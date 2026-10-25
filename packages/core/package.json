@@ -1,7 +1,7 @@
 {
   "name": "@typstream/core",
   "version": "0.0.0",
-  "description": "Shared contracts for typstream: text edits, ranges, source maps.",
+  "description": "Shared contracts for typstream: text edits, source maps, diagnostics, the worker protocol and the plugin contract.",
   "license": "UNLICENSED",
   "private": true,
   "type": "module",

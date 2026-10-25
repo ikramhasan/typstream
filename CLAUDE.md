@@ -46,8 +46,10 @@ pnpm changeset         # describe a change to a published package
 In `packages/heal`:
 - `pnpm test:long`: 20,000-run property campaign (minutes).
 - `pnpm bench`: vitest benchmarks.
-- `node scripts/perf.mjs`: asserts the latency budgets; run `pnpm build` first.
+- `node scripts/perf.mjs`: asserts the latency budgets; run `pnpm build` first. `PERF_TOLERANCE=3` (what CI uses) fails only above 3× budget.
 - `pnpm size`: bundle budget, 15 KB gzipped.
+
+CI (`.github/workflows/ci.yml`) runs the same commands on every PR, building the oracle through `.github/actions/oracle` (cached on the crate's inputs). `nightly.yml` runs `test:long`.
 
 Adding a package: copy `packages/core` and rename. Its `tsconfig.json`, `tsup.config.ts` and `api-extractor.json` only extend the shared configs (`tsconfig.base.json`, `tools/repo/`), and `@typstream/*` resolves to `packages/*/src` through a wildcard path. Then add its row to `tools/repo/layers.mjs`, and add it to the `fixed` group in `.changeset/config.json` if the row says `fixed`. Delete the copied `api/core.api.md` but keep `api/` (api-extractor won't create it), then `pnpm api:update` writes the new package's report.
 

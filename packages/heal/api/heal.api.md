@@ -4,6 +4,8 @@
 
 ```ts
 
+import { HealHandler } from '@typstream/core';
+import { HealHandlerContext } from '@typstream/core';
 import { Patch } from '@typstream/core';
 import { Range } from '@typstream/core';
 import { TextEdit } from '@typstream/core';
@@ -42,27 +44,9 @@ export interface Healer {
     setStreamingRange(range: Range | null): HealResult;
 }
 
-// @public
-export interface HealHandler {
-    // (undocumented)
-    name: string;
-    // (undocumented)
-    phase: "settled" | "output";
-    priority?: number;
-    // (undocumented)
-    run(ctx: HealHandlerContext): TextChange[];
-}
+export { HealHandler }
 
-// @public (undocumented)
-export interface HealHandlerContext {
-    // (undocumented)
-    final: boolean;
-    from: number;
-    modeAt(pos: number): ModeSpan["mode"];
-    text: string;
-    // (undocumented)
-    to: number;
-}
+export { HealHandlerContext }
 
 // @public (undocumented)
 export interface HealOptions {
