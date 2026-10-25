@@ -95,11 +95,19 @@ export interface Recognition {
   modes: ModeSpan[];
   /** Start of the last non-trivia token. */
   lastTokenStart: number;
+  /**
+   * Root checkpoint where `stopAt` ended recognition, if it did. Checkpoints,
+   * errors, events and modes then cover only text before it, and
+   * `requirements` and `lastTokenStart` don't describe the end of the text.
+   */
+  stoppedAt?: number;
 }
 
 export interface RecognizeOptions {
   /** Turn any requirement inside a set/show/import/include statement into a cut of the whole statement. */
   dropIncompleteRules?: boolean;
+  /** Asked at each root checkpoint before it's recorded; `true` stops recognition there (resync after an edit). */
+  stopAt?: (cp: Checkpoint) => boolean;
 }
 
 // --- newline modes (AtNewline) ------------------------------------------------
@@ -282,6 +290,7 @@ class Parser {
   readonly events: LintEvent[] = [];
   readonly modes: ModeSpan[] = [];
   readonly checkpoints: Checkpoint[] = [];
+  stoppedAt: number | undefined;
   lastTokenStart = 0;
   /** Start offsets of constructs a dangling end can be cut back to, innermost last. */
   readonly scopes: number[] = [];
@@ -596,7 +605,14 @@ class Parser {
     // Offsets of open text brackets (`[` in markup that isn't a content block).
     const nesting: number[] = new Array(initialNesting).fill(0);
     while (!this.atSet(stop) || (nesting.length > 0 && this.at("RightBracket"))) {
-      if (root && start) this.checkpoints.push({ offset: this.token.start, nesting: nesting.length });
+      if (root && start) {
+        const cp = { offset: this.token.start, nesting: nesting.length };
+        if (this.opts.stopAt?.(cp)) {
+          this.stoppedAt = cp.offset;
+          return;
+        }
+        this.checkpoints.push(cp);
+      }
       this.markupExpr(start, nesting);
       start = this.hadNewline();
     }
@@ -1489,5 +1505,6 @@ export const recognize = (text: string, from?: Checkpoint, opts: RecognizeOption
     events: p.events,
     modes: p.modes,
     lastTokenStart: p.lastTokenStart,
+    ...(p.stoppedAt === undefined ? {} : { stoppedAt: p.stoppedAt }),
   };
 };

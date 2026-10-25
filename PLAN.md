@@ -15,6 +15,7 @@ Status: draft v2 · 2026-10-26 · Target Typst version: **0.15.1** (pinned, see 
 
 | Date | Decision | Why / where |
 |---|---|---|
+| 2026-10-26 | **Edits resync** (#5): re-parsing after an edit resumes one checkpoint earlier than before, so it never starts at a checkpoint whose own token the edit can change, and stops at the second matching root checkpoint past the edit. The healer passes known edits (`push`, `applyEdit`) through instead of diffing the whole text. Measured side by side on one (loaded) machine: mid-document 1-char edit at 100 KB ~7–10 ms → ~0.5 ms; per streamed token at 50 KB p50 ~0.25 ms → ~0.03 ms. | §5.2 "As built (resync)" |
 | 2026-10-26 | **Low-end devices are out of scope for now.** No Chromebook or Android measurements before launch; budgets are set on a mid-range laptop. | Product call. Revisit after launch. |
 | 2026-10-26 | Work is tracked in GitHub issues, each self-contained; open questions are research tasks inside issues, not guesses in this plan. | — |
 | 2026-10-26 | `@typstream/heal` is a faithful port of typst-syntax's parser used as a recognizer, tested against Typst's real parser. | §5.2 "As built" |
@@ -249,6 +250,8 @@ Typst rules the scanner must encode (each gets a test file):
 - On any edit, invalidate checkpoints after the last checkpoint ≤ `from`, rescan from there, and **stop early** as soon as the new state at a checkpoint position equals the old state at the (shifted) same position — the rest of the document is unaffected (the same resynchronization trick CodeMirror/Lezer and tree-sitter use).
 - For appends this degenerates to "resume from the last checkpoint": O(chunk + distance to last checkpoint) per token. Constructs that are look-ahead-sensitive are flagged and tested.
 - v1 only *needs* appends (and full resets for regenerate), but the edit path is implemented and covered by the "random edit ≡ full rescan" property test (§11.1) so the editor never needs a new scanner.
+
+> **As built (resync, #5):** checkpoints are root-markup line starts storing `{ offset, nesting }` (open text brackets). After an edit, `updateState` resumes at the last checkpoint whose *following* checkpoint is still at or before `edit.from`, not at the last one before it. Whether a position is a checkpoint depends on the token there, and the lexer may read to the end of its line to find where that token ends (`#\n*` + `/*` turns the `*` into a `*/` that the `#` consumes, so 2 stops being a checkpoint). Recognition stops at the first new checkpoint whose shifted offset and nesting match an old one. That checkpoint must be the *second* one past the edit, because the lexer looks back from a token (`column()` to the line start, keywords two characters). The old checkpoints, errors, lint events, mode spans, requirements and `lastTokenStart` after that point are reused, shifted by the edit's length change. Cached lint findings past it are reused too, except when `settled` handlers are registered (they may read anything). Edits that change the rest of the document (an unclosed `/*`, a deleted `"`, a new `[`) never match and re-parse to the end. `resync.test.ts` checks the spliced state against a fresh recognition and asserts bounded re-parsing; `scripts/perf.mjs` budgets a one-character edit in the middle of 100 KB.
 
 Checkpoints double as **stable boundaries** for the renderer and for fallback (§5.6).
 
@@ -770,7 +773,6 @@ pnpm workspaces, turbo, tsup, vitest, biome (ultracite), changesets, Playwright,
   - Compile-oracle tests (healed prefixes compile with the engine); Phase 2, once `engine-wasm` is a package.
   - Mutation testing.
   - CI (the repo isn't under git yet).
-  - The incremental parser re-parses to the end after a mid-document edit; early resync (§5.2) is still an optimisation to add.
 
 **Phase 2 — Engine MVP (2–3 wks)** · issues #7–#14
 - Worker + `@typstream/engine-wasm` (productionize the Phase 0 crate: CI wasm build, eviction after every compile, changed-page SVG, structured diagnostics), VFS, base fonts, scheduler, watchdog, last-good fallback, paged target with visible-pages-first updates.

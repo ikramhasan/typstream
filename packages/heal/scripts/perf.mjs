@@ -63,7 +63,33 @@ const budget = (name, value, max, unit = "ms") => {
   budget("scaling 1 MB vs 10 KB (µs/KB ratio)", perKb[2] / perKb[0], 2, "×");
 }
 
-// 3. Pathological inputs stay linear and don't overflow the stack.
+// 3. Editing the middle of a document resyncs after the edited block (PLAN.md §5.2)
+// instead of re-parsing to the end. What's left per edit is string work over the
+// whole input (normalize, diff, output), a small fraction of a stateless heal.
+{
+  const doc = makeDoc(100_000);
+  const healer = createHealer();
+  healer.set(doc);
+  const times = [];
+  for (let i = 0; i < 200; i++) {
+    const at = 40_000 + ((i * 7919) % 20_000);
+    for (const edit of [
+      { from: at, to: at, insert: "x" },
+      { from: at, to: at + 1, insert: "" },
+    ]) {
+      const t = performance.now();
+      healer.applyEdit(edit);
+      times.push(performance.now() - t);
+    }
+  }
+  const t = performance.now();
+  for (let i = 0; i < 5; i++) heal(doc);
+  const stateless = (performance.now() - t) / 5;
+  budget("mid-document 1-char edit p50 at 100 KB", pct(times, 0.5), 2);
+  budget("mid-document edit p50 vs stateless heal at 100 KB", (pct(times, 0.5) / stateless) * 100, 10, "%");
+}
+
+// 4. Pathological inputs stay linear and don't overflow the stack.
 for (const [name, input] of [
   ["100k nested [", `${"#box[".repeat(20_000)}x`],
   ["10k backtick runs", "`` ".repeat(10_000)],
