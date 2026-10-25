@@ -18,20 +18,23 @@ use crate::world::{file_id, MemWorld};
 #[wasm_bindgen(typescript_custom_section)]
 const TS_TYPES: &'static str = r#"
 /** A range `[from, to)` in UTF-16 code units (JS string indices) of a file's text. */
-export type Span = { from: number; to: number };
-/** Where a diagnostic was reached from: a call, show rule, import or include. */
-export type TracePoint = { message: string; file?: string; span?: Span };
+export type Range = { from: number; to: number };
+/** One step of the call chain that led to a diagnostic. `span` is in /main.typ, or `null` if the step isn't. */
+export type TraceItem = { message: string; span: Range | null };
 /**
- * A Typst error or warning. `file` is the virtual path (e.g. "/main.typ") when the
- * diagnostic points into a file; `span` is set when the range could be mapped.
+ * A Typst error or warning, in the shape of `@typstream/core`'s `Diagnostic` with
+ * /main.typ as the document. `span` is in /main.typ: the problem itself, or for a
+ * problem in another file the nearest call site in /main.typ (else `null`); `file`
+ * then holds the original location. `trace` is innermost first.
  */
 export type Diagnostic = {
   severity: "error" | "warning";
+  span: Range | null;
   message: string;
   hints: string[];
-  trace: TracePoint[];
-  file?: string;
-  span?: Span;
+  trace: TraceItem[];
+  file?: { path: string; span: Range | null };
+  source: "typst";
 };
 /** `ms` is the time spent in the call: compile, export and cache eviction. */
 export type HtmlResult = { ok: boolean; html?: string; diagnostics: Diagnostic[]; ms: number };
@@ -64,6 +67,9 @@ export type PdfResult = { ok: boolean; pdf?: Uint8Array; diagnostics: Diagnostic
 /// grows ~4 MiB per compile.
 const EVICT_MAX_AGE: usize = 2;
 
+/// A Typst project in memory: fonts, source and binary files, `sys.inputs`.
+/// Compile it with `compile_html` or `compile_svg_changed`. Engines in one
+/// wasm instance share Typst's memoization cache and the wasm memory.
 #[wasm_bindgen]
 pub struct Engine {
     world: MemWorld,

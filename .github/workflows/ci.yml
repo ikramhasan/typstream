@@ -18,6 +18,8 @@ permissions:
 # then runs `pnpm install --frozen-lockfile` against a cached store.
 env:
   NODE: node@24
+  # The engine (packages/engine-wasm) needs Rust, binaryen and native typst; only the engine job has them.
+  NOT_ENGINE: --filter=!@typstream/engine-wasm
 
 jobs:
   lint:
@@ -39,7 +41,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: pnpm/setup@v3
         with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
-      - run: pnpm check-types
+      - run: pnpm check-types $NOT_ENGINE
 
   test:
     name: Test
@@ -50,8 +52,8 @@ jobs:
       - uses: ./.github/actions/oracle
       - uses: pnpm/setup@v3
         with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
-      - run: pnpm build
-      - run: pnpm test
+      - run: pnpm build $NOT_ENGINE
+      - run: pnpm test $NOT_ENGINE
 
   size:
     name: Size
@@ -61,7 +63,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: pnpm/setup@v3
         with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
-      - run: pnpm size
+      - run: pnpm size $NOT_ENGINE
 
   # Shared runners are too noisy for the strict latency budgets: report every number, fail only on a
   # large (> 3×) regression. Strict budgets are checked locally (`node scripts/perf.mjs`).
@@ -73,7 +75,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: pnpm/setup@v3
         with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
-      - run: pnpm build
+      - run: pnpm build $NOT_ENGINE
       - name: node packages/heal/scripts/perf.mjs
         env:
           PERF_TOLERANCE: 3
@@ -86,5 +88,47 @@ jobs:
             echo '```'
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
-  # TODO(#8): engine-wasm job: build the Typst engine crate (Rust + wasm-opt), wasm size budget, compile oracle tests.
+  # The Typst engine: Rust build (cached by rust-cache), tests against native typst, wasm size budget, API report and
+  # package lint. Compile-oracle tests for heal are #13.
+  engine:
+    name: Engine (wasm)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # Typst is pinned everywhere (CLAUDE.md); binaryen 133 is what Phase 0 measured with.
+      TYPST: 0.15.1
+      BINARYEN: "133"
+    steps:
+      - uses: actions/checkout@v7
+      # Typst 0.15.1 needs Rust ≥ 1.92 (CLAUDE.md).
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: packages/engine-wasm -> target
+      # wasm-bindgen-cli must match the wasm-bindgen crate in Cargo.lock exactly, so read it from there.
+      - id: bindgen
+        run: |
+          version=$(awk '/^name = "wasm-bindgen"$/ { getline; gsub(/version = |"/, ""); print; exit }' packages/engine-wasm/Cargo.lock)
+          test -n "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-bindgen@${{ steps.bindgen.outputs.version }}
+      - name: Install wasm-opt and native typst
+        run: |
+          bin="$RUNNER_TEMP/bin"
+          mkdir -p "$bin"
+          curl -fsSL "https://github.com/WebAssembly/binaryen/releases/download/version_$BINARYEN/binaryen-version_$BINARYEN-x86_64-linux.tar.gz" \
+            | tar -xz -C "$RUNNER_TEMP"
+          ln -s "$RUNNER_TEMP/binaryen-version_$BINARYEN/bin/wasm-opt" "$bin/wasm-opt"
+          curl -fsSL "https://github.com/typst/typst/releases/download/v$TYPST/typst-x86_64-unknown-linux-musl.tar.xz" \
+            | tar -xJ -C "$RUNNER_TEMP"
+          ln -s "$RUNNER_TEMP/typst-x86_64-unknown-linux-musl/typst" "$bin/typst"
+          echo "$bin" >> "$GITHUB_PATH"
+      - uses: pnpm/setup@v3
+        with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
+      - run: pnpm exec turbo run build check-types test size check:api check:package --filter=@typstream/engine-wasm
+
   # TODO(#19): Playwright suites (visual, flicker, a11y, cross-browser).

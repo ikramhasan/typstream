@@ -35,7 +35,8 @@ describe("compile_html", () => {
     const result = compile(source);
     expect(result.ok).toBe(true);
     const warning = result.diagnostics.find((d) => d.message.includes("was ignored"));
-    expect(warning).toMatchObject({ severity: "warning", file: "/main.typ" });
+    expect(warning).toMatchObject({ severity: "warning", source: "typst" });
+    expect(warning?.file).toBeUndefined();
     expect(source.slice(warning?.span?.from, warning?.span?.to)).toBe("h(1em)");
   });
 

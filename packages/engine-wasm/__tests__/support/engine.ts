@@ -14,7 +14,7 @@ const glue: typeof import("../../dist/engine.js") = await import("../../dist/eng
 glue.initSync({ module: readFileSync(`${dist}engine_bg.wasm`) });
 
 export const { Engine } = glue;
-export type { Diagnostic, HtmlResult, Span, SvgChangedResult } from "../../dist/engine.js";
+export type { Diagnostic, HtmlResult, Range, SvgChangedResult } from "../../dist/engine.js";
 
 /** An engine with Typst's bundled fonts, the same ones native `typst` uses in `native.ts`. */
 export const newEngine = (): InstanceType<typeof Engine> => {

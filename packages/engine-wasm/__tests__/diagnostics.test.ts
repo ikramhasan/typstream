@@ -1,8 +1,9 @@
-// Diagnostic spans are UTF-16 ranges (JS string indices), so slicing the
-// source with them must give the offending text even after astral characters
-// (4 UTF-8 bytes, 2 UTF-16 units) and other non-ASCII text.
+// Diagnostics follow @typstream/core's Diagnostic with /main.typ as the
+// document. Spans are UTF-16 ranges (JS string indices), so slicing the source
+// with them must give the offending text even after astral characters (4 UTF-8
+// bytes, 2 UTF-16 units) and other non-ASCII text.
 import { describe, expect, it } from "vitest";
-import { type Diagnostic, newEngine } from "./support/engine.js";
+import { type Diagnostic, newEngine, type Range } from "./support/engine.js";
 
 const engine = newEngine();
 
@@ -11,14 +12,23 @@ const diagnose = (source: string): Diagnostic[] => {
   return engine.compile_html().diagnostics;
 };
 
-const text = (source: string, diag: Diagnostic | undefined): string | undefined =>
-  diag?.span && source.slice(diag.span.from, diag.span.to);
+const slice = (source: string, span: Range | null | undefined): string | undefined =>
+  span ? source.slice(span.from, span.to) : undefined;
+
+const text = (source: string, diag: Diagnostic | undefined): string | undefined => slice(source, diag?.span);
 
 describe("UTF-16 spans", () => {
   it("points at an error after emoji", () => {
     const source = "😀🎉 Ünïcödé text #foo(1)";
     const [error] = diagnose(source);
-    expect(error).toMatchObject({ severity: "error", message: "unknown variable: foo", file: "/main.typ" });
+    expect(error).toEqual({
+      severity: "error",
+      span: { from: source.indexOf("foo"), to: source.indexOf("foo") + 3 },
+      message: "unknown variable: foo",
+      hints: [],
+      trace: [],
+      source: "typst",
+    });
     expect(text(source, error)).toBe("foo");
   });
 
@@ -38,18 +48,29 @@ describe("UTF-16 spans", () => {
     expect(text(source, error)).toBe("*");
   });
 
-  it("maps spans in other source files with that file's text", () => {
+  it("puts a problem in another file at its call site, with the original location in `file`", () => {
     const lib = '// 🧪🧪🧪\n#let f(x) = x + "s"';
     engine.set_source("/lib.typ", lib);
     const source = '#import "lib.typ": f\n😀 #f(1)';
     const [error] = diagnose(source);
-    expect(error?.file).toBe("/lib.typ");
     expect(error?.message).toBe("cannot add integer and string");
-    expect(text(lib, error)).toBe('x + "s"');
-    // The trace leads back to the call in main.
-    expect(error?.trace).toHaveLength(1);
-    expect(error?.trace[0]).toMatchObject({ message: "while calling `f`", file: "/main.typ" });
-    expect(source.slice(error?.trace[0]?.span?.from, error?.trace[0]?.span?.to)).toBe("f(1)");
+    expect(text(source, error)).toBe("f(1)");
+    expect(error?.file?.path).toBe("/lib.typ");
+    expect(slice(lib, error?.file?.span)).toBe('x + "s"');
+    expect(error?.trace.map((t) => [t.message, slice(source, t.span)])).toEqual([["while calling `f`", "f(1)"]]);
+  });
+
+  it("uses the nearest call site in main when the call chain passes through other files", () => {
+    engine.set_source("/lib.typ", '#let f(x) = x + "s"\n#let g(x) = f(x)');
+    const source = '#import "lib.typ": g\n😀 #g(1)';
+    const [error] = diagnose(source);
+    expect(text(source, error)).toBe("g(1)");
+    // Innermost first; the call of f is in lib.typ, so it has no span.
+    expect(error?.trace.map((t) => [t.message, slice(source, t.span)])).toEqual([
+      ["while calling `f`", undefined],
+      ["while calling `g`", "g(1)"],
+    ]);
+    expect(error?.trace[0]?.span).toBeNull();
   });
 
   it("maps spans in data files", () => {
@@ -57,9 +78,9 @@ describe("UTF-16 spans", () => {
     engine.set_file("/data.json", new TextEncoder().encode(json));
     const [error] = diagnose('#json("/data.json")');
     expect(error?.message).toContain("failed to parse JSON");
-    // The span is the whole file: 29 UTF-8 bytes, 27 UTF-16 units.
-    expect(error).toMatchObject({ file: "/data.json", span: { from: 0, to: json.length } });
-    expect(error?.trace[0]).toMatchObject({ message: "while calling `json`", file: "/main.typ" });
+    // The whole file: 29 UTF-8 bytes, 27 UTF-16 units.
+    expect(error?.file).toEqual({ path: "/data.json", span: { from: 0, to: json.length } });
+    expect(text('#json("/data.json")', error)).toBe('json("/data.json")');
   });
 });
 

@@ -19,7 +19,7 @@ jobs:
       - uses: ./.github/actions/oracle
       - uses: pnpm/setup@v3
         with: { runtime: node@24, cache: true, require-lockfile: true }
-      - run: pnpm build
+      - run: pnpm build --filter=@typstream/heal...
       - run: pnpm --filter @typstream/heal test:long
 
   # TODO(#19): cross-browser full matrix.

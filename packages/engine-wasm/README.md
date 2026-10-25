@@ -35,7 +35,7 @@ In Node or a worker that already has the bytes: `initSync({ module: bytes })`.
 
 Paths are virtual and absolute (`/img/a.png`); invalid ones throw. Methods that compile never throw for document errors; those come back as diagnostics.
 
-A `Diagnostic` is `{ severity, message, hints, trace, file?, span? }`. `span` is `{ from, to }` in **UTF-16 code units** of `file`'s text, so `source.slice(span.from, span.to)` is the offending text. `trace` lists the calls, show rules and imports the error came through, each with its own `file`/`span`. The warning Typst emits on every HTML compile ("html export is under active development") is dropped.
+A `Diagnostic` has the shape of `@typstream/core`'s, with `/main.typ` as the document: `{ severity, span, message, hints, trace, file?, source: "typst" }`. Spans are `{ from, to }` in **UTF-16 code units**, so `source.slice(span.from, span.to)` is the offending text. For a problem in another file, `span` is the nearest call site in `/main.typ` (or `null`) and `file: { path, span }` is the original location. `trace` lists the calls, show rules and imports the error came through, innermost first; each item has a span only where it is in `/main.typ`. The warning Typst emits on every HTML compile ("html export is under active development") is dropped.
 
 Things to know:
 - **Every compile calls `comemo::evict(2)`.** Typst's memoization cache would otherwise grow by ~4 MiB per compile; with it, memory stays flat over hundreds of streaming compiles.

@@ -48,6 +48,7 @@ pnpm changeset         # describe a change to a published package
 In `packages/engine-wasm` (Rust build, ~3 min cold):
 - `pnpm build`: `build.sh` → `dist/` (glue, `.d.ts`, `wasm-opt -Oz` wasm). The root `pnpm test` / `pnpm check-types` (turbo) build it first; run inside the package, `pnpm test` uses the existing `dist/`.
 - `pnpm size`: wasm budget, 6.0 MB brotli.
+- It isn't a tsup package: `dist/` is wasm-bindgen's output, and its API report reads `dist/engine.d.ts`, whose types are written in `src/lib.rs`. CI builds it only in the `Engine (wasm)` job; the other jobs pass `--filter=!@typstream/engine-wasm`.
 
 In `packages/heal`:
 - `pnpm test:long`: 20,000-run property campaign (minutes).
