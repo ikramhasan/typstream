@@ -1,0 +1,205 @@
+{
+  "chemistry-balancing-equations": {
+    "category": "worksheet",
+    "tags": ["chemistry", "math", "table"],
+    "notes": "Chemical formulas via an upright() helper, ionic and equilibrium equations, stretch arrows.",
+    "expectedPages": 2
+  },
+  "exam-algebra-final": {
+    "category": "exam",
+    "tags": ["math", "header-footer", "show-rule", "cases"],
+    "notes": "Header suppressed on page 1 via context, heading show rule reading a counter, marks per section.",
+    "expectedPages": 3
+  },
+  "exam-calculus-midterm": {
+    "category": "exam",
+    "tags": ["math", "answer-key", "counter"],
+    "notes": "Limits, derivatives, integrals and aligned solutions shown when show-solutions is true.",
+    "expectedPages": 2
+  },
+  "exam-history-short-answer": {
+    "category": "exam",
+    "tags": ["sources", "long-answer"],
+    "notes": "Source-based questions with ruled answer lines.",
+    "expectedPages": 2
+  },
+  "exam-physics-mechanics": {
+    "category": "exam",
+    "tags": ["physics", "units", "math", "figure", "cross-reference"],
+    "notes": "Numbered equations referenced by label, a figure drawn with place(), a table figure.",
+    "expectedPages": 2
+  },
+  "flashcards-capitals": {
+    "category": "flashcards",
+    "tags": ["grid", "duplex"],
+    "notes": "Fronts on page 1, backs on page 2.",
+    "expectedPages": 2
+  },
+  "geometry-shapes-area": {
+    "category": "worksheet",
+    "tags": ["geometry", "shapes", "math"],
+    "notes": "Native shapes only (rect, polygon, circle, curve); no packages.",
+    "expectedPages": 1
+  },
+  "handout-cornell-notes": {
+    "category": "handout",
+    "tags": ["grid", "table", "terms"],
+    "notes": "Two-column Cornell notes layout.",
+    "expectedPages": 1
+  },
+  "lab-report-pendulum": {
+    "category": "report",
+    "tags": ["physics", "table", "computed", "math", "cross-reference"],
+    "notes": "Results table with rowspan/colspan header; values computed in Typst.",
+    "expectedPages": 1
+  },
+  "lesson-plan-persuasive-writing": {
+    "category": "lesson-plan",
+    "tags": ["blocks", "highlight", "quote"],
+    "expectedPages": 2
+  },
+  "lesson-plan-water-cycle": {
+    "category": "lesson-plan",
+    "tags": ["table", "columns", "terms"],
+    "notes": "Contains Markdown task-list habits (- [x]) that are legal Typst and render as text.",
+    "expectedPages": 1
+  },
+  "math-linear-algebra": {
+    "category": "math",
+    "tags": ["math", "matrix", "augment", "cases"],
+    "expectedPages": 1
+  },
+  "math-statistics-probability": {
+    "category": "math",
+    "tags": ["math", "table", "computed"],
+    "notes": "Statistics computed in Typst code from a data array.",
+    "expectedPages": 2
+  },
+  "math-trigonometry-identities": {
+    "category": "math",
+    "tags": ["math", "aligned", "numbered-equations", "cross-reference"],
+    "expectedPages": 2
+  },
+  "multilingual-arabic-rtl-quiz": {
+    "category": "quiz",
+    "tags": ["multilingual", "rtl", "arabic"],
+    "notes": "lang: ar sets RTL; one LTR note inside. Embedded fonts only, so glyph coverage depends on fallback.",
+    "expectedPages": 1
+  },
+  "multilingual-bengali-math": {
+    "category": "worksheet",
+    "tags": ["multilingual", "bengali", "math"],
+    "notes": "Bengali numbering and digits. Renders as tofu with embedded fonts only (no warning); needs a Bengali font (#11).",
+    "expectedPages": 1
+  },
+  "multilingual-chinese-vocabulary": {
+    "category": "worksheet",
+    "tags": ["multilingual", "cjk", "table"],
+    "notes": "Chinese with pinyin, plus a Japanese and a Korean line. Needs CJK fonts for real rendering (#11).",
+    "expectedPages": 1
+  },
+  "multilingual-hindi-science": {
+    "category": "worksheet",
+    "tags": ["multilingual", "devanagari", "table"],
+    "notes": "Devanagari page numbering. Needs a Devanagari font for real rendering (#11).",
+    "expectedPages": 1
+  },
+  "multilingual-spanish-french-vocab": {
+    "category": "worksheet",
+    "tags": ["multilingual", "latin", "columns", "terms"],
+    "notes": "Two-column page with a floating parent-scoped title; per-section lang.",
+    "expectedPages": 1
+  },
+  "programming-python-loops": {
+    "category": "worksheet",
+    "tags": ["raw", "code"],
+    "notes": "Fenced raw blocks inside enum items, inline raw containing backticks.",
+    "expectedPages": 2
+  },
+  "quiz-mcq-chemistry": {
+    "category": "quiz",
+    "tags": ["mcq", "chemistry", "math"],
+    "expectedPages": 2
+  },
+  "quiz-mcq-geography": {
+    "category": "quiz",
+    "tags": ["mcq", "state", "counter", "answer-key"],
+    "notes": "Answer key built from state at the end of the document.",
+    "expectedPages": 2,
+    "stream": {
+      "source": "synthetic",
+      "options": {
+        "seed": 7
+      }
+    }
+  },
+  "quiz-true-false-cells": {
+    "category": "quiz",
+    "tags": ["table", "figure", "cross-reference"],
+    "expectedPages": 1
+  },
+  "quiz-vocabulary-matching": {
+    "category": "quiz",
+    "tags": ["grid", "matching"],
+    "expectedPages": 1
+  },
+  "reading-comprehension-lighthouse": {
+    "category": "reading-comprehension",
+    "tags": ["prose", "place"],
+    "expectedPages": 1
+  },
+  "report-climate-change": {
+    "category": "report",
+    "tags": ["outline", "bibliography", "footnote", "figure", "cross-reference", "assets"],
+    "notes": "Reads assets/climate-refs.yml. Title page, outlines of headings, figures and tables.",
+    "expectedPages": 10
+  },
+  "rubric-argumentative-essay": {
+    "category": "rubric",
+    "tags": ["table", "landscape", "colspan"],
+    "expectedPages": 1
+  },
+  "rubric-science-fair": {
+    "category": "rubric",
+    "tags": ["table", "colspan", "computed", "math"],
+    "expectedPages": 1
+  },
+  "table-gradebook": {
+    "category": "table",
+    "tags": ["table", "computed", "landscape", "hline"],
+    "notes": "16 students x 8 assessments with weighted averages, conditional fills and a bar chart.",
+    "expectedPages": 1
+  },
+  "table-periodic-elements": {
+    "category": "table",
+    "tags": ["table", "computed", "dictionary"],
+    "expectedPages": 1
+  },
+  "worksheet-fractions": {
+    "category": "worksheet",
+    "tags": ["math", "columns", "enum"],
+    "expectedPages": 1
+  },
+  "worksheet-linear-equations": {
+    "category": "worksheet",
+    "tags": ["math", "aligned", "answer-key", "footnote", "header-footer"],
+    "expectedPages": 2
+  },
+  "worksheet-photosynthesis": {
+    "category": "worksheet",
+    "tags": ["science", "table", "terms", "math"],
+    "expectedPages": 1
+  },
+  "worksheet-times-tables": {
+    "category": "worksheet",
+    "tags": ["table", "computed", "landscape"],
+    "allowedWarnings": ["no text within underscores"],
+    "notes": "Uses ____ as blanks, a common LLM habit; Typst warns and renders nothing.",
+    "expectedPages": 1
+  },
+  "worksheet-verb-tenses": {
+    "category": "worksheet",
+    "tags": ["language", "table"],
+    "expectedPages": 1
+  }
+}

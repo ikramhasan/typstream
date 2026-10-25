@@ -10,7 +10,8 @@
     "check-types": "turbo run check-types",
     "check": "biome check .",
     "fix": "biome check --write .",
-    "oracle": "tools/typst-syntax-oracle/build.sh"
+    "oracle": "tools/typst-syntax-oracle/build.sh",
+    "corpus:validate": "node corpus/scripts/validate.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.5",

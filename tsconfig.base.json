@@ -20,6 +20,9 @@
       ],
       "@typstream/heal": [
         "./packages/heal/src/index.ts"
+      ],
+      "@typstream/corpus": [
+        "./corpus/src/index.ts"
       ]
     }
   }

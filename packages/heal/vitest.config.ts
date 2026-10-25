@@ -8,6 +8,9 @@ export default defineConfig({
   },
   resolve: {
     // Test against the source of sibling packages, not their builds.
-    alias: { "@typstream/core": new URL("../core/src/index.ts", import.meta.url).pathname },
+    alias: {
+      "@typstream/core": new URL("../core/src/index.ts", import.meta.url).pathname,
+      "@typstream/corpus": new URL("../../corpus/src/index.ts", import.meta.url).pathname,
+    },
   },
 });

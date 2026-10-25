@@ -1,0 +1,21 @@
+ipcc2021:
+  type: report
+  title: "Climate Change 2021: The Physical Science Basis"
+  author: IPCC
+  date: 2021
+  publisher: Cambridge University Press
+
+houghton2015:
+  type: book
+  title: "Global Warming: The Complete Briefing"
+  author: Houghton, John
+  date: 2015
+  edition: 5
+  publisher: Cambridge University Press
+
+stern2007:
+  type: book
+  title: "The Economics of Climate Change: The Stern Review"
+  author: Stern, Nicholas
+  date: 2007
+  publisher: Cambridge University Press
