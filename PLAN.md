@@ -7,6 +7,26 @@
 
 Status: draft v2 · 2026-10-26 · Target Typst version: **0.15.1** (pinned, see §15)
 
+## Status & decisions
+
+**Where we are:** Phase 0 (engine spikes) and Phase 1 (`@typstream/heal`) are done. Phase 2 (engine) is next. Remaining work is tracked as GitHub issues; the issue labelled `roadmap` lists them in order. `CLAUDE.md` explains how to work in this repo.
+
+**Decision log** (newest first). Record new decisions here in the same PR that acts on them.
+
+| Date | Decision | Why / where |
+|---|---|---|
+| 2026-10-26 | **Low-end devices are out of scope for now.** No Chromebook or Android measurements before launch; budgets are set on a mid-range laptop. | Product call. Revisit after launch. |
+| 2026-10-26 | Work is tracked in GitHub issues, each self-contained; open questions are research tasks inside issues, not guesses in this plan. | — |
+| 2026-10-26 | `@typstream/heal` is a faithful port of typst-syntax's parser used as a recognizer, tested against Typst's real parser. | §5.2 "As built" |
+| 2026-10-26 | Stable offset = last root checkpoint whose first character is followed by another (monotone under appends). | §5.2 |
+| 2026-10-26 | **One engine: our own wasm build of Typst 0.15.1** (`@typstream/engine-wasm`) for both HTML and paged output. typst.ts and typst-wasm are dropped as defaults. | §6.1, `spikes/phase0/RESULTS.md` |
+| 2026-10-26 | Paged output uses changed-page SVG export (only pages whose frame hash changed). | §6.1, §6.5 |
+| 2026-10-26 | The engine calls `comemo::evict(2)` after every compile. | §6.3 |
+| 2026-10-26 | HTML is the default streaming target; paged is for print preview. | §0, §6.5 |
+| 2026-10-26 | Built as a published toolkit, editor-ready from day one (edits, not appends; LSP-shaped worker protocol; one plugin contract). | §10 |
+
+**Open product questions** (block parts of Phases 2–5, tracked in the "Product decisions" issue): primary surface (chat vs. document panel), launch languages/scripts, day-one Typst packages, licensing, npm scope.
+
 ---
 
 ## 0. TL;DR — the key decisions
@@ -728,10 +748,10 @@ pnpm workspaces, turbo, tsup, vitest, biome (ultracite), changesets, Playwright,
 - Remaining:
   - ✅ Changed-page SVG export prototyped. It meets the bar, so typst.ts is dropped (see RESULTS.md, "Changed-page SVG prototype").
   - Decide the data-trimming level: hyphenation languages, highlighting, bibliography and plugins (4.29 MB measured; ~2.5 MB estimated).
-  - Measure on real low-end hardware (Chromebook, a mid-range Android). CDP can't throttle workers.
-  - html-compat prelude coverage and MathML rendering across browsers.
-  - Build the `typst-syntax` wasm oracle (start with the typstyle wasm dump; replace with `@typstream/syntax`).
-- *Exit*: low-end numbers recorded; data-trimming level decided.
+  - ~~Measure on real low-end hardware~~: deferred (see decision log).
+  - html-compat prelude coverage and MathML rendering across browsers: moved to Phase 3.
+  - ✅ `typst-syntax` wasm oracle built (`tools/typst-syntax-oracle`).
+- *Exit*: data-trimming level decided (needs the launch-languages decision).
 
 **Phase 1 — `@typstream/heal`** ✅ (2026-10-26; see `packages/heal/README.md`)
 - Built:
