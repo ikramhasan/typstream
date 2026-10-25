@@ -1,0 +1,191 @@
+// One plugin contract for the whole toolkit (PLAN §8.0). A plugin is a plain
+// object with optional facets; each package reads only the facets it
+// understands, so a plugin written for the renderer keeps working when the
+// editor arrives, and new facets never break old plugins.
+
+import type { TextEdit } from "./index";
+
+/**
+ * Typst's lexical modes, plus the inside of raw blocks and comments, which
+ * handlers almost always need to leave alone.
+ * @public
+ */
+export type SyntaxMode = "markup" | "math" | "code" | "raw" | "comment";
+
+/** What a {@link HealHandler} sees. @public */
+export interface HealHandlerContext {
+  /** Normalized text (`settled`) or healed source (`output`). */
+  text: string;
+  /** Range the handler may change (`settled`: newly settled text; `output`: everything). */
+  from: number;
+  to: number;
+  /** The document is complete (no tail repair runs). */
+  final: boolean;
+  /** Lexical mode at a position (`settled` only; `output` handlers get `markup`). */
+  modeAt(pos: number): SyntaxMode;
+}
+
+/**
+ * Extension point of `@typstream/heal` (PLAN §8.1): product-specific fixes,
+ * run alongside the built-in lint rules (`settled`, on text whose parse can no
+ * longer change) or on the final healed source (`output`). Returned edits are
+ * against `ctx.text`, non-overlapping, inside `[ctx.from, ctx.to)`.
+ * @public
+ */
+export interface HealHandler {
+  name: string;
+  /** Lower runs first. Built-in lint rules run at 50. */
+  priority?: number;
+  phase: "settled" | "output";
+  run(ctx: HealHandlerContext): TextEdit[];
+}
+
+/** `fix` applies a lint rule's change, `warn` only reports it. @public */
+export type LintSetting = "fix" | "warn" | "off";
+
+/**
+ * A font for the engine. URLs are fetched by the worker (same origin unless
+ * the app allows otherwise, PLAN §9); `family` and `scripts` let it register
+ * the font before downloading it (lazy fonts, PLAN §6.4).
+ * @beta
+ */
+export type FontSource = ({ kind: "url"; url: string } | { kind: "bytes"; data: Uint8Array }) & {
+  family?: string;
+  /** ISO 15924 codes the font covers, e.g. `["Beng"]`, to fetch it when the text needs it. */
+  scripts?: string[];
+};
+
+/**
+ * A Typst package the engine may load (`#import "@preview/cetz:0.4.2"`).
+ * Without `url`, the engine resolves it from its configured mirror.
+ * @beta
+ */
+export interface PackageSpec {
+  namespace: string;
+  name: string;
+  version: string;
+  /** Where to fetch the `.tar.gz` from. */
+  url?: string;
+  /** Subresource-integrity hash of the tarball, e.g. `sha384-…`. */
+  integrity?: string;
+}
+
+/** A named document setup: page, fonts, header (PLAN §8.3). @public */
+export interface TemplateSpec {
+  /** Unique among templates, e.g. `"worksheet"`. */
+  name: string;
+  title?: string;
+  description?: string;
+  /** Typst evaluated before the document. */
+  preamble: string;
+  /** Default `sys.inputs` the template understands. */
+  inputs?: Record<string, string>;
+}
+
+/** One Typst function in the prompt catalogue, generated from the package's doc comments. @public */
+export interface FunctionDoc {
+  name: string;
+  /** E.g. `question(points: int, body: content) -> content`. */
+  signature: string;
+  description: string;
+  example?: string;
+}
+
+/** A few-shot example for the system prompt. @public */
+export interface PromptExample {
+  title?: string;
+  /** What the user asked for. */
+  request?: string;
+  /** The Typst the model should write. */
+  output: string;
+}
+
+/**
+ * Describes an interactive component the renderer swaps in for a Typst marker
+ * (PLAN §8.4). Framework-neutral: bindings (`@typstream/react`) map island
+ * names to components. Shape to be settled by the islands work (#28).
+ * @beta
+ */
+export interface IslandSpec {
+  description?: string;
+  /** The island flows with text (`inline`) or stands as a block. Default `block`. */
+  display?: "inline" | "block";
+  [key: string]: unknown;
+}
+
+/**
+ * Reserved for the visual editor (PLAN §10.3). Typed loosely on purpose: the
+ * editor will narrow these, and plugins may fill them in early without
+ * breaking when it does.
+ * @beta
+ */
+export interface EditorFacet {
+  nodes?: unknown[];
+  commands?: unknown[];
+  toolbar?: unknown[];
+  shortcuts?: unknown[];
+  slashItems?: unknown[];
+  [key: string]: unknown;
+}
+
+/**
+ * A typstream plugin: a key plus any of the facets below. `@typstream/edu` is
+ * one; so are a school's branded templates or a chemistry pack.
+ *
+ * Everything except `heal.handlers` is plain data. The engine facet is
+ * especially restricted because it is sent to the worker, which can't receive
+ * functions: worker-side code is referenced by module URL (`fixerModules`).
+ * @public
+ */
+export interface TypstreamPlugin {
+  /** Unique, namespaced for third parties: `"edu"`, `"acme/chemistry"`. */
+  key: string;
+  version?: string;
+  /** Keys of plugins that must be loaded too, before this one. */
+  dependencies?: string[];
+
+  /** Language (`@typstream/heal`). */
+  heal?: {
+    handlers?: HealHandler[];
+    /** Overrides of built-in lint rules by id, e.g. `{ "currency-dollar": "fix" }`. */
+    lint?: Record<string, LintSetting | boolean>;
+  };
+
+  /** Runtime (`@typstream/engine`, worker side). */
+  engine?: {
+    /** ES module URLs exporting diagnostic fixers, loaded inside the worker (PLAN §8.2). */
+    fixerModules?: string[];
+    /** Files mounted for every document, e.g. a local Typst package's sources. */
+    files?: Record<string, string | Uint8Array>;
+    /** @beta */
+    packages?: PackageSpec[];
+    /** @beta */
+    fonts?: FontSource[];
+    /** Typst evaluated before every document, after earlier plugins' preambles. */
+    preamble?: string;
+  };
+
+  /** Content. */
+  templates?: TemplateSpec[];
+  /** Prompt kit: what the model is told about this plugin's Typst API. */
+  prompt?: { catalogue?: FunctionDoc[]; rules?: string[]; examples?: PromptExample[] };
+
+  /** Rendering. Islands by name. @beta */
+  islands?: Record<string, IslandSpec>;
+  /** Extra tags and attributes (by tag, `"*"` for all) the sanitizer lets through. */
+  sanitize?: { allowTags?: string[]; allowAttrs?: Record<string, string[]> };
+
+  /** Editor (future). @beta */
+  editor?: EditorFacet;
+}
+
+/**
+ * Identity function that type-checks a plugin while keeping its literal type.
+ *
+ * @example
+ * ```ts
+ * export const chemistry = definePlugin({ key: "acme/chemistry", engine: { packages: [...] } });
+ * ```
+ * @public
+ */
+export const definePlugin = <P extends TypstreamPlugin>(plugin: P): P => plugin;

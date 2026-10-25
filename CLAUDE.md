@@ -13,14 +13,16 @@ Typstream renders LLM-streamed **Typst** live in the browser, for an AI tool tha
 ```
 packages/core     @typstream/core: TextEdit, positions, SourceMap. No dependencies; contracts only.
 packages/heal     @typstream/heal: normalizer, recognizer (port of typst-syntax 0.15.1), tail repair, lint, incremental healer.
+packages/engine-wasm  @typstream/engine-wasm: Typst 0.15.1 as wasm (Rust crate + wasm-bindgen glue): HTML, changed-page SVG, UTF-16 diagnostics.
 tools/typst-syntax-oracle   Typst's real parser compiled to wasm for Node; the ground truth in heal's tests.
+tools/repo        Repo tooling: package layer table (layers.mjs), layering check, shared tsup and api-extractor configs.
 corpus/           @typstream/corpus (private): shared test documents (edu/, adversarial/), meta.json, stream replay.
 spikes/phase0     Throwaway Phase 0 experiments: browser harness (harness/) and custom Typst wasm engine (custom-engine/).
                   Port code out of here into packages/; don't import from spikes.
 PLAN.md           Design and roadmap.
 ```
 
-Planned packages and their dependency layers are in PLAN.md §4.1. Rules: `core` has no dependencies; nothing below the bindings layer imports React; protocol and plugin types live in `core`.
+Planned packages and their dependency layers are in PLAN.md §4.1. Rules: `core` has no dependencies; nothing below the bindings layer imports React; protocol and plugin types live in `core`. `pnpm check:layers` enforces them from the table in `tools/repo/layers.mjs`: a package may import only the packages in its row's `deps` (the §4.1 "Deps" column).
 
 ## Setup and commands
 
@@ -29,6 +31,7 @@ Toolchain:
 - pnpm 12.
 - For the oracle and engine: Rust ≥ 1.92 (Typst 0.15.1 needs it), the `wasm32-unknown-unknown` target, and `wasm-bindgen-cli` at **exactly** the `wasm-bindgen` version in the crate's `Cargo.lock` (currently 0.2.129).
 - `binaryen` (`wasm-opt`) for the engine.
+- The native `typst` CLI **0.15.1** on `PATH` for engine-wasm's tests (they compare output with it).
 
 ```bash
 pnpm install
@@ -37,14 +40,27 @@ pnpm build             # turbo: all packages
 pnpm test              # turbo: all packages
 pnpm check-types
 pnpm check             # Biome lint + format check (pnpm fix to apply)
+pnpm check:layers      # package layering (dependency-cruiser) + package.json deps + changesets fixed group
+pnpm check:api         # public API must match packages/*/api/*.api.md; pnpm api:update to accept a change
+pnpm check:packages    # publint + @arethetypeswrong/cli on the built packages
+pnpm changeset         # describe a change to a published package
 pnpm corpus:validate   # native `typst` 0.15.1 compile of every corpus entry (needs typst on PATH or TYPST=)
 ```
+
+In `packages/engine-wasm` (Rust build, ~3 min cold):
+- `pnpm build`: `build.sh` → `dist/` (glue, `.d.ts`, `wasm-opt -Oz` wasm). The root `pnpm test` / `pnpm check-types` (turbo) build it first; run inside the package, `pnpm test` uses the existing `dist/`.
+- `pnpm size`: wasm budget, 6.0 MB brotli.
+- It isn't a tsup package: `dist/` is wasm-bindgen's output, and its API report reads `dist/engine.d.ts`, whose types are written in `src/lib.rs`. CI builds it only in the `Engine (wasm)` job; the other jobs pass `--filter=!@typstream/engine-wasm`.
 
 In `packages/heal`:
 - `pnpm test:long`: 20,000-run property campaign (minutes).
 - `pnpm bench`: vitest benchmarks.
-- `node scripts/perf.mjs`: asserts the latency budgets; run `pnpm build` first.
+- `node scripts/perf.mjs`: asserts the latency budgets; run `pnpm build` first. `PERF_TOLERANCE=3` (what CI uses) fails only above 3× budget.
 - `pnpm size`: bundle budget, 15 KB gzipped.
+
+CI (`.github/workflows/ci.yml`) runs the same commands on every PR, building the oracle through `.github/actions/oracle` (cached on the crate's inputs). `nightly.yml` runs `test:long`.
+
+Adding a package: copy `packages/core` and rename. Its `tsconfig.json`, `tsup.config.ts` and `api-extractor.json` only extend the shared configs (`tsconfig.base.json`, `tools/repo/`), and `@typstream/*` resolves to `packages/*/src` through a wildcard path. Then add its row to `tools/repo/layers.mjs`, and add it to the `fixed` group in `.changeset/config.json` if the row says `fixed`. Delete the copied `api/core.api.md` but keep `api/` (api-extractor won't create it), then `pnpm api:update` writes the new package's report.
 
 Spikes (reference only):
 - Custom engine: `spikes/phase0/custom-engine/build.sh <variant>`.
@@ -60,6 +76,7 @@ Spikes (reference only):
 - Property tests build documents from **complete** constructs (`__tests__/support/generators.ts`) and derive truncation from the streaming cut. Every bug fix adds a row to `constructs.test.ts` or a case to the generators.
 - Healing invariants must keep holding (PLAN.md §5.4): healed prefixes parse; settled text is untouched; healing is idempotent; valid documents come back unchanged; incremental, chunked and edited results equal stateless healing.
 - Performance budgets in PLAN.md §1 and §11.5–11.6 are enforced by scripts. Don't regress them silently.
+- **Public API is reviewed through the API reports** (`packages/*/api/*.api.md`). Exports without a release tag are `@public`. Tag unstable ones `@beta`, and things exported only for other typstream packages or for heal's own plumbing `@internal`. Commit the updated report with any API change.
 
 ## Gotchas
 

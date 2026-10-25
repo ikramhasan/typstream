@@ -2,6 +2,10 @@
 // generated documents token by token through the incremental healer and
 // asserts per-token latency and linear scaling. `node scripts/perf.mjs`
 // after `pnpm build`.
+//
+// PERF_TOLERANCE=k (default 1) fails only above k × budget and reports
+// anything between 1× and k× as a warning. CI sets it, because shared runners
+// are too noisy to hold the strict budgets (PLAN.md decision log).
 import { performance } from "node:perf_hooks";
 import { createHealer, heal } from "../dist/index.js";
 
@@ -23,11 +27,16 @@ const makeDoc = (size) => {
 };
 const pct = (xs, p) => [...xs].sort((a, b) => a - b)[Math.min(xs.length - 1, Math.floor(p * xs.length))];
 
+const TOLERANCE = Number(process.env.PERF_TOLERANCE ?? 1);
+if (!(TOLERANCE >= 1)) throw new Error(`PERF_TOLERANCE must be a number ≥ 1, got ${process.env.PERF_TOLERANCE}`);
+
 let failed = false;
 const budget = (name, value, max, unit = "ms") => {
-  const ok = value <= max;
-  failed ||= !ok;
-  console.log(`${ok ? "✓" : "✗"} ${name}: ${value.toFixed(3)} ${unit} (budget ${max} ${unit})`);
+  const fail = value > max * TOLERANCE;
+  failed ||= fail;
+  const mark = value <= max ? "✓" : fail ? "✗" : "⚠";
+  const limit = TOLERANCE > 1 ? `, fails above ${TOLERANCE}×` : "";
+  console.log(`${mark} ${name}: ${value.toFixed(3)} ${unit} (budget ${max} ${unit}${limit})`);
 };
 
 // 1. Per-token cost while streaming a 50 KB document in 4-char tokens.
@@ -63,7 +72,33 @@ const budget = (name, value, max, unit = "ms") => {
   budget("scaling 1 MB vs 10 KB (µs/KB ratio)", perKb[2] / perKb[0], 2, "×");
 }
 
-// 3. Pathological inputs stay linear and don't overflow the stack.
+// 3. Editing the middle of a document resyncs after the edited block (PLAN.md §5.2)
+// instead of re-parsing to the end. What's left per edit is string work over the
+// whole input (normalize, diff, output), a small fraction of a stateless heal.
+{
+  const doc = makeDoc(100_000);
+  const healer = createHealer();
+  healer.set(doc);
+  const times = [];
+  for (let i = 0; i < 200; i++) {
+    const at = 40_000 + ((i * 7919) % 20_000);
+    for (const edit of [
+      { from: at, to: at, insert: "x" },
+      { from: at, to: at + 1, insert: "" },
+    ]) {
+      const t = performance.now();
+      healer.applyEdit(edit);
+      times.push(performance.now() - t);
+    }
+  }
+  const t = performance.now();
+  for (let i = 0; i < 5; i++) heal(doc);
+  const stateless = (performance.now() - t) / 5;
+  budget("mid-document 1-char edit p50 at 100 KB", pct(times, 0.5), 2);
+  budget("mid-document edit p50 vs stateless heal at 100 KB", (pct(times, 0.5) / stateless) * 100, 10, "%");
+}
+
+// 4. Pathological inputs stay linear and don't overflow the stack.
 for (const [name, input] of [
   ["100k nested [", `${"#box[".repeat(20_000)}x`],
   ["10k backtick runs", "`` ".repeat(10_000)],

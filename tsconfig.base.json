@@ -15,14 +15,11 @@
     "skipLibCheck": true,
     "noEmit": true,
     "paths": {
-      "@typstream/core": [
-        "./packages/core/src/index.ts"
-      ],
-      "@typstream/heal": [
-        "./packages/heal/src/index.ts"
-      ],
       "@typstream/corpus": [
         "./corpus/src/index.ts"
+      ],
+      "@typstream/*": [
+        "./packages/*/src/index.ts"
       ]
     }
   }

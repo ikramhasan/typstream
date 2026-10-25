@@ -98,15 +98,9 @@ the `stream` script rewrite `meta.json`, so run `pnpm fix` afterwards.
 
 ### In CI
 
-Install Typst 0.15.1, then run `pnpm corpus:validate` from the repo root:
-
-```yaml
-- name: Install Typst 0.15.1
-  run: |
-    curl -sSfL https://github.com/typst/typst/releases/download/v0.15.1/typst-x86_64-unknown-linux-musl.tar.xz | tar -xJ
-    echo "$PWD/typst-x86_64-unknown-linux-musl" >> "$GITHUB_PATH"
-- run: pnpm corpus:validate
-```
+The `corpus` job in `.github/workflows/ci.yml` installs Typst 0.15.1 from the
+release tarball and runs `pnpm corpus:validate`. Note that the validator reads
+`TYPST` as the path to a binary, not a version.
 
 It needs no build and no oracle. On a 6-core machine it takes 10–30 s, mostly
 the 1 MB document, the 200 KB line and the 10 s `limit` timeouts. Heal's corpus

@@ -1,7 +1,16 @@
 // Healing pipeline: normalize → recognize (incrementally) → repair the tail
 // (cut incomplete constructs, close open ones, verify) → lint settled text.
 
-import { applyEdit, diffEdit, mapPosition, type Patch, type Range, SourceMap, type TextEdit } from "@typstream/core";
+import {
+  applyEdit,
+  diffEdit,
+  type HealHandler,
+  mapPosition,
+  type Patch,
+  type Range,
+  SourceMap,
+  type TextEdit,
+} from "@typstream/core";
 import {
   fixChanges,
   type LintFinding,
@@ -24,25 +33,8 @@ import {
   type SyntaxIssue,
 } from "./recognizer";
 
-export interface HealHandlerContext {
-  /** Normalized text (`settled`) or healed source (`output`). */
-  text: string;
-  /** Range the handler may change (`settled`: newly settled text; `output`: everything). */
-  from: number;
-  to: number;
-  final: boolean;
-  /** Lexical mode at a position (`settled` only; `output` handlers get `markup`). */
-  modeAt(pos: number): ModeSpan["mode"];
-}
-
-/** Extension point: product-specific fixes, run with the built-in lint rules or on the final output. */
-export interface HealHandler {
-  name: string;
-  /** Lower runs first. Built-in lint rules run at 50. */
-  priority?: number;
-  phase: "settled" | "output";
-  run(ctx: HealHandlerContext): TextChange[];
-}
+// The handler contract is part of the plugin contract, so it lives in core.
+export type { HealHandler, HealHandlerContext } from "@typstream/core";
 
 export interface HealOptions {
   /** The document is complete: no tail repair; lint everything. */
@@ -50,7 +42,7 @@ export interface HealOptions {
   /** Drop a set/show/import/include rule entirely while it is incomplete (default true). */
   dropIncompleteRules?: boolean;
   lint?: Partial<Record<LintRuleId, LintSeverity | boolean>>;
-  /** Strip a ```typst fence around the whole output (default "auto"). */
+  /** Strip a Markdown code fence (typst or typ) around the whole output (default "auto"). */
   unwrapFences?: "auto" | "never";
   /** Heal only text written into `[from, to)` of an existing document (AI edits). */
   streamingRange?: Range | null;
@@ -84,7 +76,7 @@ export interface HealResult {
 }
 
 /** Mutable recognition of a whole text, updated in place on edits. */
-interface State {
+export interface State {
   checkpoints: Checkpoint[];
   errors: SyntaxIssue[];
   events: LintEvent[];
@@ -113,38 +105,132 @@ const checkpointBefore = (cps: readonly Checkpoint[], pos: number): Checkpoint |
   return found;
 };
 
-const fullState = (text: string, opts: HealOptions): State => {
+// `fullState` and `updateState` are exported for tests only; index.ts doesn't re-export them.
+export const fullState = (text: string, opts: HealOptions): State => {
   const r = recognize(text, undefined, recognizeOpts(opts));
   return { ...r };
 };
 
-/** Re-recognizes `text` after `edit`, resuming at the last checkpoint before it. */
-const updateState = (state: State, text: string, edit: TextEdit, opts: HealOptions): number => {
-  const cp = checkpointBefore(state.checkpoints, edit.from);
-  if (!cp) {
-    Object.assign(state, fullState(text, opts));
-    return 0;
+/** What `updateState` re-recognized. */
+export interface Update {
+  /** Recognition resumed here. */
+  from: number;
+  /** It resynchronized here (new-text offset): the old state after `to - delta` was reused, shifted. */
+  to: number | null;
+  /** Length change of the edit. */
+  delta: number;
+}
+
+/** Splits off the elements at or after `at`. Positions are ascending across root checkpoints. */
+const splitAt = <T>(xs: T[], at: number, pos: (x: T) => number): T[] => {
+  let n = xs.length;
+  while (n > 0 && pos(xs[n - 1] as T) >= at) n--;
+  return xs.splice(n);
+};
+
+const eventPos = (e: LintEvent): number => ("at" in e ? e.at : e.start);
+
+const pushMode = (modes: ModeSpan[], m: ModeSpan): void => {
+  const last = modes[modes.length - 1];
+  if (!last || last.mode !== m.mode) modes.push(m);
+};
+
+/** Number of checkpoints before `pos`. */
+const countBefore = (cps: readonly Checkpoint[], pos: number): number => {
+  let lo = 0;
+  let hi = cps.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if ((cps[mid] as Checkpoint).offset < pos) lo = mid + 1;
+    else hi = mid;
   }
-  const r = recognize(text, cp, recognizeOpts(opts));
-  const keep = <T>(xs: T[], pos: (x: T) => number): void => {
-    let n = xs.length;
-    while (n > 0 && pos(xs[n - 1] as T) >= cp.offset) n--;
-    xs.length = n;
+  return lo;
+};
+
+/**
+ * Re-recognizes `text` after `edit`, resuming at a checkpoint before it and
+ * stopping as soon as recognition is back in step with the old state (PLAN.md
+ * §5.2): at a root checkpoint past the edit whose shifted offset and nesting
+ * match an old one. Recognition from a checkpoint depends only on the text from
+ * there on, which the edit didn't touch, so the rest of the old state is
+ * reused, shifted by the edit's length change.
+ */
+export const updateState = (state: State, text: string, edit: TextEdit, opts: HealOptions): Update => {
+  const delta = edit.insert.length - (edit.to - edit.from);
+  const old = state.checkpoints;
+  // Whether a position is a checkpoint depends on the token there, and the
+  // lexer may read up to the end of its line to find where it ends (`#\n*`
+  // + `/*` makes the `*` a `*/` that the `#` takes). So resume at the last
+  // checkpoint whose following one is still at or before the edit.
+  const cp = old[countBefore(old, edit.from + 1) - 2] ?? { offset: 0, nesting: 0 };
+  const editEnd = edit.from + edit.insert.length;
+  // Old checkpoints are matched in order, so the search only moves forward.
+  let next = countBefore(old, edit.to);
+  // The lexer looks back from a token (`column()` to the line start, keywords
+  // two characters), so the first checkpoint past the edit, whose line may
+  // start inside it, isn't a resync point; the next one's line can't.
+  let pastEdit = false;
+  const stopAt = (c: Checkpoint): boolean => {
+    if (c.offset < editEnd) return false;
+    if (!pastEdit) {
+      pastEdit = true;
+      return false;
+    }
+    const at = c.offset - delta;
+    while (next < old.length && (old[next] as Checkpoint).offset < at) next++;
+    const o = old[next];
+    return o !== undefined && o.offset === at && o.nesting === c.nesting;
   };
-  keep(state.checkpoints, (c) => c.offset);
-  keep(state.errors, (e) => e.start);
-  keep(state.events, (e) => ("at" in e ? e.at : e.start));
-  keep(state.modes, (m) => m.at);
-  state.checkpoints.push(...r.checkpoints);
-  state.errors.push(...r.errors);
-  state.events.push(...r.events);
-  for (const m of r.modes) {
-    const last = state.modes[state.modes.length - 1];
-    if (!last || last.mode !== m.mode) state.modes.push(m);
+  const r = recognize(text, cp, { ...recognizeOpts(opts), stopAt });
+
+  // Old state after the resync point, in new-text offsets. The state owns these objects.
+  const resync = r.stoppedAt ?? null;
+  const oldAt = resync === null ? Number.POSITIVE_INFINITY : resync - delta;
+  const resyncMode = resync === null ? null : modeAt(state.modes, oldAt);
+  const cps = splitAt(state.checkpoints, oldAt, (c) => c.offset);
+  const errors = splitAt(state.errors, oldAt, (e) => e.start);
+  const events = splitAt(state.events, oldAt, eventPos);
+  const modes = splitAt(state.modes, oldAt, (m) => m.at);
+  if (delta !== 0) {
+    for (const c of cps) c.offset += delta;
+    for (const e of errors) {
+      e.start += delta;
+      e.end += delta;
+    }
+    for (const e of events) {
+      if ("at" in e) e.at += delta;
+      else {
+        e.start += delta;
+        e.end += delta;
+      }
+    }
+    for (const m of modes) m.at += delta;
   }
-  state.requirements = r.requirements;
-  state.lastTokenStart = r.lastTokenStart;
-  return cp.offset;
+
+  splitAt(state.checkpoints, cp.offset, (c) => c.offset);
+  splitAt(state.errors, cp.offset, (e) => e.start);
+  splitAt(state.events, cp.offset, eventPos);
+  splitAt(state.modes, cp.offset, (m) => m.at);
+  state.checkpoints.push(...r.checkpoints, ...cps);
+  state.errors.push(...r.errors, ...errors);
+  state.events.push(...r.events, ...events);
+  for (const m of r.modes) if (resync === null || m.at < resync) pushMode(state.modes, m);
+  if (resync === null || resyncMode === null) {
+    state.requirements = r.requirements;
+    state.lastTokenStart = r.lastTokenStart;
+    return { from: cp.offset, to: null, delta };
+  }
+  // The token at the resync point has the mode it had; spans after it are unchanged.
+  pushMode(state.modes, { at: resync, mode: resyncMode });
+  for (const m of modes) if (m.at > resync) pushMode(state.modes, m);
+  // Requirements describe the end of the text, which is past the resync point.
+  if (delta !== 0) {
+    state.requirements = state.requirements.map((q) =>
+      q.type === "close" ? { ...q, open: q.open + delta } : { ...q, at: q.at + delta },
+    );
+    state.lastTokenStart += delta;
+  }
+  return { from: cp.offset, to: resync, delta };
 };
 
 /**
@@ -468,21 +554,47 @@ export const createHealer = (options: HealOptions = {}): Healer => {
     opts = { ...opts, streamingRange: { from: mapPosition(range.from, edit, -1), to: mapPosition(range.to, edit, 1) } };
   };
 
-  const update = (nextInput: string): HealResult => {
+  /** `inputEdit`, if known, turns the previous input into `nextInput`. */
+  const update = (nextInput: string, inputEdit: TextEdit | null = null): HealResult => {
+    const wasRaw = norm.patches.length === 0;
     input = nextInput;
     norm = normalize(input, { unwrapFences: opts.unwrapFences, streaming: !opts.final });
     const next = norm.text;
     if (next !== text) {
+      // Without normalization patches the normalized texts are the inputs, so
+      // the caller's edit applies as is and the O(n) diff is skipped.
       const edit: TextEdit | null =
-        next.length >= text.length && next.startsWith(text)
-          ? { from: text.length, to: text.length, insert: next.slice(text.length) }
-          : diffEdit(text, next);
+        inputEdit && wasRaw && norm.patches.length === 0
+          ? inputEdit
+          : next.length >= text.length && next.startsWith(text)
+            ? { from: text.length, to: text.length, insert: next.slice(text.length) }
+            : diffEdit(text, next);
       text = next;
       if (edit) {
-        const resumedAt = updateState(state, text, edit, opts);
-        if (cache.upTo > resumedAt) {
-          cache.findings = cache.findings.filter((f) => f.end <= resumedAt && f.start < resumedAt);
-          cache.upTo = resumedAt;
+        const u = updateState(state, text, edit, opts);
+        if (cache.upTo > u.from) {
+          const kept = cache.findings.filter((f) => f.end <= u.from && f.start < u.from);
+          // Lint rules only read the text, events and modes around a finding, all
+          // unchanged past the resync point: reuse those findings and re-lint up to
+          // it. Handlers may read anything, so their findings are recomputed.
+          const settledHandlers = (opts.handlers ?? []).some((h) => h.phase === "settled");
+          if (u.to !== null && cache.upTo > u.to - u.delta && !settledHandlers) {
+            const oldAt = u.to - u.delta;
+            const shifted = cache.findings
+              .filter((f) => f.start >= oldAt)
+              .map((f) => ({
+                ...f,
+                start: f.start + u.delta,
+                end: f.end + u.delta,
+                changes: f.changes.map((c) => ({ ...c, from: c.from + u.delta, to: c.to + u.delta })),
+              }));
+            const relinted = runLint(text, state, u.from, u.to, opts, opts.final === true);
+            cache.findings = [...kept, ...relinted, ...shifted];
+            cache.upTo += u.delta;
+          } else {
+            cache.findings = kept;
+            cache.upTo = u.from;
+          }
         }
       }
     }
@@ -492,8 +604,9 @@ export const createHealer = (options: HealOptions = {}): Healer => {
 
   return {
     push: (chunk) => {
-      trackRange({ from: input.length, to: input.length, insert: chunk });
-      return update(input + chunk);
+      const edit = { from: input.length, to: input.length, insert: chunk };
+      trackRange(edit);
+      return update(input + chunk, edit);
     },
     set: (nextInput) => {
       trackRange(diffEdit(input, nextInput));
@@ -501,7 +614,7 @@ export const createHealer = (options: HealOptions = {}): Healer => {
     },
     applyEdit: (edit) => {
       trackRange(edit);
-      return update(applyEdit(input, edit));
+      return update(applyEdit(input, edit), edit);
     },
     setStreamingRange: (range) => {
       opts = { ...opts, streamingRange: range };
