@@ -1,0 +1,42 @@
+[package]
+name = "typstream-engine-slim"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[lib]
+path = "../src/lib.rs"
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+html = []
+svg = ["dep:typst-svg"]
+pdf = ["dep:typst-pdf"]
+
+[dependencies]
+typst = "=0.15.1"
+typst-html = "=0.15.1"
+typst-layout = "=0.15.1"
+typst-svg = { version = "=0.15.1", optional = true }
+typst-pdf = { version = "=0.15.1", optional = true }
+wasm-bindgen = "0.2"
+js-sys = "0.3"
+comemo = "0.5.1"
+serde_json = "1"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+# "slim" experiment: same engine source, with two *dependency* crates patched (Typst itself untouched):
+#  - hypher: default features = alloc + english only (typst-layout depends on hypher with default features)
+#  - two-face: syntax-set dump replaced by an empty set (Plain Text only) -> no syntax highlighting in raw blocks
+[patch.crates-io]
+hypher = { path = "../patches/hypher-0.1.8" }
+two-face = { path = "../patches/two-face-0.4.5" }
+
+[workspace]

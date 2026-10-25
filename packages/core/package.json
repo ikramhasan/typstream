@@ -1,0 +1,23 @@
+{
+  "name": "@typstream/core",
+  "version": "0.0.0",
+  "description": "Shared contracts for typstream: text edits, ranges, source maps.",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "test": "vitest run",
+    "check-types": "tsc -p tsconfig.json"
+  }
+}

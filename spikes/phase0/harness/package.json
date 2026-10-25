@@ -1,0 +1,17 @@
+{
+  "name": "typstream-phase0-harness",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "serve": "node server.mjs",
+    "bench": "node run.mjs"
+  },
+  "dependencies": {
+    "@myriaddreamin/typst-ts-renderer": "^0.8.0-rc3",
+    "@myriaddreamin/typst-ts-web-compiler": "^0.8.0-rc3",
+    "esbuild": "^0.28.2",
+    "playwright": "^1.64.1",
+    "typst-wasm": "^1.0.0"
+  }
+}

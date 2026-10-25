@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.turbo/
+target/
+tools/typst-syntax-oracle/pkg/
+spikes/phase0/harness/.br-cache/
+spikes/phase0/harness/results/
+*.log
+.DS_Store
+coverage/
+
+# Reference material (streamdown checkout) is not part of this repo
+reference/
+
+# Raw spike outputs (summaries live in spikes/phase0/RESULTS.md)
+spikes/phase0/custom-engine/logs/

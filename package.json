@@ -1,0 +1,30 @@
+{
+  "name": "typstream-monorepo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "bench": "turbo run bench",
+    "size": "turbo run size",
+    "check-types": "turbo run check-types",
+    "check": "biome check .",
+    "fix": "biome check --write .",
+    "oracle": "tools/typst-syntax-oracle/build.sh"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.5",
+    "@types/node": "^26.6.5",
+    "@vitest/coverage-v8": "^4.1.12",
+    "esbuild": "^0.28.2",
+    "fast-check": "^4.10.2",
+    "tsup": "^8.5.1",
+    "turbo": "^2.11.10",
+    "typescript": "5.9.3",
+    "vitest": "^4.1.12"
+  },
+  "packageManager": "pnpm@12.9.1",
+  "engines": {
+    "node": ">=20"
+  }
+}
