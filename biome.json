@@ -2,8 +2,20 @@
   "$schema": "https://biomejs.dev/schemas/2.4.5/schema.json",
   "root": true,
   "files": {
-    "includes": ["packages/**", "!**/dist", "!**/node_modules", "!**/target", "!!reference", "!!spikes", "!!tools"]
+    "includes": [
+      "packages/**",
+      "tools/repo/**",
+      ".dependency-cruiser.mjs",
+      "!**/dist",
+      "!**/node_modules",
+      "!**/target",
+      "!!reference",
+      "!!spikes",
+      "!!tools/typst-syntax-oracle",
+      "!!tools/repo/fixtures"
+    ]
   },
   "formatter": { "indentStyle": "space", "lineWidth": 120 },
-  "linter": { "rules": { "recommended": true } }
+  "linter": { "rules": { "recommended": true } },
+  "overrides": [{ "includes": ["**/api-extractor*.json"], "json": { "parser": { "allowComments": true } } }]
 }

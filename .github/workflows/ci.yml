@@ -1,0 +1,90 @@
+# CI for PRs and main (PLAN.md §11.8). Each check is its own job so a PR shows lint, types, tests,
+# size and perf separately. The long property campaign runs nightly (nightly.yml).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+# Every job's pnpm/setup installs this Node and the pnpm pinned in package.json's packageManager,
+# then runs `pnpm install --frozen-lockfile` against a cached store.
+env:
+  NODE: node@24
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/setup@v3
+        with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
+      - run: pnpm check
+      # TODO(#3): layering check (dependency-cruiser), API report diff (api-extractor), publint and attw.
+
+  types:
+    name: Types
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/setup@v3
+        with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
+      - run: pnpm check-types
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/oracle
+      - uses: pnpm/setup@v3
+        with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
+      - run: pnpm build
+      - run: pnpm test
+
+  size:
+    name: Size
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/setup@v3
+        with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
+      - run: pnpm size
+
+  # Shared runners are too noisy for the strict latency budgets: report every number, fail only on a
+  # large (> 3×) regression. Strict budgets are checked locally (`node scripts/perf.mjs`).
+  perf:
+    name: Perf (report-only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/setup@v3
+        with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
+      - run: pnpm build
+      - name: node packages/heal/scripts/perf.mjs
+        env:
+          PERF_TOLERANCE: 3
+        run: |
+          set -o pipefail
+          {
+            echo '### @typstream/heal perf'
+            echo '```'
+            node packages/heal/scripts/perf.mjs
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+  # TODO(#8): engine-wasm job: build the Typst engine crate (Rust + wasm-opt), wasm size budget, compile oracle tests.
+  # TODO(#19): Playwright suites (visual, flicker, a11y, cross-browser).

@@ -4,7 +4,7 @@
 import { isHighSurrogate, type Patch } from "@typstream/core";
 
 export interface NormalizeOptions {
-  /** Strip a ```typst / ```typ fence wrapped around the whole document. */
+  /** Strip a Markdown code fence (typst or typ) wrapped around the whole document. */
   unwrapFences?: "auto" | "never";
   /** The text may still grow: hold back a trailing half surrogate pair or partial fence. */
   streaming?: boolean;

@@ -1,0 +1,45 @@
+name: Typst syntax oracle
+description: >
+  Builds tools/typst-syntax-oracle/pkg (Typst's real parser as wasm, the ground truth for heal's tests).
+  The built pkg/ is cached on the crate's inputs, so a warm run skips Rust entirely; a cold run also
+  restores the crate's target/ dir.
+
+runs:
+  using: composite
+  steps:
+    - id: pkg
+      uses: actions/cache@v6
+      with:
+        path: tools/typst-syntax-oracle/pkg
+        key: oracle-pkg-${{ runner.os }}-${{ hashFiles('tools/typst-syntax-oracle/Cargo.lock', 'tools/typst-syntax-oracle/Cargo.toml', 'tools/typst-syntax-oracle/src/**', 'tools/typst-syntax-oracle/build.sh') }}
+
+    # Typst 0.15.1 needs Rust ≥ 1.92 (CLAUDE.md).
+    - if: steps.pkg.outputs.cache-hit != 'true'
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: wasm32-unknown-unknown
+
+    # Keyed on Cargo.lock and the rustc version; src/ changes rebuild only the oracle crate itself.
+    - if: steps.pkg.outputs.cache-hit != 'true'
+      uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: tools/typst-syntax-oracle -> target
+
+    # wasm-bindgen-cli must match the wasm-bindgen crate in Cargo.lock exactly, so read it from there.
+    - if: steps.pkg.outputs.cache-hit != 'true'
+      id: bindgen
+      shell: bash
+      run: |
+        version=$(awk '/^name = "wasm-bindgen"$/ { getline; gsub(/version = |"/, ""); print; exit }' tools/typst-syntax-oracle/Cargo.lock)
+        test -n "$version"
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+
+    # A prebuilt release binary, downloaded in seconds: nothing to compile, so nothing worth caching.
+    - if: steps.pkg.outputs.cache-hit != 'true'
+      uses: taiki-e/install-action@v2
+      with:
+        tool: wasm-bindgen@${{ steps.bindgen.outputs.version }}
+
+    - if: steps.pkg.outputs.cache-hit != 'true'
+      shell: bash
+      run: tools/typst-syntax-oracle/build.sh

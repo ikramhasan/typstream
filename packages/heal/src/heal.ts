@@ -1,7 +1,16 @@
 // Healing pipeline: normalize → recognize (incrementally) → repair the tail
 // (cut incomplete constructs, close open ones, verify) → lint settled text.
 
-import { applyEdit, diffEdit, mapPosition, type Patch, type Range, SourceMap, type TextEdit } from "@typstream/core";
+import {
+  applyEdit,
+  diffEdit,
+  type HealHandler,
+  mapPosition,
+  type Patch,
+  type Range,
+  SourceMap,
+  type TextEdit,
+} from "@typstream/core";
 import {
   fixChanges,
   type LintFinding,
@@ -24,25 +33,8 @@ import {
   type SyntaxIssue,
 } from "./recognizer";
 
-export interface HealHandlerContext {
-  /** Normalized text (`settled`) or healed source (`output`). */
-  text: string;
-  /** Range the handler may change (`settled`: newly settled text; `output`: everything). */
-  from: number;
-  to: number;
-  final: boolean;
-  /** Lexical mode at a position (`settled` only; `output` handlers get `markup`). */
-  modeAt(pos: number): ModeSpan["mode"];
-}
-
-/** Extension point: product-specific fixes, run with the built-in lint rules or on the final output. */
-export interface HealHandler {
-  name: string;
-  /** Lower runs first. Built-in lint rules run at 50. */
-  priority?: number;
-  phase: "settled" | "output";
-  run(ctx: HealHandlerContext): TextChange[];
-}
+// The handler contract is part of the plugin contract, so it lives in core.
+export type { HealHandler, HealHandlerContext } from "@typstream/core";
 
 export interface HealOptions {
   /** The document is complete: no tail repair; lint everything. */
@@ -50,7 +42,7 @@ export interface HealOptions {
   /** Drop a set/show/import/include rule entirely while it is incomplete (default true). */
   dropIncompleteRules?: boolean;
   lint?: Partial<Record<LintRuleId, LintSeverity | boolean>>;
-  /** Strip a ```typst fence around the whole output (default "auto"). */
+  /** Strip a Markdown code fence (typst or typ) around the whole output (default "auto"). */
   unwrapFences?: "auto" | "never";
   /** Heal only text written into `[from, to)` of an existing document (AI edits). */
   streamingRange?: Range | null;
