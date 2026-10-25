@@ -50,7 +50,7 @@ export interface HealOptions {
   /** Drop a set/show/import/include rule entirely while it is incomplete (default true). */
   dropIncompleteRules?: boolean;
   lint?: Partial<Record<LintRuleId, LintSeverity | boolean>>;
-  /** Strip a ```typst fence around the whole output (default "auto"). */
+  /** Strip a Markdown code fence (typst or typ) around the whole output (default "auto"). */
   unwrapFences?: "auto" | "never";
   /** Heal only text written into `[from, to)` of an existing document (AI edits). */
   streamingRange?: Range | null;

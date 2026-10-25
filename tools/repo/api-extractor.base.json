@@ -1,0 +1,40 @@
+// Shared api-extractor settings (PLAN.md §10.4). A package's api-extractor.json
+// extends this file. `pnpm check:api` fails when a package's public API differs
+// from its checked-in report in api/; `pnpm api:update` rewrites the reports.
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/api-extractor/v7/api-extractor.schema.json",
+  // The .d.ts bundle tsup builds.
+  "mainEntryPointFilePath": "<projectFolder>/dist/index.d.ts",
+  "apiReport": {
+    "enabled": true,
+    "reportFolder": "<projectFolder>/api/",
+    "reportTempFolder": "<projectFolder>/dist/api/"
+  },
+  "docModel": { "enabled": false },
+  "dtsRollup": { "enabled": false },
+  "tsdocMetadata": { "enabled": false },
+  "compiler": {
+    // Not the package tsconfig: its paths point @typstream/* at source, and
+    // api-extractor must read dependencies' built .d.ts like a consumer does.
+    "overrideTsconfig": {
+      "compilerOptions": {
+        "target": "ES2022",
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
+        "lib": ["ES2022"],
+        "strict": true,
+        "skipLibCheck": true
+      },
+      "files": ["dist/index.d.ts"]
+    }
+  },
+  "messages": {
+    "extractorMessageReporting": {
+      "default": { "logLevel": "warning", "addToApiReportFile": true },
+      // Untagged exports are @public; tag @beta and @internal explicitly.
+      "ae-missing-release-tag": { "logLevel": "none" },
+      // Internal members of public interfaces keep their names.
+      "ae-internal-missing-underscore": { "logLevel": "none", "addToApiReportFile": false }
+    }
+  }
+}

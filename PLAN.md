@@ -15,6 +15,9 @@ Status: draft v2 · 2026-10-26 · Target Typst version: **0.15.1** (pinned, see 
 
 | Date | Decision | Why / where |
 |---|---|---|
+| 2026-10-26 | **Layering is an allowlist:** a package may import only the packages in its §4.1 "Deps" column. That's stricter than "lower layers only": same-layer deps (node → engine, react → dom) are allowed only where listed, and so are lower-layer ones. One table (`tools/repo/layers.mjs`) drives the dependency-cruiser rules, the package.json check and the changesets fixed group. | §4.1, #3 |
+| 2026-10-26 | API reports live in `packages/*/api/`. Untagged exports are `@public`; `@beta` and `@internal` are explicit. Packages are ESM-only for now: attw runs with the `esm-only` profile, so add CJS (and drop the profile) only for a package that needs it (§10.4). | §10.4, #3 |
+| 2026-10-26 | The changesets `fixed` group lists only packages that exist, because changesets rejects unknown names. `check:layers` fails when a package marked `fixed` in the table is missing from it. | §10.4, #3 |
 | 2026-10-26 | **Low-end devices are out of scope for now.** No Chromebook or Android measurements before launch; budgets are set on a mid-range laptop. | Product call. Revisit after launch. |
 | 2026-10-26 | Work is tracked in GitHub issues, each self-contained; open questions are research tasks inside issues, not guesses in this plan. | — |
 | 2026-10-26 | `@typstream/heal` is a faithful port of typst-syntax's parser used as a recognizer, tested against Typst's real parser. | §5.2 "As built" |
