@@ -15,6 +15,7 @@ Status: draft v2 · 2026-10-26 · Target Typst version: **0.15.1** (pinned, see 
 
 | Date | Decision | Why / where |
 |---|---|---|
+| 2026-10-26 | **CI runs on GitHub Actions** (`.github/workflows/`): lint, types, test (with the oracle), size on every PR and `main`; the 20,000-run property campaign nightly. Perf is **report-only** on PRs: shared runners can't hold the strict budgets, so CI fails only above 3× (`PERF_TOLERANCE=3`). The §11.5 plan of failing on a > 10% regression waits for a dedicated runner or CodSpeed. | #2, §11.5, §11.8 |
 | 2026-10-26 | **Low-end devices are out of scope for now.** No Chromebook or Android measurements before launch; budgets are set on a mid-range laptop. | Product call. Revisit after launch. |
 | 2026-10-26 | Work is tracked in GitHub issues, each self-contained; open questions are research tasks inside issues, not guesses in this plan. | — |
 | 2026-10-26 | `@typstream/heal` is a faithful port of typst-syntax's parser used as a recognizer, tested against Typst's real parser. | §5.2 "As built" |

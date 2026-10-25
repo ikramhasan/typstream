@@ -2,6 +2,10 @@
 // generated documents token by token through the incremental healer and
 // asserts per-token latency and linear scaling. `node scripts/perf.mjs`
 // after `pnpm build`.
+//
+// PERF_TOLERANCE=k (default 1) fails only above k × budget and reports
+// anything between 1× and k× as a warning. CI sets it, because shared runners
+// are too noisy to hold the strict budgets (PLAN.md decision log).
 import { performance } from "node:perf_hooks";
 import { createHealer, heal } from "../dist/index.js";
 
@@ -23,11 +27,16 @@ const makeDoc = (size) => {
 };
 const pct = (xs, p) => [...xs].sort((a, b) => a - b)[Math.min(xs.length - 1, Math.floor(p * xs.length))];
 
+const TOLERANCE = Number(process.env.PERF_TOLERANCE ?? 1);
+if (!(TOLERANCE >= 1)) throw new Error(`PERF_TOLERANCE must be a number ≥ 1, got ${process.env.PERF_TOLERANCE}`);
+
 let failed = false;
 const budget = (name, value, max, unit = "ms") => {
-  const ok = value <= max;
-  failed ||= !ok;
-  console.log(`${ok ? "✓" : "✗"} ${name}: ${value.toFixed(3)} ${unit} (budget ${max} ${unit})`);
+  const fail = value > max * TOLERANCE;
+  failed ||= fail;
+  const mark = value <= max ? "✓" : fail ? "✗" : "⚠";
+  const limit = TOLERANCE > 1 ? `, fails above ${TOLERANCE}×` : "";
+  console.log(`${mark} ${name}: ${value.toFixed(3)} ${unit} (budget ${max} ${unit}${limit})`);
 };
 
 // 1. Per-token cost while streaming a 50 KB document in 4-char tokens.

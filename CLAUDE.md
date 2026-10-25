@@ -41,8 +41,10 @@ pnpm check             # Biome lint + format check (pnpm fix to apply)
 In `packages/heal`:
 - `pnpm test:long`: 20,000-run property campaign (minutes).
 - `pnpm bench`: vitest benchmarks.
-- `node scripts/perf.mjs`: asserts the latency budgets; run `pnpm build` first.
+- `node scripts/perf.mjs`: asserts the latency budgets; run `pnpm build` first. `PERF_TOLERANCE=3` (what CI uses) fails only above 3× budget.
 - `pnpm size`: bundle budget, 15 KB gzipped.
+
+CI (`.github/workflows/ci.yml`) runs the same commands on every PR, building the oracle through `.github/actions/oracle` (cached on the crate's inputs). `nightly.yml` runs `test:long`.
 
 Spikes (reference only):
 - Custom engine: `spikes/phase0/custom-engine/build.sh <variant>`.
