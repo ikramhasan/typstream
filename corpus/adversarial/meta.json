@@ -1,0 +1,91 @@
+{
+  "backtick-runs": {
+    "category": "raw-delimiters",
+    "notes": "Generated. Balanced raw delimiters of every length 1-40.",
+    "expectedPages": 2
+  },
+  "bidi-mixed": {
+    "category": "bidi",
+    "tags": ["rtl", "arabic", "hebrew"],
+    "notes": "RTL and LTR mixed within paragraphs, tables and lists.",
+    "expectedPages": 1
+  },
+  "deep-nesting-10k": {
+    "category": "deep-nesting",
+    "expect": "error",
+    "expectedErrors": ["maximum parsing depth exceeded"],
+    "notes": "Generated. 10,000 levels in markup, code and math; Typst's parser stops at depth 256."
+  },
+  "deep-nesting-64": {
+    "category": "deep-nesting",
+    "notes": "Generated. Deep but legal nesting mixing markup, code and math.",
+    "expectedPages": 1
+  },
+  "large-1mb": {
+    "category": "large",
+    "notes": "Generated. ~1,000,000 UTF-16 units of education-shaped blocks with an outline, footnotes and refs.",
+    "expectedPages": 479
+  },
+  "markdown-habits": {
+    "category": "markdown-habits",
+    "expect": "error",
+    "expectedErrors": ["the character `#` is not valid in code", "unclosed label", "expected expression"],
+    "notes": "Every Markdown habit we know of. `#` headings, `$` currency and HTML fail to parse; most of the rest is legal Typst that renders wrongly."
+  },
+  "memory-bomb-array": {
+    "category": "memory-bomb",
+    "expect": "limit",
+    "notes": "Array doubling. Native typst aborts when allocation fails under the memory limit."
+  },
+  "memory-bomb-string": {
+    "category": "memory-bomb",
+    "expect": "limit",
+    "notes": "A 100 GB string repetition."
+  },
+  "pages-500": {
+    "category": "many-pages",
+    "notes": "A short loop that lays out 500 pages.",
+    "expectedPages": 500
+  },
+  "runaway-cpu-loop": {
+    "category": "runaway",
+    "expect": "limit",
+    "notes": "400 million iterations; nothing in Typst stops it. Needs the engine watchdog."
+  },
+  "runaway-exponential-recursion": {
+    "category": "runaway",
+    "expect": "limit",
+    "notes": "2^40 calls with distinct arguments, so memoization can't help."
+  },
+  "runaway-recursion": {
+    "category": "runaway",
+    "expect": "error",
+    "expectedErrors": ["maximum function call depth exceeded"]
+  },
+  "runaway-while": {
+    "category": "runaway",
+    "expect": "error",
+    "expectedErrors": ["loop seems to be infinite"]
+  },
+  "single-line-200k": {
+    "category": "large",
+    "notes": "Generated. One 200,000-character paragraph on a single line.",
+    "expectedPages": 40
+  },
+  "table-2000-rows": {
+    "category": "large-table",
+    "notes": "Generated. 2,000 rows written cell by cell.",
+    "expectedPages": 42
+  },
+  "truncated-output": {
+    "category": "truncated",
+    "expect": "error",
+    "expectedErrors": ["unclosed delimiter"],
+    "notes": "A model response cut off mid-table, inside math inside a function call."
+  },
+  "zalgo-text": {
+    "category": "zalgo",
+    "notes": "Generated. Up to 50 combining marks per base character.",
+    "expectedPages": 1
+  }
+}

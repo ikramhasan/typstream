@@ -16,6 +16,7 @@ packages/heal     @typstream/heal: normalizer, recognizer (port of typst-syntax 
 packages/engine-wasm  @typstream/engine-wasm: Typst 0.15.1 as wasm (Rust crate + wasm-bindgen glue): HTML, changed-page SVG, UTF-16 diagnostics.
 tools/typst-syntax-oracle   Typst's real parser compiled to wasm for Node; the ground truth in heal's tests.
 tools/repo        Repo tooling: package layer table (layers.mjs), layering check, shared tsup and api-extractor configs.
+corpus/           @typstream/corpus (private): shared test documents (edu/, adversarial/), meta.json, stream replay.
 spikes/phase0     Throwaway Phase 0 experiments: browser harness (harness/) and custom Typst wasm engine (custom-engine/).
                   Port code out of here into packages/; don't import from spikes.
 PLAN.md           Design and roadmap.
@@ -43,6 +44,7 @@ pnpm check:layers      # package layering (dependency-cruiser) + package.json de
 pnpm check:api         # public API must match packages/*/api/*.api.md; pnpm api:update to accept a change
 pnpm check:packages    # publint + @arethetypeswrong/cli on the built packages
 pnpm changeset         # describe a change to a published package
+pnpm corpus:validate   # native `typst` 0.15.1 compile of every corpus entry (needs typst on PATH or TYPST=)
 ```
 
 In `packages/engine-wasm` (Rust build, ~3 min cold):
@@ -70,6 +72,7 @@ Spikes (reference only):
 - **Offsets in JS APIs are UTF-16 indices** (JS string indices). Rust/Typst spans are UTF-8 bytes; convert at the wasm boundary.
 - TypeScript strict, ESM, `verbatimModuleSyntax`. Biome formats (line width 120). Match the surrounding code's comment density: explain *why*, cite parser.rs/lexer.rs functions when porting.
 - **Test against real Typst, not expectations of it.** Heal's tests check outputs with the oracle (`__tests__/support/oracle.ts`). Engine work should add a compile oracle the same way.
+- New test documents go in `corpus/` with a `meta.json` entry, and `pnpm corpus:validate` must pass (see `corpus/README.md`). Heal's tests run every corpus document.
 - Property tests build documents from **complete** constructs (`__tests__/support/generators.ts`) and derive truncation from the streaming cut. Every bug fix adds a row to `constructs.test.ts` or a case to the generators.
 - Healing invariants must keep holding (PLAN.md §5.4): healed prefixes parse; settled text is untouched; healing is idempotent; valid documents come back unchanged; incremental, chunked and edited results equal stateless healing.
 - Performance budgets in PLAN.md §1 and §11.5–11.6 are enforced by scripts. Don't regress them silently.

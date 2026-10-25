@@ -55,6 +55,26 @@ jobs:
       - run: pnpm build $NOT_ENGINE
       - run: pnpm test $NOT_ENGINE
 
+  # Every corpus document against native typst (corpus/README.md): page counts, warnings, expected errors,
+  # and runaway documents hitting the time and memory limits (prlimit is in util-linux on the runner).
+  # Heal's corpus tests run in the test job.
+  corpus:
+    name: Corpus (native typst)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TYPST_VERSION: 0.15.1
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install native typst
+        run: |
+          curl -fsSL "https://github.com/typst/typst/releases/download/v$TYPST_VERSION/typst-x86_64-unknown-linux-musl.tar.xz" \
+            | tar -xJ -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/typst-x86_64-unknown-linux-musl" >> "$GITHUB_PATH"
+      - uses: pnpm/setup@v3
+        with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
+      - run: pnpm corpus:validate
+
   size:
     name: Size
     runs-on: ubuntu-latest

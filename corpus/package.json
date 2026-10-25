@@ -1,0 +1,23 @@
+{
+  "name": "@typstream/corpus",
+  "version": "0.0.0",
+  "description": "Test corpus shared by heal, engine, renderer and visual tests, with stream replay helpers.",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "test": "vitest run",
+    "check-types": "tsc -p tsconfig.json",
+    "validate": "node scripts/validate.mjs",
+    "stream": "node scripts/stream.mjs",
+    "generate": "node scripts/generate-adversarial.mjs"
+  }
+}

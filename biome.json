@@ -4,6 +4,7 @@
   "files": {
     "includes": [
       "packages/**",
+      "corpus/**",
       "tools/repo/**",
       ".dependency-cruiser.mjs",
       "!**/dist",

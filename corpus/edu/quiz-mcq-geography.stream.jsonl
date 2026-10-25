@@ -1,0 +1,411 @@
+{"t":0,"text":"#"}
+{"t":25,"text":"set page("}
+{"t":70,"text":"margin:"}
+{"t":105,"text":" 2cm"}
+{"t":138,"text":", numbering"}
+{"t":173,"text":": "}
+{"t":207,"text":"\""}
+{"t":220,"text":"1\")\n"}
+{"t":252,"text":"#"}
+{"t":269,"text":"set text("}
+{"t":340,"text":"size:"}
+{"t":379,"text":" 11pt"}
+{"t":450,"text":")\n\n#"}
+{"t":484,"text":"let q"}
+{"t":501,"text":"-"}
+{"t":516,"text":"counter"}
+{"t":564,"text":" = counte"}
+{"t":606,"text":"r(\""}
+{"t":627,"text":"question\")"}
+{"t":661,"text":"\n#"}
+{"t":679,"text":"let answers"}
+{"t":732,"text":" = state"}
+{"t":803,"text":"(\""}
+{"t":822,"text":"answers\","}
+{"t":889,"text":" ()"}
+{"t":938,"text":")\n\n"}
+{"t":955,"text":"// A"}
+{"t":995,"text":" multiple"}
+{"t":1045,"text":"-choice"}
+{"t":1076,"text":" question"}
+{"t":1111,"text":"."}
+{"t":1119,"text":" "}
+{"t":1141,"text":"`correc"}
+{"t":1575,"text":"t` is"}
+{"t":1614,"text":" the index of"}
+{"t":1680,"text":" the right"}
+{"t":1701,"text":" option.\n"}
+{"t":1754,"text":"#"}
+{"t":1766,"text":"let mcq("}
+{"t":1828,"text":"question"}
+{"t":1865,"text":", options"}
+{"t":1914,"text":","}
+{"t":1936,"text":" correct:"}
+{"t":1989,"text":" 0"}
+{"t":2011,"text":")"}
+{"t":2028,"text":" "}
+{"t":2256,"text":"="}
+{"t":2280,"text":" "}
+{"t":2295,"text":"{\n"}
+{"t":2324,"text":"  q-"}
+{"t":2365,"text":"counter."}
+{"t":2430,"text":"step()"}
+{"t":2456,"text":"\n  answer"}
+{"t":2475,"text":"s"}
+{"t":2497,"text":".update("}
+{"t":2540,"text":"a =>"}
+{"t":2583,"text":" a "}
+{"t":2614,"text":"+ ("}
+{"t":2660,"text":"correct"}
+{"t":2687,"text":",))\n"}
+{"t":2761,"text":"  block(breaka"}
+{"t":2808,"text":"ble: false"}
+{"t":2860,"text":", below"}
+{"t":2900,"text":": "}
+{"t":2945,"text":"1."}
+{"t":2965,"text":"2em)["}
+{"t":3038,"text":"\n"}
+{"t":3048,"text":"    #contex"}
+{"t":3112,"text":"t [*"}
+{"t":3148,"text":"#q-"}
+{"t":3200,"text":"counter"}
+{"t":3242,"text":".displa"}
+{"t":3280,"text":"y()"}
+{"t":3324,"text":".* "}
+{"t":3365,"text":"#questi"}
+{"t":3400,"text":"on]\n"}
+{"t":3433,"text":"    "}
+{"t":3450,"text":"#pad"}
+{"t":3495,"text":"(left"}
+{"t":3521,"text":": "}
+{"t":3560,"text":"1.2"}
+{"t":3630,"text":"em)[\n"}
+{"t":3656,"text":"      "}
+{"t":3666,"text":"#"}
+{"t":3679,"text":"grid("}
+{"t":3722,"text":"\n        columns"}
+{"t":3769,"text":": ("}
+{"t":3798,"text":"1fr"}
+{"t":3838,"text":","}
+{"t":3848,"text":" 1"}
+{"t":3883,"text":"fr"}
+{"t":3896,"text":"),\n        row"}
+{"t":3923,"text":"-"}
+{"t":3946,"text":"gutter"}
+{"t":3965,"text":":"}
+{"t":3976,"text":" 0."}
+{"t":4013,"text":"6em"}
+{"t":4047,"text":",\n"}
+{"t":4069,"text":"        ..option"}
+{"t":4106,"text":"s"}
+{"t":4115,"text":"."}
+{"t":4139,"text":"enumerate"}
+{"t":4179,"text":"()"}
+{"t":4189,"text":".map"}
+{"t":4233,"text":"(("}
+{"t":4248,"text":"("}
+{"t":4261,"text":"i"}
+{"t":4275,"text":", o))"}
+{"t":4343,"text":" => "}
+{"t":4411,"text":"[#(\""}
+{"t":4451,"text":"ABCD"}
+{"t":4470,"text":"\"."}
+{"t":4487,"text":"at("}
+{"t":4518,"text":"i)))"}
+{"t":4580,"text":" #"}
+{"t":4610,"text":"o])\n"}
+{"t":4662,"text":"      )"}
+{"t":4700,"text":"\n"}
+{"t":4724,"text":"    ]\n"}
+{"t":4784,"text":"  "}
+{"t":4793,"text":"]\n}"}
+{"t":4829,"text":"\n\n#"}
+{"t":4874,"text":"align(center"}
+{"t":4947,"text":")["}
+{"t":4958,"text":"\n"}
+{"t":4979,"text":"  "}
+{"t":5341,"text":"#"}
+{"t":5365,"text":"text"}
+{"t":5385,"text":"("}
+{"t":5404,"text":"17"}
+{"t":5420,"text":"pt)[*"}
+{"t":5482,"text":"World Geogra"}
+{"t":5516,"text":"phy Quiz*]"}
+{"t":5572,"text":" \\"}
+{"t":5614,"text":"\n  #"}
+{"t":5682,"text":"text(fill"}
+{"t":5714,"text":":"}
+{"t":5726,"text":" luma(90"}
+{"t":5789,"text":"))["}
+{"t":5814,"text":"Grade"}
+{"t":5834,"text":" 8"}
+{"t":5855,"text":" "}
+{"t":5864,"text":"·"}
+{"t":5885,"text":" "}
+{"t":5893,"text":"10 questions"}
+{"t":5967,"text":" ·"}
+{"t":6009,"text":" "}
+{"t":6029,"text":"15 minutes"}
+{"t":6091,"text":"]\n"}
+{"t":6115,"text":"]"}
+{"t":6128,"text":"\n\nChoose the"}
+{"t":6169,"text":" "}
+{"t":6193,"text":"*one*"}
+{"t":6254,"text":" best answer for"}
+{"t":6518,"text":" each questi"}
+{"t":6540,"text":"on."}
+{"t":6557,"text":"\n\n"}
+{"t":6572,"text":"#"}
+{"t":6588,"text":"mcq([What"}
+{"t":6640,"text":" is the longes"}
+{"t":6713,"text":"t river"}
+{"t":6757,"text":" in Africa?]"}
+{"t":6817,"text":", (["}
+{"t":6857,"text":"Congo], "}
+{"t":6920,"text":"["}
+{"t":6938,"text":"Niger"}
+{"t":6957,"text":"], ["}
+{"t":6983,"text":"Nile],"}
+{"t":7001,"text":" "}
+{"t":7013,"text":"[Zambezi"}
+{"t":7078,"text":"]), correc"}
+{"t":7128,"text":"t: "}
+{"t":7179,"text":"2)\n"}
+{"t":7221,"text":"#mcq(["}
+{"t":7271,"text":"Which countr"}
+{"t":7304,"text":"y has the"}
+{"t":7346,"text":" largest popula"}
+{"t":7403,"text":"tion in South"}
+{"t":7469,"text":" Americ"}
+{"t":7493,"text":"a"}
+{"t":7513,"text":"?], "}
+{"t":7559,"text":"([Argentina"}
+{"t":7592,"text":"], "}
+{"t":7628,"text":"[Brazil"}
+{"t":7658,"text":"], ["}
+{"t":7725,"text":"Colomb"}
+{"t":7748,"text":"ia"}
+{"t":7761,"text":"], "}
+{"t":7805,"text":"["}
+{"t":7821,"text":"Peru])"}
+{"t":7870,"text":","}
+{"t":7887,"text":" correc"}
+{"t":7911,"text":"t: "}
+{"t":7945,"text":"1)"}
+{"t":7972,"text":"\n#"}
+{"t":7992,"text":"mcq(["}
+{"t":8040,"text":"Mount Everes"}
+{"t":8073,"text":"t lies"}
+{"t":8100,"text":" on the"}
+{"t":8146,"text":" border"}
+{"t":8156,"text":" of Nepal"}
+{"t":8204,"text":" and"}
+{"t":8228,"text":" which other"}
+{"t":8273,"text":" country"}
+{"t":8297,"text":"?], "}
+{"t":8341,"text":"([India],"}
+{"t":8386,"text":" ["}
+{"t":8426,"text":"Bhutan],"}
+{"t":8449,"text":" [China"}
+{"t":8492,"text":"], "}
+{"t":8537,"text":"["}
+{"t":8550,"text":"Pakistan])"}
+{"t":8623,"text":", correct"}
+{"t":8664,"text":": "}
+{"t":8697,"text":"2"}
+{"t":8711,"text":")\n"}
+{"t":8749,"text":"#mcq(["}
+{"t":8777,"text":"What is the"}
+{"t":8838,"text":" capital city"}
+{"t":8902,"text":" of Australia"}
+{"t":8944,"text":"?]"}
+{"t":8953,"text":","}
+{"t":8963,"text":" "}
+{"t":8975,"text":"([Sydney],"}
+{"t":9018,"text":" [Melbou"}
+{"t":9056,"text":"rne],"}
+{"t":9104,"text":" [Perth"}
+{"t":9173,"text":"], ["}
+{"t":9198,"text":"Canberra"}
+{"t":9232,"text":"])"}
+{"t":9254,"text":","}
+{"t":9272,"text":" correct:"}
+{"t":9341,"text":" 3)"}
+{"t":9366,"text":"\n"}
+{"t":9390,"text":"#mcq(["}
+{"t":9441,"text":"Which ocean is"}
+{"t":9486,"text":" the"}
+{"t":9497,"text":" larges"}
+{"t":9514,"text":"t"}
+{"t":9539,"text":"?],"}
+{"t":9585,"text":" ([Atlant"}
+{"t":9653,"text":"ic],"}
+{"t":9683,"text":" "}
+{"t":9694,"text":"["}
+{"t":9706,"text":"Indian], "}
+{"t":10114,"text":"[Pacifi"}
+{"t":10134,"text":"c"}
+{"t":10147,"text":"],"}
+{"t":10164,"text":" "}
+{"t":10179,"text":"["}
+{"t":10193,"text":"Arctic]),"}
+{"t":10251,"text":" correct:"}
+{"t":10292,"text":" 2)"}
+{"t":10350,"text":"\n#mcq"}
+{"t":10406,"text":"([The"}
+{"t":10929,"text":" Sahara Desert is"}
+{"t":10984,"text":" located"}
+{"t":11013,"text":" mainly in"}
+{"t":11060,"text":" which region"}
+{"t":11089,"text":"?],"}
+{"t":11112,"text":" ([North"}
+{"t":11165,"text":" Africa], "}
+{"t":11226,"text":"["}
+{"t":11243,"text":"Southern"}
+{"t":11285,"text":" Africa],"}
+{"t":11317,"text":" "}
+{"t":11332,"text":"["}
+{"t":11350,"text":"Middle East],"}
+{"t":11380,"text":" [Centra"}
+{"t":11412,"text":"l Asia"}
+{"t":11454,"text":"])"}
+{"t":11469,"text":", correct"}
+{"t":11523,"text":":"}
+{"t":11542,"text":" 0"}
+{"t":11563,"text":")"}
+{"t":11573,"text":"\n"}
+{"t":11582,"text":"#mcq"}
+{"t":11619,"text":"([Which line"}
+{"t":11677,"text":" of"}
+{"t":11697,"text":" latitu"}
+{"t":11722,"text":"de is at"}
+{"t":11787,"text":" $"}
+{"t":11825,"text":"0 degree"}
+{"t":11867,"text":"$?],"}
+{"t":11915,"text":" ([Tropic"}
+{"t":11954,"text":" of Cancer],"}
+{"t":12001,"text":" ["}
+{"t":12034,"text":"Equator"}
+{"t":12068,"text":"], ["}
+{"t":12121,"text":"Prime"}
+{"t":12138,"text":" Meridian"}
+{"t":12181,"text":"], ["}
+{"t":12229,"text":"Arctic Circle])"}
+{"t":12277,"text":","}
+{"t":12300,"text":" correct"}
+{"t":12349,"text":": "}
+{"t":12380,"text":"1)"}
+{"t":12759,"text":"\n"}
+{"t":12777,"text":"#"}
+{"t":12795,"text":"mcq"}
+{"t":12813,"text":"([Which of"}
+{"t":12859,"text":" these countries"}
+{"t":12903,"text":" is"}
+{"t":12926,"text":" landlocked"}
+{"t":12949,"text":"?],"}
+{"t":12976,"text":" ([Bolivi"}
+{"t":13014,"text":"a],"}
+{"t":13061,"text":" [Chile"}
+{"t":13091,"text":"], "}
+{"t":13135,"text":"["}
+{"t":13156,"text":"Portug"}
+{"t":13173,"text":"al"}
+{"t":13187,"text":"], "}
+{"t":13227,"text":"[Vietnam"}
+{"t":13272,"text":"]), correc"}
+{"t":13312,"text":"t:"}
+{"t":13331,"text":" 0"}
+{"t":13359,"text":")\n"}
+{"t":13401,"text":"#"}
+{"t":13412,"text":"mcq"}
+{"t":13429,"text":"([The"}
+{"t":13470,"text":" Danube flows into"}
+{"t":13505,"text":" which sea"}
+{"t":13546,"text":"?]"}
+{"t":13570,"text":", "}
+{"t":13618,"text":"([Baltic"}
+{"t":13660,"text":" Sea"}
+{"t":13684,"text":"], "}
+{"t":13733,"text":"["}
+{"t":13757,"text":"Black Sea],"}
+{"t":13786,"text":" ["}
+{"t":13820,"text":"North Sea"}
+{"t":13855,"text":"], "}
+{"t":13896,"text":"[Caspian"}
+{"t":13942,"text":" Sea"}
+{"t":13958,"text":"])"}
+{"t":13983,"text":","}
+{"t":13993,"text":" correct"}
+{"t":14016,"text":": "}
+{"t":14066,"text":"1)"}
+{"t":14113,"text":"\n"}
+{"t":14127,"text":"#"}
+{"t":14136,"text":"mcq([Which"}
+{"t":14192,"text":" contin"}
+{"t":14207,"text":"ent"}
+{"t":14225,"text":" has"}
+{"t":14234,"text":" the"}
+{"t":14257,"text":" most countr"}
+{"t":14303,"text":"ies?],"}
+{"t":14360,"text":" "}
+{"t":14377,"text":"(["}
+{"t":14390,"text":"Asia], "}
+{"t":14453,"text":"["}
+{"t":14467,"text":"Europe], "}
+{"t":14534,"text":"["}
+{"t":14550,"text":"Africa"}
+{"t":14569,"text":"], ["}
+{"t":14596,"text":"South America"}
+{"t":14636,"text":"]),"}
+{"t":14663,"text":" correc"}
+{"t":14679,"text":"t: "}
+{"t":14715,"text":"2)"}
+{"t":14747,"text":"\n\n#"}
+{"t":14791,"text":"pagebreak"}
+{"t":14832,"text":"()\n\n"}
+{"t":14853,"text":"== Answer key"}
+{"t":14926,"text":"\n\n#contex"}
+{"t":14980,"text":"t"}
+{"t":14999,"text":" {"}
+{"t":15021,"text":"\n"}
+{"t":15033,"text":"  let keys"}
+{"t":15072,"text":" = answer"}
+{"t":15120,"text":"s"}
+{"t":15131,"text":"."}
+{"t":15148,"text":"final"}
+{"t":15165,"text":"()\n"}
+{"t":15190,"text":"  table"}
+{"t":15212,"text":"("}
+{"t":15221,"text":"\n    column"}
+{"t":15266,"text":"s: keys"}
+{"t":15317,"text":".len"}
+{"t":15360,"text":"()"}
+{"t":15379,"text":","}
+{"t":15397,"text":"\n    align"}
+{"t":15414,"text":":"}
+{"t":15425,"text":" center,\n"}
+{"t":15464,"text":"    "}
+{"t":15475,"text":".."}
+{"t":15496,"text":"range(1"}
+{"t":15527,"text":", keys"}
+{"t":15569,"text":".len"}
+{"t":15611,"text":"()"}
+{"t":15627,"text":" "}
+{"t":15643,"text":"+ 1"}
+{"t":15690,"text":")."}
+{"t":15710,"text":"map("}
+{"t":15751,"text":"i =>"}
+{"t":15805,"text":" [*#"}
+{"t":15863,"text":"i"}
+{"t":15887,"text":"*]),\n"}
+{"t":15944,"text":"    "}
+{"t":15963,"text":"..keys"}
+{"t":15982,"text":".map"}
+{"t":16005,"text":"(k"}
+{"t":16022,"text":" => "}
+{"t":16057,"text":"\"ABCD\"."}
+{"t":16089,"text":"at"}
+{"t":16102,"text":"(k))"}
+{"t":16130,"text":",\n"}
+{"t":16156,"text":"  )\n"}
+{"t":16205,"text":"}\n"}
