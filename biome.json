@@ -8,6 +8,7 @@
       ".dependency-cruiser.mjs",
       "!**/dist",
       "!**/node_modules",
+      "!**/target",
       "!!reference",
       "!!spikes",
       "!!tools/typst-syntax-oracle",

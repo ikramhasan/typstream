@@ -1,0 +1,23 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/api-extractor/v7/api-extractor.schema.json",
+  "extends": "../../tools/repo/api-extractor.base.json",
+  // wasm-bindgen's glue, not a tsup bundle. It refers to fetch/WebAssembly types, hence DOM.
+  "mainEntryPointFilePath": "<projectFolder>/dist/engine.d.ts",
+  "compiler": {
+    "overrideTsconfig": {
+      "compilerOptions": {
+        "target": "ES2022",
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
+        "lib": ["ES2022", "DOM"],
+        "strict": true,
+        "skipLibCheck": true
+      },
+      "files": ["dist/engine.d.ts"]
+    }
+  },
+  "messages": {
+    // The glue's doc comments are wasm-bindgen's (JSDoc, not TSDoc); our own docs come from lib.rs.
+    "tsdocMessageReporting": { "default": { "logLevel": "none", "addToApiReportFile": false } }
+  }
+}
