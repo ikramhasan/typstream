@@ -9,7 +9,7 @@ Status: draft v2 · 2026-10-26 · Target Typst version: **0.15.1** (pinned, see 
 
 ## Status & decisions
 
-**Where we are:** Phase 0 (engine spikes) and Phase 1 (`@typstream/heal`) are done. Phase 2 (engine) is next. Remaining work is tracked as GitHub issues; the issue labelled `roadmap` lists them in order. `CLAUDE.md` explains how to work in this repo.
+**Where we are:** Phase 0 (engine spikes) and Phase 1 (`@typstream/heal`) are done. Phase 2 (engine) is next. Remaining work is tracked as GitHub issues; [#38](https://github.com/ikramhasan/typstream/issues/38) (pinned, label `roadmap`) lists them in order. `CLAUDE.md` explains how to work in this repo.
 
 **Decision log** (newest first). Record new decisions here in the same PR that acts on them.
 
@@ -25,7 +25,7 @@ Status: draft v2 · 2026-10-26 · Target Typst version: **0.15.1** (pinned, see 
 | 2026-10-26 | HTML is the default streaming target; paged is for print preview. | §0, §6.5 |
 | 2026-10-26 | Built as a published toolkit, editor-ready from day one (edits, not appends; LSP-shaped worker protocol; one plugin contract). | §10 |
 
-**Open product questions** (block parts of Phases 2–5, tracked in the "Product decisions" issue): primary surface (chat vs. document panel), launch languages/scripts, day-one Typst packages, licensing, npm scope.
+**Open product questions** (block parts of Phases 2–5, tracked in [#1](https://github.com/ikramhasan/typstream/issues/1)): primary surface (chat vs. document panel), launch languages/scripts, day-one Typst packages, licensing, npm scope.
 
 ---
 
@@ -743,6 +743,8 @@ pnpm workspaces, turbo, tsup, vitest, biome (ultracite), changesets, Playwright,
 
 ## 14. Roadmap (phased, each with exit criteria)
 
+> The phases below are the original plan. **The authoritative, up-to-date breakdown is the GitHub issues** (roadmap: #38). Issue numbers are noted per phase.
+
 **Phase 0 — Spikes**
 - ✅ **Engine bake-off done** (2026-10-26, [spikes/phase0/RESULTS.md](spikes/phase0/RESULTS.md)). typst.ts 0.8.0-rc3, typst-wasm 1.0.0 and our own Typst 0.15.1 build were measured in Chromium 156, Firefox 157 and WebKit 27.2 for size, cold start, streaming latency at 1/5/20 pages, main-thread render cost, and memory over 200 compiles. **Decision: own the engine build; HTML is the default streaming target** (§6.1).
 - Remaining:
@@ -770,30 +772,30 @@ pnpm workspaces, turbo, tsup, vitest, biome (ultracite), changesets, Playwright,
   - CI (the repo isn't under git yet).
   - The incremental parser re-parses to the end after a mid-document edit; early resync (§5.2) is still an optimisation to add.
 
-**Phase 2 — Engine MVP (2–3 wks)**
+**Phase 2 — Engine MVP (2–3 wks)** · issues #7–#14
 - Worker + `@typstream/engine-wasm` (productionize the Phase 0 crate: CI wasm build, eviction after every compile, changed-page SVG, structured diagnostics), VFS, base fonts, scheduler, watchdog, last-good fallback, paged target with visible-pages-first updates.
 - *Exit*: corpus replays with 0 error screens; perf SLOs for 5-page docs met in Chromium.
 
-**Phase 3 — React + HTML target (2–3 wks)**
+**Phase 3 — React + HTML target (2–3 wks)** · issues #15–#19
 - `<Typstream>`, HTML renderer with block diffing, sanitizer, html-compat, animation/caret, exports.
 - *Exit*: visual + a11y suites green; final-render equivalence 100%.
 
-**Phase 4 — Semantic fixers, block isolation, final mode, `@typstream/node` fix loop (2 wks)**
+**Phase 4 — Semantic fixers, block isolation, final mode, `@typstream/node` fix loop (2 wks)** · issues #20–#22
 - *Exit*: prefix-compile rate ≥ 99%; final-mode recovery shows full doc with isolated error blocks.
 
-**Phase 5 — `@typstream/edu` + prompt kit + templates (2–3 wks, can start in parallel with 2)**
+**Phase 5 — `@typstream/edu` + prompt kit + templates (2–3 wks, can start in parallel with 2)** · issues #23–#24
 - *Exit*: LLM corpus generated with the kit has < 2% raw final-mode error rate before fix loop.
 
-**Phase 6 — Hardening & extensibility**
-- Islands, lazy script fonts, package allowlist & mirror, cross-browser, low-end perf.
+**Phase 6 — Hardening & extensibility** · issues #25–#30
+- Islands, lazy script fonts, package allowlist & mirror, cross-browser. (Low-end perf deferred; see decision log.)
 
-**Track W — Website & docs (runs alongside Phases 2–6)**
+**Track W — Website & docs (runs alongside Phases 2–6)** · issues #31–#33
 - Phase 2: `apps/website` scaffold (Fumadocs), landing page with live streamed demo, Getting started.
 - Phase 3–4: Concepts + API reference generation, public playground.
 - Phase 5: `@typstream/edu` reference generated from Typst doc comments; recipes; `llms.txt`.
 - *Exit for first public release (0.1)*: docs cover every `@public` API, examples green, compat matrix published.
 
-**Later — the wider toolkit (not scheduled; v1 contracts already support them)**
+**Later — the wider toolkit (not scheduled; v1 contracts already support them)** · issues #34–#37
 - `@typstream/ai`: AI SDK integration, streaming *regions* for "rewrite this section" commands.
 - `@typstream/codemirror`: source editor with highlighting, diagnostics, completion/hover via the language service.
 - `@typstream/editor-core` / `editor-react`: Plate-style visual editor over the CST (markup subset rich-editable, code as atomic nodes), edu nodes via the plugin `editor` facet.

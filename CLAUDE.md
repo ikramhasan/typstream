@@ -5,7 +5,7 @@ Typstream renders LLM-streamed **Typst** live in the browser, for an AI tool tha
 ## Where things are decided
 
 - **`PLAN.md`** is the design: architecture, decisions and roadmap. Read *Status & decisions* at the top first; then the sections an issue links to. Some sections keep their original design sketch next to an "As built" note. The note wins.
-- **GitHub issues** are the work queue (`gh issue list`). Each one names its context, the PLAN sections to read, dependencies, and acceptance criteria. Issues labelled `research` start with an investigation whose findings you post on the issue before building. The roadmap issue (label `roadmap`) lists everything in order.
+- **GitHub issues** are the work queue (`gh issue list`). Each one names its context, the PLAN sections to read, dependencies, and acceptance criteria. Issues labelled `research` start with an investigation whose findings you post on the issue before building. The pinned roadmap issue [#38](https://github.com/ikramhasan/typstream/issues/38) lists everything in order, and [#1](https://github.com/ikramhasan/typstream/issues/1) holds open product decisions. CI, release and tooling issues: #2–#4.
 - When you make or learn a decision that changes the plan, update the *Status & decisions* log in `PLAN.md` in the same PR.
 
 ## Layout
