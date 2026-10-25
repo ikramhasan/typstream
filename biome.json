@@ -2,7 +2,7 @@
   "$schema": "https://biomejs.dev/schemas/2.4.5/schema.json",
   "root": true,
   "files": {
-    "includes": ["packages/**", "!**/dist", "!**/node_modules", "!!reference", "!!spikes", "!!tools"]
+    "includes": ["packages/**", "!**/dist", "!**/node_modules", "!**/target", "!!reference", "!!spikes", "!!tools"]
   },
   "formatter": { "indentStyle": "space", "lineWidth": 120 },
   "linter": { "rules": { "recommended": true } }

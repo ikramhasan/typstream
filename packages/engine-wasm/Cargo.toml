@@ -1,0 +1,38 @@
+[package]
+name = "typstream-engine-wasm"
+version = "0.0.0"
+edition = "2021"
+publish = false
+description = "Typst 0.15.1 compiled to wasm for @typstream/engine-wasm: in-memory World, HTML and changed-page SVG."
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+# Standalone: not part of any parent Cargo workspace.
+[workspace]
+
+[features]
+default = []
+# PDF export (+~0.36 MB brotli). Not in the default build; how PDF ships is decided in #18.
+pdf = ["dep:typst-pdf"]
+
+[dependencies]
+# Typst is pinned everywhere (CLAUDE.md); upgrade the oracle and heal's recognizer port with it.
+typst = "=0.15.1"
+typst-html = "=0.15.1"
+typst-layout = "=0.15.1"
+typst-svg = "=0.15.1"
+typst-pdf = { version = "=0.15.1", optional = true }
+comemo = "0.5.1"
+# Must match the wasm-bindgen CLI exactly (Cargo.lock pins 0.2.129).
+wasm-bindgen = "0.2"
+js-sys = "0.3"
+
+[profile.release]
+# Phase 0: opt-level "z" is the smallest; "s"/"3" are 6%/14% bigger and 25%/35% faster
+# (spikes/phase0/custom-engine/RESULTS.md).
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

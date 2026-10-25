@@ -15,6 +15,7 @@ Status: draft v2 · 2026-10-26 · Target Typst version: **0.15.1** (pinned, see 
 
 | Date | Decision | Why / where |
 |---|---|---|
+| 2026-10-26 | `@typstream/engine-wasm` API as built: changed-page SVG only (no full `compile_svg`), eviction inside every compile, UTF-16 diagnostic spans for every file, real `today()`, PDF behind a non-default cargo feature. | §6.1 "As built", #8 |
 | 2026-10-26 | **Low-end devices are out of scope for now.** No Chromebook or Android measurements before launch; budgets are set on a mid-range laptop. | Product call. Revisit after launch. |
 | 2026-10-26 | Work is tracked in GitHub issues, each self-contained; open questions are research tasks inside issues, not guesses in this plan. | — |
 | 2026-10-26 | `@typstream/heal` is a faithful port of typst-syntax's parser used as a recognizer, tested against Typst's real parser. | §5.2 "As built" |
@@ -414,6 +415,14 @@ interface EngineAdapter {
 - **Paged target: our build with changed-page export** (`compile_svg_changed`). It hashes each page frame and exports SVG only for pages that changed: median 1 page per streamed step. At 20 pages, main-thread render is 5–9 ms p50 (typst.ts 3–8 ms; sending all pages 58–146 ms). First paint of a full document is faster than typst.ts (45–88 vs 80–146 ms). **typst.ts is dropped**, so there's one engine and one wasm download. Remaining worst case: occasional multi-page reflows (40–70 ms when 7 pages change). Handle it with visible-pages-first DOM updates and offscreen pages in idle time (§6.5).
 - typst.ts and typst-wasm remain possible adapters behind the conformance suite, but we don't ship them.
 - A **server adapter** is a first-class option, not an afterthought, given the download size (§6.4).
+
+**As built** ([#8](https://github.com/ikramhasan/typstream/issues/8), `packages/engine-wasm`): the Phase 0 crate, cleaned up. `Engine` has `add_font`, `set_source` / `set_file` / `remove_file` (virtual absolute paths), `set_inputs({ key: "value" })`, `compile_html()`, `compile_svg_changed()` + `reset_pages()`, and static `features()` / `memory_bytes()`. Differences from the spike and the sketch above:
+- There is no full-document `compile_svg()`: `reset_pages()` then `compile_svg_changed()` sends every page.
+- `comemo::evict(2)` runs inside every compile; `evict` is not exported.
+- Diagnostics are `{ severity, message, hints: string[], trace: { message, file?, span? }[], file?, span? }`. `span` is `{ from, to }` in **UTF-16** units of `file`'s text, for every file (other sources and UTF-8 data files too), not just `/main.typ`. Hint spans are dropped. The "html export is under active development" warning is filtered.
+- `datetime.today()` is the real local date (the spike fixed it to 2026-01-01), as in the CLI.
+- PDF export is a cargo feature (`FEATURES=pdf ./build.sh`), not in the default build; how PDF ships is [#18](https://github.com/ikramhasan/typstream/issues/18).
+- Tests compare HTML and every SVG page byte for byte with native `typst compile` 0.15.1 using the same fonts (Typst's bundled set, read from the `typst-assets` crate).
 
 typst.ts compiler API notes that shape the adapter: `addSource`/`mapShadow` for the VFS, `compile({ format: vector | pdf, diagnostics: "full", inputs })`, `query({ selector, field })` (used for islands), `setFonts(resolver)` shared across compiler instances. Diagnostics come back as `{ severity, range: "sl:sc-el:ec" (zero-based in practice), message }` with **hints concatenated into `message`** — the adapter normalizes this into `@typstream/core`'s `Diagnostic` (`{ severity, span, message, hints[], trace[] }`) so fixers never parse adapter-specific strings.
 

@@ -13,6 +13,7 @@ Typstream renders LLM-streamed **Typst** live in the browser, for an AI tool tha
 ```
 packages/core     @typstream/core: TextEdit, positions, SourceMap. No dependencies; contracts only.
 packages/heal     @typstream/heal: normalizer, recognizer (port of typst-syntax 0.15.1), tail repair, lint, incremental healer.
+packages/engine-wasm  @typstream/engine-wasm: Typst 0.15.1 as wasm (Rust crate + wasm-bindgen glue): HTML, changed-page SVG, UTF-16 diagnostics.
 tools/typst-syntax-oracle   Typst's real parser compiled to wasm for Node; the ground truth in heal's tests.
 spikes/phase0     Throwaway Phase 0 experiments: browser harness (harness/) and custom Typst wasm engine (custom-engine/).
                   Port code out of here into packages/; don't import from spikes.
@@ -28,6 +29,7 @@ Toolchain:
 - pnpm 12.
 - For the oracle and engine: Rust ≥ 1.92 (Typst 0.15.1 needs it), the `wasm32-unknown-unknown` target, and `wasm-bindgen-cli` at **exactly** the `wasm-bindgen` version in the crate's `Cargo.lock` (currently 0.2.129).
 - `binaryen` (`wasm-opt`) for the engine.
+- The native `typst` CLI **0.15.1** on `PATH` for engine-wasm's tests (they compare output with it).
 
 ```bash
 pnpm install
@@ -37,6 +39,10 @@ pnpm test              # turbo: all packages
 pnpm check-types
 pnpm check             # Biome lint + format check (pnpm fix to apply)
 ```
+
+In `packages/engine-wasm` (Rust build, ~3 min cold):
+- `pnpm build`: `build.sh` → `dist/` (glue, `.d.ts`, `wasm-opt -Oz` wasm). The root `pnpm test` / `pnpm check-types` (turbo) build it first; run inside the package, `pnpm test` uses the existing `dist/`.
+- `pnpm size`: wasm budget, 6.0 MB brotli.
 
 In `packages/heal`:
 - `pnpm test:long`: 20,000-run property campaign (minutes).
