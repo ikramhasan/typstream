@@ -50,6 +50,7 @@ export interface Checkpoint {
   nesting: number;
 }
 
+/** @internal What the recognizer saw that a lint rule needs (lint.ts). */
 export type LintEvent =
   | { type: "ref"; start: number; end: number }
   | { type: "bare-hash"; at: number }
@@ -91,12 +92,14 @@ export interface Recognition {
   requirements: Requirement[];
   /** Syntax errors not at the end of the text. */
   errors: SyntaxIssue[];
+  /** @internal */
   events: LintEvent[];
+  /** @internal Mode changes, ascending; resolved with `modeAt`. */
   modes: ModeSpan[];
-  /** Start of the last non-trivia token. */
+  /** @internal Start of the last non-trivia token. */
   lastTokenStart: number;
   /**
-   * Root checkpoint where `stopAt` ended recognition, if it did. Checkpoints,
+   * @internal Root checkpoint where `stopAt` ended recognition, if it did. Checkpoints,
    * errors, events and modes then cover only text before it, and
    * `requirements` and `lastTokenStart` don't describe the end of the text.
    */
@@ -106,7 +109,7 @@ export interface Recognition {
 export interface RecognizeOptions {
   /** Turn any requirement inside a set/show/import/include statement into a cut of the whole statement. */
   dropIncompleteRules?: boolean;
-  /** Asked at each root checkpoint before it's recorded; `true` stops recognition there (resync after an edit). */
+  /** @internal Asked at each root checkpoint before it's recorded; `true` stops recognition there (resync after an edit). */
   stopAt?: (cp: Checkpoint) => boolean;
 }
 

@@ -51,7 +51,9 @@ export const diffEdit = (prev: string, next: string): TextEdit | null => {
   return { from: start, to: prev.length - end, insert: next.slice(start, next.length - end) };
 };
 
+/** @internal UTF-16 helpers shared by typstream packages. */
 export const isHighSurrogate = (code: number): boolean => code >= 0xd800 && code <= 0xdbff;
+/** @internal */
 export const isLowSurrogate = (code: number): boolean => code >= 0xdc00 && code <= 0xdfff;
 
 /**
@@ -104,3 +106,7 @@ export class SourceMap {
     return pos + delta;
   }
 }
+
+export * from "./diagnostic";
+export * from "./plugin";
+export * from "./protocol";

@@ -1,0 +1,25 @@
+# Nightly checks too slow for every PR (PLAN.md §11.8).
+name: Nightly
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  heal-properties:
+    name: Heal property campaign (20,000 runs)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/oracle
+      - uses: pnpm/setup@v3
+        with: { runtime: node@24, cache: true, require-lockfile: true }
+      - run: pnpm build --filter=@typstream/heal...
+      - run: pnpm --filter @typstream/heal test:long
+
+  # TODO(#19): cross-browser full matrix.

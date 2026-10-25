@@ -16,12 +16,15 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --clean",
+    "build": "tsup",
     "test": "vitest run",
     "test:long": "HEAL_PROPERTY_RUNS=20000 vitest run __tests__/properties.test.ts",
     "bench": "vitest bench --run",
     "size": "node scripts/size.mjs",
-    "check-types": "tsc -p tsconfig.json"
+    "check-types": "tsc -p tsconfig.json",
+    "check:api": "api-extractor run",
+    "api:update": "api-extractor run --local",
+    "check:package": "publint --strict --pack npm && attw --pack . --profile esm-only"
   },
   "dependencies": {
     "@typstream/core": "workspace:*"

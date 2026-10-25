@@ -1,0 +1,28 @@
+{
+  "name": "@typstream/engine-wasm",
+  "version": "0.0.0",
+  "description": "Typst 0.15.1 compiled to wasm: in-memory files and fonts, HTML and changed-page SVG, structured diagnostics.",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/engine.d.ts",
+      "default": "./dist/engine.js"
+    },
+    "./engine_bg.wasm": "./dist/engine_bg.wasm"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "./build.sh",
+    "test": "vitest run",
+    "size": "node scripts/size.mjs",
+    "check-types": "tsc -p tsconfig.json",
+    "check:api": "api-extractor run",
+    "api:update": "api-extractor run --local",
+    "check:package": "publint --strict --pack npm && attw --pack . --profile esm-only --exclude-entrypoints ./engine_bg.wasm"
+  }
+}

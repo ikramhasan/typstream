@@ -16,6 +16,13 @@ Status: draft v2 · 2026-10-26 · Target Typst version: **0.15.1** (pinned, see 
 | Date | Decision | Why / where |
 |---|---|---|
 | 2026-10-26 | **Edits resync** (#5): re-parsing after an edit resumes one checkpoint earlier than before, so it never starts at a checkpoint whose own token the edit can change, and stops at the second matching root checkpoint past the edit. The healer passes known edits (`push`, `applyEdit`) through instead of diffing the whole text. Measured side by side on one (loaded) machine: mid-document 1-char edit at 100 KB ~7–10 ms → ~0.5 ms; per streamed token at 50 KB p50 ~0.25 ms → ~0.03 ms. | §5.2 "As built (resync)" |
+| 2026-10-26 | `@typstream/engine-wasm` API as built: changed-page SVG only (no full `compile_svg`), eviction inside every compile, diagnostics in core's `Diagnostic` shape with UTF-16 spans (`/main.typ` = the document), real `today()`, PDF behind a non-default cargo feature. Its own CI job; the other jobs skip it. | §6.1 "As built", #8 |
+| 2026-10-26 | **Layering is an allowlist:** a package may import only the packages in its §4.1 "Deps" column. That's stricter than "lower layers only": same-layer deps (node → engine, react → dom) are allowed only where listed, and so are lower-layer ones. One table (`tools/repo/layers.mjs`) drives the dependency-cruiser rules, the package.json check and the changesets fixed group. | §4.1, #3 |
+| 2026-10-26 | API reports live in `packages/*/api/`. Untagged exports are `@public`; `@beta` and `@internal` are explicit. Packages are ESM-only for now: attw runs with the `esm-only` profile, so add CJS (and drop the profile) only for a package that needs it (§10.4). | §10.4, #3 |
+| 2026-10-26 | The changesets `fixed` group lists only packages that exist, because changesets rejects unknown names. `check:layers` fails when a package marked `fixed` in the table is missing from it. | §10.4, #3 |
+| 2026-10-26 | **Worker protocol v1 is in `@typstream/core`** (`protocol.ts`). Compile output arrives only as `document/diagnostics` + `document/artifact` notifications sent before the `compile` response, so client- and server-initiated compiles share one render path. Paged artifacts name the `base` revision their changed pages diff against. Added `document/setFiles`, `shutdown`, `$/cancel`, `$/log`; `resolve/*` is paged-only. | §6.1 "As built" |
+| 2026-10-26 | `Diagnostic.span` is nullable and diagnostics from other files carry `file`; `HealHandler` moved from heal to core (the plugin contract needs it); plugins override lint rules by id instead of adding `LintRule` objects (custom rules are `settled` handlers). | §6.1, §8.0 "As built" |
+| 2026-10-26 | **CI runs on GitHub Actions** (`.github/workflows/`): lint, types, test (with the oracle), size on every PR and `main`; the 20,000-run property campaign nightly. Perf is **report-only** on PRs: shared runners can't hold the strict budgets, so CI fails only above 3× (`PERF_TOLERANCE=3`). The §11.5 plan of failing on a > 10% regression waits for a dedicated runner or CodSpeed. | #2, §11.5, §11.8 |
 | 2026-10-26 | **Low-end devices are out of scope for now.** No Chromebook or Android measurements before launch; budgets are set on a mid-range laptop. | Product call. Revisit after launch. |
 | 2026-10-26 | Work is tracked in GitHub issues, each self-contained; open questions are research tasks inside issues, not guesses in this plan. | — |
 | 2026-10-26 | `@typstream/heal` is a faithful port of typst-syntax's parser used as a recognizer, tested against Typst's real parser. | §5.2 "As built" |
@@ -418,6 +425,15 @@ interface EngineAdapter {
 - typst.ts and typst-wasm remain possible adapters behind the conformance suite, but we don't ship them.
 - A **server adapter** is a first-class option, not an afterthought, given the download size (§6.4).
 
+**As built** ([#8](https://github.com/ikramhasan/typstream/issues/8), `packages/engine-wasm`): the Phase 0 crate, cleaned up. `Engine` has `add_font`, `set_source` / `set_file` / `remove_file` (virtual absolute paths), `set_inputs({ key: "value" })`, `compile_html()`, `compile_svg_changed()` + `reset_pages()`, and static `features()` / `memory_bytes()`. Differences from the spike and the sketch above:
+- There is no full-document `compile_svg()`: `reset_pages()` then `compile_svg_changed()` sends every page.
+- `comemo::evict(2)` runs inside every compile; `evict` is not exported.
+- Diagnostics already have `@typstream/core`'s `Diagnostic` shape (#7), with `/main.typ` as the document: `{ severity, span, message, hints, trace, file?, source: "typst" }`. All spans are `{ from, to }` in **UTF-16**. For a problem in another file (a source, or a UTF-8 data file such as JSON), `span` is the nearest call site in `/main.typ` from the trace and `file: { path, span }` is the original location. Trace items have a span only where they are in `/main.typ`. Hint spans are dropped. The "html export is under active development" warning is filtered. engine-wasm can't import core (its layer row has no deps), so the shape is mirrored, not shared; the worker (#10) only remaps offsets (preamble, fixers) with `mapDiagnostic`.
+- `datetime.today()` is the real local date (the spike fixed it to 2026-01-01), as in the CLI.
+- PDF export is a cargo feature (`FEATURES=pdf ./build.sh`), not in the default build; how PDF ships is [#18](https://github.com/ikramhasan/typstream/issues/18).
+- Tests compare HTML and every SVG page byte for byte with native `typst compile` 0.15.1 using the same fonts (Typst's bundled set, read from the `typst-assets` crate).
+- CI: an `Engine (wasm)` job builds it (Rust, wasm-bindgen, binaryen, native typst) and runs its types, tests, size, API report and package lint. The other jobs leave it out with `--filter=!@typstream/engine-wasm`.
+
 typst.ts compiler API notes that shape the adapter: `addSource`/`mapShadow` for the VFS, `compile({ format: vector | pdf, diagnostics: "full", inputs })`, `query({ selector, field })` (used for islands), `setFonts(resolver)` shared across compiler instances. Diagnostics come back as `{ severity, range: "sl:sc-el:ec" (zero-based in practice), message }` with **hints concatenated into `message`** — the adapter normalizes this into `@typstream/core`'s `Diagnostic` (`{ severity, span, message, hints[], trace[] }`) so fixers never parse adapter-specific strings.
 
 **The worker is a language service, not a compile function.** The main thread talks to it through a versioned, LSP-shaped protocol defined in `@typstream/core` (`{ id, method, params }` requests, `{ id, result | error }` responses, notifications for diagnostics/artifacts):
@@ -430,6 +446,14 @@ typst.ts compiler API notes that shape the adapter: `addSource`/`mapShadow` for 
 | `completion`, `hover`, `definition`, `signatureHelp`, `format` (typstyle), `foldingRanges` | — | ✓ (typst-ide / tinymist-style services) |
 
 Multiple documents per worker (chat history, editor tabs) share fonts, packages and the comemo cache. A protocol version number and capability negotiation (`initialize` → capabilities) let newer editors talk to older engines gracefully.
+
+> **As built (#7):** the protocol is `packages/core/src/protocol.ts`; its TSDoc is the reference. Differences from the table above:
+> - **Revisions.** Every document-scoped message (params, results, notifications) carries `{ uri, rev }`; revisions are client-chosen, increasing integers. Protocol-level messages (`initialize`, `shutdown`, `$/cancel`, `$/log`) carry none. `document/edit` with a non-increasing `rev` fails with `stale-revision`; compiling, exporting or resolving a revision that is no longer current fails with `content-modified`.
+> - **Compile output is pushed, not returned.** For each compile the worker sends `document/diagnostics` (always), then `document/artifact` (on success), then the `compile` response, which carries only status, timings and `memoryBytes` (for recycling, §6.3). Server-initiated recompiles (a lazy font or package arrived) publish the same notifications for the same revision, and the later one replaces the earlier. A failed compile publishes no artifact; the client keeps last-good (§5.6).
+> - **Changed pages are explicit.** A `PagedArtifact` lists only changed pages plus `pageCount`, and names the `base` revision it diffs against (`null` = all pages). A client whose pages aren't from `base` recompiles with `fullPages`. Clients opt in with the `pagedDiff` capability.
+> - **Added:** `document/setFiles` (per-document images and data; a new revision), `shutdown`, `$/cancel` (drops a queued request; a running Typst compile can't be interrupted, so the watchdog stays the hard stop), `$/log`. `initialize` takes shared `fonts` and `packages`; `document/open` takes a `preamble` and `files`. `compile` takes `mode: "streaming" | "final"` and `anchors` (HTML, §10.2).
+> - **`resolve/span` / `resolve/location`** are typed for paged output only, since HTML resolves blocks through renderer anchors. They are `@beta`, behind `resolveSpan` / `resolveLocation` capabilities. Editor services (completion, hover, …) will arrive as new capability flags, not a version bump.
+> - **`Diagnostic`** is `{ severity: "error" | "warning" | "info", span: Range | null, message, hints[], trace[], file?, source?, code? }`. `span` is `null` when Typst gives no position in the document (e.g. a missing font). For errors inside the preamble or a package, `span` is the nearest call site in the document and `file` holds the original location. Helpers: `mapDiagnostic` (through heal's source map or an edit), `normalizeDiagnostics` (sort + dedupe), `formatDiagnostic`, `lineColumn`.
 
 ### 6.2 Scheduling
 
@@ -536,6 +560,8 @@ interface TypstreamPlugin {
              shortcuts?: ShortcutSpec[]; slashItems?: SlashItemSpec[] };
 }
 ```
+> **As built (#7):** `packages/core/src/plugin.ts`. The `heal` facet is `{ handlers?: HealHandler[]; lint?: Record<ruleId, "fix" | "warn" | "off" | boolean> }`. Custom lint rules are `settled`-phase `HealHandler`s, so there is no separate `LintRule` type. `HealHandler` itself moved from heal into core, and heal re-exports it. `FontSource`, `PackageSpec`, `IslandSpec` and the `editor` facet are `@beta` and typed loosely until their issues (#11, #25, #28, #36) settle them. `definePlugin()` type-checks a plugin literal. The `engine` facet must stay structured-clonable (it is posted to the worker), and a type test enforces that.
+
 `@typstream/edu` is itself just a plugin (Typst package files + templates + prompt catalogue + islands). Customers/third parties ship their own the same way (a school's branded templates, a chemistry pack, a music-notation pack).
 
 ### 8.1 Heal handlers (TS)
