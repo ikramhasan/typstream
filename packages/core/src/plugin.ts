@@ -157,7 +157,9 @@ export interface TypstreamPlugin {
     fixerModules?: string[];
     /** Files mounted for every document, e.g. a local Typst package's sources. */
     files?: Record<string, string | Uint8Array>;
+    /** @beta */
     packages?: PackageSpec[];
+    /** @beta */
     fonts?: FontSource[];
     /** Typst evaluated before every document, after earlier plugins' preambles. */
     preamble?: string;
@@ -181,7 +183,9 @@ export interface TypstreamPlugin {
  * Identity function that type-checks a plugin while keeping its literal type.
  *
  * @example
+ * ```ts
  * export const chemistry = definePlugin({ key: "acme/chemistry", engine: { packages: [...] } });
+ * ```
  * @public
  */
 export const definePlugin = <P extends TypstreamPlugin>(plugin: P): P => plugin;

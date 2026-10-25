@@ -50,6 +50,7 @@ export interface Checkpoint {
   nesting: number;
 }
 
+/** @internal What the recognizer saw that a lint rule needs (lint.ts). */
 export type LintEvent =
   | { type: "ref"; start: number; end: number }
   | { type: "bare-hash"; at: number }
@@ -91,9 +92,11 @@ export interface Recognition {
   requirements: Requirement[];
   /** Syntax errors not at the end of the text. */
   errors: SyntaxIssue[];
+  /** @internal */
   events: LintEvent[];
+  /** @internal Mode changes, ascending; resolved with `modeAt`. */
   modes: ModeSpan[];
-  /** Start of the last non-trivia token. */
+  /** @internal Start of the last non-trivia token. */
   lastTokenStart: number;
 }
 

@@ -107,6 +107,7 @@ export interface InitializeParams {
   protocolVersion: number;
   capabilities: ClientCapabilities;
   clientInfo?: { name: string; version?: string };
+  /** @beta */
   options?: InitializeOptions;
 }
 

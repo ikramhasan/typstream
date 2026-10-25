@@ -83,8 +83,10 @@ const mapRange = (r: Range, map: PositionMapper): Range => {
  * the raw stream, or across edits to a later revision.
  *
  * @example
+ * ```ts
  * mapDiagnostic(d, (pos, assoc) => healed.map.toInput(pos, assoc));
  * mapDiagnostic(d, (pos, assoc) => mapPosition(pos, edit, assoc));
+ * ```
  * @public
  */
 export const mapDiagnostic = (d: Diagnostic, map: PositionMapper): Diagnostic => ({
