@@ -38,6 +38,21 @@ describe("one streamed token (8 chars) at the end of a 50 KB document", () => {
   });
 });
 
+describe("one-character edit in the middle of a 100 KB document", () => {
+  const doc = makeDoc(100_000);
+  const healer = createHealer();
+  healer.set(doc);
+  let i = 0;
+  bench("incremental applyEdit (resync)", () => {
+    const at = 40_000 + ((i++ * 7919) % 20_000);
+    healer.applyEdit({ from: at, to: at, insert: "x" });
+    healer.applyEdit({ from: at, to: at + 1, insert: "" });
+  });
+  bench("stateless heal (full rescan)", () => {
+    heal(doc);
+  });
+});
+
 describe("constructs", () => {
   for (const input of ["Hello *bold", "#table(columns: 2, [a], [b", "$frac(a, ", "#let x = ", "```py\nprint(1)"]) {
     bench(JSON.stringify(input), () => {

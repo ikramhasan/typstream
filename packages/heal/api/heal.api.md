@@ -165,6 +165,8 @@ export interface Recognition {
     // @internal
     modes: ModeSpan[];
     requirements: Requirement[];
+    // @internal
+    stoppedAt?: number;
 }
 
 // @public
@@ -173,6 +175,8 @@ export const recognize: (text: string, from?: Checkpoint, opts?: RecognizeOption
 // @public (undocumented)
 export interface RecognizeOptions {
     dropIncompleteRules?: boolean;
+    // @internal
+    stopAt?: (cp: Checkpoint) => boolean;
 }
 
 // @public (undocumented)

@@ -181,18 +181,36 @@ describe("incremental healer", () => {
     );
   });
 
-  it("6. random edits anywhere ≡ stateless healing of the edited text", () => {
-    const editArb = fc.record({
-      at: fc.nat(),
-      del: fc.nat({ max: 12 }),
-      insert: fc.oneof(
-        fc.constantFrom("", "*", "[", "]", "$", "#f(", "\n\n", "x", "`", '"', "= "),
-        fc.string({ maxLength: 6 }),
-      ),
-    });
+  // Several blocks, so edits in the middle resync before the end (PLAN.md §5.2).
+  const editedArb = fc.tuple(
+    fc.array(documentArb, { minLength: 1, maxLength: 3 }).map((docs) => docs.join("\n\n")),
+    fc.array(
+      fc.record({
+        at: fc.nat(),
+        del: fc.nat({ max: 12 }),
+        insert: fc.oneof(
+          fc.constantFrom("", "*", "[", "]", "$", "#f(", "\n\n", "\n", "x", "`", '"', "= ", "#", "/*", "*/", "**"),
+          fc.string({ maxLength: 6 }),
+        ),
+      }),
+      { minLength: 1, maxLength: 8 },
+    ),
+  );
+  const comparable = (r: ReturnType<typeof heal>) => ({
+    source: r.source,
+    stableOffset: r.stableOffset,
+    openFrames: r.openFrames,
+    errors: r.errors,
+    findings: r.findings,
+  });
+
+  it.each([
+    ["lint off", NO_LINT],
+    ["lint on", {}],
+  ])("6. random edits anywhere ≡ stateless healing of the edited text (%s)", (_, opts) => {
     fc.assert(
-      fc.property(documentArb, fc.array(editArb, { minLength: 1, maxLength: 8 }), (doc, edits) => {
-        const healer = createHealer(NO_LINT);
+      fc.property(editedArb, ([doc, edits]) => {
+        const healer = createHealer(opts);
         healer.set(doc);
         let text = doc;
         for (const e of edits) {
@@ -200,11 +218,11 @@ describe("incremental healer", () => {
           const to = Math.min(from + e.del, text.length);
           text = text.slice(0, from) + e.insert + text.slice(to);
           const inc = healer.applyEdit({ from, to, insert: e.insert });
-          const ref = heal(text, NO_LINT);
-          if (inc.source !== ref.source) {
-            throw new Error(
-              `edit ${JSON.stringify(e)}\ninc: ${JSON.stringify(inc.source)}\nref: ${JSON.stringify(ref.source)}`,
-            );
+          const ref = heal(text, opts);
+          try {
+            expect(comparable(inc)).toEqual(comparable(ref));
+          } catch (err) {
+            throw new Error(`edit ${JSON.stringify(e)} → ${JSON.stringify(text)}\n${(err as Error).message}`);
           }
         }
       }),
