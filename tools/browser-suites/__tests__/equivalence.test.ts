@@ -7,6 +7,12 @@
 //   the page hashes: Typst's frame hashes include source spans, which differ between an
 //   incrementally reparsed source and a fresh parse);
 // - the same DOM: rendered blocks, or each page's SVG and text layer.
+//
+// The adversarial set (runaways, memory bombs, a 479-page document) runs in
+// Chromium only. It tests the engine and its watchdog, the same wasm in every
+// browser, and it is most of the suite's time (a final compile that runs out of
+// time starts the hang search, #21, up to 16 more compiles under the 10 s budget).
+// What browsers do differently is render, which the edu set checks in all three.
 
 import type { Artifact } from "@typstream/core";
 import { type MountedTypstream, mountTypstream } from "@typstream/dom";
@@ -40,7 +46,7 @@ beforeAll(async () => {
   await engine.ready;
   await warmFonts(engine);
   await loadMathFont();
-  corpus = await loadCorpus();
+  corpus = (await loadCorpus()).filter((e) => browser === "chromium" || e.set === "edu");
 }, 60_000);
 afterAll(() => engine.dispose());
 
@@ -49,6 +55,9 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 /** What a reader sees of an artifact: everything but page hashes. */
 const visible = (a: Artifact | null) =>
   a?.target === "paged" ? { ...a, pages: a.pages.map(({ hash: _, ...page }) => page) } : a;
+
+/** Blocks the fallback showed as error boxes (#21): failed ones, and those the hang search skipped. */
+const isolated = (s: DocumentState) => JSON.stringify(s.lastCompile?.fallback?.isolated ?? []);
 
 /** How a document ended: its status and why it failed, if it did. */
 const outcome = (s: DocumentState) => ({ status: s.status, failure: s.failure?.reason ?? null });
@@ -122,8 +131,11 @@ const compare = async (entry: CorpusDocument, target: Target) => {
     expect(sa.heal.source, id).toBe(sb.heal.source);
     // Runaways and bombs stop live compiling at once.
     if (entry.set === "edu") expect(compiles, id).toBeGreaterThan(1);
+    // The watchdog acted on one side only: a final compile ran out of time there, or the
+    // hang search skipped blocks there (isolation for errors happens on both sides alike).
+    const timedOut =
+      (sa.failure?.reason === "timeout") !== (sb.failure?.reason === "timeout") || isolated(sa) !== isolated(sb);
     if (JSON.stringify(outcome(sa)) !== JSON.stringify(outcome(sb))) {
-      const timedOut = (sa.failure?.reason === "timeout") !== (sb.failure?.reason === "timeout");
       return {
         timedOut,
         problem: `${id}: streamed ${JSON.stringify(outcome(sa))}, one-shot ${JSON.stringify(outcome(sb))}`,
@@ -131,7 +143,7 @@ const compare = async (entry: CorpusDocument, target: Target) => {
     }
     if (sb.status !== "done") return { timedOut: false, problem: null };
     if (JSON.stringify(visible(sa.artifact)) !== JSON.stringify(visible(sb.artifact)))
-      return { timedOut: false, problem: `${id}: artifacts differ` };
+      return { timedOut, problem: `${id}: artifacts differ${timedOut ? " (the watchdog acted on one side)" : ""}` };
     await shown(streamed, sa.artifact);
     await shown(oneShot, sb.artifact);
     if (rendered(streamed) !== rendered(oneShot)) return { timedOut: false, problem: `${id}: rendered DOM differs` };
@@ -150,7 +162,7 @@ describe(`final-render equivalence in ${browser}`, () => {
       const mismatches: string[] = [];
       let compared = 0;
       for (const entry of corpus) {
-        // A timeout on one side only is the machine being busy (the watchdog's final budget is 10 s): once more.
+        // The watchdog acting on one side only is the machine being busy (its final budget is 10 s): once more.
         let result = await compare(entry, target);
         if (result.timedOut) result = await compare(entry, target);
         if (result.problem) mismatches.push(result.problem);

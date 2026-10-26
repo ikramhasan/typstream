@@ -187,11 +187,12 @@ jobs:
       - run: pnpm exec turbo run test --filter=@typstream/example-nextjs-ai-sdk
 
   # Corpus-wide browser suites (tools/browser-suites, #19): final-render equivalence, flicker and accessibility over
-  # mountTypstream on the real worker. One job per browser: each runs the whole corpus in both targets.
+  # mountTypstream on the real worker. One job per browser (Chromium also runs the adversarial set's equivalence).
+  # Tests take 10-20 min; the timeout leaves room for `--with-deps`, whose apt mirror has taken 20 min on a bad day.
   suites:
     name: Browser suites (${{ matrix.browser }})
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:

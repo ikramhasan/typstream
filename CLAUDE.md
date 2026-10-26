@@ -122,7 +122,8 @@ In `tools/browser-suites` (PLAN.md §11.4, #19; details in its README):
 - `pnpm test:browser`: equivalence (every corpus document streamed vs one-shot, both targets, artifacts and DOM), flicker
   (replays with MutationObservers: settled HTML blocks and pages stay) and accessibility (axe-core, both targets, light and
   dark) through `mountTypstream` on the real worker, in Chromium, Firefox and WebKit. `BROWSERS=chromium` runs one. Needs
-  engine-wasm's `dist/`. ~10 min per browser; CI runs one job per browser.
+  engine-wasm's `dist/`. The adversarial set's equivalence runs in Chromium only (engine and watchdog, ~10 min); the
+  other browsers take ~5–8 min. CI runs one job per browser.
 - `pnpm test:visual`: screenshots against `__tests__/__screenshots__/<browser>/`, run inside Playwright's Docker image
   (`scripts/visual.mjs`; needs Docker) so baselines don't depend on the machine. `pnpm visual:update` accepts changes;
   commit the PNGs it writes (stored as palette PNGs). Engine, renderer, html-compat or CSS changes that alter output need

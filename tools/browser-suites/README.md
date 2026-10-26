@@ -22,7 +22,11 @@ own).
 bombs, 479 pages), in both targets, is streamed into a mount (the growing text with `isStreaming`, paced so it
 compiles along the way) and finished, then compared with a mount given the whole source at once: the same status
 and failure, the same artifact (the HTML string; every page's size, SVG and text runs, but not page hashes, which
-include source spans), and the same DOM.
+include source spans), and the same DOM. The adversarial set runs in Chromium only: it tests the engine and its
+watchdog, the same wasm in every browser, and takes most of the time (a final compile that runs out of time starts
+#21's hang search, up to 16 more compiles under the 10 s budget). The edu set, where browsers differ in rendering,
+runs in all three. When the watchdog acted on one side only (a timeout, or blocks the hang search skipped), the
+machine was busy: the document is compared once more.
 
 **Flicker** (`flicker.test.ts`). Every edu document is replayed in up to 60 steps, each waiting until the document
 caught up, while MutationObservers record what the renderers remove and add.
