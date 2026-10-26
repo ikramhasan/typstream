@@ -1,0 +1,382 @@
+// The main-thread client (PLAN §4, §6.2–6.3): owns the worker, runs one compile
+// at a time for all of its documents, and replaces the worker when a compile
+// runs past its budget (watchdog), the worker crashes, or its memory grows past
+// a threshold (recycling). A pre-warmed spare makes a replacement immediate.
+
+import {
+  type DocumentUri,
+  type InitializeOptions,
+  type InitializeResult,
+  PROTOCOL_VERSION,
+  type RequestId,
+  type Revision,
+  type ServerNotification,
+} from "@typstream/core";
+import { type Clock, systemClock } from "./clock";
+import { Connection, type GoneReason, type SpawnEngine } from "./connection";
+import {
+  type CompileOutcome,
+  type DocumentHost,
+  DocumentImpl,
+  type DocumentOptions,
+  type EngineDocument,
+  type WatchdogOptions,
+} from "./document";
+import { DEFAULT_SCHEDULE, type ScheduleOptions } from "./schedule";
+
+/**
+ * How to run the engine.
+ * @public
+ */
+export interface EngineOptions {
+  /** Starts a worker running the engine server (#10). */
+  spawn: SpawnEngine;
+  /** Fonts and packages shared by every document, sent with `initialize`. @beta */
+  initialize?: InitializeOptions;
+  /** Sent with `initialize`, for the worker's logs. */
+  clientInfo?: { name: string; version?: string };
+  /** Compile budgets and strikes; defaults in {@link DEFAULT_WATCHDOG}. */
+  watchdog?: Partial<WatchdogOptions>;
+  /**
+   * Replace the worker once it reports more memory than this after a compile.
+   * A safety net: the default engine evicts Typst's caches after every compile
+   * and stays flat. Default 256 MiB; `Infinity` disables recycling.
+   */
+  recycleBytes?: number;
+  /** Keep an initialized spare worker so replacing the active one is instant. Default true. */
+  spare?: boolean;
+  /** Default schedule of every document. */
+  schedule?: Partial<ScheduleOptions>;
+  /** Timers; tests pass fake ones. */
+  clock?: Clock;
+}
+
+/**
+ * Something the engine did, for logging and telemetry (PLAN §8.6). The library
+ * sends nothing anywhere itself.
+ *
+ * - `ready`: a worker finished `initialize` (the first one and every replacement).
+ * - `watchdog`: a compile ran past its budget; the worker was terminated.
+ * - `crash`: a worker failed outside the protocol.
+ * - `recycle`: a worker was replaced because it used too much memory.
+ * - `log`: a `$/log` message from the worker.
+ * - `failed`: the engine can't run; every document is in `error`.
+ * @public
+ */
+export type EngineEvent =
+  | { type: "ready"; info: InitializeResult }
+  | { type: "watchdog"; uri: DocumentUri; rev: Revision; budgetMs: number }
+  | { type: "crash"; error: unknown }
+  | { type: "recycle"; memoryBytes: number }
+  | { type: "log"; level: "debug" | "info" | "warn" | "error"; message: string }
+  | { type: "failed"; error: Error };
+
+/**
+ * The main-thread engine client. Create one per page (or per app) and open a
+ * document per rendered Typst source; documents share the worker.
+ * @public
+ */
+export interface Engine {
+  /** Opens a document. Throws if `options.uri` is already open. */
+  open(options?: DocumentOptions): EngineDocument;
+  /** The first worker's `initialize` answer. Rejects if the engine can't start. */
+  readonly ready: Promise<InitializeResult>;
+  /** Calls `listener` with every {@link EngineEvent}; returns the unsubscribe function. */
+  onEvent(listener: (event: EngineEvent) => void): () => void;
+  /** Disposes every document and terminates the workers. */
+  dispose(): void;
+}
+
+/** 3 s per streaming compile, 10 s per final compile, live compiling stops after 3 strikes. @public */
+export const DEFAULT_WATCHDOG: Readonly<WatchdogOptions> = { streamingMs: 3000, finalMs: 10_000, strikes: 3 };
+
+/** 256 MiB of engine memory, past which the worker is replaced. @public */
+export const DEFAULT_RECYCLE_BYTES = 256 * 1024 * 1024;
+
+/**
+ * Creates the engine client and starts its worker.
+ *
+ * @example
+ * ```ts
+ * const engine = createEngine({ spawn: fromWorker(() => new Worker(workerUrl, { type: "module" })) });
+ * const doc = engine.open({ target: "html" });
+ * doc.subscribe((s) => render(s.artifact, s.status));
+ * for await (const chunk of llmStream) doc.push(chunk);
+ * doc.finish();
+ * ```
+ * @public
+ */
+export const createEngine = (options: EngineOptions): Engine => new EngineImpl(options);
+
+interface Slot {
+  conn: Connection;
+  ready: Promise<InitializeResult>;
+  isReady: boolean;
+}
+
+const asError = (e: unknown): Error => (e instanceof Error ? e : new Error(String(e)));
+
+class EngineImpl implements Engine, DocumentHost {
+  readonly clock: Clock;
+  readonly watchdog: WatchdogOptions;
+  readonly ready: Promise<InitializeResult>;
+  generation = 0;
+  broken: Error | null = null;
+
+  private readonly options: EngineOptions;
+  private readonly schedule: ScheduleOptions;
+  private readonly recycleBytes: number;
+  private active: Slot;
+  private spare: Slot | null = null;
+  private readonly docs = new Map<DocumentUri, DocumentImpl>();
+  /** Documents waiting for their compile, first come first served; each at most once. */
+  private queue: DocumentImpl[] = [];
+  private busy = false;
+  private recycleAfter: number | null = null;
+  private nextUri = 1;
+  private readonly listeners = new Set<(event: EngineEvent) => void>();
+  private disposed = false;
+
+  constructor(options: EngineOptions) {
+    this.options = options;
+    this.clock = options.clock ?? systemClock;
+    this.watchdog = { ...DEFAULT_WATCHDOG, ...options.watchdog };
+    this.schedule = { ...DEFAULT_SCHEDULE, ...options.schedule };
+    this.recycleBytes = options.recycleBytes ?? DEFAULT_RECYCLE_BYTES;
+    this.active = this.spawn();
+    this.ready = this.active.ready;
+  }
+
+  open(options: DocumentOptions = {}): EngineDocument {
+    if (this.disposed) throw new Error("engine is disposed");
+    let uri = options.uri;
+    if (uri === undefined) {
+      do uri = `doc-${this.nextUri++}`;
+      while (this.docs.has(uri));
+    } else if (this.docs.has(uri)) {
+      throw new Error(`document ${uri} is already open`);
+    }
+    const schedule = { ...this.schedule, ...options.schedule };
+    const doc = new DocumentImpl(uri, this, schedule, options);
+    this.docs.set(uri, doc);
+    if (this.broken) doc.engineFailed(this.broken);
+    return doc;
+  }
+
+  onEvent(listener: (event: EngineEvent) => void): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+
+  dispose(): void {
+    if (this.disposed) return;
+    for (const doc of [...this.docs.values()]) doc.dispose();
+    this.disposed = true;
+    this.queue = [];
+    this.active.conn.close("dispose");
+    this.spare?.conn.close("dispose");
+    this.spare = null;
+    this.listeners.clear();
+  }
+
+  // -------------------------------------------------------------------------
+  // DocumentHost
+
+  enqueue(doc: DocumentImpl): void {
+    if (this.disposed || this.broken) return;
+    if (!this.queue.includes(doc)) this.queue.push(doc);
+    void this.pump();
+  }
+
+  close(uri: DocumentUri, rev: Revision): void {
+    if (!this.disposed) this.active.conn.send("document/close", { uri, rev });
+  }
+
+  release(doc: DocumentImpl, inFlight: RequestId | null): void {
+    this.docs.delete(doc.uri);
+    this.queue = this.queue.filter((d) => d !== doc);
+    // The compile can't be interrupted once it runs, but if it's still queued
+    // behind other messages the worker drops it. Either way the engine waits for
+    // the answer (or the watchdog) before the next compile.
+    if (inFlight !== null && !this.disposed) this.active.conn.notify("$/cancel", { id: inFlight });
+  }
+
+  // -------------------------------------------------------------------------
+  // workers
+
+  private emit(event: EngineEvent): void {
+    for (const listener of this.listeners) listener(event);
+  }
+
+  /** Starts a worker and initializes it. Throws if the worker can't be created. */
+  private spawn(): Slot {
+    // Filled in below; the worker can't answer before `spawn` returns.
+    const slot = { isReady: false } as Slot;
+    const conn = new Connection(
+      this.options.spawn,
+      (n) => this.receive(slot, n),
+      (e) => this.crashed(slot, e),
+    );
+    const ready = conn
+      .request("initialize", {
+        protocolVersion: PROTOCOL_VERSION,
+        capabilities: { pagedDiff: true },
+        clientInfo: this.options.clientInfo,
+        options: this.options.initialize,
+      })
+      .result.then((info) => {
+        if (info.protocolVersion !== PROTOCOL_VERSION) {
+          throw new Error(`engine speaks protocol ${info.protocolVersion}, client ${PROTOCOL_VERSION}`);
+        }
+        return info;
+      });
+    slot.conn = conn;
+    slot.ready = ready;
+    ready.then(
+      (info) => {
+        if (this.disposed || !conn.alive) return;
+        slot.isReady = true;
+        this.emit({ type: "ready", info });
+        // Warm the next spare only once the active worker is up, so they don't
+        // compete for the first compile.
+        if (slot === this.active && this.options.spare !== false && !this.spare) this.spare = this.trySpawn();
+      },
+      (e) => {
+        if (slot === this.active && conn.alive) this.fail(asError(e));
+        else if (slot === this.spare) this.dropSpare();
+      },
+    );
+    return slot;
+  }
+
+  private trySpawn(): Slot | null {
+    try {
+      return this.spawn();
+    } catch (e) {
+      this.emit({ type: "crash", error: e });
+      return null;
+    }
+  }
+
+  private dropSpare(): void {
+    this.spare?.conn.close("crash");
+    this.spare = null;
+  }
+
+  private receive(slot: Slot, n: ServerNotification): void {
+    if (slot !== this.active) return;
+    if (n.method === "$/log") this.emit({ type: "log", ...n.params });
+    else this.docs.get(n.params.uri)?.receive(n);
+  }
+
+  private crashed(slot: Slot, error: unknown): void {
+    this.emit({ type: "crash", error });
+    if (slot === this.spare) {
+      this.dropSpare();
+      return;
+    }
+    if (slot !== this.active) return;
+    // A worker that dies before it is up would die again: don't respawn in a loop.
+    if (!slot.isReady) {
+      slot.conn.close("crash");
+      this.fail(asError(error));
+      return;
+    }
+    this.replace("crash");
+  }
+
+  /**
+   * Terminates the active worker and promotes the spare (or starts a new one).
+   * Whatever the old worker owed is rejected with `WorkerGone(reason)`, and
+   * documents open themselves in the new worker before their next compile.
+   */
+  private replace(reason: GoneReason): void {
+    const old = this.active;
+    const next = this.spare ?? this.trySpawn();
+    this.spare = null;
+    this.generation++;
+    old.conn.close(reason);
+    if (!next) {
+      this.fail(new Error("could not start a replacement engine worker"));
+      return;
+    }
+    this.active = next;
+    // A promoted spare is already up; start its own spare now. A new worker
+    // starts its spare when it is ready (spawn).
+    if (next.isReady && this.options.spare !== false) this.spare = this.trySpawn();
+  }
+
+  private fail(error: Error): void {
+    if (this.broken || this.disposed) return;
+    this.broken = error;
+    this.queue = [];
+    // Not "crash": that would count as a watchdog strike for the compile in flight.
+    this.active.conn.close("dispose");
+    this.dropSpare();
+    this.emit({ type: "failed", error });
+    for (const doc of this.docs.values()) doc.engineFailed(error);
+  }
+
+  // -------------------------------------------------------------------------
+  // compiling
+
+  /** Runs queued compiles one at a time, each under the watchdog. */
+  private async pump(): Promise<void> {
+    if (this.busy) return;
+    this.busy = true;
+    try {
+      for (;;) {
+        if (this.disposed || this.broken) return;
+        if (this.recycleAfter !== null) this.recycle();
+        const doc = this.queue.shift();
+        if (!doc) return;
+        const slot = this.active;
+        try {
+          await slot.ready;
+        } catch {
+          return; // fail() already told every document.
+        }
+        if (this.disposed || this.broken) return;
+        if (slot !== this.active) {
+          // Replaced while starting up: compile on the new worker instead.
+          this.queue.unshift(doc);
+          continue;
+        }
+        const job = doc.prepare(slot.conn, this.generation);
+        if (!job) continue;
+        const { id, result } = slot.conn.request("compile", job.params);
+        doc.started(id);
+        const timer = this.clock.setTimeout(() => {
+          if (slot !== this.active) return;
+          this.emit({ type: "watchdog", uri: job.params.uri, rev: job.params.rev, budgetMs: job.budgetMs });
+          this.replace("timeout");
+        }, job.budgetMs);
+        let outcome: CompileOutcome;
+        try {
+          outcome = { result: await result };
+          const bytes = outcome.result.memoryBytes;
+          if (bytes !== undefined && bytes > this.recycleBytes && slot === this.active) this.recycleAfter = bytes;
+        } catch (error) {
+          outcome = { error };
+        } finally {
+          this.clock.clearTimeout(timer);
+        }
+        doc.settle(outcome);
+      }
+    } finally {
+      this.busy = false;
+    }
+  }
+
+  /**
+   * Swaps in a fresh worker between compiles, so nothing is lost: documents
+   * open themselves in it on their next compile, which runs without the old
+   * worker's caches.
+   */
+  private recycle(): void {
+    const memoryBytes = this.recycleAfter ?? 0;
+    this.recycleAfter = null;
+    this.emit({ type: "recycle", memoryBytes });
+    this.replace("recycle");
+  }
+}

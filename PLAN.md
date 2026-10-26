@@ -17,6 +17,7 @@ Status: draft v2 · 2026-10-26 · Target Typst version: **0.15.1** (pinned, see 
 |---|---|---|
 | 2026-10-26 | **Compile oracle (#13):** healed prefixes go through the real compiler in `tools/compile-oracle` (outside `packages/`: heal may not import the engine), in CI's engine job. **88% of corpus stream prefixes compile** after healing (HTML and paged alike), 96% of generated ones. The test allows an explicit list of error classes, each tied to the issue that removes it, and fails below a rate floor (87%) that rises as classes go. | §5.5 "Measured", §11.1 "As built" |
 | 2026-10-26 | **Layer 3 is two generic fixers, not the §5.5 table:** *tail cut* (an error in the unsettled tail, or a call site there in its trace, cuts the healed source at that point and re-heals) and *pending reference* (`@x` with no `<x>` becomes a placeholder). Simulated with the PLAN's 2-round limit they reach **99.4%** on the corpus. Heal takes the syntactic cases (a value being typed at the cut, a reference at the cut, incomplete `#let`) so fewer rounds are needed. | §5.5 "Measured", #20 |
+| 2026-10-26 | **Engine client** (#9, `packages/engine`): `createEngine({ spawn })` → `engine.open()` → `EngineDocument` (`push` / `set` / `applyEdit` / `finish`, state snapshots via `subscribe`). The worker sits behind a `SpawnEngine` factory, so the client has no DOM dependency. **One compile at a time per engine**, across documents, so a watchdog budget only ever measures that document's own compile. Edits go to the worker only right before a compile, as one diff of the healed source; a change that leaves the healed source unchanged doesn't compile. Boundary bias means "compile after `minInterval` once `stableOffset` advanced". Crashes count as watchdog strikes. Recycling swaps workers between compiles, and documents reopen on their next compile. The client merges changed pages, so `state.artifact` is always complete. 4.7 KB gz. | §6.2–6.3 "As built" |
 | 2026-10-26 | **Corpus format:** `corpus/<set>/<name>.typ`, optional `.stream.jsonl` (`{"t", "text"}` per line), and one `meta.json` per set whose `expect` (`ok` / `error` / `limit`) says what native `typst compile` 0.15.1 must do, checked by `pnpm corpus:validate` with embedded fonts only. Streams without a recording are synthesized from the source (token-sized, seeded). | §11.2 "As built", `corpus/README.md` |
 | 2026-10-26 | Heal runs the corpus: every prefix of documents up to 20 KB through the incremental healer, sampled prefixes of larger ones. Bugs the corpus finds but nobody has fixed yet are listed as known, each with a repro that must keep failing. | `packages/heal/__tests__/corpus*.test.ts` |
 | 2026-10-26 | **Edits resync** (#5): re-parsing after an edit resumes one checkpoint earlier than before, so it never starts at a checkpoint whose own token the edit can change, and stops at the second matching root checkpoint past the edit. The healer passes known edits (`push`, `applyEdit`) through instead of diffing the whole text. Measured side by side on one (loaded) machine: mid-document 1-char edit at 100 KB ~7–10 ms → ~0.5 ms; per streamed token at 50 KB p50 ~0.25 ms → ~0.03 ms. | §5.2 "As built (resync)" |
@@ -496,6 +497,26 @@ Multiple documents per worker (chat history, editor tabs) share fonts, packages 
 - **Compiler recycling** (for adapters without eviction, i.e. typst.ts #895 — measured +1.3 MB per compile, 280 MB after 200 — and as a general safety net): the worker pool tracks wasm memory per worker; past a threshold (default 256 MB) it spins up a fresh worker in the background, warms it with the current document, then swaps — invisible to the user.
 - Optional `maxMemoryMB` via a wasm memory cap where the adapter supports it.
 - After 3 timeouts on the same document → stop live compiling, show "document too complex to preview live", compile once at the end.
+
+> **As built (#9, `packages/engine`, main-thread client):**
+> - **Scheduling.**
+>   - The engine runs **one compile at a time across all its documents**. The worker is single-threaded anyway, and this way a watchdog timer never counts another document's compile. Each document has at most one pending compile, which is a flag: the healed source is read when its turn comes.
+>   - Edits are sent only right before a compile, as `diffEdit(sent, healed)`. A change that heals to the same source doesn't compile (e.g. typing inside a cut `#let x =`).
+>   - The EMA is over the worker's `timings.totalMs` (α = 0.3).
+>   - Boundary bias: when heal's `stableOffset` has advanced since the last compile, the next compile is due `minInterval` after the last one started, not after the adaptive interval.
+>   - A due compile still waits for a 0 ms timer, so chunks pushed in one task share a compile.
+> - **Watchdog.**
+>   - The budget clock starts once the worker has answered `initialize`, so cold start isn't counted.
+>   - A worker crash (an `error` event) during a compile is a strike, like a timeout.
+>   - A worker that dies before it is initialized isn't respawned. The engine fails, and every document reports `error`, rather than respawning in a loop.
+>   - The spare is spawned once the active worker is up, so they don't compete for the first compile.
+>   - After a replacement, documents open themselves in the new worker (`document/open` with the current healed text) at their next compile. Idle documents don't recompile.
+> - **Recycling.** `memoryBytes` from a compile result over the threshold swaps in the spare right after that compile. There is no warm-up compile: the next one runs without the old worker's caches.
+> - **Status.**
+>   - While streaming, `stale` wins over `compiling`: it lasts until a compile succeeds.
+>   - In final mode a failure is `error`.
+>   - After the third strike, `live` is false. `finish()` still compiles once, with the final budget.
+> - **Paged output.** The client applies changed-page artifacts, so `state.artifact` always holds every page. A `base` it doesn't have triggers a `fullPages` recompile.
 
 ### 6.4 Assets: wasm, fonts, packages
 

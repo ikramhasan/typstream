@@ -13,6 +13,7 @@ Typstream renders LLM-streamed **Typst** live in the browser, for an AI tool tha
 ```
 packages/core     @typstream/core: TextEdit, positions, SourceMap. No dependencies; contracts only.
 packages/heal     @typstream/heal: normalizer, recognizer (port of typst-syntax 0.15.1), tail repair, lint, incremental healer.
+packages/engine   @typstream/engine: main-thread client (heal → scheduler → worker, watchdog, recycling, last-good); worker half is #10.
 packages/engine-wasm  @typstream/engine-wasm: Typst 0.15.1 as wasm (Rust crate + wasm-bindgen glue): HTML, changed-page SVG, UTF-16 diagnostics.
 tools/typst-syntax-oracle   Typst's real parser compiled to wasm for Node; the ground truth in heal's tests.
 tools/compile-oracle        Do healed prefixes compile? heal × engine-wasm over the corpus; error classes and the prefix compile rate.
