@@ -75,7 +75,8 @@ describe("Typst packages in the worker", { timeout: 90_000 }, () => {
 
   it("doesn't load a package that isn't allowed", async () => {
     const state = await render([], CETZ);
-    expect(state.status).toBe("error");
+    // The fallback ladder (#21) shows the failing import as an error block.
+    expect(state.lastCompile?.fallback?.isolated?.length).toBeGreaterThan(0);
     expect(state.diagnostics.find((d) => d.severity === "error")?.message).toBe(
       "package @preview/cetz:0.5.3 is not allowed",
     );
