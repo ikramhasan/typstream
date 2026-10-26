@@ -55,7 +55,9 @@ const until = (doc: EngineDocument, done: (s: DocumentState) => boolean, ms = 90
 
 const finished = (doc: EngineDocument) =>
   until(doc, (s) => s.status === "done" || s.status === "error").then((s) => {
-    if (s.status === "error") throw new Error(`compile failed: ${JSON.stringify(s.diagnostics.slice(0, 3))}`);
+    // The failure says whether Typst reported errors or the watchdog stopped the compile (timeout, crash).
+    if (s.status === "error")
+      throw new Error(`compile failed: ${JSON.stringify(s.failure)} ${JSON.stringify(s.diagnostics.slice(0, 3))}`);
     return s;
   });
 

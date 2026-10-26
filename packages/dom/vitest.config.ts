@@ -30,6 +30,10 @@ export default defineConfig({
         test: {
           name: "browser",
           include: ["__tests__/browser/**/*.test.ts"],
+          // One test file at a time per browser. html-render's streaming test and the paged tests each
+          // run an engine worker; side by side on a 4-core CI runner (with the other two browsers going
+          // too), 20-page final compiles in WebKit failed after ~12 s, which fits the 10 s final watchdog.
+          fileParallelism: false,
           browser: {
             enabled: true,
             headless: true,
