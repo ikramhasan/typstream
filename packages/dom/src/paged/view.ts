@@ -243,10 +243,12 @@ export const createPagedView = (container: HTMLElement, options: PagedViewOption
     if (cancelIdle === null && !destroyed) cancelIdle = idle(drawIdle);
   };
 
+  // Idle work starts once the frame has drawn the visible pages (drawVisible
+  // queues it). Started here too, WebKit's timer fallback can fire before the
+  // frame and draw visible pages in idle time instead.
   const schedule = () => {
-    if (destroyed) return;
-    if (frameHandle === null) frameHandle = requestAnimationFrame(drawVisible);
-    idleLater();
+    if (destroyed || frameHandle !== null) return;
+    frameHandle = requestAnimationFrame(drawVisible);
   };
 
   const addSlot = (page: PageUpdate, visible: boolean): Slot => {
