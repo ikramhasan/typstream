@@ -3,6 +3,7 @@ packages:
   - "apps/*"
   - "corpus"
   - "tools/compile-oracle"
+  - "examples/*"
 
 allowBuilds:
   esbuild: true

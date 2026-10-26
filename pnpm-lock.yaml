@@ -242,6 +242,12 @@ importers:
 
   corpus: {}
 
+  examples/node-validate:
+    dependencies:
+      '@typstream/node':
+        specifier: workspace:*
+        version: link:../../packages/node
+
   packages/core: {}
 
   packages/engine:
@@ -296,6 +302,31 @@ importers:
       pdfjs-dist:
         specifier: ^6.4.299
         version: 6.4.299
+
+  packages/node:
+    dependencies:
+      '@typstream/core':
+        specifier: workspace:*
+        version: link:../core
+      '@typstream/engine':
+        specifier: workspace:*
+        version: link:../engine
+      '@typstream/engine-wasm':
+        specifier: workspace:*
+        version: link:../engine-wasm
+      '@typstream/heal':
+        specifier: workspace:*
+        version: link:../heal
+    devDependencies:
+      '@types/ws':
+        specifier: ^8.18.2
+        version: 8.18.2
+      '@typstream/corpus':
+        specifier: workspace:*
+        version: link:../../corpus
+      ws:
+        specifier: ^8.22.0
+        version: 8.22.0
 
   tools/compile-oracle:
     devDependencies:
@@ -1261,6 +1292,9 @@ packages:
 
   '@types/react@19.3.0':
     resolution: {integrity: sha512-N0rFCuH9YoxG9/m61l9MfpJKfmLOVU0em7ipIz6TRgSSkvReLB9vL85GB+yr8Bs5leqpvg96JSwF4ZS1s4viQg==}
+
+  '@types/ws@8.18.2':
+    resolution: {integrity: sha512-67MQl+fpWKVTT1NYdnmo3U4sc/xPo/zQBncVnI74qmQa0z/b+1g6iYqNmGCPbxO+zz2aklb08a0oHfegiVd0/w==}
 
   '@vitejs/plugin-react@6.1.2':
     resolution: {integrity: sha512-fhJNGUdscQa4HkI0xFxwonWyhnVReCPDbXI7FH7jmzpnVCrFQI7PRrhWecO263610vOrs9tr2Y4xcf8uAdFxbw==}
@@ -3000,6 +3034,10 @@ snapshots:
   '@types/react@19.3.0':
     dependencies:
       csstype: 3.2.3
+
+  '@types/ws@8.18.2':
+    dependencies:
+      '@types/node': 26.6.5
 
   '@vitejs/plugin-react@6.1.2(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))':
     dependencies:

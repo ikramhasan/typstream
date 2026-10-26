@@ -32,7 +32,7 @@ export const PACKAGES = {
   syntax: { name: "@typstream/syntax", layer: 1, deps: ["core"] },
   engine: { name: "@typstream/engine", layer: 2, deps: ["core", "heal", "engine-wasm"], fixed: true },
   "engine-wasm": { name: "@typstream/engine-wasm", layer: 2, deps: [] },
-  node: { name: "@typstream/node", layer: 2, deps: ["core", "heal", "engine"] },
+  node: { name: "@typstream/node", layer: 2, deps: ["core", "heal", "engine", "engine-wasm"] },
   edu: { name: "@typstream/edu", layer: 3, deps: ["core"] },
   "html-compat": { name: "@typstream/html-compat", layer: 3, deps: ["core"], testDeps: ["engine-wasm"] },
   dom: { name: "@typstream/dom", layer: 4, deps: ["core", "engine"], fixed: true },

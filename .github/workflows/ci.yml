@@ -21,8 +21,11 @@ env:
   # engine-wasm's own checks need Rust, binaryen and native typst; only the engine job has them. Jobs that reach
   # it through @typstream/engine restore its dist/ with ./.github/actions/engine-wasm instead.
   # The compile oracle (tools/compile-oracle) needs the built engine, and html-compat's tests compile with it
-  # (a devDependency turbo would build), so both run in the engine job too.
-  NOT_ENGINE: --filter=!@typstream/engine-wasm --filter=!@typstream/compile-oracle --filter=!@typstream/html-compat
+  # (a devDependency turbo would build), so both run in the engine job too. So do @typstream/node and its example
+  # (its build copies Typst's fonts out of the Rust crate graph).
+  NOT_ENGINE: >-
+    --filter=!@typstream/engine-wasm --filter=!@typstream/compile-oracle --filter=!@typstream/html-compat
+    --filter=!@typstream/node --filter=!@typstream/example-node-validate
 
 jobs:
   lint:
@@ -117,7 +120,7 @@ jobs:
 
   # The Typst engine: Rust build (cached by rust-cache), tests against native typst, wasm size budget, API report and
   # package lint. Also html-compat, whose tests compile with the engine. Then the compile oracle (#13): do heal's outputs
-  # compile with the engine?
+  # compile with the engine? Then @typstream/node on top of it (corpus, watchdog, protocol conformance) and its example.
   engine:
     name: Engine (wasm)
     runs-on: ubuntu-latest
@@ -159,6 +162,9 @@ jobs:
         with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
       - run: pnpm exec turbo run build check-types test size check:api check:package --filter=@typstream/engine-wasm --filter=@typstream/html-compat
       - run: pnpm exec turbo run check-types test --filter=@typstream/compile-oracle
+      - run: pnpm exec turbo run build check-types test check:api check:package --filter=@typstream/node
+      - name: examples/node-validate
+        run: pnpm exec turbo run test --filter=@typstream/example-node-validate
 
   # The engine worker in real browsers (packages/engine/__tests__/browser): protocol conformance, streaming through
   # client + worker + engine-wasm, and the watchdog, in Chromium, Firefox and WebKit.

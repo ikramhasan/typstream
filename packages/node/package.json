@@ -1,0 +1,40 @@
+{
+  "name": "@typstream/node",
+  "version": "0.0.0",
+  "description": "Server-side Typst for typstream: validate and render documents, repair them with an LLM, and serve the engine protocol over WebSocket.",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsup && node scripts/copy-fonts.mjs",
+    "test": "vitest run",
+    "check-types": "tsc -p tsconfig.json",
+    "check:api": "api-extractor run",
+    "api:update": "api-extractor run --local",
+    "check:package": "publint --strict --pack npm && attw --pack . --profile esm-only"
+  },
+  "dependencies": {
+    "@typstream/core": "workspace:*",
+    "@typstream/engine": "workspace:*",
+    "@typstream/engine-wasm": "workspace:*",
+    "@typstream/heal": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.2",
+    "@typstream/corpus": "workspace:*",
+    "ws": "^8.22.0"
+  }
+}

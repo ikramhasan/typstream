@@ -8,6 +8,7 @@ export type { InitInput } from "@typstream/engine-wasm";
 // What `inProcess` returns; the same types as the main entry's.
 export type { EngineConnection, EngineEvents, SpawnEngine } from "./connection";
 export type {
+  AdapterCompileOptions,
   AdapterCompileResult,
   AdapterDocument,
   AdapterHtmlResult,
@@ -17,4 +18,4 @@ export type {
 } from "./server/adapter";
 export { type EngineWasmOptions, engineWasm, type FontInput, TYPST_VERSION } from "./server/engine-wasm";
 export { inProcess, serve, type WorkerScope } from "./server/serve";
-export { createServer, type EngineServer, PREAMBLE_PATH, type ServerOptions } from "./server/server";
+export { createServer, type EngineServer, fromMain, PREAMBLE_PATH, type ServerOptions } from "./server/server";

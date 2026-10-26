@@ -110,3 +110,4 @@ export class SourceMap {
 export * from "./diagnostic";
 export * from "./plugin";
 export * from "./protocol";
+export * from "./wire";

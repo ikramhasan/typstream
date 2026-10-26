@@ -57,12 +57,14 @@ export type SvgChangedResult = {
   compileMs: number;
   exportMs: number;
 };
+/** A paged compile without export (`check_paged`). */
+export type CheckResult = { ok: boolean; pageCount?: number; diagnostics: Diagnostic[]; ms: number };
 "#;
 
 #[cfg(feature = "pdf")]
 #[wasm_bindgen(typescript_custom_section)]
 const TS_PDF_TYPES: &'static str = r#"
-export type PdfResult = { ok: boolean; pdf?: Uint8Array; diagnostics: Diagnostic[]; ms: number };
+export type PdfResult = { ok: boolean; pdf?: Uint8Array; pageCount?: number; diagnostics: Diagnostic[]; ms: number };
 "#;
 
 /// How many evict calls an unused memoized result survives. Eviction counts
@@ -233,6 +235,25 @@ impl Engine {
         finish(obj, t0)
     }
 
+    /// Compiles paged without exporting anything: diagnostics and the page
+    /// count, for validating a document (`@typstream/node`'s `validate`). It
+    /// leaves the `compile_svg_changed` baseline alone.
+    #[wasm_bindgen(unchecked_return_type = "CheckResult")]
+    pub fn check_paged(&self) -> JsValue {
+        let t0 = perf_now();
+        let Warned { output, warnings } =
+            typst::compile::<typst_layout::PagedDocument>(&self.world);
+        let obj = match output {
+            Ok(doc) => {
+                let obj = self.result(true, &[], &warnings);
+                set(&obj, "pageCount", doc.pages().len() as f64);
+                obj
+            }
+            Err(errors) => self.result(false, &errors, &warnings),
+        };
+        finish(obj, t0)
+    }
+
     /// Forgets the page hashes, so the next `compile_svg_changed` sends every
     /// page (a new document, or the renderer lost its DOM).
     pub fn reset_pages(&mut self) {
@@ -246,15 +267,19 @@ impl Engine {
         let t0 = perf_now();
         let Warned { output, warnings } =
             typst::compile::<typst_layout::PagedDocument>(&self.world);
-        let obj =
-            match output.and_then(|doc| typst_pdf::pdf(&doc, &typst_pdf::PdfOptions::default())) {
-                Ok(bytes) => {
-                    let obj = self.result(true, &[], &warnings);
-                    set(&obj, "pdf", js_sys::Uint8Array::from(bytes.as_slice()));
-                    obj
-                }
-                Err(errors) => self.result(false, &errors, &warnings),
-            };
+        let exported = output.and_then(|doc| {
+            typst_pdf::pdf(&doc, &typst_pdf::PdfOptions::default())
+                .map(|pdf| (pdf, doc.pages().len()))
+        });
+        let obj = match exported {
+            Ok((bytes, pages)) => {
+                let obj = self.result(true, &[], &warnings);
+                set(&obj, "pdf", js_sys::Uint8Array::from(bytes.as_slice()));
+                set(&obj, "pageCount", pages as f64);
+                obj
+            }
+            Err(errors) => self.result(false, &errors, &warnings),
+        };
         finish(obj, t0)
     }
 

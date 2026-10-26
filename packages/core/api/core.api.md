@@ -89,6 +89,9 @@ export interface CompileTimings {
 export const definePlugin: <P extends TypstreamPlugin>(plugin: P) => P;
 
 // @public
+export const deserializeMessage: (text: string) => unknown;
+
+// @public
 export interface Diagnostic {
     code?: string;
     file?: {
@@ -581,6 +584,9 @@ export type ResultOf<M extends RequestMethod> = RequestMap[M]["result"];
 
 // @public
 export type Revision = number;
+
+// @public
+export const serializeMessage: (message: unknown) => string;
 
 // @public
 export interface ServerCapabilities {

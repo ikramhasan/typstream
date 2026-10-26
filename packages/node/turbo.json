@@ -1,0 +1,8 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    // Tests load the engine and fonts from this package's own dist/ (dist/fonts).
+    "test": { "dependsOn": ["^build", "build"] }
+  }
+}

@@ -6,6 +6,7 @@
       "packages/**",
       "apps/**",
       "corpus/**",
+      "examples/**",
       "tools/repo/**",
       "tools/compile-oracle/**",
       ".dependency-cruiser.mjs",

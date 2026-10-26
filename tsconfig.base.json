@@ -21,6 +21,9 @@
       "@typstream/corpus/stream": [
         "./corpus/src/stream.ts"
       ],
+      "@typstream/engine/server": [
+        "./packages/engine/src/server.ts"
+      ],
       "@typstream/*": [
         "./packages/*/src/index.ts"
       ]

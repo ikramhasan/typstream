@@ -1,0 +1,31 @@
+[package]
+name = "typstream-node-native-spike"
+version = "0.0.0"
+edition = "2021"
+publish = false
+description = "Throwaway (#22): the engine-wasm World as a napi-rs addon, to compare native and wasm on the server."
+
+[lib]
+crate-type = ["cdylib"]
+
+[workspace]
+
+[dependencies]
+# Same pins as packages/engine-wasm.
+typst = "=0.15.1"
+typst-html = "=0.15.1"
+typst-layout = "=0.15.1"
+typst-svg = "=0.15.1"
+typst-pdf = "=0.15.1"
+comemo = "0.5.1"
+napi = { version = "3", default-features = false, features = ["napi8"] }
+napi-derive = "3"
+
+[build-dependencies]
+napi-build = "2"
+
+[profile.release]
+# Native builds optimise for speed; size doesn't matter on a server.
+opt-level = 3
+lto = true
+codegen-units = 1

@@ -161,7 +161,10 @@ class Server implements EngineServer {
     this.waiting.delete(id);
     try {
       if (this.cancelled.delete(id)) throw new ProtocolError("request-cancelled", "cancelled before it started");
-      const handler = this.handlers[request.method] as (params: unknown, received: number) => Promise<unknown>;
+      const handler = this.handlers[request.method] as
+        | ((params: unknown, received: number) => Promise<unknown>)
+        | undefined;
+      if (!handler) throw new ProtocolError("method-not-found", `unknown method ${String(request.method)}`);
       const result = await handler(request.params, received);
       this.post({ id, result } as ServerMessage);
     } catch (e) {
@@ -335,6 +338,7 @@ class Server implements EngineServer {
 
     compile: async (params: CompileParams, received): Promise<CompileResult> => {
       const { uri, rev, target } = params;
+      const mode = params.mode ?? "streaming";
       const doc = this.current(uri, rev);
       if (!this.adapter.targets.includes(target)) this.unsupported(`the ${target} target`);
       this.sync(doc, params.inputs);
@@ -342,7 +346,7 @@ class Server implements EngineServer {
       let compileMs: number | undefined;
       let exportMs: number | undefined;
       if (target === "html") {
-        const r = await doc.compiler.compileHtml();
+        const r = await doc.compiler.compileHtml({ mode });
         ({ compileMs, exportMs } = r);
         this.post({
           method: "document/diagnostics",
@@ -356,7 +360,7 @@ class Server implements EngineServer {
       } else {
         // Changed pages only when the client can apply them to the pages it has.
         const full = params.fullPages === true || !this.client.pagedDiff || doc.pagedBase === null;
-        const r = await doc.compiler.compilePaged({ fullPages: full });
+        const r = await doc.compiler.compilePaged({ fullPages: full, mode });
         ({ compileMs, exportMs } = r);
         this.post({
           method: "document/diagnostics",
@@ -390,7 +394,7 @@ class Server implements EngineServer {
       const doc = this.current(uri, rev);
       if (!this.adapter.exports.includes("html")) this.unsupported("HTML export");
       this.sync(doc, inputs);
-      const r = await doc.compiler.compileHtml();
+      const r = await doc.compiler.compileHtml({ mode: "final" });
       const diagnostics = this.diagnostics(doc, r.diagnostics);
       return r.html === null
         ? { uri, rev, diagnostics, status: "error" }
