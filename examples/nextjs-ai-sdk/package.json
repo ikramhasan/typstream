@@ -1,0 +1,27 @@
+{
+  "name": "@typstream/example-nextjs-ai-sdk",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Stream a Typst worksheet from an LLM into <Typstream> with the Vercel AI SDK's useChat (Next.js App Router).",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "node smoke.mjs"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.88",
+    "@ai-sdk/react": "^4.0.157",
+    "ai": "^7.0.153",
+    "next": "^16.4.3",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "typstream": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "playwright": "^1.64.1"
+  }
+}

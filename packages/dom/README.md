@@ -1,6 +1,27 @@
 # @typstream/dom
 
-Framework-free renderers for typstream's output. `@typstream/react` is a thin layer over them.
+Framework-free renderers for typstream's output, and `mountTypstream`, which puts them on an engine document. `@typstream/react` is a thin layer over it.
+
+## `mountTypstream`: a document in an element
+
+What the framework bindings wrap (`@typstream/react` is a thin layer over it). It opens a document on an engine, feeds it, and shows each artifact with the renderer for its target.
+
+```ts
+import { createEngine, engineWorker } from "@typstream/engine";
+import { mountTypstream } from "@typstream/dom";
+
+const engine = createEngine({ spawn: engineWorker() });
+const options = { engine, isStreaming: true, animated: true, caret: true };
+const view = mountTypstream(element, { ...options, source: "" });
+let text = "";
+for await (const chunk of llmStream) view.update({ ...options, source: (text += chunk) });
+view.update({ ...options, source: text, isStreaming: false }); // finish: strict compile, no caret
+```
+
+- **`update(options)` takes all options each time** and acts only on what changed: a `source` that extends the last one is pushed, any other is set; `isStreaming` turning false finishes the document, turning true starts it over. `stream` (an `AsyncIterable<string>`) is the alternative to `source`. Target, inputs and files change in place; a different engine, preamble (plugins', template's, own), heal or schedule options open a new document, and the old output stays until its first compile.
+- **Lazy.** The document opens when the element comes within a screen of the viewport, or as soon as it streams (`lazy: false` opens it right away). Offscreen, finished documents apply changes when they scroll back.
+- **Renderers follow the artifact's target**, so after `target` changes the old output stays until the first artifact of the new one.
+- `getState()` / `subscribe()` read the document's state, `destroy()` disposes it and removes what was rendered (the engine is the caller's).
 
 ## Paged (SVG pages)
 

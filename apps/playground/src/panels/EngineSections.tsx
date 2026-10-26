@@ -1,7 +1,7 @@
-// The inspector's engine sections, for the raw engine view: the document's
-// status and fallback, compile timings from the worker, diagnostics and the
-// engine's events. All of it straight from DocumentState and the engine's
-// event stream.
+// The inspector's engine sections, for the render pane's document (<Typstream>'s,
+// or the one the raw engine and DOM views share): its status and fallback,
+// compile timings from the worker, diagnostics and the engine's events. All of
+// it straight from DocumentState and the engine's event stream.
 import type { CompileResult, Diagnostic } from "@typstream/core";
 import type { EngineEvent } from "@typstream/engine";
 import type { RawEngine } from "../rawEngine";
@@ -104,12 +104,12 @@ export const EngineSections = ({ engine }: { engine: RawEngine }) => {
             <dt>Re-heal</dt>
             <dd
               className={sent === null || state.heal.source === sent ? "" : "over"}
-              title="The engine heals what it's given again; healing is idempotent, so it should compile the healed source unchanged"
+              title="The document heals what it's given: the healed source (raw and DOM views; healing is idempotent) or the raw input (<Typstream>, healing incrementally). Either way it should compile what the healed pane shows."
             >
               {sent === null
                 ? "–"
                 : state.heal.source === sent
-                  ? "compiles the healed source as is"
+                  ? "compiles the healed pane's source"
                   : `changed it (${sent.length.toLocaleString()} → ${state.heal.source.length.toLocaleString()} chars)`}
             </dd>
           </dl>

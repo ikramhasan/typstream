@@ -25,7 +25,7 @@ interface Props {
   onSeek: (at: number) => void;
   hoverPatch: number | null;
   onHoverPatch: (patch: number | null) => void;
-  /** The raw engine view's document, when the render pane shows it. */
+  /** The render pane's document (<Typstream>'s, or the raw and DOM views'), unless rendering is off. */
   engine: RawEngine | null;
 }
 

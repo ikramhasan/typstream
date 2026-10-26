@@ -19,11 +19,15 @@ packages/engine-wasm  @typstream/engine-wasm: Typst 0.15.1 as wasm (Rust crate +
 packages/html-compat  @typstream/html-compat: Typst prelude + CSS so HTML export keeps grid, align, shapes, place, … (tests need the engine).
 packages/dom      @typstream/dom: framework-free renderers. `src/html/`: HTML renderer (string block split, sanitizer, source
                   anchors, word fade-in, caret, theme CSS). `src/paged/`: SVG pages (changed pages, visible first, text layer).
+                  `src/mount.ts`: `mountTypstream`, a document on an engine in an element (what the bindings wrap).
+packages/react    @typstream/react: <Typstream>, TypstreamProvider, useTypstream(); a thin layer over mountTypstream.
+packages/typstream  typstream: the convenience package (<Typstream> with html-compat and the math font; re-exports).
 tools/typst-syntax-oracle   Typst's real parser and lexer compiled to wasm for Node; the ground truth in heal's tests.
 tools/compile-oracle        Do healed prefixes compile? heal × engine-wasm over the corpus; error classes and the prefix compile rate.
 tools/repo        Repo tooling: package layer table (layers.mjs), layering check, shared tsup and api-extractor configs.
 corpus/           @typstream/corpus (private): shared test documents (edu/, adversarial/), meta.json, stream replay.
 apps/playground   Dev playground (Vite + React): replay streams, inspect healing and the engine's raw output, record corpus cases.
+examples/         node-validate (@typstream/node fix loop), nextjs-ai-sdk (useChat → <Typstream>, Next.js App Router).
 spikes/phase0     Throwaway Phase 0 experiments: browser harness (harness/) and custom Typst wasm engine (custom-engine/).
                   Port code out of here into packages/; don't import from spikes.
 PLAN.md           Design and roadmap.
@@ -74,6 +78,13 @@ In `packages/dom`:
 - `pnpm size`: HTML renderer ≤ 9 KB gzipped (with its CSS), paged renderer ≤ 4 KB.
 - Its API report needs DOM types, so its `api-extractor.json` overrides the shared compiler settings.
 
+In `packages/react`:
+- `pnpm test`: Node tests (provider merging, the shared engine's lifetime). `pnpm test:browser`: `<Typstream>` with React Testing Library against the real engine worker in Chromium, Firefox and WebKit (StrictMode, lazy opening, worker cleanup). `BROWSERS=chromium` runs one. Needs engine-wasm's `dist/`.
+- `pnpm size`: ≤ 15 KB gzipped including `@typstream/dom` (React and the engine external).
+- Its bundle starts with `"use client"` (tsup banner), as does `typstream`'s, for Next.js's App Router.
+
+In `examples/nextjs-ai-sdk`: `pnpm test` builds the app (Turbopack) and streams one answer into `<Typstream>` in Chromium, failing on any error frame. Without `ANTHROPIC_API_KEY` the route replays a recorded worksheet; build the packages first (`pnpm turbo run build --filter=typstream...`). CI runs it in the browsers job.
+
 In `packages/heal`:
 - `pnpm test:long`: 20,000-run property campaign (minutes).
 - `pnpm bench`: vitest benchmarks.
@@ -92,7 +103,7 @@ In `apps/playground` (PLAN.md §10.5, #31):
 - Load a corpus entry, paste a document or `.stream.jsonl`, or open one from disk. Scrub by chunk, token or character (arrows, Shift for 10, Home/End, Space plays at the recorded timing). The panes show raw input vs healed source with patches, open frames, the settled boundary, lint findings and syntax errors; the inspector has per-step and whole-stream push timings against the §1 budget.
 - The URL hash holds the whole state (source, seed, split, step, options), so a link reproduces a case. "Save as corpus case" downloads `.typ` + `.stream.jsonl` and shows the `meta.json` entry to add.
 - The dev and preview servers send COOP/COEP headers: without cross-origin isolation browsers round `performance.now()` to 0.1 ms, too coarse for heal's timings. The first profile after a load includes JIT warm-up; use "re-run".
-- The render pane's **Raw engine** mode spawns the real engine worker (`engineWorker()`, one per page) and `set()`s the healed source of each step into one document; the engine's scheduler paces compiles, so playback doesn't flood it. It shows the last good artifact exactly as the engine sent it, with no `@typstream/dom` in between: HTML in a sandboxed iframe (scripts off), pages as SVG `<img>`s, or the raw markup. The **DOM renderer** mode shows the same document through `@typstream/dom` (`createHtmlRenderer`, `createPagedView`), so switching modes compares one artifact raw and rendered; its status line reports what the renderer did (blocks parsed, pages drawn, ms). Toggles: target (HTML / paged), html-compat (its preamble and files on the document, its CSS on the HTML and the DOM renderer's sanitizer allowances), mode (`Off` spawns no worker). The inspector adds the document's status and fallback, worker-side compile timings, engine diagnostics (in healed-source coordinates) and engine events. `render`, `target` and `compat` are in the URL hash. When the React bindings land (#17), `<Typstream>` becomes the default mode and the raw and DOM views stay as toggles.
+- The render pane spawns the real engine worker (`engineWorker()`, one per page) on first use. Its default mode, **`<Typstream>`**, is `@typstream/react`'s component as an app uses it: fed the raw input of each step with `isStreaming` until final mode, on its own document, with word fade-in and the caret; its status line reports what it rendered (blocks or pages, ms). The **Raw engine** mode `set()`s the healed source of each step into another document and shows the last good artifact exactly as the engine sent it, with no `@typstream/dom` in between: HTML in a sandboxed iframe (scripts off), pages as SVG `<img>`s, or the raw markup. The **DOM renderer** mode shows that same document through `@typstream/dom` (`createHtmlRenderer`, `createPagedView`), so switching between the three tells a bindings bug from a renderer bug from engine output. The engine's scheduler paces compiles, so playback doesn't flood it. Toggles: target (HTML / paged), html-compat (its preamble and files on the document, its CSS on the HTML and the renderer's sanitizer allowances), mode (`Off` spawns no worker). The inspector adds the shown document's status and fallback, worker-side compile timings, engine diagnostics and engine events; with `<Typstream>` its re-heal row checks that the component's own healing equals the healed pane. `render` (`engine`, `dom`, `off`; default `<Typstream>`), `target` and `compat` are in the URL hash.
 - `pnpm --filter playground build` (static `dist/`), `test`, `check-types`.
 
 Spikes (reference only):

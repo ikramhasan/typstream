@@ -11,6 +11,8 @@
       "tools/compile-oracle/**",
       ".dependency-cruiser.mjs",
       "!**/dist",
+      "!**/.next",
+      "!**/next-env.d.ts",
       "!**/node_modules",
       "!**/target",
       "!**/*.generated.ts",
