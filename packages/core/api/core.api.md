@@ -418,6 +418,7 @@ export interface PageUpdate {
     height: number;
     index: number;
     svg: string;
+    text?: TextRun[];
     // (undocumented)
     width: number;
 }
@@ -668,6 +669,21 @@ export interface TextEdit {
     origin?: EditOrigin;
     // (undocumented)
     to: number;
+}
+
+// @public
+export interface TextRun {
+    matrix?: [number, number, number, number];
+    // (undocumented)
+    size: number;
+    // (undocumented)
+    text: string;
+    // (undocumented)
+    width: number;
+    // (undocumented)
+    x: number;
+    // (undocumented)
+    y: number;
 }
 
 // @public

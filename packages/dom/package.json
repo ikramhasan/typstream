@@ -1,0 +1,38 @@
+{
+  "name": "@typstream/dom",
+  "version": "0.0.0",
+  "description": "Framework-free renderers for typstream: sanitized, block-diffed HTML and paged SVG output, kept in step with a streaming document.",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run --project node",
+    "test:browser": "vitest run --project browser",
+    "size": "node scripts/size.mjs",
+    "check-types": "tsc -p tsconfig.json",
+    "check:api": "api-extractor run",
+    "api:update": "api-extractor run --local",
+    "check:package": "publint --strict --pack npm && attw --pack . --profile esm-only"
+  },
+  "dependencies": {
+    "@typstream/core": "workspace:*",
+    "@typstream/engine": "workspace:*"
+  },
+  "devDependencies": {
+    "@typstream/corpus": "workspace:*",
+    "@typstream/html-compat": "workspace:*",
+    "@vitest/browser-playwright": "4.1.12",
+    "playwright": "^1.64.1"
+  }
+}

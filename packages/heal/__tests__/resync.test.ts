@@ -9,6 +9,8 @@ import { fullState, type State, updateState } from "../src/heal";
 import { BLOCK_ATOMS, documentArb, INLINE_ATOMS } from "./support/generators";
 
 const RUNS = Number(process.env.HEAL_PROPERTY_RUNS ?? 150);
+// Size of the large document, in KB. Mutation runs shrink it (it's re-recognized 40 times per run).
+const LARGE = Number(process.env.HEAL_RESYNC_KB ?? 100) * 1_000;
 
 const makeDoc = (size: number): string => {
   const atoms = [...BLOCK_ATOMS, ...INLINE_ATOMS];
@@ -34,11 +36,11 @@ const check = (state: State, text: string, e: TextEdit) => {
 };
 
 describe("resync after an edit", () => {
-  it("re-recognizes only the edited block of a 100 KB document", () => {
-    const doc = makeDoc(100_000);
+  it(`re-recognizes only the edited block of a ${LARGE / 1_000} KB document`, () => {
+    const doc = makeDoc(LARGE);
     // One-letter edits all over the document: each must resync within a few
     // blocks. (Deleting a `"` or splitting a raw fence can change the rest of the document.)
-    for (let at = 37; at < doc.length; at += 4_999) {
+    for (let at = 37; at < doc.length; at += Math.floor(doc.length / 20) - 1) {
       const letter = doc.slice(at).search(/[a-z]/) + at;
       for (const e of [
         { from: letter, to: letter, insert: "x" },
