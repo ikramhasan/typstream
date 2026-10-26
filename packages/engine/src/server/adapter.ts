@@ -5,6 +5,7 @@
 // trimmed build) must pass the same conformance suite (PLAN §11.3).
 
 import type {
+  CompileMode,
   CompileTarget,
   Diagnostic,
   ExportFormat,
@@ -15,6 +16,16 @@ import type {
 
 /** A value, or a promise of it. @public */
 export type MaybePromise<T> = T | Promise<T>;
+
+/**
+ * How a compile will be used. `mode` is the `compile` request's (default
+ * `streaming`); exports are `final`. Adapters may budget or fix differently
+ * per mode (PLAN §5.7, §6.3); engine-wasm ignores it.
+ * @public
+ */
+export interface AdapterCompileOptions {
+  mode?: CompileMode;
+}
 
 /**
  * A Typst compiler the worker server can host.
@@ -52,13 +63,13 @@ export interface AdapterDocument {
   /** `sys.inputs` for the following compiles. */
   setInputs(inputs: Record<string, string>): void;
   /** Compiles `/main.typ` to HTML. */
-  compileHtml(): MaybePromise<AdapterHtmlResult>;
+  compileHtml(options?: AdapterCompileOptions): MaybePromise<AdapterHtmlResult>;
   /**
    * Compiles paged output and returns the pages that changed since the last
    * successful paged compile, or every page with `fullPages` (or the first
    * time). A failed compile keeps what the next one diffs against.
    */
-  compilePaged(options: { fullPages: boolean }): MaybePromise<AdapterPagedResult>;
+  compilePaged(options: { fullPages: boolean } & AdapterCompileOptions): MaybePromise<AdapterPagedResult>;
   /** Only when the adapter's `exports` include `"pdf"`. */
   exportPdf?(): MaybePromise<AdapterCompileResult & { pdf: Uint8Array | null }>;
   /** Frees the document. */

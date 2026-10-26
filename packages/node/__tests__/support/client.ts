@@ -1,4 +1,5 @@
-// A minimal protocol client for tests: correlates responses with requests and
+// A minimal protocol client for node-specific server tests (the shared suite is
+// @typstream/engine's conformance.ts): correlates responses with requests and
 // records every server message in arrival order. Transports plug in below.
 
 import {

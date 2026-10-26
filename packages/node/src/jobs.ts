@@ -2,7 +2,7 @@
 // worker.ts must stay runnable as plain TypeScript by Node, so it imports
 // nothing at runtime except engine-wasm.
 
-import type { Diagnostic } from "@typstream/core";
+import type { Diagnostic, PageUpdate } from "@typstream/core";
 
 /** What a job compiles to. `check` is a paged compile without export. */
 export type JobOp = "check" | "html" | "svg" | "pdf";
@@ -38,8 +38,8 @@ export interface JobResult {
   pageCount?: number;
   html?: string;
   pdf?: Uint8Array;
-  /** `svg`: exported pages; all of them when `full`. */
-  pages?: { index: number; svg: string }[];
+  /** `svg`: exported pages (engine-wasm's frame hash and size included); all of them when `full`. */
+  pages?: PageUpdate[];
   full?: boolean;
   compileMs: number;
   exportMs?: number;

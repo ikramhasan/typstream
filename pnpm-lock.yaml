@@ -308,6 +308,9 @@ importers:
       '@typstream/core':
         specifier: workspace:*
         version: link:../core
+      '@typstream/engine':
+        specifier: workspace:*
+        version: link:../engine
       '@typstream/engine-wasm':
         specifier: workspace:*
         version: link:../engine-wasm

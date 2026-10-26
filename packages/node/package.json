@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "@typstream/core": "workspace:*",
+    "@typstream/engine": "workspace:*",
     "@typstream/engine-wasm": "workspace:*",
     "@typstream/heal": "workspace:*"
   },

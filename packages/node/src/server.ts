@@ -1,56 +1,38 @@
 // The worker protocol (`@typstream/core`, PLAN §6.1) served from Node, for
-// clients that shouldn't download the engine. Transport-agnostic: a connection
-// takes decoded client messages and hands back server messages;
-// `handleWebSocket` wires one to a socket using core's text codec.
+// clients that shouldn't download the engine. The protocol itself is
+// `@typstream/engine`'s server (#10), the same code that runs in the browser
+// worker; this file gives it an adapter that compiles on the Node engine's
+// worker pool, and a gate for messages from untrusted remote clients.
 //
-// Protocol state (documents, revisions, page hashes) lives here, on the main
-// thread. Pool workers only compile, so the watchdog can kill one without
-// losing a document.
+// Documents (text, files, inputs, page hashes) live here on the main thread.
+// Pool workers only compile, so the watchdog can kill one without losing a
+// document: the compile it stopped reports a `timeout` diagnostic.
 
 import { createHash } from "node:crypto";
 import {
-  type Artifact,
   type ClientMessage,
-  type CompileParams,
-  type CompileResult,
-  type CompileTarget,
-  type Diagnostic,
-  type DocumentEditParams,
-  type DocumentOpenParams,
-  type DocumentParams,
-  type DocumentSetFilesParams,
+  type CompileMode,
   deserializeMessage,
-  type ErrorCode,
-  type ExportParams,
-  type ExportResult,
-  type FileDelta,
-  type InitializeParams,
-  type InitializeResult,
-  normalizeDiagnostics,
-  type PagedArtifact,
-  PROTOCOL_VERSION,
+  type PageUpdate,
   ProtocolError,
-  type Request,
-  type RequestId,
-  type RequestMethod,
-  type Revision,
   type ServerMessage,
-  type ServerNotification,
   serializeMessage,
 } from "@typstream/core";
+import { type AdapterDocument, createServer, type EngineAdapter, TYPST_VERSION } from "@typstream/engine/server";
 import { fileEntry, toVirtualPath } from "./document";
 import { type Compiled, compile, defaultEngine, type NodeEngine } from "./engine";
+import type { JobOp } from "./jobs";
 import type { FileEntry } from "./pool";
 
 /** @public */
 export interface ProtocolServerOptions {
   /** Default: {@link defaultEngine}. */
   engine?: NodeEngine;
-  /** Watchdog budget per compile by `mode`, in ms. Default 3,000 streaming, 10,000 final (PLAN §6.3). */
+  /** Watchdog budget per compile by `mode`, in ms; exports are `final`. Default 3,000 streaming, 10,000 final (PLAN §6.3). */
   timeouts?: { streaming?: number; final?: number };
   /** Open documents per connection. Default 32. */
   maxDocuments?: number;
-  /** Longest document text, in UTF-16 code units. Default 1,000,000 (PLAN §9). */
+  /** Longest `/main.typ` (preamble and text), in UTF-16 code units. Default 1,000,000 (PLAN §9). */
   maxTextLength?: number;
   /** Reported in `initialize`'s `serverInfo`. */
   serverInfo?: { name?: string; version?: string };
@@ -60,7 +42,7 @@ export interface ProtocolServerOptions {
 export interface ProtocolConnection {
   /** Handles a message from the client. Malformed messages are answered (requests) or logged (notifications). */
   receive(message: unknown): void;
-  /** The client went away: drops its documents and queued requests; nothing more is sent. */
+  /** The client went away: drops its queued requests and documents; nothing more is sent. */
   close(): void;
 }
 
@@ -70,401 +52,215 @@ export interface ProtocolServer {
   connect(send: (message: ServerMessage) => void): ProtocolConnection;
 }
 
-const TYPST_VERSION = "0.15.1";
+/** Content hash of a page's SVG, to diff pages that different workers exported. */
+const contentHash = (svg: string): string => createHash("sha1").update(svg).digest("hex");
 
-interface Document {
-  uri: string;
-  rev: Revision;
-  text: string;
-  preamble: string | undefined;
-  files: Map<string, FileEntry>;
-  /** The last paged artifact sent: its revision, every page's hash, and the worker baseline token. */
-  paged: { rev: Revision; hashes: string[]; token: string } | null;
-  /** Affinity key: compiles of this document prefer the same worker. */
-  key: object;
-}
+/**
+ * engine-wasm on the pool as `@typstream/engine`'s `EngineAdapter`, one per
+ * connection. Fonts are the engine's: `initialize`'s fonts and packages are
+ * ignored.
+ */
+const poolAdapter = (engine: NodeEngine, options: ProtocolServerOptions): EngineAdapter => {
+  const maxDocuments = options.maxDocuments ?? 32;
+  const maxTextLength = options.maxTextLength ?? 1_000_000;
+  const budget = (mode: CompileMode = "streaming"): number =>
+    mode === "final" ? (options.timeouts?.final ?? 10_000) : (options.timeouts?.streaming ?? 3_000);
+  let openDocuments = 0;
+  let nextToken = 1;
 
-const pageHash = (svg: string): string => createHash("sha1").update(svg).digest("hex").slice(0, 16);
+  return {
+    info: {
+      name: options.serverInfo?.name ?? "@typstream/node",
+      ...(options.serverInfo?.version ? { version: options.serverInfo.version } : {}),
+      typstVersion: TYPST_VERSION,
+    },
+    targets: ["html", "paged"],
+    exports: ["pdf", "html"],
+    init: async () => {},
 
-/** A page's size in points, from the root `<svg viewBox="0 0 w h">` Typst writes. */
-const pageSize = (svg: string): { width: number; height: number } => {
-  const m = /^<svg[^>]*?\sviewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(svg);
-  return { width: Number(m?.[1] ?? 0), height: Number(m?.[2] ?? 0) };
+    open(): AdapterDocument {
+      if (openDocuments >= maxDocuments) {
+        throw new ProtocolError("invalid-params", `at most ${maxDocuments} documents can be open`);
+      }
+      openDocuments++;
+      let closed = false;
+      let main = "";
+      const files = new Map<string, FileEntry>();
+      let inputs: Record<string, string> = {};
+      /** Compiles of this document prefer the worker that compiled it last. */
+      const affinity = {};
+      /**
+       * Pages as of the last successful paged compile: content hashes by index,
+       * and the token of the worker baseline they match.
+       */
+      let paged: { hashes: string[]; token: string } | null = null;
+
+      const run = (
+        op: JobOp,
+        mode: CompileMode | undefined,
+        extra: { baseline?: string | null; token?: string } = {},
+      ) => compile(engine, { text: main, op, files, inputs, timeoutMs: budget(mode), affinity, ...extra });
+      const timings = (c: Compiled) => ({ compileMs: c.result?.compileMs, exportMs: c.result?.exportMs });
+
+      return {
+        setFiles(delta) {
+          for (const [path, content] of Object.entries(delta)) {
+            if (path === "/main.typ") {
+              const text = typeof content === "string" ? content : "";
+              if (text.length > maxTextLength) {
+                throw new ProtocolError("invalid-params", `the document exceeds ${maxTextLength} UTF-16 code units`);
+              }
+              main = text;
+              continue;
+            }
+            // Throws on paths outside the document; the server answers invalid-params.
+            const virtual = toVirtualPath(path);
+            if (content === null) files.delete(virtual);
+            else files.set(virtual, fileEntry(content));
+          }
+        },
+        setInputs(next) {
+          inputs = { ...next };
+        },
+        async compileHtml(o) {
+          const c = await run("html", o?.mode);
+          return { html: c.ok ? (c.result?.html ?? "") : null, diagnostics: c.diagnostics, ...timings(c) };
+        },
+        async compilePaged({ fullPages, mode }) {
+          // The worker exports only changed pages when its baseline is this document's
+          // last paged compile (same token); otherwise every page.
+          const token = String(nextToken++);
+          const c = await run("svg", mode, { baseline: fullPages ? null : (paged?.token ?? null), token });
+          const r = c.result;
+          if (!c.ok || !r) return { output: null, diagnostics: c.diagnostics, ...timings(c) };
+          const pageCount = r.pageCount ?? 0;
+          const exported = (r.pages ?? []).map((page) => ({ page, content: contentHash(page.svg) }));
+          let hashes: string[];
+          let changed = exported;
+          if (r.full) {
+            hashes = exported.map((p) => p.content);
+            // Every page came back (another worker, or a reset): send the ones that differ.
+            const before = paged;
+            if (!fullPages && before) changed = exported.filter((p) => before.hashes[p.page.index] !== p.content);
+          } else {
+            hashes = (paged?.hashes ?? []).slice(0, pageCount);
+            for (const p of exported) hashes[p.page.index] = p.content;
+          }
+          paged = { hashes, token };
+          const pages: PageUpdate[] = changed.map((p) => p.page);
+          return { output: { pageCount, changed: pages }, diagnostics: c.diagnostics, ...timings(c) };
+        },
+        async exportPdf() {
+          const c = await run("pdf", "final");
+          return { pdf: c.ok ? (c.result?.pdf ?? null) : null, diagnostics: c.diagnostics, ...timings(c) };
+        },
+        close() {
+          if (closed) return;
+          closed = true;
+          openDocuments--;
+        },
+      };
+    },
+  };
 };
 
-// --- param checks: the client is remote and untrusted, so check shapes before using them
+// --- the gate: remote clients are untrusted, so check shapes before the server reads them
 
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
-const isRev = (v: unknown): v is number => Number.isSafeInteger(v);
+const isInt = (v: unknown): v is number => Number.isSafeInteger(v);
+const optional = (v: unknown, check: (v: unknown) => boolean): boolean => v === undefined || check(v);
+const isStringRecord = (v: unknown): boolean => isObject(v) && Object.values(v).every((x) => typeof x === "string");
+const isFiles = (v: unknown): boolean =>
+  isObject(v) && Object.values(v).every((x) => x === null || typeof x === "string" || x instanceof Uint8Array);
+const isEdit = (e: unknown): boolean => isObject(e) && isInt(e.from) && isInt(e.to) && typeof e.insert === "string";
 
-const invalid = (message: string): ProtocolError => new ProtocolError("invalid-params", message);
-
-const documentParams = (p: unknown): DocumentParams => {
-  if (!isObject(p) || typeof p.uri !== "string" || !isRev(p.rev))
-    throw invalid("expected { uri: string, rev: integer }");
-  return p as unknown as DocumentParams;
-};
-
-const fileDelta = (v: unknown): FileDelta => {
-  if (v === undefined) return {};
-  if (!isObject(v)) throw invalid("files must be an object of path → string | bytes | null");
-  for (const [path, data] of Object.entries(v)) {
-    if (data !== null && typeof data !== "string" && !(data instanceof Uint8Array)) {
-      throw invalid(`files["${path}"] must be a string, bytes or null`);
-    }
+/** Why a request's params can't be handled, or `null` if they look right. */
+const paramsProblem = (method: string, p: unknown): string | null => {
+  if (method === "shutdown") return null;
+  if (!isObject(p)) return "params must be an object";
+  if (method === "initialize") {
+    if (typeof p.protocolVersion !== "number") return "protocolVersion must be a number";
+    return optional(p.capabilities, isObject) ? null : "capabilities must be an object";
   }
-  return v as FileDelta;
-};
-
-const stringRecord = (v: unknown, what: string): Record<string, string> | undefined => {
-  if (v === undefined) return undefined;
-  if (!isObject(v) || Object.values(v).some((x) => typeof x !== "string"))
-    throw invalid(`${what} must map names to strings`);
-  return v as Record<string, string>;
+  if (typeof p.uri !== "string" || !isInt(p.rev)) return "expected { uri: string, rev: integer }";
+  switch (method) {
+    case "document/open":
+      if (typeof p.text !== "string") return "text must be a string";
+      if (!optional(p.preamble, (v) => typeof v === "string")) return "preamble must be a string";
+      return optional(p.files, isFiles) ? null : "files must map paths to a string, bytes or null";
+    case "document/edit":
+      return Array.isArray(p.edits) && p.edits.every(isEdit)
+        ? null
+        : "edits must be [{ from: integer, to: integer, insert: string }]";
+    case "document/setFiles":
+      return isFiles(p.files) ? null : "files must map paths to a string, bytes or null";
+    case "compile":
+      if (typeof p.target !== "string") return "target must be a string";
+      if (!optional(p.mode, (v) => v === "streaming" || v === "final")) return 'mode must be "streaming" or "final"';
+      if (!optional(p.fullPages, (v) => typeof v === "boolean")) return "fullPages must be a boolean";
+      return optional(p.inputs, isStringRecord) ? null : "inputs must map names to strings";
+    case "export/pdf":
+    case "export/html":
+      return optional(p.inputs, isStringRecord) ? null : "inputs must map names to strings";
+    default:
+      return null;
+  }
 };
 
 /**
- * Serves the protocol on top of a {@link NodeEngine}. Capabilities: targets
- * `html` and `paged` (with changed-page updates), exports `pdf` and `html`;
- * no `resolve/*` yet. Fonts and packages sent in `initialize` are ignored: the
- * engine's fonts are configured on the server.
+ * Serves the protocol on a {@link NodeEngine}, with `@typstream/engine`'s
+ * server: targets `html` and `paged` (with changed-page updates), exports
+ * `pdf` and `html`; no `resolve/*` yet. Each connection has its own documents.
  * @public
  */
 export const createProtocolServer = (options: ProtocolServerOptions = {}): ProtocolServer => {
   const engine = options.engine ?? defaultEngine();
-  const timeouts = { streaming: options.timeouts?.streaming ?? 3_000, final: options.timeouts?.final ?? 10_000 };
-  const maxDocuments = options.maxDocuments ?? 32;
-  const maxTextLength = options.maxTextLength ?? 1_000_000;
-  let nextToken = 1;
-
   return {
     connect(send) {
-      let state: "new" | "ready" | "shut-down" | "closed" = "new";
-      let pagedDiff = false;
-      const documents = new Map<string, Document>();
-      const queue: { request: Request; t0: number }[] = [];
-      const cancelled = new Set<RequestId>();
-      let running = false;
-
-      const emit = (message: ServerMessage): void => {
-        if (state !== "closed") send(message);
+      let closed = false;
+      /** Requests received and not answered yet: cancelled when the client goes away. */
+      const outstanding = new Set<number>();
+      const server = createServer(poolAdapter(engine, options), (message) => {
+        if ("id" in message) outstanding.delete(message.id);
+        if (!closed) send(message);
+      });
+      const reply = (message: ServerMessage): void => {
+        if (!closed) send(message);
       };
-      const notify = (n: ServerNotification): void => emit(n);
-      const fail = (id: RequestId, code: ErrorCode, message: string, data?: unknown): void =>
-        emit({ id, error: new ProtocolError(code, message, data).toJSON() });
-
-      const open = (p: DocumentParams): Document => {
-        const doc = documents.get(p.uri);
-        if (!doc) throw new ProtocolError("document-not-open", `document ${p.uri} is not open`);
-        return doc;
-      };
-      /** A document at its current revision; compiling an older one is pointless. */
-      const current = (p: DocumentParams): Document => {
-        const doc = open(p);
-        if (p.rev !== doc.rev) {
-          throw new ProtocolError("content-modified", `${p.uri} is at revision ${doc.rev}, not ${p.rev}`);
-        }
-        return doc;
-      };
-      const advance = (doc: Document, rev: unknown): void => {
-        if (!isRev(rev)) throw invalid("rev must be an integer");
-        if (rev <= doc.rev) {
-          throw new ProtocolError("stale-revision", `${doc.uri} is at revision ${doc.rev}; ${rev} is not newer`);
-        }
-        doc.rev = rev;
-      };
-      const checkLength = (text: string): void => {
-        if (text.length > maxTextLength) throw invalid(`document text exceeds ${maxTextLength} UTF-16 code units`);
-      };
-      const applyFiles = (doc: Document, delta: FileDelta): void => {
-        for (const [path, data] of Object.entries(delta)) {
-          let virtual: string;
-          try {
-            virtual = toVirtualPath(path);
-          } catch (error) {
-            throw invalid((error as Error).message);
-          }
-          if (data === null) doc.files.delete(virtual);
-          else doc.files.set(virtual, fileEntry(data));
-        }
-      };
-
-      const pagedArtifact = (doc: Document, compiled: Compiled, token: string, fullPages: boolean): PagedArtifact => {
-        const r = compiled.result;
-        const pageCount = r?.pageCount ?? 0;
-        const exported = (r?.pages ?? []).map((p) => ({ ...p, hash: pageHash(p.svg) }));
-        const previous = doc.paged;
-        let hashes: string[];
-        let changed = exported;
-        if (r?.full) {
-          hashes = exported.map((p) => p.hash);
-        } else {
-          // The worker diffed against `previous` (same token): unlisted pages are unchanged.
-          hashes = (previous?.hashes ?? []).slice(0, pageCount);
-          for (const p of exported) hashes[p.index] = p.hash;
-        }
-        const diff = pagedDiff && !fullPages && previous !== null;
-        if (diff && r?.full) changed = exported.filter((p) => previous.hashes[p.index] !== p.hash);
-        doc.paged = { rev: doc.rev, hashes, token };
-        return {
-          target: "paged",
-          base: diff ? previous.rev : null,
-          pageCount,
-          pages: changed.map((p) => ({ index: p.index, hash: p.hash, ...pageSize(p.svg), svg: p.svg })),
-        };
-      };
-
-      const handlers: { [M in RequestMethod]: (params: unknown, id: RequestId) => Promise<unknown> | unknown } = {
-        initialize: () => {
-          throw invalid("already initialized");
-        },
-        shutdown: () => {
-          documents.clear();
-          state = "shut-down";
-          return null;
-        },
-        "document/open": (raw) => {
-          const p = documentParams(raw) as DocumentOpenParams;
-          if (typeof p.text !== "string") throw invalid("text must be a string");
-          if (p.preamble !== undefined && typeof p.preamble !== "string") throw invalid("preamble must be a string");
-          if (documents.has(p.uri)) throw new ProtocolError("document-already-open", `${p.uri} is already open`);
-          if (documents.size >= maxDocuments) throw invalid(`at most ${maxDocuments} documents can be open`);
-          checkLength(p.text);
-          const doc: Document = {
-            uri: p.uri,
-            rev: p.rev,
-            text: p.text,
-            preamble: p.preamble,
-            files: new Map(),
-            paged: null,
-            key: {},
-          };
-          applyFiles(doc, fileDelta(p.files));
-          documents.set(p.uri, doc);
-          return null;
-        },
-        "document/edit": (raw) => {
-          const p = documentParams(raw) as DocumentEditParams;
-          const doc = open(p);
-          if (!Array.isArray(p.edits)) throw invalid("edits must be an array");
-          let text = doc.text;
-          for (const e of p.edits as unknown[]) {
-            if (!isObject(e) || !isRev(e.from) || !isRev(e.to) || typeof e.insert !== "string") {
-              throw invalid("an edit is { from: integer, to: integer, insert: string }");
-            }
-            if (e.from < 0 || e.from > e.to || e.to > text.length) {
-              throw invalid(`edit [${e.from}, ${e.to}) is outside the text (length ${text.length})`);
-            }
-            text = text.slice(0, e.from) + e.insert + text.slice(e.to);
-          }
-          checkLength(text);
-          advance(doc, p.rev);
-          doc.text = text;
-          return null;
-        },
-        "document/setFiles": (raw) => {
-          const p = documentParams(raw) as DocumentSetFilesParams;
-          const doc = open(p);
-          const delta = fileDelta(p.files);
-          // Check every path before changing anything.
-          for (const path of Object.keys(delta)) {
-            try {
-              toVirtualPath(path);
-            } catch (error) {
-              throw invalid((error as Error).message);
-            }
-          }
-          advance(doc, p.rev);
-          applyFiles(doc, delta);
-          return null;
-        },
-        "document/close": (raw) => {
-          const p = documentParams(raw);
-          open(p);
-          documents.delete(p.uri);
-          return null;
-        },
-        compile: async (raw, _id) => {
-          const p = documentParams(raw) as CompileParams;
-          if (p.target !== "html" && p.target !== "paged") {
-            throw new ProtocolError("unsupported", `target ${String(p.target)} is not supported`);
-          }
-          const target: CompileTarget = p.target;
-          const inputs = stringRecord(p.inputs, "inputs");
-          const doc = current(p);
-          const timeoutMs = p.mode === "final" ? timeouts.final : timeouts.streaming;
-          let compiled: Compiled;
-          let artifact: Artifact | undefined;
-          if (target === "html") {
-            compiled = await compile(engine, {
-              text: doc.text,
-              preamble: doc.preamble,
-              files: doc.files,
-              inputs,
-              op: "html",
-              timeoutMs,
-              affinity: doc.key,
-            });
-            if (compiled.ok && compiled.result?.html !== undefined)
-              artifact = { target: "html", html: compiled.result.html };
-          } else {
-            const fullPages = p.fullPages === true || !pagedDiff;
-            const token = `${nextToken++}`;
-            compiled = await compile(engine, {
-              text: doc.text,
-              preamble: doc.preamble,
-              files: doc.files,
-              inputs,
-              op: "svg",
-              timeoutMs,
-              affinity: doc.key,
-              baseline: fullPages ? null : (doc.paged?.token ?? null),
-              token,
-            });
-            if (compiled.ok && documents.get(doc.uri) === doc)
-              artifact = pagedArtifact(doc, compiled, token, fullPages);
-          }
-          // The document may have been closed while it compiled: then nothing is published.
-          if (documents.get(doc.uri) === doc) {
-            notify({
-              method: "document/diagnostics",
-              params: { uri: doc.uri, rev: p.rev, target, diagnostics: normalizeDiagnostics(compiled.diagnostics) },
-            });
-            if (artifact) notify({ method: "document/artifact", params: { uri: doc.uri, rev: p.rev, artifact } });
-          }
-          const r = compiled.result;
-          const result: Omit<CompileResult, "timings"> & { timings: Partial<CompileResult["timings"]> } = {
-            uri: doc.uri,
-            rev: p.rev,
-            target,
-            status: artifact ? "ok" : "error",
-            timings: {
-              ...(r ? { compileMs: r.compileMs } : {}),
-              ...(r?.exportMs !== undefined ? { exportMs: r.exportMs } : {}),
-            },
-          };
-          return result;
-        },
-        "export/pdf": async (raw) => exportDoc(raw, "pdf"),
-        "export/html": async (raw) => exportDoc(raw, "html"),
-        "resolve/span": () => {
-          throw new ProtocolError("unsupported", "resolve/span is not supported by this server");
-        },
-        "resolve/location": () => {
-          throw new ProtocolError("unsupported", "resolve/location is not supported by this server");
-        },
-      };
-
-      const exportDoc = async (raw: unknown, format: "pdf" | "html"): Promise<ExportResult<Uint8Array | string>> => {
-        const p = documentParams(raw) as ExportParams;
-        const inputs = stringRecord(p.inputs, "inputs");
-        const doc = current(p);
-        const compiled = await compile(engine, {
-          text: doc.text,
-          preamble: doc.preamble,
-          files: doc.files,
-          inputs,
-          op: format,
-          timeoutMs: timeouts.final,
-          affinity: doc.key,
-        });
-        const diagnostics: Diagnostic[] = normalizeDiagnostics(compiled.diagnostics);
-        const data = format === "pdf" ? compiled.result?.pdf : compiled.result?.html;
-        return compiled.ok && data !== undefined
-          ? { uri: doc.uri, rev: p.rev, diagnostics, status: "ok", data }
-          : { uri: doc.uri, rev: p.rev, diagnostics, status: "error" };
-      };
-
-      const initialize = (id: RequestId, raw: unknown): void => {
-        if (!isObject(raw) || typeof raw.protocolVersion !== "number" || !isObject(raw.capabilities)) {
-          fail(id, "invalid-params", "expected { protocolVersion, capabilities }");
-          return;
-        }
-        const p = raw as unknown as InitializeParams;
-        if (p.protocolVersion !== PROTOCOL_VERSION) {
-          fail(id, "protocol-version-mismatch", `this server speaks protocol ${PROTOCOL_VERSION}`, {
-            supported: [PROTOCOL_VERSION],
-          });
-          return;
-        }
-        pagedDiff = p.capabilities.pagedDiff === true;
-        state = "ready";
-        const result: InitializeResult = {
-          protocolVersion: PROTOCOL_VERSION,
-          capabilities: { targets: ["html", "paged"], exports: ["pdf", "html"], pagedDiff: true },
-          serverInfo: {
-            name: options.serverInfo?.name ?? "@typstream/node",
-            ...(options.serverInfo?.version ? { version: options.serverInfo.version } : {}),
-            typstVersion: TYPST_VERSION,
-          },
-        };
-        emit({ id, result });
-      };
-
-      /** Requests run one at a time, in arrival order, so edits and compiles of a document never interleave. */
-      const pump = async (): Promise<void> => {
-        if (running) return;
-        running = true;
-        while (queue.length > 0 && state !== "closed") {
-          const { request, t0 } = queue.shift() as { request: Request; t0: number };
-          const { id, method } = request;
-          if (cancelled.delete(id)) {
-            fail(id, "request-cancelled", `request ${id} was cancelled`);
-            continue;
-          }
-          if (state === "shut-down") {
-            fail(id, "not-initialized", "the server has shut down");
-            continue;
-          }
-          if (method === "initialize" && state === "new") {
-            initialize(id, request.params);
-            continue;
-          }
-          if (state === "new") {
-            fail(id, "not-initialized", "send initialize first");
-            continue;
-          }
-          const handler = handlers[method];
-          try {
-            const result = await handler(request.params, id);
-            if (method === "compile" && isObject(result)) {
-              (result.timings as Record<string, number>).totalMs = performance.now() - t0;
-            }
-            emit({ id, result } as ServerMessage);
-          } catch (error) {
-            if (error instanceof ProtocolError) emit({ id, error: error.toJSON() });
-            else fail(id, "internal", error instanceof Error ? error.message : String(error));
-          }
-        }
-        running = false;
-      };
-
       return {
         receive(message) {
-          if (state === "closed") return;
+          if (closed) return;
           if (!isObject(message) || typeof message.method !== "string") {
-            if (isObject(message) && typeof message.id === "number")
-              fail(message.id, "invalid-params", "malformed message");
-            else notify({ method: "$/log", params: { level: "warn", message: "ignored a malformed message" } });
+            if (isObject(message) && isInt(message.id)) {
+              reply({ id: message.id, error: { code: "invalid-params", message: "malformed message" } });
+            } else reply({ method: "$/log", params: { level: "warn", message: "ignored a malformed message" } });
             return;
           }
-          const m = message as ClientMessage;
-          if (!("id" in m)) {
-            if (m.method === "$/cancel" && isObject(m.params) && typeof m.params.id === "number") {
-              // Only requests that haven't started can be dropped.
-              if (queue.some((q) => q.request.id === m.params.id)) cancelled.add(m.params.id);
+          if (!("id" in message)) {
+            // The only client notification; anything else is ignored.
+            if (message.method === "$/cancel" && isObject(message.params) && isInt(message.params.id)) {
+              server.receive(message as ClientMessage);
             }
             return;
           }
-          if (typeof m.id !== "number") return;
-          if (!(m.method in handlers)) return fail(m.id, "method-not-found", `unknown method ${m.method}`);
-          queue.push({ request: m, t0: performance.now() });
-          void pump();
+          if (!isInt(message.id)) {
+            reply({ method: "$/log", params: { level: "warn", message: "ignored a request without an integer id" } });
+            return;
+          }
+          const problem = paramsProblem(message.method, message.params);
+          if (problem) {
+            reply({ id: message.id, error: { code: "invalid-params", message: problem } });
+            return;
+          }
+          outstanding.add(message.id);
+          server.receive(message as ClientMessage);
         },
         close() {
-          state = "closed";
-          queue.length = 0;
-          documents.clear();
+          if (closed) return;
+          closed = true;
+          // Drop what hasn't started, then free the documents.
+          for (const id of outstanding) server.receive({ method: "$/cancel", params: { id } });
+          server.receive({ id: -1, method: "shutdown", params: null });
         },
       };
     },
@@ -492,13 +288,14 @@ const text = (data: unknown): string => {
 
 /**
  * Serves one WebSocket: each text message is a client message in core's wire
- * format (`serializeMessage` from `@typstream/core`); replies go back the same way.
+ * format (`serializeMessage` from `@typstream/core`); replies go back the same
+ * way. Cap message sizes on the socket server (`ws`'s `maxPayload`).
  *
  * @example
  * ```ts
  * import { WebSocketServer } from "ws";
  * const server = createProtocolServer();
- * new WebSocketServer({ port: 8080 }).on("connection", (ws) => handleWebSocket(ws, server));
+ * new WebSocketServer({ port: 8080, maxPayload: 8 << 20 }).on("connection", (ws) => handleWebSocket(ws, server));
  * ```
  * @public
  */

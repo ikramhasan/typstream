@@ -1,14 +1,10 @@
 // What a document is to the engine: `/main.typ` (an optional preamble, then the
-// text), files under `/`, and `sys.inputs`; and how diagnostics come back to
-// the text's own coordinates.
+// text), files under `/`, and `sys.inputs`. Diagnostics come back to the text's
+// coordinates with `fromMain` from `@typstream/engine/server`, which the
+// protocol server uses too.
 
-import type { Diagnostic, FileContent, Range } from "@typstream/core";
+import type { FileContent } from "@typstream/core";
 import type { FileEntry } from "./pool";
-
-/** Diagnostics inside the preamble report this path in `Diagnostic.file`. */
-export const PREAMBLE_PATH = "/preamble.typ";
-
-const RESERVED = new Set(["/main.typ", PREAMBLE_PATH]);
 
 /**
  * The engine path of a document file: `img/a.png` (relative to the document
@@ -19,7 +15,7 @@ export const toVirtualPath = (path: string): string => {
   const segments = path.split("/").filter((s) => s !== "" && s !== ".");
   if (segments.length === 0 || segments.some((s) => s === "..")) throw new Error(`invalid file path: ${path}`);
   const virtual = `/${segments.join("/")}`;
-  if (RESERVED.has(virtual)) throw new Error(`file path is reserved for the document: ${path}`);
+  if (virtual === "/main.typ") throw new Error(`file path is reserved for the document: ${path}`);
   return virtual;
 };
 
@@ -56,6 +52,7 @@ export const fileEntries = (files: Record<string, FileContent> | undefined): Map
   return out;
 };
 
+/** `/main.typ` and where the document text starts in it. */
 export interface Assembled {
   main: string;
   /** Where the document text starts in `main`. */
@@ -64,26 +61,8 @@ export interface Assembled {
 
 /**
  * `/main.typ` for a document. The preamble goes first, so its set and show
- * rules apply to the text, then a newline so the text starts on a line of its own.
+ * rules apply to the text, then a newline so the text starts on a line of its
+ * own (as `@typstream/engine`'s protocol server does).
  */
 export const assemble = (text: string, preamble?: string): Assembled =>
   preamble ? { main: `${preamble}\n${text}`, offset: preamble.length + 1 } : { main: text, offset: 0 };
-
-/**
- * Moves diagnostics from `main` back to the document text. A position inside
- * the preamble isn't in the text: the diagnostic's `file` then points into the
- * preamble and `span` falls back to the nearest call site in the text, from
- * the trace (as engine-wasm does for other files).
- */
-export const toDocument = (diagnostics: readonly Diagnostic[], { offset }: Assembled): Diagnostic[] => {
-  if (offset === 0) return [...diagnostics];
-  const shift = (r: Range | null): Range | null =>
-    r && r.from >= offset ? { from: r.from - offset, to: r.to - offset } : null;
-  return diagnostics.map((d) => {
-    const trace = d.trace.map((t) => ({ ...t, span: shift(t.span) }));
-    const span = shift(d.span);
-    if (span || !d.span) return { ...d, span, trace };
-    const callSite = trace.find((t) => t.span)?.span ?? null;
-    return { ...d, span: callSite, trace, file: d.file ?? { path: PREAMBLE_PATH, span: d.span } };
-  });
-};

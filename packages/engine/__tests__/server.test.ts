@@ -71,8 +71,8 @@ describe("fromMain", () => {
   });
 });
 
-/** An adapter whose compiles are scripted by the source text. */
-const scripted = (options: { init?: () => Promise<void> } = {}): EngineAdapter => ({
+/** An adapter whose compiles are scripted by the source text. `modes` records each compile's mode. */
+const scripted = (options: { init?: () => Promise<void>; modes?: unknown[] } = {}): EngineAdapter => ({
   info: { name: "scripted", typstVersion: "0.15.1" },
   targets: ["html"],
   exports: [],
@@ -87,7 +87,8 @@ const scripted = (options: { init?: () => Promise<void> } = {}): EngineAdapter =
         }
       },
       setInputs() {},
-      compileHtml() {
+      compileHtml(o) {
+        options.modes?.push(o?.mode);
         // A wasm trap is how a Typst panic surfaces.
         if (main.includes("PANIC")) throw new WebAssembly.RuntimeError("unreachable");
         if (main.includes("THROW")) throw new Error("adapter bug");
@@ -144,6 +145,26 @@ describe("server", () => {
     await s.settle();
     expect(s.out.at(-1)).toEqual({ id: 4, result: null });
     expect(s.fatal).toHaveLength(1);
+  });
+
+  it("tells the adapter each compile's mode: the request's, streaming by default, final for exports", async () => {
+    const modes: unknown[] = [];
+    const s = direct({ ...scripted({ modes }), exports: ["html"] });
+    s.send({ id: 1, method: "initialize", params: { protocolVersion: 1, capabilities: {} } });
+    s.send({ id: 2, method: "document/open", params: { uri: "a", rev: 1, text: "x" } });
+    s.send({ id: 3, method: "compile", params: { uri: "a", rev: 1, target: "html" } });
+    s.send({ id: 4, method: "compile", params: { uri: "a", rev: 1, target: "html", mode: "final" } });
+    s.send({ id: 5, method: "export/html", params: { uri: "a", rev: 1 } });
+    await s.settle();
+    expect(modes).toEqual(["streaming", "final", "final"]);
+  });
+
+  it("answers unknown methods with method-not-found", async () => {
+    const s = direct(scripted());
+    s.send({ id: 1, method: "initialize", params: { protocolVersion: 1, capabilities: {} } });
+    s.send({ id: 2, method: "nope" as "shutdown", params: null });
+    await s.settle();
+    expect(s.out.at(-1)).toEqual({ id: 2, error: { code: "method-not-found", message: "unknown method nope" } });
   });
 
   it("refuses targets it lacks and file paths the adapter can't hold", async () => {

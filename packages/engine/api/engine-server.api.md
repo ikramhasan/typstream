@@ -5,6 +5,7 @@
 ```ts
 
 import { ClientMessage } from '@typstream/core';
+import { CompileMode } from '@typstream/core';
 import { CompileTarget } from '@typstream/core';
 import { Diagnostic } from '@typstream/core';
 import { ExportFormat } from '@typstream/core';
@@ -13,6 +14,12 @@ import { InitializeOptions } from '@typstream/core';
 import { InitInput } from '@typstream/engine-wasm';
 import { PageUpdate } from '@typstream/core';
 import { ServerMessage } from '@typstream/core';
+
+// @public
+export interface AdapterCompileOptions {
+    // (undocumented)
+    mode?: CompileMode;
+}
 
 // @public
 export interface AdapterCompileResult {
@@ -24,10 +31,10 @@ export interface AdapterCompileResult {
 // @public
 export interface AdapterDocument {
     close(): void;
-    compileHtml(): MaybePromise<AdapterHtmlResult>;
+    compileHtml(options?: AdapterCompileOptions): MaybePromise<AdapterHtmlResult>;
     compilePaged(options: {
         fullPages: boolean;
-    }): MaybePromise<AdapterPagedResult>;
+    } & AdapterCompileOptions): MaybePromise<AdapterPagedResult>;
     exportPdf?(): MaybePromise<AdapterCompileResult & {
         pdf: Uint8Array | null;
     }>;
@@ -93,6 +100,9 @@ export interface EngineWasmOptions {
 
 // @public
 export type FontInput = string | URL | Uint8Array;
+
+// @public
+export const fromMain: (d: Diagnostic, offset: number) => Diagnostic;
 
 export { InitInput }
 

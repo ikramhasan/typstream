@@ -11,6 +11,7 @@ export default defineConfig({
     // Test against the source of sibling packages, not their builds (engine-wasm has no source to alias).
     alias: {
       "@typstream/core": new URL("../core/src/index.ts", import.meta.url).pathname,
+      "@typstream/engine/server": new URL("../engine/src/server.ts", import.meta.url).pathname,
       "@typstream/heal": new URL("../heal/src/index.ts", import.meta.url).pathname,
       "@typstream/corpus": new URL("../../corpus/src/index.ts", import.meta.url).pathname,
     },

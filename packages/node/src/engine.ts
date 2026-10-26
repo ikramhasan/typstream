@@ -4,7 +4,8 @@
 
 import { availableParallelism } from "node:os";
 import type { Diagnostic, FileContent } from "@typstream/core";
-import { type Assembled, assemble, fileEntries, toDocument } from "./document";
+import { fromMain } from "@typstream/engine/server";
+import { type Assembled, assemble, fileEntries } from "./document";
 import { type FontOptions, loadFonts } from "./fonts";
 import type { JobOp, JobResult } from "./jobs";
 import { EnginePool, type FileEntry } from "./pool";
@@ -74,7 +75,7 @@ export const defaultEngine = (): NodeEngine => {
 
 /** Options every compile takes. @public */
 export interface DocumentOptions {
-  /** Typst evaluated before the document (theme, imports). Diagnostics inside it carry `file: { path: "/preamble.typ" }`. */
+  /** Typst evaluated before the document (theme, imports). Diagnostics inside it carry `file: { path: "<preamble>" }`. */
   preamble?: string;
   /** Files the document reads (images, data, other `.typ` files), by path relative to the document. */
   files?: Record<string, FileContent>;
@@ -141,7 +142,7 @@ export const compile = async (engine: NodeEngine, req: CompileRequest): Promise<
     case "done":
       return {
         ok: outcome.result.ok,
-        diagnostics: toDocument(outcome.result.diagnostics, assembled),
+        diagnostics: outcome.result.diagnostics.map((d) => fromMain(d, assembled.offset)),
         result: outcome.result,
         ms: outcome.ms,
       };

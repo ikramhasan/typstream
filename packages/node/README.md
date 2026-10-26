@@ -40,7 +40,7 @@ if (result.ok) {
 
 Options every compile takes: `preamble` (Typst evaluated before the document), `files` (images, data and `.typ` files by relative path), `inputs` (`sys.inputs`), `timeoutMs`, `engine`.
 
-Positions in diagnostics are UTF-16 offsets into `source`, as everywhere in typstream. Diagnostics inside the preamble carry `file: { path: "/preamble.typ" }`.
+Positions in diagnostics are UTF-16 offsets into `source`, as everywhere in typstream. Diagnostics inside the preamble carry `file: { path: "<preamble>" }`.
 
 ### Engine
 
@@ -68,13 +68,17 @@ The bundled fonts are Libertinus Serif, New Computer Modern and DejaVu Sans Mono
 import { WebSocketServer } from "ws";
 import { createProtocolServer, handleWebSocket } from "@typstream/node";
 
-const server = createProtocolServer({ timeouts: { streaming: 3_000, final: 10_000 } });
-new WebSocketServer({ port: 8080 }).on("connection", (ws) => handleWebSocket(ws, server));
+const server = createProtocolServer({ timeouts: { streaming: 3_000, final: 10_000 }, maxDocuments: 32 });
+new WebSocketServer({ port: 8080, maxPayload: 8 << 20 }).on("connection", (ws) => handleWebSocket(ws, server));
 ```
 
-Each connection is a session with its own documents. Messages are JSON, with bytes as `{ "$bytes": "<base64>" }`; `serializeMessage` / `deserializeMessage` from `@typstream/core` read and write them in the browser. The server offers HTML and paged targets (with changed-page updates) and PDF and HTML exports. It doesn't offer `resolve/*`.
+The protocol is served by `@typstream/engine`'s server, the same code that runs in the browser worker, over an adapter that compiles on this package's worker pool.
 
-Protocol state lives on the main thread and workers only compile, so a watchdog kill costs one compile, not the session.
+- **Sessions:** each connection is a session with its own documents. Closing the socket cancels its queued requests and frees its documents.
+- **Wire format:** JSON, with bytes as `{ "$bytes": "<base64>" }`. `serializeMessage` / `deserializeMessage` from `@typstream/core` read and write it in the browser.
+- **What it offers:** HTML and paged targets (with changed-page updates), PDF and HTML exports. No `resolve/*`.
+- **Untrusted clients:** messages are checked before the server reads them, and too many documents or too long a text answer `invalid-params`.
+- **Watchdog:** documents live on the main thread and workers only compile, so a watchdog kill costs one compile, not the session.
 
 ## Building and testing
 
@@ -84,4 +88,4 @@ Protocol state lives on the main thread and workers only compile, so a watchdog 
 - the whole corpus through `validate`, with page counts checked against native Typst's;
 - the watchdog and crash recovery;
 - `fixLoop` with a scripted model;
-- the protocol conformance suite (`__tests__/support/conformance.ts`), in-process and over a real WebSocket.
+- `@typstream/engine`'s protocol conformance suite, in-process and over a real WebSocket, plus the server's own behaviour (watchdog per mode, malformed input, limits, disconnects).
