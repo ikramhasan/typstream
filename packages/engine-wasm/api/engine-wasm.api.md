@@ -33,6 +33,7 @@ export class Engine {
     add_font(bytes: Uint8Array): number;
     check_paged(): CheckResult;
     compile_html(): HtmlResult;
+    compile_pdf(): PdfResult;
     compile_svg_changed(): SvgChangedResult;
     static features(): string[];
     // (undocumented)
@@ -72,6 +73,8 @@ export interface InitOutput {
     // (undocumented)
     readonly engine_compile_html: (a: number) => number;
     // (undocumented)
+    readonly engine_compile_pdf: (a: number) => number;
+    // (undocumented)
     readonly engine_compile_svg_changed: (a: number) => number;
     // (undocumented)
     readonly engine_features: (a: number) => void;
@@ -95,6 +98,9 @@ export interface InitOutput {
 
 // @public
 export function initSync(module: { module: SyncInitInput } | SyncInitInput): InitOutput;
+
+// @public
+export type PdfResult = { ok: boolean; pdf?: Uint8Array; pageCount?: number; diagnostics: Diagnostic[]; ms: number };
 
 // @public
 type Range_2 = { from: number; to: number };

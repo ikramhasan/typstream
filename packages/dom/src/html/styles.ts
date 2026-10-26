@@ -2,6 +2,8 @@
 // (class `typstream`, the scope html-compat's CSS uses too) and wrapped in
 // :where(), so an app's own rules win without !important.
 
+import { THEME_CSS } from "./theme";
+
 /** Typst's MathML rules (typst-html 0.15.1, src/mathml.rs), which its export puts in <head>, scoped. */
 export const TYPST_MATH_CSS = `/* Alignment */
 :where(.typstream) mtable.right-align mtd,
@@ -80,37 +82,7 @@ export const TYPST_MATH_CSS = `/* Alignment */
  * MathML rules. The renderer injects it unless told not to.
  * @public
  */
-export const htmlRendererCss: string = `/* Theme. "auto" follows the page's color-scheme; set color-scheme: light dark on it to follow the OS. */
-:where(.typstream) {
-  --typstream-foreground: light-dark(#1c1c1e, #e8e8ea);
-  --typstream-muted: light-dark(#5c5c63, #a4a4ab);
-  --typstream-link: light-dark(#1d4ed8, #8ab4ff);
-  --typstream-highlight: light-dark(#fff2a8, #6b5b00);
-  --typstream-caret-color: currentColor;
-  color: var(--typstream-foreground);
-  overflow-wrap: break-word;
-}
-:where(.typstream[data-typstream-theme="light"]) {
-  color-scheme: light;
-}
-:where(.typstream[data-typstream-theme="dark"]) {
-  color-scheme: dark;
-}
-:where(.typstream) a {
-  color: var(--typstream-link);
-}
-:where(.typstream) mark {
-  background: var(--typstream-highlight);
-  color: inherit;
-}
-:where(.typstream) figcaption {
-  color: var(--typstream-muted);
-}
-:where(.typstream) img,
-:where(.typstream) svg {
-  max-width: 100%;
-}
-
+export const htmlRendererCss: string = `${THEME_CSS}
 /* Word fade-in. Durations and easing are set on the root; each word has its own delay. */
 @keyframes typstream-fadeIn {
   from {

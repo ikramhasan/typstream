@@ -104,6 +104,9 @@ export interface MountedTypstream {
     destroy(): void;
     readonly document: EngineDocument | null;
     readonly element: HTMLElement;
+    exportHtml(options?: StandaloneHtmlOptions): Promise<string>;
+    exportPdf(): Promise<Uint8Array>;
+    exportSource(): string;
     getState(): DocumentState | null;
     subscribe(listener: () => void): () => void;
     update(options: TypstreamOptions): void;
@@ -155,6 +158,17 @@ export interface RenderedInfo {
     // (undocumented)
     target: CompileTarget;
     timings: CompileTimings | null;
+}
+
+// @public
+export const standaloneHtml: (html: string, options?: StandaloneHtmlOptions) => string;
+
+// @public
+export interface StandaloneHtmlOptions {
+    mathFont?: Uint8Array | string | URL;
+    stylesheets?: readonly string[];
+    theme?: "light" | "dark" | "auto";
+    title?: string;
 }
 
 // @public

@@ -8,7 +8,7 @@
 // engine-wasm.
 
 import { parentPort, workerData } from "node:worker_threads";
-import { Engine, initSync } from "@typstream/engine-wasm/pdf";
+import { Engine, initSync } from "@typstream/engine-wasm";
 import type { Job, JobResult, WorkerInit, WorkerReply, WorkerRequest } from "./jobs";
 
 const { module, fonts } = workerData as WorkerInit;

@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 // mountTypstream without a framework, in each browser, on the real engine
 // worker: options applied with update(), files changed in place, a failing
-// stream, and destroy(). @typstream/react's browser tests cover the rest
+// stream, exports, and destroy(). @typstream/react's browser tests cover the rest
 // through <Typstream>.
 
 import type { DocumentState, Engine } from "@typstream/engine";
@@ -96,6 +96,48 @@ describe(`mountTypstream in ${browser}`, () => {
     expect(view.document).not.toBe(doc);
     await until(view, (s) => s.status === "done");
     expect(el.textContent).toContain("beta");
+    view.destroy();
+    el.remove();
+  });
+
+  it("exports at the document's own page size, a standalone HTML file, and the source", async () => {
+    const el = host();
+    el.style.width = "300px";
+    const source = "= Worksheet\nSolve $x^2 = 4$.";
+    const view = mountTypstream(el, {
+      engine,
+      source,
+      target: "paged",
+      layout: "fit-width",
+      inputs: { answers: "true" },
+      stylesheets: [".marker { color: red }"],
+      lazy: false,
+    });
+    const shown = await until(view, (s) => s.status === "done" && s.artifact?.target === "paged");
+    // The preview is as wide as the element (300 px = 225 pt)…
+    expect(shown.artifact?.target === "paged" && shown.artifact.pages[0]?.width).toBeCloseTo(225, 0);
+    // …and the PDF is A4, Typst's default.
+    const pdf = new TextDecoder("latin1").decode(await view.exportPdf());
+    const [width, height] = (/\/MediaBox\s*\[\s*0 0 ([\d.]+) ([\d.]+)/.exec(pdf) ?? []).slice(1).map(Number);
+    expect(width).toBeCloseTo(595.28, 1);
+    expect(height).toBeCloseTo(841.89, 1);
+    const file = await view.exportHtml({ title: "Worksheet" });
+    expect(file).toContain('<meta http-equiv="Content-Security-Policy"');
+    expect(file).toContain(".marker { color: red }");
+    expect(file).toContain("<h2>Worksheet</h2>");
+    expect(view.exportSource()).toBe(source);
+    view.destroy();
+    el.remove();
+  });
+
+  it("opens a lazy document that hasn't opened yet to export it", async () => {
+    const el = host();
+    el.style.cssText = "position: absolute; top: 100000px";
+    const view = mountTypstream(el, { engine, source: "Far below." });
+    expect(view.document).toBeNull();
+    const pdf = await view.exportPdf();
+    expect(new TextDecoder().decode(pdf.subarray(0, 5))).toBe("%PDF-");
+    expect(view.document).not.toBeNull();
     view.destroy();
     el.remove();
   });

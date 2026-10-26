@@ -70,8 +70,8 @@ export interface AdapterDocument {
    * time). A failed compile keeps what the next one diffs against.
    */
   compilePaged(options: { fullPages: boolean } & AdapterCompileOptions): MaybePromise<AdapterPagedResult>;
-  /** Only when the adapter's `exports` include `"pdf"`. */
-  exportPdf?(): MaybePromise<AdapterCompileResult & { pdf: Uint8Array | null }>;
+  /** Compiles paged output to PDF. Only when the adapter's `exports` include `"pdf"`; always `final` mode. */
+  exportPdf?(options?: AdapterCompileOptions): MaybePromise<AdapterCompileResult & { pdf: Uint8Array | null }>;
   /** Frees the document. */
   close(): void;
 }

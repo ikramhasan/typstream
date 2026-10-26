@@ -10,8 +10,10 @@ export type {
   DocumentState,
   DocumentStatus,
   EngineDocument,
+  ExportOptions,
   WatchdogOptions,
 } from "./document";
+export { ExportError } from "./document";
 export {
   createEngine,
   DEFAULT_RECYCLE_BYTES,

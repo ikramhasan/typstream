@@ -2,7 +2,7 @@ import type { CompileParams, DocumentOpenParams, HtmlArtifact, PagedArtifact } f
 import { heal } from "@typstream/heal";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fromWorker, type WorkerLike } from "../src/connection";
-import type { DocumentState } from "../src/document";
+import { type DocumentState, ExportError } from "../src/document";
 import { createEngine, type EngineEvent, type EngineOptions } from "../src/engine";
 import { compileInterval, DEFAULT_SCHEDULE, updateEma } from "../src/schedule";
 import { type FakeOptions, FakeWorkers } from "./support/fake-worker";
@@ -457,6 +457,132 @@ describe("dispose", () => {
     expect(workers.alive).toEqual([]);
     await tick(500);
     expect(() => engine.open()).toThrow(/disposed/);
+  });
+});
+
+describe("exports", () => {
+  const text = (pdf: Uint8Array) => new TextDecoder().decode(pdf);
+
+  it("syncs the worker and exports the healed source before waiting compiles", async () => {
+    const { workers, engine } = setup();
+    const doc = engine.open({ text: "Hello" });
+    await tick(100);
+    doc.push(" *wor");
+    const pdf = doc.exportPdf();
+    await tick(100);
+    expect(text(await pdf)).toBe("%PDF Hello *wor*");
+    const worker = workers.alive[0];
+    const methods = worker?.received.map((m) => m.method) ?? [];
+    // The edit, then the export, then the compile of the same source for the preview.
+    expect(methods.slice(methods.indexOf("document/edit"))).toEqual(["document/edit", "export/pdf", "compile"]);
+    expect(worker?.requests("export/pdf")[0]?.params).toEqual({ uri: doc.uri, rev: 2 });
+    expect(html(doc.getState())).toBe("<p>Hello *wor*</p>");
+  });
+
+  it("exports HTML, and the source exports compile", async () => {
+    const { engine } = setup();
+    const doc = engine.open({ text: "```typst\nHi *there" });
+    expect(doc.exportSource()).toBe("Hi *there*");
+    const page = doc.exportHtml();
+    await tick(100);
+    expect(await page).toBe("<html><body><p>Hi *there*</p></body></html>");
+    doc.finish();
+    expect(doc.exportSource()).toBe("Hi *there");
+  });
+
+  it("opens the document in a worker that doesn't have it yet", async () => {
+    const { workers, engine } = setup();
+    const doc = engine.open({ text: "Fresh", preamble: "#set page(width: 10cm)" });
+    const pdf = doc.exportPdf();
+    await tick(100);
+    expect(text(await pdf)).toBe("%PDF Fresh");
+    // The export went first; the preview's first compile follows, with nothing more to send.
+    const methods = workers.alive[0]?.received.map((m) => m.method);
+    expect(methods).toEqual(["initialize", "document/open", "export/pdf", "compile"]);
+    expect(html(doc.getState())).toBe("<p>Fresh</p>");
+  });
+
+  it("uses the document's inputs unless given others", async () => {
+    const { workers, engine } = setup();
+    const doc = engine.open({ text: "Hi", inputs: { answers: "true", "typstream-page-width": "300" } });
+    await tick(100);
+    const exports = [doc.exportPdf(), doc.exportHtml({ inputs: { answers: "true" } })];
+    await tick(100);
+    await Promise.all(exports);
+    const sent = workers.alive[0]?.received.filter((m) => m.method.startsWith("export/"));
+    expect(sent?.map((m) => (m.params as { inputs?: unknown }).inputs)).toEqual([
+      { answers: "true", "typstream-page-width": "300" },
+      { answers: "true" },
+    ]);
+  });
+
+  it("rejects with diagnostics in input coordinates when the document has errors", async () => {
+    const { engine } = setup();
+    const doc = engine.open({ text: "```typst\nSee ERROR" });
+    const pdf = doc.exportPdf().catch((e: unknown) => e);
+    await tick(100);
+    const error = await pdf;
+    expect(error).toBeInstanceOf(ExportError);
+    expect(error).toMatchObject({ reason: "diagnostics", message: "unknown variable: ERROR" });
+    expect((error as ExportError).diagnostics.map((d) => d.span)).toEqual([{ from: 13, to: 18 }]);
+  });
+
+  it("rejects formats the engine doesn't offer", async () => {
+    const { engine } = setup({ exports: ["html"] });
+    const doc = engine.open({ text: "Hi" });
+    const pdf = doc.exportPdf().catch((e: unknown) => e);
+    await tick(100);
+    expect(await pdf).toMatchObject({ reason: "unsupported" });
+    expect(await engine.ready).toMatchObject({ capabilities: { exports: ["html"] } });
+  });
+
+  it("stops an export past the final budget, and continues on the spare", async () => {
+    const { workers, engine, events } = setup();
+    const doc = engine.open({ text: "ok" });
+    await tick(100);
+    doc.set("LOOP");
+    const pdf = doc.exportPdf().catch((e: unknown) => e);
+    await tick(10);
+    doc.set("fine");
+    await tick(9900);
+    expect(workers.spawned[0]?.terminated).toBe(false);
+    await tick(200);
+    expect(await pdf).toMatchObject({ reason: "timeout", message: "Exporting took longer than 10000 ms." });
+    expect(events.find((e) => e.type === "watchdog")).toMatchObject({ uri: doc.uri, budgetMs: 10_000 });
+    expect(workers.spawned[0]?.terminated).toBe(true);
+    // An export isn't a strike against live compiling; the compile waiting behind it runs on the spare.
+    await tick(100);
+    expect(doc.getState()).toMatchObject({ status: "idle", live: true, failure: null });
+    expect(html(doc.getState())).toBe("<p>fine</p>");
+  });
+
+  it("rejects when the worker crashes during the export", async () => {
+    const { engine } = setup();
+    const doc = engine.open({ text: "ok" });
+    await tick(100);
+    doc.set("CRASH");
+    const page = doc.exportHtml().catch((e: unknown) => e);
+    await tick(100);
+    expect(await page).toMatchObject({ reason: "crash" });
+  });
+
+  it("rejects exports of a disposed document or engine", async () => {
+    const { workers, engine } = setup();
+    const doc = engine.open({ text: "ok" });
+    const queued = doc.exportPdf().catch((e: unknown) => e);
+    doc.dispose();
+    await tick(100);
+    expect(await queued).toMatchObject({ reason: "engine", message: "The document was disposed." });
+    expect(await doc.exportPdf().catch((e: unknown) => e)).toMatchObject({ reason: "engine" });
+    await tick(100);
+    expect(workers.spawned[0]?.requests("export/pdf")).toEqual([]);
+
+    const other = engine.open({ text: "ok" });
+    await tick(100);
+    const pending = other.exportHtml().catch((e: unknown) => e);
+    engine.dispose();
+    await tick(100);
+    expect(await pending).toMatchObject({ reason: "engine" });
   });
 });
 

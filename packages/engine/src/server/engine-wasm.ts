@@ -4,7 +4,7 @@
 // memoization cache. Fonts are fetched once and added to every document's
 // engine (each copies them into wasm memory; sharing them is #11).
 
-import type { FontSource } from "@typstream/core";
+import type { ExportFormat, FontSource } from "@typstream/core";
 import initWasm, { Engine, type InitInput } from "@typstream/engine-wasm";
 import type { AdapterDocument, EngineAdapter } from "./adapter";
 
@@ -46,15 +46,20 @@ const fontInput = (font: FontSource): FontInput => (font.kind === "url" ? font.u
 
 /**
  * The engine-wasm {@link EngineAdapter}. Targets HTML and paged (changed-page
- * SVG); exports HTML. PDF is a separate build (#18).
+ * SVG); exports HTML, and PDF when the wasm has it (engine-wasm's own build
+ * does, #18; a custom `wasm` built without the `pdf` feature doesn't).
  * @public
  */
 export const engineWasm = (options: EngineWasmOptions = {}): EngineAdapter => {
   let fonts: Uint8Array[] = [];
+  let exports: ExportFormat[] = ["html"];
   return {
     info: { name: "engine-wasm", typstVersion: TYPST_VERSION },
     targets: ["html", "paged"],
-    exports: ["html"],
+    // Known once the wasm is loaded; the server reads it after `init`.
+    get exports() {
+      return exports;
+    },
 
     async init(init) {
       const [, loaded] = await Promise.all([
@@ -63,6 +68,7 @@ export const engineWasm = (options: EngineWasmOptions = {}): EngineAdapter => {
         Promise.all([...(options.fonts ?? []), ...(init.fonts ?? []).map(fontInput)].map(loadFont)),
       ]);
       fonts = loaded;
+      if (Engine.features().includes("pdf")) exports = ["html", "pdf"];
     },
 
     open(): AdapterDocument {
@@ -91,6 +97,10 @@ export const engineWasm = (options: EngineWasmOptions = {}): EngineAdapter => {
             compileMs: r.compileMs,
             exportMs: r.exportMs,
           };
+        },
+        exportPdf() {
+          const r = engine.compile_pdf();
+          return { pdf: r.ok ? (r.pdf ?? null) : null, diagnostics: r.diagnostics, compileMs: r.ms };
         },
         close: () => engine.free(),
       };

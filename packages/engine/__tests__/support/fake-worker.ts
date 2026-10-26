@@ -8,7 +8,8 @@
 //   CRASH  → the worker fails outside the protocol (an `error` event)
 //
 // Paged artifacts have one page per paragraph (split on blank lines) and send
-// only changed pages, diffing against the previous paged artifact.
+// only changed pages, diffing against the previous paged artifact. Exports
+// follow the same markers; a PDF is the bytes of `%PDF ` and the text.
 
 import {
   applyEdit,
@@ -16,6 +17,9 @@ import {
   type CompileParams,
   type CompileResult,
   type Diagnostic,
+  type ExportFormat,
+  type ExportParams,
+  type ExportResult,
   type InitializeResult,
   isRequest,
   type PageUpdate,
@@ -35,6 +39,8 @@ export interface FakeOptions {
   memoryBytes?: (compiles: number) => number | undefined;
   /** `initialize` answers with this protocol version. */
   protocolVersion?: number;
+  /** The export formats offered. Default HTML and PDF. */
+  exports?: ExportFormat[];
 }
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -109,7 +115,11 @@ export class FakeWorker implements EngineConnection {
         await sleep(this.options.initMs ?? 50);
         const result: InitializeResult = {
           protocolVersion: this.options.protocolVersion ?? PROTOCOL_VERSION,
-          capabilities: { targets: ["html", "paged"], exports: [], pagedDiff: true },
+          capabilities: {
+            targets: ["html", "paged"],
+            exports: this.options.exports ?? ["html", "pdf"],
+            pagedDiff: true,
+          },
           serverInfo: { name: "fake", typstVersion: "0.15.1" },
         };
         return this.respond({ id: req.id, result });
@@ -142,9 +152,59 @@ export class FakeWorker implements EngineConnection {
         return this.respond({ id: req.id, result: null });
       case "compile":
         return this.compile(req.id, req.params);
+      case "export/pdf":
+        return this.export(req.id, "pdf", req.params);
+      case "export/html":
+        return this.export(req.id, "html", req.params);
       default:
         return this.respond({ id: req.id, error: { code: "method-not-found", message: req.method } });
     }
+  }
+
+  /** Runs a compile or export of `text`: false if it never finishes (LOOP, CRASH). */
+  private async work(text: string): Promise<boolean> {
+    if (text.includes("CRASH")) {
+      await sleep(1);
+      this.events.error(new Error("worker crashed"));
+      return false;
+    }
+    if (text.includes("LOOP")) return false;
+    await sleep(this.options.compileMs?.(text) ?? 10);
+    return !this.terminated;
+  }
+
+  private errors(text: string): Diagnostic[] {
+    const at = text.indexOf("ERROR");
+    return at < 0
+      ? []
+      : [
+          {
+            severity: "error",
+            span: { from: at, to: at + 5 },
+            message: "unknown variable: ERROR",
+            hints: [],
+            trace: [],
+          },
+        ];
+  }
+
+  private async export(id: number, format: ExportFormat, p: ExportParams): Promise<void> {
+    const doc = this.docs.get(p.uri);
+    if (!doc) return this.respond({ id, error: { code: "document-not-open", message: p.uri } });
+    if (p.rev !== doc.rev) return this.respond({ id, error: { code: "content-modified", message: "" } });
+    if (!(this.options.exports ?? ["html", "pdf"]).includes(format)) {
+      return this.respond({ id, error: { code: "unsupported", message: `fake doesn't support ${format} export` } });
+    }
+    const text = doc.text;
+    if (!(await this.work(text))) return new Promise(() => {});
+    const diagnostics = this.errors(text);
+    const data =
+      format === "pdf" ? new TextEncoder().encode(`%PDF ${text}`) : `<html><body><p>${text}</p></body></html>`;
+    const result: ExportResult<Uint8Array | string> =
+      diagnostics.length > 0
+        ? { uri: p.uri, rev: p.rev, diagnostics, status: "error" }
+        : { uri: p.uri, rev: p.rev, diagnostics, status: "ok", data };
+    this.respond({ id, result } as Response);
   }
 
   private async compile(id: number, p: CompileParams): Promise<void> {
@@ -154,32 +214,12 @@ export class FakeWorker implements EngineConnection {
     this.running++;
     this.maxRunning = Math.max(this.maxRunning, this.running);
     const text = doc.text;
-    if (text.includes("CRASH")) {
-      await sleep(1);
-      this.events.error(new Error("worker crashed"));
-      return new Promise(() => {});
-    }
-    if (text.includes("LOOP")) return new Promise(() => {});
-    const ms = this.options.compileMs?.(text) ?? 10;
-    await sleep(ms);
-    if (this.terminated) return;
+    if (!(await this.work(text))) return new Promise(() => {});
     this.running--;
     this.compiles++;
-    const at = text.indexOf("ERROR");
-    const diagnostics: Diagnostic[] =
-      at < 0
-        ? []
-        : [
-            {
-              severity: "error",
-              span: { from: at, to: at + 5 },
-              message: "unknown variable: ERROR",
-              hints: [],
-              trace: [],
-            },
-          ];
+    const diagnostics = this.errors(text);
     this.post({ method: "document/diagnostics", params: { uri: p.uri, rev: p.rev, target: p.target, diagnostics } });
-    const ok = at < 0;
+    const ok = diagnostics.length === 0;
     if (ok && p.target === "html") {
       this.post({
         method: "document/artifact",
@@ -207,7 +247,7 @@ export class FakeWorker implements EngineConnection {
       rev: p.rev,
       target: p.target,
       status: ok ? "ok" : "error",
-      timings: { totalMs: ms },
+      timings: { totalMs: this.options.compileMs?.(text) ?? 10 },
     };
     const memoryBytes = this.options.memoryBytes?.(this.compiles);
     if (memoryBytes !== undefined) result.memoryBytes = memoryBytes;

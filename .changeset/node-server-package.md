@@ -11,4 +11,4 @@ New package `@typstream/node` (#22): `validate` and `render` (PDF, HTML, SVG) on
 
 `@typstream/engine`'s server passes each compile's `mode` to the adapter (`AdapterCompileOptions`; exports are `final`), answers unknown methods with `method-not-found`, and exports `fromMain`. `@typstream/node` serves the protocol with it.
 
-`@typstream/engine-wasm` adds `check_paged()` (a paged compile without export) and a second build with PDF export, `@typstream/engine-wasm/pdf`.
+`@typstream/engine-wasm` adds `check_paged()` (a paged compile without export) and PDF export (`compile_pdf()`).

@@ -2,18 +2,13 @@
 # Builds the engine into dist/:
 #   engine.js        wasm-bindgen --target web glue (ES module; default export = async init, plus initSync)
 #   engine.d.ts      types, including the result and Diagnostic types
-#   engine_bg.wasm   release build after wasm-opt -Oz: HTML + SVG, what browsers load
-#   pdf/             the same three files built with the `pdf` feature (`@typstream/engine-wasm/pdf`):
-#                    what @typstream/node runs, and the candidate lazy PDF module for #18
+#   engine_bg.wasm   release build after wasm-opt -Oz: HTML, SVG and PDF (#18 put PDF in the one build)
 #   fonts/           the base font set (PLAN §6.4), copied from typst-assets, with its license NOTICE
 #   fonts.js         `baseFonts`: their URLs, as `new URL("./fonts/…", import.meta.url)` for bundlers
 #
 # It skips the build when dist/ was built from the same inputs (dist/.inputs), so
 # CI can restore dist/ from a cache and turbo's build is then a no-op. FORCE=1
 # rebuilds anyway.
-#
-#   ./build.sh                  # both builds
-#   FEATURES=pdf ./build.sh     # only the root build, with the given cargo features
 #
 # Needs Rust >= 1.92 with wasm32-unknown-unknown, wasm-bindgen-cli at the
 # version in Cargo.lock, and binaryen's wasm-opt.
@@ -27,7 +22,7 @@ if [ $# -gt 0 ]; then
 fi
 
 # Everything the output depends on. Cargo.lock pins the crates (and wasm-bindgen's version).
-inputs=$( { echo "features=${FEATURES:-}"; sha256sum build.sh Cargo.toml Cargo.lock $(find src -type f | sort); } | sha256sum | cut -d' ' -f1)
+inputs=$( { sha256sum build.sh Cargo.toml Cargo.lock $(find src -type f | sort); } | sha256sum | cut -d' ' -f1)
 if [ -z "${FORCE:-}" ] && [ -f dist/engine_bg.wasm ] && [ "$(cat dist/.inputs 2>/dev/null)" = "$inputs" ]; then
   echo "dist/ is up to date (FORCE=1 to rebuild)"
   exit 0
@@ -51,26 +46,14 @@ if [ "$locked" != "$cli" ]; then
   exit 1
 fi
 
-# build <out-dir> [cargo features]
-build() {
-  local out=$1 features=${2:-}
-  cargo build --release --locked --target "$TARGET" ${features:+--features "$features"}
-  mkdir -p "$out"
-  wasm-bindgen --target web --out-dir "$out" --out-name engine "$WASM"
-  wasm-opt "${WASM_OPT_FEATURES[@]}" -Oz "$out/engine_bg.wasm" -o "$out/engine_bg.opt.wasm"
-  mv "$out/engine_bg.opt.wasm" "$out/engine_bg.wasm"
-  # wasm-bindgen's own .d.ts for the raw module; nobody imports it.
-  rm -f "$out/engine_bg.wasm.d.ts"
-}
-
 rm -rf dist
-if [ -n "${FEATURES:-}" ]; then
-  build dist "$FEATURES"
-else
-  build dist
-  # Shares every dependency artifact with the build above; only typst-pdf and the final link are extra.
-  build dist/pdf pdf
-fi
+cargo build --release --locked --target "$TARGET"
+mkdir -p dist
+wasm-bindgen --target web --out-dir dist --out-name engine "$WASM"
+wasm-opt "${WASM_OPT_FEATURES[@]}" -Oz dist/engine_bg.wasm -o dist/engine_bg.opt.wasm
+mv dist/engine_bg.opt.wasm dist/engine_bg.wasm
+# wasm-bindgen's own .d.ts for the raw module; nobody imports it.
+rm -f dist/engine_bg.wasm.d.ts
 
 # The base fonts: Typst's defaults for text, math and raw (PLAN §6.4: ≈ 2.6 MB raw, 1.45 MB brotli).
 # Taken from the typst-assets crate the build just downloaded, so they are the files native typst embeds.

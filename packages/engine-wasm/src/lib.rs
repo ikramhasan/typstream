@@ -74,6 +74,7 @@ export type CheckResult = { ok: boolean; pageCount?: number; diagnostics: Diagno
 #[cfg(feature = "pdf")]
 #[wasm_bindgen(typescript_custom_section)]
 const TS_PDF_TYPES: &'static str = r#"
+/** A paged compile exported to PDF (`compile_pdf`). */
 export type PdfResult = { ok: boolean; pdf?: Uint8Array; pageCount?: number; diagnostics: Diagnostic[]; ms: number };
 "#;
 
@@ -271,7 +272,7 @@ impl Engine {
         self.page_hashes.clear();
     }
 
-    /// Compiles paged and exports PDF. Only in builds with the `pdf` feature.
+    /// Compiles paged and exports PDF. Only in builds with the `pdf` feature (the default).
     #[cfg(feature = "pdf")]
     #[wasm_bindgen(unchecked_return_type = "PdfResult")]
     pub fn compile_pdf(&self) -> JsValue {

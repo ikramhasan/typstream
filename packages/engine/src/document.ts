@@ -11,6 +11,8 @@ import {
   type Diagnostic,
   type DocumentUri,
   diffEdit,
+  type ExportFormat,
+  type ExportResult,
   type FileDelta,
   isError,
   mapDiagnostic,
@@ -142,6 +144,25 @@ export interface EngineDocument {
   setInputs(inputs: Record<string, string>): void;
   /** Writes (or, with `null`, deletes) files the document reads. */
   setFiles(files: FileDelta): void;
+  /**
+   * Exports the document as PDF: {@link EngineDocument.exportSource}'s source,
+   * compiled in final mode with the document's preamble and files, by the
+   * same engine as the preview (PLAN §6.5). Exports run before compiles that
+   * are waiting, under the final watchdog budget. Call `finish()` first to
+   * export the finished document. Rejects with an {@link ExportError}.
+   */
+  exportPdf(options?: ExportOptions): Promise<Uint8Array>;
+  /**
+   * Exports the document as Typst's HTML, without source anchors: a complete,
+   * unsanitized HTML document. `@typstream/dom`'s `standaloneHtml` makes it a
+   * file that opens on its own. Otherwise as {@link EngineDocument.exportPdf}.
+   */
+  exportHtml(options?: ExportOptions): Promise<string>;
+  /**
+   * The source the exports compile: the healed input (lint fixes, and tail
+   * repair until `finish()`), without the preamble or files.
+   */
+  exportSource(): string;
   /** The current state; the same object until something changes. */
   getState(): DocumentState;
   /** Calls `listener` with every new state; returns the unsubscribe function. */
@@ -151,6 +172,47 @@ export interface EngineDocument {
    * and closes the document in the worker.
    */
   dispose(): void;
+}
+
+/**
+ * How to export a document.
+ * @public
+ */
+export interface ExportOptions {
+  /**
+   * `sys.inputs` for the export. Default: the document's. Leave out layout
+   * inputs, such as a fit-width preview's page size, to export at the
+   * document's own page size.
+   */
+  inputs?: Record<string, string>;
+}
+
+/**
+ * Why an export failed:
+ *
+ * - `diagnostics`: the source has errors (they are in `diagnostics`).
+ * - `unsupported`: the engine doesn't offer this format (see `initialize`'s
+ *   `capabilities.exports` in `engine.ready`).
+ * - `timeout`: the export ran past the final watchdog budget; the worker was replaced.
+ * - `crash`: the worker died during the export.
+ * - `engine`: the engine can't run, was disposed, or refused the request; or
+ *   the document was disposed.
+ * @public
+ */
+export class ExportError extends Error {
+  /** Always `"ExportError"`. */
+  override readonly name = "ExportError";
+  /** What went wrong, for choosing what to show. */
+  readonly reason: "diagnostics" | "unsupported" | "timeout" | "crash" | "engine";
+  /** The export's diagnostics in input coordinates, sorted; with `diagnostics`, at least one error. */
+  readonly diagnostics: Diagnostic[];
+
+  /** @internal */
+  constructor(reason: ExportError["reason"], message: string, diagnostics: Diagnostic[] = []) {
+    super(message);
+    this.reason = reason;
+    this.diagnostics = diagnostics;
+  }
 }
 
 /** Watchdog limits (PLAN §6.3). @public */
@@ -174,8 +236,25 @@ export interface DocumentHost {
   enqueue(doc: DocumentImpl): void;
   /** Sends `document/close` to the active worker. */
   close(uri: DocumentUri, rev: Revision): void;
-  /** Forgets a disposed document, cancelling its compile in flight. */
+  /** Forgets a disposed document, cancelling its compile in flight and its queued exports. */
   release(doc: DocumentImpl, inFlight: RequestId | null): void;
+  /** Queues an export, or rejects it right away if the engine can't run. */
+  export(job: ExportJob): void;
+}
+
+/** @internal An export waiting for its turn in the engine. */
+export interface ExportJob {
+  doc: DocumentImpl;
+  format: ExportFormat;
+  inputs: Record<string, string> | undefined;
+  resolve(data: Uint8Array | string): void;
+  reject(error: ExportError): void;
+}
+
+/** @internal What the worker holds of a document: its revision, and the healing that made it. */
+export interface Synced {
+  rev: Revision;
+  heal: HealResult;
 }
 
 /** @internal A compile the engine is about to send. */
@@ -214,7 +293,7 @@ export class DocumentImpl implements EngineDocument {
   private rev: Revision = 0;
   private openedIn = -1;
   private sentSource = "";
-  private sent: { rev: Revision; heal: HealResult } | null = null;
+  private sent: Synced | null = null;
 
   // Scheduling. "Latest wins": at most one compile in flight, and at most one
   // pending, which is just this flag; the source is read when the compile starts.
@@ -317,6 +396,25 @@ export class DocumentImpl implements EngineDocument {
     this.update();
   }
 
+  exportPdf(options?: ExportOptions): Promise<Uint8Array> {
+    return this.export("pdf", options) as Promise<Uint8Array>;
+  }
+
+  exportHtml(options?: ExportOptions): Promise<string> {
+    return this.export("html", options) as Promise<string>;
+  }
+
+  exportSource(): string {
+    return this.healed.source;
+  }
+
+  private export(format: ExportFormat, options: ExportOptions = {}): Promise<Uint8Array | string> {
+    return new Promise((resolve, reject) => {
+      if (this.disposed) reject(new ExportError("engine", "The document was disposed."));
+      else this.host.export({ doc: this, format, inputs: options.inputs ?? this.inputs, resolve, reject });
+    });
+  }
+
   getState(): DocumentState {
     return this.state;
   }
@@ -397,6 +495,22 @@ export class DocumentImpl implements EngineDocument {
       this.emit();
       return null;
     }
+    const { rev, heal } = this.sync(conn, generation);
+    this.needsCompile = false;
+    this.urgent = false;
+    this.compiling = true;
+    this.lastStart = this.host.clock.now();
+    this.stableAtLastCompile = heal.stableOffset;
+    const params: CompileParams = { uri: this.uri, rev, target: this.target, mode: this.final ? "final" : "streaming" };
+    if (this.inputs) params.inputs = this.inputs;
+    if (this.fullPages) params.fullPages = true;
+    this.fullPages = false;
+    this.emit();
+    return { params, budgetMs: this.final ? this.host.watchdog.finalMs : this.host.watchdog.streamingMs };
+  }
+
+  /** Brings the worker's copy of the document up to the healed source. */
+  private sync(conn: Connection, generation: number): Synced {
     const heal = this.healed;
     const source = heal.source;
     const { uri } = this;
@@ -420,17 +534,54 @@ export class DocumentImpl implements EngineDocument {
     }
     this.sentSource = source;
     this.sent = { rev: this.rev, heal };
-    this.needsCompile = false;
-    this.urgent = false;
-    this.compiling = true;
-    this.lastStart = this.host.clock.now();
-    this.stableAtLastCompile = heal.stableOffset;
-    const params: CompileParams = { uri, rev: this.rev, target: this.target, mode: this.final ? "final" : "streaming" };
-    if (this.inputs) params.inputs = this.inputs;
-    if (this.fullPages) params.fullPages = true;
-    this.fullPages = false;
-    this.emit();
-    return { params, budgetMs: this.final ? this.host.watchdog.finalMs : this.host.watchdog.streamingMs };
+    return this.sent;
+  }
+
+  /**
+   * The engine's turn for an export of this document: bring the worker's copy
+   * up to date, or return `null` if the document was disposed.
+   */
+  prepareExport(conn: Connection, generation: number): Synced | null {
+    if (this.disposed) return null;
+    const rev = this.rev;
+    const synced = this.sync(conn, generation);
+    // The worker now has a source the preview hasn't compiled: compile it too.
+    if (synced.rev !== rev) {
+      this.needsCompile = true;
+      this.update();
+    }
+    return synced;
+  }
+
+  /** The export `prepareExport` synced for is over. */
+  settleExport(
+    job: ExportJob,
+    synced: Synced,
+    outcome: { result: ExportResult<Uint8Array | string> } | { error: unknown },
+  ): void {
+    if ("result" in outcome) {
+      const r = outcome.result;
+      if (r.status === "ok") {
+        job.resolve(r.data);
+        return;
+      }
+      const toInput = (pos: number, assoc: 1 | -1) => synced.heal.map.toInput(pos, assoc);
+      const diagnostics = normalizeDiagnostics(r.diagnostics.map((d) => mapDiagnostic(d, toInput)));
+      const message = diagnostics.find(isError)?.message ?? "The document has errors.";
+      job.reject(new ExportError("diagnostics", message, diagnostics));
+      return;
+    }
+    const e = outcome.error;
+    if (e instanceof WorkerGone && e.reason === "timeout") {
+      job.reject(new ExportError("timeout", `Exporting took longer than ${this.host.watchdog.finalMs} ms.`));
+    } else if (e instanceof WorkerGone && e.reason === "crash") {
+      job.reject(new ExportError("crash", "The engine crashed while exporting."));
+    } else if (e instanceof ProtocolError && e.code === "unsupported") {
+      job.reject(new ExportError("unsupported", e.message));
+    } else {
+      if (e instanceof ProtocolError && DESYNC.has(e.code)) this.desync();
+      job.reject(new ExportError("engine", e instanceof Error ? e.message : String(e)));
+    }
   }
 
   started(id: RequestId): void {
