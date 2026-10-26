@@ -105,7 +105,7 @@ export const App = () => {
   const raw = useMemo(() => (step && norm ? rawMarks(step.result, norm) : []), [step, norm]);
   const render = state?.render;
   const engine = useRawEngine({
-    enabled: render?.mode === "engine",
+    enabled: render !== undefined && render.mode !== "off",
     docKey: ready?.key ?? null,
     source: step?.result.source ?? null,
     final,
@@ -245,7 +245,7 @@ export const App = () => {
           onSeek={seek}
           hoverPatch={hoverPatch}
           onHoverPatch={setHoverPatch}
-          engine={state.render.mode === "engine" ? engine : null}
+          engine={state.render.mode === "off" ? null : engine}
         />
         <RenderPane
           settings={state.render}

@@ -26,7 +26,7 @@ describe("hash state", () => {
         unwrapFences: "never",
         lint: { "email-at": "off", "currency-dollar": "fix" },
       },
-      render: { mode: "off", target: "paged", compat: false },
+      render: { mode: "dom", target: "paged", compat: false },
     };
     expect(await decodeState(await encodeState(state))).toEqual(state);
     const stream: PlaygroundState = {
@@ -41,7 +41,7 @@ describe("hash state", () => {
   });
 
   it("falls back to defaults on a mangled hash", async () => {
-    const state = await decodeState("#doc=%%%&split=bogus&at=-3&lint=nope:fix,email-at:loud&render=dom&target=pdf");
+    const state = await decodeState("#doc=%%%&split=bogus&at=-3&lint=nope:fix,email-at:loud&render=bogus&target=pdf");
     expect(state).toEqual({ ...defaultState(), at: 0 });
   });
 });

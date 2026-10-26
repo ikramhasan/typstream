@@ -1,15 +1,18 @@
-// The render pane: a mode, a target, and the view for that mode. One mode so
-// far, the raw engine view; `<Typstream>` from the React bindings (#17) joins as
-// the default, and the raw view stays beside it for checking a renderer against
-// what the engine actually produced.
+// The render pane: a mode, a target, and the view for that mode. Both views
+// show one engine document: the raw engine view as the worker sent it, the DOM
+// view through @typstream/dom's renderers. `<Typstream>` from the React
+// bindings (#17) joins as the default, and the raw view stays beside it for
+// checking a renderer against what the engine actually produced.
 import type { CompileTarget } from "@typstream/core";
 import { useState } from "react";
 import type { RenderMode, RenderSettings } from "../hash";
 import type { RawEngine } from "../rawEngine";
+import { DomView } from "./DomView";
 import { RawEngineView } from "./RawEngineView";
 
 const MODES: Record<RenderMode, { label: string; title: string }> = {
   engine: { label: "Raw engine", title: "The engine's artifacts as they arrive, with no renderer in between" },
+  dom: { label: "DOM renderer", title: "The same artifacts through @typstream/dom's HTML and paged renderers" },
   off: { label: "Off", title: "No engine worker: heal only" },
 };
 
@@ -62,10 +65,12 @@ export const RenderPane = ({ settings, onChange, engine, follow }: Props) => {
               <input type="checkbox" checked={settings.compat} onChange={(e) => set({ compat: e.target.checked })} />
               html-compat
             </label>
-            <label title="Show the artifact's markup instead of rendering it">
-              <input type="checkbox" checked={markup} onChange={(e) => setMarkup(e.target.checked)} />
-              markup
-            </label>
+            {settings.mode === "engine" ? (
+              <label title="Show the artifact's markup instead of rendering it">
+                <input type="checkbox" checked={markup} onChange={(e) => setMarkup(e.target.checked)} />
+                markup
+              </label>
+            ) : null}
           </>
         )}
       </h2>
@@ -77,6 +82,8 @@ export const RenderPane = ({ settings, onChange, engine, follow }: Props) => {
           markup={markup}
           follow={follow}
         />
+      ) : settings.mode === "dom" ? (
+        <DomView engine={engine} target={settings.target} compat={settings.compat} follow={follow} />
       ) : (
         <div className="render-slot">
           <p>Rendering is off; no engine worker runs.</p>

@@ -4,10 +4,11 @@
 // scripts and load nothing. It's for watching documents render while scrubbing
 // and for telling renderer bugs from engine output.
 import type { Artifact, CompileTarget, PageUpdate } from "@typstream/core";
-import { baseFonts } from "@typstream/engine-wasm/fonts";
 import { htmlCompatCss } from "@typstream/html-compat";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { MATH_FONT } from "../fonts";
 import type { RawEngine } from "../rawEngine";
+import { RenderStatus } from "./RenderStatus";
 
 interface Props {
   engine: RawEngine;
@@ -26,20 +27,11 @@ const MAX_MARKUP = 1_000_000;
 export const RawEngineView = ({ engine, target, compat, markup, follow }: Props) => {
   const { state } = engine;
   if (!state) return <div className="render-slot">Starting the engine…</div>;
-  const { artifact, status, failure } = state;
+  const { artifact, status } = state;
 
   return (
     <div className="raw-engine">
-      <div className={`render-status ${status}`}>
-        <b>{status}</b>
-        {failure ? <span title={failure.message}>{failure.message}</span> : null}
-        {artifact && artifact.target !== target ? (
-          <span>
-            Showing the last {artifact.target} output until the first {target} compile.
-          </span>
-        ) : null}
-        {artifact && (status === "stale" || status === "error") ? <span>Showing the last good output.</span> : null}
-      </div>
+      <RenderStatus state={state} target={target} />
       {!artifact ? (
         <div className="render-slot">{status === "compiling" ? "Compiling…" : "No output yet."}</div>
       ) : markup ? (
@@ -76,10 +68,9 @@ const Markup = ({ artifact }: { artifact: Artifact }) => {
 };
 
 // html-compat's CSS sets New Computer Modern Math for <math>; without it as a web
-// font browsers can't stretch delimiters (PLAN.md §6.5). It's the engine's own file.
-const mathFont = baseFonts.find((url) => url.pathname.includes("NewCMMath"));
+// font browsers can't stretch delimiters (PLAN.md §6.5).
 const COMPAT_CSS = `${
-  mathFont ? `@font-face { font-family: "New Computer Modern Math"; src: url("${mathFont.href}"); }\n` : ""
+  MATH_FONT ? `@font-face { font-family: "New Computer Modern Math"; src: url("${MATH_FONT.href}"); }\n` : ""
 }${htmlCompatCss}`;
 
 // The page around the engine's HTML: a white sheet, and the `typstream` root

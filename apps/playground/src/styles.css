@@ -454,6 +454,22 @@ small {
   font-size: 11px;
 }
 
+.render-dom-html,
+.render-dom-pages {
+  flex: 1;
+  overflow: auto;
+  padding: 16px 24px;
+}
+
+.render-dom-pages {
+  background: #3a3f48;
+}
+
+.render-report {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
 .render-markup {
   flex: 1;
   overflow: auto;

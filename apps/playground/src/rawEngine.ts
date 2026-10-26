@@ -1,4 +1,4 @@
-// The raw engine view's data: one EngineDocument fed the healed source of the
+// The render views' data (raw engine and DOM): one EngineDocument fed the healed source of the
 // current step. Every step is a `set()`; the engine's scheduler decides when to
 // compile (latest wins, adaptive interval), so playback at any speed costs one
 // compile at a time. The document heals again what it's given; healing is

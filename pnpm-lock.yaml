@@ -217,6 +217,9 @@ importers:
       '@typstream/corpus':
         specifier: workspace:*
         version: link:../../corpus
+      '@typstream/dom':
+        specifier: workspace:*
+        version: link:../../packages/dom
       '@typstream/engine':
         specifier: workspace:*
         version: link:../../packages/engine

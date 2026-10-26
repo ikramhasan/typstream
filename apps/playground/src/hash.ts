@@ -21,12 +21,13 @@ export interface HealSettings {
 
 /**
  * What the render pane shows. `engine` is the raw engine view: the engine's
- * artifacts as they come, with no renderer in between. `off` spawns no worker.
- * When the React bindings land (#17), `<Typstream>` joins as the default mode.
+ * artifacts as they come, with no renderer in between. `dom` renders the same
+ * artifacts with @typstream/dom. `off` spawns no worker. When the React
+ * bindings land (#17), `<Typstream>` joins as the default mode.
  */
-export type RenderMode = "engine" | "off";
+export type RenderMode = "engine" | "dom" | "off";
 
-export const RENDER_MODES: readonly RenderMode[] = ["engine", "off"];
+export const RENDER_MODES: readonly RenderMode[] = ["engine", "dom", "off"];
 
 export interface RenderSettings {
   mode: RenderMode;

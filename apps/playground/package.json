@@ -15,6 +15,7 @@
   "dependencies": {
     "@typstream/core": "workspace:*",
     "@typstream/corpus": "workspace:*",
+    "@typstream/dom": "workspace:*",
     "@typstream/engine": "workspace:*",
     "@typstream/engine-wasm": "workspace:*",
     "@typstream/heal": "workspace:*",
