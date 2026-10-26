@@ -59,7 +59,10 @@ const Markup = ({ artifact }: { artifact: Artifact }) => {
       artifact.target === "html"
         ? artifact.html
         : artifact.pages
-            .map((p) => `<!-- page ${p.index + 1} · ${p.width}×${p.height} pt · hash ${p.hash} -->\n${p.svg}`)
+            .map(
+              (p) =>
+                `<!-- page ${p.index + 1} · ${p.width.toFixed(2)}×${p.height.toFixed(2)} pt · hash ${p.hash} -->\n${p.svg}`,
+            )
             .join("\n\n"),
     [artifact],
   );
