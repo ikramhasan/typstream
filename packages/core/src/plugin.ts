@@ -3,7 +3,9 @@
 // understands, so a plugin written for the renderer keeps working when the
 // editor arrives, and new facets never break old plugins.
 
+import type { Diagnostic } from "./diagnostic";
 import type { TextEdit } from "./index";
+import type { CompileMode } from "./protocol";
 
 /**
  * Typst's lexical modes, plus the inside of raw blocks and comments, which
@@ -38,6 +40,58 @@ export interface HealHandler {
   priority?: number;
   phase: "settled" | "output";
   run(ctx: HealHandlerContext): TextEdit[];
+}
+
+/** What a {@link DiagnosticFixer} sees. @public */
+export interface FixContext {
+  /**
+   * The document text that was compiled, without its preamble: the client's
+   * text in the first round, with earlier rounds' fixes after that.
+   */
+  text: string;
+  /**
+   * Text before this offset is settled: streaming more can't change it. Fixes
+   * that drop or rewrite text still being typed belong after it. It is the end
+   * of the text in final compiles, and when the client didn't say.
+   */
+  settled: number;
+  /** The compile's mode: fixers can stay out of final compiles with {@link DiagnosticFixer.modes}. */
+  mode: CompileMode;
+  /** 0 for the client's text; 1 and 2 for recompiles after fixes. */
+  round: number;
+  /** Every error of the compile, the one being fixed included. */
+  errors: readonly Diagnostic[];
+}
+
+/**
+ * Layer 3 of healing (PLAN §5.5, §8.2): turns a compile error into edits that
+ * should make it go away; the worker applies them and recompiles, at most twice
+ * per revision. For each error, fixers are tried in priority order and the
+ * first that returns edits fixes it. A round is applied only when every error
+ * has a fix, since one left over fails the recompile anyway. Fixers run in the
+ * worker, so plugins ship them as ES modules (`engine.fixerModules`) whose
+ * default export is a fixer or an array of them.
+ *
+ * Fixed compiles import typstream's runtime library as `typstream`
+ * (`/@typstream/runtime.typ`), so fixes can insert placeholders such as
+ * `#typstream.pending-ref("key");`.
+ * @public
+ */
+export interface DiagnosticFixer {
+  /** Unique. Reported as the `source` of the errors it fixed while streaming. */
+  name: string;
+  /** Lower runs first. Default 50; the built-in `pending-ref` runs at 10 and the catch-all `tail-cut` at 100. */
+  priority?: number;
+  /** Compiles it runs in. Default: both. */
+  modes?: readonly CompileMode[];
+  /** Errors it is tried on: a test of the message, or of the whole diagnostic. Default: every error. */
+  match?: RegExp | ((d: Diagnostic) => boolean);
+  /**
+   * Edits to `ctx.text` (non-overlapping, ascending) that should make `d` go
+   * away, or `null` when it can't fix it. May be async, e.g. to fetch a font
+   * or a package; the compile waits for it.
+   */
+  fix(d: Diagnostic, ctx: FixContext): TextEdit[] | null | Promise<TextEdit[] | null>;
 }
 
 /** `fix` applies a lint rule's change, `warn` only reports it. @public */
@@ -153,7 +207,7 @@ export interface TypstreamPlugin {
 
   /** Runtime (`@typstream/engine`, worker side). */
   engine?: {
-    /** ES module URLs exporting diagnostic fixers, loaded inside the worker (PLAN §8.2). */
+    /** ES module URLs loaded inside the worker; each default-exports a {@link DiagnosticFixer} or an array of them (PLAN §8.2). */
     fixerModules?: string[];
     /** Files mounted for every document, e.g. a local Typst package's sources. */
     files?: Record<string, string | Uint8Array>;

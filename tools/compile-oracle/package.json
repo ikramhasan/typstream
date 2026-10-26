@@ -11,7 +11,9 @@
     "check-types": "tsc -p tsconfig.json"
   },
   "devDependencies": {
+    "@typstream/core": "workspace:*",
     "@typstream/corpus": "workspace:*",
+    "@typstream/engine": "workspace:*",
     "@typstream/engine-wasm": "workspace:*",
     "@typstream/heal": "workspace:*"
   }

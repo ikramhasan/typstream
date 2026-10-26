@@ -8,9 +8,12 @@ import {
   applyEdit,
   type ClientCapabilities,
   type ClientMessage,
+  type CompileMode,
   type CompileParams,
   type CompileResult,
+  type CompileTarget,
   type Diagnostic,
+  type DiagnosticFixer,
   type DocumentUri,
   type ExportParams,
   type ExportResult,
@@ -19,6 +22,7 @@ import {
   type InitializeParams,
   type InitializeResult,
   isClientNotification,
+  isError,
   mapDiagnostic,
   type ParamsOf,
   PROTOCOL_VERSION,
@@ -32,8 +36,10 @@ import {
   type ServerMessage,
   type VersionMismatchData,
 } from "@typstream/core";
-import type { AdapterDocument, EngineAdapter } from "./adapter";
+import type { AdapterDocument, AdapterHtmlResult, AdapterPagedResult, EngineAdapter } from "./adapter";
 import { type Anchored, Anchors, fromAnchored } from "./anchors";
+import { DEFAULT_FIXERS, FIX_BUDGET_MS, fixersOf, orderFixers, runFixers } from "./fixers";
+import { RUNTIME, RUNTIME_IMPORT, RUNTIME_PATH } from "./runtime";
 
 /**
  * `Diagnostic.file.path` of problems inside a document's preamble. The preamble
@@ -57,6 +63,12 @@ export interface ServerOptions {
    * answered `internal`.
    */
   onFatal?(error: unknown): void;
+  /**
+   * Layer 3 diagnostic fixers (PLAN §5.5), tried by priority. Default
+   * {@link DEFAULT_FIXERS}; `[]` turns them off. Fixers from `initialize`'s
+   * `fixerModules` join these.
+   */
+  fixers?: readonly DiagnosticFixer[];
 }
 
 /**
@@ -87,15 +99,21 @@ interface Doc {
   compiler: AdapterDocument;
   /** `text` changed since `/main.typ` was last written. */
   dirty: boolean;
-  /** Source anchors for HTML compiles (PLAN §10.2). */
+  /** Source anchors for HTML compiles (PLAN §10.2), of `text` and of texts the fixers changed. */
   anchors: Anchors;
+  fixedAnchors: Anchors;
   /** The anchors `/main.typ` was last written with, or `null` when it has none. */
   anchored: Anchored | null;
+  /** Length of what precedes the text in `/main.typ`: `prefix`, plus the runtime import in fixed compiles. */
+  offset: number;
   /** Key of the `sys.inputs` last set. */
   inputs: string | null;
   /** Revision of the last paged artifact sent, which the adapter's changed pages diff against; `null` after HTML. */
   pagedBase: Revision | null;
 }
+
+/** An adapter compile's result, its diagnostics moved into document coordinates. */
+type Compiled = AdapterHtmlResult | AdapterPagedResult;
 
 type Handlers = { [M in RequestMethod]: (params: ParamsOf<M>, received: number) => Promise<ResultOf<M>> };
 
@@ -137,6 +155,21 @@ const virtualPath = (path: string): string => {
   return `/${rel}`;
 };
 
+/** Imports a fixer module (PLAN §8.2); its default export is a fixer or an array of them. */
+const loadFixers = async (url: string): Promise<DiagnosticFixer[]> => {
+  let module: { default?: unknown };
+  try {
+    module = await import(/* @vite-ignore */ url);
+  } catch (e) {
+    throw invalid(`fixer module ${url} failed to load: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  try {
+    return fixersOf(module.default, url);
+  } catch (e) {
+    throw invalid(e instanceof Error ? e.message : String(e));
+  }
+};
+
 class Server implements EngineServer {
   private phase: "new" | "initializing" | "ready" | "shutdown" = "new";
   private client: ClientCapabilities = {};
@@ -145,12 +178,16 @@ class Server implements EngineServer {
   /** Requests received and not yet started; only these can be cancelled. */
   private readonly waiting = new Set<RequestId>();
   private readonly cancelled = new Set<RequestId>();
+  /** Layer 3 fixers in the order they're tried; plugin modules join at `initialize`. */
+  private fixers: DiagnosticFixer[];
 
   constructor(
     private readonly adapter: EngineAdapter,
     private readonly post: (message: ServerMessage) => void,
     private readonly options: ServerOptions,
-  ) {}
+  ) {
+    this.fixers = orderFixers(options.fixers ?? DEFAULT_FIXERS);
+  }
 
   receive(message: ClientMessage): void {
     if (isClientNotification(message)) {
@@ -245,16 +282,40 @@ class Server implements EngineServer {
     if (doc.dirty || anchors !== (doc.anchored !== null)) {
       doc.anchored = anchors ? doc.anchors.apply(doc.text) : null;
       doc.compiler.setFiles({ [MAIN]: doc.prefix + (doc.anchored?.text ?? doc.text) });
+      doc.offset = doc.prefix.length;
       doc.dirty = false;
     }
   }
 
+  /**
+   * Writes a text the fixers changed as `/main.typ`, after the preamble and the
+   * runtime library's import. Anchors name offsets in the client's text
+   * (`toOriginal`). The next `sync` writes the document's own text again.
+   */
+  private writeFixed(doc: Doc, text: string, anchors: boolean, toOriginal: (pos: number) => number): void {
+    doc.anchored = anchors ? doc.fixedAnchors.apply(text, toOriginal) : null;
+    const prefix = doc.prefix + RUNTIME_IMPORT;
+    doc.compiler.setFiles({ [MAIN]: prefix + (doc.anchored?.text ?? text) });
+    doc.offset = prefix.length;
+    doc.dirty = true;
+  }
+
+  /** Diagnostics from `/main.typ` in the coordinates of the text last written to it. */
   private diagnostics(doc: Doc, ds: Diagnostic[]): Diagnostic[] {
     const { anchored } = doc;
     return ds.map((d) => {
-      const inDocument = fromMain(d, doc.prefix.length);
+      const inDocument = fromMain(d, doc.offset);
       return anchored ? mapDiagnostic(inDocument, (pos) => fromAnchored(anchored, pos)) : inDocument;
     });
+  }
+
+  /** One compile of what `/main.typ` holds, with diagnostics in its text's coordinates. */
+  private async compileMain(doc: Doc, target: CompileTarget, mode: CompileMode, fullPages: boolean): Promise<Compiled> {
+    const r =
+      target === "html"
+        ? await doc.compiler.compileHtml({ mode })
+        : await doc.compiler.compilePaged({ fullPages, mode });
+    return { ...r, diagnostics: this.diagnostics(doc, r.diagnostics) };
   }
 
   private unsupported(what: string): never {
@@ -274,7 +335,11 @@ class Server implements EngineServer {
       }
       this.phase = "initializing";
       try {
-        await this.adapter.init(params.options ?? {});
+        const [, modules] = await Promise.all([
+          this.adapter.init(params.options ?? {}),
+          Promise.all((params.options?.fixerModules ?? []).map(loadFixers)),
+        ]);
+        this.fixers = orderFixers([...(this.options.fixers ?? DEFAULT_FIXERS), ...modules.flat()]);
       } catch (e) {
         this.phase = "new";
         throw e;
@@ -305,6 +370,8 @@ class Server implements EngineServer {
       if (this.docs.has(uri)) throw new ProtocolError("document-already-open", `document ${uri} is already open`);
       const compiler = this.adapter.open();
       try {
+        // Before the document's files, so one at the same path replaces it.
+        compiler.setFiles({ [RUNTIME_PATH]: RUNTIME });
         if (files) this.writeFiles(compiler, files);
       } catch (e) {
         compiler.close();
@@ -317,7 +384,9 @@ class Server implements EngineServer {
         compiler,
         dirty: true,
         anchors: new Anchors(),
+        fixedAnchors: new Anchors(),
         anchored: null,
+        offset: 0,
         inputs: null,
         pagedBase: null,
       });
@@ -359,40 +428,53 @@ class Server implements EngineServer {
       const mode = params.mode ?? "streaming";
       const doc = this.current(uri, rev);
       if (!this.adapter.targets.includes(target)) this.unsupported(`the ${target} target`);
-      this.sync(doc, params.inputs, target === "html" && params.anchors !== false);
-      let ok: boolean;
-      let compileMs: number | undefined;
-      let exportMs: number | undefined;
-      if (target === "html") {
-        const r = await doc.compiler.compileHtml({ mode });
-        ({ compileMs, exportMs } = r);
-        this.post({
-          method: "document/diagnostics",
-          params: { uri, rev, target, diagnostics: this.diagnostics(doc, r.diagnostics) },
+      const anchors = target === "html" && params.anchors !== false;
+      this.sync(doc, params.inputs, anchors);
+      // Changed pages only when the client can apply them to the pages it has.
+      const full = params.fullPages === true || !this.client.pagedDiff || doc.pagedBase === null;
+      let r = await this.compileMain(doc, target, mode, full);
+      let { compileMs, diagnostics } = r;
+      let fixMs: number | undefined;
+      if (r.diagnostics.some(isError) && this.fixers.length > 0) {
+        const fixStart = performance.now();
+        const { settled } = params;
+        const outcome = await runFixers({
+          text: doc.text,
+          settled:
+            mode === "streaming" && settled !== undefined
+              ? Math.max(0, Math.min(settled, doc.text.length))
+              : doc.text.length,
+          mode,
+          fixers: this.fixers,
+          diagnostics,
+          deadline: received + FIX_BUDGET_MS[mode],
+          compile: async (text, toOriginal) => {
+            this.writeFixed(doc, text, anchors, toOriginal);
+            r = await this.compileMain(doc, target, mode, full);
+            if (r.compileMs !== undefined) compileMs = (compileMs ?? 0) + r.compileMs;
+            return r.diagnostics;
+          },
         });
-        ok = r.html !== null;
-        if (r.html !== null) {
-          this.post({ method: "document/artifact", params: { uri, rev, artifact: { target, html: r.html } } });
-          doc.pagedBase = null;
-        }
-      } else {
-        // Changed pages only when the client can apply them to the pages it has.
-        const full = params.fullPages === true || !this.client.pagedDiff || doc.pagedBase === null;
-        const r = await doc.compiler.compilePaged({ fullPages: full, mode });
-        ({ compileMs, exportMs } = r);
+        diagnostics = outcome.diagnostics;
+        if (outcome.rounds > 0) fixMs = performance.now() - fixStart;
+      }
+      this.post({ method: "document/diagnostics", params: { uri, rev, target, diagnostics } });
+      // The last compile's output: the first one's, or the fixed text's.
+      const ok = "html" in r ? r.html !== null : r.output !== null;
+      if ("html" in r && r.html !== null) {
+        this.post({ method: "document/artifact", params: { uri, rev, artifact: { target: "html", html: r.html } } });
+        doc.pagedBase = null;
+      } else if ("output" in r && r.output) {
+        const { pageCount, changed } = r.output;
         this.post({
-          method: "document/diagnostics",
-          params: { uri, rev, target, diagnostics: this.diagnostics(doc, r.diagnostics) },
+          method: "document/artifact",
+          params: {
+            uri,
+            rev,
+            artifact: { target: "paged", base: full ? null : doc.pagedBase, pageCount, pages: changed },
+          },
         });
-        ok = r.output !== null;
-        if (r.output) {
-          const { pageCount, changed } = r.output;
-          this.post({
-            method: "document/artifact",
-            params: { uri, rev, artifact: { target, base: full ? null : doc.pagedBase, pageCount, pages: changed } },
-          });
-          doc.pagedBase = rev;
-        }
+        doc.pagedBase = rev;
       }
       const result: CompileResult = {
         uri,
@@ -402,7 +484,8 @@ class Server implements EngineServer {
         timings: { totalMs: performance.now() - received },
       };
       if (compileMs !== undefined) result.timings.compileMs = compileMs;
-      if (exportMs !== undefined) result.timings.exportMs = exportMs;
+      if (r.exportMs !== undefined) result.timings.exportMs = r.exportMs;
+      if (fixMs !== undefined) result.timings.fixMs = fixMs;
       const memoryBytes = this.adapter.memoryBytes?.();
       if (memoryBytes !== undefined) result.memoryBytes = memoryBytes;
       return result;

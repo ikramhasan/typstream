@@ -503,6 +503,8 @@ export class DocumentImpl implements EngineDocument {
     this.stableAtLastCompile = heal.stableOffset;
     const params: CompileParams = { uri: this.uri, rev, target: this.target, mode: this.final ? "final" : "streaming" };
     if (this.inputs) params.inputs = this.inputs;
+    // The worker's fixers may cut what is still being typed (PLAN §5.5), never the settled text.
+    if (!this.final) params.settled = heal.stableOffset;
     if (this.fullPages) params.fullPages = true;
     this.fullPages = false;
     this.emit();

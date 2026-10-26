@@ -21,6 +21,7 @@
 // - a line starting with `<`: a label there attaches to the element before it,
 //   which would be the anchor.
 
+import { diffEdit } from "@typstream/core";
 import { type Checkpoint, recognize } from "@typstream/heal";
 
 /** What anchors were inserted where, to map compiler positions back to the document. */
@@ -82,15 +83,23 @@ export const anchorPoints = (text: string, checkpoints: readonly Checkpoint[]): 
   return points;
 };
 
-/** Inserts anchors at `points` (line starts, ascending). */
-export const insertAnchors = (text: string, points: readonly number[]): Anchored => {
+/**
+ * Inserts anchors at `points` (line starts, ascending). `label` turns a point
+ * into the offset the anchor names: the identity, or, for a text the worker
+ * fixed (Layer 3), the offset in the client's text.
+ */
+export const insertAnchors = (
+  text: string,
+  points: readonly number[],
+  label: (at: number) => number = (at) => at,
+): Anchored => {
   const parts: string[] = [];
   const start: number[] = [];
   const length: number[] = [];
   let last = 0;
   let shift = 0;
   for (const at of points) {
-    const anchor = anchorText(at);
+    const anchor = anchorText(label(at));
     parts.push(text.slice(last, at), anchor);
     start.push(at + shift);
     length.push(anchor.length);
@@ -140,10 +149,13 @@ export class Anchors {
     this.changedFrom = this.changedFrom === null ? from : Math.min(this.changedFrom, from);
   }
 
-  /** `text` with anchors. `text` must be the document after the changes reported. */
-  apply(text: string): Anchored {
+  /**
+   * `text` with anchors. Changes not reported with `changed` are found by
+   * comparing with the last text. `label` is {@link insertAnchors}'.
+   */
+  apply(text: string, label?: (at: number) => number): Anchored {
     if (this.changedFrom !== null || text !== this.text) {
-      const from = this.changedFrom ?? 0;
+      const from = Math.min(this.changedFrom ?? text.length, diffEdit(this.text, text)?.from ?? text.length);
       const old = this.checkpoints;
       // As heal resumes after an edit (heal.ts, `updateState`): at the last
       // checkpoint whose following one is still at or before the change, since
@@ -156,6 +168,6 @@ export class Anchors {
       this.text = text;
       this.changedFrom = null;
     }
-    return insertAnchors(text, anchorPoints(text, this.checkpoints));
+    return insertAnchors(text, anchorPoints(text, this.checkpoints), label);
   }
 }

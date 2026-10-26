@@ -1,7 +1,8 @@
 // The full #13 measurement: every stream prefix (or every code point, with
-// COMPILE_ORACLE_STEP=char) of every oracle document, healed, compiled and
-// classified, for each target. Prints a Markdown table per target and writes
-// the classified prefixes as JSON. Run with `pnpm report`; it takes minutes.
+// COMPILE_ORACLE_STEP=char) of every oracle document, healed, compiled,
+// classified and given to the engine's Layer 3 fixers (#20), for each target.
+// Prints a Markdown table per target and writes the classified prefixes as
+// JSON. Run with `pnpm report`; it takes minutes.
 import { writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -18,17 +19,19 @@ const targets = (process.env.COMPILE_ORACLE_TARGETS ?? "html,paged").split(",") 
 const generated = Number(process.env.COMPILE_ORACLE_GENERATED ?? 150);
 const outFile = process.env.COMPILE_ORACLE_OUT ?? join(tmpdir(), `compile-oracle-${step}.json`);
 
-it.runIf(enabled)("report", () => {
+it.runIf(enabled)("report", async () => {
   const all: Record<string, ClassifiedPrefix[]> = {};
   const summaries: string[] = [];
   for (const target of targets) {
     const engine = newEngine();
-    const corpus = corpusDocuments()
-      .filter((doc) => compilesComplete(engine, doc, target))
-      .flatMap((doc) => runDocument(engine, doc, { target, step, research: true }));
-    const gen = generatedDocuments(engine, generated, target).flatMap((doc) =>
-      runDocument(engine, doc, { target, step, research: true }),
-    );
+    const corpus: ClassifiedPrefix[] = [];
+    for (const doc of corpusDocuments().filter((doc) => compilesComplete(engine, doc, target))) {
+      corpus.push(...(await runDocument(engine, doc, { target, step, research: true })));
+    }
+    const gen: ClassifiedPrefix[] = [];
+    for (const doc of generatedDocuments(engine, generated, target)) {
+      gen.push(...(await runDocument(engine, doc, { target, step, research: true })));
+    }
     engine.free();
     all[target] = [...corpus, ...gen];
     summaries.push(formatStats(`${target}, corpus (${step} prefixes)`, stats(corpus)));

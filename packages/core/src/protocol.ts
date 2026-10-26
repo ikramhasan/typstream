@@ -10,7 +10,7 @@
 
 import type { Diagnostic } from "./diagnostic";
 import type { Range, TextEdit } from "./index";
-import type { FontSource, PackageSpec } from "./plugin";
+import type { DiagnosticFixer, FontSource, PackageSpec } from "./plugin";
 
 /**
  * Bumped only for breaking changes. Additive changes (new methods, new optional
@@ -99,6 +99,13 @@ export interface ServerCapabilities {
 export interface InitializeOptions {
   fonts?: FontSource[];
   packages?: PackageSpec[];
+  /**
+   * ES module URLs the worker imports at `initialize`, each exporting a
+   * {@link DiagnosticFixer} or an array of them as its default export
+   * (PLAN §8.2; plugins' `engine.fixerModules`). A module that fails to load
+   * fails `initialize`.
+   */
+  fixerModules?: string[];
 }
 
 /** @public */
@@ -204,6 +211,13 @@ export interface CompileParams extends DocumentParams {
   inputs?: Record<string, string>;
   /** Default `streaming`. */
   mode?: CompileMode;
+  /**
+   * Streaming only: the text before this offset is settled (heal's
+   * `stableOffset`). Fixers may drop or rewrite only what comes after it, the
+   * text still being typed (PLAN §5.5). Without it, all of the text counts as
+   * settled.
+   */
+  settled?: number;
   /**
    * HTML only: insert source anchors at top-level blocks (PLAN §10.2).
    * Default true; exports never contain anchors.
@@ -374,6 +388,11 @@ export interface CancelParams {
  * any earlier set for the same document and target (as LSP's
  * `publishDiagnostics` does). A later set for the same revision replaces an
  * earlier one: the server recompiled on its own.
+ *
+ * When diagnostic fixers (PLAN §5.5) made a compile succeed, it also lists the
+ * errors they fixed, at their place in the document: in streaming compiles as
+ * `info` with the fixer's name as `source` (the text is still being written);
+ * in final ones as the errors they are, next to the artifact.
  * @public
  */
 export interface DiagnosticsNotification extends DocumentParams {

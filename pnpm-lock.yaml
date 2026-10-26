@@ -475,9 +475,15 @@ importers:
 
   tools/compile-oracle:
     devDependencies:
+      '@typstream/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@typstream/corpus':
         specifier: workspace:*
         version: link:../../corpus
+      '@typstream/engine':
+        specifier: workspace:*
+        version: link:../../packages/engine
       '@typstream/engine-wasm':
         specifier: workspace:*
         version: link:../../packages/engine-wasm

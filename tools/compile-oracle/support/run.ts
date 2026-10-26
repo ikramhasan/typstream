@@ -5,6 +5,7 @@ import type { OracleDocument } from "./documents";
 import { setFiles } from "./documents";
 import type { Diagnostic, Engine } from "./engine";
 import { compileErrors, compilePrefixes, type Target } from "./measure";
+import { OracleServer } from "./server";
 import type { ClassifiedPrefix } from "./stats";
 
 export interface RunOptions {
@@ -13,10 +14,7 @@ export interface RunOptions {
   step?: "stream" | "char";
   /** Which chunk indices to compile. Default: all. */
   sample?: (index: number) => boolean;
-  /**
-   * Research measurements for failing prefixes (slower): whether the settled part
-   * compiles alone (§5.6 level 2), and whether the simulated fixers fix it.
-   */
+  /** Research measurements for failing prefixes (slower): whether the settled part compiles alone (§5.6 level 2). */
   research?: boolean;
 }
 
@@ -30,59 +28,18 @@ const code = (s: string) => {
 const atCut = (healed: string, error: Diagnostic) =>
   error.span !== null && /^[\s)\]}$"*_`]*$/.test(healed.slice(error.span.to));
 
-const CITATION = /^label `<(.+)>` does not exist/;
-
-/**
- * Where an error can be cut: its own span if that is in the unsettled tail, else
- * the innermost call site in the tail it came through (a settled function
- * called with a half-typed argument), else nowhere.
- */
-const cutPoint = (error: Diagnostic, stable: number): number | undefined => {
-  if (error.span && error.span.from >= stable) return error.span.from;
-  return error.trace.find((t) => t.span && t.span.from >= stable)?.span?.from;
-};
-
-/**
- * A sketch of the generic Layer 3 fixers #13 recommends, to measure what they
- * would reach; not the real thing (#20). Each round: references to missing
- * labels become placeholder text, and the healed source is cut at the first
- * other error in the unsettled tail (or call site there) and healed again.
- */
-export const simulateFixers = (
+export const runDocument = async (
   engine: Engine,
-  healed: string,
-  stableOffset: number,
-  target: Target,
-  rounds: number,
-): boolean => {
-  let source = healed;
-  let stable = stableOffset;
-  for (let round = 0; round < rounds; round++) {
-    const errors = compileErrors(engine, source, target);
-    if (errors.length === 0) return true;
-    const refs = errors.filter((e) => e.span && CITATION.test(e.message));
-    const cuts = errors.filter((e) => !CITATION.test(e.message)).map((e) => cutPoint(e, stable));
-    if (cuts.some((c) => c === undefined) || refs.length + cuts.length < errors.length) return false;
-    // Cut first: healing a prefix leaves the text before the cut alone.
-    const cut = Math.min(source.length, ...(cuts as number[]));
-    if (cut < source.length) source = heal(source.slice(0, cut)).source;
-    // Then the references before the cut, last first so earlier spans stay valid.
-    for (const e of refs.sort((a, b) => (b.span?.from ?? 0) - (a.span?.from ?? 0))) {
-      const { from, to } = e.span as { from: number; to: number };
-      if (to > cut) continue;
-      source = `${source.slice(0, from)}[${source.slice(from + 1, to)}]${source.slice(to)}`;
-      if (from < stable) stable += 1;
-    }
-  }
-  return compileErrors(engine, source, target).length === 0;
-};
-
-export const runDocument = (engine: Engine, doc: OracleDocument, options: RunOptions): ClassifiedPrefix[] => {
+  doc: OracleDocument,
+  options: RunOptions,
+): Promise<ClassifiedPrefix[]> => {
   const { target, step = "stream", sample, research = false } = options;
   setFiles(engine, doc);
+  const server = await OracleServer.open(engine);
   const chunks = step === "char" ? Array.from(doc.source) : doc.chunks;
-  return compilePrefixes(engine, chunks, target, sample).map((r) => {
-    const out: ClassifiedPrefix = {
+  const out: ClassifiedPrefix[] = [];
+  for (const r of compilePrefixes(engine, chunks, target, sample)) {
+    const p: ClassifiedPrefix = {
       doc: doc.id,
       cut: r.cut,
       errors: r.errors.map((e) => ({
@@ -92,17 +49,22 @@ export const runDocument = (engine: Engine, doc: OracleDocument, options: RunOpt
         atCut: atCut(r.healed, e),
       })),
     };
-    if (step === "stream") out.t = doc.times[r.index] as number;
+    if (step === "stream") p.t = doc.times[r.index] as number;
     const [first] = r.errors;
     if (first) {
       const prefix = doc.source.slice(0, r.cut);
-      out.example = `${code(prefix.slice(-28))} → ${first.message}`;
+      p.example = `${code(prefix.slice(-28))} → ${first.message}`;
+      // Layer 3: the engine server's fix loop, as the worker runs it on this prefix.
+      const fixed = await server.compile(r.healed, r.stableOffset, target);
+      p.fixRounds = fixed.compiles - 1;
+      p.fixMs = fixed.result.timings.fixMs ?? 0;
+      p.fixedIn = fixed.result.status === "ok" ? p.fixRounds : null;
       if (research) {
         const settled = prefix.slice(0, heal(prefix).map.toInput(r.stableOffset));
-        out.stableOk = compileErrors(engine, heal(settled).source, target).length === 0;
-        out.fixedIn = [1, 2, 3].find((n) => simulateFixers(engine, r.healed, r.stableOffset, target, n)) ?? null;
+        p.stableOk = compileErrors(engine, heal(settled).source, target).length === 0;
       }
     }
-    return out;
-  });
+    out.push(p);
+  }
+  return out;
 };

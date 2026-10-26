@@ -14,7 +14,8 @@ Typstream renders LLM-streamed **Typst** live in the browser, for an AI tool tha
 packages/core     @typstream/core: TextEdit, positions, SourceMap. No dependencies; contracts only.
 packages/heal     @typstream/heal: normalizer, recognizer (port of typst-syntax 0.15.1), tail repair, lint, incremental healer.
 packages/engine   @typstream/engine: main-thread client (heal → scheduler → worker, watchdog, recycling, last-good), and
-                  the worker half (`/server`: protocol server, EngineAdapter, engine-wasm adapter; `worker.ts`, spawned by `engineWorker()`).
+                  the worker half (`/server`: protocol server, EngineAdapter, engine-wasm adapter, Layer 3 fixers and the Typst
+                  runtime library they insert; `worker.ts`, spawned by `engineWorker()`).
 packages/engine-wasm  @typstream/engine-wasm: Typst 0.15.1 as wasm (Rust crate + wasm-bindgen glue): HTML, changed-page SVG, PDF, UTF-16 diagnostics.
 packages/html-compat  @typstream/html-compat: Typst prelude + CSS so HTML export keeps grid, align, shapes, place, … (tests need the engine).
 packages/dom      @typstream/dom: framework-free renderers. `src/html/`: HTML renderer (string block split, sanitizer, source
@@ -24,7 +25,8 @@ packages/dom      @typstream/dom: framework-free renderers. `src/html/`: HTML re
 packages/react    @typstream/react: <Typstream>, TypstreamProvider, useTypstream(); a thin layer over mountTypstream.
 packages/typstream  typstream: the convenience package (<Typstream> with html-compat and the math font; re-exports).
 tools/typst-syntax-oracle   Typst's real parser and lexer compiled to wasm for Node; the ground truth in heal's tests.
-tools/compile-oracle        Do healed prefixes compile? heal × engine-wasm over the corpus; error classes and the prefix compile rate.
+tools/compile-oracle        Do healed prefixes compile? heal × engine-wasm over the corpus, then the engine's fixers; error classes
+                            and the prefix compile rate.
 tools/repo        Repo tooling: package layer table (layers.mjs), layering check, shared tsup and api-extractor configs.
 corpus/           @typstream/corpus (private): shared test documents (edu/, adversarial/), meta.json, stream replay.
 apps/playground   Dev playground (Vite + React): replay streams, inspect healing and the engine's raw output, record corpus cases.

@@ -8,6 +8,7 @@ import { ClientMessage } from '@typstream/core';
 import { CompileMode } from '@typstream/core';
 import { CompileTarget } from '@typstream/core';
 import { Diagnostic } from '@typstream/core';
+import { DiagnosticFixer } from '@typstream/core';
 import { ExportFormat } from '@typstream/core';
 import { FileContent } from '@typstream/core';
 import { InitializeOptions } from '@typstream/core';
@@ -59,6 +60,9 @@ export interface AdapterPagedResult extends AdapterCompileResult {
 export const createServer: (adapter: EngineAdapter, post: (message: ServerMessage) => void, options?: ServerOptions) => EngineServer;
 
 // @public
+export const DEFAULT_FIXERS: readonly DiagnosticFixer[];
+
+// @public
 export interface EngineAdapter {
     readonly exports: readonly ExportFormat[];
     readonly info: {
@@ -107,24 +111,34 @@ export const fromMain: (d: Diagnostic, offset: number) => Diagnostic;
 export { InitInput }
 
 // @beta
-export const inProcess: (createAdapter: () => EngineAdapter) => SpawnEngine;
+export const inProcess: (createAdapter: () => EngineAdapter, options?: Pick<ServerOptions, "fixers">) => SpawnEngine;
 
 // @public
 export type MaybePromise<T> = T | Promise<T>;
 
 // @public
+export const pendingRef: DiagnosticFixer;
+
+// @public
 export const PREAMBLE_PATH = "<preamble>";
 
 // @public
-export const serve: (adapter: EngineAdapter, scope?: WorkerScope) => EngineServer;
+export const RUNTIME_PATH = "/@typstream/runtime.typ";
+
+// @public
+export const serve: (adapter: EngineAdapter, scope?: WorkerScope, options?: Pick<ServerOptions, "fixers">) => EngineServer;
 
 // @public
 export interface ServerOptions {
+    fixers?: readonly DiagnosticFixer[];
     onFatal?(error: unknown): void;
 }
 
 // @public
 export type SpawnEngine = (events: EngineEvents) => EngineConnection;
+
+// @public
+export const tailCut: DiagnosticFixer;
 
 // @public
 export const TYPST_VERSION = "0.15.1";
