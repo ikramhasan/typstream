@@ -108,6 +108,10 @@ const ensureStyles = (doc: Document) => {
   }
 };
 
+/** Text runs of two versions of a page are the same. */
+const sameRuns = (a: PageUpdate["text"], b: PageUpdate["text"]): boolean =>
+  a === b || (a?.length === b?.length && JSON.stringify(a) === JSON.stringify(b));
+
 /** CSS px per point. */
 const PX_PER_PT = 4 / 3;
 
@@ -287,6 +291,14 @@ export const createPagedView = (container: HTMLElement, options: PagedViewOption
           slots[page.index] = slot;
         }
         if (slot.want.hash === page.hash && slot.drawn !== null) continue;
+        // The same page under a new hash: Typst's frame hashes include source spans,
+        // which change when text before them is reparsed. Keep what's on screen.
+        if (slot.drawn === slot.want.hash && slot.want.svg === page.svg) {
+          if (slot.texted === slot.want.hash && sameRuns(slot.want.text, page.text)) slot.texted = page.hash;
+          slot.drawn = page.hash;
+          slot.want = page;
+          continue;
+        }
         if (slot.want.width !== page.width || slot.want.height !== page.height || slot.drawn === null) size(slot, page);
         slot.want = page;
         dirty.add(slot);

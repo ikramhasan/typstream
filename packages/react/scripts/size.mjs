@@ -5,7 +5,9 @@ import { gzipSync } from "node:zlib";
 import { build } from "esbuild";
 
 const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
-const BUDGET = 15 * 1024;
+// 15 KB until #19's renderer fixes (language and direction, filled areas in the dark theme, unchanged pages
+// not redrawn, lone wrappers) added 0.3 KB to a bundle that was at 14.9.
+const BUDGET = 15.5 * 1024;
 
 const result = await build({
   entryPoints: ["src/index.ts"],

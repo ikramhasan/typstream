@@ -219,19 +219,31 @@ const full = (html: string, from: number, to: number): Split => {
       return { shell, shellStart, shellEnd, blocks: [{ html: copy(html.slice(from, to)), src }], reuse: null };
     // A template that wraps the whole document: split inside the wrapper. The
     // anchor before the wrapper marks its first block, unless one inside does.
+    // A template's wrapper holds the anchors of the blocks after its first; a
+    // lone block that is a div (a title in `#align`, while it is all there is
+    // of a stream) has its anchor before it and none inside. Descending into
+    // that one would rebuild the page twice: now, and when the next block comes.
     let wrapper: Item | null = null;
     let elements = 0;
+    let anchored = false;
     let inside: number | null = src;
     for (const item of items) {
       const anchor = item.tag === "typstream-anchor" ? ANCHOR.exec(html.slice(item.start, item.end)) : null;
-      if (anchor) inside = Number(anchor[1]);
-      else {
+      if (anchor) {
+        inside = Number(anchor[1]);
+        anchored = true;
+      } else {
         elements++;
         wrapper = item;
       }
     }
-    if (elements === 1 && wrapper?.tag && WRAPPERS.has(wrapper.tag)) {
-      const close = wrapper.end - (wrapper.tag.length + 3);
+    const close = wrapper?.tag ? wrapper.end - (wrapper.tag.length + 3) : 0;
+    if (
+      elements === 1 &&
+      wrapper?.tag &&
+      WRAPPERS.has(wrapper.tag) &&
+      (!anchored || html.slice(wrapper.open, close).includes("<typstream-anchor"))
+    ) {
       shellStart.push(html.slice(wrapper.start, wrapper.open));
       shellEnd.unshift(html.slice(close, wrapper.end));
       from = wrapper.open;

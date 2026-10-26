@@ -6,7 +6,14 @@
  * Theme variables and element colors, shared by the renderer and standalone exports.
  * The last rule is for right-to-left text, which Typst's HTML export doesn't mark,
  * even under `text(lang: "ar")` (#11): each paragraph takes its direction from its
- * first strong letter, as `dir="auto"` would, so Arabic aligns right.
+ * first strong letter, as `dir="auto"` would, so Arabic aligns right. (The
+ * renderer also sets `dir` on its root from the document's language, which
+ * orders lists and tables.)
+ *
+ * What the document filled (an inline `background`: a box, a table cell, a code
+ * block) has the light theme's colors inside: the author chose the fill for dark
+ * text, as on paper. Placed pieces (a shape's labels) often sit outside the fill,
+ * on the page, so they keep the theme (`light dark` follows the OS under `auto`).
  */
 export const THEME_CSS = `/* Theme. "auto" follows the page's color-scheme; set color-scheme: light dark on it to follow the OS. */
 :where(.typstream) {
@@ -23,6 +30,18 @@ export const THEME_CSS = `/* Theme. "auto" follows the page's color-scheme; set 
 }
 :where(.typstream[data-typstream-theme="dark"]) {
   color-scheme: dark;
+}
+:where(.typstream [style*=background]) {
+  color-scheme: light;
+}
+:where(.typstream [style*=background] .ts-place) {
+  color-scheme: light dark;
+}
+:where(.typstream[data-typstream-theme=dark] [style*=background] .ts-place) {
+  color-scheme: dark;
+}
+:where(.typstream [style*=background], .typstream [style*=background] .ts-place) {
+  color: var(--typstream-foreground);
 }
 :where(.typstream) a {
   color: var(--typstream-link);
