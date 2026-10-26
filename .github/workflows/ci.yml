@@ -18,7 +18,8 @@ permissions:
 # then runs `pnpm install --frozen-lockfile` against a cached store.
 env:
   NODE: node@24
-  # The engine (packages/engine-wasm) needs Rust, binaryen and native typst; only the engine job has them.
+  # engine-wasm's own checks need Rust, binaryen and native typst; only the engine job has them. Jobs that reach
+  # it through @typstream/engine restore its dist/ with ./.github/actions/engine-wasm instead.
   NOT_ENGINE: --filter=!@typstream/engine-wasm
 
 jobs:
@@ -39,6 +40,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
+      - uses: ./.github/actions/engine-wasm
       - uses: pnpm/setup@v3
         with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
       - run: pnpm check-types $NOT_ENGINE
@@ -50,6 +52,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/oracle
+      - uses: ./.github/actions/engine-wasm
       - uses: pnpm/setup@v3
         with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
       - run: pnpm build $NOT_ENGINE
@@ -81,6 +84,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
+      - uses: ./.github/actions/engine-wasm
       - uses: pnpm/setup@v3
         with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
       - run: pnpm size $NOT_ENGINE
@@ -93,6 +97,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
+      - uses: ./.github/actions/engine-wasm
       - uses: pnpm/setup@v3
         with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
       - run: pnpm build $NOT_ENGINE
@@ -151,4 +156,18 @@ jobs:
         with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
       - run: pnpm exec turbo run build check-types test size check:api check:package --filter=@typstream/engine-wasm
 
-  # TODO(#19): Playwright suites (visual, flicker, a11y, cross-browser).
+  # The engine worker in real browsers (packages/engine/__tests__/browser): protocol conformance, streaming through
+  # client + worker + engine-wasm, and the watchdog, in Chromium, Firefox and WebKit.
+  browsers:
+    name: Engine (browsers)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/engine-wasm
+      - uses: pnpm/setup@v3
+        with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
+      - run: pnpm --filter @typstream/engine exec playwright install --with-deps chromium firefox webkit
+      - run: pnpm --filter @typstream/engine test:browser
+
+  # TODO(#19): Playwright suites (visual, flicker, a11y).

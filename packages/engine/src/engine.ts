@@ -29,7 +29,7 @@ import { DEFAULT_SCHEDULE, type ScheduleOptions } from "./schedule";
  * @public
  */
 export interface EngineOptions {
-  /** Starts a worker running the engine server (#10). */
+  /** Starts a worker running the engine server: {@link engineWorker} in a browser. */
   spawn: SpawnEngine;
   /** Fonts and packages shared by every document, sent with `initialize`. @beta */
   initialize?: InitializeOptions;
@@ -98,7 +98,7 @@ export const DEFAULT_RECYCLE_BYTES = 256 * 1024 * 1024;
  *
  * @example
  * ```ts
- * const engine = createEngine({ spawn: fromWorker(() => new Worker(workerUrl, { type: "module" })) });
+ * const engine = createEngine({ spawn: engineWorker() });
  * const doc = engine.open({ target: "html" });
  * doc.subscribe((s) => render(s.artifact, s.status));
  * for await (const chunk of llmStream) doc.push(chunk);

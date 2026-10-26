@@ -13,8 +13,10 @@ engine.set_source("/main.typ", "= Hello\nInline math $x^2$.");
 const { ok, html, diagnostics } = engine.compile_html();
 
 // Paged preview: only the pages whose content changed.
-const { pageCount, changed } = engine.compile_svg_changed(); // changed: { index, svg }[]
+const { pageCount, changed } = engine.compile_svg_changed(); // changed: { index, hash, width, height, svg }[]
 ```
+
+The base fonts (Libertinus Serif regular, bold and italic, New Computer Modern Math, DejaVu Sans Mono; ≈ 2.6 MB, licenses in `dist/fonts/NOTICE`) ship in `dist/fonts/`. `import { baseFonts } from "@typstream/engine-wasm/fonts"` gives their URLs, written as `new URL("./fonts/…", import.meta.url)` so bundlers emit them as assets.
 
 In Node or a worker that already has the bytes: `initSync({ module: bytes })`.
 
@@ -28,7 +30,7 @@ In Node or a worker that already has the bytes: `initSync({ module: bytes })`.
 | `set_file(path, bytes)` / `remove_file(path)` | Binary files (images, data). `/main.typ` can't be removed. |
 | `set_inputs({ key: "value" })` | `sys.inputs`. Values must be strings. |
 | `compile_html()` | `{ ok, html?, diagnostics, ms }` |
-| `compile_svg_changed()` | `{ ok, pageCount?, changed?, diagnostics, ms, compileMs, exportMs }`. A failed compile keeps the previous pages as the baseline. |
+| `compile_svg_changed()` | `{ ok, pageCount?, changed?, diagnostics, ms, compileMs, exportMs }`. A failed compile keeps the previous pages as the baseline. Each changed page has its `width` and `height` in points and a `hash` (32 hex digits) of its frame. Frame hashes include source spans, so the same text parsed afresh or reparsed incrementally can hash differently. |
 | `reset_pages()` | The next `compile_svg_changed` sends every page. |
 | `Engine.features()` | `["html", "svg"]`, plus `"pdf"` in builds with that feature. |
 | `Engine.memory_bytes()` | Wasm linear memory in bytes. |
@@ -49,7 +51,8 @@ Things to know:
 Needs Rust ≥ 1.92 with `wasm32-unknown-unknown`, `wasm-bindgen-cli` at exactly the version in `Cargo.lock` (0.2.129), and binaryen's `wasm-opt`.
 
 ```bash
-pnpm build        # ./build.sh: cargo release build, wasm-bindgen --target web, wasm-opt -Oz → dist/
+pnpm build        # ./build.sh: cargo release build, wasm-bindgen --target web, wasm-opt -Oz, base fonts → dist/
+                  # (skipped when dist/ was built from the same inputs; FORCE=1 rebuilds)
 pnpm test         # vitest, against the existing dist/
 pnpm turbo run test --filter=@typstream/engine-wasm   # from the repo root: build if needed, then test
 pnpm size         # brotli-11 size of the wasm; budget 6.0 MB

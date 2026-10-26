@@ -1,5 +1,6 @@
 // @typstream/engine, main-thread half: the client that heals, schedules and
-// supervises compiles in the engine worker (PLAN §4, §6). The worker half is #10.
+// supervises compiles in the engine worker (PLAN §4, §6). The worker half is
+// `@typstream/engine/server`; `engineWorker()` spawns the default worker.
 
 export type { Clock } from "./clock";
 export { type EngineConnection, type EngineEvents, fromWorker, type SpawnEngine, type WorkerLike } from "./connection";
@@ -20,3 +21,4 @@ export {
   type EngineOptions,
 } from "./engine";
 export { DEFAULT_SCHEDULE, type ScheduleOptions } from "./schedule";
+export { engineWorker } from "./spawn";

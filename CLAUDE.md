@@ -13,7 +13,8 @@ Typstream renders LLM-streamed **Typst** live in the browser, for an AI tool tha
 ```
 packages/core     @typstream/core: TextEdit, positions, SourceMap. No dependencies; contracts only.
 packages/heal     @typstream/heal: normalizer, recognizer (port of typst-syntax 0.15.1), tail repair, lint, incremental healer.
-packages/engine   @typstream/engine: main-thread client (heal → scheduler → worker, watchdog, recycling, last-good); worker half is #10.
+packages/engine   @typstream/engine: main-thread client (heal → scheduler → worker, watchdog, recycling, last-good), and
+                  the worker half (`/server`: protocol server, EngineAdapter, engine-wasm adapter; `worker.ts`, spawned by `engineWorker()`).
 packages/engine-wasm  @typstream/engine-wasm: Typst 0.15.1 as wasm (Rust crate + wasm-bindgen glue): HTML, changed-page SVG, UTF-16 diagnostics.
 tools/typst-syntax-oracle   Typst's real parser compiled to wasm for Node; the ground truth in heal's tests.
 tools/repo        Repo tooling: package layer table (layers.mjs), layering check, shared tsup and api-extractor configs.
@@ -49,9 +50,15 @@ pnpm corpus:validate   # native `typst` 0.15.1 compile of every corpus entry (ne
 ```
 
 In `packages/engine-wasm` (Rust build, ~3 min cold):
-- `pnpm build`: `build.sh` → `dist/` (glue, `.d.ts`, `wasm-opt -Oz` wasm). The root `pnpm test` / `pnpm check-types` (turbo) build it first; run inside the package, `pnpm test` uses the existing `dist/`.
+- `pnpm build`: `build.sh` → `dist/` (glue, `.d.ts`, `wasm-opt -Oz` wasm, base fonts from typst-assets). It skips the build when `dist/` came from the same inputs (`FORCE=1` rebuilds). The root `pnpm test` / `pnpm check-types` (turbo) build it first; run inside the package, `pnpm test` uses the existing `dist/`.
 - `pnpm size`: wasm budget, 6.0 MB brotli.
-- It isn't a tsup package: `dist/` is wasm-bindgen's output, and its API report reads `dist/engine.d.ts`, whose types are written in `src/lib.rs`. CI builds it only in the `Engine (wasm)` job; the other jobs pass `--filter=!@typstream/engine-wasm`.
+- It isn't a tsup package: `dist/` is wasm-bindgen's output, and its API report reads `dist/engine.d.ts`, whose types are written in `src/lib.rs`. Only the `Engine (wasm)` CI job runs its own checks; the other jobs pass `--filter=!@typstream/engine-wasm`, but `@typstream/engine` depends on it, so turbo still builds it there: they restore `dist/` with `.github/actions/engine-wasm` (cached on the crate's inputs), and `build.sh` then has nothing to do.
+
+In `packages/engine`:
+- `pnpm test`: the `node` vitest project (client against a fake worker; server and protocol conformance against engine-wasm in-process). Needs engine-wasm's `dist/`.
+- `pnpm test:browser`: the `browser` project, the real worker in Chromium, Firefox and WebKit (vitest browser mode, Playwright). `BROWSERS=chromium` runs one.
+- `pnpm size`: main thread ≤ 8 KB, worker JS ≤ 40 KB gzipped.
+- Two API reports: `api/engine.api.md` (main entry) and `api/engine-server.api.md` (`@typstream/engine/server`).
 
 In `packages/heal`:
 - `pnpm test:long`: 20,000-run property campaign (minutes).
@@ -59,7 +66,7 @@ In `packages/heal`:
 - `node scripts/perf.mjs`: asserts the latency budgets; run `pnpm build` first. `PERF_TOLERANCE=3` (what CI uses) fails only above 3× budget.
 - `pnpm size`: bundle budget, 15 KB gzipped.
 
-CI (`.github/workflows/ci.yml`) runs the same commands on every PR, building the oracle through `.github/actions/oracle` (cached on the crate's inputs). `nightly.yml` runs `test:long`.
+CI (`.github/workflows/ci.yml`) runs the same commands on every PR, building the oracle through `.github/actions/oracle` and engine-wasm through `.github/actions/engine-wasm` (both cached on the crate's inputs), plus the engine's browser tests. `nightly.yml` runs `test:long`.
 
 Adding a package: copy `packages/core` and rename. Its `tsconfig.json`, `tsup.config.ts` and `api-extractor.json` only extend the shared configs (`tsconfig.base.json`, `tools/repo/`), and `@typstream/*` resolves to `packages/*/src` through a wildcard path. Then add its row to `tools/repo/layers.mjs`, and add it to the `fixed` group in `.changeset/config.json` if the row says `fixed`. Delete the copied `api/core.api.md` but keep `api/` (api-extractor won't create it), then `pnpm api:update` writes the new package's report.
 
@@ -87,4 +94,6 @@ Spikes (reference only):
 - Typst's memoization cache grows with every compile unless the engine calls `comemo::evict(2)` **after every compile** (Phase 0: flat ~21 MB vs +2 MB/compile).
 - Chrome DevTools CPU throttling doesn't slow Web Workers. Worker timings under CDP throttling aren't low-end numbers.
 - typst-wasm (npm) only accepts relative paths (`main.typ`) and needs COOP/COEP or JSPI. typst.ts's `render_svg` panics on normal documents (use `render_svg_diff`). Details in `spikes/phase0/RESULTS.md`.
+- Typst's page frame hashes include source spans: the same text, parsed afresh or reparsed incrementally, can hash differently. Compare page SVGs, not hashes, when checking that two compiles look the same.
+- Streaming most corpus documents produces compile-error frames (a cut `#question(` heals to `#question()`); heal's invariants are about parsing, not compiling. Engine tests that assert "no error frames" use documents checked at every prefix (`packages/engine/__tests__/support/documents.ts`).
 - The shell prints a zoxide warning on every command; set `_ZO_DOCTOR=0` to silence it.
