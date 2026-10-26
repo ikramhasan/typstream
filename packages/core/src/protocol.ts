@@ -245,6 +245,22 @@ export interface HtmlArtifact {
   html: string;
 }
 
+/**
+ * A run of text drawn on a page, for a selectable text layer (the SVG draws
+ * glyphs as paths). In points from the page's top left: `(x, y)` is the start
+ * of the baseline, `width` the run's advance, `size` its font size.
+ * @public
+ */
+export interface TextRun {
+  text: string;
+  x: number;
+  y: number;
+  size: number;
+  width: number;
+  /** `[a, b, c, d]` of an SVG `matrix()` (translation is `x`/`y`); only for rotated, skewed or scaled text. */
+  matrix?: [number, number, number, number];
+}
+
 /** One rendered page of a paged artifact. Sizes in Typst points. @public */
 export interface PageUpdate {
   /** Zero-based page index. */
@@ -255,6 +271,8 @@ export interface PageUpdate {
   height: number;
   /** Untrusted SVG markup: the renderer sanitizes it. */
   svg: string;
+  /** The page's text runs in document order. Optional: other engines may not provide them. */
+  text?: TextRun[];
 }
 
 /**

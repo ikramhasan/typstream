@@ -6,6 +6,7 @@
 
 mod diagnostics;
 mod js;
+mod text;
 mod world;
 
 use typst::diag::{SourceDiagnostic, Warned};
@@ -39,10 +40,19 @@ export type Diagnostic = {
 /** `ms` is the time spent in the call: compile, export and cache eviction. */
 export type HtmlResult = { ok: boolean; html?: string; diagnostics: Diagnostic[]; ms: number };
 /**
- * One exported page. `hash` (32 hex digits) identifies the page's content: equal
- * hashes mean identical pages. `width` and `height` are in Typst points.
+ * A run of text on a page, for a selectable text layer: the glyphs are paths in
+ * the SVG. Points, from the page's top left. `(x, y)` is the start of the
+ * baseline; `width` is the run's advance and `size` its font size. `matrix`
+ * (`[a, b, c, d]` of an SVG matrix, translation in `x`/`y`) is set only when
+ * the text is rotated, skewed or scaled.
  */
-export type ChangedPage = { index: number; hash: string; width: number; height: number; svg: string };
+export type TextRun = { text: string; x: number; y: number; size: number; width: number; matrix?: [number, number, number, number] };
+/**
+ * One exported page. `hash` (32 hex digits) identifies the page's content: equal
+ * hashes mean identical pages. `width` and `height` are in Typst points. `text`
+ * lists the page's text runs in document order.
+ */
+export type ChangedPage = { index: number; hash: string; width: number; height: number; svg: string; text: TextRun[] };
 /**
  * `changed` holds only the pages whose content changed since the last successful
  * call (all of them after `reset_pages`); indices refer to the new document.
@@ -214,6 +224,7 @@ impl Engine {
                         set(&entry, "width", page.frame.width().to_pt());
                         set(&entry, "height", page.frame.height().to_pt());
                         set(&entry, "svg", typst_svg::svg(page, &options));
+                        set(&entry, "text", text::text_runs(page));
                         changed.push(&entry);
                     }
                     hashes.push(hash);
