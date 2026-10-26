@@ -18,6 +18,7 @@ import {
   isError,
   mapDiagnostic,
   normalizeDiagnostics,
+  type PackageSpec,
   ProtocolError,
   type RequestId,
   type Revision,
@@ -109,8 +110,16 @@ export interface DocumentOptions {
   inputs?: Record<string, string>;
   /** Typst evaluated before the document (theme, imports); fixed for the document's lifetime. */
   preamble?: string;
-  /** Files the document reads (images, data), relative to its root. */
+  /**
+   * Files the document reads (images, data), relative to its root. Keys such as
+   * `@typstream/edu:0.1.0/lib.typ` mount a local package.
+   */
   files?: FileDelta;
+  /**
+   * Typst packages the document may import, in addition to the engine's
+   * (`initialize.packages`); fixed for the document's lifetime. @beta
+   */
+  packages?: PackageSpec[];
   /** Passed to `createHealer`. Use `finish()` rather than `final`. */
   heal?: HealOptions;
   /** Overrides the engine's schedule for this document. */
@@ -299,6 +308,7 @@ export class DocumentImpl implements EngineDocument {
   private readonly healer: Healer;
   private readonly preamble: string | undefined;
   private readonly fallback: boolean;
+  private readonly packages: PackageSpec[] | undefined;
   private healed: HealResult;
   private target: CompileTarget;
   private inputs: Record<string, string> | undefined;
@@ -354,6 +364,7 @@ export class DocumentImpl implements EngineDocument {
     this.inputs = options.inputs;
     this.preamble = options.preamble;
     this.fallback = options.fallback !== false;
+    this.packages = options.packages;
     this.files = { ...options.files };
     this.state = this.snapshot();
     this.scheduleCompile();
@@ -567,7 +578,14 @@ export class DocumentImpl implements EngineDocument {
     if (this.openedIn !== generation) {
       // A fresh worker (startup, watchdog, recycling) or a desync: open with everything.
       this.rev++;
-      conn.send("document/open", { uri, rev: this.rev, text: source, preamble: this.preamble, files: this.files });
+      conn.send("document/open", {
+        uri,
+        rev: this.rev,
+        text: source,
+        preamble: this.preamble,
+        files: this.files,
+        packages: this.packages,
+      });
       this.openedIn = generation;
       this.pendingFiles = null;
     } else {

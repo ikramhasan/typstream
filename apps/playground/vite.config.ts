@@ -25,7 +25,7 @@ export default defineConfig({
     alias: [
       { find: "@typstream/corpus/stream", replacement: `${root}corpus/src/stream.ts` },
       {
-        find: /^@typstream\/(core|heal|engine|html-compat|dom|react)$/,
+        find: /^@typstream\/(core|heal|engine|html-compat|dom|react|universe)$/,
         replacement: `${root}packages/$1/src/index.ts`,
       },
     ],

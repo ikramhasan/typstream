@@ -7,7 +7,7 @@ import type { CompileParams, Diagnostic, DiagnosticFixer, FixContext, HtmlArtifa
 import { PROTOCOL_VERSION } from "@typstream/core";
 import { afterEach, describe, expect, it } from "vitest";
 import type { EngineAdapter } from "../src/server/adapter";
-import { DEFAULT_FIXERS, fixersOf, orderFixers, pendingRef, tailCut } from "../src/server/fixers";
+import { DEFAULT_FIXERS, fixersOf, orderFixers, packageStub, pendingRef, tailCut } from "../src/server/fixers";
 import { RUNTIME_PATH, typstString } from "../src/server/runtime";
 import { inProcess } from "../src/server/serve";
 import type { ServerOptions } from "../src/server/server";
@@ -63,6 +63,45 @@ describe("pending-ref", () => {
 
   it("writes keys as Typst strings", () => {
     expect(typstString('a"b\\c')).toBe('"a\\"b\\\\c"');
+  });
+});
+
+describe("package-stub", () => {
+  const SPEC = "@preview/x:1.0.0";
+  const stub = (text: string, message = `package ${SPEC} is not allowed`) => {
+    const from = text.indexOf(`"${SPEC}"`);
+    const edits = run(packageStub, error(message, from, from + SPEC.length + 2), ctx(text));
+    return edits && edits.length === 1
+      ? text.slice(0, edits[0]?.from) + edits[0]?.insert + text.slice(edits[0]?.to)
+      : null;
+  };
+  const call = `typstream.missing-package("${SPEC}")`;
+
+  it("binds imported names to placeholders", () => {
+    expect(stub(`#import "${SPEC}": a, b.c as d, e\nText`)).toBe(`#let (a, d, e) = (${call},) * 3\nText`);
+    expect(stub(`#import "${SPEC}": (\n  a,\n  b,\n)\n`)).toBe(`#let (a, b) = (${call},) * 2\n`);
+    expect(stub(`#import "${SPEC}": f\n`)).toBe(`#let f = ${call}\n`);
+  });
+
+  it("binds the module's name for a bare or renamed import", () => {
+    expect(stub(`#import "${SPEC}"\n`)).toBe(`#let x = ${call}\n`);
+    expect(stub(`#import "${SPEC}" as m: f\n`)).toBe(`#let (m, f) = (${call},) * 2\n`);
+    expect(stub(`#{ import "${SPEC}" as m }`)).toBe(`#{ let m = ${call} }`);
+  });
+
+  it("stubs packages still loading, failed, or unknown to Typst", () => {
+    for (const message of [
+      `package ${SPEC} is still loading`,
+      `package ${SPEC} failed to load (HTTP 404)`,
+      `package not found (searched for ${SPEC})`,
+    ]) {
+      expect(stub(`#import "${SPEC}": f\n`, message)).toBe(`#let f = ${call}\n`);
+    }
+  });
+
+  it("leaves wildcard imports and specs outside an import alone", () => {
+    expect(stub(`#import "${SPEC}": *\n`)).toBeNull();
+    expect(stub(`#include "${SPEC}"\n`)).toBeNull();
   });
 });
 
@@ -129,7 +168,7 @@ describe("registry", () => {
 
   it("orders by priority, then as given; built-ins bracket plugin fixers", () => {
     const order = orderFixers([...DEFAULT_FIXERS, f("a"), f("b", 5), f("c")]).map((x) => x.name);
-    expect(order).toEqual(["b", "pending-ref", "a", "c", "tail-cut"]);
+    expect(order).toEqual(["b", "pending-ref", "package-stub", "a", "c", "tail-cut"]);
   });
 
   it("checks a fixer module's default export", () => {

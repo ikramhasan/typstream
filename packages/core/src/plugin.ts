@@ -110,17 +110,28 @@ export type FontSource = ({ kind: "url"; url: string } | { kind: "bytes"; data: 
 };
 
 /**
- * A Typst package the engine may load (`#import "@preview/cetz:0.4.2"`).
- * Without `url`, the engine resolves it from its configured mirror.
+ * A Typst package the engine may load (`#import "@preview/cetz:0.5.3"`): an
+ * entry of its allowlist (PLAN §6.4). The engine fetches it only when a
+ * document imports it. A document asking for another version of an allowed
+ * package gets the nearest allowed one, with a warning. Without `url`, the
+ * server resolves it from its configured registry, if it has one.
+ * `@typstream/universe` lists the packages typstream vendors.
  * @beta
  */
 export interface PackageSpec {
+  /** `preview` for Typst Universe packages. */
   namespace: string;
   name: string;
+  /** `major.minor.patch`. */
   version: string;
-  /** Where to fetch the `.tar.gz` from. */
+  /** Where to fetch the `.tar.gz` from, as packages.typst.org serves it. */
   url?: string;
-  /** Subresource-integrity hash of the tarball, e.g. `sha384-…`. */
+  /**
+   * Subresource-integrity hash (`sha256-…`, `sha384-…` or `sha512-…`), checked
+   * before use: of the `.tar.gz` as fetched, or of the `.tar` inside it. Prefer
+   * the tar's: servers often send `.gz` files with `Content-Encoding: gzip`,
+   * and browsers then hand over the tar.
+   */
   integrity?: string;
 }
 

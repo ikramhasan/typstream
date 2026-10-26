@@ -9,7 +9,15 @@
 // streaming (`lazy`): a chat history of fifty finished answers shares one worker,
 // and only the visible ones are opened and compiled.
 
-import type { CompileTarget, CompileTimings, Diagnostic, FileDelta, Revision, TypstreamPlugin } from "@typstream/core";
+import type {
+  CompileTarget,
+  CompileTimings,
+  Diagnostic,
+  FileDelta,
+  PackageSpec,
+  Revision,
+  TypstreamPlugin,
+} from "@typstream/core";
 import type { DocumentOptions, DocumentState, DocumentStatus, Engine, EngineDocument } from "@typstream/engine";
 import { type StandaloneHtmlOptions, standaloneHtml } from "./export/standalone";
 import type { AnimateOptions } from "./html/animate";
@@ -51,7 +59,10 @@ export interface TypstreamOptions {
   heal?: DocumentOptions["heal"];
   /** Overrides the engine's compile schedule for this document. */
   schedule?: DocumentOptions["schedule"];
-  /** Plugins' engine files and preambles, heal handlers, templates and sanitizer allowances (html-compat, for one). */
+  /**
+   * Plugins' engine files, packages and preambles, heal handlers, templates and
+   * sanitizer allowances (html-compat, for one).
+   */
   plugins?: readonly TypstreamPlugin[];
   /** More CSS for the HTML target, such as html-compat's stylesheet. */
   stylesheets?: readonly string[];
@@ -166,6 +177,7 @@ interface OpenKey {
   heal: DocumentOptions["heal"];
   schedule: DocumentOptions["schedule"];
   files: FileDelta;
+  packages: PackageSpec[];
 }
 
 const openKey = (o: TypstreamOptions): OpenKey => {
@@ -189,7 +201,8 @@ const openKey = (o: TypstreamOptions): OpenKey => {
     ...(Object.keys(lint).length ? { lint } : {}),
   };
   const files = Object.assign({}, ...plugins.map((p) => p.engine?.files));
-  return { engine: o.engine, preamble, heal, schedule: o.schedule, files };
+  const packages = plugins.flatMap((p) => p.engine?.packages ?? []);
+  return { engine: o.engine, preamble, heal, schedule: o.schedule, files, packages };
 };
 
 const sameKey = (a: OpenKey, b: OpenKey) =>
@@ -197,7 +210,8 @@ const sameKey = (a: OpenKey, b: OpenKey) =>
   a.preamble === b.preamble &&
   equal(a.heal, b.heal) &&
   equal(a.schedule, b.schedule) &&
-  equal(a.files, b.files);
+  equal(a.files, b.files) &&
+  equal(a.packages, b.packages);
 
 const templateInputs = (o: TypstreamOptions): Record<string, string> | undefined =>
   o.template
@@ -444,6 +458,7 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
         text,
         files: { ...want.files, ...files },
         ...(want.preamble ? { preamble: want.preamble } : {}),
+        ...(want.packages.length ? { packages: want.packages } : {}),
         heal: want.heal,
         ...(want.schedule ? { schedule: want.schedule } : {}),
       });

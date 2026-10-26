@@ -43,6 +43,7 @@ import type { AdapterDocument, AdapterHtmlResult, AdapterPagedResult, EngineAdap
 import { type Anchored, Anchors, fromAnchored } from "./anchors";
 import { type Attempt, type RecoverMemo, recover, toDocument, type Variant } from "./fallback";
 import { DEFAULT_FIXERS, FIX_BUDGET_MS, fixersOf, orderFixers, runFixers } from "./fixers";
+import { DocumentPackages, type PackageOptions, PackageStore } from "./packages";
 import { RUNTIME, RUNTIME_IMPORT, RUNTIME_PATH } from "./runtime";
 
 /**
@@ -73,6 +74,12 @@ export interface ServerOptions {
    * `fixerModules` join these.
    */
   fixers?: readonly DiagnosticFixer[];
+  /**
+   * Typst packages (PLAN §6.4): the server's own allowlist, whether to take the
+   * client's, where packages without a URL come from. Default: only what the
+   * client allows. @beta
+   */
+  packages?: PackageOptions;
 }
 
 /**
@@ -123,6 +130,8 @@ interface Doc {
   pagedBase: Revision | null;
   /** What the fallback learnt about the text; forgotten when files or inputs change. */
   memo: RecoverMemo | null;
+  /** Packages it may import, and those mounted in `compiler`. */
+  packages: DocumentPackages;
 }
 
 /** An adapter compile's result, its diagnostics moved into document coordinates. */
@@ -161,8 +170,15 @@ export const fromMain = (d: Diagnostic, offset: number): Diagnostic => {
   return { ...d, span, trace };
 };
 
-/** A protocol file path (relative to the document root) as the adapter's absolute virtual path. */
+/** A file of a package: `@namespace/name:x.y.z/` and a path inside it (engine-wasm's convention). */
+const PACKAGE_FILE = /^@[^/]+\/[^/:]+:\d+\.\d+\.\d+\/./;
+
+/**
+ * A protocol file path (relative to the document root) as the adapter's
+ * absolute virtual path. Package files keep their spec prefix.
+ */
 const virtualPath = (path: string): string => {
+  if (PACKAGE_FILE.test(path)) return path;
   const rel = path.replace(/^(\.?\/)+/, "");
   if (rel === "" || rel === "main.typ") throw invalid(`can't write ${JSON.stringify(path)}: it is the document`);
   return `/${rel}`;
@@ -217,6 +233,7 @@ class Server implements EngineServer {
   private readonly cancelled = new Set<RequestId>();
   /** Layer 3 fixers in the order they're tried; plugin modules join at `initialize`. */
   private fixers: DiagnosticFixer[];
+  private readonly packages: PackageStore;
 
   constructor(
     private readonly adapter: EngineAdapter,
@@ -224,6 +241,7 @@ class Server implements EngineServer {
     private readonly options: ServerOptions,
   ) {
     this.fixers = orderFixers(options.fixers ?? DEFAULT_FIXERS);
+    this.packages = new PackageStore(options.packages);
   }
 
   receive(message: ClientMessage): void {
@@ -342,7 +360,7 @@ class Server implements EngineServer {
   private diagnostics(doc: Doc, ds: Diagnostic[]): Diagnostic[] {
     const { anchored } = doc;
     return ds.map((d) => {
-      const inDocument = fromMain(d, doc.offset);
+      const inDocument = doc.packages.describe(fromMain(d, doc.offset));
       return anchored ? mapDiagnostic(inDocument, (pos) => fromAnchored(anchored, pos)) : inDocument;
     });
   }
@@ -354,6 +372,27 @@ class Server implements EngineServer {
         ? await doc.compiler.compileHtml({ mode })
         : await doc.compiler.compilePaged({ fullPages, mode });
     return { ...r, diagnostics: this.diagnostics(doc, r.diagnostics) };
+  }
+
+  /**
+   * Compiles a document's revision again once `loading` packages arrive, unless
+   * a newer revision came first: server-initiated output, which the client
+   * takes as the later artifact of that revision.
+   */
+  private recompile(loading: Promise<void>, params: CompileParams): void {
+    void loading.then(() => {
+      this.chain = this.chain.then(async () => {
+        if (this.phase !== "ready" || this.docs.get(params.uri)?.rev !== params.rev) return;
+        try {
+          await this.handlers.compile(params, performance.now());
+        } catch (e) {
+          if (isTrap(e) && this.options.onFatal) {
+            this.phase = "shutdown";
+            this.options.onFatal(e);
+          }
+        }
+      });
+    });
   }
 
   private unsupported(what: string): never {
@@ -372,6 +411,7 @@ class Server implements EngineServer {
         );
       }
       this.phase = "initializing";
+      this.packages.setClientPackages(params.options?.packages);
       try {
         const [, modules] = await Promise.all([
           this.adapter.init(params.options ?? {}),
@@ -403,7 +443,7 @@ class Server implements EngineServer {
       return null;
     },
 
-    "document/open": async ({ uri, rev, text, preamble, files }) => {
+    "document/open": async ({ uri, rev, text, preamble, files, packages }) => {
       this.ready();
       if (this.docs.has(uri)) throw new ProtocolError("document-already-open", `document ${uri} is already open`);
       const compiler = this.adapter.open();
@@ -415,7 +455,7 @@ class Server implements EngineServer {
         compiler.close();
         throw e;
       }
-      this.docs.set(uri, {
+      const doc: Doc = {
         rev,
         text,
         prefix: preamble ? `${preamble}\n` : "",
@@ -428,7 +468,13 @@ class Server implements EngineServer {
         inputs: null,
         pagedBase: null,
         memo: null,
-      });
+        // A package arriving changes the files, so what the fallback learnt no longer holds.
+        packages: new DocumentPackages(this.packages, packages, (files) => {
+          compiler.setFiles(files);
+          doc.memo = null;
+        }),
+      };
+      this.docs.set(uri, doc);
       return null;
     },
 
@@ -470,6 +516,9 @@ class Server implements EngineServer {
       if (!this.adapter.targets.includes(target)) this.unsupported(`the ${target} target`);
       const fallback = fallbackOf(params.fallback, doc.text.length);
       const anchors = target === "html" && params.anchors !== false;
+      // Imported packages load first, within the fix budget; any later arrival compiles again.
+      const waiting = await doc.packages.prepare(doc.prefix + doc.text, received + FIX_BUDGET_MS[mode]);
+      if (waiting) this.recompile(waiting.loading, params);
       this.sync(doc, params.inputs, anchors);
       const settled =
         mode === "streaming" && params.settled !== undefined
@@ -571,7 +620,7 @@ class Server implements EngineServer {
           outcome = last;
         }
       }
-      const { diagnostics } = outcome;
+      const diagnostics = [...outcome.diagnostics, ...doc.packages.substitutions(doc.text)];
       this.post({ method: "document/diagnostics", params: { uri, rev, target, diagnostics } });
       // The last compile's output: the first one's, or a fixed or fallback text's.
       const out = outcome.ok ? (r as Compiled | null) : null;
@@ -611,6 +660,7 @@ class Server implements EngineServer {
     "export/html": async ({ uri, rev, inputs }: ExportParams): Promise<ExportResult<string>> => {
       const doc = this.current(uri, rev);
       if (!this.adapter.exports.includes("html")) this.unsupported("HTML export");
+      await doc.packages.prepare(doc.prefix + doc.text, performance.now() + FIX_BUDGET_MS.final);
       this.sync(doc, inputs);
       const r = await doc.compiler.compileHtml({ mode: "final" });
       const diagnostics = this.diagnostics(doc, r.diagnostics);
@@ -622,6 +672,7 @@ class Server implements EngineServer {
     "export/pdf": async ({ uri, rev, inputs }: ExportParams): Promise<ExportResult<Uint8Array>> => {
       const doc = this.current(uri, rev);
       if (!this.adapter.exports.includes("pdf") || !doc.compiler.exportPdf) this.unsupported("PDF export");
+      await doc.packages.prepare(doc.prefix + doc.text, performance.now() + FIX_BUDGET_MS.final);
       this.sync(doc, inputs);
       const r = await doc.compiler.exportPdf({ mode: "final" });
       const diagnostics = this.diagnostics(doc, r.diagnostics);

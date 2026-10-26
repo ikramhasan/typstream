@@ -1,7 +1,7 @@
 {
   "name": "@typstream/html-compat",
   "version": "0.0.0",
-  "description": "A Typst prelude and CSS that make Typst's HTML export keep the content of layout elements it would drop (grid, align, place, shapes, …).",
+  "description": "A Typst prelude and CSS that make Typst's HTML export keep the content of layout elements it would drop (grid, align, place, shapes, \u2026).",
   "license": "UNLICENSED",
   "private": true,
   "type": "module",
@@ -34,6 +34,7 @@
   "devDependencies": {
     "@typstream/corpus": "workspace:*",
     "@typstream/engine-wasm": "workspace:*",
+    "@typstream/universe": "workspace:*",
     "parse5": "^8.0.1",
     "pdfjs-dist": "^6.4.299"
   }

@@ -9,11 +9,14 @@ import type { FileEntry } from "./pool";
 /**
  * The engine path of a document file: `img/a.png` (relative to the document
  * root, as the protocol says; a leading `/` is accepted) becomes `/img/a.png`.
- * Throws on paths that escape the root or collide with the document itself.
+ * A package's file (`@typstream/edu:0.1.0/lib.typ`, a local package) keeps its
+ * spec prefix, which engine-wasm roots at the package. Throws on paths that
+ * escape the root or collide with the document itself.
  */
 export const toVirtualPath = (path: string): string => {
   const segments = path.split("/").filter((s) => s !== "" && s !== ".");
   if (segments.length === 0 || segments.some((s) => s === "..")) throw new Error(`invalid file path: ${path}`);
+  if (/^@[^/]+\/[^/:]+:\d+\.\d+\.\d+\/./.test(path)) return segments.join("/");
   const virtual = `/${segments.join("/")}`;
   if (virtual === "/main.typ") throw new Error(`file path is reserved for the document: ${path}`);
   return virtual;

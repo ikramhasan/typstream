@@ -27,7 +27,8 @@
     "@typstream/engine-wasm": "workspace:*",
     "@typstream/heal": "workspace:*",
     "@typstream/html-compat": "workspace:*",
-    "@typstream/react": "workspace:*"
+    "@typstream/react": "workspace:*",
+    "@typstream/universe": "workspace:*"
   },
   "peerDependencies": {
     "react": "^19.0.0"

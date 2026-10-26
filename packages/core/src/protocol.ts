@@ -156,8 +156,19 @@ export interface DocumentOpenParams extends DocumentParams {
    * `Diagnostic.file`, never offsets into `text`.
    */
   preamble?: string;
-  /** Files the document can read (images, data), relative to its root. */
+  /**
+   * Files the document can read (images, data), relative to its root. A key
+   * such as `@typstream/edu:0.1.0/lib.typ` is a file of that package (its spec,
+   * then the path inside it): files mounted this way make a local package
+   * importable, with no allowlist or download.
+   */
   files?: FileDelta;
+  /**
+   * Packages this document may import, in addition to `initialize`'s (plugins'
+   * `engine.packages`). The server fetches one only when the document imports
+   * it, and may ignore the list (a server facing untrusted clients). @beta
+   */
+  packages?: PackageSpec[];
 }
 
 /**

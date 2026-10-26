@@ -154,6 +154,8 @@ export interface DocumentEditParams extends DocumentParams {
 // @public
 export interface DocumentOpenParams extends DocumentParams {
     files?: FileDelta;
+    // @beta
+    packages?: PackageSpec[];
     preamble?: string;
     // (undocumented)
     text: string;
@@ -419,10 +421,8 @@ export interface PackageSpec {
     integrity?: string;
     // (undocumented)
     name: string;
-    // (undocumented)
     namespace: string;
     url?: string;
-    // (undocumented)
     version: string;
 }
 

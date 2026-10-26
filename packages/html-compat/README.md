@@ -44,6 +44,7 @@ Inside a box (an inline element), the prelude writes `span.ts-b` instead of `div
 - **Drawn content** (`.ts-frame`) is SVG: its text is in `aria-label`, not selectable.
 - `enum(full: true)` with a pattern shows plain numbers; the `augment` line of a matrix is dropped by Typst's MathML export.
 - **Table** strokes other than the default or `none`, and `table.hline`/`table.vline`, are not drawn.
+- **fletcher 0.5.8** diagrams stay empty: its cetz 0.3.4 canvas calls `layout` inside `context`, within the package, where neither the prelude's `layout` nor its drawing detection reaches. CeTZ 0.5 canvases (cetz, cetz-plot, alchemist) become `.ts-frame` SVG and are in the matrix.
 
 ## Tests
 

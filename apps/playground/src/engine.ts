@@ -1,9 +1,11 @@
 // The playground's engine: one worker for the page, spawned the first time the
 // render pane needs it (so `render=off` never loads the 19 MB wasm), plus a log
 // of its events for the inspector. Documents come and go with the source and
-// settings (rawEngine.ts); the worker and its warm Typst caches stay.
+// settings (rawEngine.ts); the worker and its warm Typst caches stay. Documents
+// may import the packages @typstream/universe vendors, as with `typstream`.
 import type { InitializeResult } from "@typstream/core";
 import { createEngine, type Engine, type EngineEvent, engineWorker } from "@typstream/engine";
+import { UNIVERSE_PACKAGES } from "@typstream/universe";
 
 /** An engine event and when it happened (`performance.now()`). */
 export interface LoggedEvent {
@@ -27,7 +29,11 @@ const listeners = new Set<() => void>();
 
 export const sharedEngine = (): Engine => {
   if (engine) return engine;
-  engine = createEngine({ spawn: engineWorker(), clientInfo: { name: "typstream-playground" } });
+  engine = createEngine({
+    spawn: engineWorker(),
+    clientInfo: { name: "typstream-playground" },
+    initialize: { packages: [...UNIVERSE_PACKAGES] },
+  });
   engine.onEvent((event) => {
     log =
       event.type === "ready"

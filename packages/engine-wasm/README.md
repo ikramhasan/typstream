@@ -28,6 +28,7 @@ In Node or a worker that already has the bytes: `initSync({ module: bytes })`.
 | `add_font(bytes)` | Adds a font file; returns the number of faces (a TTC has several). |
 | `set_source(path, text)` | Sets a source file. `/main.typ` is the entry point. Existing sources are updated incrementally. |
 | `set_file(path, bytes)` / `remove_file(path)` | Binary files (images, data). `/main.typ` can't be removed. |
+| Package paths | `@preview/cetz:0.5.3/src/lib.typ` (a spec, then a path) is a file of that package, rooted at it, so `#import "@preview/cetz:0.5.3"` reads its `typst.toml` and entry point. A package with nothing mounted is "package not found". `@typstream/engine`'s server fetches and mounts allowed packages (#25). |
 | `set_inputs({ key: "value" })` | `sys.inputs`. Values must be strings. |
 | `compile_html()` | `{ ok, html?, diagnostics, ms }` |
 | `compile_svg_changed()` | `{ ok, pageCount?, changed?, diagnostics, ms, compileMs, exportMs }`. A failed compile keeps the previous pages as the baseline. Each changed page has its `width` and `height` in points and a `hash` (32 hex digits) of its frame. Frame hashes include source spans, so the same text parsed afresh or reparsed incrementally can hash differently. |

@@ -7,16 +7,18 @@ import type { Diagnostic, HtmlResult } from "@typstream/engine-wasm";
 import { Engine, initSync } from "@typstream/engine-wasm";
 import { HTML_COMPAT_PATH, htmlCompatPreamble, htmlCompatSource } from "../../src/index";
 import { fonts } from "./fonts";
+import { mountPackages } from "./packages";
 
 initSync({ module: readFileSync(createRequire(import.meta.url).resolve("@typstream/engine-wasm/engine_bg.wasm")) });
 
 export type { Diagnostic };
 
-/** An engine with Typst's bundled fonts and the prelude mounted. */
+/** An engine with Typst's bundled fonts, the prelude and the vendored Typst packages mounted. */
 export const newEngine = (): Engine => {
   const engine = new Engine();
   for (const font of fonts()) engine.add_font(font.bytes);
   engine.set_source(HTML_COMPAT_PATH, htmlCompatSource);
+  mountPackages(engine);
   return engine;
 };
 

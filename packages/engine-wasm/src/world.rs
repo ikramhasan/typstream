@@ -1,10 +1,12 @@
-//! The in-memory `World`: virtual files and fonts given as bytes. No packages,
-//! network or filesystem; everything a document can read was put here by JS.
+//! The in-memory `World`: virtual files and fonts given as bytes. No network or
+//! filesystem; everything a document can read, packages included, was put here
+//! by JS.
 
 use std::collections::HashMap;
 
-use typst::diag::{FileError, FileResult};
+use typst::diag::{FileError, FileResult, PackageError};
 use typst::foundations::{Bytes, Datetime, Dict, Duration};
+use typst::syntax::package::PackageSpec;
 use typst::syntax::{FileId, RootedPath, Source, VirtualPath, VirtualRoot};
 use typst::text::{Font, FontBook};
 use typst::utils::LazyHash;
@@ -13,15 +15,31 @@ use typst::{Feature, Library, LibraryExt, World};
 /// The entry point. It always exists (empty until `set_source`).
 pub const MAIN_PATH: &str = "/main.typ";
 
-/// Interns a virtual path such as `/main.typ` or `/img/a.png`.
+/// Interns a virtual path: a project file such as `/main.typ` or `/img/a.png`,
+/// or a package's file, written as its spec and the path inside it:
+/// `@preview/cetz:0.5.3/src/lib.typ`. What `#import "@preview/cetz:0.5.3"` reads
+/// is that package's `typst.toml` and entry point.
 pub fn file_id(path: &str) -> Option<FileId> {
+    if let Some(rest) = path.strip_prefix('@') {
+        // `namespace/name:version/inner`: the spec ends at the second slash.
+        let (namespace, rest) = rest.split_once('/')?;
+        let (name, inner) = rest.split_once('/')?;
+        let spec: PackageSpec = format!("@{namespace}/{name}").parse().ok()?;
+        let vpath = VirtualPath::new(inner).ok()?;
+        return Some(RootedPath::new(VirtualRoot::Package(spec), vpath).intern());
+    }
     let vpath = VirtualPath::new(path).ok()?;
     Some(RootedPath::new(VirtualRoot::Project, vpath).intern())
 }
 
-/// The virtual path of a file id, with a leading slash.
+/// The virtual path of a file id, as `file_id` takes it.
 pub fn file_path(id: FileId) -> String {
-    id.get().vpath().get_with_slash().to_string()
+    let rooted = id.get();
+    let vpath = rooted.vpath().get_with_slash();
+    match rooted.root() {
+        VirtualRoot::Package(spec) => format!("{spec}{vpath}"),
+        VirtualRoot::Project => vpath.to_string(),
+    }
 }
 
 fn build_library(inputs: Dict) -> LazyHash<Library> {
@@ -112,8 +130,20 @@ impl MemWorld {
     }
 }
 
-fn not_found(id: FileId) -> FileError {
-    FileError::NotFound(id.get().vpath().get_with_slash().into())
+impl MemWorld {
+    /// A missing file. In a package nothing was mounted for, it's the package
+    /// that is missing, which is what Typst reports for an unknown package
+    /// ("package not found (searched for @preview/x:1.0.0)").
+    fn not_found(&self, id: FileId) -> FileError {
+        let root = id.get().root();
+        if let VirtualRoot::Package(spec) = root {
+            let mounted = |other: &FileId| other.get().root() == root;
+            if !self.sources.keys().any(mounted) && !self.files.keys().any(mounted) {
+                return FileError::Package(PackageError::NotFound(spec.clone()));
+            }
+        }
+        FileError::NotFound(id.get().vpath().get_with_slash().into())
+    }
 }
 
 impl World for MemWorld {
@@ -130,7 +160,7 @@ impl World for MemWorld {
     }
 
     fn source(&self, id: FileId) -> FileResult<Source> {
-        self.sources.get(&id).cloned().ok_or_else(|| not_found(id))
+        self.sources.get(&id).cloned().ok_or_else(|| self.not_found(id))
     }
 
     fn file(&self, id: FileId) -> FileResult<Bytes> {
@@ -139,7 +169,7 @@ impl World for MemWorld {
         }
         match self.sources.get(&id) {
             Some(source) => Ok(Bytes::from_string(source.text().to_string())),
-            None => Err(not_found(id)),
+            None => Err(self.not_found(id)),
         }
     }
 

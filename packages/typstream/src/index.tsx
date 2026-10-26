@@ -1,12 +1,14 @@
 // typstream (PLAN §4.1): the convenience package, like `streamdown`. One
 // import for the React component with the defaults an app wants: html-compat
-// (layout survives HTML export) and the engine's math font for MathML.
+// (layout survives HTML export), the engine's math font for MathML, and the
+// Typst packages @typstream/universe vendors (diagrams, math, chemistry).
 // Everything else is @typstream/react's, plus the engine and healer for apps
 // that drive documents themselves.
 
 import { baseFonts } from "@typstream/engine-wasm/fonts";
 import { htmlCompat, htmlCompatCss } from "@typstream/html-compat";
 import { type TypstreamProps as BaseProps, Typstream as BaseTypstream } from "@typstream/react";
+import { universe } from "@typstream/universe";
 
 /** The engine's copy of New Computer Modern Math, the font html-compat's CSS asks for in `<math>`. */
 const MATH_FONT = baseFonts.find((url) => url.pathname.includes("NewCMMath"));
@@ -19,9 +21,14 @@ export interface TypstreamProps extends BaseProps {
    * Default true.
    */
   htmlCompat?: boolean;
+  /**
+   * Let documents import the Typst packages `@typstream/universe` vendors
+   * (CeTZ, fletcher, cetz-plot, physica, unify, chemformula, alchemist),
+   * fetched from the app's own origin when a document imports one. Default true.
+   */
+  packages?: boolean;
 }
 
-const PLUGINS = [htmlCompat];
 const STYLESHEETS = [htmlCompatCss];
 
 /**
@@ -35,10 +42,17 @@ const STYLESHEETS = [htmlCompatCss];
  * ```
  * @public
  */
-export const Typstream = ({ htmlCompat: compat = true, plugins, stylesheets, mathFont, ...props }: TypstreamProps) => (
+export const Typstream = ({
+  htmlCompat: compat = true,
+  packages = true,
+  plugins,
+  stylesheets,
+  mathFont,
+  ...props
+}: TypstreamProps) => (
   <BaseTypstream
     {...props}
-    plugins={compat ? [...PLUGINS, ...(plugins ?? [])] : plugins}
+    plugins={[...(compat ? [htmlCompat] : []), ...(packages ? [universe] : []), ...(plugins ?? [])]}
     stylesheets={compat ? [...STYLESHEETS, ...(stylesheets ?? [])] : stylesheets}
     mathFont={mathFont ?? MATH_FONT}
   />
@@ -59,3 +73,4 @@ export {
   type TypstreamProviderProps,
   useTypstream,
 } from "@typstream/react";
+export { UNIVERSE_PACKAGES, type UniversePackage, universe } from "@typstream/universe";
