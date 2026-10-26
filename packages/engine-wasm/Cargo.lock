@@ -2555,6 +2555,7 @@ version = "0.0.0"
 dependencies = [
  "comemo",
  "js-sys",
+ "serde_json",
  "typst",
  "typst-html",
  "typst-layout",

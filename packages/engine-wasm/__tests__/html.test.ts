@@ -104,9 +104,7 @@ describe("engine", () => {
   });
 
   it("counts the faces a font file adds", () => {
-    const fresh = new Engine();
-    expect(fresh.add_font(new Uint8Array([1, 2, 3]))).toBe(0);
-    fresh.free();
+    expect(Engine.add_font(new Uint8Array([1, 2, 3]))).toBe(0);
   });
 
   it("reports wasm memory", () => {

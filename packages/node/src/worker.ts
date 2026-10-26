@@ -13,8 +13,8 @@ import type { Job, JobResult, WorkerInit, WorkerReply, WorkerRequest } from "./j
 
 const { module, fonts } = workerData as WorkerInit;
 initSync({ module });
+for (const font of fonts) Engine.add_font(font);
 const engine = new Engine();
-for (const font of fonts) engine.add_font(font);
 
 /** Path → version of every file set on the engine (sources and binary files). */
 const held = new Map<string, number>();

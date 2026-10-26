@@ -273,6 +273,7 @@ export type FontSource = ({
 }) & {
     family?: string;
     scripts?: string[];
+    info?: string;
 };
 
 // @public

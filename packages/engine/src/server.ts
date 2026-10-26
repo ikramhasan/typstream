@@ -2,7 +2,7 @@
 // speaks the protocol from @typstream/core and compiles with an EngineAdapter;
 // engine-wasm is the default. Failed compiles go through the Layer 3 fixers
 // (PLAN §5.5); Typst packages come from an allowlist (§6.4). The default worker
-// script (worker.ts) is `serve(engineWasm({ fonts: baseFonts }))`; write your
+// script (worker.ts) is `serve(engineWasm({ fonts: baseFonts, lazyFonts: scriptFonts }))`; write your
 // own worker with these exports to load the wasm or fonts from elsewhere.
 
 export type { InitInput } from "@typstream/engine-wasm";
@@ -17,7 +17,13 @@ export type {
   EngineAdapter,
   MaybePromise,
 } from "./server/adapter";
-export { type EngineWasmOptions, engineWasm, type FontInput, TYPST_VERSION } from "./server/engine-wasm";
+export {
+  type EngineWasmOptions,
+  engineWasm,
+  type FontInput,
+  type LazyFontInput,
+  TYPST_VERSION,
+} from "./server/engine-wasm";
 export { DEFAULT_FIXERS, packageStub, pendingRef, tailCut } from "./server/fixers";
 export type { PackageOptions } from "./server/packages";
 export { RUNTIME_PATH } from "./server/runtime";

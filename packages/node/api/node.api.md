@@ -81,6 +81,7 @@ export interface FixRequest {
 export interface FontOptions {
     fontPaths?: string[];
     fonts?: Uint8Array[];
+    scriptFonts?: boolean;
     typstFonts?: boolean;
 }
 

@@ -1,10 +1,13 @@
 //! @typstream/engine-wasm: Typst 0.15.1 compiled to wasm (PLAN.md §6.1).
 //!
-//! An `Engine` holds an in-memory World (fonts and virtual files as bytes,
-//! `sys.inputs`) and compiles it to HTML, or to SVG for the pages that changed
-//! since the last call. Every compile ends with `comemo::evict(2)` (§6.3).
+//! An `Engine` holds an in-memory World (virtual files as bytes, `sys.inputs`)
+//! and compiles it to HTML, or to SVG for the pages that changed since the last
+//! call. Fonts are shared by every engine in the instance, and can be
+//! registered before their bytes are loaded (§6.4, fonts.rs). Every compile
+//! ends with `comemo::evict(2)` (§6.3).
 
 mod diagnostics;
+mod fonts;
 mod js;
 mod text;
 mod world;
@@ -37,8 +40,15 @@ export type Diagnostic = {
   file?: { path: string; span: Range | null };
   source: "typst";
 };
-/** `ms` is the time spent in the call: compile, export and cache eviction. */
-export type HtmlResult = { ok: boolean; html?: string; diagnostics: Diagnostic[]; ms: number };
+/**
+ * What every compile returns. `ms` is the time spent in the call: compile,
+ * export and cache eviction. `missingFonts` lists the lazily registered font
+ * files (`Engine.register_font` ids) the compile wanted but had no bytes for:
+ * it fell back to other fonts or tofu. Load them and compile again.
+ */
+export type CompileResult = { ok: boolean; diagnostics: Diagnostic[]; ms: number; missingFonts: number[] };
+/** An HTML compile (`compile_html`): `html` is the document when `ok`. */
+export type HtmlResult = CompileResult & { html?: string };
 /**
  * A run of text on a page, for a selectable text layer: the glyphs are paths in
  * the SVG. Points, from the page's top left. `(x, y)` is the start of the
@@ -58,24 +68,21 @@ export type ChangedPage = { index: number; hash: string; width: number; height: 
  * call (all of them after `reset_pages`); indices refer to the new document.
  * Pages at or past `pageCount` are gone.
  */
-export type SvgChangedResult = {
-  ok: boolean;
+export type SvgChangedResult = CompileResult & {
   pageCount?: number;
   changed?: ChangedPage[];
-  diagnostics: Diagnostic[];
-  ms: number;
   compileMs: number;
   exportMs: number;
 };
 /** A paged compile without export (`check_paged`). */
-export type CheckResult = { ok: boolean; pageCount?: number; diagnostics: Diagnostic[]; ms: number };
+export type CheckResult = CompileResult & { pageCount?: number };
 "#;
 
 #[cfg(feature = "pdf")]
 #[wasm_bindgen(typescript_custom_section)]
 const TS_PDF_TYPES: &'static str = r#"
 /** A paged compile exported to PDF (`compile_pdf`). */
-export type PdfResult = { ok: boolean; pdf?: Uint8Array; pageCount?: number; diagnostics: Diagnostic[]; ms: number };
+export type PdfResult = CompileResult & { pdf?: Uint8Array; pageCount?: number };
 "#;
 
 /// How many evict calls an unused memoized result survives. Eviction counts
@@ -85,9 +92,9 @@ export type PdfResult = { ok: boolean; pdf?: Uint8Array; pageCount?: number; dia
 /// grows ~4 MiB per compile.
 const EVICT_MAX_AGE: usize = 2;
 
-/// A Typst project in memory: fonts, source and binary files, `sys.inputs`.
-/// Compile it with `compile_html` or `compile_svg_changed`. Engines in one
-/// wasm instance share Typst's memoization cache and the wasm memory.
+/// A Typst project in memory: source and binary files, `sys.inputs`. Compile
+/// it with `compile_html` or `compile_svg_changed`. Engines in one wasm
+/// instance share their fonts, Typst's memoization cache and the wasm memory.
 #[wasm_bindgen]
 pub struct Engine {
     world: MemWorld,
@@ -109,6 +116,13 @@ impl Engine {
             "diagnostics",
             diagnostics::to_js_array(&self.world, errors, warnings),
         );
+        let missing: js_sys::Array = self
+            .world
+            .missing_fonts()
+            .into_iter()
+            .map(JsValue::from)
+            .collect();
+        set(&obj, "missingFonts", missing);
         obj
     }
 }
@@ -135,9 +149,30 @@ impl Engine {
         }
     }
 
-    /// Adds a font file (TTF, OTF or TTC). Returns the number of faces added.
-    pub fn add_font(&mut self, bytes: &[u8]) -> u32 {
-        self.world.add_font(bytes)
+    /// Adds a font file (TTF, OTF or TTC) for every engine in the instance.
+    /// Returns its number of faces. Adding a file again does nothing.
+    pub fn add_font(bytes: &[u8]) -> u32 {
+        fonts::add(bytes)
+    }
+
+    /// The metadata Typst keeps about each face of a font file, as JSON, for
+    /// `register_font`. Computed at build time for a font registry.
+    pub fn font_info(bytes: &[u8]) -> String {
+        fonts::info(bytes)
+    }
+
+    /// Registers a font file from its `font_info` without its bytes, for every
+    /// engine in the instance. Typst can select its faces by family and for
+    /// fallback; a compile that does lists the returned id in `missingFonts`
+    /// until `load_font` gives it the bytes. Throws on invalid info.
+    pub fn register_font(info: &str) -> Result<u32, JsError> {
+        fonts::register(info).map_err(|e| JsError::new(&e))
+    }
+
+    /// Gives a registered font file its bytes. Throws unless they are the file
+    /// its info came from. Loading a file again does nothing.
+    pub fn load_font(id: u32, bytes: &[u8]) -> Result<(), JsError> {
+        fonts::load(id, bytes).map_err(|e| JsError::new(&e))
     }
 
     /// Sets a source file. `/main.typ` is the entry point. A path such as
@@ -186,8 +221,9 @@ impl Engine {
 
     /// Compiles with the HTML target.
     #[wasm_bindgen(unchecked_return_type = "HtmlResult")]
-    pub fn compile_html(&self) -> JsValue {
+    pub fn compile_html(&mut self) -> JsValue {
         let t0 = perf_now();
+        self.world.begin_compile();
         let Warned { output, warnings } = typst::compile::<typst_html::HtmlDocument>(&self.world);
         let obj = match output
             .and_then(|doc| typst_html::html(&doc, &typst_html::HtmlOptions::default()))
@@ -209,6 +245,7 @@ impl Engine {
     #[wasm_bindgen(unchecked_return_type = "SvgChangedResult")]
     pub fn compile_svg_changed(&mut self) -> JsValue {
         let t0 = perf_now();
+        self.world.begin_compile();
         let Warned { output, warnings } =
             typst::compile::<typst_layout::PagedDocument>(&self.world);
         let compile_ms = perf_now() - t0;
@@ -253,8 +290,9 @@ impl Engine {
     /// count, for validating a document (`@typstream/node`'s `validate`). It
     /// leaves the `compile_svg_changed` baseline alone.
     #[wasm_bindgen(unchecked_return_type = "CheckResult")]
-    pub fn check_paged(&self) -> JsValue {
+    pub fn check_paged(&mut self) -> JsValue {
         let t0 = perf_now();
+        self.world.begin_compile();
         let Warned { output, warnings } =
             typst::compile::<typst_layout::PagedDocument>(&self.world);
         let obj = match output {
@@ -277,8 +315,9 @@ impl Engine {
     /// Compiles paged and exports PDF. Only in builds with the `pdf` feature (the default).
     #[cfg(feature = "pdf")]
     #[wasm_bindgen(unchecked_return_type = "PdfResult")]
-    pub fn compile_pdf(&self) -> JsValue {
+    pub fn compile_pdf(&mut self) -> JsValue {
         let t0 = perf_now();
+        self.world.begin_compile();
         let Warned { output, warnings } =
             typst::compile::<typst_layout::PagedDocument>(&self.world);
         let exported = output.and_then(|doc| {

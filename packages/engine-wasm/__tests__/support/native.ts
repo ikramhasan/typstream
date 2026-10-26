@@ -35,10 +35,11 @@ const withProject = <T>(source: string, run: (dir: string) => T): T => {
 // Only the fonts the wasm tests load (see fonts.ts), nothing from the system.
 const FONT_ARGS = ["--ignore-system-fonts", "--ignore-embedded-fonts", "--font-path", fontDir()];
 
-/** Native `typst compile` to SVG: one string per page. */
-export const nativeSvgPages = (source: string): string[] =>
+/** Native `typst compile` to SVG: one string per page. `fontPaths` add font directories. */
+export const nativeSvgPages = (source: string, fontPaths: string[] = []): string[] =>
   withProject(source, (dir) => {
-    typst(["compile", ...FONT_ARGS, join(dir, "main.typ"), join(dir, "page-{0p}.svg")]);
+    const extra = fontPaths.flatMap((path) => ["--font-path", path]);
+    typst(["compile", ...FONT_ARGS, ...extra, join(dir, "main.typ"), join(dir, "page-{0p}.svg")]);
     return readdirSync(dir)
       .filter((name) => name.startsWith("page-"))
       .sort()

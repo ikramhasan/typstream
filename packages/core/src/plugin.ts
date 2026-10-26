@@ -99,14 +99,21 @@ export type LintSetting = "fix" | "warn" | "off";
 
 /**
  * A font for the engine. URLs are fetched by the worker (same origin unless
- * the app allows otherwise, PLAN §9); `family` and `scripts` let it register
- * the font before downloading it (lazy fonts, PLAN §6.4).
+ * the app allows otherwise, PLAN §9). A URL with `info` is a lazy font: the
+ * engine registers it from `info` and downloads it only when a document
+ * uses it (PLAN §6.4).
  * @beta
  */
 export type FontSource = ({ kind: "url"; url: string } | { kind: "bytes"; data: Uint8Array }) & {
   family?: string;
-  /** ISO 15924 codes the font covers, e.g. `["Beng"]`, to fetch it when the text needs it. */
+  /** ISO 15924 codes the font is for, e.g. `["Beng"]`. Informational. */
   scripts?: string[];
+  /**
+   * The engine's metadata for the file's faces, which it selects fonts by.
+   * For engine-wasm, Typst's `FontInfo` per face as JSON: `Engine.font_info`,
+   * or `node scripts/fonts.mjs --info font.ttf` in `@typstream/engine-wasm`.
+   */
+  info?: string;
 };
 
 /**
