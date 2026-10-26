@@ -21,7 +21,7 @@ tools/typst-syntax-oracle   Typst's real parser compiled to wasm for Node; the g
 tools/compile-oracle        Do healed prefixes compile? heal × engine-wasm over the corpus; error classes and the prefix compile rate.
 tools/repo        Repo tooling: package layer table (layers.mjs), layering check, shared tsup and api-extractor configs.
 corpus/           @typstream/corpus (private): shared test documents (edu/, adversarial/), meta.json, stream replay.
-apps/playground   Dev playground (Vite + React): replay streams, inspect healing, record corpus cases. Heal-only for now.
+apps/playground   Dev playground (Vite + React): replay streams, inspect healing and the engine's raw output, record corpus cases.
 spikes/phase0     Throwaway Phase 0 experiments: browser harness (harness/) and custom Typst wasm engine (custom-engine/).
                   Port code out of here into packages/; don't import from spikes.
 PLAN.md           Design and roadmap.
@@ -80,11 +80,12 @@ CI (`.github/workflows/ci.yml`) runs the same commands on every PR, building the
 Adding a package: copy `packages/core` and rename. Its `tsconfig.json`, `tsup.config.ts` and `api-extractor.json` only extend the shared configs (`tsconfig.base.json`, `tools/repo/`), and `@typstream/*` resolves to `packages/*/src` through a wildcard path. Then add its row to `tools/repo/layers.mjs`, and add it to the `fixed` group in `.changeset/config.json` if the row says `fixed`. Delete the copied `api/core.api.md` but keep `api/` (api-extractor won't create it), then `pnpm api:update` writes the new package's report.
 
 In `apps/playground` (PLAN.md §10.5, #31):
-- `pnpm --filter playground dev`: Vite dev server on http://localhost:5173. No build needed first: `@typstream/*` resolves to `packages/*/src` (see `vite.config.ts`), so heal edits hot-reload.
+- `pnpm --filter playground dev`: Vite dev server on http://localhost:5173. `@typstream/*` resolves to `packages/*/src` (see `vite.config.ts`), so heal and engine edits hot-reload. The exception is engine-wasm: build its `dist/` once (`pnpm --filter @typstream/engine-wasm build`) before rendering works.
 - Load a corpus entry, paste a document or `.stream.jsonl`, or open one from disk. Scrub by chunk, token or character (arrows, Shift for 10, Home/End, Space plays at the recorded timing). The panes show raw input vs healed source with patches, open frames, the settled boundary, lint findings and syntax errors; the inspector has per-step and whole-stream push timings against the §1 budget.
 - The URL hash holds the whole state (source, seed, split, step, options), so a link reproduces a case. "Save as corpus case" downloads `.typ` + `.stream.jsonl` and shows the `meta.json` entry to add.
 - The dev and preview servers send COOP/COEP headers: without cross-origin isolation browsers round `performance.now()` to 0.1 ms, too coarse for heal's timings. The first profile after a load includes JIT warm-up; use "re-run".
-- `pnpm --filter playground build` (static `dist/`), `test`, `check-types`. The render pane is a slot until the engine worker (#10) and React bindings (#17) land.
+- The render pane's **Raw engine** mode spawns the real engine worker (`engineWorker()`, one per page) and `set()`s the healed source of each step into one document; the engine's scheduler paces compiles, so playback doesn't flood it. It shows the last good artifact exactly as the engine sent it, with no `@typstream/dom` in between: HTML in a sandboxed iframe (scripts off), pages as SVG `<img>`s, or the raw markup. Toggles: target (HTML / paged), html-compat (its preamble and files on the document, its CSS on the HTML), mode (`Off` spawns no worker). The inspector adds the document's status and fallback, worker-side compile timings, engine diagnostics (in healed-source coordinates) and engine events. `render`, `target` and `compat` are in the URL hash. When the React bindings land (#17), `<Typstream>` becomes the default mode and the raw view stays as a toggle.
+- `pnpm --filter playground build` (static `dist/`), `test`, `check-types`.
 
 Spikes (reference only):
 - Custom engine: `spikes/phase0/custom-engine/build.sh <variant>`.

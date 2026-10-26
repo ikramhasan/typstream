@@ -1,7 +1,9 @@
 import type { Normalized } from "@typstream/heal";
-import type { ReactNode } from "react";
 import { describePatch } from "../marks";
+import type { RawEngine } from "../rawEngine";
 import type { Profile, Step } from "../session";
+import { EngineSections } from "./EngineSections";
+import { ms, Section } from "./Section";
 
 /** PLAN.md §1: main-thread time per token, p95 < 0.5 ms (50 KB docs); no task > 50 ms. */
 const P95_BUDGET_MS = 0.5;
@@ -23,19 +25,9 @@ interface Props {
   onSeek: (at: number) => void;
   hoverPatch: number | null;
   onHoverPatch: (patch: number | null) => void;
+  /** The raw engine view's document, when the render pane shows it. */
+  engine: RawEngine | null;
 }
-
-const ms = (value: number) => `${value < 1 ? value.toFixed(3) : value.toFixed(1)} ms`;
-
-const Section = ({ title, count, children }: { title: string; count?: number; children: ReactNode }) => (
-  <details className="section" open>
-    <summary>
-      {title}
-      {count === undefined ? null : <span className="count">{count}</span>}
-    </summary>
-    {children}
-  </details>
-);
 
 /** The line of `text` around `offset`, for showing where a frame opened. */
 const lineAt = (text: string, offset: number): string => {
@@ -79,7 +71,7 @@ export const Inspector = (props: Props) => {
         </label>
       </Section>
 
-      <Section title="Timings">
+      <Section title="Heal timings">
         <dl>
           <dt>This step</dt>
           <dd>
@@ -142,6 +134,8 @@ export const Inspector = (props: Props) => {
           {crossOriginIsolated ? null : " Not cross-origin isolated, so the timer only resolves 0.1 ms."}
         </p>
       </Section>
+
+      {props.engine ? <EngineSections engine={props.engine} /> : null}
 
       <Section title="Open frames" count={result.openFrames.length}>
         {result.openFrames.length === 0 ? (

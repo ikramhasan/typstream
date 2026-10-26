@@ -218,7 +218,7 @@ small {
 .panes {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 380px;
-  grid-template-rows: minmax(0, 3fr) minmax(0, 2fr);
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
   grid-template-areas:
     "raw healed inspector"
     "render render inspector";
@@ -324,11 +324,144 @@ small {
   outline-offset: 1px;
 }
 
-/* Render slot */
+/* Render pane */
 
 .render-pane {
   grid-area: render;
   border-top: 1px solid var(--border);
+}
+
+.pane h2.render-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 12px;
+}
+
+.render-header select,
+.render-header label {
+  font-size: 12px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.render-header label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.segmented {
+  display: inline-flex;
+}
+
+.segmented button {
+  padding: 1px 8px;
+  font-size: 12px;
+  font-weight: 400;
+  text-transform: none;
+  border-radius: 0;
+}
+
+.segmented button:first-child {
+  border-radius: 6px 0 0 6px;
+}
+
+.segmented button:last-child {
+  margin-left: -1px;
+  border-radius: 0 6px 6px 0;
+}
+
+.segmented button.on {
+  color: #fff;
+  background: #2d5bd1;
+  border-color: #3a6be0;
+}
+
+.raw-engine {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.render-status {
+  display: flex;
+  gap: 10px;
+  overflow: hidden;
+  padding: 3px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.render-status b,
+.engine-status {
+  color: var(--ok);
+}
+
+.render-status.compiling b,
+.engine-status.compiling {
+  color: var(--accent);
+}
+
+.render-status.stale,
+.render-status.error {
+  background: rgba(240, 96, 90, 0.12);
+}
+
+.render-status.stale b,
+.render-status.error b,
+.engine-status.stale,
+.engine-status.error {
+  color: var(--bad);
+}
+
+.render-html {
+  flex: 1;
+  width: 100%;
+  border: none;
+  background: #fff;
+}
+
+.render-pages {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+  background: #3a3f48;
+}
+
+.render-pages figure {
+  margin: 0 auto 16px;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.render-pages img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+}
+
+.render-pages figcaption {
+  margin-top: 4px;
+  text-align: center;
+  color: #c0c6d0;
+  font-size: 11px;
+}
+
+.render-markup {
+  flex: 1;
+  overflow: auto;
+  margin: 0;
+  padding: 8px 12px;
+  font: 12px / 1.5 var(--mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .render-slot {
@@ -421,6 +554,15 @@ small {
 
 .issues li.warn {
   color: var(--warn);
+}
+
+.issues li.bad {
+  color: var(--bad);
+}
+
+.issues .diag-hint {
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .ok {

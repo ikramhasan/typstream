@@ -10,6 +10,7 @@ import { SaveDialog } from "./panels/SaveDialog";
 import { Scrubber } from "./panels/Scrubber";
 import { SourcePane } from "./panels/SourcePane";
 import { Toolbar } from "./panels/Toolbar";
+import { useRawEngine } from "./rawEngine";
 import { HealSession, type Profile, profileStream } from "./session";
 import { type Loaded, loadSource, sourceFromText, sourceKey } from "./source";
 import { prefixLengths, splitStream } from "./stream";
@@ -102,6 +103,16 @@ export const App = () => {
     [step, options.unwrapFences, final],
   );
   const raw = useMemo(() => (step && norm ? rawMarks(step.result, norm) : []), [step, norm]);
+  const render = state?.render;
+  const engine = useRawEngine({
+    enabled: render?.mode === "engine",
+    docKey: ready?.key ?? null,
+    source: step?.result.source ?? null,
+    final,
+    target: render?.target ?? "html",
+    compat: render?.compat ?? true,
+    heal: options,
+  });
   const healed = useMemo(() => (step && norm ? healedMarks(step.result, norm) : []), [step, norm]);
 
   // Profile every push of the stream, for the timing strip and p50/p95/max.
@@ -234,8 +245,14 @@ export const App = () => {
           onSeek={seek}
           hoverPatch={hoverPatch}
           onHoverPatch={setHoverPatch}
+          engine={state.render.mode === "engine" ? engine : null}
         />
-        <RenderPane source={step?.result.source ?? null} />
+        <RenderPane
+          settings={state.render}
+          onChange={(next) => update({ render: next })}
+          engine={engine}
+          follow={follow}
+        />
       </main>
       {dialog === "paste" ? (
         <PasteDialog
