@@ -53,6 +53,7 @@ When a compile fails, the server tries its diagnostic fixers and recompiles, at 
 
 - **`tail-cut`** (streaming only): an error in the text still being typed (after heal's `stableOffset`, which the client sends as `settled`) cuts the text there and heals the rest again. `#text(` without its body, `#v(1`, `rgb("#e` and closure parameters before `=>` drop out until the next tokens bring them back.
 - **`pending-ref`**: a reference to a label that doesn't exist yet (a citation before `#bibliography`) shows its key as a muted placeholder. In final mode the error is still reported.
+- **`package-stub`**: an import of a package the document can't have (not allowed, still loading, failed to load) binds the names it imports to placeholders showing the package's spec. Wildcard imports and modules whose fields are used (`cetz.draw`) can't be stood in for; their error stays, and the fallback isolates the block.
 
 Placeholders come from a small Typst library mounted at `/@typstream/runtime.typ` (a document's own file at that path replaces it). Fixed errors are reported as `info` diagnostics (`source` is the fixer's name) while streaming. Plugins add fixers as ES modules whose default export is a `DiagnosticFixer` or an array of them:
 
@@ -80,5 +81,17 @@ What still fails after the fixers is never a blank screen (PLAN §5.6). The clie
 - **Last resort** (final mode): the whole document as one error block showing its source.
 
 `state.lastCompile.fallback` says what was isolated (`isolated` ranges) or shown as plain text (`plainFrom`). Isolated blocks' errors stay in `diagnostics`.
+
+## Typst packages
+
+Documents may `#import "@preview/…"` packages from an allowlist (PLAN §6.4). The allowlist is the `packages` of `initialize` (engine-wide: `createEngine({ initialize: { packages } })`) plus those of each document (`engine.open({ packages })`, which `mountTypstream` fills from plugins' `engine.packages`). `@typstream/universe` vendors the packages typstream allows by default, and `typstream`'s `<Typstream>` adds them.
+
+- **Nothing outside the allowlist is fetched.** An empty allowlist means no network. Before each compile the server scans the preamble and document for package specs (`"@preview/cetz:0.5.3"` in a string), and the allowed ones are fetched, checked against their `integrity` and untarred into the document's files. Mounted packages are scanned for their own imports.
+- **Waiting.** A compile waits for its packages within the fix budget (1 s streaming, 3 s final). A package that arrives later compiles the revision again, as server-initiated output.
+- **Caching.** Tarballs are kept in Cache Storage (`typstream-packages`) where there is one, so allowed packages work offline after the first load, and in memory for every document of the worker.
+- **Other versions.** A version that isn't allowed resolves to the nearest allowed one (same major.minor, else the newest) with a warning on the import. Models often write old versions.
+- **Errors.** A missing package is reported as `package … is not allowed` (with the allowed ones as a hint), `is still loading` or `failed to load (reason)`.
+- **Local packages.** Files keyed `@namespace/name:x.y.z/path` (a document's or a plugin's `files`) are that package's files, so `#import "@typstream/edu:0.1.0"` works with no allowlist or download.
+- **Server options.** A server's own `serve(adapter, scope, { packages })` options set its allowlist, a `registry` for specs without a `url`, the cache, and `trustClient: false`, which ignores the client's lists. `@typstream/node` sets that, so WebSocket clients can't make it fetch URLs.
 
 Tests: `pnpm test` (Node: client, server, protocol conformance against engine-wasm) and `pnpm test:browser` (the real worker in Chromium, Firefox and WebKit). Any engine server must pass `__tests__/conformance.ts`.

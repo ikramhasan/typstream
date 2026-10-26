@@ -13,6 +13,7 @@ import { ExportFormat } from '@typstream/core';
 import { FileContent } from '@typstream/core';
 import { InitializeOptions } from '@typstream/core';
 import { InitInput } from '@typstream/engine-wasm';
+import { PackageSpec } from '@typstream/core';
 import { PageUpdate } from '@typstream/core';
 import { ServerMessage } from '@typstream/core';
 
@@ -114,10 +115,22 @@ export const fromMain: (d: Diagnostic, offset: number) => Diagnostic;
 export { InitInput }
 
 // @beta
-export const inProcess: (createAdapter: () => EngineAdapter, options?: Pick<ServerOptions, "fixers">) => SpawnEngine;
+export const inProcess: (createAdapter: () => EngineAdapter, options?: Pick<ServerOptions, "fixers" | "packages">) => SpawnEngine;
 
 // @public
 export type MaybePromise<T> = T | Promise<T>;
+
+// @beta
+export interface PackageOptions {
+    allowlist?: readonly PackageSpec[];
+    cache?: string | false;
+    fetch?: (url: string) => Promise<Response>;
+    registry?: string;
+    trustClient?: boolean;
+}
+
+// @public
+export const packageStub: DiagnosticFixer;
 
 // @public
 export const pendingRef: DiagnosticFixer;
@@ -129,12 +142,14 @@ export const PREAMBLE_PATH = "<preamble>";
 export const RUNTIME_PATH = "/@typstream/runtime.typ";
 
 // @public
-export const serve: (adapter: EngineAdapter, scope?: WorkerScope, options?: Pick<ServerOptions, "fixers">) => EngineServer;
+export const serve: (adapter: EngineAdapter, scope?: WorkerScope, options?: Pick<ServerOptions, "fixers" | "packages">) => EngineServer;
 
 // @public
 export interface ServerOptions {
     fixers?: readonly DiagnosticFixer[];
     onFatal?(error: unknown): void;
+    // @beta
+    packages?: PackageOptions;
 }
 
 // @public

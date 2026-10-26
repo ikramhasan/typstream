@@ -55,6 +55,57 @@ export const pendingRef: DiagnosticFixer = {
   },
 };
 
+const MISSING_PACKAGE =
+  /^package (@\S+) (?:is not allowed|is still loading|failed to load)|^package not found \(searched for (@[^)]+)\)$/;
+const NAME = String.raw`[\p{XID_Start}_][\p{XID_Continue}-]*`;
+const ITEM = String.raw`${NAME}(?:\.${NAME})*(?:\s+as\s+${NAME})?`;
+/** What follows an import's spec: `as name`, then `: *`, `: a, b as c` (maybe in parentheses), or nothing. */
+const IMPORT_TAIL = new RegExp(
+  String.raw`^(?:\s+as\s+(${NAME}))?(?:\s*:\s*(\*|\([^()]*\)|${ITEM}(?:\s*,\s*${ITEM})*))?`,
+  "u",
+);
+
+/**
+ * An import of a package the document can't have (not allowed, still loading,
+ * failed to load; PLAN §5.5) binds what it would have imported to
+ * placeholders that show the package's spec where they're called:
+ * `#import "@preview/x:1.0.0": a, b as c` becomes
+ * `#let (a, c) = (typstream.missing-package("@preview/x:1.0.0"),) * 2`, and a
+ * bare or `as m` import binds the module's name the same way. A wildcard
+ * import, or a module whose fields are used (`m.draw`), can't be stood in
+ * for: the error stays. Final compiles show the placeholders too and report
+ * the error.
+ * @public
+ */
+export const packageStub: DiagnosticFixer = {
+  name: "package-stub",
+  priority: 20,
+  match: MISSING_PACKAGE,
+  fix(d, { text }) {
+    const m = MISSING_PACKAGE.exec(d.message);
+    const spec = m?.[1] ?? m?.[2];
+    if (!d.span || spec === undefined || text.slice(d.span.from, d.span.to) !== typstString(spec)) return null;
+    const keyword = /import\s+$/.exec(text.slice(Math.max(0, d.span.from - 64), d.span.from));
+    if (!keyword) return null;
+    const from = d.span.from - keyword[0].length;
+    const tail = IMPORT_TAIL.exec(text.slice(d.span.to)) as RegExpExecArray;
+    const [, alias, items] = tail;
+    if (items === "*") return null;
+    const names = alias ? [alias] : [];
+    if (items) {
+      for (const item of items.replace(/^\(|\)$/g, "").split(",")) {
+        const parts = item.trim().split(/\s+as\s+/u);
+        const bound = (parts[1] ?? parts[0]?.split(".").pop())?.trim();
+        if (bound) names.push(bound);
+      }
+    } else if (!alias) names.push(spec.slice(spec.indexOf("/") + 1, spec.lastIndexOf(":")));
+    const stub = `typstream.missing-package(${typstString(spec)})`;
+    const insert =
+      names.length === 1 ? `let ${names[0]} = ${stub}` : `let (${names.join(", ")}) = (${stub},) * ${names.length}`;
+    return [{ from, to: d.span.to + tail[0].length, insert }];
+  },
+};
+
 // Lint already ran on the client's text; re-healing a prefix of it only closes what the cut left open.
 const NO_LINT = Object.fromEntries(Object.keys(DEFAULT_LINT).map((id) => [id, false])) as Record<LintRuleId, false>;
 
@@ -132,10 +183,10 @@ export const tailCut: DiagnosticFixer = {
 };
 
 /**
- * The built-in fixers: {@link pendingRef}, then {@link tailCut}.
+ * The built-in fixers: {@link pendingRef}, {@link packageStub}, then {@link tailCut}.
  * @public
  */
-export const DEFAULT_FIXERS: readonly DiagnosticFixer[] = [pendingRef, tailCut];
+export const DEFAULT_FIXERS: readonly DiagnosticFixer[] = [pendingRef, packageStub, tailCut];
 
 /** Most rounds of fixes after the first compile (PLAN §5.5). */
 export const MAX_FIX_ROUNDS = 2;

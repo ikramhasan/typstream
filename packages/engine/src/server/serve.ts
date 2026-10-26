@@ -20,7 +20,8 @@ export interface WorkerScope {
 /**
  * Runs the engine server in this worker: answers the client's messages with
  * `adapter`. A worker script is one call. `options.fixers` replaces the
- * built-in diagnostic fixers ({@link DEFAULT_FIXERS}).
+ * built-in diagnostic fixers ({@link DEFAULT_FIXERS}); `options.packages`
+ * configures Typst packages (by default the client's allowlist is used).
  *
  * @example
  * ```ts
@@ -33,7 +34,7 @@ export interface WorkerScope {
 export const serve = (
   adapter: EngineAdapter,
   scope?: WorkerScope,
-  options: Pick<ServerOptions, "fixers"> = {},
+  options: Pick<ServerOptions, "fixers" | "packages"> = {},
 ): EngineServer => {
   const self = scope ?? (globalThis as unknown as WorkerScope);
   const server = createServer(adapter, (message) => self.postMessage(message), {
@@ -54,11 +55,11 @@ export const serve = (
  * and Node. Messages are structured-cloned and delivered on later tasks, as a
  * worker's would be, but compiles block the thread and `terminate` can't stop
  * one that is running, so the watchdog can't rescue a runaway document.
- * `createAdapter` is called once per spawn; `options.fixers` is as in {@link serve}.
+ * `createAdapter` is called once per spawn; `options` are as in {@link serve}.
  * @beta
  */
 export const inProcess =
-  (createAdapter: () => EngineAdapter, options: Pick<ServerOptions, "fixers"> = {}): SpawnEngine =>
+  (createAdapter: () => EngineAdapter, options: Pick<ServerOptions, "fixers" | "packages"> = {}): SpawnEngine =>
   (events) => {
     let alive = true;
     const server = createServer(

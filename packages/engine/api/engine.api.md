@@ -15,6 +15,7 @@ import { HealOptions } from '@typstream/heal';
 import { HealResult } from '@typstream/heal';
 import { InitializeOptions } from '@typstream/core';
 import { InitializeResult } from '@typstream/core';
+import { PackageSpec } from '@typstream/core';
 import { Revision } from '@typstream/core';
 import { ServerMessage } from '@typstream/core';
 import { TextEdit } from '@typstream/core';
@@ -50,6 +51,8 @@ export interface DocumentOptions {
     files?: FileDelta;
     heal?: HealOptions;
     inputs?: Record<string, string>;
+    // @beta
+    packages?: PackageSpec[];
     preamble?: string;
     schedule?: Partial<ScheduleOptions>;
     target?: CompileTarget;

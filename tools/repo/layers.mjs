@@ -7,7 +7,8 @@
 // are listed so their rules are in place before their code is.
 //
 // `testDeps` are packages only the package's tests (`__tests__/`) may import too, as
-// devDependencies: html-compat's tests compile documents with the engine.
+// devDependencies: html-compat's tests compile documents with the engine, and the
+// engine's load the vendored Typst packages.
 //
 // `fixed` marks the packages released in one fixed version group (PLAN §10.4).
 // Changesets rejects names that don't exist yet, so .changeset/config.json lists
@@ -30,11 +31,18 @@ export const PACKAGES = {
   core: { name: "@typstream/core", layer: 0, deps: [], fixed: true },
   heal: { name: "@typstream/heal", layer: 1, deps: ["core"], fixed: true },
   syntax: { name: "@typstream/syntax", layer: 1, deps: ["core"] },
-  engine: { name: "@typstream/engine", layer: 2, deps: ["core", "heal", "engine-wasm"], fixed: true },
+  engine: {
+    name: "@typstream/engine",
+    layer: 2,
+    deps: ["core", "heal", "engine-wasm"],
+    testDeps: ["universe"],
+    fixed: true,
+  },
   "engine-wasm": { name: "@typstream/engine-wasm", layer: 2, deps: [] },
   node: { name: "@typstream/node", layer: 2, deps: ["core", "heal", "engine", "engine-wasm"] },
+  universe: { name: "@typstream/universe", layer: 2, deps: ["core"] },
   edu: { name: "@typstream/edu", layer: 3, deps: ["core"] },
-  "html-compat": { name: "@typstream/html-compat", layer: 3, deps: ["core"], testDeps: ["engine-wasm"] },
+  "html-compat": { name: "@typstream/html-compat", layer: 3, deps: ["core"], testDeps: ["engine-wasm", "universe"] },
   dom: { name: "@typstream/dom", layer: 4, deps: ["core", "engine"], testDeps: ["html-compat"], fixed: true },
   react: {
     name: "@typstream/react",
@@ -46,7 +54,7 @@ export const PACKAGES = {
   typstream: {
     name: "typstream",
     layer: 4,
-    deps: ["react", "engine", "engine-wasm", "heal", "html-compat"],
+    deps: ["react", "engine", "engine-wasm", "heal", "html-compat", "universe"],
     fixed: true,
   },
   ai: { name: "@typstream/ai", layer: 5, deps: ["core", "heal"] },

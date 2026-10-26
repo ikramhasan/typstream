@@ -25,6 +25,9 @@ import { TypstreamInfo } from '@typstream/react';
 import { TypstreamProps as TypstreamProps_2 } from '@typstream/react';
 import { TypstreamProvider } from '@typstream/react';
 import { TypstreamProviderProps } from '@typstream/react';
+import { universe } from '@typstream/universe';
+import { UNIVERSE_PACKAGES } from '@typstream/universe';
+import { UniversePackage } from '@typstream/universe';
 import { useTypstream } from '@typstream/react';
 
 export { createEngine }
@@ -67,11 +70,18 @@ export { TypstreamInfo }
 // @public
 export interface TypstreamProps extends TypstreamProps_2 {
     htmlCompat?: boolean;
+    packages?: boolean;
 }
 
 export { TypstreamProvider }
 
 export { TypstreamProviderProps }
+
+export { universe }
+
+export { UNIVERSE_PACKAGES }
+
+export { UniversePackage }
 
 export { useTypstream }
 

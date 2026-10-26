@@ -1,7 +1,7 @@
 {
   "name": "@typstream/playground",
   "version": "0.0.0",
-  "description": "Dev playground: replay streams, inspect healing, record corpus cases (PLAN.md §10.5).",
+  "description": "Dev playground: replay streams, inspect healing, record corpus cases (PLAN.md \u00a710.5).",
   "license": "UNLICENSED",
   "private": true,
   "type": "module",
@@ -21,6 +21,7 @@
     "@typstream/heal": "workspace:*",
     "@typstream/html-compat": "workspace:*",
     "@typstream/react": "workspace:*",
+    "@typstream/universe": "workspace:*",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },

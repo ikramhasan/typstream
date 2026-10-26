@@ -140,14 +140,16 @@ impl Engine {
         self.world.add_font(bytes)
     }
 
-    /// Sets a source file. `/main.typ` is the entry point. Throws on an
-    /// invalid path.
+    /// Sets a source file. `/main.typ` is the entry point. A path such as
+    /// `@preview/cetz:0.5.3/src/lib.typ` is a file of that package (its spec,
+    /// then the path inside it). Throws on an invalid path.
     pub fn set_source(&mut self, path: &str, text: &str) -> Result<(), JsError> {
         self.world.set_source(path_id(path)?, text);
         Ok(())
     }
 
-    /// Sets a binary file (images, data). Throws on an invalid path.
+    /// Sets a binary file (images, data, a package's `typst.toml` or wasm
+    /// plugins). Paths as in `set_source`. Throws on an invalid path.
     pub fn set_file(&mut self, path: &str, bytes: &[u8]) -> Result<(), JsError> {
         self.world.set_file(path_id(path)?, bytes);
         Ok(())

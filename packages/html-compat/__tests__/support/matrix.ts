@@ -17,7 +17,8 @@ export interface MatrixEntry {
 const BIB = `bytes("@book{knuth, title={The Art of Computer Programming}, author={Knuth, Donald}, year={1968}}")`;
 
 // A drawing built the way CeTZ builds its canvas: an unbreakable block of `place`d curves and labels
-// (cetz 0.4.2 src/canvas.typ). Packages aren't available to the engine yet (#27).
+// (cetz 0.4.2 src/canvas.typ). The real packages have entries below (#25); this one keeps the shape
+// covered without them.
 const CANVAS = `#block(breakable: false, width: 4cm, height: 2cm, {
   place(top + left, dx: 0pt, dy: 0pt, curve(curve.move((0pt, 0pt)), curve.line((3cm, 1.5cm))))
   place(top + left, dx: 1cm, dy: 1cm)[Label A]
@@ -178,6 +179,44 @@ export const MATRIX: MatrixEntry[] = [
     nativeDrops: true,
   },
   { name: "canvas of placed drawings (CeTZ-style)", source: CANVAS, html: /ts-frame" role="img" aria-label="Label A"/ },
+  // Packages typstream vendors (@typstream/universe, #25). fletcher 0.5.8 is a known gap: its
+  // cetz 0.3.4 canvas calls `layout` inside `context`, within the package, so it stays empty.
+  {
+    name: "CeTZ canvas (@preview/cetz:0.5.3)",
+    source: `#import "@preview/cetz:0.5.3"
+#cetz.canvas({
+  import cetz.draw: *
+  grid((-2, -2), (2, 2), step: 1, stroke: gray + 0.3pt)
+  circle((0, 0), radius: 1)
+  line((-2, 0), (2, 0), mark: (end: ">"))
+  content((1.4, 1.4), [Unit circle])
+})`,
+    html: /ts-frame" role="img" aria-label="Unit circle"/,
+    nativeDrops: true,
+  },
+  {
+    name: "function graph (@preview/cetz-plot:0.1.4)",
+    source: `#import "@preview/cetz:0.5.3"
+#import "@preview/cetz-plot:0.1.4": plot
+#cetz.canvas(plot.plot(size: (5, 3), x-label: [time], y-label: [height], {
+  plot.add(domain: (-2, 2), x => x * x - 1)
+}))`,
+    html: /ts-frame" role="img" aria-label="[^"]*time[^"]*height/,
+    nativeDrops: true,
+  },
+  {
+    name: "structural formula (@preview/alchemist:0.2.0)",
+    source: `#import "@preview/alchemist:0.2.0": *
+#skeletize({
+  fragment("H_3C")
+  single()
+  fragment("CH_2")
+  single()
+  fragment("OH")
+})`,
+    html: /ts-frame" role="img"/,
+    nativeDrops: true,
+  },
   {
     name: "box of placed pieces (hand-made diagram)",
     source:

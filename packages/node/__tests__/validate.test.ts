@@ -114,6 +114,18 @@ describe("validate", () => {
     expect(r.diagnostics).toMatchObject([{ message: "unknown variable: nope", span: { from: 44, to: 48 } }]);
   });
 
+  it("mounts a local package from files keyed by its spec", async () => {
+    const r = await validate('#import "@typstream/demo:0.1.0": greet\n#greet("class")', {
+      engine,
+      files: {
+        "@typstream/demo:0.1.0/typst.toml": '[package]\nname = "demo"\nversion = "0.1.0"\nentrypoint = "lib.typ"\n',
+        "@typstream/demo:0.1.0/lib.typ": "#let greet(who) = [Hello, #who!]",
+      },
+      lint: false,
+    });
+    expect(r.diagnostics).toEqual([]);
+  });
+
   it("rejects file paths outside the document", async () => {
     await expect(validate("x", { engine, files: { "../etc/passwd": "" } })).rejects.toThrow(/invalid file path/);
     await expect(validate("x", { engine, files: { "main.typ": "" } })).rejects.toThrow(/reserved/);

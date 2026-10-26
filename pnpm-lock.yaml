@@ -235,6 +235,9 @@ importers:
       '@typstream/react':
         specifier: workspace:*
         version: link:../../packages/react
+      '@typstream/universe':
+        specifier: workspace:*
+        version: link:../../packages/universe
       react:
         specifier: ^19.3.1
         version: 19.3.1
@@ -336,6 +339,9 @@ importers:
       '@typstream/corpus':
         specifier: workspace:*
         version: link:../../corpus
+      '@typstream/universe':
+        specifier: workspace:*
+        version: link:../universe
       '@vitest/browser-playwright':
         specifier: 4.1.12
         version: 4.1.12(playwright@1.64.1)(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))(vitest@4.1.12)
@@ -373,6 +379,9 @@ importers:
       '@typstream/engine-wasm':
         specifier: workspace:*
         version: link:../engine-wasm
+      '@typstream/universe':
+        specifier: workspace:*
+        version: link:../universe
       parse5:
         specifier: ^8.0.1
         version: 8.0.1
@@ -465,6 +474,9 @@ importers:
       '@typstream/react':
         specifier: workspace:*
         version: link:../react
+      '@typstream/universe':
+        specifier: workspace:*
+        version: link:../universe
     devDependencies:
       '@types/react':
         specifier: ^19.3.0
@@ -472,6 +484,12 @@ importers:
       react:
         specifier: ^19.3.1
         version: 19.3.1
+
+  packages/universe:
+    dependencies:
+      '@typstream/core':
+        specifier: workspace:*
+        version: link:../core
 
   tools/compile-oracle:
     devDependencies:

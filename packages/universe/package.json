@@ -1,0 +1,31 @@
+{
+  "name": "@typstream/universe",
+  "version": "0.0.0",
+  "description": "The Typst Universe packages typstream allows by default (CeTZ, fletcher, cetz-plot, physica, unify, chemformula, alchemist), vendored with integrity hashes, as an engine allowlist plugin.",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "vendor"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "vendor": "node scripts/vendor.mjs",
+    "check-types": "tsc -p tsconfig.json",
+    "check:api": "api-extractor run",
+    "api:update": "api-extractor run --local",
+    "check:package": "publint --strict --pack npm && attw --pack . --profile esm-only"
+  },
+  "dependencies": {
+    "@typstream/core": "workspace:*"
+  }
+}

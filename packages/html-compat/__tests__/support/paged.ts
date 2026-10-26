@@ -1,11 +1,13 @@
 // The text of a document's paged (PDF) output: native `typst compile` 0.15.1, read back with
-// pdf.js. This is the reference the HTML output must not lose characters against.
+// pdf.js. This is the reference the HTML output must not lose characters against. Documents
+// may import the vendored Typst packages.
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { fontDir } from "./fonts";
+import { packageDir } from "./packages";
 
 const TYPST_VERSION = "0.15.1";
 
@@ -43,6 +45,11 @@ export const pagedText = async (source: string, files: Record<string, Uint8Array
       fontDir(),
       "--features",
       "html",
+      // The vendored packages, and an empty cache so nothing is downloaded.
+      "--package-path",
+      packageDir(),
+      "--package-cache-path",
+      join(dir, ".no-package-cache"),
       join(dir, "main.typ"),
       "-",
     ]);

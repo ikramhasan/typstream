@@ -68,6 +68,11 @@ export const RUNTIME = `// typstream runtime library: placeholders for what a st
     if source != "" { block(above: 0.8em, text(size: 0.8em, raw(source, block: true))) }
   })
 }
+
+/// Stands for what a document imported from a package it can't have (not
+/// allowed, still loading, failed to load): a function that shows the
+/// package's spec wherever it is called.
+#let missing-package(spec) = (..args) => _muted("typstream-missing-package", [[#spec]])
 `;
 
 const ESCAPES: Record<string, string> = { "\n": "\\n", "\r": "\\r", "\t": "\\t", "\\": "\\\\", '"': '\\"' };

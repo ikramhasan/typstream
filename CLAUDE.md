@@ -19,12 +19,15 @@ packages/engine   @typstream/engine: main-thread client (heal → scheduler → 
                   by `engineWorker()`).
 packages/engine-wasm  @typstream/engine-wasm: Typst 0.15.1 as wasm (Rust crate + wasm-bindgen glue): HTML, changed-page SVG, PDF, UTF-16 diagnostics.
 packages/html-compat  @typstream/html-compat: Typst prelude + CSS so HTML export keeps grid, align, shapes, place, … (tests need the engine).
+packages/universe @typstream/universe: the Typst Universe packages allowed by default (CeTZ, fletcher, cetz-plot, physica, unify,
+                  chemformula, alchemist), vendored tarballs + integrity, as an allowlist plugin. The engine loads packages
+                  in `packages/engine/src/server/packages.ts`.
 packages/dom      @typstream/dom: framework-free renderers. `src/html/`: HTML renderer (string block split, sanitizer, source
                   anchors, word fade-in, caret, theme CSS). `src/paged/`: SVG pages (changed pages, visible first, text layer).
                   `src/mount.ts`: `mountTypstream`, a document on an engine in an element (what the bindings wrap).
                   `src/export/`: `standaloneHtml`, a downloadable file from an HTML export (theme, CSS, CSP).
 packages/react    @typstream/react: <Typstream>, TypstreamProvider, useTypstream(); a thin layer over mountTypstream.
-packages/typstream  typstream: the convenience package (<Typstream> with html-compat and the math font; re-exports).
+packages/typstream  typstream: the convenience package (<Typstream> with html-compat, the math font and universe's packages; re-exports).
 tools/typst-syntax-oracle   Typst's real parser and lexer compiled to wasm for Node; the ground truth in heal's tests.
 tools/compile-oracle        Do healed prefixes compile? heal × engine-wasm over the corpus, then the engine's fixers and fallback;
                             error classes, the prefix compile rate, and final-mode renders of every corpus document.
@@ -76,6 +79,11 @@ In `packages/engine`:
 In `packages/html-compat`:
 - Edit `typst/html-compat.typ` / `css/html-compat.css`, then `pnpm embed` to regenerate `src/assets.generated.ts` (a test checks it).
 - Its tests compile with engine-wasm (a `testDeps` entry in `tools/repo/layers.mjs`) and compare with native `typst` + pdf.js, so they run in CI's `Engine (wasm)` job, not the general test job.
+
+In `packages/universe`:
+- `vendor/` holds the `.tar.gz` files exactly as packages.typst.org serves them (committed). `integrity` is the SHA-256 of the *uncompressed* tar, because servers often send `.gz` with `Content-Encoding: gzip`.
+- `node scripts/vendor.mjs name:version` adds one and prints its integrity; `--check` compares every tarball with upstream (network). The tests check the hashes and that every package a vendored one imports is vendored too.
+- The engine's Node tests and html-compat's matrix mount these packages; html-compat's native `typst` runs get them through `--package-path` (no network).
 
 In `packages/dom`:
 - `pnpm test`: node tests (the HTML block splitter, paged helpers). `pnpm test:browser`: the renderers in Chromium, Firefox and WebKit, fed by the real engine worker with html-compat and corpus documents (needs engine-wasm's `dist/`). `BROWSERS=chromium` runs one.
