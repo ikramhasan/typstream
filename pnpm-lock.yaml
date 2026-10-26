@@ -324,6 +324,19 @@ importers:
         specifier: ^1.64.1
         version: 1.64.1
 
+  packages/edu:
+    dependencies:
+      '@typstream/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@typstream/engine-wasm':
+        specifier: workspace:*
+        version: link:../engine-wasm
+      '@typstream/html-compat':
+        specifier: workspace:*
+        version: link:../html-compat
+
   packages/engine:
     dependencies:
       '@typstream/core':
@@ -499,6 +512,9 @@ importers:
       '@typstream/corpus':
         specifier: workspace:*
         version: link:../../corpus
+      '@typstream/edu':
+        specifier: workspace:*
+        version: link:../../packages/edu
       '@typstream/engine':
         specifier: workspace:*
         version: link:../../packages/engine

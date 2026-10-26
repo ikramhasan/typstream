@@ -16,7 +16,13 @@
 import { describe, expect, it } from "vitest";
 import { knownBug } from "../../../packages/heal/__tests__/support/known-bugs";
 import type { ErrorClass } from "../support/classify";
-import { compilesComplete, corpusDocuments, generatedDocuments, type OracleDocument } from "../support/documents";
+import {
+  compilesComplete,
+  corpusDocuments,
+  eduDocuments,
+  generatedDocuments,
+  type OracleDocument,
+} from "../support/documents";
 import { newEngine } from "../support/engine";
 import { runDocument } from "../support/run";
 import { type ClassifiedPrefix, formatStats, stats } from "../support/stats";
@@ -50,6 +56,7 @@ const GENERATED = 40;
 const engine = newEngine();
 const corpus = corpusDocuments().filter((doc) => compilesComplete(engine, doc, TARGET));
 const generated = generatedDocuments(engine, GENERATED, TARGET);
+const edu = eduDocuments();
 
 /** Every SAMPLE-th chunk, offset per document so different cuts get covered, and the last. */
 const run = (doc: OracleDocument, offset: number): Promise<ClassifiedPrefix[]> =>
@@ -80,6 +87,18 @@ describe("compile oracle: healed prefixes compile", () => {
     all.push(...prefixes);
     for (const p of prefixes) if (p.fixedIn == null) for (const e of p.errors) seen.add(e.cls);
     expect(unexpected(doc, prefixes).slice(0, 5).join("\n\n")).toBe("");
+  });
+
+  it("edu documents compile when complete", () => {
+    for (const doc of edu) expect(compilesComplete(engine, doc, TARGET), doc.id).toBe(true);
+  });
+
+  it.each(edu.map((doc, i) => [doc.id, doc, i] as const))("%s", async (_, doc, i) => {
+    const prefixes = await run(doc, i);
+    for (const p of prefixes) if (p.fixedIn == null) for (const e of p.errors) seen.add(e.cls);
+    expect(unexpected(doc, prefixes).slice(0, 5).join("\n\n")).toBe("");
+    const s = stats(prefixes);
+    expect(s.fixedRate, doc.id).toBeGreaterThanOrEqual(RATE_FLOOR);
   });
 
   it("generated documents", async () => {

@@ -1,0 +1,6 @@
+[package]
+name = "edu"
+version = "0.1.0"
+entrypoint = "lib.typ"
+description = "Questions, answer spaces, answer keys, callouts, rubrics, drawings and templates for teachers' documents."
+compiler = "0.15.1"

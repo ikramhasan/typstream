@@ -3,6 +3,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { type CorpusEntry, loadCorpus, streamOf, synthesizeStream } from "@typstream/corpus";
+import { eduExamples, eduFiles, eduPreamble } from "@typstream/edu";
 import { heal } from "@typstream/heal";
 import fc from "fast-check";
 // Heal's property-test generator: documents assembled from complete constructs.
@@ -62,6 +63,24 @@ export const corpusDocuments = (): OracleDocument[] =>
         files: corpusFiles(e),
       };
     });
+
+/**
+ * @typstream/edu's prompt examples, written in its vocabulary (#23). The engine prepends edu's
+ * import as a preamble, so it arrives whole: the first chunk carries it.
+ */
+export const eduDocuments = (): OracleDocument[] =>
+  eduExamples.map((e) => {
+    const stream = synthesizeStream(e.output);
+    const chunks = stream.map((c) => c.text);
+    chunks[0] = eduPreamble + (chunks[0] ?? "");
+    return {
+      id: `edu/${e.title}`,
+      source: eduPreamble + e.output,
+      chunks,
+      times: stream.map((c) => c.t),
+      files: eduFiles,
+    };
+  });
 
 /** A module for the generator's `#import "lib.typ": f`. */
 const GENERATED_FILES = { "/lib.typ": "#let f(x) = x\n" };

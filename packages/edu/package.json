@@ -1,0 +1,38 @@
+{
+  "name": "@typstream/edu",
+  "version": "0.0.0",
+  "description": "Typst functions and templates for teachers' documents (questions, answer spaces and keys, callouts, rubrics, drawings, chemistry), as a typstream plugin.",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./edu.css": "./css/edu.css",
+    "./typst/*": "./typst/*"
+  },
+  "files": [
+    "dist",
+    "typst",
+    "css"
+  ],
+  "scripts": {
+    "build": "node scripts/embed.mjs && tsup",
+    "embed": "node scripts/embed.mjs",
+    "test": "vitest run",
+    "check-types": "tsc -p tsconfig.json",
+    "check:api": "api-extractor run",
+    "api:update": "api-extractor run --local",
+    "check:package": "publint --strict --pack npm && attw --pack . --profile esm-only --exclude-entrypoints ./edu.css"
+  },
+  "dependencies": {
+    "@typstream/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@typstream/engine-wasm": "workspace:*",
+    "@typstream/html-compat": "workspace:*"
+  }
+}
