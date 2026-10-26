@@ -45,6 +45,13 @@ export default {
       to: { path: "(^|/node_modules/)(react|react-dom|preact)(/|$)" },
     },
     {
+      name: "no-apps",
+      severity: "error",
+      comment: "Apps import packages, never the reverse.",
+      from: { path: "^packages/" },
+      to: { path: "^apps/" },
+    },
+    {
       name: "no-spikes",
       severity: "error",
       comment: "spikes/ is throwaway: port code into packages/ instead of importing it.",
@@ -54,6 +61,8 @@ export default {
   ],
   options: {
     doNotFollow: { path: "node_modules" },
+    // Build output: bundles, not the source the rules are about.
+    exclude: { path: "(^|/)dist/" },
     // Resolve @typstream/* to source, so the check doesn't need a build.
     tsConfig: { fileName: "tsconfig.base.json" },
     tsPreCompilationDeps: true,

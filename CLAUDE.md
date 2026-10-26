@@ -19,12 +19,13 @@ tools/typst-syntax-oracle   Typst's real parser compiled to wasm for Node; the g
 tools/compile-oracle        Do healed prefixes compile? heal × engine-wasm over the corpus; error classes and the prefix compile rate.
 tools/repo        Repo tooling: package layer table (layers.mjs), layering check, shared tsup and api-extractor configs.
 corpus/           @typstream/corpus (private): shared test documents (edu/, adversarial/), meta.json, stream replay.
+apps/playground   Dev playground (Vite + React): replay streams, inspect healing, record corpus cases. Heal-only for now.
 spikes/phase0     Throwaway Phase 0 experiments: browser harness (harness/) and custom Typst wasm engine (custom-engine/).
                   Port code out of here into packages/; don't import from spikes.
 PLAN.md           Design and roadmap.
 ```
 
-Planned packages and their dependency layers are in PLAN.md §4.1. Rules: `core` has no dependencies; nothing below the bindings layer imports React; protocol and plugin types live in `core`. `pnpm check:layers` enforces them from the table in `tools/repo/layers.mjs`: a package may import only the packages in its row's `deps` (the §4.1 "Deps" column).
+Planned packages and their dependency layers are in PLAN.md §4.1. Rules: `core` has no dependencies; nothing below the bindings layer imports React; protocol and plugin types live in `core`. `pnpm check:layers` enforces them from the table in `tools/repo/layers.mjs`: a package may import only the packages in its row's `deps` (the §4.1 "Deps" column). Apps (`apps/*`) may import any package; packages never import apps.
 
 ## Setup and commands
 
@@ -65,6 +66,13 @@ Compile oracle (`tools/compile-oracle`, needs the built engine): `pnpm turbo run
 CI (`.github/workflows/ci.yml`) runs the same commands on every PR, building the oracle through `.github/actions/oracle` (cached on the crate's inputs). `nightly.yml` runs `test:long`.
 
 Adding a package: copy `packages/core` and rename. Its `tsconfig.json`, `tsup.config.ts` and `api-extractor.json` only extend the shared configs (`tsconfig.base.json`, `tools/repo/`), and `@typstream/*` resolves to `packages/*/src` through a wildcard path. Then add its row to `tools/repo/layers.mjs`, and add it to the `fixed` group in `.changeset/config.json` if the row says `fixed`. Delete the copied `api/core.api.md` but keep `api/` (api-extractor won't create it), then `pnpm api:update` writes the new package's report.
+
+In `apps/playground` (PLAN.md §10.5, #31):
+- `pnpm --filter playground dev`: Vite dev server on http://localhost:5173. No build needed first: `@typstream/*` resolves to `packages/*/src` (see `vite.config.ts`), so heal edits hot-reload.
+- Load a corpus entry, paste a document or `.stream.jsonl`, or open one from disk. Scrub by chunk, token or character (arrows, Shift for 10, Home/End, Space plays at the recorded timing). The panes show raw input vs healed source with patches, open frames, the settled boundary, lint findings and syntax errors; the inspector has per-step and whole-stream push timings against the §1 budget.
+- The URL hash holds the whole state (source, seed, split, step, options), so a link reproduces a case. "Save as corpus case" downloads `.typ` + `.stream.jsonl` and shows the `meta.json` entry to add.
+- The dev and preview servers send COOP/COEP headers: without cross-origin isolation browsers round `performance.now()` to 0.1 ms, too coarse for heal's timings. The first profile after a load includes JIT warm-up; use "re-run".
+- `pnpm --filter playground build` (static `dist/`), `test`, `check-types`. The render pane is a slot until the engine worker (#10) and React bindings (#17) land.
 
 Spikes (reference only):
 - Custom engine: `spikes/phase0/custom-engine/build.sh <variant>`.

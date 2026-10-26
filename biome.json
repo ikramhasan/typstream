@@ -4,6 +4,7 @@
   "files": {
     "includes": [
       "packages/**",
+      "apps/**",
       "corpus/**",
       "tools/repo/**",
       "tools/compile-oracle/**",
