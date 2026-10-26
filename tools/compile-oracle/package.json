@@ -13,6 +13,7 @@
   "devDependencies": {
     "@typstream/core": "workspace:*",
     "@typstream/corpus": "workspace:*",
+    "@typstream/edu": "workspace:*",
     "@typstream/engine": "workspace:*",
     "@typstream/engine-wasm": "workspace:*",
     "@typstream/heal": "workspace:*"

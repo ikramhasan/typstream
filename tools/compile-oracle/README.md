@@ -2,7 +2,7 @@
 
 Do healed stream prefixes **compile**? Heal's own tests prove every healed prefix parses (Typst's parser is the oracle). This workspace checks the next step: it streams documents through `@typstream/heal`'s incremental healer and compiles every healed prefix with the real compiler, `@typstream/engine-wasm`, then classifies the errors. Failing prefixes then go through the engine server's Layer 3 fixers (`@typstream/engine/server`, #20), the way the worker compiles them, to measure the rate with fixers, and what those leave through its Layer 4 fallback (#21). It lives outside `packages/` because heal may not import the engine (PLAN.md §4.1).
 
-Documents: the corpus documents whose complete source compiles for the target (`corpus/`, up to 20 KB and 50 pages; the cut-off response counts, since it heals to one), and documents from heal's property-test generator that compile when complete.
+Documents: the corpus documents whose complete source compiles for the target (`corpus/`, up to 20 KB and 50 pages; the cut-off response counts, since it heals to one), documents from heal's property-test generator that compile when complete, and `@typstream/edu`'s prompt examples (#23), with edu's import arriving whole in the first chunk as the engine's preamble would.
 
 ```bash
 pnpm turbo run test --filter=@typstream/compile-oracle   # builds the engine first if needed

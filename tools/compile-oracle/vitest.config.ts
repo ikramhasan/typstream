@@ -11,6 +11,7 @@ export default defineConfig({
     alias: {
       "@typstream/core": new URL("../../packages/core/src/index.ts", import.meta.url).pathname,
       "@typstream/heal": new URL("../../packages/heal/src/index.ts", import.meta.url).pathname,
+      "@typstream/edu": new URL("../../packages/edu/src/index.ts", import.meta.url).pathname,
       "@typstream/corpus": new URL("../../corpus/src/index.ts", import.meta.url).pathname,
     },
   },
