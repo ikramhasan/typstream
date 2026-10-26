@@ -55,6 +55,8 @@ const expected = [
   ["layering:core", "packages/core/src/index.ts", "packages/heal/src/index.ts"],
   ["layering:dom", "packages/dom/src/index.ts", "packages/heal/src/index.ts"],
   ["layering:heal", "packages/heal/src/index.ts", "packages/engine/src/index.ts"],
+  ["layering:html-compat", "packages/html-compat/src/index.ts", "packages/engine-wasm/src/index.ts"],
+  ["layering:html-compat:tests", "packages/html-compat/__tests__/a.test.ts", "packages/heal/src/index.ts"],
   ["no-react-below-bindings", "packages/core/src/index.ts", "react"],
   ["no-react-below-bindings", "packages/engine/src/index.ts", "react"],
   ["no-spikes", "packages/heal/src/index.ts", "spikes/spike.ts"],

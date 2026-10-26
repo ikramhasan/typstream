@@ -10,6 +10,7 @@
       "!**/dist",
       "!**/node_modules",
       "!**/target",
+      "!**/*.generated.ts",
       "!!reference",
       "!!spikes",
       "!!tools/typst-syntax-oracle",

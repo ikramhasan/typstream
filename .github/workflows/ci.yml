@@ -19,7 +19,8 @@ permissions:
 env:
   NODE: node@24
   # The engine (packages/engine-wasm) needs Rust, binaryen and native typst; only the engine job has them.
-  NOT_ENGINE: --filter=!@typstream/engine-wasm
+  # html-compat's tests compile with the engine (a devDependency turbo would build), so it runs there too.
+  NOT_ENGINE: --filter=!@typstream/engine-wasm --filter=!@typstream/html-compat
 
 jobs:
   lint:
@@ -109,7 +110,7 @@ jobs:
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
   # The Typst engine: Rust build (cached by rust-cache), tests against native typst, wasm size budget, API report and
-  # package lint. Compile-oracle tests for heal are #13.
+  # package lint. Also html-compat, whose tests compile with the engine. Compile-oracle tests for heal are #13.
   engine:
     name: Engine (wasm)
     runs-on: ubuntu-latest
@@ -149,6 +150,6 @@ jobs:
           echo "$bin" >> "$GITHUB_PATH"
       - uses: pnpm/setup@v3
         with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
-      - run: pnpm exec turbo run build check-types test size check:api check:package --filter=@typstream/engine-wasm
+      - run: pnpm exec turbo run build check-types test size check:api check:package --filter=@typstream/engine-wasm --filter=@typstream/html-compat
 
   # TODO(#19): Playwright suites (visual, flicker, a11y, cross-browser).
