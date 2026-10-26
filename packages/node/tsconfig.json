@@ -1,0 +1,6 @@
+{
+  "extends": "../../tsconfig.base.json",
+  // DOM: engine-wasm's glue types (InitInput) and the WebAssembly namespace.
+  "compilerOptions": { "types": ["node"], "lib": ["ES2022", "DOM"] },
+  "include": ["src", "__tests__"]
+}

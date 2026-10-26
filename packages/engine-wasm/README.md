@@ -30,6 +30,8 @@ In Node or a worker that already has the bytes: `initSync({ module: bytes })`.
 | `compile_html()` | `{ ok, html?, diagnostics, ms }` |
 | `compile_svg_changed()` | `{ ok, pageCount?, changed?, diagnostics, ms, compileMs, exportMs }`. A failed compile keeps the previous pages as the baseline. |
 | `reset_pages()` | The next `compile_svg_changed` sends every page. |
+| `check_paged()` | `{ ok, pageCount?, diagnostics, ms }`: a paged compile without export, for validation. Leaves the changed-page baseline alone. |
+| `compile_pdf()` | `{ ok, pdf?, pageCount?, diagnostics, ms }`. Only in the `pdf` build. |
 | `Engine.features()` | `["html", "svg"]`, plus `"pdf"` in builds with that feature. |
 | `Engine.memory_bytes()` | Wasm linear memory in bytes. |
 
@@ -42,14 +44,14 @@ Things to know:
 - The memoization cache and memory are **global to the wasm instance**, shared by every `Engine` in it. Wasm memory never shrinks; recycle the worker to give it back.
 - No packages, network or filesystem: a document can read only what was set on the engine.
 - `datetime.today()` is the local date, as in the Typst CLI.
-- PDF export isn't in the default build (`FEATURES=pdf ./build.sh` adds `compile_pdf()`); how PDF ships is #18.
+- PDF export isn't in the default build. `build.sh` also writes a build with it to `dist/pdf/`, imported as `@typstream/engine-wasm/pdf` (same API plus `compile_pdf()`). `@typstream/node` runs it; how browsers get PDF is #18.
 
 ## Building
 
 Needs Rust ≥ 1.92 with `wasm32-unknown-unknown`, `wasm-bindgen-cli` at exactly the version in `Cargo.lock` (0.2.129), and binaryen's `wasm-opt`.
 
 ```bash
-pnpm build        # ./build.sh: cargo release build, wasm-bindgen --target web, wasm-opt -Oz → dist/
+pnpm build        # ./build.sh: cargo release build, wasm-bindgen --target web, wasm-opt -Oz → dist/ and dist/pdf/
 pnpm test         # vitest, against the existing dist/
 pnpm turbo run test --filter=@typstream/engine-wasm   # from the repo root: build if needed, then test
 pnpm size         # brotli-11 size of the wasm; budget 6.0 MB

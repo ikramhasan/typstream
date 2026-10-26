@@ -5,6 +5,7 @@
     "includes": [
       "packages/**",
       "corpus/**",
+      "examples/**",
       "tools/repo/**",
       ".dependency-cruiser.mjs",
       "!**/dist",

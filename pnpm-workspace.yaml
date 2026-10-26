@@ -1,6 +1,7 @@
 packages:
   - "packages/*"
   - "corpus"
+  - "examples/*"
 
 allowBuilds:
   esbuild: true

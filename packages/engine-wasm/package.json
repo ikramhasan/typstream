@@ -11,7 +11,12 @@
       "types": "./dist/engine.d.ts",
       "default": "./dist/engine.js"
     },
-    "./engine_bg.wasm": "./dist/engine_bg.wasm"
+    "./engine_bg.wasm": "./dist/engine_bg.wasm",
+    "./pdf": {
+      "types": "./dist/pdf/engine.d.ts",
+      "default": "./dist/pdf/engine.js"
+    },
+    "./pdf/engine_bg.wasm": "./dist/pdf/engine_bg.wasm"
   },
   "files": [
     "dist"
@@ -23,6 +28,6 @@
     "check-types": "tsc -p tsconfig.json",
     "check:api": "api-extractor run",
     "api:update": "api-extractor run --local",
-    "check:package": "publint --strict --pack npm && attw --pack . --profile esm-only --exclude-entrypoints ./engine_bg.wasm"
+    "check:package": "publint --strict --pack npm && attw --pack . --profile esm-only --exclude-entrypoints ./engine_bg.wasm ./pdf/engine_bg.wasm"
   }
 }

@@ -19,7 +19,8 @@ permissions:
 env:
   NODE: node@24
   # The engine (packages/engine-wasm) needs Rust, binaryen and native typst; only the engine job has them.
-  NOT_ENGINE: --filter=!@typstream/engine-wasm
+  # @typstream/node and its example run the engine, so they live in that job too.
+  NOT_ENGINE: --filter=!@typstream/engine-wasm --filter=!@typstream/node --filter=!@typstream/example-node-validate
 
 jobs:
   lint:
@@ -109,7 +110,8 @@ jobs:
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
   # The Typst engine: Rust build (cached by rust-cache), tests against native typst, wasm size budget, API report and
-  # package lint. Compile-oracle tests for heal are #13.
+  # package lint. Then @typstream/node on top of it (corpus, watchdog, protocol conformance) and its example.
+  # Compile-oracle tests for heal are #13.
   engine:
     name: Engine (wasm)
     runs-on: ubuntu-latest
@@ -150,5 +152,8 @@ jobs:
       - uses: pnpm/setup@v3
         with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
       - run: pnpm exec turbo run build check-types test size check:api check:package --filter=@typstream/engine-wasm
+      - run: pnpm exec turbo run build check-types test check:api check:package --filter=@typstream/node
+      - name: examples/node-validate
+        run: pnpm exec turbo run test --filter=@typstream/example-node-validate
 
   # TODO(#19): Playwright suites (visual, flicker, a11y, cross-browser).

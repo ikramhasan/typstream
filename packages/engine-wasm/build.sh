@@ -2,10 +2,12 @@
 # Builds the engine into dist/:
 #   engine.js        wasm-bindgen --target web glue (ES module; default export = async init, plus initSync)
 #   engine.d.ts      types, including the result and Diagnostic types
-#   engine_bg.wasm   release build after wasm-opt -Oz
+#   engine_bg.wasm   release build after wasm-opt -Oz: HTML + SVG, what browsers load
+#   pdf/             the same three files built with the `pdf` feature (`@typstream/engine-wasm/pdf`):
+#                    what @typstream/node runs, and the candidate lazy PDF module for #18
 #
-#   ./build.sh                  # html + svg (the default build)
-#   FEATURES=pdf ./build.sh     # also PDF export (not shipped; see #18)
+#   ./build.sh                  # both builds
+#   FEATURES=pdf ./build.sh     # only the root build, with the given cargo features
 #
 # Needs Rust >= 1.92 with wasm32-unknown-unknown, wasm-bindgen-cli at the
 # version in Cargo.lock, and binaryen's wasm-opt.
@@ -36,14 +38,24 @@ if [ "$locked" != "$cli" ]; then
   exit 1
 fi
 
-cargo build --release --locked --target "$TARGET" ${FEATURES:+--features "$FEATURES"}
+# build <out-dir> [cargo features]
+build() {
+  local out=$1 features=${2:-}
+  cargo build --release --locked --target "$TARGET" ${features:+--features "$features"}
+  mkdir -p "$out"
+  wasm-bindgen --target web --out-dir "$out" --out-name engine "$WASM"
+  wasm-opt "${WASM_OPT_FEATURES[@]}" -Oz "$out/engine_bg.wasm" -o "$out/engine_bg.opt.wasm"
+  mv "$out/engine_bg.opt.wasm" "$out/engine_bg.wasm"
+  # wasm-bindgen's own .d.ts for the raw module; nobody imports it.
+  rm -f "$out/engine_bg.wasm.d.ts"
+  echo "built $(pwd)/$out ($(wc -c < "$out/engine_bg.wasm" | tr -d ' ') bytes of wasm)"
+}
 
 rm -rf dist
-mkdir -p dist
-wasm-bindgen --target web --out-dir dist --out-name engine "$WASM"
-wasm-opt "${WASM_OPT_FEATURES[@]}" -Oz dist/engine_bg.wasm -o dist/engine_bg.opt.wasm
-mv dist/engine_bg.opt.wasm dist/engine_bg.wasm
-# wasm-bindgen's own .d.ts for the raw module; nobody imports it.
-rm -f dist/engine_bg.wasm.d.ts
-
-echo "built $(pwd)/dist ($(wc -c < dist/engine_bg.wasm | tr -d ' ') bytes of wasm)"
+if [ -n "${FEATURES:-}" ]; then
+  build dist "$FEATURES"
+else
+  build dist
+  # Shares every dependency artifact with the build above; only typst-pdf and the final link are extra.
+  build dist/pdf pdf
+fi

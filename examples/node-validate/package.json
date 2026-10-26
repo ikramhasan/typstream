@@ -1,0 +1,14 @@
+{
+  "name": "@typstream/example-node-validate",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Validate an LLM-written Typst document on the server, repair it in a fix loop, and render it to PDF.",
+  "type": "module",
+  "scripts": {
+    "start": "node index.mjs",
+    "test": "node index.mjs worksheet.typ --quiet"
+  },
+  "dependencies": {
+    "@typstream/node": "workspace:*"
+  }
+}

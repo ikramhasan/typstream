@@ -9,6 +9,9 @@ function __wbg_init (module_or_path?: { module_or_path: InitInput | Promise<Init
 export default __wbg_init;
 
 // @public
+export type CheckResult = { ok: boolean; pageCount?: number; diagnostics: Diagnostic[]; ms: number };
+
+// @public
 export type Diagnostic = {
     severity: "error" | "warning";
     span: Range_2 | null;
@@ -25,6 +28,7 @@ export class Engine {
     [Symbol.dispose](): void;
     constructor();
     add_font(bytes: Uint8Array): number;
+    check_paged(): CheckResult;
     compile_html(): HtmlResult;
     compile_svg_changed(): SvgChangedResult;
     static features(): string[];
@@ -60,6 +64,8 @@ export interface InitOutput {
     readonly __wbindgen_export4: (a: number, b: number, c: number) => void;
     // (undocumented)
     readonly engine_add_font: (a: number, b: number, c: number) => number;
+    // (undocumented)
+    readonly engine_check_paged: (a: number) => number;
     // (undocumented)
     readonly engine_compile_html: (a: number) => number;
     // (undocumented)
