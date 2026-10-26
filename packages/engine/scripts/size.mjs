@@ -1,24 +1,32 @@
-// Bundle size budget (PLAN.md §11.6): the main-thread part of the engine,
-// minified + gzipped ESM. @typstream/heal has its own budget and is left out;
-// @typstream/core's helpers are inlined.
+// Bundle size budgets (PLAN.md §11.6), minified + gzipped ESM:
+// - the main-thread part of the engine. @typstream/heal has its own budget and
+//   is left out; @typstream/core's helpers are inlined.
+// - the worker's JS: the server, core's helpers and engine-wasm's glue. The
+//   wasm and the fonts are separate files with their own budgets.
 import { gzipSync } from "node:zlib";
 import { build } from "esbuild";
 
-const BUDGET_GZ = 8 * 1024;
-const result = await build({
-  entryPoints: ["src/index.ts"],
-  bundle: true,
-  minify: true,
-  format: "esm",
-  write: false,
-  platform: "neutral",
-  external: ["@typstream/heal"],
-  alias: { "@typstream/core": "../core/src/index.ts" },
-});
-const code = result.outputFiles[0].contents;
-const gz = gzipSync(code, { level: 9 }).length;
 const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
-console.log(
-  `@typstream/engine (main thread): ${kb(code.length)} minified, ${kb(gz)} gzipped (budget ${kb(BUDGET_GZ)})`,
-);
-process.exitCode = gz <= BUDGET_GZ ? 0 : 1;
+
+const measure = async (label, entry, budget, external) => {
+  const result = await build({
+    entryPoints: [entry],
+    bundle: true,
+    minify: true,
+    format: "esm",
+    write: false,
+    platform: "neutral",
+    external,
+    alias: { "@typstream/core": "../core/src/index.ts" },
+  });
+  const code = result.outputFiles[0].contents;
+  const gz = gzipSync(code, { level: 9 }).length;
+  console.log(`${label}: ${kb(code.length)} minified, ${kb(gz)} gzipped (budget ${kb(budget)})`);
+  return gz <= budget;
+};
+
+const ok = [
+  await measure("@typstream/engine (main thread)", "src/index.ts", 8 * 1024, ["@typstream/heal"]),
+  await measure("@typstream/engine (worker JS, excl. wasm and fonts)", "src/worker.ts", 40 * 1024, []),
+];
+process.exitCode = ok.every(Boolean) ? 0 : 1;

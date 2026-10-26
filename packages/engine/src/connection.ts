@@ -77,7 +77,11 @@ export const fromWorker =
   (events) => {
     const worker = create();
     worker.addEventListener("message", (event) => events.message(event.data as ServerMessage));
-    worker.addEventListener("error", (event) => events.error(event));
+    worker.addEventListener("error", (event) => {
+      // Handled here: without this, browsers also report it as an uncaught error of the page.
+      (event as { preventDefault?(): void }).preventDefault?.();
+      events.error(event);
+    });
     // A message that can't be deserialized leaves a request unanswered forever.
     worker.addEventListener("messageerror", (event) => events.error(event));
     return worker;

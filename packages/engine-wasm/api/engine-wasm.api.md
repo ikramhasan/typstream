@@ -9,6 +9,9 @@ function __wbg_init (module_or_path?: { module_or_path: InitInput | Promise<Init
 export default __wbg_init;
 
 // @public
+export type ChangedPage = { index: number; hash: string; width: number; height: number; svg: string };
+
+// @public
 export type CheckResult = { ok: boolean; pageCount?: number; diagnostics: Diagnostic[]; ms: number };
 
 // @public
@@ -101,7 +104,7 @@ export { Range_2 as Range }
 export type SvgChangedResult = {
     ok: boolean;
     pageCount?: number;
-    changed?: { index: number; svg: string }[];
+    changed?: ChangedPage[];
     diagnostics: Diagnostic[];
     ms: number;
     compileMs: number;

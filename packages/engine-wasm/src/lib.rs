@@ -39,6 +39,11 @@ export type Diagnostic = {
 /** `ms` is the time spent in the call: compile, export and cache eviction. */
 export type HtmlResult = { ok: boolean; html?: string; diagnostics: Diagnostic[]; ms: number };
 /**
+ * One exported page. `hash` (32 hex digits) identifies the page's content: equal
+ * hashes mean identical pages. `width` and `height` are in Typst points.
+ */
+export type ChangedPage = { index: number; hash: string; width: number; height: number; svg: string };
+/**
  * `changed` holds only the pages whose content changed since the last successful
  * call (all of them after `reset_pages`); indices refer to the new document.
  * Pages at or past `pageCount` are gone.
@@ -46,7 +51,7 @@ export type HtmlResult = { ok: boolean; html?: string; diagnostics: Diagnostic[]
 export type SvgChangedResult = {
   ok: boolean;
   pageCount?: number;
-  changed?: { index: number; svg: string }[];
+  changed?: ChangedPage[];
   diagnostics: Diagnostic[];
   ms: number;
   compileMs: number;
@@ -205,6 +210,9 @@ impl Engine {
                     if self.page_hashes.get(index) != Some(&hash) {
                         let entry = js_sys::Object::new();
                         set(&entry, "index", index as f64);
+                        set(&entry, "hash", format!("{hash:032x}"));
+                        set(&entry, "width", page.frame.width().to_pt());
+                        set(&entry, "height", page.frame.height().to_pt());
                         set(&entry, "svg", typst_svg::svg(page, &options));
                         changed.push(&entry);
                     }
