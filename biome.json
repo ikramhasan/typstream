@@ -4,8 +4,10 @@
   "files": {
     "includes": [
       "packages/**",
+      "apps/**",
       "corpus/**",
       "tools/repo/**",
+      "tools/compile-oracle/**",
       ".dependency-cruiser.mjs",
       "!**/dist",
       "!**/node_modules",

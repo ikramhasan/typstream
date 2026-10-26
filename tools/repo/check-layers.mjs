@@ -4,7 +4,7 @@
 //    name, and declares only the workspace dependencies its row allows.
 // 2. dependency-cruiser on a fixture of illegal imports reports exactly the
 //    expected violations, so a rule that silently stopped matching fails here.
-// 3. dependency-cruiser on packages/.
+// 3. dependency-cruiser on packages/ and apps/.
 import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -57,11 +57,12 @@ const expected = [
   ["layering:heal", "packages/heal/src/index.ts", "packages/engine/src/index.ts"],
   ["layering:html-compat", "packages/html-compat/src/index.ts", "packages/engine-wasm/src/index.ts"],
   ["layering:html-compat:tests", "packages/html-compat/__tests__/a.test.ts", "packages/heal/src/index.ts"],
+  ["no-apps", "packages/engine/src/index.ts", "apps/playground/app.ts"],
   ["no-react-below-bindings", "packages/core/src/index.ts", "react"],
   ["no-react-below-bindings", "packages/engine/src/index.ts", "react"],
   ["no-spikes", "packages/heal/src/index.ts", "spikes/spike.ts"],
 ].map((v) => v.join(" "));
-const fixture = spawnSync(depcruise, ["packages", "--config", config, "--output-type", "json"], {
+const fixture = spawnSync(depcruise, ["packages", "apps", "--config", config, "--output-type", "json"], {
   cwd: join(root, "tools/repo/fixtures/layering"),
   encoding: "utf8",
 });
@@ -81,7 +82,7 @@ console.log(`✓ manifests match layers.mjs; fixture reports all ${expected.leng
 
 // 3. The real tree. depcruise prints the violations and sets the exit code.
 try {
-  execFileSync(depcruise, ["packages", "--config", config, "--output-type", "err-long"], {
+  execFileSync(depcruise, ["packages", "apps", "--config", config, "--output-type", "err-long"], {
     cwd: root,
     stdio: "inherit",
   });

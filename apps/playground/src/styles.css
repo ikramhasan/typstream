@@ -1,0 +1,512 @@
+:root {
+  --bg: #111317;
+  --panel: #181b21;
+  --border: #2a2f38;
+  --fg: #e3e6eb;
+  --muted: #8a93a3;
+  --accent: #6ea8fe;
+  --ok: #3fb984;
+  --warn: #e0a83a;
+  --bad: #f0605a;
+  --ins: rgba(63, 185, 132, 0.28);
+  --del: rgba(240, 96, 90, 0.3);
+  --norm: rgba(170, 120, 255, 0.3);
+  --tail: rgba(110, 168, 254, 0.08);
+  --mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: dark;
+  font:
+    13px / 1.45 system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif;
+  color: var(--fg);
+  background: var(--bg);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+button,
+select,
+input,
+textarea {
+  font: inherit;
+  color: inherit;
+  background: #21252d;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+button {
+  padding: 3px 10px;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--muted);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+button.primary {
+  background: #2d5bd1;
+  border-color: #3a6be0;
+}
+
+button.link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+select,
+input {
+  padding: 2px 6px;
+}
+
+input[type="number"] {
+  width: 5em;
+}
+
+input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+small {
+  color: var(--muted);
+}
+
+.app {
+  display: grid;
+  grid-template-rows: auto auto auto 1fr;
+  height: 100vh;
+}
+
+/* Toolbar */
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+
+.toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+}
+
+.toolbar .brand {
+  margin-right: 4px;
+}
+
+.toolbar select {
+  max-width: 200px;
+}
+
+.toolbar .sep {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+}
+
+.toolbar .grow {
+  flex: 1;
+}
+
+.lint-menu {
+  position: relative;
+}
+
+.lint-menu summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.lint-rules {
+  position: absolute;
+  z-index: 10;
+  top: 24px;
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.lint-rules label {
+  justify-content: space-between;
+  gap: 16px;
+  white-space: nowrap;
+}
+
+/* Scrubber */
+
+.scrubber {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.scrubber-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.scrubber-controls button {
+  min-width: 34px;
+}
+
+.scrubber-controls .position {
+  margin-left: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.scrubber-controls .next-chunk {
+  overflow: hidden;
+  margin-left: auto;
+  max-width: 45%;
+  color: var(--muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.scrubber-track input[type="range"] {
+  display: block;
+  width: 100%;
+  margin: 0;
+}
+
+.timing-strip {
+  display: block;
+  width: 100%;
+  height: 28px;
+  margin-top: 2px;
+  cursor: pointer;
+}
+
+.error-banner {
+  padding: 6px 12px;
+  background: var(--del);
+}
+
+/* Panes */
+
+.panes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 380px;
+  grid-template-rows: minmax(0, 3fr) minmax(0, 2fr);
+  grid-template-areas:
+    "raw healed inspector"
+    "render render inspector";
+  min-height: 0;
+}
+
+.pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--border);
+}
+
+.pane h2 {
+  margin: 0;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.pane h2 small {
+  margin-left: 6px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.source-pane.raw {
+  grid-area: raw;
+}
+
+.source-pane.healed {
+  grid-area: healed;
+}
+
+.source-pane pre {
+  flex: 1;
+  overflow: auto;
+  margin: 0;
+  padding: 8px 12px;
+  font: 12.5px / 1.5 var(--mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Highlights. Raw panes show what patches remove, healed panes what they insert;
+   an empty range is a caret where text was inserted (raw) or removed (healed). */
+
+.unsettled {
+  background-color: var(--tail);
+}
+
+.raw .patch {
+  background: var(--del);
+  text-decoration: line-through rgba(240, 96, 90, 0.8);
+}
+
+.healed .patch {
+  background: var(--ins);
+}
+
+.normalize {
+  background: var(--norm);
+}
+
+.open {
+  outline: 1px solid var(--warn);
+  outline-offset: -1px;
+  border-radius: 2px;
+}
+
+.error {
+  text-decoration: underline wavy var(--bad);
+}
+
+.finding {
+  text-decoration: underline wavy var(--warn);
+}
+
+.caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.2em;
+  margin: 0 1px;
+  vertical-align: text-bottom;
+  background: var(--muted);
+}
+
+.raw .caret.patch {
+  background: var(--ok);
+}
+
+.healed .caret.patch {
+  background: var(--bad);
+}
+
+.focus,
+.caret.focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Render slot */
+
+.render-pane {
+  grid-area: render;
+  border-top: 1px solid var(--border);
+}
+
+.render-slot {
+  flex: 1;
+  overflow: auto;
+  padding: 12px 16px;
+  color: var(--muted);
+  background: repeating-linear-gradient(-45deg, transparent 0 12px, rgba(255, 255, 255, 0.015) 12px 24px);
+}
+
+/* Inspector */
+
+.inspector {
+  grid-area: inspector;
+  overflow: auto;
+  border-right: none;
+  border-left: 1px solid var(--border);
+  background: var(--panel);
+}
+
+.section {
+  padding: 6px 12px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.section summary {
+  padding: 2px 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.section .count {
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: #2a2f38;
+  color: var(--fg);
+  font-weight: 500;
+}
+
+.section dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 3px 12px;
+  margin: 0 0 6px;
+}
+
+.section dt {
+  color: var(--muted);
+}
+
+.section dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.section label {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.section ul,
+.section ol {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.section li {
+  padding: 2px 4px;
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+}
+
+.patches li:hover,
+.patches li.focus {
+  background: rgba(110, 168, 254, 0.15);
+  outline: none;
+}
+
+.patches li.normalize {
+  background: none;
+  color: #c3a6ff;
+}
+
+.issues li.warn {
+  color: var(--warn);
+}
+
+.ok {
+  color: var(--ok);
+}
+
+.over {
+  color: var(--bad);
+}
+
+.empty,
+.hint {
+  margin: 0;
+  color: var(--muted);
+}
+
+/* Dialogs */
+
+.dialog {
+  width: min(720px, 90vw);
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--fg);
+  background: var(--panel);
+}
+
+.dialog::backdrop {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.dialog > header,
+.dialog > footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+}
+
+.dialog > header h2 {
+  flex: 1;
+  margin: 0;
+  font-size: 15px;
+}
+
+.dialog > footer {
+  justify-content: flex-end;
+}
+
+.dialog > footer .hint {
+  margin-right: auto;
+}
+
+.dialog > p {
+  padding: 0 16px;
+}
+
+.dialog textarea {
+  display: block;
+  width: calc(100% - 32px);
+  height: 50vh;
+  margin: 0 16px;
+  padding: 8px;
+  font: 12.5px / 1.5 var(--mono);
+  resize: vertical;
+}
+
+.dialog .form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+  padding: 0 16px;
+}
+
+.dialog .form label {
+  display: grid;
+  gap: 2px;
+  color: var(--muted);
+}
+
+.meta-snippet {
+  max-height: 200px;
+  overflow: auto;
+  margin: 12px 16px 0;
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--bg);
+  font: 12px / 1.5 var(--mono);
+}

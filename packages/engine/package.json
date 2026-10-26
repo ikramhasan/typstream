@@ -1,0 +1,31 @@
+{
+  "name": "@typstream/engine",
+  "version": "0.0.0",
+  "description": "Compiles streamed Typst in a worker: heals on the main thread, schedules compiles, and recovers from runaway documents.",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "size": "node scripts/size.mjs",
+    "check-types": "tsc -p tsconfig.json",
+    "check:api": "api-extractor run",
+    "api:update": "api-extractor run --local",
+    "check:package": "publint --strict --pack npm && attw --pack . --profile esm-only"
+  },
+  "dependencies": {
+    "@typstream/core": "workspace:*",
+    "@typstream/heal": "workspace:*"
+  }
+}
