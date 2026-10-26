@@ -3,7 +3,7 @@
 //
 // `deps` is the "Deps" column of §4.1: the only workspace packages a package may
 // import. Deps must sit in a lower layer, or in the same layer when §4.1 says so
-// (node → engine, react → dom, typstream → react). Packages that don't exist yet
+// (engine → engine-wasm, node → engine, react → dom, typstream → react). Packages that don't exist yet
 // are listed so their rules are in place before their code is.
 //
 // `testDeps` are packages only the package's tests (`__tests__/`) may import too, as
@@ -30,7 +30,7 @@ export const PACKAGES = {
   core: { name: "@typstream/core", layer: 0, deps: [], fixed: true },
   heal: { name: "@typstream/heal", layer: 1, deps: ["core"], fixed: true },
   syntax: { name: "@typstream/syntax", layer: 1, deps: ["core"] },
-  engine: { name: "@typstream/engine", layer: 2, deps: ["core", "heal"], fixed: true },
+  engine: { name: "@typstream/engine", layer: 2, deps: ["core", "heal", "engine-wasm"], fixed: true },
   "engine-wasm": { name: "@typstream/engine-wasm", layer: 2, deps: [] },
   node: { name: "@typstream/node", layer: 2, deps: ["core", "heal", "engine"] },
   edu: { name: "@typstream/edu", layer: 3, deps: ["core"] },

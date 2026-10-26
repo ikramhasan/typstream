@@ -149,6 +149,9 @@ export interface EngineOptions {
 }
 
 // @public
+export const engineWorker: () => SpawnEngine;
+
+// @public
 export const fromWorker: (create: () => WorkerLike) => SpawnEngine;
 
 // @public

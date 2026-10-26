@@ -5,27 +5,41 @@
   "license": "UNLICENSED",
   "private": true,
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/worker.js"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    }
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "default": "./dist/server.js"
+    },
+    "./worker": "./dist/worker.js"
   },
   "files": [
     "dist"
   ],
   "scripts": {
     "build": "tsup",
-    "test": "vitest run",
+    "test": "vitest run --project node",
     "size": "node scripts/size.mjs",
     "check-types": "tsc -p tsconfig.json",
-    "check:api": "api-extractor run",
-    "api:update": "api-extractor run --local",
-    "check:package": "publint --strict --pack npm && attw --pack . --profile esm-only"
+    "check:api": "api-extractor run && api-extractor run -c api-extractor.server.json",
+    "api:update": "api-extractor run --local && api-extractor run --local -c api-extractor.server.json",
+    "check:package": "publint --strict --pack npm && attw --pack . --profile esm-only",
+    "test:browser": "vitest run --project browser"
   },
   "dependencies": {
     "@typstream/core": "workspace:*",
+    "@typstream/engine-wasm": "workspace:*",
     "@typstream/heal": "workspace:*"
+  },
+  "devDependencies": {
+    "@typstream/corpus": "workspace:*",
+    "@vitest/browser-playwright": "4.1.12",
+    "playwright": "^1.64.1"
   }
 }

@@ -17,6 +17,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/oracle
+      # heal's dependents include @typstream/engine, which builds on engine-wasm.
+      - uses: ./.github/actions/engine-wasm
       - uses: pnpm/setup@v3
         with: { runtime: node@24, cache: true, require-lockfile: true }
       - run: pnpm build --filter=@typstream/heal...

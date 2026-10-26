@@ -71,6 +71,21 @@ describe("compile_svg_changed", () => {
     expect(compile(benchDoc()).indices).toEqual([]);
   });
 
+  it("gives each page its size in points and a content hash", () => {
+    const pages = compile(`#set page(width: 200pt, height: 100pt)\nOne\n#pagebreak()\nTwo`).changed ?? [];
+    expect(pages.map(({ width, height }) => ({ width, height }))).toEqual([
+      { width: 200, height: 100 },
+      { width: 200, height: 100 },
+    ]);
+    expect(pages[0]?.hash).toMatch(/^[0-9a-f]{32}$/);
+    expect(pages[0]?.hash).not.toBe(pages[1]?.hash);
+    engine.reset_pages();
+    // A recompile of the same source hashes the same.
+    expect(compile(`#set page(width: 200pt, height: 100pt)\nOne\n#pagebreak()\nTwo`).changed?.[0]?.hash).toBe(
+      pages[0]?.hash,
+    );
+  });
+
   it("sends every page again after reset_pages", () => {
     compile(benchDoc());
     engine.reset_pages();
