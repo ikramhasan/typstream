@@ -254,4 +254,44 @@ describe("incremental healer", () => {
       { numRuns: Math.ceil(RUNS / 3) },
     );
   });
+
+  it("8. edits with lint on ≡ stateless healing, findings included", () => {
+    // Lint findings are cached and shifted across edits (§5.2 resync); with a
+    // settled handler they are recomputed instead. Both must match a fresh heal.
+    const lintDoc = documentArb.map(
+      (d) => `# Head\n\nSome **bold** and me@x.com.\n\n${d}\n\nMore ] text **x** here.\n\n# Tail\n\nend`,
+    );
+    const editArb = fc.record({
+      at: fc.nat(),
+      del: fc.nat({ max: 12 }),
+      insert: fc.oneof(
+        fc.constantFrom("", "**b** ", "# H\n", "a ] b", "me@x.com ", "\n\n", "*", "[", "x"),
+        fc.string({ maxLength: 6 }),
+      ),
+    });
+    const handler = { name: "noop", phase: "settled" as const, run: () => [] };
+    fc.assert(
+      fc.property(
+        lintDoc,
+        fc.array(editArb, { minLength: 1, maxLength: 8 }),
+        fc.boolean(),
+        (doc, edits, withHandler) => {
+          const opts = withHandler ? { handlers: [handler] } : {};
+          const healer = createHealer(opts);
+          healer.set(doc);
+          let text = doc;
+          for (const e of edits) {
+            const from = e.at % (text.length + 1);
+            const to = Math.min(from + e.del, text.length);
+            text = text.slice(0, from) + e.insert + text.slice(to);
+            const inc = healer.applyEdit({ from, to, insert: e.insert });
+            const ref = heal(text, opts);
+            expect(inc.source, JSON.stringify({ e, text })).toBe(ref.source);
+            expect(inc.findings).toEqual(ref.findings);
+          }
+        },
+      ),
+      { numRuns: RUNS },
+    );
+  });
 });
