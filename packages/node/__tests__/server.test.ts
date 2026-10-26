@@ -128,6 +128,28 @@ describe("serving from Node", () => {
     c.close();
   });
 
+  it("isolates the block of a finished document that runs away, each check under the budget", async () => {
+    const strict = createProtocolServer({ engine, timeouts: { streaming: 30_000, final: 500 } });
+    const c = await ready(strict);
+    const text = `= Problems\n\n${RUNAWAY}\n\nMore problems.`;
+    await c.request("document/open", { uri: "a", rev: 1, text });
+    const result = await c.request("compile", {
+      uri: "a",
+      rev: 1,
+      target: "html",
+      mode: "final",
+      fallback: { isolate: true },
+    });
+    expect(result.status).toBe("ok");
+    const block = { from: text.indexOf("#let"), to: text.indexOf("More") };
+    expect(result.fallback).toEqual({ isolated: [block], plainFrom: null });
+    expect(diagnosticsOf(c, 1)[0]).toMatchObject([{ code: "timeout", span: block }]);
+    expect(
+      await c.errorOf("compile", { uri: "a", rev: 1, target: "html", fallback: { skip: [{ from: 0 }] } } as never),
+    ).toBe("invalid-params");
+    c.close();
+  });
+
   it("exports PDF", async () => {
     const c = await ready();
     await c.request("document/open", { uri: "a", rev: 1, text: PAGES(2) });

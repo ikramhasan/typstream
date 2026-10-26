@@ -2,7 +2,7 @@
 // or the one the raw engine and DOM views share): its status and fallback,
 // compile timings from the worker, diagnostics and the engine's events. All of
 // it straight from DocumentState and the engine's event stream.
-import type { CompileResult, Diagnostic } from "@typstream/core";
+import type { CompileFallback, CompileResult, Diagnostic } from "@typstream/core";
 import type { EngineEvent } from "@typstream/engine";
 import type { RawEngine } from "../rawEngine";
 import { ms, Section } from "./Section";
@@ -33,11 +33,20 @@ const describeEvent = (event: EngineEvent): string => {
   }
 };
 
+/** What Layer 4 (PLAN §5.6) did to the artifact shown, if anything. */
+const fallbackNote = (fallback: CompileFallback | undefined) => {
+  if (!fallback) return null;
+  const parts = [];
+  if (fallback.isolated.length > 0) parts.push(`${fallback.isolated.length} error block(s)`);
+  if (fallback.plainFrom !== null) parts.push(`plain text from ${fallback.plainFrom}`);
+  return <small className="over"> ({parts.join(", ")})</small>;
+};
+
 const Timings = ({ compiles }: { compiles: readonly CompileResult[] }) => {
   const last = compiles.at(-1);
   if (!last) return <p className="empty">No compile has finished yet.</p>;
   const totals = compiles.map((c) => c.timings.totalMs);
-  const { totalMs, compileMs, exportMs, fixMs } = last.timings;
+  const { totalMs, compileMs, exportMs, fixMs, fallbackMs } = last.timings;
   return (
     <dl>
       <dt>Last compile</dt>
@@ -47,10 +56,10 @@ const Timings = ({ compiles }: { compiles: readonly CompileResult[] }) => {
           ({last.target}, rev {last.rev}, {last.status})
         </small>
       </dd>
-      <dt>Typst / export / fix</dt>
+      <dt>Typst / export / fix / fallback</dt>
       <dd>
         {compileMs === undefined ? "–" : ms(compileMs)} / {exportMs === undefined ? "–" : ms(exportMs)} /{" "}
-        {fixMs === undefined ? "–" : ms(fixMs)}
+        {fixMs === undefined ? "–" : ms(fixMs)} / {fallbackMs === undefined ? "–" : ms(fallbackMs)}
       </dd>
       <dt>Compiles</dt>
       <dd>
@@ -96,6 +105,7 @@ export const EngineSections = ({ engine }: { engine: RawEngine }) => {
                 <>
                   {state.artifact.target} of rev {state.artifactRev}
                   {state.status === "stale" || state.status === "error" ? <small> (last good)</small> : null}
+                  {fallbackNote(state.lastCompile?.fallback)}
                 </>
               ) : (
                 "nothing yet"

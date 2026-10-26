@@ -84,6 +84,16 @@ export const anchorPoints = (text: string, checkpoints: readonly Checkpoint[]): 
 };
 
 /**
+ * Starts of a text's top-level blocks (PLAN §5.6): 0, then each line an anchor
+ * goes before. Block `i` runs to the start of block `i + 1`, the last one to
+ * the end of the text.
+ */
+export const blockStarts = (text: string, checkpoints = recognize(text).checkpoints): number[] => [
+  0,
+  ...anchorPoints(text, checkpoints).filter((at) => at > 0),
+];
+
+/**
  * Inserts anchors at `points` (line starts, ascending). `label` turns a point
  * into the offset the anchor names: the identity, or, for a text the worker
  * fixed (Layer 3), the offset in the client's text.

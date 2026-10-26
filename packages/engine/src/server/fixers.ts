@@ -202,22 +202,26 @@ const fixError = async (fixers: readonly DiagnosticFixer[], d: Diagnostic, ctx: 
 };
 
 /**
- * Applies the edits of several fixes, ascending, skipping any that overlap one
- * already taken (a cut covers what follows it).
+ * Applies edits in one pass, ascending, skipping any that overlap one already
+ * taken (a cut covers what follows it). The map leads from the result back to `text`.
  */
-const applyFixes = (text: string, fixes: Fix[]): { text: string; map: SourceMap } => {
-  const edits = fixes.flatMap((f) => f.edits).sort((a, b) => a.from - b.from || b.to - a.to);
+export const applyEdits = (
+  text: string,
+  edits: readonly TextEdit[],
+  reason: string,
+): { text: string; map: SourceMap } => {
+  const sorted = [...edits].sort((a, b) => a.from - b.from || b.to - a.to);
   const parts: string[] = [];
   const patches: Patch[] = [];
   let last = 0;
   let shift = 0;
-  for (const e of edits) {
+  for (const e of sorted) {
     if (e.from < last) continue;
     parts.push(text.slice(last, e.from), e.insert);
     patches.push({
       original: { from: e.from, to: e.to },
       result: { from: e.from + shift, to: e.from + shift + e.insert.length },
-      reason: "fix",
+      reason,
     });
     shift += e.insert.length - (e.to - e.from);
     last = e.to;
@@ -280,7 +284,11 @@ export const runFixers = async (run: FixRun): Promise<FixOutcome> => {
       const d = mapDiagnostic(error, toOriginal);
       fixed.push(mode === "final" ? d : { ...d, severity: "info", source: fixer.name });
     }
-    const next = applyFixes(text, fixes);
+    const next = applyEdits(
+      text,
+      fixes.flatMap((f) => f.edits),
+      "fix",
+    );
     text = next.text;
     settled = next.map.toResult(settled);
     maps.push(next.map);

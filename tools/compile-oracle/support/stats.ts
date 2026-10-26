@@ -23,6 +23,12 @@ export interface ClassifiedPrefix {
   fixRounds?: number;
   /** For failures: time the engine spent in fixers and their recompiles (ms). */
   fixMs?: number;
+  /**
+   * For failures Layer 3 leaves: what Layer 4 (#21) rendered, asked for the
+   * stable prefix: isolated blocks, the stable prefix, the fixers again on
+   * another round, or nothing (`null`).
+   */
+  fallback?: "isolated" | "stable-prefix" | "fixed" | null;
   example?: string;
 }
 
@@ -54,6 +60,10 @@ export interface Stats {
   /** Prefixes that compile with Layer 3 (heal alone, or fixed). */
   fixed: number;
   fixedRate: number;
+  /** Prefixes with an artifact once Layer 4 joins (asked for the stable prefix), and how Layer 4 made them. */
+  rendered: number;
+  renderedRate: number;
+  byFallback: { isolated: number; stablePrefix: number };
   classes: ClassStats[];
   /** Failing prefixes whose errors are all in the unsettled tail. */
   allInTail: number;
@@ -121,12 +131,20 @@ export const stats = (results: readonly ClassifiedPrefix[]): Stats => {
   const compiling = results.length - failing.length;
   const fixed = results.length - results.filter(failsFixed).length;
   const share = (n: number) => (results.length === 0 ? 1 : n / results.length);
+  const unfixed = results.filter(failsFixed);
+  const rendered = fixed + unfixed.filter((r) => r.fallback != null).length;
   return {
     prefixes: results.length,
     compiling,
     rate: share(compiling),
     fixed,
     fixedRate: share(fixed),
+    rendered,
+    renderedRate: share(rendered),
+    byFallback: {
+      isolated: unfixed.filter((r) => r.fallback === "isolated").length,
+      stablePrefix: unfixed.filter((r) => r.fallback === "stable-prefix").length,
+    },
     classes,
     allInTail: failing.filter((r) => r.errors.every((e) => e.inTail)).length,
     stableOk: failing.filter((r) => r.stableOk).length,
@@ -157,6 +175,10 @@ export const formatStats = (title: string, s: Stats): string => {
       `running ${s.fixRounds} extra compiles (${pct(s.fixRounds, s.prefixes)} of prefixes; ` +
       `fixing took p50 ${s.fixMs.p50.toFixed(1)} ms, p95 ${s.fixMs.p95.toFixed(1)} ms). ` +
       `Longest stale run: ${stale(s.longestStaleFixed)}; heal alone: ${stale(s.longestStale)}.`,
+    "",
+    `With Layer 4 (the stable prefix asked for): **${pct(s.rendered, s.prefixes)}** of prefixes render ` +
+      `(${s.prefixes - s.fixed} left by Layer 3: ${s.byFallback.stablePrefix} as the stable prefix, ` +
+      `${s.byFallback.isolated} with isolated blocks).`,
   ];
   if (s.stableOk > 0) {
     lines.push(

@@ -13,6 +13,7 @@ import {
   diffEdit,
   type ExportFormat,
   type ExportResult,
+  type FallbackParams,
   type FileDelta,
   isError,
   mapDiagnostic,
@@ -26,6 +27,7 @@ import {
 import { createHealer, type Healer, type HealOptions, type HealResult } from "@typstream/heal";
 import type { Clock } from "./clock";
 import { type Connection, WorkerGone } from "./connection";
+import { HangSearch } from "./hang";
 import { applyPaged } from "./paged";
 import { compileInterval, type ScheduleOptions, updateEma } from "./schedule";
 
@@ -113,6 +115,14 @@ export interface DocumentOptions {
   heal?: HealOptions;
   /** Overrides the engine's schedule for this document. */
   schedule?: Partial<ScheduleOptions>;
+  /**
+   * Layer 4 (PLAN §5.6): when the source fails to compile even after the
+   * worker's fixes, show failing top-level blocks as error boxes, after
+   * `schedule.staleMs` the unsettled tail as plain text, and in final mode
+   * find and skip what hangs or crashes the engine. Default true; false
+   * keeps the last good artifact instead.
+   */
+  fallback?: boolean;
 }
 
 /**
@@ -223,6 +233,12 @@ export interface WatchdogOptions {
   finalMs: number;
   /** Timeouts or crashes after which a document stops compiling live. Default 3. */
   strikes: number;
+  /**
+   * Budget of each compile that looks for the part of a finished document
+   * that hangs or crashes the engine (PLAN §5.6): prefixes of it, the rest
+   * skipped. Default 5000 ms.
+   */
+  probeMs: number;
 }
 
 /** @internal What a document needs from the engine. */
@@ -282,6 +298,7 @@ export class DocumentImpl implements EngineDocument {
   private readonly schedule: ScheduleOptions;
   private readonly healer: Healer;
   private readonly preamble: string | undefined;
+  private readonly fallback: boolean;
   private healed: HealResult;
   private target: CompileTarget;
   private inputs: Record<string, string> | undefined;
@@ -312,6 +329,12 @@ export class DocumentImpl implements EngineDocument {
   private final = false;
   private live = true;
   private strikes = 0;
+  /** Since when streaming compiles have failed (clock time), or `null` while the artifact is current. */
+  private staleSince: number | null = null;
+  /** Final mode: the search for what hangs the source (PLAN §5.6), while it runs and after. */
+  private hang: HangSearch | null = null;
+  /** The compile in flight only probes for a hang; its output isn't the document's. */
+  private probing = false;
   private artifact: Artifact | null = null;
   private artifactRev: Revision | null = null;
   private diagnostics: Diagnostic[] = [];
@@ -330,6 +353,7 @@ export class DocumentImpl implements EngineDocument {
     this.target = options.target ?? "html";
     this.inputs = options.inputs;
     this.preamble = options.preamble;
+    this.fallback = options.fallback !== false;
     this.files = { ...options.files };
     this.state = this.snapshot();
     this.scheduleCompile();
@@ -364,6 +388,8 @@ export class DocumentImpl implements EngineDocument {
     this.final = false;
     this.live = true;
     this.strikes = 0;
+    this.staleSince = null;
+    this.hang = null;
     this.urgent = false;
     this.failure = null;
     this.needsCompile = true;
@@ -507,8 +533,30 @@ export class DocumentImpl implements EngineDocument {
     if (!this.final) params.settled = heal.stableOffset;
     if (this.fullPages) params.fullPages = true;
     this.fullPages = false;
+    const { watchdog } = this.host;
+    let budgetMs = this.final ? watchdog.finalMs : watchdog.streamingMs;
+    this.probing = false;
+    if (this.fallback) params.fallback = this.fallbackParams(heal);
+    if (this.hang?.probing) {
+      this.probing = true;
+      budgetMs = watchdog.probeMs;
+    }
     this.emit();
-    return { params, budgetMs: this.final ? this.host.watchdog.finalMs : this.host.watchdog.streamingMs };
+    return { params, budgetMs };
+  }
+
+  /** Layer 4 of the next compile (PLAN §5.6). */
+  private fallbackParams(heal: HealResult): FallbackParams {
+    const fallback: FallbackParams = { isolate: true };
+    const since = this.staleSince;
+    if (!this.final && since !== null && this.host.clock.now() - since >= this.schedule.staleMs) {
+      fallback.stablePrefix = true;
+    }
+    // What hangs a finished source stays skipped while it is the source.
+    if (this.hang && this.hang.text !== heal.source) this.hang = null;
+    const skip = this.hang?.skip();
+    if (skip?.length) fallback.skip = skip;
+    return fallback;
   }
 
   /** Brings the worker's copy of the document up to the healed source. */
@@ -595,6 +643,8 @@ export class DocumentImpl implements EngineDocument {
     // Only output of the revision last sent counts: anything else is older
     // than what the worker now has, and its positions don't match `sent.heal`.
     if (this.disposed || n.method === "$/log" || !this.sent || n.params.rev !== this.sent.rev) return;
+    // A probe for a hang compiles a prefix of the document, with the rest skipped.
+    if (this.probing && this.compiling) return;
     const { rev, heal } = this.sent;
     if (n.method === "document/diagnostics") {
       if (n.params.target !== this.target) return;
@@ -626,11 +676,23 @@ export class DocumentImpl implements EngineDocument {
 
   /** The compile `prepare` described is over. */
   settle(outcome: CompileOutcome): void {
+    const probing = this.probing;
     this.compiling = false;
+    this.probing = false;
     this.inFlight = null;
     if (this.disposed) return;
     if ("result" in outcome) {
       const r = outcome.result;
+      if (probing || (this.hang && !this.hang.done)) {
+        // A compile of the hang search finished: on to the next one, unless that was the last.
+        this.hang?.answer(null);
+        if (probing || !this.hang?.done) {
+          this.needsCompile = true;
+          this.urgent = true;
+          this.update();
+          return;
+        }
+      }
       this.lastCompile = r;
       this.ema = updateEma(this.ema, r.timings.totalMs);
       this.failure =
@@ -640,16 +702,40 @@ export class DocumentImpl implements EngineDocument {
               reason: "diagnostics",
               message: this.diagnostics.find(isError)?.message ?? "The document has errors.",
             };
+      if (r.status === "ok" && r.fallback?.plainFrom == null) this.staleSince = null;
+      else if (r.status !== "ok" && !this.final) this.staleSince ??= this.host.clock.now();
     } else {
       const e = outcome.error;
-      if (e instanceof WorkerGone && (e.reason === "timeout" || e.reason === "crash")) this.strike(e.reason);
-      else if (e instanceof WorkerGone) this.needsCompile = true;
+      if (e instanceof WorkerGone && (e.reason === "timeout" || e.reason === "crash")) {
+        if (!this.final) this.staleSince ??= this.host.clock.now();
+        if (this.searchHang(e.reason)) {
+          this.needsCompile = true;
+          this.urgent = true;
+        } else this.strike(e.reason);
+      } else if (e instanceof WorkerGone) this.needsCompile = true;
       else if (!(e instanceof ProtocolError && e.code === "request-cancelled")) {
         this.failure = { reason: "engine", message: e instanceof Error ? e.message : String(e) };
         if (e instanceof ProtocolError && DESYNC.has(e.code)) this.desync();
       }
     }
     this.update();
+  }
+
+  /**
+   * A final compile ran out of time or crashed: look for the blocks that do
+   * it, or go on looking. False when there's no search to run (streaming, the
+   * fallback is off, or the search gave up).
+   */
+  private searchHang(reason: "timeout" | "crash"): boolean {
+    if (!this.final || !this.fallback || !this.sent) return false;
+    const text = this.sent.heal.source;
+    if (this.hang?.text === text && !this.hang.done) {
+      if (this.hang.answer(reason)) return true;
+    } else if (!this.hang || this.hang.text !== text) {
+      this.hang = new HangSearch(text, reason);
+      return true;
+    }
+    return false;
   }
 
   private strike(reason: "timeout" | "crash"): void {

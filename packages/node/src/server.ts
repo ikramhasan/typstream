@@ -150,6 +150,11 @@ const poolAdapter = (engine: NodeEngine, options: ProtocolServerOptions): Engine
           const pages: PageUpdate[] = changed.map((p) => p.page);
           return { output: { pageCount, changed: pages }, diagnostics: c.diagnostics, ...timings(c) };
         },
+        async check({ target, mode }) {
+          // HTML has no changed-page baseline; a paged check exports nothing.
+          const c = await run(target === "html" ? "html" : "check", mode);
+          return { diagnostics: c.diagnostics, ...timings(c) };
+        },
         async exportPdf() {
           const c = await run("pdf", "final");
           return { pdf: c.ok ? (c.result?.pdf ?? null) : null, diagnostics: c.diagnostics, ...timings(c) };
@@ -173,6 +178,14 @@ const isStringRecord = (v: unknown): boolean => isObject(v) && Object.values(v).
 const isFiles = (v: unknown): boolean =>
   isObject(v) && Object.values(v).every((x) => x === null || typeof x === "string" || x instanceof Uint8Array);
 const isEdit = (e: unknown): boolean => isObject(e) && isInt(e.from) && isInt(e.to) && typeof e.insert === "string";
+const isFlag = (v: unknown): boolean => typeof v === "boolean";
+const isSkip = (r: unknown): boolean =>
+  isObject(r) && isInt(r.from) && isInt(r.to) && (r.reason === "timeout" || r.reason === "crash");
+const isFallback = (v: unknown): boolean =>
+  isObject(v) &&
+  optional(v.isolate, isFlag) &&
+  optional(v.stablePrefix, isFlag) &&
+  optional(v.skip, (s) => Array.isArray(s) && s.every(isSkip));
 
 /** Why a request's params can't be handled, or `null` if they look right. */
 const paramsProblem = (method: string, p: unknown): string | null => {
@@ -198,6 +211,7 @@ const paramsProblem = (method: string, p: unknown): string | null => {
       if (typeof p.target !== "string") return "target must be a string";
       if (!optional(p.mode, (v) => v === "streaming" || v === "final")) return 'mode must be "streaming" or "final"';
       if (!optional(p.fullPages, (v) => typeof v === "boolean")) return "fullPages must be a boolean";
+      if (!optional(p.fallback, isFallback)) return "fallback must be { isolate?, stablePrefix?, skip? }";
       return optional(p.inputs, isStringRecord) ? null : "inputs must map names to strings";
     case "export/pdf":
     case "export/html":

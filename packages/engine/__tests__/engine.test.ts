@@ -270,6 +270,97 @@ describe("last-good fallback", () => {
   });
 });
 
+describe("fallback ladder", () => {
+  it("asks the worker to isolate failing blocks, unless the fallback is off", async () => {
+    const { workers, engine } = setup();
+    engine.open({ text: "a" });
+    engine.open({ text: "b", fallback: false });
+    await tick(100);
+    expect(workers.compileRequests().map((p) => p.fallback)).toEqual([{ isolate: true }, undefined]);
+  });
+
+  it("asks for the stable prefix once the last good render is stale", async () => {
+    const { workers, engine } = setup();
+    const doc = engine.open({ text: "Good" });
+    await tick(100);
+    doc.push(" ERROR");
+    await tick(100);
+    doc.push(" a");
+    await tick(1600);
+    expect(workers.compileRequests().at(-1)?.fallback).toEqual({ isolate: true });
+    doc.push(" b");
+    await tick(100);
+    expect(workers.compileRequests().at(-1)?.fallback).toEqual({ isolate: true, stablePrefix: true });
+    // A good render ends it.
+    doc.set("Good again");
+    await tick(100);
+    doc.push(" ERROR");
+    await tick(100);
+    expect(workers.compileRequests().at(-1)?.fallback).toEqual({ isolate: true });
+  });
+
+  // Eight blocks; the sixth hangs.
+  const BLOCKS = ["A", "B", "C", "D", "E", "LOOP", "G", "H"];
+
+  it("finds the block that hangs a finished document in ⌈log₂ n⌉ + 1 compiles, each under its own budget", async () => {
+    const { workers, engine } = setup();
+    const doc = engine.open({ text: BLOCKS.join("\n\n") });
+    doc.finish();
+    // The whole text runs out of its 10 s; then prefixes of 4 blocks (finishes), 6 (runs past the 5 s
+    // probe budget) and 5 (finishes), and the whole text without block 5.
+    await tick(16_000);
+    const [first, ...after] = workers.compileRequests();
+    expect(first?.fallback).toEqual({ isolate: true });
+    const text = doc.getState().heal.source;
+    const start = (i: number) => text.indexOf(BLOCKS[i] as string);
+    expect(after.map((p) => p.fallback?.skip)).toEqual([
+      [{ from: start(4), to: text.length, reason: "timeout" }],
+      [{ from: start(6), to: text.length, reason: "timeout" }],
+      [{ from: start(5), to: text.length, reason: "timeout" }],
+      [{ from: start(5), to: start(6), reason: "timeout" }],
+    ]);
+    expect(after).toHaveLength(Math.ceil(Math.log2(BLOCKS.length)) + 1);
+    const s = doc.getState();
+    expect(s.status).toBe("done");
+    expect(html(s)).toBe(`<p>${BLOCKS.join("\n\n").replace("LOOP\n\n", "[skipped:timeout]")}</p>`);
+  });
+
+  it("doesn't show what the probes compile, and keeps skipping what hangs", async () => {
+    const { workers, engine } = setup();
+    const doc = engine.open({ text: BLOCKS.join("\n\n") });
+    const shown: (string | undefined)[] = [];
+    doc.subscribe((s) => shown.push(html(s)));
+    doc.finish();
+    await tick(16_000);
+    expect(new Set(shown.filter(Boolean))).toEqual(new Set([html(doc.getState())]));
+    doc.setInputs({ answers: "true" });
+    await tick(100);
+    expect(workers.compileRequests().at(-1)?.fallback?.skip).toHaveLength(1);
+    expect(doc.getState().status).toBe("done");
+  });
+
+  it("skips what crashes the worker", async () => {
+    const { workers, engine } = setup();
+    const doc = engine.open({ text: "A\n\nCRASH\n\nC" });
+    doc.finish();
+    await tick(1000);
+    expect(workers.compileRequests().at(-1)?.fallback?.skip).toEqual([{ from: 3, to: 10, reason: "crash" }]);
+    expect(doc.getState().status).toBe("done");
+    expect(html(doc.getState())).toBe("<p>A\n\n[skipped:crash]C</p>");
+  });
+
+  it("starts over when the finished source changes", async () => {
+    const { workers, engine } = setup();
+    const doc = engine.open({ text: "A\n\nLOOP" });
+    doc.finish();
+    await tick(10_200);
+    expect(doc.getState().status).toBe("done");
+    doc.applyEdit({ from: 0, to: 1, insert: "Z" });
+    await tick(100);
+    expect(workers.compileRequests().at(-1)?.fallback?.skip).toBeUndefined();
+  });
+});
+
 describe("paged artifacts", () => {
   const pages = (s: DocumentState) => (s.artifact as PagedArtifact).pages.map((p) => p.svg);
 
@@ -363,7 +454,7 @@ describe("watchdog", () => {
 
   it("gives a final compile the final budget", async () => {
     const { engine, events } = setup();
-    const doc = engine.open({ text: "LOOP" });
+    const doc = engine.open({ text: "LOOP", fallback: false });
     doc.finish();
     await tick(9000);
     expect(events.some((e) => e.type === "watchdog")).toBe(false);

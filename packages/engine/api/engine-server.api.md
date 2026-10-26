@@ -31,6 +31,9 @@ export interface AdapterCompileResult {
 
 // @public
 export interface AdapterDocument {
+    check?(options: {
+        target: CompileTarget;
+    } & AdapterCompileOptions): MaybePromise<AdapterCompileResult>;
     close(): void;
     compileHtml(options?: AdapterCompileOptions): MaybePromise<AdapterHtmlResult>;
     compilePaged(options: {

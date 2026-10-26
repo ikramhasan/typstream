@@ -52,11 +52,18 @@ export type ClientNotificationMethod = keyof ClientNotificationMap;
 export const compareDiagnostics: (a: Diagnostic, b: Diagnostic) => number;
 
 // @public
+export interface CompileFallback {
+    isolated: Range[];
+    plainFrom: number | null;
+}
+
+// @public
 export type CompileMode = "streaming" | "final";
 
 // @public
 export interface CompileParams extends DocumentParams {
     anchors?: boolean;
+    fallback?: FallbackParams;
     fullPages?: boolean;
     inputs?: Record<string, string>;
     mode?: CompileMode;
@@ -67,6 +74,7 @@ export interface CompileParams extends DocumentParams {
 
 // @public (undocumented)
 export interface CompileResult extends DocumentParams {
+    fallback?: CompileFallback;
     memoryBytes?: number;
     status: "ok" | "error";
     // (undocumented)
@@ -82,6 +90,7 @@ export type CompileTarget = "html" | "paged";
 export interface CompileTimings {
     compileMs?: number;
     exportMs?: number;
+    fallbackMs?: number;
     fixMs?: number;
     totalMs: number;
 }
@@ -229,6 +238,13 @@ export type ExportResult<Data> = DocumentParams & {
 } | {
     status: "error";
 });
+
+// @public
+export interface FallbackParams {
+    isolate?: boolean;
+    skip?: SkippedRange[];
+    stablePrefix?: boolean;
+}
 
 // @public
 export type FileContent = string | Uint8Array;
@@ -647,6 +663,11 @@ export interface ServerNotificationMap {
 
 // @public (undocumented)
 export type ServerNotificationMethod = keyof ServerNotificationMap;
+
+// @public
+export interface SkippedRange extends Range {
+    reason: "timeout" | "crash";
+}
 
 // @public
 export class SourceMap {

@@ -34,7 +34,7 @@ export const setFiles = (engine: Engine, doc: OracleDocument): void => {
 const MAX_CORPUS_DOC = 20_000;
 const MAX_PAGES = 50;
 
-const corpusFiles = (entry: CorpusEntry): Record<string, Uint8Array> => {
+export const corpusFiles = (entry: CorpusEntry): Record<string, Uint8Array> => {
   // The only asset the corpus uses today; documents name it relative to themselves.
   const files: Record<string, Uint8Array> = {};
   for (const match of entry.source.matchAll(/bibliography\("([^"]+)"/g)) {

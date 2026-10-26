@@ -228,6 +228,63 @@ export interface CompileParams extends DocumentParams {
    * dropped its pages, e.g. after remounting).
    */
   fullPages?: boolean;
+  /**
+   * What the server may show when the text doesn't compile even after its
+   * fixes (Layer 4, PLAN §5.6). Without it a failed compile publishes no
+   * artifact and the client keeps its last good one.
+   */
+  fallback?: FallbackParams;
+}
+
+/**
+ * Layer 4 of a compile (PLAN §5.6): how the server turns a document that
+ * doesn't compile into one that does, rather than publishing no artifact.
+ * @public
+ */
+export interface FallbackParams {
+  /**
+   * Show each top-level block that fails as an error box in place of the block
+   * (`typstream.error-block`, with the error and the block's source), found
+   * by compiling prefixes of the document (bisection). While streaming, only
+   * blocks of the settled text are isolated; the unsettled tail is left to
+   * the fixers and `stablePrefix`.
+   */
+  isolate?: boolean;
+  /**
+   * Streaming: when the unsettled tail fails, compile the settled text and
+   * show the tail as plain text below it (level 2). Clients ask for it once
+   * their last good render is too stale to keep showing.
+   */
+  stablePrefix?: boolean;
+  /**
+   * Parts of the text the client found the compiler can't get through: a
+   * compile ran past the watchdog budget or crashed the worker (PLAN §6.3).
+   * They are shown as error boxes without being compiled. Ranges are in the
+   * text, ascending and not overlapping, and should cover whole top-level
+   * blocks.
+   */
+  skip?: SkippedRange[];
+}
+
+/**
+ * A part of the text the compiler can't get through (see {@link FallbackParams}).
+ * @public
+ */
+export interface SkippedRange extends Range {
+  /** What happened when it was compiled. */
+  reason: "timeout" | "crash";
+}
+
+/**
+ * How the artifact of a compile differs from the document, when Layer 4 made
+ * it (PLAN §5.6). Ranges are in document coordinates.
+ * @public
+ */
+export interface CompileFallback {
+  /** Blocks shown as error boxes, ascending: blocks that failed, and `skip`ped ranges. */
+  isolated: Range[];
+  /** Streaming: the unsettled text from here on was shown as plain text (`stablePrefix`), or `null`. */
+  plainFrom: number | null;
 }
 
 /** Wall-clock milliseconds measured in the worker. @public */
@@ -240,6 +297,8 @@ export interface CompileTimings {
   exportMs?: number;
   /** Diagnostic fixers (Layer 3), including the recompiles they caused. */
   fixMs?: number;
+  /** The fallback (Layer 4), including its compiles. */
+  fallbackMs?: number;
 }
 
 /** @public */
@@ -250,6 +309,8 @@ export interface CompileResult extends DocumentParams {
   timings: CompileTimings;
   /** Engine memory after the compile (e.g. wasm memory), for recycling decisions (PLAN §6.3). */
   memoryBytes?: number;
+  /** Set when the artifact came from the fallback (`CompileParams.fallback`) rather than the text as it is. */
+  fallback?: CompileFallback;
 }
 
 /** Compiled HTML. @public */
