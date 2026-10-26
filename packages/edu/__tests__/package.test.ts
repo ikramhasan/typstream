@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { gzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 // @ts-expect-error: a plain .mjs script without types
 import { generate, publicNames } from "../scripts/embed.mjs";
@@ -27,18 +28,24 @@ describe("package", () => {
   });
 
   it("mounts every file under the root the preamble imports from", () => {
-    expect(eduPreamble).toBe(`#import "${EDU_ROOT}/lib.typ": *\n`);
+    expect(EDU_ROOT).toBe(`@typstream/edu:${EDU_VERSION}`);
+    expect(eduPreamble).toBe(`#import "${EDU_ROOT}": *\n`);
     expect(Object.keys(eduFiles).every((path) => path.startsWith(`${EDU_ROOT}/`))).toBe(true);
     expect(edu.engine?.files).toBe(eduFiles);
     expect(edu.engine?.preamble).toBe(eduPreamble);
   });
 
-  it("has a typst.toml for the same version, so #25 can mount it as @typstream/edu", () => {
+  it("has a typst.toml for the same version, which Typst checks against the import", () => {
     const toml = eduFiles[`${EDU_ROOT}/typst.toml`] ?? "";
     expect(toml).toMatch(/^name = "edu"$/m);
     expect(toml).toMatch(new RegExp(`^version = "${EDU_VERSION}"$`, "m"));
     expect(toml).toMatch(/^entrypoint = "lib.typ"$/m);
     expect(edu.version).toBe(EDU_VERSION);
+  });
+
+  it("keeps the Typst package within its size budget (PLAN §11.6: 30 KB gzipped)", () => {
+    const bytes = gzipSync(Object.values(eduFiles).join(""), { level: 9 }).length;
+    expect(bytes).toBeLessThanOrEqual(30 * 1024);
   });
 
   it("documents every public function, each with an example", () => {

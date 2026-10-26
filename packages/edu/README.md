@@ -50,14 +50,12 @@ Every function works in the paged and the HTML target, and in English, Arabic an
 
 ## Using it with plain Typst
 
-The package needs no typstream: copy `typst/` to `@typstream/edu/` in a project and import it.
+The package needs no typstream. In typstream it is a local package: the plugin mounts its files under `@typstream/edu:0.1.0/…` (`EDU_ROOT`), which the engine roots at that package (#25), so nothing is fetched and it needs no allowlist entry. With plain `typst`, put `typst/` where Typst looks for that package and import it the same way:
 
 ```sh
-mkdir -p project/@typstream && cp -r node_modules/@typstream/edu/typst project/@typstream/edu
-typst compile --root project --input showAnswers=true project/main.typ   # main.typ starts with #import "/@typstream/edu/lib.typ": *
+mkdir -p packages/typstream/edu && cp -r node_modules/@typstream/edu/typst packages/typstream/edu/0.1.0
+typst compile --package-path packages --input showAnswers=true main.typ   # main.typ starts with #import "@typstream/edu:0.1.0": *
 ```
-
-Once the engine resolves local `@typstream/*` packages (#25), edu will be mounted as `@typstream/edu:0.1.0` (its `typst.toml` is ready) and the preamble will import that. Documents don't change.
 
 ## Tests
 
@@ -68,7 +66,7 @@ The tests compile through `@typstream/engine-wasm` and native `typst` 0.15.1, so
 - `languages.test.ts`: labels, option letters and points in English, Arabic and Bengali; `dir="rtl"` in Arabic only.
 - `chemistry.test.ts`: `ce()`'s MathML.
 - `native.test.ts`: native `typst` compiles the examples and templates without warnings, to as many pages as engine-wasm.
-- `package.test.ts`: the generated module is current and ASCII, the catalogue covers every public name, the CSS is scoped.
+- `package.test.ts`: the generated module is current and ASCII, the catalogue covers every public name, the CSS is scoped, the Typst sources stay within 30 KB gzipped (16 KB now).
 - `tools/compile-oracle`: the prompt examples' stream prefixes compile.
 
 Edit `typst/`, `css/edu.css` or `examples/`, then `pnpm embed` (or `pnpm build`) to regenerate `src/assets.generated.ts`. A test fails when it's stale.

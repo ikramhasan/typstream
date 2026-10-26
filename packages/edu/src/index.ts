@@ -10,14 +10,11 @@ import { CATALOGUE, CSS_SOURCE, EXAMPLES, FILES } from "./assets.generated";
 export const EDU_VERSION = "0.1.0";
 
 /**
- * Where the engine mounts edu's files in its virtual file system: `${EDU_ROOT}/lib.typ` and so on.
- *
- * Until the engine resolves local `@typstream/*` packages (#25), edu is a directory of project
- * files imported by path, like html-compat. Then this becomes `@typstream/edu:0.1.0` and
- * {@link eduPreamble} imports `"@typstream/edu:0.1.0"`; documents never write the import, so
- * they don't change.
+ * The package spec edu's files are mounted under: `${EDU_ROOT}/lib.typ` and so on. The engine
+ * roots keys of the form `@ns/name:x.y.z/path` at that package (#25), so it is a local package,
+ * read from the files the plugin mounts; nothing is fetched and it needs no allowlist entry.
  */
-export const EDU_ROOT = "/@typstream/edu";
+export const EDU_ROOT = "@typstream/edu:0.1.0";
 
 /** The input that shows answers: set it to `"true"` and recompile for a teacher's copy. */
 export const SHOW_ANSWERS_INPUT = "showAnswers";
@@ -28,7 +25,7 @@ export const eduFiles: Readonly<Record<string, string>> = Object.fromEntries(
 );
 
 /** Typst to put before a document: imports every public function and template. */
-export const eduPreamble: string = `#import "${EDU_ROOT}/lib.typ": *\n`;
+export const eduPreamble: string = `#import "${EDU_ROOT}": *\n`;
 
 /**
  * Styles for the HTML edu's functions write. Rules are scoped to the renderer's root (class

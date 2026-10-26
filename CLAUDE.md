@@ -86,6 +86,7 @@ In `packages/universe`:
 - `vendor/` holds the `.tar.gz` files exactly as packages.typst.org serves them (committed). `integrity` is the SHA-256 of the *uncompressed* tar, because servers often send `.gz` with `Content-Encoding: gzip`.
 - `node scripts/vendor.mjs name:version` adds one and prints its integrity; `--check` compares every tarball with upstream (network). The tests check the hashes and that every package a vendored one imports is vendored too.
 - The engine's Node tests and html-compat's matrix mount these packages; html-compat's native `typst` runs get them through `--package-path` (no network).
+
 In `packages/edu`:
 - Edit `typst/*.typ`, `css/edu.css` or `examples/*.typ`, then `pnpm embed` to regenerate `src/assets.generated.ts` (the files, CSS, the prompt catalogue from the `///` doc comments of the names `lib.typ` imports, and the examples; a test checks it). Every public function needs a doc comment with an `example` block.
 - Answers must produce no output unless `sys.inputs.showAnswers` is `"true"`; every parameter needs a default and must accept what a stream cut leaves (`(2` is the number 2, `5em` arrives as `5`). Its tests compile with engine-wasm and native `typst`, so they run in CI's `Engine (wasm)` job; the compile oracle streams `examples/`.

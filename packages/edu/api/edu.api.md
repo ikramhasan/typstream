@@ -13,7 +13,7 @@ import { TypstreamPlugin } from '@typstream/core';
 export const edu: TypstreamPlugin;
 
 // @public
-export const EDU_ROOT = "/@typstream/edu";
+export const EDU_ROOT = "@typstream/edu:0.1.0";
 
 // @public
 export const EDU_VERSION = "0.1.0";
