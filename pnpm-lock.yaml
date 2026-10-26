@@ -213,6 +213,17 @@ importers:
 
   packages/core: {}
 
+  packages/engine:
+    dependencies:
+      '@typstream/core':
+        specifier: workspace:*
+        version: link:../core
+      '@typstream/heal':
+        specifier: workspace:*
+        version: link:../heal
+
+  packages/engine-wasm: {}
+
   packages/heal:
     dependencies:
       '@typstream/core':
