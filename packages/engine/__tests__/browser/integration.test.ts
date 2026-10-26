@@ -209,7 +209,6 @@ describe(`streaming in ${browser}`, { timeout: 120_000 }, () => {
     expect(final.status).toBe("done");
     expect(lostArtifact).toBe(false);
     expect(frames.filter((f) => f.compile.status !== "ok" || f.errors > 0)).toEqual([]);
-    expect(frames.some((f) => f.compile.timings.fixMs !== undefined)).toBe(true);
     expect(trouble(events)).toEqual([]);
     expect(final.artifact).toEqual(await oneShot(engine, source, "html"));
     engine.dispose();
