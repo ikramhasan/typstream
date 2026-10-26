@@ -55,6 +55,20 @@ export const PREAMBLE_PATH = "<preamble>";
 
 const MAIN = "/main.typ";
 
+/** How long an export waits for fonts its compile lacked (they are on their way) before exporting without them. */
+const EXPORT_WAIT_MS = 3000;
+
+/** Whether `pending` settles within `ms`: `true` if it resolved. */
+const arrives = (pending: Promise<void>, ms: number): Promise<boolean> =>
+  new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(false), ms);
+    pending.then(
+      () => resolve(true),
+      () => resolve(false),
+    );
+    pending.finally(() => clearTimeout(timer)).catch(() => {});
+  });
+
 /**
  * Hooks for the host the server runs in.
  * @public
@@ -132,6 +146,11 @@ interface Doc {
   memo: RecoverMemo | null;
   /** Packages it may import, and those mounted in `compiler`. */
   packages: DocumentPackages;
+  /**
+   * What the last compile lacked and is on its way (a lazy font), with that
+   * compile's params to repeat once it arrives. Any compile replaces it.
+   */
+  waiting: { pending: Promise<void>; params: CompileParams } | null;
 }
 
 /** An adapter compile's result, its diagnostics moved into document coordinates. */
@@ -395,6 +414,62 @@ class Server implements EngineServer {
     });
   }
 
+  /**
+   * Remembers what a compile lacked (replacing what an earlier one did), and
+   * once it has arrived queues a recompile like a request, so it never runs
+   * alongside one.
+   */
+  private await(doc: Doc, params: CompileParams, pending: Promise<void>[]): void {
+    if (pending.length === 0) {
+      doc.waiting = null;
+      return;
+    }
+    const waiting = { pending: Promise.all(pending).then(() => {}), params };
+    doc.waiting = waiting;
+    waiting.pending.then(
+      () => {
+        this.chain = this.chain.then(() => this.recompileWaiting(doc, waiting));
+      },
+      (e: unknown) => {
+        if (doc.waiting !== waiting || this.docs.get(params.uri) !== doc) return;
+        doc.waiting = null;
+        const message = e instanceof Error ? e.message : String(e);
+        this.post({ method: "$/log", params: { level: "warn", message: `compiling without it: ${message}` } });
+      },
+    );
+  }
+
+  /**
+   * Compiles a document again once what its last compile lacked has arrived,
+   * publishing output for the same revision. Skipped when it was closed,
+   * edited or compiled again since: the client's next compile has it.
+   */
+  private async recompileWaiting(doc: Doc, waiting: NonNullable<Doc["waiting"]>): Promise<void> {
+    const { uri, rev } = waiting.params;
+    if (this.phase !== "ready" || doc.waiting !== waiting || this.docs.get(uri) !== doc) return;
+    doc.waiting = null;
+    if (doc.rev !== rev) return;
+    try {
+      await this.handlers.compile({ ...waiting.params, fullPages: false }, performance.now());
+    } catch (e) {
+      if (isTrap(e) && this.options.onFatal) {
+        this.phase = "shutdown";
+        this.options.onFatal(e);
+        return;
+      }
+      this.post({
+        method: "$/log",
+        params: { level: "error", message: `recompile of ${uri}: ${e instanceof Error ? e.message : String(e)}` },
+      });
+    }
+  }
+
+  /** An export's compile, once more after what it lacked arrived (within {@link EXPORT_WAIT_MS}). */
+  private async exportOnce<R extends { pending?: Promise<void> }>(compile: () => R | Promise<R>): Promise<R> {
+    const r = await compile();
+    return r.pending && (await arrives(r.pending, EXPORT_WAIT_MS)) ? compile() : r;
+  }
+
   private unsupported(what: string): never {
     throw new ProtocolError("unsupported", `${this.adapter.info.name} doesn't support ${what}`);
   }
@@ -468,6 +543,7 @@ class Server implements EngineServer {
         inputs: null,
         pagedBase: null,
         memo: null,
+        waiting: null,
         // A package arriving changes the files, so what the fallback learnt no longer holds.
         packages: new DocumentPackages(this.packages, packages, (files) => {
           compiler.setFiles(files);
@@ -533,9 +609,12 @@ class Server implements EngineServer {
       const count = (ms: number | undefined) => {
         if (ms !== undefined) compileMs = (compileMs ?? 0) + ms;
       };
+      // What compiles lacked that is on its way (lazy fonts): the document is compiled again once it arrives.
+      const pending: Promise<void>[] = [];
       const compile = async (): Promise<Compiled> => {
         r = await this.compileMain(doc, target, mode, full);
         count(r.compileMs);
+        if (r.pending) pending.push(r.pending);
         return r;
       };
 
@@ -639,6 +718,7 @@ class Server implements EngineServer {
         });
         doc.pagedBase = rev;
       }
+      this.await(doc, params, pending);
       const ok = out !== null && ("html" in out ? out.html !== null : out.output !== null);
       const result: CompileResult = {
         uri,
@@ -662,7 +742,7 @@ class Server implements EngineServer {
       if (!this.adapter.exports.includes("html")) this.unsupported("HTML export");
       await doc.packages.prepare(doc.prefix + doc.text, performance.now() + FIX_BUDGET_MS.final);
       this.sync(doc, inputs);
-      const r = await doc.compiler.compileHtml({ mode: "final" });
+      const r = await this.exportOnce(() => doc.compiler.compileHtml({ mode: "final" }));
       const diagnostics = this.diagnostics(doc, r.diagnostics);
       return r.html === null
         ? { uri, rev, diagnostics, status: "error" }
@@ -674,7 +754,8 @@ class Server implements EngineServer {
       if (!this.adapter.exports.includes("pdf") || !doc.compiler.exportPdf) this.unsupported("PDF export");
       await doc.packages.prepare(doc.prefix + doc.text, performance.now() + FIX_BUDGET_MS.final);
       this.sync(doc, inputs);
-      const r = await doc.compiler.exportPdf({ mode: "final" });
+      const exportPdf = doc.compiler.exportPdf.bind(doc.compiler);
+      const r = await this.exportOnce(() => exportPdf({ mode: "final" }));
       const diagnostics = this.diagnostics(doc, r.diagnostics);
       return r.pdf === null
         ? { uri, rev, diagnostics, status: "error" }

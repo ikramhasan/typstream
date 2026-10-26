@@ -49,8 +49,8 @@ export const newEngine = (): Engine => {
       .filter((name) => /\.(otf|ttf)$/.test(name))
       .sort()
       .map((name) => readFileSync(join(dir, name)));
+    // Fonts belong to the wasm instance: every engine sees them.
+    for (const font of fonts) glue.Engine.add_font(font);
   }
-  const engine = new glue.Engine();
-  for (const font of fonts) engine.add_font(font);
-  return engine;
+  return new glue.Engine();
 };

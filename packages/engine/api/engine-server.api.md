@@ -28,6 +28,7 @@ export interface AdapterCompileResult {
     compileMs?: number;
     diagnostics: Diagnostic[];
     exportMs?: number;
+    pending?: Promise<void>;
 }
 
 // @public
@@ -102,7 +103,9 @@ export const engineWasm: (options?: EngineWasmOptions) => EngineAdapter;
 
 // @public
 export interface EngineWasmOptions {
+    fontCache?: string | false;
     fonts?: readonly FontInput[];
+    lazyFonts?: readonly LazyFontInput[];
     wasm?: InitInput | Promise<InitInput>;
 }
 
@@ -116,6 +119,12 @@ export { InitInput }
 
 // @beta
 export const inProcess: (createAdapter: () => EngineAdapter, options?: Pick<ServerOptions, "fixers" | "packages">) => SpawnEngine;
+
+// @public
+export interface LazyFontInput {
+    info: string;
+    url: string | URL;
+}
 
 // @public
 export type MaybePromise<T> = T | Promise<T>;

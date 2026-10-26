@@ -55,11 +55,10 @@ describe.runIf(run)(`PDF engine cost in ${server.browser}`, () => {
     const t1 = performance.now();
     await glue.default({ module_or_path: module });
     const instantiateMs = performance.now() - t1;
-    const engine = new glue.Engine();
+    // Fonts belong to the instance (#11): every Engine below sees them.
     const [, fontsMs] = time(() => {
-      for (const font of fonts) engine.add_font(font);
+      for (const font of fonts) glue.Engine.add_font(font);
     });
-    engine.free();
 
     const perDoc: Record<string, unknown> = {};
     for (const [name, source] of Object.entries(docs)) {
@@ -67,7 +66,6 @@ describe.runIf(run)(`PDF engine cost in ${server.browser}`, () => {
       // though Typst's cache is shared by the instance (as in a worker that
       // exports several documents).
       const e = new glue.Engine();
-      for (const font of fonts) e.add_font(font);
       e.set_source("/main.typ", source);
       const [first, pdfFirstMs] = time(() => e.compile_pdf());
       expect(first.ok).toBe(true);

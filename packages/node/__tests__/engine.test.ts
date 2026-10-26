@@ -84,8 +84,21 @@ describe("engine", () => {
     await engine.close();
   });
 
+  it("has the script fonts browsers load lazily", async () => {
+    const fontsIn = async (options: { scriptFonts?: boolean }) => {
+      const engine = createEngine({ workers: 1, ...options });
+      const r = await render("= প্রশ্ন\nআমি বাংলায় গান গাই। مرحبا", "pdf", { engine });
+      await engine.close();
+      if (!r.ok) throw new Error("compile failed");
+      const embedded = new TextDecoder("latin1").decode(r.data).matchAll(/\/BaseFont\s*\/[A-Z]{6}\+(Noto[\w-]+)/g);
+      return [...new Set([...embedded].map((m) => m[1]))].sort();
+    };
+    expect(await fontsIn({})).toEqual(["NotoNaskhArabic-Regular", "NotoSerifBengali-Bold", "NotoSerifBengali-Regular"]);
+    expect(await fontsIn({ scriptFonts: false })).toEqual([]);
+  });
+
   it("uses only the fonts it is given", async () => {
-    const engine = createEngine({ workers: 1, typstFonts: false });
+    const engine = createEngine({ workers: 1, typstFonts: false, scriptFonts: false });
     const r = await render("$x$", "pdf", { engine });
     expect(r).toMatchObject({ ok: false, diagnostics: [{ message: "no font could be found" }] });
     await engine.close();

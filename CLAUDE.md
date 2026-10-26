@@ -68,7 +68,7 @@ pnpm corpus:validate   # native `typst` 0.15.1 compile of every corpus entry (ne
 ```
 
 In `packages/engine-wasm` (Rust build, ~3 min cold):
-- `pnpm build`: `build.sh` → `dist/` (glue, `.d.ts`, `wasm-opt -Oz` wasm, base fonts from typst-assets). It skips the build when `dist/` came from the same inputs (`FORCE=1` rebuilds). The root `pnpm test` / `pnpm check-types` (turbo) build it first; run inside the package, `pnpm test` uses the existing `dist/`.
+- `pnpm build`: `build.sh` → `dist/` (glue, `.d.ts`, `wasm-opt -Oz` wasm, base fonts from typst-assets, and the lazily loaded script fonts, downloaded from notofonts at a pinned commit and SHA-256 checked, with their `FontInfo` registry written by `scripts/fonts.mjs`). It skips the build when `dist/` came from the same inputs (`FORCE=1` rebuilds). The root `pnpm test` / `pnpm check-types` (turbo) build it first; run inside the package, `pnpm test` uses the existing `dist/`.
 - `pnpm size`: wasm budget, 6.3 MB brotli (HTML, SVG and PDF in one build since #18).
 - It isn't a tsup package: `dist/` is wasm-bindgen's output, and its API report reads `dist/engine.d.ts`, whose types are written in `src/lib.rs`. Only the `Engine (wasm)` CI job runs its own checks; the other jobs pass `--filter=!@typstream/engine-wasm`, but `@typstream/engine` depends on it, so turbo still builds it there: they restore `dist/` with `.github/actions/engine-wasm` (cached on the crate's inputs), and `build.sh` then has nothing to do.
 

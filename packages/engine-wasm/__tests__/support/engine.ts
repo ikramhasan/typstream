@@ -16,9 +16,11 @@ glue.initSync({ module: readFileSync(`${dist}engine_bg.wasm`) });
 export const { Engine } = glue;
 export type { Diagnostic, HtmlResult, Range, SvgChangedResult } from "../../dist/engine.js";
 
-/** An engine with Typst's bundled fonts, the same ones native `typst` uses in `native.ts`. */
+/**
+ * An engine with Typst's bundled fonts, the same ones native `typst` uses in
+ * `native.ts`. Fonts belong to the instance, so they're added once per file.
+ */
 export const newEngine = (): InstanceType<typeof Engine> => {
-  const engine = new Engine();
-  for (const font of fonts()) engine.add_font(font.bytes);
-  return engine;
+  for (const font of fonts()) Engine.add_font(font.bytes);
+  return new Engine();
 };

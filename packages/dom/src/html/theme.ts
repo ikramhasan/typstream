@@ -2,7 +2,12 @@
 // renderer's animation and MathML CSS: a template literal with substitutions
 // isn't pure to bundlers, so styles.ts would come along whole.
 
-/** Theme variables and element colors, shared by the renderer and standalone exports. */
+/**
+ * Theme variables and element colors, shared by the renderer and standalone exports.
+ * The last rule is for right-to-left text, which Typst's HTML export doesn't mark,
+ * even under `text(lang: "ar")` (#11): each paragraph takes its direction from its
+ * first strong letter, as `dir="auto"` would, so Arabic aligns right.
+ */
 export const THEME_CSS = `/* Theme. "auto" follows the page's color-scheme; set color-scheme: light dark on it to follow the OS. */
 :where(.typstream) {
   --typstream-foreground: light-dark(#1c1c1e, #e8e8ea);
@@ -32,5 +37,8 @@ export const THEME_CSS = `/* Theme. "auto" follows the page's color-scheme; set 
 :where(.typstream) img,
 :where(.typstream) svg {
   max-width: 100%;
+}
+:where(.typstream) :is(p, li, dt, dd, h1, h2, h3, h4, h5, h6, th, td, figcaption, blockquote) {
+  unicode-bidi: plaintext;
 }
 `;

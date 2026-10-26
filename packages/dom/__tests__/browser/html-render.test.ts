@@ -77,6 +77,27 @@ describe(`HTML renderer on corpus documents in ${browser}`, () => {
     expect(normalize(TYPST_MATH_CSS.replaceAll(":where(.typstream) ", ""))).toBe(normalize(head));
   });
 
+  it("sets right-to-left paragraphs from their text, which Typst's HTML doesn't mark", async () => {
+    const doc = openHtml(engine);
+    const html = await compileHtml(doc, "= Arabic\n\nمرحبا بالعالم. هذا اختبار.\n\nEnglish, then العربية.");
+    doc.dispose();
+    const renderer = mount();
+    renderer.root.style.width = "600px";
+    renderer.update(html);
+    const [arabic, english] = Array.from(renderer.root.querySelectorAll("p")).map((p) => {
+      const range = document.createRange();
+      range.selectNodeContents(p);
+      const text = range.getBoundingClientRect();
+      const box = p.getBoundingClientRect();
+      return { left: text.left - box.left, right: box.right - text.right };
+    });
+    // Arabic hugs the right edge, a paragraph starting in English the left.
+    expect(arabic?.right).toBeLessThan(1);
+    expect(arabic?.left).toBeGreaterThan(100);
+    expect(english?.left).toBeLessThan(1);
+    unmount(renderer);
+  });
+
   it("resolves blocks to the source that produced them", async () => {
     let checked = 0;
     const misses: string[] = [];

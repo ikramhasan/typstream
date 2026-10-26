@@ -96,6 +96,13 @@ export interface AdapterCompileResult {
   compileMs?: number;
   /** Turning the document into HTML or SVG. */
   exportMs?: number;
+  /**
+   * Set when the compile lacked something that is on its way, e.g. a lazily
+   * loaded font (it fell back to another font or tofu). Resolves once it has
+   * arrived and a compile would look different; rejects if it can't arrive.
+   * The server then recompiles the document on its own; exports wait for it.
+   */
+  pending?: Promise<void>;
 }
 
 /** `html` is `null` when the compile failed. @public */

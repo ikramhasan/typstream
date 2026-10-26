@@ -15,10 +15,10 @@ initSync({ module: readFileSync(createRequire(import.meta.url).resolve("@typstre
 
 export type { Diagnostic };
 
-/** An engine with Typst's bundled fonts, edu and html-compat mounted. */
+/** An engine with Typst's bundled fonts (they belong to the wasm instance), edu and html-compat mounted. */
 export const newEngine = (): Engine => {
+  for (const font of fonts()) Engine.add_font(font.bytes);
   const engine = new Engine();
-  for (const font of fonts()) engine.add_font(font.bytes);
   for (const [path, source] of Object.entries(eduFiles)) engine.set_source(path, source);
   engine.set_source(HTML_COMPAT_PATH, htmlCompatSource);
   return engine;

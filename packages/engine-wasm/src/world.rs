@@ -2,13 +2,16 @@
 //! filesystem; everything a document can read, packages included, was put here
 //! by JS.
 
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
+use std::sync::{Arc, Mutex};
 
 use typst::diag::{FileError, FileResult, PackageError};
 use typst::foundations::{Bytes, Datetime, Dict, Duration};
 use typst::syntax::package::PackageSpec;
 use typst::syntax::{FileId, RootedPath, Source, VirtualPath, VirtualRoot};
 use typst::text::{Font, FontBook};
+
+use crate::fonts;
 use typst::utils::LazyHash;
 use typst::{Feature, Library, LibraryExt, World};
 
@@ -54,8 +57,10 @@ fn build_library(inputs: Dict) -> LazyHash<Library> {
 
 pub struct MemWorld {
     library: LazyHash<Library>,
-    book: LazyHash<FontBook>,
-    fonts: Vec<Font>,
+    /// The instance's font book as of the last `begin_compile` (fonts.rs).
+    book: Arc<LazyHash<FontBook>>,
+    /// Lazy font files the current compile asked for before their bytes arrived.
+    missing_fonts: Mutex<BTreeSet<u32>>,
     main: FileId,
     /// Kept across compiles and updated with `Source::replace`, so the
     /// incremental reparser and comemo can reuse work.
@@ -70,24 +75,23 @@ impl MemWorld {
         sources.insert(main, Source::new(main, String::new()));
         MemWorld {
             library: build_library(Dict::new()),
-            book: LazyHash::new(FontBook::new()),
-            fonts: Vec::new(),
+            book: fonts::book(),
+            missing_fonts: Mutex::new(BTreeSet::new()),
             main,
             sources,
             files: HashMap::new(),
         }
     }
 
-    /// Adds every face in a font file (a TTC has several). Returns how many.
-    pub fn add_font(&mut self, bytes: &[u8]) -> u32 {
-        let mut added = 0;
-        for font in Font::iter(Bytes::new(bytes.to_vec())) {
-            self.fonts.push(font);
-            added += 1;
-        }
-        // The book is indexed like `fonts`, so rebuild it rather than patch it.
-        self.book = LazyHash::new(FontBook::from_fonts(self.fonts.iter()));
-        added
+    /// Call before every compile: takes up fonts added since the last one.
+    pub fn begin_compile(&mut self) {
+        self.book = fonts::book();
+        self.missing_fonts.get_mut().unwrap().clear();
+    }
+
+    /// Lazy font files the last compile wanted but couldn't have (fonts.rs).
+    pub fn missing_fonts(&self) -> Vec<u32> {
+        self.missing_fonts.lock().unwrap().iter().copied().collect()
     }
 
     pub fn set_source(&mut self, id: FileId, text: &str) {
@@ -174,7 +178,10 @@ impl World for MemWorld {
     }
 
     fn font(&self, index: usize) -> Option<Font> {
-        self.fonts.get(index).cloned()
+        fonts::font(index).unwrap_or_else(|id| {
+            self.missing_fonts.lock().unwrap().insert(id);
+            None
+        })
     }
 
     /// Like the Typst CLI: the local date without an offset, else the UTC date

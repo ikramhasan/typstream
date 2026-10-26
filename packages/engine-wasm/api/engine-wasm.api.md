@@ -12,7 +12,10 @@ export default __wbg_init;
 export type ChangedPage = { index: number; hash: string; width: number; height: number; svg: string; text: TextRun[] };
 
 // @public
-export type CheckResult = { ok: boolean; pageCount?: number; diagnostics: Diagnostic[]; ms: number };
+export type CheckResult = CompileResult & { pageCount?: number };
+
+// @public
+export type CompileResult = { ok: boolean; diagnostics: Diagnostic[]; ms: number; missingFonts: number[] };
 
 // @public
 export type Diagnostic = {
@@ -30,15 +33,18 @@ export class Engine {
     // (undocumented)
     [Symbol.dispose](): void;
     constructor();
-    add_font(bytes: Uint8Array): number;
+    static add_font(bytes: Uint8Array): number;
     check_paged(): CheckResult;
     compile_html(): HtmlResult;
     compile_pdf(): PdfResult;
     compile_svg_changed(): SvgChangedResult;
     static features(): string[];
+    static font_info(bytes: Uint8Array): string;
     // (undocumented)
     free(): void;
+    static load_font(id: number, bytes: Uint8Array): void;
     static memory_bytes(): number;
+    static register_font(info: string): number;
     remove_file(path: string): void;
     reset_pages(): void;
     set_file(path: string, bytes: Uint8Array): void;
@@ -47,7 +53,7 @@ export class Engine {
 }
 
 // @public
-export type HtmlResult = { ok: boolean; html?: string; diagnostics: Diagnostic[]; ms: number };
+export type HtmlResult = CompileResult & { html?: string };
 
 // @public (undocumented)
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
@@ -67,7 +73,7 @@ export interface InitOutput {
     // (undocumented)
     readonly __wbindgen_export4: (a: number, b: number, c: number) => void;
     // (undocumented)
-    readonly engine_add_font: (a: number, b: number, c: number) => number;
+    readonly engine_add_font: (a: number, b: number) => number;
     // (undocumented)
     readonly engine_check_paged: (a: number) => number;
     // (undocumented)
@@ -79,9 +85,15 @@ export interface InitOutput {
     // (undocumented)
     readonly engine_features: (a: number) => void;
     // (undocumented)
+    readonly engine_font_info: (a: number, b: number, c: number) => void;
+    // (undocumented)
+    readonly engine_load_font: (a: number, b: number, c: number, d: number) => void;
+    // (undocumented)
     readonly engine_memory_bytes: () => number;
     // (undocumented)
     readonly engine_new: () => number;
+    // (undocumented)
+    readonly engine_register_font: (a: number, b: number, c: number) => void;
     // (undocumented)
     readonly engine_remove_file: (a: number, b: number, c: number, d: number) => void;
     // (undocumented)
@@ -100,19 +112,16 @@ export interface InitOutput {
 export function initSync(module: { module: SyncInitInput } | SyncInitInput): InitOutput;
 
 // @public
-export type PdfResult = { ok: boolean; pdf?: Uint8Array; pageCount?: number; diagnostics: Diagnostic[]; ms: number };
+export type PdfResult = CompileResult & { pdf?: Uint8Array; pageCount?: number };
 
 // @public
 type Range_2 = { from: number; to: number };
 export { Range_2 as Range }
 
 // @public
-export type SvgChangedResult = {
-    ok: boolean;
+export type SvgChangedResult = CompileResult & {
     pageCount?: number;
     changed?: ChangedPage[];
-    diagnostics: Diagnostic[];
-    ms: number;
     compileMs: number;
     exportMs: number;
 };

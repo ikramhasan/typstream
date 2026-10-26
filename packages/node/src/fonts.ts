@@ -1,10 +1,12 @@
 // Fonts for the server engine. By default, Typst's bundled set (what native
 // `typst compile --ignore-system-fonts` uses), copied into dist/fonts at build
-// time; plus any the caller adds.
+// time, and engine-wasm's script fonts (which browsers load lazily, PLAN §6.4;
+// a server has them on disk, so it loads them up front); plus any the caller adds.
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { scriptFonts } from "@typstream/engine-wasm/fonts";
 
 const FONT_FILE = /\.(ttf|otf|ttc|otc)$/i;
 
@@ -26,6 +28,11 @@ export interface FontOptions {
    * Sans Mono). Default true.
    */
   typstFonts?: boolean;
+  /**
+   * Load engine-wasm's script fonts: Noto Naskh Arabic, Noto Serif Bengali and
+   * Noto Serif Devanagari, regular and bold. Default true.
+   */
+  scriptFonts?: boolean;
   /** Font files (TTF, OTF, TTC) as bytes. */
   fonts?: Uint8Array[];
   /** Directories searched recursively for font files, like `typst --font-path`. */
@@ -48,6 +55,7 @@ export const loadFonts = (options: FontOptions = {}): Uint8Array[] => {
     }
     paths.push(...bundled);
   }
+  if (options.scriptFonts !== false) paths.push(...scriptFonts.map((font) => fileURLToPath(font.url)));
   for (const dir of options.fontPaths ?? []) paths.push(...fontFilesIn(dir));
   return [...paths.map((path) => new Uint8Array(readFileSync(path))), ...(options.fonts ?? [])];
 };
