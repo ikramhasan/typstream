@@ -191,9 +191,10 @@ describe(`streaming in ${browser}`, { timeout: 120_000 }, () => {
     engine.dispose();
   });
 
-  it("keeps the last good artifact through error frames, and still ends equal to a one-shot compile", async () => {
+  it("fixes the frames heal alone can't compile, and still ends equal to a one-shot compile", async () => {
     // A cut `#question(` heals to `#question()`, which misses its body: an
-    // error frame until the body streams in (Layer 3 fixers, #20).
+    // error frame until the body streams in, unless the worker's tail-cut
+    // fixer (Layer 3, #20) cuts the call off.
     const { source, chunks } = await commands.corpusStream("worksheet-fractions");
     const { engine, events } = await start();
     const doc = engine.open();
@@ -207,7 +208,7 @@ describe(`streaming in ${browser}`, { timeout: 120_000 }, () => {
     const final = await replay(doc, chunks, 400);
     expect(final.status).toBe("done");
     expect(lostArtifact).toBe(false);
-    expect(frames.every((f) => f.compile.status === "ok" || f.errors > 0)).toBe(true);
+    expect(frames.filter((f) => f.compile.status !== "ok" || f.errors > 0)).toEqual([]);
     expect(trouble(events)).toEqual([]);
     expect(final.artifact).toEqual(await oneShot(engine, source, "html"));
     engine.dispose();

@@ -96,6 +96,19 @@ describe("compiling", () => {
     expect(doc.getState().status).toBe("done");
   });
 
+  it("tells the worker which text is settled while streaming, for its fixers", async () => {
+    const { workers, engine } = setup();
+    const doc = engine.open();
+    doc.push("Intro.\n\n#text(");
+    await tick(100);
+    const settled = workers.compileRequests().at(-1)?.settled;
+    expect(settled).toBe(doc.getState().heal.stableOffset);
+    expect(settled).toBe("Intro.\n\n".length);
+    doc.finish();
+    await tick(100);
+    expect(workers.compileRequests().at(-1)?.settled).toBeUndefined();
+  });
+
   it("passes target and inputs, and recompiles when they change", async () => {
     const { workers, engine } = setup();
     const doc = engine.open({ text: "Hi", inputs: { answers: "false" } });

@@ -47,4 +47,27 @@ const engine = createEngine({
 
 The server speaks the protocol in `@typstream/core` over any `EngineAdapter` (`createServer` for other transports, `inProcess` to run it on the calling thread in tests or Node). It keeps each document's text, preamble (evaluated before the document; diagnostics stay in document coordinates), files and inputs, and sends changed pages only. A wasm trap (a Typst panic, or out of memory) ends the worker so the client replaces it.
 
+## Fixers (Layer 3)
+
+When a compile fails, the server tries its diagnostic fixers and recompiles, at most twice per revision, so streamed text that heals but doesn't compile yet still renders:
+
+- **`tail-cut`** (streaming only): an error in the text still being typed (after heal's `stableOffset`, which the client sends as `settled`) cuts the text there and heals the rest again. `#text(` without its body, `#v(1`, `rgb("#e` and closure parameters before `=>` drop out until the next tokens bring them back.
+- **`pending-ref`**: a reference to a label that doesn't exist yet (a citation before `#bibliography`) shows its key as a muted placeholder. In final mode the error is still reported.
+
+Placeholders come from a small Typst library mounted at `/@typstream/runtime.typ` (a document's own file at that path replaces it). Fixed errors are reported as `info` diagnostics (`source` is the fixer's name) while streaming. Plugins add fixers as ES modules whose default export is a `DiagnosticFixer` or an array of them:
+
+```ts
+// acme-fixers.js, loaded in the worker
+export default {
+  name: "acme/old-macro",
+  match: /^unknown variable: oldbox$/,
+  fix: (d, { text }) => [{ from: d.span.from, to: d.span.to, insert: "box" }],
+};
+
+// main thread
+createEngine({ spawn: engineWorker(), initialize: { fixerModules: [new URL("./acme-fixers.js", import.meta.url).href] } });
+```
+
+A custom worker can replace the list: `serve(engineWasm(), undefined, { fixers: [pendingRef, myFixer, tailCut] })`; `[]` turns them off.
+
 Tests: `pnpm test` (Node: client, server, protocol conformance against engine-wasm) and `pnpm test:browser` (the real worker in Chromium, Firefox and WebKit). Any engine server must pass `__tests__/conformance.ts`.

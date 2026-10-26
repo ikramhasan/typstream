@@ -4,7 +4,7 @@
 import type { ClientMessage, ServerMessage } from "@typstream/core";
 import type { SpawnEngine } from "../connection";
 import type { EngineAdapter } from "./adapter";
-import { createServer, type EngineServer } from "./server";
+import { createServer, type EngineServer, type ServerOptions } from "./server";
 
 /**
  * The parts of a worker's global scope {@link serve} uses.
@@ -19,7 +19,8 @@ export interface WorkerScope {
 
 /**
  * Runs the engine server in this worker: answers the client's messages with
- * `adapter`. A worker script is one call.
+ * `adapter`. A worker script is one call. `options.fixers` replaces the
+ * built-in diagnostic fixers ({@link DEFAULT_FIXERS}).
  *
  * @example
  * ```ts
@@ -29,9 +30,14 @@ export interface WorkerScope {
  * ```
  * @public
  */
-export const serve = (adapter: EngineAdapter, scope?: WorkerScope): EngineServer => {
+export const serve = (
+  adapter: EngineAdapter,
+  scope?: WorkerScope,
+  options: Pick<ServerOptions, "fixers"> = {},
+): EngineServer => {
   const self = scope ?? (globalThis as unknown as WorkerScope);
   const server = createServer(adapter, (message) => self.postMessage(message), {
+    ...options,
     // Thrown outside the protocol, the error reaches the client as the worker's
     // `error` event, and the client replaces the worker.
     onFatal: (error) =>
@@ -48,11 +54,11 @@ export const serve = (adapter: EngineAdapter, scope?: WorkerScope): EngineServer
  * and Node. Messages are structured-cloned and delivered on later tasks, as a
  * worker's would be, but compiles block the thread and `terminate` can't stop
  * one that is running, so the watchdog can't rescue a runaway document.
- * `createAdapter` is called once per spawn.
+ * `createAdapter` is called once per spawn; `options.fixers` is as in {@link serve}.
  * @beta
  */
 export const inProcess =
-  (createAdapter: () => EngineAdapter): SpawnEngine =>
+  (createAdapter: () => EngineAdapter, options: Pick<ServerOptions, "fixers"> = {}): SpawnEngine =>
   (events) => {
     let alive = true;
     const server = createServer(
@@ -61,7 +67,7 @@ export const inProcess =
         const copy = structuredClone(message);
         setTimeout(() => alive && events.message(copy));
       },
-      { onFatal: (error) => setTimeout(() => alive && events.error(error)) },
+      { ...options, onFatal: (error) => setTimeout(() => alive && events.error(error)) },
     );
     return {
       postMessage: (message) => {

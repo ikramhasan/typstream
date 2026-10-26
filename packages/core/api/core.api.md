@@ -60,6 +60,7 @@ export interface CompileParams extends DocumentParams {
     fullPages?: boolean;
     inputs?: Record<string, string>;
     mode?: CompileMode;
+    settled?: number;
     // (undocumented)
     target: CompileTarget;
 }
@@ -106,6 +107,15 @@ export interface Diagnostic {
     source?: string;
     span: Range | null;
     trace: TraceItem[];
+}
+
+// @public
+export interface DiagnosticFixer {
+    fix(d: Diagnostic, ctx: FixContext): TextEdit[] | null | Promise<TextEdit[] | null>;
+    match?: RegExp | ((d: Diagnostic) => boolean);
+    modes?: readonly CompileMode[];
+    name: string;
+    priority?: number;
 }
 
 // @public
@@ -226,6 +236,15 @@ export type FileContent = string | Uint8Array;
 // @public
 export type FileDelta = Record<string, FileContent | null>;
 
+// @public
+export interface FixContext {
+    errors: readonly Diagnostic[];
+    mode: CompileMode;
+    round: number;
+    settled: number;
+    text: string;
+}
+
 // @beta
 export type FontSource = ({
     kind: "url";
@@ -285,6 +304,7 @@ export interface HtmlArtifact {
 
 // @beta
 export interface InitializeOptions {
+    fixerModules?: string[];
     // (undocumented)
     fonts?: FontSource[];
     // (undocumented)

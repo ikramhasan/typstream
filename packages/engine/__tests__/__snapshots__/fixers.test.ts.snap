@@ -1,0 +1,146 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`diagnostic shapes > matches the snapshot 1`] = `
+[
+  {
+    "diagnostics": [
+      {
+        "at": "@ipcc2021",
+        "message": "label \`<ipcc2021>\` does not exist in the document",
+        "severity": "error",
+        "trace": [],
+      },
+    ],
+    "text": "Cited @ipcc2021.",
+  },
+  {
+    "diagnostics": [
+      {
+        "at": "@fig-",
+        "message": "label \`<fig->\` does not exist in the document",
+        "severity": "error",
+        "trace": [],
+      },
+    ],
+    "text": "A partial @fig-",
+  },
+  {
+    "diagnostics": [
+      {
+        "at": "ref(<nope>)",
+        "message": "label \`<nope>\` does not exist in the document",
+        "severity": "error",
+        "trace": [],
+      },
+    ],
+    "text": "#ref(<nope>)",
+  },
+  {
+    "diagnostics": [
+      {
+        "at": "text()",
+        "message": "missing argument: body",
+        "severity": "error",
+        "trace": [],
+      },
+    ],
+    "text": "Hello
+
+#text()",
+  },
+  {
+    "diagnostics": [
+      {
+        "at": "align(center)",
+        "message": "missing argument: body",
+        "severity": "error",
+        "trace": [],
+      },
+    ],
+    "text": "#align(center)",
+  },
+  {
+    "diagnostics": [
+      {
+        "at": "1",
+        "message": "expected relative length or fraction, found integer",
+        "severity": "error",
+        "trace": [],
+      },
+    ],
+    "text": "#v(1)",
+  },
+  {
+    "diagnostics": [
+      {
+        "at": "()",
+        "message": "expected length, color, gradient, tiling, dictionary, stroke, none, or auto, found array",
+        "severity": "error",
+        "trace": [],
+      },
+    ],
+    "text": "#rect(stroke: ())",
+  },
+  {
+    "diagnostics": [
+      {
+        "at": ""#e"",
+        "message": "color string has wrong length",
+        "severity": "error",
+        "trace": [],
+      },
+    ],
+    "text": "#rgb("#e")",
+  },
+  {
+    "diagnostics": [
+      {
+        "at": """",
+        "message": "expected two or three letter language code (ISO 639-1/2/3)",
+        "severity": "error",
+        "trace": [],
+      },
+    ],
+    "text": "#text(lang: "")[x]",
+  },
+  {
+    "diagnostics": [
+      {
+        "at": "i",
+        "message": "unknown variable: i",
+        "severity": "error",
+        "trace": [],
+      },
+    ],
+    "text": "#range(3).map(((i, (w, ))))",
+  },
+  {
+    "diagnostics": [
+      {
+        "at": "x.enumerate",
+        "message": "element text has no method \`enumerate\`",
+        "severity": "error",
+        "trace": [
+          [
+            "while calling \`f\`",
+            "f([Arg])",
+          ],
+        ],
+      },
+    ],
+    "text": "#let f(x) = x.enumerate()
+#f([Arg])",
+  },
+  {
+    "diagnostics": [
+      {
+        "at": ""assets/clim"",
+        "message": "file not found (searched at /assets/clim)",
+        "severity": "error",
+        "trace": [],
+      },
+    ],
+    "text": "#bibliography("assets/clim")",
+  },
+]
+`;
