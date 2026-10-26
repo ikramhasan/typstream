@@ -366,8 +366,15 @@ dependencies = [
 name = "typst-syntax-oracle"
 version = "0.0.0"
 dependencies = [
+ "ecow",
  "serde_json",
  "typst-syntax",
+ "typst-utils",
+ "unicode-ident",
+ "unicode-math-class",
+ "unicode-script",
+ "unicode-segmentation",
+ "unscanny",
  "wasm-bindgen",
 ]
 
