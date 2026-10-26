@@ -1,18 +1,10 @@
-// The `pdf` build (dist/pdf, `@typstream/engine-wasm/pdf`): the same engine plus compile_pdf.
-import { existsSync, readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+// PDF export (`compile_pdf`), in the default build since #18.
 import { describe, expect, it } from "vitest";
 import { benchDoc, SMOKE } from "./support/documents.js";
-import { fonts } from "./support/fonts.js";
+import { newEngine } from "./support/engine.js";
 import { nativeSvgPages } from "./support/native.js";
 
-const dist = fileURLToPath(new URL("../dist/pdf/", import.meta.url));
-if (!existsSync(`${dist}engine.js`)) throw new Error(`pdf build missing: run ./build.sh (expected ${dist}engine.js)`);
-const glue: typeof import("../dist/pdf/engine.js") = await import("../dist/pdf/engine.js");
-glue.initSync({ module: readFileSync(`${dist}engine_bg.wasm`) });
-
-const engine = new glue.Engine();
-for (const font of fonts()) engine.add_font(font.bytes);
+const engine = newEngine();
 
 const pdfPages = (pdf: Uint8Array): number =>
   (
@@ -21,11 +13,7 @@ const pdfPages = (pdf: Uint8Array): number =>
       .match(/\/Type\s*\/Page\b/g) ?? []
   ).length;
 
-describe("pdf build", () => {
-  it("has the pdf feature", () => {
-    expect(glue.Engine.features()).toEqual(["html", "svg", "pdf"]);
-  });
-
+describe("compile_pdf", () => {
   it.each([
     ["smoke", SMOKE],
     ["six pages", benchDoc()],

@@ -15,11 +15,12 @@ packages/core     @typstream/core: TextEdit, positions, SourceMap. No dependenci
 packages/heal     @typstream/heal: normalizer, recognizer (port of typst-syntax 0.15.1), tail repair, lint, incremental healer.
 packages/engine   @typstream/engine: main-thread client (heal → scheduler → worker, watchdog, recycling, last-good), and
                   the worker half (`/server`: protocol server, EngineAdapter, engine-wasm adapter; `worker.ts`, spawned by `engineWorker()`).
-packages/engine-wasm  @typstream/engine-wasm: Typst 0.15.1 as wasm (Rust crate + wasm-bindgen glue): HTML, changed-page SVG, UTF-16 diagnostics.
+packages/engine-wasm  @typstream/engine-wasm: Typst 0.15.1 as wasm (Rust crate + wasm-bindgen glue): HTML, changed-page SVG, PDF, UTF-16 diagnostics.
 packages/html-compat  @typstream/html-compat: Typst prelude + CSS so HTML export keeps grid, align, shapes, place, … (tests need the engine).
 packages/dom      @typstream/dom: framework-free renderers. `src/html/`: HTML renderer (string block split, sanitizer, source
                   anchors, word fade-in, caret, theme CSS). `src/paged/`: SVG pages (changed pages, visible first, text layer).
                   `src/mount.ts`: `mountTypstream`, a document on an engine in an element (what the bindings wrap).
+                  `src/export/`: `standaloneHtml`, a downloadable file from an HTML export (theme, CSS, CSP).
 packages/react    @typstream/react: <Typstream>, TypstreamProvider, useTypstream(); a thin layer over mountTypstream.
 packages/typstream  typstream: the convenience package (<Typstream> with html-compat and the math font; re-exports).
 tools/typst-syntax-oracle   Typst's real parser and lexer compiled to wasm for Node; the ground truth in heal's tests.
@@ -60,7 +61,7 @@ pnpm corpus:validate   # native `typst` 0.15.1 compile of every corpus entry (ne
 
 In `packages/engine-wasm` (Rust build, ~3 min cold):
 - `pnpm build`: `build.sh` → `dist/` (glue, `.d.ts`, `wasm-opt -Oz` wasm, base fonts from typst-assets). It skips the build when `dist/` came from the same inputs (`FORCE=1` rebuilds). The root `pnpm test` / `pnpm check-types` (turbo) build it first; run inside the package, `pnpm test` uses the existing `dist/`.
-- `pnpm size`: wasm budget, 6.0 MB brotli.
+- `pnpm size`: wasm budget, 6.3 MB brotli (HTML, SVG and PDF in one build since #18).
 - It isn't a tsup package: `dist/` is wasm-bindgen's output, and its API report reads `dist/engine.d.ts`, whose types are written in `src/lib.rs`. Only the `Engine (wasm)` CI job runs its own checks; the other jobs pass `--filter=!@typstream/engine-wasm`, but `@typstream/engine` depends on it, so turbo still builds it there: they restore `dist/` with `.github/actions/engine-wasm` (cached on the crate's inputs), and `build.sh` then has nothing to do.
 
 In `packages/engine`:
@@ -75,7 +76,7 @@ In `packages/html-compat`:
 
 In `packages/dom`:
 - `pnpm test`: node tests (the HTML block splitter, paged helpers). `pnpm test:browser`: the renderers in Chromium, Firefox and WebKit, fed by the real engine worker with html-compat and corpus documents (needs engine-wasm's `dist/`). `BROWSERS=chromium` runs one.
-- `pnpm size`: HTML renderer ≤ 9 KB gzipped (with its CSS), paged renderer ≤ 4 KB.
+- `pnpm size`: HTML renderer ≤ 9 KB gzipped (with its CSS), paged renderer ≤ 4 KB, standalone HTML export ≤ 2 KB.
 - Its API report needs DOM types, so its `api-extractor.json` overrides the shared compiler settings.
 
 In `packages/react`:

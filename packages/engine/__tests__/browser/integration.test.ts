@@ -8,7 +8,7 @@ import type { Artifact, CompileResult } from "@typstream/core";
 import { describe, expect, it } from "vitest";
 import { commands, server } from "vitest/browser";
 import { fromWorker } from "../../src/connection";
-import type { DocumentState, EngineDocument } from "../../src/document";
+import { type DocumentState, type EngineDocument, ExportError } from "../../src/document";
 import { createEngine, type Engine, type EngineEvent, type EngineOptions } from "../../src/engine";
 import { conformance } from "../conformance";
 import { FIVE_PAGES } from "../support/documents";
@@ -227,6 +227,45 @@ describe(`watchdog in ${browser}`, { timeout: 120_000 }, () => {
     const recovered = await until(doc, (s) => s.status === "idle" && s.failure === null);
     expect(recovered.artifact?.target === "html" && recovered.artifact.html).toContain("Recovered.");
     expect(events.filter((e) => e.type === "failed")).toEqual([]);
+    engine.dispose();
+  });
+});
+
+describe(`exports in ${browser}`, { timeout: 120_000 }, () => {
+  /** Pages in a PDF: its page objects (typst-pdf writes them uncompressed). */
+  const pdfPages = (pdf: Uint8Array): number =>
+    (new TextDecoder("latin1").decode(pdf).match(/\/Type\s*\/Page\b/g) ?? []).length;
+
+  it("exports a PDF with the paged preview's pages, and HTML without source anchors", async () => {
+    const { engine, events } = await start();
+    expect((await engine.ready).capabilities.exports).toEqual(["html", "pdf"]);
+    const doc = engine.open({ target: "paged", text: FIVE_PAGES });
+    doc.finish();
+    const done = await until(doc, (s) => s.status === "done");
+    const preview = done.artifact?.target === "paged" ? done.artifact : null;
+    expect(preview?.pageCount).toBeGreaterThan(4);
+
+    const pdf = await doc.exportPdf();
+    expect(new TextDecoder().decode(pdf.subarray(0, 5))).toBe("%PDF-");
+    expect(pdfPages(pdf)).toBe(preview?.pageCount);
+
+    const html = await doc.exportHtml();
+    expect(html).toMatch(/^<!DOCTYPE html>/);
+    expect(html).toContain("A five page handout");
+    expect(html).not.toContain("typstream-anchor");
+    expect(doc.exportSource()).toBe(FIVE_PAGES);
+    expect(trouble(events)).toEqual([]);
+    engine.dispose();
+  });
+
+  it("rejects the export of a document with errors, with its diagnostics", async () => {
+    const { engine } = await start();
+    const doc = engine.open({ text: "Fine.\n#nope" });
+    doc.finish();
+    const error = await doc.exportPdf().catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ExportError);
+    expect(error).toMatchObject({ reason: "diagnostics", message: "unknown variable: nope" });
+    expect((error as ExportError).diagnostics.map((d) => d.span)).toEqual([{ from: 7, to: 11 }]);
     engine.dispose();
   });
 });

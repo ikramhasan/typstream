@@ -158,6 +158,17 @@ export interface RenderedInfo {
 }
 
 // @public
+export const standaloneHtml: (html: string, options?: StandaloneHtmlOptions) => string;
+
+// @public
+export interface StandaloneHtmlOptions {
+    mathFont?: Uint8Array | string | URL;
+    stylesheets?: readonly string[];
+    theme?: "light" | "dark" | "auto";
+    title?: string;
+}
+
+// @public
 export interface TypstreamOptions {
     animated?: boolean | AnimateOptions;
     caret?: boolean;

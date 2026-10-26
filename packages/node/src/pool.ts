@@ -101,7 +101,7 @@ export class EnginePool {
     if (this.closed) throw new Error("@typstream/node: the engine is closed");
     // Compile the 20 MB module once; workers receive it compiled.
     this.init ??= (async () => ({
-      module: await WebAssembly.compile(readFileSync(requireHere.resolve("@typstream/engine-wasm/pdf/engine_bg.wasm"))),
+      module: await WebAssembly.compile(readFileSync(requireHere.resolve("@typstream/engine-wasm/engine_bg.wasm"))),
       fonts: this.options.fonts(),
     }))();
     const init = await this.init;

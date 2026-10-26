@@ -1,0 +1,36 @@
+// The theme, on its own so standalone exports (../export/) don't bundle the
+// renderer's animation and MathML CSS: a template literal with substitutions
+// isn't pure to bundlers, so styles.ts would come along whole.
+
+/** Theme variables and element colors, shared by the renderer and standalone exports. */
+export const THEME_CSS = `/* Theme. "auto" follows the page's color-scheme; set color-scheme: light dark on it to follow the OS. */
+:where(.typstream) {
+  --typstream-foreground: light-dark(#1c1c1e, #e8e8ea);
+  --typstream-muted: light-dark(#5c5c63, #a4a4ab);
+  --typstream-link: light-dark(#1d4ed8, #8ab4ff);
+  --typstream-highlight: light-dark(#fff2a8, #6b5b00);
+  --typstream-caret-color: currentColor;
+  color: var(--typstream-foreground);
+  overflow-wrap: break-word;
+}
+:where(.typstream[data-typstream-theme="light"]) {
+  color-scheme: light;
+}
+:where(.typstream[data-typstream-theme="dark"]) {
+  color-scheme: dark;
+}
+:where(.typstream) a {
+  color: var(--typstream-link);
+}
+:where(.typstream) mark {
+  background: var(--typstream-highlight);
+  color: inherit;
+}
+:where(.typstream) figcaption {
+  color: var(--typstream-muted);
+}
+:where(.typstream) img,
+:where(.typstream) svg {
+  max-width: 100%;
+}
+`;

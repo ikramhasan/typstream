@@ -423,7 +423,7 @@ class Server implements EngineServer {
       const doc = this.current(uri, rev);
       if (!this.adapter.exports.includes("pdf") || !doc.compiler.exportPdf) this.unsupported("PDF export");
       this.sync(doc, inputs);
-      const r = await doc.compiler.exportPdf();
+      const r = await doc.compiler.exportPdf({ mode: "final" });
       const diagnostics = this.diagnostics(doc, r.diagnostics);
       return r.pdf === null
         ? { uri, rev, diagnostics, status: "error" }

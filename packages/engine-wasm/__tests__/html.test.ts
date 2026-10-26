@@ -100,7 +100,7 @@ describe("sys.inputs", () => {
 
 describe("engine", () => {
   it("reports its features", () => {
-    expect(Engine.features()).toEqual(["html", "svg"]);
+    expect(Engine.features()).toEqual(["html", "svg", "pdf"]);
   });
 
   it("counts the faces a font file adds", () => {

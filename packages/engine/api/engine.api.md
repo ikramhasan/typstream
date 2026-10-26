@@ -90,6 +90,9 @@ export interface EngineConnection {
 export interface EngineDocument {
     applyEdit(edit: TextEdit): void;
     dispose(): void;
+    exportHtml(options?: ExportOptions): Promise<string>;
+    exportPdf(options?: ExportOptions): Promise<Uint8Array>;
+    exportSource(): string;
     finish(): void;
     getState(): DocumentState;
     push(chunk: string): void;
@@ -150,6 +153,20 @@ export interface EngineOptions {
 
 // @public
 export const engineWorker: () => SpawnEngine;
+
+// @public
+export class ExportError extends Error {
+    // @internal
+    constructor(reason: ExportError["reason"], message: string, diagnostics?: Diagnostic[]);
+    readonly diagnostics: Diagnostic[];
+    readonly name = "ExportError";
+    readonly reason: "diagnostics" | "unsupported" | "timeout" | "crash" | "engine";
+}
+
+// @public
+export interface ExportOptions {
+    inputs?: Record<string, string>;
+}
 
 // @public
 export const fromWorker: (create: () => WorkerLike) => SpawnEngine;

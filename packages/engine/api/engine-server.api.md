@@ -35,7 +35,7 @@ export interface AdapterDocument {
     compilePaged(options: {
         fullPages: boolean;
     } & AdapterCompileOptions): MaybePromise<AdapterPagedResult>;
-    exportPdf?(): MaybePromise<AdapterCompileResult & {
+    exportPdf?(options?: AdapterCompileOptions): MaybePromise<AdapterCompileResult & {
         pdf: Uint8Array | null;
     }>;
     setFiles(files: Record<string, FileContent | null>): void;

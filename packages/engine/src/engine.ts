@@ -5,6 +5,8 @@
 
 import {
   type DocumentUri,
+  type ExportParams,
+  type ExportResult,
   type InitializeOptions,
   type InitializeResult,
   PROTOCOL_VERSION,
@@ -20,6 +22,8 @@ import {
   DocumentImpl,
   type DocumentOptions,
   type EngineDocument,
+  ExportError,
+  type ExportJob,
   type WatchdogOptions,
 } from "./document";
 import { DEFAULT_SCHEDULE, type ScheduleOptions } from "./schedule";
@@ -56,7 +60,7 @@ export interface EngineOptions {
  * sends nothing anywhere itself.
  *
  * - `ready`: a worker finished `initialize` (the first one and every replacement).
- * - `watchdog`: a compile ran past its budget; the worker was terminated.
+ * - `watchdog`: a compile or export ran past its budget; the worker was terminated.
  * - `crash`: a worker failed outside the protocol.
  * - `recycle`: a worker was replaced because it used too much memory.
  * - `log`: a `$/log` message from the worker.
@@ -131,6 +135,8 @@ class EngineImpl implements Engine, DocumentHost {
   private readonly docs = new Map<DocumentUri, DocumentImpl>();
   /** Documents waiting for their compile, first come first served; each at most once. */
   private queue: DocumentImpl[] = [];
+  /** Exports waiting for their turn. They go before compiles: someone is waiting for the file. */
+  private exports: ExportJob[] = [];
   private busy = false;
   private recycleAfter: number | null = null;
   private nextUri = 1;
@@ -173,6 +179,7 @@ class EngineImpl implements Engine, DocumentHost {
     for (const doc of [...this.docs.values()]) doc.dispose();
     this.disposed = true;
     this.queue = [];
+    this.rejectExports(this.exports, "The engine was disposed.");
     this.active.conn.close("dispose");
     this.spare?.conn.close("dispose");
     this.spare = null;
@@ -195,10 +202,35 @@ class EngineImpl implements Engine, DocumentHost {
   release(doc: DocumentImpl, inFlight: RequestId | null): void {
     this.docs.delete(doc.uri);
     this.queue = this.queue.filter((d) => d !== doc);
+    this.rejectExports(
+      this.exports.filter((job) => job.doc === doc),
+      "The document was disposed.",
+    );
     // The compile can't be interrupted once it runs, but if it's still queued
     // behind other messages the worker drops it. Either way the engine waits for
     // the answer (or the watchdog) before the next compile.
     if (inFlight !== null && !this.disposed) this.active.conn.notify("$/cancel", { id: inFlight });
+  }
+
+  export(job: ExportJob): void {
+    if (this.disposed || this.broken) {
+      job.reject(this.engineError("The engine was disposed."));
+      return;
+    }
+    this.exports.push(job);
+    void this.pump();
+  }
+
+  /** Why an export can't run: the engine's failure, or `otherwise`. */
+  private engineError(otherwise: string): ExportError {
+    return new ExportError("engine", this.broken?.message ?? otherwise);
+  }
+
+  /** Rejects `jobs` and takes them off the export queue. */
+  private rejectExports(jobs: ExportJob[], message: string): void {
+    const gone = new Set(jobs);
+    this.exports = this.exports.filter((job) => !gone.has(job));
+    for (const job of gone) job.reject(new ExportError("engine", message));
   }
 
   // -------------------------------------------------------------------------
@@ -310,6 +342,7 @@ class EngineImpl implements Engine, DocumentHost {
     if (this.broken || this.disposed) return;
     this.broken = error;
     this.queue = [];
+    this.rejectExports(this.exports, error.message);
     // Not "crash": that would count as a watchdog strike for the compile in flight.
     this.active.conn.close("dispose");
     this.dropSpare();
@@ -320,7 +353,7 @@ class EngineImpl implements Engine, DocumentHost {
   // -------------------------------------------------------------------------
   // compiling
 
-  /** Runs queued compiles one at a time, each under the watchdog. */
+  /** Runs queued exports and compiles one at a time, each under the watchdog. */
   private async pump(): Promise<void> {
     if (this.busy) return;
     this.busy = true;
@@ -328,44 +361,85 @@ class EngineImpl implements Engine, DocumentHost {
       for (;;) {
         if (this.disposed || this.broken) return;
         if (this.recycleAfter !== null) this.recycle();
-        const doc = this.queue.shift();
-        if (!doc) return;
+        const job = this.exports.shift();
+        const doc = job ? undefined : this.queue.shift();
+        if (!job && !doc) return;
         const slot = this.active;
         try {
           await slot.ready;
         } catch {
-          return; // fail() already told every document.
+          // fail() already told every document, and rejected the other exports.
+          job?.reject(this.engineError("The engine worker failed to start."));
+          return;
         }
-        if (this.disposed || this.broken) return;
+        if (this.disposed || this.broken) {
+          job?.reject(this.engineError("The engine was disposed."));
+          return;
+        }
         if (slot !== this.active) {
-          // Replaced while starting up: compile on the new worker instead.
-          this.queue.unshift(doc);
+          // Replaced while starting up: run it on the new worker instead.
+          if (job) this.exports.unshift(job);
+          else if (doc) this.queue.unshift(doc);
           continue;
         }
-        const job = doc.prepare(slot.conn, this.generation);
-        if (!job) continue;
-        const { id, result } = slot.conn.request("compile", job.params);
-        doc.started(id);
-        const timer = this.clock.setTimeout(() => {
-          if (slot !== this.active) return;
-          this.emit({ type: "watchdog", uri: job.params.uri, rev: job.params.rev, budgetMs: job.budgetMs });
-          this.replace("timeout");
-        }, job.budgetMs);
-        let outcome: CompileOutcome;
-        try {
-          outcome = { result: await result };
-          const bytes = outcome.result.memoryBytes;
-          if (bytes !== undefined && bytes > this.recycleBytes && slot === this.active) this.recycleAfter = bytes;
-        } catch (error) {
-          outcome = { error };
-        } finally {
-          this.clock.clearTimeout(timer);
-        }
-        doc.settle(outcome);
+        if (job) await this.runExport(slot, job);
+        else if (doc) await this.compile(slot, doc);
       }
     } finally {
       this.busy = false;
     }
+  }
+
+  /** Arms the watchdog for a request on `slot`; returns the function that disarms it. */
+  private watch(slot: Slot, uri: DocumentUri, rev: Revision, budgetMs: number): () => void {
+    const timer = this.clock.setTimeout(() => {
+      if (slot !== this.active) return;
+      this.emit({ type: "watchdog", uri, rev, budgetMs });
+      this.replace("timeout");
+    }, budgetMs);
+    return () => this.clock.clearTimeout(timer);
+  }
+
+  private async compile(slot: Slot, doc: DocumentImpl): Promise<void> {
+    const job = doc.prepare(slot.conn, this.generation);
+    if (!job) return;
+    const { id, result } = slot.conn.request("compile", job.params);
+    doc.started(id);
+    const disarm = this.watch(slot, job.params.uri, job.params.rev, job.budgetMs);
+    let outcome: CompileOutcome;
+    try {
+      outcome = { result: await result };
+      const bytes = outcome.result.memoryBytes;
+      if (bytes !== undefined && bytes > this.recycleBytes && slot === this.active) this.recycleAfter = bytes;
+    } catch (error) {
+      outcome = { error };
+    } finally {
+      disarm();
+    }
+    doc.settle(outcome);
+  }
+
+  private async runExport(slot: Slot, job: ExportJob): Promise<void> {
+    const synced = job.doc.prepareExport(slot.conn, this.generation);
+    if (!synced) {
+      job.reject(new ExportError("engine", "The document was disposed."));
+      return;
+    }
+    const params: ExportParams = { uri: job.doc.uri, rev: synced.rev };
+    if (job.inputs) params.inputs = job.inputs;
+    const { result } =
+      job.format === "pdf" ? slot.conn.request("export/pdf", params) : slot.conn.request("export/html", params);
+    // Exports compile the whole document in final mode (PLAN §6.3).
+    const disarm = this.watch(slot, params.uri, params.rev, this.watchdog.finalMs);
+    let outcome: { result: ExportResult<Uint8Array | string> } | { error: unknown };
+    try {
+      outcome = { result: await result };
+    } catch (error) {
+      outcome = { error };
+    } finally {
+      disarm();
+    }
+    job.doc.settleExport(job, synced, outcome);
   }
 
   /**

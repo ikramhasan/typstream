@@ -26,5 +26,6 @@ const measure = async (label, entry, budget) => {
 const ok = [
   await measure("@typstream/dom (HTML renderer, incl. its CSS)", "src/html/index.ts", 9 * 1024),
   await measure("@typstream/dom (paged renderer)", "src/paged/index.ts", 4 * 1024),
+  await measure("@typstream/dom (standalone HTML export)", "src/export/index.ts", 2 * 1024),
 ];
 process.exitCode = ok.every(Boolean) ? 0 : 1;

@@ -95,6 +95,10 @@ const scripted = (options: { init?: () => Promise<void>; modes?: unknown[] } = {
         return { html: `<p>${main}</p>`, diagnostics: [] };
       },
       compilePaged: () => ({ output: null, diagnostics: [] }),
+      exportPdf(o) {
+        options.modes?.push(o?.mode);
+        return { pdf: new TextEncoder().encode(main), diagnostics: [] };
+      },
       close() {},
     };
   },
@@ -149,14 +153,15 @@ describe("server", () => {
 
   it("tells the adapter each compile's mode: the request's, streaming by default, final for exports", async () => {
     const modes: unknown[] = [];
-    const s = direct({ ...scripted({ modes }), exports: ["html"] });
+    const s = direct({ ...scripted({ modes }), exports: ["html", "pdf"] });
     s.send({ id: 1, method: "initialize", params: { protocolVersion: 1, capabilities: {} } });
     s.send({ id: 2, method: "document/open", params: { uri: "a", rev: 1, text: "x" } });
     s.send({ id: 3, method: "compile", params: { uri: "a", rev: 1, target: "html" } });
     s.send({ id: 4, method: "compile", params: { uri: "a", rev: 1, target: "html", mode: "final" } });
     s.send({ id: 5, method: "export/html", params: { uri: "a", rev: 1 } });
+    s.send({ id: 6, method: "export/pdf", params: { uri: "a", rev: 1 } });
     await s.settle();
-    expect(modes).toEqual(["streaming", "final", "final"]);
+    expect(modes).toEqual(["streaming", "final", "final", "final"]);
   });
 
   it("answers unknown methods with method-not-found", async () => {

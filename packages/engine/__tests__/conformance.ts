@@ -365,6 +365,23 @@ export const conformance = (name: string, spawn: () => SpawnEngine, timeout = 30
           expect(await codeOf(c.request("export/pdf", { uri, rev: 1 }))).toBe("unsupported");
         }
       });
+
+      it("exports PDF when it offers it, with errors as diagnostics", async () => {
+        const c = client();
+        const info = await c.initialize();
+        if (!info.capabilities.exports.includes("pdf")) return;
+        const uri = await open(c, "= Title\n#pagebreak()\nTwo");
+        const out = await c.request("export/pdf", { uri, rev: 1 });
+        expect(out).toMatchObject({ uri, rev: 1, status: "ok", diagnostics: [] });
+        const pdf = out.status === "ok" ? out.data : new Uint8Array();
+        expect(String.fromCharCode(...pdf.subarray(0, 5))).toBe("%PDF-");
+        await c.request("document/edit", { uri, rev: 2, edits: [{ from: 0, to: 0, insert: "#nope\n" }] });
+        const failed = await c.request("export/pdf", { uri, rev: 2 });
+        expect(failed).toMatchObject({ uri, rev: 2, status: "error" });
+        expect(failed.diagnostics.map((d) => [d.message, d.span])).toEqual([
+          ["unknown variable: nope", { from: 1, to: 5 }],
+        ]);
+      });
     });
   });
 };

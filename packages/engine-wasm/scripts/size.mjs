@@ -1,8 +1,9 @@
 // Wasm size budget (PLAN.md §11.6): brotli -q 11 of dist/engine_bg.wasm, as in the Phase 0 measurements.
+// 6.3 MB for HTML + SVG + PDF (#18 added PDF, +0.34 MB) until #26 trims Typst's bundled data.
 import { readFileSync } from "node:fs";
 import { brotliCompressSync, constants } from "node:zlib";
 
-const BUDGET_BR = 6_000_000;
+const BUDGET_BR = 6_300_000;
 const wasm = readFileSync(new URL("../dist/engine_bg.wasm", import.meta.url));
 const br = brotliCompressSync(wasm, {
   params: {
