@@ -14,3 +14,7 @@ reference/
 
 # Raw spike outputs (summaries live in spikes/phase0/RESULTS.md)
 spikes/phase0/custom-engine/logs/
+
+# Stryker sandboxes and reports
+.stryker-tmp/
+reports/
