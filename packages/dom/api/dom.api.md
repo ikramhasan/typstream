@@ -104,6 +104,9 @@ export interface MountedTypstream {
     destroy(): void;
     readonly document: EngineDocument | null;
     readonly element: HTMLElement;
+    exportHtml(options?: StandaloneHtmlOptions): Promise<string>;
+    exportPdf(): Promise<Uint8Array>;
+    exportSource(): string;
     getState(): DocumentState | null;
     subscribe(listener: () => void): () => void;
     update(options: TypstreamOptions): void;

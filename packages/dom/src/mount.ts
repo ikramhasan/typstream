@@ -11,6 +11,7 @@
 
 import type { CompileTarget, CompileTimings, Diagnostic, FileDelta, Revision, TypstreamPlugin } from "@typstream/core";
 import type { DocumentOptions, DocumentState, DocumentStatus, Engine, EngineDocument } from "@typstream/engine";
+import { type StandaloneHtmlOptions, standaloneHtml } from "./export/standalone";
 import type { AnimateOptions } from "./html/animate";
 import { createHtmlRenderer, type HtmlRenderer } from "./html/renderer";
 import { FIT_WIDTH_PREAMBLE, fitWidthInputs } from "./paged/mount";
@@ -115,6 +116,22 @@ export interface MountedTypstream {
   subscribe(listener: () => void): () => void;
   /** Applies new options. Anything left out goes back to its default. */
   update(options: TypstreamOptions): void;
+  /**
+   * Exports the document as PDF (#18), from the engine that compiles the
+   * preview. Its inputs are the template's and `inputs`, without fit-width's
+   * page size, so it prints at the document's own size. Opens a document that
+   * hasn't opened yet (see `lazy`). Rejects with the engine's `ExportError`.
+   */
+  exportPdf(): Promise<Uint8Array>;
+  /**
+   * Exports the document as an HTML file that opens on its own
+   * ({@link standaloneHtml}), with the mount's `stylesheets` and `theme`;
+   * `options` add to or override them (a `mathFont`, a `title`). Otherwise as
+   * {@link MountedTypstream.exportPdf}.
+   */
+  exportHtml(options?: StandaloneHtmlOptions): Promise<string>;
+  /** The source the exports compile (the healed input); opens the document if needed. */
+  exportSource(): string;
   /** Disposes the document and removes what was rendered. The engine stays (it isn't ours). */
   destroy(): void;
 }
@@ -242,8 +259,10 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
   let streamText = "";
   let streamOpen = false;
 
-  // Visibility (lazy) and the element's width (fit-width).
+  // Visibility (lazy) and the element's width (fit-width). An export opens the
+  // document whatever its visibility (`exporting`).
   let visible = false;
+  let exporting = false;
   let fitInputs: Record<string, string> | null = null;
   let io: IntersectionObserver | null = null;
   let ro: ResizeObserver | null = null;
@@ -356,6 +375,9 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
 
   const fitWidth = () => opts.target === "paged" && opts.layout === "fit-width";
 
+  /** The document's inputs without fit-width's page size: what exports compile with. */
+  const exportInputs = (): Record<string, string> => ({ ...templateInputs(opts), ...opts.inputs });
+
   const measure = () => {
     const width = element.clientWidth;
     fitInputs = width > 0 ? fitWidthInputs(width, opts.pageHeight ?? "a4") : null;
@@ -404,10 +426,10 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
       io = null;
     }
     // Offscreen and complete: changes wait until it scrolls into view.
-    if (lazy && !visible && !streaming()) return;
+    if (lazy && !visible && !streaming() && !exporting) return;
 
     const target = opts.target ?? "html";
-    const inputs = { ...templateInputs(opts), ...opts.inputs, ...fitInputs };
+    const inputs = { ...exportInputs(), ...fitInputs };
     const files = opts.files ?? {};
     const text = opts.stream ? streamText : (opts.source ?? "");
     const final = !streaming();
@@ -486,6 +508,17 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
 
   apply(initial);
 
+  /** The document for an export, opened now if it hasn't been. */
+  const exportDoc = (): EngineDocument => {
+    if (destroyed) throw new Error("mountTypstream: the mount is destroyed");
+    if (!doc) {
+      exporting = true;
+      sync();
+    }
+    if (!doc) throw new Error("mountTypstream: the document didn't open");
+    return doc;
+  };
+
   return {
     element,
     get document() {
@@ -499,6 +532,16 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
     update(next) {
       if (!destroyed) apply(next);
     },
+    exportPdf: async () => exportDoc().exportPdf({ inputs: exportInputs() }),
+    async exportHtml(options = {}) {
+      const html = await exportDoc().exportHtml({ inputs: exportInputs() });
+      return standaloneHtml(html, {
+        ...(opts.theme ? { theme: opts.theme } : {}),
+        ...options,
+        stylesheets: [...(opts.stylesheets ?? []), ...(options.stylesheets ?? [])],
+      });
+    },
+    exportSource: () => exportDoc().exportSource(),
     destroy() {
       if (destroyed) return;
       destroyed = true;
