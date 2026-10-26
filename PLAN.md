@@ -15,6 +15,8 @@ Status: draft v2 · 2026-10-26 · Target Typst version: **0.15.1** (pinned, see 
 
 | Date | Decision | Why / where |
 |---|---|---|
+| 2026-10-26 | **Compile oracle (#13):** healed prefixes go through the real compiler in `tools/compile-oracle` (outside `packages/`: heal may not import the engine), in CI's engine job. **88% of corpus stream prefixes compile** after healing (HTML and paged alike), 96% of generated ones. The test allows an explicit list of error classes, each tied to the issue that removes it, and fails below a rate floor (87%) that rises as classes go. | §5.5 "Measured", §11.1 "As built" |
+| 2026-10-26 | **Layer 3 is two generic fixers, not the §5.5 table:** *tail cut* (an error in the unsettled tail, or a call site there in its trace, cuts the healed source at that point and re-heals) and *pending reference* (`@x` with no `<x>` becomes a placeholder). Simulated with the PLAN's 2-round limit they reach **99.4%** on the corpus. Heal takes the syntactic cases (a value being typed at the cut, a reference at the cut, incomplete `#let`) so fewer rounds are needed. | §5.5 "Measured", #20 |
 | 2026-10-26 | **Corpus format:** `corpus/<set>/<name>.typ`, optional `.stream.jsonl` (`{"t", "text"}` per line), and one `meta.json` per set whose `expect` (`ok` / `error` / `limit`) says what native `typst compile` 0.15.1 must do, checked by `pnpm corpus:validate` with embedded fonts only. Streams without a recording are synthesized from the source (token-sized, seeded). | §11.2 "As built", `corpus/README.md` |
 | 2026-10-26 | Heal runs the corpus: every prefix of documents up to 20 KB through the incremental healer, sampled prefixes of larger ones. Bugs the corpus finds but nobody has fixed yet are listed as known, each with a repro that must keep failing. | `packages/heal/__tests__/corpus*.test.ts` |
 | 2026-10-26 | **Edits resync** (#5): re-parsing after an edit resumes one checkpoint earlier than before, so it never starts at a checkpoint whose own token the edit can change, and stops at the second matching root checkpoint past the edit. The healer passes known edits (`push`, `applyEdit`) through instead of diffing the whole text. Measured side by side on one (loaded) machine: mid-document 1-char edit at 100 KB ~7–10 ms → ~0.5 ms; per streamed token at 50 KB p50 ~0.25 ms → ~0.03 ms. | §5.2 "As built (resync)" |
@@ -73,7 +75,7 @@ Status: draft v2 · 2026-10-26 · Target Typst version: **0.15.1** (pinned, see 
 ### Success metrics (SLOs, enforced by tests in §11)
 | Metric | Target |
 |--------|--------|
-| Prefix-compile rate (share of stream prefixes whose healed source compiles with zero errors, over corpus) | ≥ 99% (layers 1–3), 100% visible render incl. fallback |
+| Prefix-compile rate (share of stream prefixes whose healed source compiles with zero errors, over corpus) | ≥ 99% (layers 1–3), 100% visible render incl. fallback. Measured (#13): 88.0% with heal alone; 99.4% with simulated layer-3 fixers |
 | Final-render equivalence (streamed final frame vs. one-shot compile) | 100% byte-identical HTML / pixel-identical pages |
 | Main-thread time per token (heal + scheduling) | p95 < 0.5 ms for 50 KB docs (heal measured: p95 0.2 ms at 40–50 KB) |
 | Main-thread long tasks during stream (> 50 ms) | 0 |
@@ -380,6 +382,28 @@ Some errors only appear after evaluation. The worker compiles the healed source;
 
 Fixers that need IO (fonts, packages) are **async**: the engine renders with a placeholder now and schedules a recompile when the resource arrives.
 
+**Measured (#13).** The table above was a hypothesis. `tools/compile-oracle` healed and compiled every stream prefix of the 39 corpus documents that compile complete (16,618 prefixes) and of 150 generated documents (6,315). **88.0% of corpus prefixes compile** (87.9% paged; 87.7% when cutting at every code point); 96.3% of generated ones. 36 of 39 documents fail somewhere. Error classes, as a share of all corpus prefixes:
+
+| Class | Share | Where | Cause |
+|---|---:|---|---|
+| missing argument | 4.5% | tail, at the cut | A call closed before its required arguments arrived: `#text(` → `text()`, `#align(center` (body comes after `)`), user functions. Needs signatures, so only the compiler knows. |
+| type mismatch | 3.3% | tail, 98% at the cut | A value still being typed: `#v(1` (integer, not length), `0.`, `stroke: (` (array), `..xs.zip(` |
+| citation before bibliography | 2.9% | settled | `@key` cites a bibliography entry; `#bibliography(..)` is the last line. One document: **70% of its stream (21 s) never compiles.** |
+| invalid value | 0.6% | tail, at the cut | A string or array still being typed: `rgb("#e`, `link("")`, `lang: ""`, `(0cm, 2.5cm), (1` |
+| unknown variable | 0.3% | tail | Closure parameters before `=>` arrives (`.map(((l, t)` is an array of unknowns) |
+| invalid operation | 0.3% | 69% settled | A settled function called with a half-typed argument fails in its body (`#mcq(q, ([Arg`); the call site is in the tail, in the diagnostic's trace |
+| partial reference | 0.1% | tail, at the cut | `@fig-` of `@fig-cell` |
+| file not found | 0.02% | tail, at the cut | A path still being typed: `bibliography("assets/clim` |
+| syntax | 0.01% | tail | Only heal's two known bugs |
+
+Forward references (`@x` before `<x>`) never occurred: the corpus defines labels before using them. No `unknown font`, `package`, infinite-loop or call-depth errors occurred in prefixes. HTML and paged output fail on the same prefixes, except that 64-deep nesting exceeds Typst's maximum HTML depth even when complete.
+
+What handles each class:
+- **Heal, syntactically** (no compile round): drop a code value still being typed at the cut inside an argument list, array or dictionary (a number literal, a string heal had to close, an open group), generalizing `(a: 1, b:` → `(a: 1`; drop a reference that touches the end of the input; drop an incomplete `#let` like an incomplete set/show rule (generated documents' `#let (a, b) = (1,`). Content blocks keep streaming. This covers type mismatch, invalid value, file not found and partial references: about 4% of prefixes.
+- **Layer 3, two generic fixers** (#20): *tail cut*: an error in the unsettled tail, or whose trace has a call site there, cuts the healed source at that point and re-heals (missing argument, unknown variable, invalid operation, and anything heal leaves); *pending reference*: `label <x> does not exist` rewrites the `@x` to a placeholder while streaming and is reported in final mode. A simulation of the two (`simulateFixers` in the oracle) fixes 80% of failing prefixes in one round and 95% in two: **99.4% of corpus prefixes compile with the 2-round limit**, 99.95% with 3. The longest remaining stale run is 0.6 s.
+- **Last-good render** (§5.6 level 1) for the rest. The stable-prefix compile (level 2) would rescue only 75% of failures and drops the whole unsettled tail (often a whole table), so tail cut comes first.
+- The other rows of the table (`file not found` for images, fonts, packages, loops) didn't occur here; they stay as hypotheses until a corpus has them (images, #25 packages).
+
 ### 5.6 Layer 4 — Fallback ladder
 
 If errors remain after Layer 3:
@@ -676,6 +700,7 @@ Tooling: **vitest** (unit/property/bench), **fast-check** (property), **Playwrig
 - **Per-construct test files** (streamdown style): `strong.test.ts`, `emph.test.ts`, `raw-inline.test.ts`, `raw-block.test.ts`, `math-inline.test.ts`, `math-display.test.ts`, `math-calls.test.ts`, `content-block.test.ts`, `code-block.test.ts`, `args.test.ts`, `dict-array.test.ts`, `strings.test.ts`, `unicode-escape.test.ts`, `comments-nested.test.ts`, `labels.test.ts`, `refs.test.ts`, `statements-let-set-show.test.ts`, `closures.test.ts`, `control-flow.test.ts`, `embedded-expr-end.test.ts`, `urls-not-comments.test.ts`, `headings-lists-terms.test.ts`, `escapes.test.ts`, `surrogates.test.ts`, `fence-unwrap.test.ts`, plus one file per lint rule.
 - **Table-driven expectations**: `{ input, healed, stableOffset, openFrames }` for ~1000 hand cases, including every row of §3 and §5.4.
 - **Property tests over every prefix** (copy remend's method): generate documents from *complete* atoms (markup, math, code, tables, figures, raw blocks, edu functions, nested combos), then for every cut point assert invariants 1–6 of §5.4. Oracle for (1) = `typst-syntax` error-free parse (via `@typstream/syntax`, or the typstyle wasm `parse()` dump as a stopgap — search it for `Error` nodes). Additionally a **compile oracle** (sampled, slower): healed prefix compiles with zero errors via the real compiler with the edu package mounted.
+  **As built (#13):** `tools/compile-oracle` (heal may not import the engine, §4.1), run in CI's engine job. It compiles one in three stream prefixes of the corpus and of generated documents to HTML; errors must be in an allowed class tied to the issue that removes it, a class that stops occurring must leave the list, and the corpus rate must stay above a floor. `pnpm --filter @typstream/compile-oracle report` runs the full measurement (§5.5 "Measured"). The edu package isn't mounted yet (#23).
 - **Chunking fuzz**: same docs fed through `createHealer().push()` with random chunk sizes (1 char … 200 chars, incl. splits inside surrogate pairs and inside `\r\n`) → result must equal stateless `heal()` of the same prefix (**incremental ≡ stateless**).
 - **Random-edit equivalence** (the editor-readiness guarantee): apply random `TextEdit` sequences (insert/delete/replace anywhere, incl. inside raw blocks, strings, math, nested code) via `applyEdit` → scanner state, checkpoints and regions must equal a full rescan of the resulting text; early-resync must actually trigger (assert rescanned length is bounded for local edits).
 - **Streaming-region tests**: take a complete doc, delete a block, then stream it back in at its original position in random chunks → every intermediate healed document is valid, the suffix is byte-identical, and the final result equals the original.
@@ -804,7 +829,7 @@ pnpm workspaces, turbo, tsup, vitest, biome (ultracite), changesets, Playwright,
   - Coverage: 97.6% lines, 92% branches.
 - Perf: per token at 40–50 KB p50 0.16 ms / p95 0.2 ms; stateless healing is linear (~85 µs/KB up to 1 MB); pathological inputs under 75 ms.
 - Not done yet:
-  - Compile-oracle tests (healed prefixes compile with the engine); Phase 2, once `engine-wasm` is a package.
+  - ✅ Compile-oracle tests (healed prefixes compile with the engine): `tools/compile-oracle`, #13.
   - Mutation testing.
   - CI (the repo isn't under git yet).
 

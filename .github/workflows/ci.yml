@@ -19,7 +19,8 @@ permissions:
 env:
   NODE: node@24
   # The engine (packages/engine-wasm) needs Rust, binaryen and native typst; only the engine job has them.
-  NOT_ENGINE: --filter=!@typstream/engine-wasm
+  # The compile oracle (tools/compile-oracle) needs the built engine, so it runs there too.
+  NOT_ENGINE: --filter=!@typstream/engine-wasm --filter=!@typstream/compile-oracle
 
 jobs:
   lint:
@@ -109,7 +110,7 @@ jobs:
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
   # The Typst engine: Rust build (cached by rust-cache), tests against native typst, wasm size budget, API report and
-  # package lint. Compile-oracle tests for heal are #13.
+  # package lint. Then the compile oracle (#13): do heal's outputs compile with the engine?
   engine:
     name: Engine (wasm)
     runs-on: ubuntu-latest
@@ -150,5 +151,6 @@ jobs:
       - uses: pnpm/setup@v3
         with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
       - run: pnpm exec turbo run build check-types test size check:api check:package --filter=@typstream/engine-wasm
+      - run: pnpm exec turbo run check-types test --filter=@typstream/compile-oracle
 
   # TODO(#19): Playwright suites (visual, flicker, a11y, cross-browser).

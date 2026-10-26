@@ -6,6 +6,7 @@
       "packages/**",
       "corpus/**",
       "tools/repo/**",
+      "tools/compile-oracle/**",
       ".dependency-cruiser.mjs",
       "!**/dist",
       "!**/node_modules",
