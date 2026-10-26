@@ -19,6 +19,7 @@ import {
   type InitializeParams,
   type InitializeResult,
   isClientNotification,
+  mapDiagnostic,
   type ParamsOf,
   PROTOCOL_VERSION,
   ProtocolError,
@@ -32,6 +33,7 @@ import {
   type VersionMismatchData,
 } from "@typstream/core";
 import type { AdapterDocument, EngineAdapter } from "./adapter";
+import { type Anchored, Anchors, fromAnchored } from "./anchors";
 
 /**
  * `Diagnostic.file.path` of problems inside a document's preamble. The preamble
@@ -85,6 +87,10 @@ interface Doc {
   compiler: AdapterDocument;
   /** `text` changed since `/main.typ` was last written. */
   dirty: boolean;
+  /** Source anchors for HTML compiles (PLAN §10.2). */
+  anchors: Anchors;
+  /** The anchors `/main.typ` was last written with, or `null` when it has none. */
+  anchored: Anchored | null;
   /** Key of the `sys.inputs` last set. */
   inputs: string | null;
   /** Revision of the last paged artifact sent, which the adapter's changed pages diff against; `null` after HTML. */
@@ -221,8 +227,12 @@ class Server implements EngineServer {
     }
   }
 
-  /** Brings the compiler's `/main.typ` and `sys.inputs` up to date. */
-  private sync(doc: Doc, inputs: Record<string, string> | undefined): void {
+  /**
+   * Brings the compiler's `/main.typ` and `sys.inputs` up to date. With
+   * `anchors`, `/main.typ` holds the document with source anchors (HTML
+   * previews only; paged output and exports never have them).
+   */
+  private sync(doc: Doc, inputs: Record<string, string> | undefined, anchors = false): void {
     const key = inputsKey(inputs);
     if (key !== doc.inputs) {
       try {
@@ -232,14 +242,19 @@ class Server implements EngineServer {
       }
       doc.inputs = key;
     }
-    if (doc.dirty) {
-      doc.compiler.setFiles({ [MAIN]: doc.prefix + doc.text });
+    if (doc.dirty || anchors !== (doc.anchored !== null)) {
+      doc.anchored = anchors ? doc.anchors.apply(doc.text) : null;
+      doc.compiler.setFiles({ [MAIN]: doc.prefix + (doc.anchored?.text ?? doc.text) });
       doc.dirty = false;
     }
   }
 
   private diagnostics(doc: Doc, ds: Diagnostic[]): Diagnostic[] {
-    return ds.map((d) => fromMain(d, doc.prefix.length));
+    const { anchored } = doc;
+    return ds.map((d) => {
+      const inDocument = fromMain(d, doc.prefix.length);
+      return anchored ? mapDiagnostic(inDocument, (pos) => fromAnchored(anchored, pos)) : inDocument;
+    });
   }
 
   private unsupported(what: string): never {
@@ -301,6 +316,8 @@ class Server implements EngineServer {
         prefix: preamble ? `${preamble}\n` : "",
         compiler,
         dirty: true,
+        anchors: new Anchors(),
+        anchored: null,
         inputs: null,
         pagedBase: null,
       });
@@ -316,6 +333,7 @@ class Server implements EngineServer {
           throw invalid(`edit [${from}, ${to}) is outside the text (length ${text.length})`);
         }
         text = applyEdit(text, edit);
+        doc.anchors.changed(from);
       }
       doc.text = text;
       doc.rev = rev;
@@ -341,7 +359,7 @@ class Server implements EngineServer {
       const mode = params.mode ?? "streaming";
       const doc = this.current(uri, rev);
       if (!this.adapter.targets.includes(target)) this.unsupported(`the ${target} target`);
-      this.sync(doc, params.inputs);
+      this.sync(doc, params.inputs, target === "html" && params.anchors !== false);
       let ok: boolean;
       let compileMs: number | undefined;
       let exportMs: number | undefined;
