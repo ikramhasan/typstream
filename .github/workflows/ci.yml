@@ -168,7 +168,7 @@ jobs:
 
   # The engine worker in real browsers (packages/engine/__tests__/browser): protocol conformance, streaming through
   # client + worker + engine-wasm, and the watchdog, in Chromium, Firefox and WebKit. Then the renderers
-  # (packages/dom/__tests__/browser), fed by that worker.
+  # (packages/dom/__tests__/browser) against that worker.
   browsers:
     name: Engine (browsers)
     runs-on: ubuntu-latest

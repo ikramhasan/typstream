@@ -4,6 +4,8 @@
 
 ```ts
 
+import { EngineDocument } from '@typstream/engine';
+import { PagedArtifact } from '@typstream/core';
 import { TypstreamPlugin } from '@typstream/core';
 
 // @public
@@ -18,6 +20,23 @@ export interface AnimateOptions {
 
 // @public
 export const createHtmlRenderer: (root: HTMLElement, options?: HtmlRendererOptions) => HtmlRenderer;
+
+// @public
+export const createPagedView: (container: HTMLElement, options?: PagedViewOptions) => PagedView;
+
+// @beta
+export interface DrawInfo {
+    ms: number;
+    pages: number[];
+    textLayers: number[];
+    when: "frame" | "idle" | "flush";
+}
+
+// @public
+export const FIT_WIDTH_PREAMBLE: string;
+
+// @public
+export const fitWidthInputs: (widthPx: number, pageHeight?: "a4" | "auto", inputs?: Record<string, string>) => Record<string, string>;
 
 // @public
 export interface HtmlRenderer {
@@ -60,6 +79,44 @@ export interface HtmlUpdateResult {
     created: number;
     ms: number;
     removed: number;
+}
+
+// @public
+export const isSafeHref: (href: string) => boolean;
+
+// @public
+export interface MountedPaged {
+    destroy(): void;
+    readonly view: PagedView;
+}
+
+// @public
+export const mountPaged: (container: HTMLElement, doc: EngineDocument, options?: MountPagedOptions) => MountedPaged;
+
+// @public
+export interface MountPagedOptions extends PagedViewOptions {
+    inputs?: Record<string, string>;
+    pageHeight?: "a4" | "auto";
+    resizeDebounce?: number;
+}
+
+// @public
+export interface PagedView {
+    destroy(): void;
+    readonly element: HTMLElement;
+    flush(): void;
+    readonly pending: number;
+    render(artifact: PagedArtifact): void;
+}
+
+// @public
+export interface PagedViewOptions {
+    layout?: "fixed" | "fit-width";
+    linkTarget?: string | null;
+    // @beta
+    onDraw?: (info: DrawInfo) => void;
+    rootMargin?: string;
+    textLayer?: boolean;
 }
 
 // @public

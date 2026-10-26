@@ -9,7 +9,7 @@ function __wbg_init (module_or_path?: { module_or_path: InitInput | Promise<Init
 export default __wbg_init;
 
 // @public
-export type ChangedPage = { index: number; hash: string; width: number; height: number; svg: string };
+export type ChangedPage = { index: number; hash: string; width: number; height: number; svg: string; text: TextRun[] };
 
 // @public
 export type CheckResult = { ok: boolean; pageCount?: number; diagnostics: Diagnostic[]; ms: number };
@@ -113,6 +113,9 @@ export type SvgChangedResult = {
 
 // @public (undocumented)
 export type SyncInitInput = BufferSource | WebAssembly.Module;
+
+// @public
+export type TextRun = { text: string; x: number; y: number; size: number; width: number; matrix?: [number, number, number, number] };
 
 // @public
 export type TraceItem = { message: string; span: Range_2 | null };

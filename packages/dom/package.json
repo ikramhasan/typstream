@@ -1,7 +1,7 @@
 {
   "name": "@typstream/dom",
   "version": "0.0.0",
-  "description": "Framework-free renderers for typstream: sanitized, block-diffed HTML output kept in step with a streaming document.",
+  "description": "Framework-free renderers for typstream: sanitized, block-diffed HTML and paged SVG output, kept in step with a streaming document.",
   "license": "UNLICENSED",
   "private": true,
   "type": "module",
