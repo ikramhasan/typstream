@@ -222,3 +222,143 @@ export const soupArb = fc
     { maxLength: 40 },
   )
   .map((parts) => parts.join(""));
+
+// --- Code ------------------------------------------------------------------------
+// Typst code built from complete expressions: every operator, closures, patterns,
+// rules and control flow, with the newline rules that apply inside code (a line
+// break ends a statement, `else` and `.` on the next line continue one).
+
+const IDENT = fc.constantFrom("x", "y", "foo", "my-var", "_tmp", "é");
+const LITERAL = fc.constantFrom(
+  "1",
+  "0",
+  "1.5",
+  "1e3",
+  ".5",
+  "0x1F",
+  "0b101",
+  "0o17",
+  "2pt",
+  "50%",
+  "1fr",
+  "3em",
+  '"s"',
+  '"a\\"b"',
+  '"\\u{41}"',
+  "none",
+  "auto",
+  "true",
+  "false",
+  "<lbl>",
+  "`raw`",
+  "[text *b*]",
+  "[]",
+  "$x^2$",
+  "$ a/b $",
+  "()",
+  "(:)",
+);
+const BINARY = ["+", "-", "*", "/", "==", "!=", "<", "<=", ">", ">=", "and", "or", "in", "not in"];
+const ASSIGN = ["=", "+=", "-=", "*=", "/="];
+
+const { expr: codeExprArb } = fc.letrec<{ expr: string; args: string; block: string; stmt: string }>((tie) => ({
+  expr: fc.oneof(
+    { depthSize: "small", withCrossShrink: true },
+    { weight: 4, arbitrary: IDENT },
+    { weight: 4, arbitrary: LITERAL },
+    fc.tuple(fc.constantFrom("-", "+", "not "), tie("expr")).map(([op, e]) => `${op}${e}`),
+    fc.tuple(tie("expr"), fc.constantFrom(...BINARY), tie("expr")).map(([a, op, b]) => `${a} ${op} ${b}`),
+    tie("expr").map((e) => `(${e})`),
+    fc.tuple(tie("expr"), tie("expr")).map(([a, b]) => `(${a}, ${b})`),
+    tie("expr").map((e) => `(${e},)`),
+    fc.tuple(IDENT, tie("expr")).map(([k, v]) => `(${k}: ${v}, "k": 1)`),
+    fc.tuple(IDENT, IDENT).map(([a, b]) => `${a}.${b}`),
+    fc.tuple(IDENT, tie("args")).map(([f, a]) => `${f}(${a})`),
+    fc.tuple(IDENT, IDENT, tie("args")).map(([o, m, a]) => `${o}.${m}(${a})`),
+    fc.tuple(IDENT, tie("args")).map(([f, a]) => `${f}(${a})[body]`),
+    IDENT.map((f) => `${f}[only content]`),
+    tie("expr").map((e) => `x => ${e}`),
+    fc
+      .tuple(fc.constantFrom("(x, y)", "(..args)", "(a: 1, ..rest)", "()", "((a, b), c)", "(_)"), tie("expr"))
+      .map(([p, e]) => `${p} => ${e}`),
+    fc.tuple(tie("expr"), tie("block")).map(([c, b]) => `if ${c} ${b}`),
+    fc.tuple(tie("expr"), tie("block"), tie("block")).map(([c, a, b]) => `if ${c} ${a} else ${b}`),
+    fc.tuple(tie("expr"), tie("block")).map(([c, a]) => `if ${c} ${a} else if ${c} [b] else [c]`),
+    fc
+      .tuple(fc.constantFrom("x", "(k, v)", "(a, .., b)", "_"), tie("expr"), tie("block"))
+      .map(([p, e, b]) => `for ${p} in ${e} ${b}`),
+    fc.tuple(tie("expr"), tie("block")).map(([c, b]) => `while ${c} ${b}`),
+    tie("expr").map((e) => `context ${e}`),
+    tie("block"),
+  ),
+  args: fc.oneof(
+    fc.constant(""),
+    tie("expr"),
+    fc.tuple(tie("expr"), IDENT, tie("expr")).map(([a, k, v]) => `${a}, ${k}: ${v}`),
+    tie("expr").map((e) => `..${e}`),
+    fc.tuple(tie("expr"), tie("expr")).map(([a, b]) => `${a},\n  ${b},`),
+  ),
+  block: fc.oneof(
+    { depthSize: "small" },
+    fc
+      .array(tie("stmt"), { minLength: 0, maxLength: 3 })
+      .chain((stmts) => fc.constantFrom("; ", "\n").map((sep) => `{ ${stmts.join(sep)} }`)),
+    fc.constantFrom("[a]", "[*b* _c_]", "[- item]"),
+  ),
+  stmt: fc.oneof(
+    { weight: 3, arbitrary: tie("expr") },
+    fc
+      .tuple(fc.constantFrom("x", "_", "(a, b)", "(a, ..b)", "(a: x, ..r)", "f(x, y: 1, ..z)"), tie("expr"))
+      .map(([p, e]) => `let ${p} = ${e}`),
+    IDENT.map((x) => `let ${x}`),
+    fc.tuple(IDENT, fc.constantFrom(...ASSIGN), tie("expr")).map(([x, op, e]) => `${x} ${op} ${e}`),
+    fc.tuple(IDENT, tie("args")).map(([f, a]) => `set ${f}(${a})`),
+    fc.tuple(IDENT, tie("expr")).map(([f, c]) => `set ${f}(red) if ${c}`),
+    fc.constantFrom(
+      "show heading: set text(blue)",
+      'show "x": it => [y]',
+      "show: it => it",
+      "show heading.where(level: 1): it => it.body",
+      'import "m.typ": a, b as c',
+      'import "m.typ" as m',
+      'import "m.typ": *',
+      'import "m.typ": (a, b)',
+      'include "x.typ"',
+      "break",
+      "continue",
+      "return",
+      "return x",
+      "if x { 1 }\nelse { 2 }",
+      "x\n  .at(0)",
+      "(1 +\n 2)",
+      "// comment\nx",
+      "/* block */ x",
+    ),
+  ),
+}));
+
+export { codeExprArb };
+
+/** Markup paragraphs with embedded code: `#(…)`, `#{…}`, and calls or rules straight after `#`. */
+export const codeDocumentArb = fc
+  .array(
+    fc.oneof(
+      codeExprArb.map((e) => `#(${e})`),
+      codeExprArb.map((e) => `#{\n  ${e}\n}`),
+      codeExprArb.map((e) => `Text with $#${e}$ in math.`),
+      fc
+        .constantFrom("x", "foo(1)", "x.y", "f(a)[b]", "if true [a] else [b]", "for i in (1, 2) [#i]")
+        .map((e) => `Some #${e} text.`),
+      fc.constantFrom(
+        "#let f(x) = x + 1",
+        "#set text(size: 12pt)",
+        "#show heading: it => [*#it.body*]",
+        '#import "@preview/pkg:1.0.0": a',
+        "#if x [a]\nelse [b]",
+        "= Heading <h>\n- #x\n+ #(1 + 2)\n/ Term: #y",
+      ),
+      paragraph,
+    ),
+    { minLength: 1, maxLength: 5 },
+  )
+  .map((blocks) => `${blocks.join("\n\n")}\n`);

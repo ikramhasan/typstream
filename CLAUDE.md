@@ -17,7 +17,7 @@ packages/engine   @typstream/engine: main-thread client (heal → scheduler → 
                   the worker half (`/server`: protocol server, EngineAdapter, engine-wasm adapter; `worker.ts`, spawned by `engineWorker()`).
 packages/engine-wasm  @typstream/engine-wasm: Typst 0.15.1 as wasm (Rust crate + wasm-bindgen glue): HTML, changed-page SVG, UTF-16 diagnostics.
 packages/html-compat  @typstream/html-compat: Typst prelude + CSS so HTML export keeps grid, align, shapes, place, … (tests need the engine).
-tools/typst-syntax-oracle   Typst's real parser compiled to wasm for Node; the ground truth in heal's tests.
+tools/typst-syntax-oracle   Typst's real parser and lexer compiled to wasm for Node; the ground truth in heal's tests.
 tools/compile-oracle        Do healed prefixes compile? heal × engine-wasm over the corpus; error classes and the prefix compile rate.
 tools/repo        Repo tooling: package layer table (layers.mjs), layering check, shared tsup and api-extractor configs.
 corpus/           @typstream/corpus (private): shared test documents (edu/, adversarial/), meta.json, stream replay.
@@ -72,10 +72,11 @@ In `packages/heal`:
 - `pnpm bench`: vitest benchmarks.
 - `node scripts/perf.mjs`: asserts the latency budgets; run `pnpm build` first. `PERF_TOLERANCE=3` (what CI uses) fails only above 3× budget.
 - `pnpm size`: bundle budget, 15 KB gzipped.
+- `pnpm mutate`: Stryker mutation testing of `src/` (~1.5–2 h on 6 cores). `STRYKER_INCREMENTAL=1` retests only what changed since the last run, but it reuses static mutants' (module-level constants) results whatever changed, so record scores from full runs. It fails below an 80% score; the first full run scored 80.59% (2026-10-26). It runs the suite without the corpus tests and with few, seeded property runs (`vitest.mutation.config.ts`, the `mutate` script's env). `node scripts/mutation-report.mjs --survivors` lists what survived. Equivalent mutants and known survivors are triaged on #6.
 
 Compile oracle (`tools/compile-oracle`, needs the built engine): `pnpm turbo run test --filter=@typstream/compile-oracle`; `pnpm --filter @typstream/compile-oracle report` for the full measurement (minutes).
 
-CI (`.github/workflows/ci.yml`) runs the same commands on every PR, building the oracle through `.github/actions/oracle` and engine-wasm through `.github/actions/engine-wasm` (both cached on the crate's inputs), plus the engine's browser tests. `nightly.yml` runs `test:long`.
+CI (`.github/workflows/ci.yml`) runs the same commands on every PR, building the oracle through `.github/actions/oracle` and engine-wasm through `.github/actions/engine-wasm` (both cached on the crate's inputs), plus the engine's browser tests. `nightly.yml` runs `test:long` and heal's `pnpm mutate` (score in the job summary, HTML report as an artifact).
 
 Adding a package: copy `packages/core` and rename. Its `tsconfig.json`, `tsup.config.ts` and `api-extractor.json` only extend the shared configs (`tsconfig.base.json`, `tools/repo/`), and `@typstream/*` resolves to `packages/*/src` through a wildcard path. Then add its row to `tools/repo/layers.mjs`, and add it to the `fixed` group in `.changeset/config.json` if the row says `fixed`. Delete the copied `api/core.api.md` but keep `api/` (api-extractor won't create it), then `pnpm api:update` writes the new package's report.
 
@@ -95,7 +96,7 @@ Spikes (reference only):
 - **Typst is pinned to 0.15.1** everywhere: oracle, engine crate, recognizer port. Upgrading is a deliberate task: update all three and re-run the long property tests.
 - **Offsets in JS APIs are UTF-16 indices** (JS string indices). Rust/Typst spans are UTF-8 bytes; convert at the wasm boundary.
 - TypeScript strict, ESM, `verbatimModuleSyntax`. Biome formats (line width 120). Match the surrounding code's comment density: explain *why*, cite parser.rs/lexer.rs functions when porting.
-- **Test against real Typst, not expectations of it.** Heal's tests check outputs with the oracle (`__tests__/support/oracle.ts`). Engine work should add a compile oracle the same way.
+- **Test against real Typst, not expectations of it.** Heal's tests check outputs with the oracle (`__tests__/support/oracle.ts`): parse errors, the parse tree's token modes (`tokenModes`), and Typst's own lexer run alone (`lexTokens`; build.rs copies its source out of the pinned typst-syntax crate). Engine work should add a compile oracle the same way.
 - New test documents go in `corpus/` with a `meta.json` entry, and `pnpm corpus:validate` must pass (see `corpus/README.md`). Heal's tests run every corpus document.
 - Property tests build documents from **complete** constructs (`__tests__/support/generators.ts`) and derive truncation from the streaming cut. Every bug fix adds a row to `constructs.test.ts` or a case to the generators.
 - Healing invariants must keep holding (PLAN.md §5.4): healed prefixes parse; settled text is untouched; healing is idempotent; valid documents come back unchanged; incremental, chunked and edited results equal stateless healing.
