@@ -265,6 +265,18 @@ importers:
         specifier: workspace:*
         version: link:../../corpus
 
+  tools/compile-oracle:
+    devDependencies:
+      '@typstream/corpus':
+        specifier: workspace:*
+        version: link:../../corpus
+      '@typstream/engine-wasm':
+        specifier: workspace:*
+        version: link:../../packages/engine-wasm
+      '@typstream/heal':
+        specifier: workspace:*
+        version: link:../../packages/heal
+
 packages:
 
   '@andrewbranch/untar.js@1.0.4':

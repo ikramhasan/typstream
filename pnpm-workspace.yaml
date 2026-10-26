@@ -2,6 +2,7 @@ packages:
   - "packages/*"
   - "apps/*"
   - "corpus"
+  - "tools/compile-oracle"
 
 allowBuilds:
   esbuild: true

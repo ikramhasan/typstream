@@ -16,6 +16,7 @@ packages/heal     @typstream/heal: normalizer, recognizer (port of typst-syntax 
 packages/engine   @typstream/engine: main-thread client (heal → scheduler → worker, watchdog, recycling, last-good); worker half is #10.
 packages/engine-wasm  @typstream/engine-wasm: Typst 0.15.1 as wasm (Rust crate + wasm-bindgen glue): HTML, changed-page SVG, UTF-16 diagnostics.
 tools/typst-syntax-oracle   Typst's real parser compiled to wasm for Node; the ground truth in heal's tests.
+tools/compile-oracle        Do healed prefixes compile? heal × engine-wasm over the corpus; error classes and the prefix compile rate.
 tools/repo        Repo tooling: package layer table (layers.mjs), layering check, shared tsup and api-extractor configs.
 corpus/           @typstream/corpus (private): shared test documents (edu/, adversarial/), meta.json, stream replay.
 apps/playground   Dev playground (Vite + React): replay streams, inspect healing, record corpus cases. Heal-only for now.
@@ -59,6 +60,8 @@ In `packages/heal`:
 - `pnpm bench`: vitest benchmarks.
 - `node scripts/perf.mjs`: asserts the latency budgets; run `pnpm build` first. `PERF_TOLERANCE=3` (what CI uses) fails only above 3× budget.
 - `pnpm size`: bundle budget, 15 KB gzipped.
+
+Compile oracle (`tools/compile-oracle`, needs the built engine): `pnpm turbo run test --filter=@typstream/compile-oracle`; `pnpm --filter @typstream/compile-oracle report` for the full measurement (minutes).
 
 CI (`.github/workflows/ci.yml`) runs the same commands on every PR, building the oracle through `.github/actions/oracle` (cached on the crate's inputs). `nightly.yml` runs `test:long`.
 
