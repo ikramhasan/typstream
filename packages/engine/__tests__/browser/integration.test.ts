@@ -17,6 +17,7 @@ declare module "vitest/browser" {
   interface BrowserCommands {
     corpusStream(name: string): Promise<{ source: string; chunks: string[] }>;
     synthesizeStream(source: string): Promise<string[]>;
+    adversarial(): Promise<{ name: string; source: string; expect: "ok" | "error" | "limit" }[]>;
   }
 }
 
@@ -228,6 +229,46 @@ describe(`watchdog in ${browser}`, { timeout: 120_000 }, () => {
     const recovered = await until(doc, (s) => s.status === "idle" && s.failure === null);
     expect(recovered.artifact?.target === "html" && recovered.artifact.html).toContain("Recovered.");
     expect(events.filter((e) => e.type === "failed")).toEqual([]);
+    engine.dispose();
+  });
+});
+
+describe(`fallback ladder in ${browser}`, { timeout: 300_000 }, () => {
+  // PLAN §5.6 and #21's acceptance: no corpus document ends without a render. Documents that fail
+  // show their failing blocks as error blocks; runaway loops and memory bombs are found by
+  // compiling prefixes, each under its own budget, and skipped.
+  it("renders every adversarial document when it is finished", async () => {
+    const entries = (await commands.adversarial()).filter((e) => e.name !== "large-1mb");
+    const { engine } = await start({ watchdog: { finalMs: 4000, probeMs: 2000 } });
+    const results: string[] = [];
+    for (const entry of entries) {
+      const doc = engine.open({ text: entry.source });
+      doc.finish();
+      const s = await until(doc, (s) => s.status === "done" || s.status === "error", 120_000);
+      const html = s.artifact?.target === "html" ? s.artifact.html : "";
+      const blocks = (html.match(/typstream-error-block/g) ?? []).length;
+      results.push(`${entry.name}: ${s.status}${blocks ? `, ${blocks} error block(s)` : ""}`);
+      expect.soft(s.status, entry.name).toBe("done");
+      // 64-deep nesting compiles to pages, but exceeds Typst's maximum HTML depth.
+      expect.soft(blocks > 0, entry.name).toBe(entry.expect !== "ok" || entry.name === "deep-nesting-64");
+      doc.dispose();
+    }
+    console.info(results.join("\n"));
+    engine.dispose();
+  });
+
+  it("keeps rendering a stream past a block that fails, as an error block", async () => {
+    const { engine } = await start();
+    const doc = engine.open();
+    for (const part of ["= Quiz\n\n", "#table(columns: nope)[a]\n\n", "Question 1.\n\n", "Question 2.\n\n"]) {
+      doc.push(part);
+      await sleep(150);
+    }
+    const s = await until(doc, (s) => s.status === "idle" && s.artifact !== null);
+    const html = s.artifact?.target === "html" ? s.artifact.html : "";
+    expect(html).toContain("typstream-error-block");
+    expect(html).toContain("Question 2.");
+    expect(s.lastCompile?.fallback?.isolated).toHaveLength(1);
     engine.dispose();
   });
 });

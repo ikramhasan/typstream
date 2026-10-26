@@ -6,7 +6,9 @@
 // class is allowed until the issue next to it removes it, and an allowed class
 // that no longer occurs must be dropped from the list. The prefix compile rate
 // with Layer 3 (PLAN §1) is printed and must not fall below RATE_FLOOR; raise
-// the floor as classes go.
+// the floor as classes go. What Layer 3 leaves, Layer 4 (#21) must render:
+// asked for the stable prefix, as the client does once its last good render is
+// stale, every prefix publishes an artifact.
 //
 // COMPILE_ORACLE_SAMPLE=1 compiles every stream prefix; `pnpm report` runs the
 // full measurement.
@@ -26,7 +28,7 @@ import { type ClassifiedPrefix, formatStats, stats } from "../support/stats";
  * good render meanwhile (§5.6, #21).
  */
 const DEEP =
-  "#20 leaves values that need three cuts (`#place(center, dx: 3` inside content inside a call); last-good render (#21)";
+  "#20 leaves values that need three cuts (`#place(center, dx: 3` inside content inside a call); last-good render, then the stable prefix (#21)";
 const ALLOWED: Partial<Record<ErrorClass, string>> = {
   "missing-argument": DEEP,
   "type-mismatch": DEEP,
@@ -84,13 +86,16 @@ describe("compile oracle: healed prefixes compile", () => {
     const prefixes: ClassifiedPrefix[] = [];
     for (const [i, doc] of generated.entries()) prefixes.push(...(await run(doc, i)));
     for (const p of prefixes) if (p.fixedIn == null) for (const e of p.errors) seen.add(e.cls);
-    process.stdout.write(`\n${formatStats(`generated, ${TARGET}, 1 in ${SAMPLE} stream prefixes`, stats(prefixes))}\n`);
+    const s = stats(prefixes);
+    process.stdout.write(`\n${formatStats(`generated, ${TARGET}, 1 in ${SAMPLE} stream prefixes`, s)}\n`);
+    expect(s.renderedRate).toBe(1);
   });
 
   it("prefix compile rate", () => {
     const s = stats(all);
     process.stdout.write(`\n${formatStats(`corpus, ${TARGET}, 1 in ${SAMPLE} stream prefixes`, s)}\n`);
     expect(s.fixedRate).toBeGreaterThanOrEqual(RATE_FLOOR);
+    expect(s.renderedRate).toBe(1);
   });
 
   it("every allowed class still occurs (else drop it from ALLOWED)", () => {

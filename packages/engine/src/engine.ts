@@ -91,8 +91,17 @@ export interface Engine {
   dispose(): void;
 }
 
-/** 3 s per streaming compile, 10 s per final compile, live compiling stops after 3 strikes. @public */
-export const DEFAULT_WATCHDOG: Readonly<WatchdogOptions> = { streamingMs: 3000, finalMs: 10_000, strikes: 3 };
+/**
+ * 3 s per streaming compile, 10 s per final compile, live compiling stops after
+ * 3 strikes; 5 s per compile looking for what hangs a finished document.
+ * @public
+ */
+export const DEFAULT_WATCHDOG: Readonly<WatchdogOptions> = {
+  streamingMs: 3000,
+  finalMs: 10_000,
+  strikes: 3,
+  probeMs: 5000,
+};
 
 /** 256 MiB of engine memory, past which the worker is replaced. @public */
 export const DEFAULT_RECYCLE_BYTES = 256 * 1024 * 1024;

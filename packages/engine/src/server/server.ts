@@ -8,6 +8,7 @@ import {
   applyEdit,
   type ClientCapabilities,
   type ClientMessage,
+  type CompileFallback,
   type CompileMode,
   type CompileParams,
   type CompileResult,
@@ -17,6 +18,7 @@ import {
   type DocumentUri,
   type ExportParams,
   type ExportResult,
+  type FallbackParams,
   type FileContent,
   type FileDelta,
   type InitializeParams,
@@ -34,10 +36,12 @@ import {
   type ResultOf,
   type Revision,
   type ServerMessage,
+  type SkippedRange,
   type VersionMismatchData,
 } from "@typstream/core";
 import type { AdapterDocument, AdapterHtmlResult, AdapterPagedResult, EngineAdapter } from "./adapter";
 import { type Anchored, Anchors, fromAnchored } from "./anchors";
+import { type Attempt, type RecoverMemo, recover, toDocument, type Variant } from "./fallback";
 import { DEFAULT_FIXERS, FIX_BUDGET_MS, fixersOf, orderFixers, runFixers } from "./fixers";
 import { RUNTIME, RUNTIME_IMPORT, RUNTIME_PATH } from "./runtime";
 
@@ -70,6 +74,13 @@ export interface ServerOptions {
    */
   fixers?: readonly DiagnosticFixer[];
 }
+
+/**
+ * The fallback (Layer 4, PLAN §5.6) starts a compile only while the request
+ * has taken less than this (ms): half the client's watchdog budgets (3 s
+ * streaming, 10 s final, by default), so it can't run them out on its own.
+ */
+export const FALLBACK_BUDGET_MS: Readonly<Record<CompileMode, number>> = { streaming: 1500, final: 5000 };
 
 /**
  * The server end of one client connection.
@@ -110,6 +121,8 @@ interface Doc {
   inputs: string | null;
   /** Revision of the last paged artifact sent, which the adapter's changed pages diff against; `null` after HTML. */
   pagedBase: Revision | null;
+  /** What the fallback learnt about the text; forgotten when files or inputs change. */
+  memo: RecoverMemo | null;
 }
 
 /** An adapter compile's result, its diagnostics moved into document coordinates. */
@@ -153,6 +166,30 @@ const virtualPath = (path: string): string => {
   const rel = path.replace(/^(\.?\/)+/, "");
   if (rel === "" || rel === "main.typ") throw invalid(`can't write ${JSON.stringify(path)}: it is the document`);
   return `/${rel}`;
+};
+
+/** Checked fallback params; `skip` must be ascending, disjoint ranges of the text. */
+const fallbackOf = (f: FallbackParams | undefined, length: number): FallbackParams | null => {
+  if (f === undefined || f === null) return null;
+  if (typeof f !== "object") throw invalid("fallback must be an object");
+  const skip: SkippedRange[] = [];
+  for (const r of f.skip ?? []) {
+    const { from, to, reason } = r ?? ({} as SkippedRange);
+    if (
+      !(
+        Number.isInteger(from) &&
+        Number.isInteger(to) &&
+        from >= (skip.at(-1)?.to ?? 0) &&
+        from < to &&
+        to <= length
+      ) ||
+      (reason !== "timeout" && reason !== "crash")
+    ) {
+      throw invalid(`fallback.skip: [${from}, ${to}) must be inside the text (length ${length}), ascending, disjoint`);
+    }
+    skip.push({ from, to, reason });
+  }
+  return { isolate: f.isolate === true, stablePrefix: f.stablePrefix === true, skip };
 };
 
 /** Imports a fixer module (PLAN §8.2); its default export is a fixer or an array of them. */
@@ -278,6 +315,7 @@ class Server implements EngineServer {
         throw invalid(e instanceof Error ? e.message : String(e));
       }
       doc.inputs = key;
+      doc.memo = null;
     }
     if (doc.dirty || anchors !== (doc.anchored !== null)) {
       doc.anchored = anchors ? doc.anchors.apply(doc.text) : null;
@@ -389,6 +427,7 @@ class Server implements EngineServer {
         offset: 0,
         inputs: null,
         pagedBase: null,
+        memo: null,
       });
       return null;
     },
@@ -414,6 +453,7 @@ class Server implements EngineServer {
       const doc = this.next(uri, rev);
       this.writeFiles(doc.compiler, files);
       doc.rev = rev;
+      doc.memo = null;
       return null;
     },
 
@@ -428,44 +468,118 @@ class Server implements EngineServer {
       const mode = params.mode ?? "streaming";
       const doc = this.current(uri, rev);
       if (!this.adapter.targets.includes(target)) this.unsupported(`the ${target} target`);
+      const fallback = fallbackOf(params.fallback, doc.text.length);
       const anchors = target === "html" && params.anchors !== false;
       this.sync(doc, params.inputs, anchors);
+      const settled =
+        mode === "streaming" && params.settled !== undefined
+          ? Math.max(0, Math.min(params.settled, doc.text.length))
+          : doc.text.length;
       // Changed pages only when the client can apply them to the pages it has.
-      const full = params.fullPages === true || !this.client.pagedDiff || doc.pagedBase === null;
-      let r = await this.compileMain(doc, target, mode, full);
-      let { compileMs, diagnostics } = r;
+      let full = params.fullPages === true || !this.client.pagedDiff || doc.pagedBase === null;
+      // The last compile, whose output is published, and the time spent in Typst.
+      let r: Compiled | null = null;
+      let compileMs: number | undefined;
       let fixMs: number | undefined;
-      if (r.diagnostics.some(isError) && this.fixers.length > 0) {
-        const fixStart = performance.now();
-        const { settled } = params;
-        const outcome = await runFixers({
+      const count = (ms: number | undefined) => {
+        if (ms !== undefined) compileMs = (compileMs ?? 0) + ms;
+      };
+      const compile = async (): Promise<Compiled> => {
+        r = await this.compileMain(doc, target, mode, full);
+        count(r.compileMs);
+        return r;
+      };
+
+      /**
+       * Compiles the document's text, or a variant the fallback made of it,
+       * and fixes it (Layer 3). Diagnostics in document coordinates.
+       */
+      const attempt = async (variant: Variant | null, settledIn: number): Promise<Attempt> => {
+        const base: Variant = variant ?? { text: doc.text, toOriginal: (p) => p };
+        if (variant) this.writeFixed(doc, variant.text, anchors, variant.toOriginal);
+        else this.sync(doc, params.inputs, anchors);
+        let { diagnostics } = await compile();
+        let ok = !diagnostics.some(isError);
+        if (!ok && this.fixers.length > 0) {
+          const fixStart = performance.now();
+          const outcome = await runFixers({
+            text: base.text,
+            settled: settledIn,
+            mode,
+            fixers: this.fixers,
+            diagnostics,
+            deadline: received + FIX_BUDGET_MS[mode],
+            compile: async (text, toBase) => {
+              this.writeFixed(doc, text, anchors, (p) => base.toOriginal(toBase(p)));
+              return (await compile()).diagnostics;
+            },
+          });
+          ({ ok, diagnostics } = outcome);
+          if (outcome.rounds > 0) fixMs = (fixMs ?? 0) + performance.now() - fixStart;
+        }
+        return { ok, diagnostics: variant ? toDocument(diagnostics, variant) : diagnostics };
+      };
+
+      /** Compiles a variant for its errors only (the fallback's checks of prefixes). */
+      const check = async (variant: Variant): Promise<Diagnostic[]> => {
+        this.writeFixed(doc, variant.text, false, variant.toOriginal);
+        let c: { diagnostics: Diagnostic[]; compileMs?: number };
+        if (doc.compiler.check) c = await doc.compiler.check({ target, mode });
+        else if (target === "html") c = await doc.compiler.compileHtml({ mode });
+        else {
+          const paged = await doc.compiler.compilePaged({ fullPages: true, mode });
+          // It moved the adapter's baseline: the artifact sends every page.
+          if (paged.output) full = true;
+          c = paged;
+        }
+        count(c.compileMs);
+        return toDocument(this.diagnostics(doc, c.diagnostics), variant).filter(isError);
+      };
+
+      const skip = fallback?.skip ?? [];
+      // With skipped ranges, the text as it is hangs: only the fallback compiles it.
+      let outcome: Attempt = skip.length > 0 ? { ok: false, diagnostics: [] } : await attempt(null, settled);
+      let recovered: CompileFallback | undefined;
+      let fallbackMs: number | undefined;
+      if (!outcome.ok && fallback && (fallback.isolate || fallback.stablePrefix || skip.length > 0)) {
+        const start = performance.now();
+        let last: Attempt | null = null;
+        const memoKey = target;
+        const rec = await recover({
           text: doc.text,
-          settled:
-            mode === "streaming" && settled !== undefined
-              ? Math.max(0, Math.min(settled, doc.text.length))
-              : doc.text.length,
+          settled,
           mode,
-          fixers: this.fixers,
-          diagnostics,
-          deadline: received + FIX_BUDGET_MS[mode],
-          compile: async (text, toOriginal) => {
-            this.writeFixed(doc, text, anchors, toOriginal);
-            r = await this.compileMain(doc, target, mode, full);
-            if (r.compileMs !== undefined) compileMs = (compileMs ?? 0) + r.compileMs;
-            return r.diagnostics;
+          isolate: fallback.isolate === true,
+          stablePrefix: mode === "streaming" && fallback.stablePrefix === true,
+          skip,
+          errors: skip.length > 0 ? null : outcome.diagnostics,
+          attempt: async (variant, settledIn) => {
+            last = await attempt(variant, settledIn);
+            return last;
           },
+          check,
+          deadline: received + FALLBACK_BUDGET_MS[mode],
+          memo: doc.memo,
+          memoKey,
         });
-        diagnostics = outcome.diagnostics;
-        if (outcome.rounds > 0) fixMs = performance.now() - fixStart;
+        fallbackMs = performance.now() - start;
+        if (rec) {
+          outcome = { ok: true, diagnostics: rec.diagnostics };
+          recovered = { isolated: rec.isolated, plainFrom: rec.plainFrom };
+          doc.memo = rec.memo;
+        } else if (skip.length > 0 && last) {
+          outcome = last;
+        }
       }
+      const { diagnostics } = outcome;
       this.post({ method: "document/diagnostics", params: { uri, rev, target, diagnostics } });
-      // The last compile's output: the first one's, or the fixed text's.
-      const ok = "html" in r ? r.html !== null : r.output !== null;
-      if ("html" in r && r.html !== null) {
-        this.post({ method: "document/artifact", params: { uri, rev, artifact: { target: "html", html: r.html } } });
+      // The last compile's output: the first one's, or a fixed or fallback text's.
+      const out = outcome.ok ? (r as Compiled | null) : null;
+      if (out && "html" in out && out.html !== null) {
+        this.post({ method: "document/artifact", params: { uri, rev, artifact: { target: "html", html: out.html } } });
         doc.pagedBase = null;
-      } else if ("output" in r && r.output) {
-        const { pageCount, changed } = r.output;
+      } else if (out && "output" in out && out.output) {
+        const { pageCount, changed } = out.output;
         this.post({
           method: "document/artifact",
           params: {
@@ -476,6 +590,7 @@ class Server implements EngineServer {
         });
         doc.pagedBase = rev;
       }
+      const ok = out !== null && ("html" in out ? out.html !== null : out.output !== null);
       const result: CompileResult = {
         uri,
         rev,
@@ -484,8 +599,10 @@ class Server implements EngineServer {
         timings: { totalMs: performance.now() - received },
       };
       if (compileMs !== undefined) result.timings.compileMs = compileMs;
-      if (r.exportMs !== undefined) result.timings.exportMs = r.exportMs;
+      if (r !== null && (r as Compiled).exportMs !== undefined) result.timings.exportMs = (r as Compiled).exportMs;
       if (fixMs !== undefined) result.timings.fixMs = fixMs;
+      if (fallbackMs !== undefined) result.timings.fallbackMs = fallbackMs;
+      if (ok && recovered) result.fallback = recovered;
       const memoryBytes = this.adapter.memoryBytes?.();
       if (memoryBytes !== undefined) result.memoryBytes = memoryBytes;
       return result;

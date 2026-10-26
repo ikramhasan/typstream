@@ -49,6 +49,12 @@ export default defineConfig({
                 return { source: entry.source, chunks: streamOf(entry).map((c) => c.text) };
               },
               synthesizeStream: (_ctx, source: string) => synthesizeStream(source).map((c) => c.text),
+              adversarial: () =>
+                loadCorpus({ sets: ["adversarial"] }).map((e) => ({
+                  name: e.name,
+                  source: e.source,
+                  expect: e.meta.expect ?? "ok",
+                })),
             },
           },
         },

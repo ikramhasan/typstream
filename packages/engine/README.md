@@ -19,7 +19,7 @@ doc.finish(); // strict heal, final compile → status "done" or "error"
 - **Latest wins.** The engine runs one compile at a time across all its documents. Each document has at most one compile pending, and it reads the newest healed source when its turn comes. Edits reach the worker as one diff right before the compile.
 - **Adaptive interval.** Compiles start at most every `clamp(minInterval, 1.25 × EMA(compileMs), maxInterval)` (33–500 ms by default). When a line or block has just finished (heal's `stableOffset` advanced), the next compile is due after `minInterval` instead.
 - **Stale output is dropped.** Diagnostics and artifacts count only for the revision last sent. Diagnostics are mapped back to input positions.
-- **Last good.** A failed compile keeps the previous artifact. While streaming the status is `stale`. In final mode it is `error`.
+- **Last good.** A failed compile keeps the previous artifact. While streaming the status is `stale`. In final mode it is `error`. Before it comes to that, the worker's fallback (below) usually finds something to show.
 - **Watchdog.**
   - Each compile gets 3 s while streaming and 10 s in final mode. Past that, the worker is terminated and an initialized spare takes over.
   - After 3 timeouts or crashes, live compiling stops (`failure.reason === "too-complex"`). `finish()` still compiles once.
@@ -69,5 +69,16 @@ createEngine({ spawn: engineWorker(), initialize: { fixerModules: [new URL("./ac
 ```
 
 A custom worker can replace the list: `serve(engineWasm(), undefined, { fixers: [pendingRef, myFixer, tailCut] })`; `[]` turns them off.
+
+## Fallback (Layer 4)
+
+What still fails after the fixers is never a blank screen (PLAN §5.6). The client asks for it with every compile (`fallback: false` on a document turns it off):
+
+- **Error blocks.** The text is split into top-level blocks (heal's root checkpoints, where source anchors go). The server finds the first failing block by compiling prefixes, bisecting (⌈log₂ n⌉ check compiles, which export nothing), and shows it as `#typstream.error-block(source, message)`: a "This part couldn't be displayed" box with the error and the block's source. Then it goes on to the next one. Blocks with syntax errors need no compile. While streaming only settled blocks are isolated, and what the server found is remembered for the next revision.
+- **Stable prefix.** Once the last good render is `schedule.staleMs` old (1.5 s), the client asks for it: when the tail still being written fails, the settled text compiles with the tail as plain text below it.
+- **Hangs and crashes** (final mode). A finished document that runs past the watchdog or crashes the worker is bisected by the client: prefixes compile with the rest skipped (`fallback.skip`), each under `watchdog.probeMs` (5 s). The block that doesn't finish is skipped, shown as an error block, from then on.
+- **Last resort** (final mode): the whole document as one error block showing its source.
+
+`state.lastCompile.fallback` says what was isolated (`isolated` ranges) or shown as plain text (`plainFrom`). Isolated blocks' errors stay in `diagnostics`.
 
 Tests: `pnpm test` (Node: client, server, protocol conformance against engine-wasm) and `pnpm test:browser` (the real worker in Chromium, Firefox and WebKit). Any engine server must pass `__tests__/conformance.ts`.

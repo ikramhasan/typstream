@@ -59,6 +59,21 @@ export const runDocument = async (
       p.fixRounds = fixed.compiles - 1;
       p.fixMs = fixed.result.timings.fixMs ?? 0;
       p.fixedIn = fixed.result.status === "ok" ? p.fixRounds : null;
+      if (p.fixedIn === null) {
+        // Layer 4 (#21), as the client asks once its last good render is stale.
+        const fallback = await server.compile(r.healed, r.stableOffset, target, {
+          fallback: { isolate: true, stablePrefix: true },
+        });
+        const f = fallback.result.fallback;
+        p.fallback =
+          fallback.result.status !== "ok"
+            ? null
+            : f?.plainFrom != null
+              ? "stable-prefix"
+              : f?.isolated.length
+                ? "isolated"
+                : "fixed";
+      }
       if (research) {
         const settled = prefix.slice(0, heal(prefix).map.toInput(r.stableOffset));
         p.stableOk = compileErrors(engine, heal(settled).source, target).length === 0;

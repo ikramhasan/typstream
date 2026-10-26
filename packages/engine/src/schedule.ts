@@ -19,10 +19,21 @@ export interface ScheduleOptions {
    * Default true.
    */
   boundaryBias: boolean;
+  /**
+   * After this long without a good render while streaming, failing compiles
+   * fall back to the settled text, with the rest as plain text below it (PLAN
+   * §5.6 level 2). Default 1500 ms.
+   */
+  staleMs: number;
 }
 
-/** 33 ms to 500 ms between compiles, with boundary bias. @public */
-export const DEFAULT_SCHEDULE: Readonly<ScheduleOptions> = { minInterval: 33, maxInterval: 500, boundaryBias: true };
+/** 33 ms to 500 ms between compiles, with boundary bias; the stable prefix after 1.5 s stale. @public */
+export const DEFAULT_SCHEDULE: Readonly<ScheduleOptions> = {
+  minInterval: 33,
+  maxInterval: 500,
+  boundaryBias: true,
+  staleMs: 1500,
+};
 
 /** Weight of the newest sample in the moving average of compile times. */
 const EMA_ALPHA = 0.3;

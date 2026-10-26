@@ -98,6 +98,14 @@ export const engineWasm = (options: EngineWasmOptions = {}): EngineAdapter => {
             exportMs: r.exportMs,
           };
         },
+        check({ target }) {
+          if (target === "html") {
+            const r = engine.compile_html();
+            return { diagnostics: r.diagnostics, compileMs: r.ms };
+          }
+          const r = engine.check_paged();
+          return { diagnostics: r.diagnostics, compileMs: r.ms };
+        },
         exportPdf() {
           const r = engine.compile_pdf();
           return { pdf: r.ok ? (r.pdf ?? null) : null, diagnostics: r.diagnostics, compileMs: r.ms };

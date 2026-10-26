@@ -46,6 +46,7 @@ export const DEFAULT_WATCHDOG: Readonly<WatchdogOptions>;
 
 // @public
 export interface DocumentOptions {
+    fallback?: boolean;
     files?: FileDelta;
     heal?: HealOptions;
     inputs?: Record<string, string>;
@@ -176,6 +177,7 @@ export interface ScheduleOptions {
     boundaryBias: boolean;
     maxInterval: number;
     minInterval: number;
+    staleMs: number;
 }
 
 // @public
@@ -184,6 +186,7 @@ export type SpawnEngine = (events: EngineEvents) => EngineConnection;
 // @public
 export interface WatchdogOptions {
     finalMs: number;
+    probeMs: number;
     streamingMs: number;
     strikes: number;
 }

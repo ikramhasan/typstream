@@ -70,6 +70,13 @@ export interface AdapterDocument {
    * time). A failed compile keeps what the next one diffs against.
    */
   compilePaged(options: { fullPages: boolean } & AdapterCompileOptions): MaybePromise<AdapterPagedResult>;
+  /**
+   * Compiles `/main.typ` for its diagnostics only, as the fallback does to
+   * check prefixes of a document (PLAN §5.6). It must leave the baseline that
+   * `compilePaged` diffs against alone. Optional: without it the server
+   * compiles normally and sends every page with the next paged artifact.
+   */
+  check?(options: { target: CompileTarget } & AdapterCompileOptions): MaybePromise<AdapterCompileResult>;
   /** Compiles paged output to PDF. Only when the adapter's `exports` include `"pdf"`; always `final` mode. */
   exportPdf?(options?: AdapterCompileOptions): MaybePromise<AdapterCompileResult & { pdf: Uint8Array | null }>;
   /** Frees the document. */

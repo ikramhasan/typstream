@@ -1,10 +1,13 @@
 // The engine's protocol server (`@typstream/engine/server`) over the oracle's
-// engine, so prefixes go through the real Layer 3 fix loop (#20): the same
-// runtime library, rounds and budgets as in the browser worker. Anchors are
-// off; they don't change what compiles (packages/engine/__tests__/anchors.test.ts).
+// engine, so prefixes go through the real Layer 3 fix loop (#20) and Layer 4
+// fallback (#21): the same runtime library, rounds and budgets as in the
+// browser worker. Anchors are off; they don't change what compiles
+// (packages/engine/__tests__/anchors.test.ts).
 import {
+  type CompileMode,
   type CompileResult,
   type Diagnostic,
+  type FallbackParams,
   PROTOCOL_VERSION,
   type RequestMethod,
   type ServerMessage,
@@ -17,15 +20,17 @@ import type { Target } from "./measure";
 export interface ServerCompile {
   result: CompileResult;
   diagnostics: Diagnostic[];
-  /** Compiles the server ran: 1, plus one per fix round. */
+  /** Compiles the server ran for an artifact: 1, plus one per fix round and per fallback attempt. */
   compiles: number;
+  /** Compiles the fallback ran only to check a prefix. */
+  checks: number;
 }
 
 /**
  * An adapter over one shared engine. The oracle has set the document's other
  * files on it already; closing a document leaves the engine alone.
  */
-const adapter = (engine: Engine, counter: { compiles: number }): EngineAdapter => ({
+const adapter = (engine: Engine, counter: { compiles: number; checks: number }): EngineAdapter => ({
   info: { name: "compile-oracle", typstVersion: "0.15.1" },
   targets: ["html", "paged"],
   exports: [],
@@ -53,6 +58,10 @@ const adapter = (engine: Engine, counter: { compiles: number }): EngineAdapter =
         diagnostics: r.diagnostics,
       };
     },
+    check({ target }) {
+      counter.checks++;
+      return { diagnostics: (target === "html" ? engine.compile_html() : engine.check_paged()).diagnostics };
+    },
     close: () => {},
   }),
 });
@@ -60,7 +69,7 @@ const adapter = (engine: Engine, counter: { compiles: number }): EngineAdapter =
 /** A protocol client for one document, compiling streamed healed sources. */
 export class OracleServer {
   private readonly server: EngineServer;
-  private readonly counter = { compiles: 0 };
+  private readonly counter = { compiles: 0, checks: 0 };
   private readonly waiting = new Map<number, (m: ServerMessage) => void>();
   private diagnostics: Diagnostic[] = [];
   private id = 0;
@@ -93,8 +102,17 @@ export class OracleServer {
     });
   }
 
-  /** Compiles `text` as the client would while streaming: heal's stable offset as `settled`. */
-  async compile(text: string, settled: number, target: Target): Promise<ServerCompile> {
+  /**
+   * Compiles `text` as the client would: while streaming with heal's stable
+   * offset as `settled`; in final mode all of it settled. `fallback` as the
+   * client sends it (Layer 4); without it, Layer 3 only.
+   */
+  async compile(
+    text: string,
+    settled: number,
+    target: Target,
+    options: { mode?: CompileMode; fallback?: FallbackParams } = {},
+  ): Promise<ServerCompile> {
     this.rev++;
     await this.request("document/edit", {
       uri: "doc",
@@ -103,14 +121,17 @@ export class OracleServer {
     });
     this.text = text;
     this.counter.compiles = 0;
+    this.counter.checks = 0;
+    const mode = options.mode ?? "streaming";
     const result = (await this.request("compile", {
       uri: "doc",
       rev: this.rev,
       target,
-      mode: "streaming",
-      settled,
+      mode,
+      settled: mode === "streaming" ? settled : undefined,
       anchors: false,
+      fallback: options.fallback,
     })) as CompileResult;
-    return { result, diagnostics: this.diagnostics, compiles: this.counter.compiles };
+    return { result, diagnostics: this.diagnostics, compiles: this.counter.compiles, checks: this.counter.checks };
   }
 }

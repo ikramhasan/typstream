@@ -7,6 +7,9 @@
 //   LOOP   → never finishes (only the watchdog gets the client out)
 //   CRASH  → the worker fails outside the protocol (an `error` event)
 //
+// A compile's `fallback.skip` ranges are replaced with `[skipped:<reason>]`
+// first, as the server shows them as error blocks without compiling them.
+//
 // Paged artifacts have one page per paragraph (split on blank lines) and send
 // only changed pages, diffing against the previous paged artifact. Exports
 // follow the same markers; a PDF is the bytes of `%PDF ` and the text.
@@ -213,7 +216,9 @@ export class FakeWorker implements EngineConnection {
     if (p.rev !== doc.rev) return this.respond({ id, error: { code: "content-modified", message: "" } });
     this.running++;
     this.maxRunning = Math.max(this.maxRunning, this.running);
-    const text = doc.text;
+    const text = [...(p.fallback?.skip ?? [])]
+      .reverse()
+      .reduce((t, r) => `${t.slice(0, r.from)}[skipped:${r.reason}]${t.slice(r.to)}`, doc.text);
     if (!(await this.work(text))) return new Promise(() => {});
     this.running--;
     this.compiles++;
