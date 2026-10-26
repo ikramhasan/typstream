@@ -1,15 +1,20 @@
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
+import { loadCorpus, streamOf } from "../../corpus/src/index.ts";
 
 // Two projects. `node` (pnpm test): pure helpers. `browser` (pnpm
-// test:browser): the renderer against the real engine worker in Chromium,
-// Firefox and WebKit, as in @typstream/engine's browser tests.
+// test:browser): the renderers in Chromium, Firefox and WebKit, fed by the real
+// engine worker as in @typstream/engine's browser tests.
 
 const alias = {
   // Test against the source of sibling packages, not their builds.
   "@typstream/core": new URL("../core/src/index.ts", import.meta.url).pathname,
   "@typstream/heal": new URL("../heal/src/index.ts", import.meta.url).pathname,
   "@typstream/engine": new URL("../engine/src/index.ts", import.meta.url).pathname,
+  "@typstream/html-compat": new URL("../html-compat/src/index.ts", import.meta.url).pathname,
+  "@typstream/corpus": new URL("../../corpus/src/index.ts", import.meta.url).pathname,
 };
 
 export default defineConfig({
@@ -32,6 +37,21 @@ export default defineConfig({
             // BROWSERS=chromium runs one.
             instances: (process.env.BROWSERS ?? "chromium,firefox,webkit").split(",").map((browser) => ({ browser })),
             screenshotFailures: false,
+            // The corpus reads files, so documents are loaded here and sent to the browser.
+            commands: {
+              corpusEntries: () =>
+                loadCorpus({ sets: ["edu"] }).map((e) => {
+                  // Documents read their set's assets/ as /assets/ (text files only so far).
+                  const dir = join(dirname(e.path), "assets");
+                  const names = existsSync(dir) ? readdirSync(dir) : [];
+                  return {
+                    name: e.name,
+                    source: e.source,
+                    chunks: streamOf(e).map((c) => c.text),
+                    files: Object.fromEntries(names.map((n) => [`assets/${n}`, readFileSync(join(dir, n), "utf8")])),
+                  };
+                }),
+            },
           },
         },
       },

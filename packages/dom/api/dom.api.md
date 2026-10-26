@@ -6,6 +6,20 @@
 
 import { EngineDocument } from '@typstream/engine';
 import { PagedArtifact } from '@typstream/core';
+import { TypstreamPlugin } from '@typstream/core';
+
+// @public
+export interface AnimateOptions {
+    animation?: "fadeIn" | "blurIn" | "slideUp" | (string & {});
+    duration?: number;
+    easing?: string;
+    maxBacklogMs?: number;
+    sep?: "word" | "char";
+    stagger?: number;
+}
+
+// @public
+export const createHtmlRenderer: (root: HTMLElement, options?: HtmlRendererOptions) => HtmlRenderer;
 
 // @public
 export const createPagedView: (container: HTMLElement, options?: PagedViewOptions) => PagedView;
@@ -23,6 +37,49 @@ export const FIT_WIDTH_PREAMBLE: string;
 
 // @public
 export const fitWidthInputs: (widthPx: number, pageHeight?: "a4" | "auto", inputs?: Record<string, string>) => Record<string, string>;
+
+// @public
+export interface HtmlRenderer {
+    // @beta
+    blockAt(offset: number): Element | null;
+    clear(): void;
+    dispose(): void;
+    readonly root: HTMLElement;
+    // @beta
+    sourceRange(node: Node): {
+        from: number;
+        to: number | null;
+    } | null;
+    update(html: string, options?: HtmlUpdateOptions): HtmlUpdateResult;
+}
+
+// @public
+export const htmlRendererCss: string;
+
+// @public
+export interface HtmlRendererOptions {
+    animation?: AnimateOptions;
+    idPrefix?: string;
+    injectStyles?: boolean;
+    linkTarget?: string | null;
+    plugins?: readonly TypstreamPlugin[];
+    stylesheets?: readonly string[];
+    theme?: "auto" | "light" | "dark";
+}
+
+// @public
+export interface HtmlUpdateOptions {
+    animate?: boolean;
+    caret?: boolean;
+}
+
+// @public
+export interface HtmlUpdateResult {
+    blocks: number;
+    created: number;
+    ms: number;
+    removed: number;
+}
 
 // @public
 export const isSafeHref: (href: string) => boolean;
@@ -61,6 +118,9 @@ export interface PagedViewOptions {
     rootMargin?: string;
     textLayer?: boolean;
 }
+
+// @public
+export const registerMathFont: (url: string | URL, doc?: Document) => Promise<void>;
 
 // (No @packageDocumentation comment for this package)
 

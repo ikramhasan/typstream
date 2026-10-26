@@ -1,7 +1,7 @@
 {
   "name": "@typstream/dom",
   "version": "0.0.0",
-  "description": "Framework-free renderers for typstream: paged SVG output, kept in step with a streaming document.",
+  "description": "Framework-free renderers for typstream: sanitized, block-diffed HTML and paged SVG output, kept in step with a streaming document.",
   "license": "UNLICENSED",
   "private": true,
   "type": "module",
@@ -31,6 +31,7 @@
   },
   "devDependencies": {
     "@typstream/corpus": "workspace:*",
+    "@typstream/html-compat": "workspace:*",
     "@vitest/browser-playwright": "4.1.12",
     "playwright": "^1.64.1"
   }

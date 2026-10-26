@@ -35,7 +35,7 @@ export const PACKAGES = {
   node: { name: "@typstream/node", layer: 2, deps: ["core", "heal", "engine", "engine-wasm"] },
   edu: { name: "@typstream/edu", layer: 3, deps: ["core"] },
   "html-compat": { name: "@typstream/html-compat", layer: 3, deps: ["core"], testDeps: ["engine-wasm"] },
-  dom: { name: "@typstream/dom", layer: 4, deps: ["core", "engine"], fixed: true },
+  dom: { name: "@typstream/dom", layer: 4, deps: ["core", "engine"], testDeps: ["html-compat"], fixed: true },
   react: { name: "@typstream/react", layer: 4, deps: ["dom"], fixed: true },
   typstream: { name: "typstream", layer: 4, deps: ["react", "engine", "heal"], fixed: true },
   ai: { name: "@typstream/ai", layer: 5, deps: ["core", "heal"] },

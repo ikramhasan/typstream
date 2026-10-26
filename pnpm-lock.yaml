@@ -262,6 +262,9 @@ importers:
       '@typstream/corpus':
         specifier: workspace:*
         version: link:../../corpus
+      '@typstream/html-compat':
+        specifier: workspace:*
+        version: link:../html-compat
       '@vitest/browser-playwright':
         specifier: 4.1.12
         version: 4.1.12(playwright@1.64.1)(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))(vitest@4.1.12)
