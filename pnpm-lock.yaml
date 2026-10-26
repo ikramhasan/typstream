@@ -217,9 +217,21 @@ importers:
       '@typstream/corpus':
         specifier: workspace:*
         version: link:../../corpus
+      '@typstream/dom':
+        specifier: workspace:*
+        version: link:../../packages/dom
+      '@typstream/engine':
+        specifier: workspace:*
+        version: link:../../packages/engine
+      '@typstream/engine-wasm':
+        specifier: workspace:*
+        version: link:../../packages/engine-wasm
       '@typstream/heal':
         specifier: workspace:*
         version: link:../../packages/heal
+      '@typstream/html-compat':
+        specifier: workspace:*
+        version: link:../../packages/html-compat
       react:
         specifier: ^19.3.1
         version: 19.3.1

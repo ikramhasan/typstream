@@ -1,5 +1,6 @@
 // Shareable playground state, kept in the URL hash (PLAN.md §10.5). Corpus entries
 // are referenced by id; pasted documents and streams travel deflated and base64url'd.
+import type { CompileTarget } from "@typstream/core";
 import type { LintRuleId, LintSeverity } from "@typstream/heal";
 import { DEFAULT_LINT } from "@typstream/heal";
 import { SPLITS, type Split } from "./stream";
@@ -18,6 +19,23 @@ export interface HealSettings {
   lint: Partial<Record<LintRuleId, LintSeverity>>;
 }
 
+/**
+ * What the render pane shows. `engine` is the raw engine view: the engine's
+ * artifacts as they come, with no renderer in between. `dom` renders the same
+ * artifacts with @typstream/dom. `off` spawns no worker. When the React
+ * bindings land (#17), `<Typstream>` joins as the default mode.
+ */
+export type RenderMode = "engine" | "dom" | "off";
+
+export const RENDER_MODES: readonly RenderMode[] = ["engine", "dom", "off"];
+
+export interface RenderSettings {
+  mode: RenderMode;
+  target: CompileTarget;
+  /** Open the document with @typstream/html-compat's preamble and files, and style its HTML. */
+  compat: boolean;
+}
+
 export interface PlaygroundState {
   source: Source;
   /** Seed for synthesized streams (pasted documents, corpus entries without a recording). */
@@ -28,6 +46,7 @@ export interface PlaygroundState {
   /** Heal the prefix as a complete document (`healer.finish()`). */
   final: boolean;
   heal: HealSettings;
+  render: RenderSettings;
 }
 
 export const DEFAULT_SOURCE: Source = { kind: "corpus", id: "edu/quiz-mcq-geography" };
@@ -39,6 +58,7 @@ export const defaultState = (): PlaygroundState => ({
   at: null,
   final: false,
   heal: { dropIncompleteRules: true, unwrapFences: "auto", lint: {} },
+  render: { mode: "engine", target: "html", compat: true },
 });
 
 const SEVERITIES: readonly LintSeverity[] = ["fix", "warn", "off"];
@@ -81,6 +101,9 @@ export const encodeState = async (state: PlaygroundState): Promise<string> => {
   if (state.heal.unwrapFences !== "auto") p.set("fences", state.heal.unwrapFences);
   const lint = Object.entries(state.heal.lint).filter(([rule, sev]) => DEFAULT_LINT[rule as LintRuleId] !== sev);
   if (lint.length > 0) p.set("lint", lint.map(([rule, sev]) => `${rule}:${sev}`).join(","));
+  if (state.render.mode !== "engine") p.set("render", state.render.mode);
+  if (state.render.target !== "html") p.set("target", state.render.target);
+  if (!state.render.compat) p.set("compat", "0");
   return p.toString();
 };
 
@@ -117,5 +140,9 @@ export const decodeState = async (hash: string): Promise<PlaygroundState> => {
     const [rule, sev] = pair.split(":") as [LintRuleId, LintSeverity];
     if (rule in DEFAULT_LINT && SEVERITIES.includes(sev)) state.heal.lint[rule] = sev;
   }
+  const render = p.get("render") as RenderMode | null;
+  if (render && RENDER_MODES.includes(render)) state.render.mode = render;
+  if (p.get("target") === "paged") state.render.target = "paged";
+  state.render.compat = p.get("compat") !== "0";
   return state;
 };
