@@ -4,8 +4,17 @@
 
 ```ts
 
+import { CompileTarget } from '@typstream/core';
+import { CompileTimings } from '@typstream/core';
+import { Diagnostic } from '@typstream/core';
+import { DocumentOptions } from '@typstream/engine';
+import { DocumentState } from '@typstream/engine';
+import { DocumentStatus } from '@typstream/engine';
+import { Engine } from '@typstream/engine';
 import { EngineDocument } from '@typstream/engine';
+import { FileDelta } from '@typstream/core';
 import { PagedArtifact } from '@typstream/core';
+import { Revision } from '@typstream/core';
 import { TypstreamPlugin } from '@typstream/core';
 
 // @public
@@ -91,6 +100,16 @@ export interface MountedPaged {
 }
 
 // @public
+export interface MountedTypstream {
+    destroy(): void;
+    readonly document: EngineDocument | null;
+    readonly element: HTMLElement;
+    getState(): DocumentState | null;
+    subscribe(listener: () => void): () => void;
+    update(options: TypstreamOptions): void;
+}
+
+// @public
 export const mountPaged: (container: HTMLElement, doc: EngineDocument, options?: MountPagedOptions) => MountedPaged;
 
 // @public
@@ -99,6 +118,9 @@ export interface MountPagedOptions extends PagedViewOptions {
     pageHeight?: "a4" | "auto";
     resizeDebounce?: number;
 }
+
+// @public
+export const mountTypstream: (element: HTMLElement, initial: TypstreamOptions) => MountedTypstream;
 
 // @public
 export interface PagedView {
@@ -121,6 +143,48 @@ export interface PagedViewOptions {
 
 // @public
 export const registerMathFont: (url: string | URL, doc?: Document) => Promise<void>;
+
+// @beta
+export interface RenderedInfo {
+    blocks?: number;
+    final: boolean;
+    pages?: number;
+    patches: number;
+    renderMs: number;
+    rev: Revision | null;
+    // (undocumented)
+    target: CompileTarget;
+    timings: CompileTimings | null;
+}
+
+// @public
+export interface TypstreamOptions {
+    animated?: boolean | AnimateOptions;
+    caret?: boolean;
+    engine: Engine;
+    files?: FileDelta;
+    heal?: DocumentOptions["heal"];
+    inputs?: Record<string, string>;
+    isStreaming?: boolean;
+    layout?: "fixed" | "fit-width";
+    lazy?: boolean;
+    linkTarget?: string | null;
+    onDiagnostics?: (diagnostics: Diagnostic[], state: DocumentState) => void;
+    // Warning: (ae-incompatible-release-tags) The symbol "onRendered" is marked as @public, but its signature references "RenderedInfo" which is marked as @beta
+    onRendered?: (info: RenderedInfo) => void;
+    onStatusChange?: (status: DocumentStatus, state: DocumentState) => void;
+    pageHeight?: "a4" | "auto";
+    plugins?: readonly TypstreamPlugin[];
+    preamble?: string;
+    schedule?: DocumentOptions["schedule"];
+    source?: string;
+    stream?: AsyncIterable<string> | null;
+    stylesheets?: readonly string[];
+    target?: CompileTarget;
+    template?: string;
+    textLayer?: boolean;
+    theme?: "auto" | "light" | "dark";
+}
 
 // (No @packageDocumentation comment for this package)
 

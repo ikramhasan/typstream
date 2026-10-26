@@ -1,0 +1,39 @@
+{
+  "name": "typstream",
+  "version": "0.0.0",
+  "description": "Render Typst streamed from an LLM, live, in React: import { Typstream } from \"typstream\".",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "check-types": "tsc -p tsconfig.json",
+    "check:api": "api-extractor run",
+    "api:update": "api-extractor run --local",
+    "check:package": "publint --strict --pack npm && attw --pack . --profile esm-only"
+  },
+  "dependencies": {
+    "@typstream/engine": "workspace:*",
+    "@typstream/engine-wasm": "workspace:*",
+    "@typstream/heal": "workspace:*",
+    "@typstream/html-compat": "workspace:*",
+    "@typstream/react": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "react": "^19.3.1"
+  }
+}

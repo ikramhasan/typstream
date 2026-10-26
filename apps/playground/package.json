@@ -20,6 +20,7 @@
     "@typstream/engine-wasm": "workspace:*",
     "@typstream/heal": "workspace:*",
     "@typstream/html-compat": "workspace:*",
+    "@typstream/react": "workspace:*",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },

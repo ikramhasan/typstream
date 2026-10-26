@@ -1,5 +1,6 @@
 import { joinStream, type StreamChunk } from "@typstream/corpus/stream";
 import { type HealOptions, normalize } from "@typstream/heal";
+import { useTypstream } from "@typstream/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { decodeState, encodeState, type PlaygroundState, type Source } from "./hash";
 import { healedMarks, rawMarks } from "./marks";
@@ -14,6 +15,7 @@ import { useRawEngine } from "./rawEngine";
 import { HealSession, type Profile, profileStream } from "./session";
 import { type Loaded, loadSource, sourceFromText, sourceKey } from "./source";
 import { prefixLengths, splitStream } from "./stream";
+import { useTypstreamEngine } from "./typstreamEngine";
 
 /** Streams up to this many steps are profiled automatically; longer ones on request. */
 const AUTO_PROFILE_STEPS = 20_000;
@@ -104,8 +106,9 @@ export const App = () => {
   );
   const raw = useMemo(() => (step && norm ? rawMarks(step.result, norm) : []), [step, norm]);
   const render = state?.render;
-  const engine = useRawEngine({
-    enabled: render !== undefined && render.mode !== "off",
+  // The raw engine and DOM views' document; <Typstream> opens its own.
+  const rawEngine = useRawEngine({
+    enabled: render?.mode === "engine" || render?.mode === "dom",
     docKey: ready?.key ?? null,
     source: step?.result.source ?? null,
     final,
@@ -113,6 +116,9 @@ export const App = () => {
     compat: render?.compat ?? true,
     heal: options,
   });
+  const typstream = useTypstream();
+  const typstreamEngine = useTypstreamEngine(typstream, step?.result.source ?? null);
+  const engine = render?.mode === "typstream" ? typstreamEngine : rawEngine;
   const healed = useMemo(() => (step && norm ? healedMarks(step.result, norm) : []), [step, norm]);
 
   // Profile every push of the stream, for the timing strip and p50/p95/max.
@@ -250,7 +256,12 @@ export const App = () => {
         <RenderPane
           settings={state.render}
           onChange={(next) => update({ render: next })}
-          engine={engine}
+          engine={rawEngine}
+          typstream={typstream}
+          docKey={ready?.key ?? null}
+          input={step?.input ?? null}
+          final={final}
+          heal={options}
           follow={follow}
         />
       </main>

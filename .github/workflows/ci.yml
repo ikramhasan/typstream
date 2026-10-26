@@ -23,9 +23,10 @@ env:
   # The compile oracle (tools/compile-oracle) needs the built engine, and html-compat's tests compile with it
   # (a devDependency turbo would build), so both run in the engine job too. So do @typstream/node and its example
   # (its build copies Typst's fonts out of the Rust crate graph).
+  # examples/nextjs-ai-sdk's test drives a browser, so it runs in the browsers job.
   NOT_ENGINE: >-
     --filter=!@typstream/engine-wasm --filter=!@typstream/compile-oracle --filter=!@typstream/html-compat
-    --filter=!@typstream/node --filter=!@typstream/example-node-validate
+    --filter=!@typstream/node --filter=!@typstream/example-node-validate --filter=!@typstream/example-nextjs-ai-sdk
 
 jobs:
   lint:
@@ -168,7 +169,8 @@ jobs:
 
   # The engine worker in real browsers (packages/engine/__tests__/browser): protocol conformance, streaming through
   # client + worker + engine-wasm, and the watchdog, in Chromium, Firefox and WebKit. Then the renderers
-  # (packages/dom/__tests__/browser) against that worker.
+  # (packages/dom/__tests__/browser) and <Typstream> (packages/react/__tests__/browser) against that worker. Last,
+  # examples/nextjs-ai-sdk: a production Next.js build streaming an answer into <Typstream> in Chromium.
   browsers:
     name: Engine (browsers)
     runs-on: ubuntu-latest
@@ -181,5 +183,7 @@ jobs:
       - run: pnpm --filter @typstream/engine exec playwright install --with-deps chromium firefox webkit
       - run: pnpm --filter @typstream/engine test:browser
       - run: pnpm --filter @typstream/dom test:browser
+      - run: pnpm --filter @typstream/react test:browser
+      - run: pnpm exec turbo run test --filter=@typstream/example-nextjs-ai-sdk
 
   # TODO(#19): Playwright suites (visual, flicker, a11y).

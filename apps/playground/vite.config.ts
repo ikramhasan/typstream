@@ -24,7 +24,10 @@ export default defineConfig({
   resolve: {
     alias: [
       { find: "@typstream/corpus/stream", replacement: `${root}corpus/src/stream.ts` },
-      { find: /^@typstream\/(core|heal|engine|html-compat|dom)$/, replacement: `${root}packages/$1/src/index.ts` },
+      {
+        find: /^@typstream\/(core|heal|engine|html-compat|dom|react)$/,
+        replacement: `${root}packages/$1/src/index.ts`,
+      },
     ],
   },
   // The corpus is loaded through import.meta.glob from outside the app.
