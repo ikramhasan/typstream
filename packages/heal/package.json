@@ -19,6 +19,7 @@
     "build": "tsup",
     "test": "vitest run",
     "test:long": "HEAL_PROPERTY_RUNS=20000 vitest run __tests__/properties.test.ts",
+    "mutate": "HEAL_PROPERTY_RUNS=10 HEAL_PROPERTY_SEED=1 HEAL_RESYNC_KB=10 stryker run",
     "bench": "vitest bench --run",
     "size": "node scripts/size.mjs",
     "check-types": "tsc -p tsconfig.json",
@@ -30,6 +31,8 @@
     "@typstream/core": "workspace:*"
   },
   "devDependencies": {
+    "@stryker-mutator/core": "10.1.1",
+    "@stryker-mutator/vitest-runner": "10.1.1",
     "@typstream/corpus": "workspace:*"
   }
 }

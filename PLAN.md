@@ -15,6 +15,8 @@ Status: draft v2 · 2026-10-26 · Target Typst version: **0.15.1** (pinned, see 
 
 | Date | Decision | Why / where |
 |---|---|---|
+| 2026-10-26 | **Mutation testing for heal** (#6): Stryker over `packages/heal/src`, nightly, failing below 80%. Score **80.59%** (full run; 3,464 killed, 340 timeouts, 800 survived, 116 uncovered of 4,721). Mutation runs leave out the corpus tests and use 10 seeded property runs: instrumented code is ~10× slower and every survivor runs every test that covers it. Most kills come from differential tests against Typst: its lexer run alone, token modes, first error positions. Survivors are triaged on #6. | §11.1 "As built (mutation testing)" |
+| 2026-10-26 | The syntax oracle also runs **Typst's own lexer** (`lex(text, mode)`; build.rs copies `lexer.rs` from the pinned typst-syntax crate, where it's private) and reports each token's lexer mode in the parse tree (`modes(text)`). | `tools/typst-syntax-oracle`, #6 |
 | 2026-10-26 | **The server runs engine-wasm on Node worker threads, not a native addon** (#22). Measured on the edu corpus: a napi-rs addon over the same World is ~2.5× faster warm (PDF p50 7 vs 19 ms) and ~8× on a process's first compile. But a runaway native compile can't be stopped (`worker.terminate()` never returns, the process can't exit), and a memory bomb aborts the whole process. Wasm terminates in 10–140 ms and traps at wasm32's 2 GiB limit inside its worker. An `-O3` wasm build gains 10–25% on HTML/SVG, nothing on PDF, and costs +45% RSS plus a second full Rust build: not worth it. | §6.1 "As built (#22)", [#22 comment](https://github.com/ikramhasan/typstream/issues/22#issuecomment-6405646790) |
 | 2026-10-26 | `@typstream/node` imports engine-wasm directly (its deps: core, heal, engine, engine-wasm); `@typstream/engine` is the browser runtime. engine-wasm ships a second build with PDF export (`@typstream/engine-wasm/pdf`, also a candidate for #18's lazy PDF module) and `check_paged()`. The server's default fonts are Typst's bundled set, as in `typst compile --ignore-system-fonts`. | §4.1, §6.1, §6.4 |
 | 2026-10-26 | **Server adapter = the worker protocol over WebSocket, served by #10's protocol server.** `@typstream/node` runs `@typstream/engine/server`'s `createServer` with an `EngineAdapter` that compiles on its worker pool, so one implementation of the protocol serves the browser worker and Node. A gate in front checks untrusted messages and enforces limits. JSON with bytes as `{ "$bytes": base64 }` (`serializeMessage` / `deserializeMessage` in core, so browser clients can decode). Documents live on the server's main thread and pool workers only compile, so the watchdog can kill one without losing a document; changed pages are diffed by SVG content across workers. The adapter now receives each compile's `mode` (exports are `final`), and unknown methods answer `method-not-found`. #10's conformance suite passes in-process and over a real WebSocket. | §6.1 "As built (#22)" |
@@ -776,6 +778,8 @@ Tooling: **vitest** (unit/property/bench), **fast-check** (property), **Playwrig
 - **Differential vs. tree-sitter-typst / typst-syntax for mode classification**: for random docs, our `mode(i)` must match the oracle's node kind at every offset (catches scanner drift when Typst syntax changes).
 - **Mutation testing** (Stryker) on `heal` to keep the test suite honest; coverage ≥ 95% lines/branches for `heal`.
 
+> **As built (mutation testing, #6):** `pnpm mutate` in `packages/heal` (Stryker, vitest runner, per-test coverage) runs nightly and fails below 80%. Score 80.59% at the first full run (lexer 88.6%, recognizer 77.2%, heal 65.4%, chars 81.7%, lint 96.2%, normalize 97.5%). The tests that took it from 57.6% compare with real Typst: the lexer token by token in all three modes (ASCII and Unicode soup), token modes and first error positions on generated code, and a syntax table checked on every prefix. The mode-classification differential above is `modes.test.ts`. Equivalent survivors: operator precedence and associativity (the recognizer builds no tree), ASCII fast paths in front of Unicode regexes, repair and resync shortcuts that only change cost. The rest are on #6. Running these differentials found port divergences and heal bugs, each kept as a known bug whose repro must keep failing (`__tests__/support/known-bugs.ts`, `lexer.test.ts`, `errors.test.ts`, `results.test.ts`).
+
 ### 11.2 Corpus (shared by all layers)
 `corpus/` holds real-world-shaped documents, each with metadata (`category`, `expectedPages`, `allowedWarnings`):
 - **Hand-authored edu set** (~60): worksheets (math, science, language), MCQ quizzes, exams with answer keys, lesson plans, rubrics, reading comprehension, chemistry equations, physics with units, geometry with CeTZ, multilingual (Bengali, Arabic RTL, Chinese, Hindi), long reports with outline/bibliography.
@@ -902,10 +906,10 @@ pnpm workspaces, turbo, tsup, vitest, biome (ultracite), changesets, Playwright,
   - Recognizer ≡ typst-syntax on documents, prefixes and character soup.
   - All 21 property and edge-case tests passed a 10,000-run campaign (millions of healed prefixes checked by Typst's parser). An earlier 20,000-run campaign found no violations; one test only hit the old 120 s timeout, which is now raised for long runs.
   - Coverage: 97.6% lines, 92% branches.
+  - Mutation score 80.59% (Stryker, nightly; #6).
 - Perf: per token at 40–50 KB p50 0.16 ms / p95 0.2 ms; stateless healing is linear (~85 µs/KB up to 1 MB); pathological inputs under 75 ms.
 - Not done yet:
   - ✅ Compile-oracle tests (healed prefixes compile with the engine): `tools/compile-oracle`, #13.
-  - Mutation testing.
   - CI (the repo isn't under git yet).
 
 **Phase 2 — Engine MVP (2–3 wks)** · issues #7–#14

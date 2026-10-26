@@ -11,7 +11,7 @@ runs:
       uses: actions/cache@v6
       with:
         path: tools/typst-syntax-oracle/pkg
-        key: oracle-pkg-${{ runner.os }}-${{ hashFiles('tools/typst-syntax-oracle/Cargo.lock', 'tools/typst-syntax-oracle/Cargo.toml', 'tools/typst-syntax-oracle/src/**', 'tools/typst-syntax-oracle/build.sh') }}
+        key: oracle-pkg-${{ runner.os }}-${{ hashFiles('tools/typst-syntax-oracle/Cargo.lock', 'tools/typst-syntax-oracle/Cargo.toml', 'tools/typst-syntax-oracle/src/**', 'tools/typst-syntax-oracle/build.sh', 'tools/typst-syntax-oracle/build.rs') }}
 
     # Typst 0.15.1 needs Rust ≥ 1.92 (CLAUDE.md).
     - if: steps.pkg.outputs.cache-hit != 'true'

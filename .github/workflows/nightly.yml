@@ -24,4 +24,29 @@ jobs:
       - run: pnpm build --filter=@typstream/heal...
       - run: pnpm --filter @typstream/heal test:long
 
+  # Mutation testing of heal (PLAN.md §11.1, #6). The score goes to the job summary and the HTML
+  # report is an artifact; `mutate` fails below the break threshold in stryker.config.mjs.
+  heal-mutation:
+    name: Heal mutation testing
+    runs-on: ubuntu-latest
+    # A full run is ~2 h on 6 local cores; hosted runners have 4.
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/oracle
+      - uses: pnpm/setup@v3
+        with: { runtime: node@24, cache: true, require-lockfile: true }
+      # No build: heal's tests run against the source of the packages they use.
+      - run: pnpm --filter @typstream/heal mutate
+      - name: Record the score
+        if: ${{ !cancelled() }}
+        working-directory: packages/heal
+        run: node scripts/mutation-report.mjs --survivors | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: heal-mutation-report
+          path: packages/heal/reports/mutation/
+          retention-days: 30
+
   # TODO(#19): cross-browser full matrix.
