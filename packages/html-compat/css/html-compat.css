@@ -1,0 +1,176 @@
+/*
+ * @typstream/html-compat: styles for the HTML that html-compat.typ emits, and Typst-like
+ * defaults for the elements Typst's HTML export writes natively (tables, math).
+ *
+ * Everything is scoped to the renderer's root element, `.typstream`, and wrapped in
+ * :where() so an app's own rules win without !important. Inline `style` attributes
+ * carry the per-element values from the document (sizes, colors, strokes).
+ */
+
+/* Top-level place() is positioned against the document. */
+:where(.typstream) {
+  position: relative;
+}
+
+/* Block elements inside a box are spans (a div would end the paragraph); this makes them blocks.
+   Rules below that set another display (grid, flex) come later and win. */
+:where(.typstream .ts-b) {
+  display: block;
+}
+
+/* Math: Typst's own math font. Without a math font, browsers can't stretch delimiters
+   and fall back to whatever has the math alphanumerics (PLAN.md §6.5). */
+:where(.typstream) math {
+  /* biome-ignore lint/a11y/useGenericFontNames: `math` is the generic family (CSS Fonts 4). */
+  font-family: "New Computer Modern Math", math;
+}
+:where(.typstream) math[display="block"] {
+  margin: 0.65em 0;
+}
+:where(.typstream .ts-equation) {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+}
+:where(.typstream .ts-equation) > math {
+  flex: 1;
+}
+:where(.typstream .ts-equation) > p {
+  margin: 0;
+}
+
+/* Tables: Typst's defaults are a 1pt black stroke on every cell, start/top alignment and no
+   bold header. The cell's own padding, fill and alignment are on its .ts-cell. */
+:where(.typstream) table {
+  border-collapse: collapse;
+}
+:where(.typstream) :is(td, th) {
+  border: 1pt solid currentColor;
+  padding: 0;
+  vertical-align: top;
+  text-align: start;
+  font-weight: inherit;
+}
+:where(.typstream) :is(td, th):has(> .ts-no-stroke) {
+  border: none;
+}
+
+/* Layout containers. Blocks inside an align() move like its text. */
+:where(.typstream .ts-align-center) > * {
+  margin-inline: auto;
+}
+:where(.typstream) :is(.ts-align-end, .ts-align-right) > * {
+  margin-inline-start: auto;
+}
+:where(.typstream .ts-grid) {
+  display: grid;
+}
+:where(.typstream .ts-cell) {
+  min-width: 0;
+  box-sizing: border-box;
+}
+:where(.typstream .ts-valign) {
+  display: flex;
+  flex-direction: column;
+}
+:where(.typstream .ts-stack) {
+  display: flex;
+}
+:where(.typstream .ts-columns) {
+  column-fill: balance;
+}
+:where(.typstream .ts-colbreak) {
+  break-after: column;
+}
+:where(.typstream .ts-pagebreak) {
+  break-after: page;
+  border-top: 1px dashed color-mix(in srgb, currentColor 25%, transparent);
+  margin: 1.5em 0;
+}
+
+/* Boxes and blocks. Typst draws strokes centred on the edge and counts them in the size. */
+:where(.typstream) :is(.ts-block, .ts-shape, .ts-box, .ts-place) {
+  box-sizing: border-box;
+}
+:where(.typstream) :is(.ts-block, .ts-shape) {
+  position: relative;
+  margin-block: 0.6em;
+}
+/* Typst spaces blocks apart, not from the edges of what contains them. */
+:where(.typstream)
+  :is(.ts-cell, .ts-block, .ts-shape, .ts-box, .ts-stack-item, .ts-place, .ts-align, figure)
+  > :first-child {
+  margin-block-start: 0;
+}
+:where(.typstream)
+  :is(.ts-cell, .ts-block, .ts-shape, .ts-box, .ts-stack-item, .ts-place, .ts-align, figure)
+  > :last-child {
+  margin-block-end: 0;
+}
+:where(.typstream .ts-box) {
+  display: inline-block;
+  position: relative;
+  vertical-align: baseline;
+}
+/* box(width: 1fr) takes the rest of a line in Typst; HTML has no inline equivalent. */
+:where(.typstream .ts-box.ts-fr) {
+  min-width: 4em;
+  overflow: hidden;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+:where(.typstream .ts-repeat) {
+  white-space: nowrap;
+}
+/* Empty shapes are drawings of a size; with content they size to it. */
+:where(.typstream .ts-shape:empty) {
+  min-height: 1em;
+}
+:where(.typstream .ts-line) {
+  height: 0;
+  margin: 0.6em 0;
+}
+:where(.typstream .ts-transform) {
+  width: fit-content;
+}
+:where(.typstream .ts-hide) {
+  visibility: hidden;
+}
+
+/* place(): absolute, against the nearest block, shape or box (or the document). */
+:where(.typstream .ts-place) {
+  position: absolute;
+}
+:where(.typstream .ts-place.ts-float) {
+  position: static;
+}
+
+/* Spacing. */
+:where(.typstream .ts-h) {
+  display: inline-block;
+}
+:where(.typstream .ts-hfill) {
+  display: inline-block;
+  width: 2em;
+}
+
+/* Enumerations with a numbering pattern carry their markers as text. */
+:where(.typstream .ts-enum) {
+  list-style: none;
+  padding-inline-start: 1.5em;
+}
+:where(.typstream .ts-enum) > li > .ts-marker {
+  display: inline-block;
+  min-width: 1.5em;
+  margin-inline-start: -1.5em;
+}
+
+/* Drawings (html.frame): inline SVG, scaled down to fit narrow containers. */
+:where(.typstream .ts-frame) svg {
+  max-width: 100%;
+  height: auto;
+}
+:where(.typstream) :is(div.ts-frame, span.ts-frame.ts-b) {
+  width: fit-content;
+  margin-block: 0.6em;
+}

@@ -18,6 +18,9 @@
       "@typstream/corpus": [
         "./corpus/src/index.ts"
       ],
+      "@typstream/corpus/stream": [
+        "./corpus/src/stream.ts"
+      ],
       "@typstream/*": [
         "./packages/*/src/index.ts"
       ]

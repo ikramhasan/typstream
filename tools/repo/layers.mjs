@@ -6,6 +6,9 @@
 // (node → engine, react → dom, typstream → react). Packages that don't exist yet
 // are listed so their rules are in place before their code is.
 //
+// `testDeps` are packages only the package's tests (`__tests__/`) may import too, as
+// devDependencies: html-compat's tests compile documents with the engine.
+//
 // `fixed` marks the packages released in one fixed version group (PLAN §10.4).
 // Changesets rejects names that don't exist yet, so .changeset/config.json lists
 // only the ones that do; check-layers.mjs keeps the two in sync.
@@ -21,7 +24,7 @@ export const BINDINGS = LAYERS.indexOf("bindings");
 
 /**
  * Keyed by directory under `packages/`.
- * @type {Record<string, { name: string, layer: number, deps: string[], fixed?: boolean }>}
+ * @type {Record<string, { name: string, layer: number, deps: string[], testDeps?: string[], fixed?: boolean }>}
  */
 export const PACKAGES = {
   core: { name: "@typstream/core", layer: 0, deps: [], fixed: true },
@@ -31,7 +34,7 @@ export const PACKAGES = {
   "engine-wasm": { name: "@typstream/engine-wasm", layer: 2, deps: [] },
   node: { name: "@typstream/node", layer: 2, deps: ["core", "heal", "engine", "engine-wasm"] },
   edu: { name: "@typstream/edu", layer: 3, deps: ["core"] },
-  "html-compat": { name: "@typstream/html-compat", layer: 3, deps: ["core"] },
+  "html-compat": { name: "@typstream/html-compat", layer: 3, deps: ["core"], testDeps: ["engine-wasm"] },
   dom: { name: "@typstream/dom", layer: 4, deps: ["core", "engine"], fixed: true },
   react: { name: "@typstream/react", layer: 4, deps: ["dom"], fixed: true },
   typstream: { name: "typstream", layer: 4, deps: ["react", "engine", "heal"], fixed: true },
@@ -44,7 +47,7 @@ export const PACKAGES = {
 // The table must itself respect the layering, or the rules built from it would
 // allow what §4.1 forbids.
 for (const [dir, pkg] of Object.entries(PACKAGES)) {
-  for (const dep of pkg.deps) {
+  for (const dep of [...pkg.deps, ...(pkg.testDeps ?? [])]) {
     const target = PACKAGES[dep];
     if (!target) throw new Error(`layers.mjs: ${dir} depends on unknown package ${dep}`);
     if (target.layer > pkg.layer)

@@ -1,3 +1,4 @@
+// Browser-safe: no Node imports, so apps can use it through `@typstream/corpus/stream`.
 // Stream files (`<name>.stream.jsonl`): one chunk per line, `{"t": ms, "text": "..."}`,
 // where `t` is the arrival time in milliseconds since the first chunk. Joining the
 // chunks' text gives exactly the entry's `.typ` source.

@@ -4,13 +4,16 @@
   "files": {
     "includes": [
       "packages/**",
+      "apps/**",
       "corpus/**",
       "examples/**",
       "tools/repo/**",
+      "tools/compile-oracle/**",
       ".dependency-cruiser.mjs",
       "!**/dist",
       "!**/node_modules",
       "!**/target",
+      "!**/*.generated.ts",
       "!!reference",
       "!!spikes",
       "!!tools/typst-syntax-oracle",

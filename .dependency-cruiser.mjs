@@ -12,16 +12,27 @@ const packagePath = (dirs) => {
   return `^(packages/(${dirs.map(escapeRegExp).join("|")})/|(${names.join("|")})(/|$))`;
 };
 
-const layering = Object.entries(PACKAGES).map(([dir, pkg]) => {
-  const forbidden = Object.keys(PACKAGES).filter((d) => d !== dir && !pkg.deps.includes(d));
-  const allowed = pkg.deps.map((d) => PACKAGES[d].name).join(", ") || "no other packages";
-  return {
-    name: `layering:${dir}`,
-    severity: "error",
-    comment: `${pkg.name} (layer ${pkg.layer}, ${LAYERS[pkg.layer]}) may import ${allowed} (PLAN.md §4.1).`,
-    from: { path: `^packages/${escapeRegExp(dir)}/` },
-    to: { path: packagePath(forbidden) },
+// A package's tests may also import its `testDeps` (e.g. html-compat's tests compile with
+// the engine); its shipped code may not.
+const layering = Object.entries(PACKAGES).flatMap(([dir, pkg]) => {
+  const rule = (name, from, deps, what) => {
+    const forbidden = Object.keys(PACKAGES).filter((d) => d !== dir && !deps.includes(d));
+    const allowed = deps.map((d) => PACKAGES[d].name).join(", ") || "no other packages";
+    return {
+      name,
+      severity: "error",
+      comment: `${what} (layer ${pkg.layer}, ${LAYERS[pkg.layer]}) may import ${allowed} (PLAN.md §4.1).`,
+      from,
+      to: { path: packagePath(forbidden) },
+    };
   };
+  const root = `^packages/${escapeRegExp(dir)}/`;
+  if (!pkg.testDeps?.length) return [rule(`layering:${dir}`, { path: root }, pkg.deps, pkg.name)];
+  const tests = `${root}__tests__/`;
+  return [
+    rule(`layering:${dir}`, { path: root, pathNot: tests }, pkg.deps, pkg.name),
+    rule(`layering:${dir}:tests`, { path: tests }, [...pkg.deps, ...pkg.testDeps], `${pkg.name}'s tests`),
+  ];
 });
 
 const belowBindings = Object.keys(PACKAGES).filter((d) => PACKAGES[d].layer < BINDINGS);
@@ -45,6 +56,13 @@ export default {
       to: { path: "(^|/node_modules/)(react|react-dom|preact)(/|$)" },
     },
     {
+      name: "no-apps",
+      severity: "error",
+      comment: "Apps import packages, never the reverse.",
+      from: { path: "^packages/" },
+      to: { path: "^apps/" },
+    },
+    {
       name: "no-spikes",
       severity: "error",
       comment: "spikes/ is throwaway: port code into packages/ instead of importing it.",
@@ -54,6 +72,8 @@ export default {
   ],
   options: {
     doNotFollow: { path: "node_modules" },
+    // Build output: bundles, not the source the rules are about.
+    exclude: { path: "(^|/)dist/" },
     // Resolve @typstream/* to source, so the check doesn't need a build.
     tsConfig: { fileName: "tsconfig.base.json" },
     tsPreCompilationDeps: true,
