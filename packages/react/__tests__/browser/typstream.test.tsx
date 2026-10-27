@@ -1,18 +1,26 @@
 /// <reference lib="dom" />
 // <Typstream> in each browser, with React Testing Library and the real engine
 // worker: streaming a growing `source` and a `stream`, both targets, the
-// provider's settings, useTypstream(), StrictMode, lazy opening offscreen, and
-// cleanup (documents on unmount, the shared worker after its last user).
+// provider's settings, useTypstream(), StrictMode, lazy opening offscreen,
+// cleanup (documents on unmount, the shared worker after its last user), and
+// exports (#18) from the handle and the hook.
 
 import { cleanup, render, waitFor } from "@testing-library/react";
 import type { Diagnostic, FallbackEvent, RenderedEvent } from "@typstream/core";
 import type { DocumentStatus, Engine, EngineDocument } from "@typstream/engine";
 import { htmlCompat, htmlCompatCss } from "@typstream/html-compat";
-import { createRef, StrictMode } from "react";
+import { createRef, StrictMode, useEffect } from "react";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { commands, server } from "vitest/browser";
 import { defaultEngineForTests, RELEASE_DELAY } from "../../src/engine";
-import { Typstream, type TypstreamHandle, type TypstreamProps, TypstreamProvider, useTypstream } from "../../src/index";
+import {
+  Typstream,
+  type TypstreamHandle,
+  type TypstreamInfo,
+  type TypstreamProps,
+  TypstreamProvider,
+  useTypstream,
+} from "../../src/index";
 import { FIVE_PAGES, sleep, startEngine, tokens, workers } from "../support/engine";
 
 const browser = server.browser;
@@ -49,6 +57,13 @@ const tracked = (base: Engine) => {
     },
   });
   return { engine, docs };
+};
+
+/** A PDF's first page size in points, from its MediaBox. */
+const mediaBox = (pdf: Uint8Array): number[] => {
+  const text = new TextDecoder("latin1").decode(pdf);
+  expect(text.startsWith("%PDF-")).toBe(true);
+  return (/\/MediaBox\s*\[\s*0 0 ([\d.]+) ([\d.]+)/.exec(text) ?? []).slice(1).map(Number);
 };
 
 /** Records what a <Typstream> reports through its callbacks. */
@@ -248,4 +263,153 @@ describe(`<Typstream> in ${browser}`, () => {
     expect(workers.terminated - terminated).toBe(1);
     expect(defaultEngineForTests.current()).toBeNull();
   }, 60_000);
+
+  describe("exports", () => {
+    /** Renders a <Typstream> with useTypstream() and hands the hook's result out. */
+    const withHook = (props: Omit<TypstreamProps, "ref">) => {
+      const info: { current: TypstreamInfo | null } = { current: null };
+      const Harness = (p: Omit<TypstreamProps, "ref">) => {
+        const t = useTypstream();
+        info.current = t;
+        return <Typstream ref={t.ref} {...p} />;
+      };
+      const result = render(<Harness {...props} />);
+      return {
+        ...result,
+        info,
+        rerender: (next: Omit<TypstreamProps, "ref">) => result.rerender(<Harness {...next} />),
+      };
+    };
+
+    it("exports a PDF at the document's own page size from a fit-width preview", async () => {
+      const r = recorder();
+      const { info } = withHook({
+        engine,
+        source: "= Worksheet\nSolve $x^2 = 4$.",
+        target: "paged",
+        layout: "fit-width",
+        style: { width: "300px" },
+        lazy: false,
+        ...r.props,
+      });
+      await waitFor(() => expect(info.current?.state?.artifact?.target).toBe("paged"), LONG);
+      await waitFor(() => expect(r.last()).toBe("done"), LONG);
+      const shown = info.current?.state?.artifact;
+      // The preview is as wide as the element (300 px = 225 pt)…
+      expect(shown?.target === "paged" && shown.pages[0]?.width).toBeCloseTo(225, 0);
+      // …and the PDF, from the hook and from the handle, is A4, Typst's default.
+      const [width, height] = mediaBox(await (info.current as TypstreamInfo).exportPdf());
+      expect(width).toBeCloseTo(595.28, 1);
+      expect(height).toBeCloseTo(841.89, 1);
+      expect(mediaBox(await (info.current?.handle as TypstreamHandle).exportPdf())).toEqual([width, height]);
+      // `document`'s own export compiles with the preview's inputs, fit-width's width included.
+      const [previewWidth] = mediaBox(await (info.current?.document as EngineDocument).exportPdf());
+      expect(previewWidth).toBeCloseTo(225, 0);
+    }, 60_000);
+
+    it("exports with the inputs passed as props, and an export's own over them", async () => {
+      const r = recorder();
+      const source = '#set page(width: float(sys.inputs.at("width", default: "100")) * 1pt, height: 200pt)\nHi';
+      const { info, rerender } = withHook({ engine, source, inputs: { width: "300" }, lazy: false, ...r.props });
+      await waitFor(() => expect(r.last()).toBe("done"), LONG);
+      const size = async () => mediaBox(await (info.current as TypstreamInfo).exportPdf());
+      expect((await size())[0]).toBeCloseTo(300, 1);
+      rerender({ engine, source, inputs: { width: "400" }, lazy: false, ...r.props });
+      const [width, height] = await size();
+      expect(width).toBeCloseTo(400, 1);
+      expect(height).toBeCloseTo(200, 1);
+      // A teacher's copy: inputs for one export, over the props'.
+      const t = info.current as TypstreamInfo;
+      expect(mediaBox(await t.exportPdf({ inputs: { width: "500" } }))[0]).toBeCloseTo(500, 1);
+      expect(mediaBox(await (t.handle as TypstreamHandle).exportPdf({ inputs: { width: "450" } }))[0]).toBeCloseTo(
+        450,
+        1,
+      );
+      expect((await size())[0]).toBeCloseTo(400, 1);
+      const source2 = '#sys.inputs.at("copy", default: "none")';
+      rerender({ engine, source: source2, inputs: { copy: "student" }, lazy: false, ...r.props });
+      expect(await t.exportHtml({ inputs: { copy: "teacher" } })).toContain("teacher");
+      expect(await (info.current as TypstreamInfo).exportHtml()).toContain("student");
+    }, 60_000);
+
+    it("exports a standalone HTML file with the component's stylesheets and theme", async () => {
+      const r = recorder();
+      const { info } = withHook({
+        engine,
+        source: "= Worksheet\nSolve $x^2 = 4$.",
+        stylesheets: [".marker { color: red }"],
+        theme: "dark",
+        ...r.props,
+      });
+      await waitFor(() => expect(r.last()).toBe("done"), LONG);
+      const file = await (info.current as TypstreamInfo).exportHtml({ title: "Worksheet" });
+      expect(file).toMatch(/^<!DOCTYPE html>/i);
+      expect(file).toContain('<meta http-equiv="Content-Security-Policy"');
+      expect(file).toContain("<title>Worksheet</title>");
+      expect(file).toContain(".marker { color: red }");
+      expect(file).toContain('data-typstream-theme="dark"');
+      expect(file).toContain("<h2>Worksheet</h2>");
+    }, 60_000);
+
+    it("exports the healed source", async () => {
+      const r = recorder();
+      const { info } = withHook({ engine, source: "#table(columns: 2, [a], [b", isStreaming: true, ...r.props });
+      await waitFor(() => expect(info.current?.healedSource).not.toBe(""), LONG);
+      const t = info.current as TypstreamInfo;
+      expect(t.exportSource()).toMatch(/^#table\(columns: 2, \[a\], \[b.*\]\)$/);
+      expect(t.exportSource()).toBe(t.healedSource);
+    }, 60_000);
+
+    it("opens a lazy document that hasn't opened yet to export it", async () => {
+      const { info } = withHook({ engine, source: "= Far below", style: { marginTop: "400vh" } });
+      await waitFor(() => expect(info.current?.handle).not.toBeNull(), LONG);
+      await sleep(300);
+      const t = info.current as TypstreamInfo;
+      expect(t.handle?.document).toBeNull();
+      expect(t.document).toBeNull();
+      expect(mediaBox(await t.exportPdf())).toHaveLength(2);
+      expect(t.handle?.document).not.toBeNull();
+      expect(t.exportSource()).toBe("= Far below");
+    }, 60_000);
+
+    it("fails clearly before the component mounts and after it unmounts", async () => {
+      // A hook whose ref no <Typstream> received.
+      const info: { current: TypstreamInfo | null } = { current: null };
+      const Lonely = () => {
+        info.current = useTypstream();
+        return null;
+      };
+      render(<Lonely />);
+      const lonely = info.current as unknown as TypstreamInfo;
+      await expect(lonely.exportPdf()).rejects.toThrow("<Typstream> isn't mounted");
+      await expect(lonely.exportHtml()).rejects.toThrow("<Typstream> isn't mounted");
+      expect(() => lonely.exportSource()).toThrow("<Typstream> isn't mounted");
+
+      // Exports started in the parent's effects: the first render's runs before the ref has the instance.
+      const early: Promise<Uint8Array | Error>[] = [];
+      const Eager = () => {
+        const t = useTypstream();
+        useEffect(() => {
+          early.push(t.exportPdf().catch((error: Error) => error));
+        }, [t]);
+        return <Typstream ref={t.ref} engine={engine} source="= Eager" lazy={false} />;
+      };
+      const eager = render(<Eager />);
+      await waitFor(() => expect(early.length).toBeGreaterThan(1), LONG);
+      expect(await early[0]).toEqual(new Error("<Typstream> isn't mounted"));
+      // Once the ref has the instance, the next render's export works.
+      expect(mediaBox((await early.at(-1)) as Uint8Array)).toHaveLength(2);
+      eager.unmount();
+
+      const handle = createRef<TypstreamHandle>();
+      const r = recorder();
+      const { unmount } = render(<Typstream ref={handle} engine={engine} source="= Gone" {...r.props} />);
+      await waitFor(() => expect(r.last()).toBe("done"), LONG);
+      const instance = handle.current as TypstreamHandle;
+      unmount();
+      await expect(instance.exportPdf()).rejects.toThrow("<Typstream> isn't mounted");
+      await expect(instance.exportHtml()).rejects.toThrow("<Typstream> isn't mounted");
+      expect(() => instance.exportSource()).toThrow("<Typstream> isn't mounted");
+    }, 60_000);
+  });
 });

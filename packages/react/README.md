@@ -54,10 +54,15 @@ const t = useTypstream();
 <Typstream ref={t.ref} source={text} isStreaming />;
 t.status; // "idle" until the document opens
 t.diagnostics; t.healedSource; t.openFrames; // e.g. "writing a table…"
-t.document; // the EngineDocument, for exports (#18)
+t.document; // the EngineDocument, once it has opened
+await t.exportPdf(); // Uint8Array, at the document's own page size (also on the ref's TypstreamHandle)
+await t.exportPdf({ inputs: { showAnswers: "true" } }); // inputs for this export only, over the props'
+await t.exportHtml({ title: "Quiz" }); // a standalone HTML file, with the component's plugins' CSS and theme
+t.exportSource(); // the healed Typst the exports compile
 ```
 
-React refs don't announce when they're set, so the hook hands out a callback ref rather than reading yours.
+React refs don't announce when they're set, so the hook hands out a callback ref rather than reading yours. The exports
+open a lazy document that hasn't opened yet, and reject (`exportSource()` throws) while no `<Typstream>` is mounted.
 
 ## Behaviour
 
@@ -70,4 +75,4 @@ React refs don't announce when they're set, so the hook hands out a callback ref
 
 - `pnpm test`: configuration merging and the shared engine's lifetime, in Node.
 - `pnpm test:browser`: `<Typstream>` with React Testing Library against the real engine worker in Chromium, Firefox and WebKit (`BROWSERS=chromium` runs one).
-- `pnpm size`: ≤ 16.6 KB gzipped with `@typstream/dom` (React and the engine external).
+- `pnpm size`: ≤ 16.7 KB gzipped with `@typstream/dom` (React and the engine external).

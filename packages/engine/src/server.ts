@@ -26,7 +26,7 @@ export {
   type LazyFontInput,
   TYPST_VERSION,
 } from "./server/engine-wasm";
-export { DEFAULT_FIXERS, missingImage, packageStub, pendingRef, tailCut } from "./server/fixers";
+export { DEFAULT_FIXERS, hoistImport, missingImage, packageStub, pendingRef, tailCut } from "./server/fixers";
 export { DEFAULT_FONT_FAMILY_BYTES, type FontCatalogueOptions } from "./server/fonts";
 export type { PackageOptions } from "./server/packages";
 export { RUNTIME_PATH } from "./server/runtime";

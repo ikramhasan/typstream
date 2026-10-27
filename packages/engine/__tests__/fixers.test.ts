@@ -24,6 +24,7 @@ import type { EngineAdapter } from "../src/server/adapter";
 import {
   DEFAULT_FIXERS,
   fixersOf,
+  hoistImport,
   missingImage,
   orderFixers,
   packageStub,
@@ -124,6 +125,65 @@ describe("package-stub", () => {
   it("leaves wildcard imports and specs outside an import alone", () => {
     expect(stub(`#import "${SPEC}": *\n`)).toBeNull();
     expect(stub(`#include "${SPEC}"\n`)).toBeNull();
+  });
+});
+
+describe("hoist-import", () => {
+  /** The text after hoistImport's edits for an `unknown variable: name` at `use`, or `null`. */
+  const hoist = (text: string, use: string, c: Partial<FixContext> = {}) => {
+    const from = text.indexOf(use);
+    const name = /^[\p{L}_][\p{L}\p{N}_-]*/u.exec(use)?.[0] as string;
+    const d = error(`unknown variable: ${name}`, from, from + name.length);
+    const edits = run(hoistImport, d, { ...ctx(text, text.length), ...c });
+    if (!edits) return null;
+    let out = text;
+    for (const e of [...edits].reverse()) out = out.slice(0, e.from) + e.insert + out.slice(e.to);
+    return out;
+  };
+  const CETZ = '#import "@preview/cetz:0.5.3"';
+
+  it("moves a package import below a helper that uses it to the start", () => {
+    const text = `= Alkanes\n\n#let chain(n) = cetz.canvas({})\n\n${CETZ}\n\n#chain(2)\n`;
+    expect(hoist(text, "cetz.canvas")).toBe(`${CETZ}\n= Alkanes\n\n#let chain(n) = cetz.canvas({})\n\n\n#chain(2)\n`);
+  });
+
+  it("moves an import of items or an alias, above a template that uses them", () => {
+    const unify = '#import "@preview/unify:0.8.1": num, qty, unit';
+    const text = `#show: exam.with(instructions: [Use #unit("m/s^2").])\n${unify}\n`;
+    expect(hoist(text, "unit(")).toBe(`${unify}\n#show: exam.with(instructions: [Use #unit("m/s^2").])\n`);
+    expect(hoist(`#f()\n#import "@preview/x:1.0.0" as m: f\n`, "f()")).toBe(
+      `#import "@preview/x:1.0.0" as m: f\n#f()\n`,
+    );
+    expect(hoist(`#m.f()\n#import "@preview/x:1.0.0" as m\n`, "m.f")).toBe(`#import "@preview/x:1.0.0" as m\n#m.f()\n`);
+    expect(hoist(`#d()\n#import "@preview/x:1.0.0": (a, b.c as d)\n`, "d()")).toBe(
+      `#import "@preview/x:1.0.0": (a, b.c as d)\n#d()\n`,
+    );
+  });
+
+  it("keeps the line ending and leaves a last line without one whole", () => {
+    expect(hoist(`#cetz.canvas({})\r\n${CETZ}\r\nEnd`, "cetz")).toBe(`${CETZ}\n#cetz.canvas({})\r\nEnd`);
+    expect(hoist(`#cetz.canvas({})\n${CETZ}`, "cetz")).toBe(`${CETZ}\n#cetz.canvas({})\n`);
+  });
+
+  it("leaves wildcards, other names, earlier imports and file imports alone", () => {
+    expect(hoist(`#dv(f)\n#import "@preview/physica:0.9.8": *\n`, "dv")).toBeNull();
+    expect(hoist(`#canvas()\n${CETZ}\n`, "canvas")).toBeNull();
+    expect(hoist(`${CETZ}\n#let f() = cetz.canvas({})\n`, "cetz")).toBeNull();
+    expect(hoist(`#util.f()\n#import "util.typ"\n`, "util")).toBeNull();
+  });
+
+  it("leaves imports in raw text, comments, blocks and indented lines alone", () => {
+    expect(hoist(`#cetz.canvas({})\n\`\`\`typ\n${CETZ}\n\`\`\`\n`, "cetz")).toBeNull();
+    expect(hoist(`#cetz.canvas({})\n/*\n${CETZ}\n*/\n`, "cetz")).toBeNull();
+    expect(hoist(`#cetz.canvas({})\n#box[\n${CETZ}\n]\n`, "cetz")).toBeNull();
+    expect(hoist(`#cetz.canvas({})\n  ${CETZ}\n`, "cetz")).toBeNull();
+  });
+
+  it("moves only a settled import while streaming", () => {
+    const text = `#cetz.canvas({})\n${CETZ}\n`;
+    expect(hoist(text, "cetz", { settled: text.indexOf(CETZ) + 5 })).toBeNull();
+    expect(hoist(text, "cetz", { settled: text.length })).toBe(`${CETZ}\n#cetz.canvas({})\n`);
+    expect(hoist(text, "cetz", { mode: "final", settled: 0 })).toBe(`${CETZ}\n#cetz.canvas({})\n`);
   });
 });
 
@@ -261,7 +321,7 @@ describe("registry", () => {
 
   it("orders by priority, then as given; built-ins bracket plugin fixers", () => {
     const order = orderFixers([...DEFAULT_FIXERS, f("a"), f("b", 5), f("c")]).map((x) => x.name);
-    expect(order).toEqual(["b", "pending-ref", "missing-image", "package-stub", "a", "c", "tail-cut"]);
+    expect(order).toEqual(["b", "pending-ref", "missing-image", "package-stub", "hoist-import", "a", "c", "tail-cut"]);
   });
 
   it("checks a fixer module's default export", () => {
@@ -329,6 +389,24 @@ const serverWith = async (options: ServerOptions & { fixerModules?: string[]; al
 };
 
 const at = (text: string, d: Diagnostic) => (d.span ? text.slice(d.span.from, d.span.to) : null);
+
+/** The vendored Typst Universe tarballs, read from disk (Node's fetch can't read file: URLs). */
+const fetchVendored = async (url: string) => new Response(readFileSync(fileURLToPath(url)));
+
+/**
+ * Runs `f` with `performance.now()` stopped, so no budget runs out however slow the machine: these tests are about
+ * what the fixers do, not how fast. The fix budgets (`FIX_BUDGET_MS`) count from the request, package loading
+ * included, and a slow CI machine spent all of the streaming one on CeTZ: no fix round started. (The server is
+ * in-process: it reads this clock.)
+ */
+const unhurried = async <T>(f: () => Promise<T>): Promise<T> => {
+  const now = vi.spyOn(performance, "now").mockReturnValue(performance.now());
+  try {
+    return await f();
+  } finally {
+    now.mockRestore();
+  }
+};
 
 describe("fix loop", { timeout: 30_000 }, () => {
   it("cuts a call whose arguments haven't arrived, and reports the cut as info", async () => {
@@ -481,6 +559,55 @@ describe("fix loop", { timeout: 30_000 }, () => {
     expect(out.compiles).toBe(1);
   });
 
+  describe("a package import below a name it binds", () => {
+    // How the model wrote it (a "Molecules" request in examples/nextjs-ai-sdk): a helper on CeTZ, then the import.
+    const ALKANES = `= The first five alkanes
+
+#let chain(n) = cetz.canvas({
+  import cetz.draw: *
+  let pts = range(n).map(i => (i * 0.87, if calc.rem(i, 2) == 0 { 0 } else { 0.5 }))
+  line(..pts, stroke: 1.4pt)
+})
+
+#import "@preview/cetz:0.5.3"
+
+#table(columns: 2, [Ethane], [#chain(2)], [Propane], [#chain(3)])
+`;
+    // As kit-v1-sonnet-exam-forces (corpus/llm) has it: unify in the template's arguments, above its import.
+    const UNITS = `#show: doc => [#doc]
+Use $g = 9.8$ #unit("m/s^2") unless told otherwise.
+
+#import "@preview/unify:0.8.1": num, qty, unit
+
+A speed of #qty("3", "m/s").
+`;
+    const packages = () =>
+      serverWith({ packages: { fetch: fetchVendored, cache: false }, allow: [...UNIVERSE_PACKAGES] });
+
+    it("moves the import up in final mode and reports the source's error", async () => {
+      const { compile } = await packages();
+      const out = await unhurried(() => compile(ALKANES, { mode: "final", target: "paged" }));
+      expect([out.result.status, out.compiles]).toEqual(["ok", 2]);
+      expect(out.result.fixes).toEqual([{ fixer: "hoist-import", message: "unknown variable: cetz" }]);
+      expect(out.diagnostics.map((d) => [d.severity, d.source, at(ALKANES, d)])).toEqual([["error", "typst", "cetz"]]);
+      // Two chains drawn on the page.
+      const svg = out.artifact?.target === "paged" ? (out.artifact.pages[0]?.svg ?? "") : "";
+      expect(svg.match(/<path/g)?.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it("reports the move as info while streaming, and maps the document's positions back", async () => {
+      const { compile } = await packages();
+      const out = await unhurried(() => compile(UNITS, { settled: UNITS.length }));
+      expect(out.result.status).toBe("ok");
+      expect(out.diagnostics.map((d) => [d.severity, d.source, at(UNITS, d)])).toEqual([
+        ["info", "hoist-import", "unit"],
+      ]);
+      expect(out.html).toContain("unless told otherwise");
+      // `#unit("m/s^2")`, as unify writes it: m s⁻² in MathML.
+      expect(out.html).toContain("<msup><mtext>s</mtext><mrow><mo>−</mo><mn>2</mn></mrow></msup>");
+    });
+  });
+
   describe("a package's error with no position in the document (#72)", () => {
     // CeTZ evaluates a canvas's elements in its own code: a half-typed coordinate panics with
     // no span and no trace in the document. The stream, as #24 recorded it.
@@ -490,25 +617,12 @@ describe("fix loop", { timeout: 30_000 }, () => {
     /** The triangle's canvas up to `end`, healed as the client heals it. */
     const prefix = (end: string) =>
       heal(`#import "@preview/cetz:0.5.3"\n\n${source.slice(canvas, source.indexOf(end, canvas) + end.length)}`);
-    // The vendored tarballs, read from disk (Node's fetch can't read file: URLs).
-    const fetch = async (url: string) => new Response(readFileSync(fileURLToPath(url)));
-    /**
-     * Runs `f` with `performance.now()` stopped, so no budget runs out however slow the machine: these tests are about
-     * what the fixers cut, not how fast. The streaming fix budget (`FIX_BUDGET_MS`, 1 s) counts from the request,
-     * package loading included, and a slow CI machine spent all of it on CeTZ: no fix round started. (The server is
-     * in-process: it reads this clock.)
-     */
-    const unhurried = async <T>(f: () => Promise<T>): Promise<T> => {
-      const now = vi.spyOn(performance, "now").mockReturnValue(performance.now());
-      try {
-        return await f();
-      } finally {
-        now.mockRestore();
-      }
-    };
     /** A server with CeTZ loaded and evaluated once: on a stopped clock, loading packages waits for them to arrive. */
     const cetz = async () => {
-      const server = await serverWith({ packages: { fetch, cache: false }, allow: [...UNIVERSE_PACKAGES] });
+      const server = await serverWith({
+        packages: { fetch: fetchVendored, cache: false },
+        allow: [...UNIVERSE_PACKAGES],
+      });
       const empty = prefix("import cetz.draw: *");
       const out = await unhurried(() => server.compile(empty.source, { settled: empty.stableOffset, target: "paged" }));
       expect(out.result.status).toBe("ok");
@@ -735,6 +849,8 @@ describe("diagnostic shapes", { timeout: 30_000 }, () => {
     "#range(3).map(((i, (w, ))))",
     "#let f(x) = x.enumerate()\n#f([Arg])",
     '#bibliography("assets/clim")',
+    // hoist-import: a function that uses a name bound after it
+    "#let f() = x\n#let x = 1\n#f()",
     // missing-image: a path that isn't there, one being typed, a name holding it
     '#figure(image("cat.png", width: 50%), caption: [A cat])',
     '#image("https://exa")',

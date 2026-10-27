@@ -92,12 +92,20 @@ Renders a streaming Typst document into `element` and keeps it up to date. The r
 
 <auto-type-table path="packages/dom/src/mount.ts" name="MountedTypstream" />
 
-The exports compile the document in final mode with the template's and your `inputs`, without the fit-width page
-size, so they come out at the document's own size. They reject with the engine's
+#### `TypstreamExportOptions`
+
+What `exportPdf` and `exportHtml` take (`exportHtml` takes `StandaloneHtmlOptions` too).
+
+<auto-type-table path="packages/dom/src/mount.ts" name="TypstreamExportOptions" />
+
+The exports compile the document in final mode with the template's inputs, your `inputs` and the export's own
+(`exportPdf({ inputs })`, for that export only), without the fit-width page size, so they come out at the document's
+own size. They reject with the engine's
 [`ExportError`](/docs/reference/engine#exporterror). See [Exports](/docs/guides/exports).
 
 ```ts
 const pdf = await view.exportPdf();
+const key = await view.exportPdf({ inputs: { showAnswers: "true" } });
 const file = await view.exportHtml({ title: "Fractions worksheet" });
 ```
 

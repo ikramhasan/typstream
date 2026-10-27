@@ -219,6 +219,43 @@ describe(`mountTypstream in ${browser}`, () => {
     el.remove();
   });
 
+  it("exports with an export's own inputs over the template's and the mount's", async () => {
+    const el = host();
+    const source = [
+      '#let at(key) = sys.inputs.at(key, default: "none")',
+      '#set page(width: float(at("width")) * 1pt, height: float(at("height")) * 1pt)',
+      'Copy: #at("copy"), kind: #at("kind")',
+    ].join("\n");
+    const memo = definePlugin({
+      key: "acme/memo",
+      templates: [{ name: "memo", preamble: "", inputs: { kind: "memo", height: "100" } }],
+    });
+    const view = mountTypstream(el, {
+      engine,
+      source,
+      plugins: [memo],
+      template: "memo",
+      inputs: { width: "300", height: "200", copy: "student" },
+      lazy: false,
+    });
+    await until(view, (s) => s.status === "done");
+    const size = async (inputs?: Record<string, string>) => {
+      const pdf = new TextDecoder("latin1").decode(await view.exportPdf(inputs ? { inputs } : undefined));
+      return (/\/MediaBox\s*\[\s*0 0 ([\d.]+) ([\d.]+)/.exec(pdf) ?? []).slice(1).map(Number);
+    };
+    // The mount's inputs over the template's…
+    expect(await size()).toEqual([300, 200]);
+    // …and an export's over both, for that export only.
+    expect(await size({ width: "400" })).toEqual([400, 200]);
+    expect(await size()).toEqual([300, 200]);
+    const file = await view.exportHtml({ inputs: { copy: "teacher" }, title: "Memo" });
+    expect(file).toContain("Copy: teacher, kind: memo");
+    expect(file).toContain("<title>Memo</title>");
+    expect(await view.exportHtml()).toContain("Copy: student, kind: memo");
+    view.destroy();
+    el.remove();
+  });
+
   it("loads plugins: preambles in dependency order, files, templates, sanitizer allowances and stylesheets", async () => {
     const el = host();
     const base = definePlugin({

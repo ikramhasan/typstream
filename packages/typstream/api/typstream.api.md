@@ -28,8 +28,10 @@ import { htmlCompatCss } from '@typstream/html-compat';
 import { ImageResolver } from '@typstream/engine';
 import * as react from 'react';
 import { RenderedEvent } from '@typstream/react';
+import { StandaloneHtmlOptions } from '@typstream/react';
 import { TelemetryHooks } from '@typstream/react';
 import { TypstreamDefaults } from '@typstream/react';
+import { TypstreamExportOptions } from '@typstream/react';
 import { TypstreamHandle } from '@typstream/react';
 import { TypstreamInfo } from '@typstream/react';
 import { TypstreamProps as TypstreamProps_2 } from '@typstream/react';
@@ -87,12 +89,16 @@ export { ImageResolver }
 
 export { RenderedEvent }
 
+export { StandaloneHtmlOptions }
+
 export { TelemetryHooks }
 
 // @public
 export const Typstream: (input: TypstreamProps) => react.JSX.Element;
 
 export { TypstreamDefaults }
+
+export { TypstreamExportOptions }
 
 export { TypstreamHandle }
 

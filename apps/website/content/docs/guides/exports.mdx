@@ -12,12 +12,13 @@ and they don't need a second download or a server.
 | | PDF | HTML | Source |
 |---|---|---|---|
 | `EngineDocument` (`@typstream/engine`) | `exportPdf(options?)` | `exportHtml(options?)`: Typst's raw HTML | `exportSource()` |
-| `MountedTypstream` (`@typstream/dom`) | `exportPdf()` | `exportHtml(options?)`: a standalone file | `exportSource()` |
-| React (`typstream`, `@typstream/react`) | `document.exportPdf(options?)` | `document.exportHtml(options?)`, then `standaloneHtml` | `document.exportSource()` |
+| `MountedTypstream` (`@typstream/dom`) | `exportPdf(options?)` | `exportHtml(options?)`: a standalone file | `exportSource()` |
+| React (`typstream`, `@typstream/react`) | `exportPdf(options?)` | `exportHtml(options?)`: a standalone file | `exportSource()` |
 
-In React, the `EngineDocument` is `useTypstream().document`, or `document` on the handle `<Typstream ref>` gives you.
-It is `null` until the document opens: documents open when their element comes near the viewport, or when they start
-streaming.
+In React, the exports are on `useTypstream()` (`t.exportPdf()`) and on the handle `<Typstream ref>` gives you. They
+are `MountedTypstream`'s: the component mounts one. Documents open when their element comes near the viewport, or when
+they start streaming; an export opens one that hasn't opened yet. Before the `<Typstream>` mounts, and after it
+unmounts, the exports reject (`exportSource()` throws) with "`<Typstream>` isn't mounted".
 
 ## What an export compiles
 
@@ -35,14 +36,17 @@ as a finished document) with the document's preamble and files, in the engine's 
 
 ### Inputs
 
-`exportPdf` and `exportHtml` on an `EngineDocument` take `{ inputs }`, the `sys.inputs` to compile with. By default
-they use the document's current inputs. Pass them explicitly when they should differ from the preview's: a teacher's
-copy (`{ showAnswers: "true" }`, see [edu documents](/docs/guides/edu-documents#export-the-students-and-teachers-pdfs)),
-or a student's copy while the preview shows answers.
+`exportPdf` and `exportHtml` take `{ inputs }`, `sys.inputs` for that export only. Use them when the export should
+differ from the preview: a teacher's copy (`{ showAnswers: "true" }`, see
+[edu documents](/docs/guides/edu-documents#export-the-students-and-teachers-pdfs)), or a student's copy
+(`{ showAnswers: "false" }`) while the preview shows answers.
 
-Also pass them when the preview uses `layout="fit-width"`: that layout lays pages out at the element's width through
-inputs of its own, and you want the export at the document's own page size. `MountedTypstream`'s exports leave the
-layout's inputs out for you: they compile with the template's inputs and your `inputs`.
+- **React and `MountedTypstream`** compile with the template's inputs and the `inputs` prop or option, then the
+  export's `inputs` over them. They leave out the inputs of `layout="fit-width"`, which lays pages out at the
+  element's width, so the export comes out at the document's own page size.
+- **`EngineDocument`** compiles with the document's current inputs, or with exactly the export's `inputs` when you
+  give them: they replace the document's rather than adding to them. A mounted document's inputs include fit-width's
+  page size, so in React and with `mountTypstream`, export through the component or the mount, not `document`.
 
 ## PDF
 
@@ -80,8 +84,8 @@ const file = standaloneHtml(await doc.exportHtml(), { plugins: doc.plugins, titl
 
 `doc.plugins` is the document's resolved plugin list, so the file gets the same plugin stylesheets as the preview.
 
-`MountedTypstream.exportHtml(options?)` does both steps, with the mount's plugins, `stylesheets` and `theme`;
-`options` add to or override them.
+`MountedTypstream.exportHtml(options?)` and React's `exportHtml(options?)` do both steps, with the component's or
+mount's plugins, `stylesheets` and `theme`; `options` add to or override them, and can hold `inputs` too.
 
 To embed the math font, fetch the engine's copy once:
 
@@ -137,7 +141,6 @@ try {
 
 ```tsx title="components/download-buttons.tsx"
 "use client";
-import { standaloneHtml } from "@typstream/dom";
 import { useState } from "react";
 import type { TypstreamInfo } from "typstream";
 
@@ -152,7 +155,8 @@ const save = (data: BlobPart, type: string, name: string) => {
 
 export function DownloadButtons({ t, disabled }: { t: TypstreamInfo; disabled: boolean }) {
   const [error, setError] = useState<string | null>(null);
-  const doc = t.document;
+  // An export opens a document that hasn't opened yet; it needs a mounted <Typstream>.
+  const off = !t.handle || disabled;
 
   const run = async (download: () => Promise<void>) => {
     setError(null);
@@ -167,10 +171,10 @@ export function DownloadButtons({ t, disabled }: { t: TypstreamInfo; disabled: b
     <div>
       <button
         type="button"
-        disabled={!doc || disabled}
+        disabled={off}
         onClick={() =>
           run(async () => {
-            const pdf = await doc!.exportPdf();
+            const pdf = await t.exportPdf();
             // TypeScript 5.7+ types Blob parts as ArrayBuffer-backed views.
             save(pdf as Uint8Array<ArrayBuffer>, "application/pdf", "document.pdf");
           })
@@ -180,20 +184,17 @@ export function DownloadButtons({ t, disabled }: { t: TypstreamInfo; disabled: b
       </button>
       <button
         type="button"
-        disabled={!doc || disabled}
+        disabled={off}
         onClick={() =>
-          run(async () => {
-            const html = await doc!.exportHtml();
-            save(standaloneHtml(html, { plugins: doc!.plugins }), "text/html", "document.html");
-          })
+          run(async () => save(await t.exportHtml({ title: "Document" }), "text/html", "document.html"))
         }
       >
         HTML
       </button>
       <button
         type="button"
-        disabled={!doc}
-        onClick={() => save(doc!.exportSource(), "text/plain", "document.typ")}
+        disabled={!t.handle}
+        onClick={() => save(t.exportSource(), "text/plain", "document.typ")}
       >
         Typst source
       </button>
@@ -219,8 +220,9 @@ export function Answer({ text, isStreaming }: { text: string; isStreaming: boole
 }
 ```
 
-`typstream` doesn't re-export `standaloneHtml` or `ExportError`: install `@typstream/dom` and `@typstream/engine` to
-import them (`npm install @typstream/dom @typstream/engine`).
+`exportHtml` already returns the standalone file, so the component needs nothing from `@typstream/dom`. `typstream`
+doesn't re-export `ExportError`: check `error.name === "ExportError"`, or install `@typstream/engine` to import the
+class.
 
 ## On the server
 

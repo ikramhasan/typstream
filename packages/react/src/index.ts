@@ -11,6 +11,7 @@ export type {
   RenderedEvent,
   WatchdogEvent,
 } from "@typstream/core";
+export type { StandaloneHtmlOptions, TypstreamExportOptions } from "@typstream/dom";
 export type { DocumentState, DocumentStatus, Engine } from "@typstream/engine";
 export { type TypstreamDefaults, TypstreamProvider, type TypstreamProviderProps } from "./context";
 export { Typstream, type TypstreamHandle, type TypstreamProps } from "./Typstream";

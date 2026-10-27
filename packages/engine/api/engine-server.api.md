@@ -129,6 +129,9 @@ export type FontInput = string | URL | Uint8Array;
 // @public
 export const fromMain: (d: Diagnostic, offset: number) => Diagnostic;
 
+// @public
+export const hoistImport: DiagnosticFixer;
+
 export { InitInput }
 
 // @beta
