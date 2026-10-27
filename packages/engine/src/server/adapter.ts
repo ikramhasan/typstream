@@ -74,9 +74,13 @@ export interface AdapterDocument {
   /**
    * Compiles paged output and returns the pages that changed since the last
    * successful paged compile, or every page with `fullPages` (or the first
-   * time). A failed compile keeps what the next one diffs against.
+   * time). A failed compile keeps what the next one diffs against. With
+   * `drawings`, pages may come as `drawing`s for a canvas (core's
+   * `PageDrawing`); an adapter without them sends SVG.
    */
-  compilePaged(options: { fullPages: boolean } & AdapterCompileOptions): MaybePromise<AdapterPagedResult>;
+  compilePaged(
+    options: { fullPages: boolean; drawings?: boolean } & AdapterCompileOptions,
+  ): MaybePromise<AdapterPagedResult>;
   /**
    * Compiles `/main.typ` for its diagnostics only, as the fallback does to
    * check prefixes of a document (PLAN §5.6). It must leave the baseline that
@@ -101,7 +105,7 @@ export interface AdapterCompileResult {
   diagnostics: Diagnostic[];
   /** Typst compilation (evaluation + layout). */
   compileMs?: number;
-  /** Turning the document into HTML or SVG. */
+  /** Turning the document into HTML, SVG or drawings. */
   exportMs?: number;
   /**
    * Set when the compile lacked something that is on its way, e.g. a lazily

@@ -81,6 +81,7 @@ export interface CompileParams extends DocumentParams {
     fullPages?: boolean;
     inputs?: Record<string, string>;
     mode?: CompileMode;
+    pageFormat?: PageFormat;
     settled?: number;
     // (undocumented)
     target: CompileTarget;
@@ -552,6 +553,28 @@ export interface PagedArtifact {
 }
 
 // @beta
+export interface PageDrawing {
+    glyphs: [string, string][];
+    links: PageLink[];
+    ops: Uint8Array;
+    strings: string[];
+}
+
+// @public
+export type PageFormat = "svg" | "drawing";
+
+// @beta
+export interface PageLink {
+    // (undocumented)
+    height: number;
+    url: string;
+    // (undocumented)
+    width: number;
+    x: number;
+    y: number;
+}
+
+// @beta
 export interface PagePoint {
     // (undocumented)
     page: number;
@@ -564,6 +587,8 @@ export interface PagePoint {
 // @public
 export interface PageUpdate {
     dir?: "ltr" | "rtl";
+    // @beta
+    drawing?: PageDrawing;
     hash: string;
     // (undocumented)
     height: number;

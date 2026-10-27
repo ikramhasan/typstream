@@ -7,6 +7,7 @@
 //! ends with `comemo::evict(2)` (§6.3).
 
 mod diagnostics;
+mod draw;
 mod fonts;
 mod js;
 mod text;
@@ -83,12 +84,27 @@ export type TextNode = {
   to: number;
   children?: TextNode[];
 };
+/** A link to a URL on a drawn page: the box around its area, in points from the page's top left. */
+export type PageLink = { url: string; x: number; y: number; width: number; height: number };
+/**
+ * A page as drawing operations for a canvas (src/draw.rs describes the format):
+ * `ops` holds little-endian 32-bit floats, `strings` what they name (colours,
+ * path data, image URLs), `glyphs` the outlines they draw as `[key, path]` in
+ * font units (one key, one outline, on every page).
+ */
+export type PageDrawing = {
+  ops: Uint8Array;
+  strings: string[];
+  glyphs: [string, string][];
+  links: PageLink[];
+};
 /**
  * One exported page. `hash` (32 hex digits) identifies the page's content: equal
- * hashes mean identical pages. `width` and `height` are in Typst points. `text`
- * lists the page's text runs as Typst laid them out, `structure` the elements
- * around them. `lang` is the document's language as typst-html writes it
- * (`ar`, `zh-CN`) and `dir` its direction.
+ * hashes mean identical pages. `width` and `height` are in Typst points. `svg`
+ * is the page as typst-svg writes it, or empty when the page comes as a
+ * `drawing` instead. `text` lists the page's text runs as Typst laid them out,
+ * `structure` the elements around them. `lang` is the document's language as
+ * typst-html writes it (`ar`, `zh-CN`) and `dir` its direction.
  */
 export type ChangedPage = {
   index: number;
@@ -96,6 +112,7 @@ export type ChangedPage = {
   width: number;
   height: number;
   svg: string;
+  drawing?: PageDrawing;
   text: TextRun[];
   structure: TextNode[];
   lang: string;
@@ -280,8 +297,12 @@ impl Engine {
     /// the last successful call. Pages are compared by `hash128` (frames cache
     /// their hashes, so this is cheap). A failed compile keeps the old hashes,
     /// so the next success diffs against what is on screen.
+    ///
+    /// With `drawings`, a page comes as a `drawing` for a canvas instead (its
+    /// `svg` empty), unless it has something the drawing can't express
+    /// (gradients, tilings, colour glyphs): that page is still SVG.
     #[wasm_bindgen(unchecked_return_type = "SvgChangedResult")]
-    pub fn compile_svg_changed(&mut self) -> JsValue {
+    pub fn compile_svg_changed(&mut self, drawings: Option<bool>) -> JsValue {
         let t0 = perf_now();
         self.world.begin_compile();
         let Warned { output, warnings } =
@@ -305,7 +326,13 @@ impl Engine {
                         set(&entry, "hash", format!("{hash:032x}"));
                         set(&entry, "width", page.frame.width().to_pt());
                         set(&entry, "height", page.frame.height().to_pt());
-                        set(&entry, "svg", typst_svg::svg(page, &options));
+                        match drawings.unwrap_or(false).then(|| draw::page_drawing(page)).flatten() {
+                            Some(drawing) => {
+                                set(&entry, "svg", "");
+                                set(&entry, "drawing", drawing);
+                            }
+                            None => set(&entry, "svg", typst_svg::svg(page, &options)),
+                        }
                         let begun = open.at(doc.pages(), index);
                         let text = text::page_text(page, begun, &lang, dir);
                         set(&entry, "text", text.runs);

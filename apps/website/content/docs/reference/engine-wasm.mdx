@@ -89,7 +89,7 @@ Call one of them once per thread before creating an `Engine`.
 | `remove_file(path)` | `void` | Removes a source or binary file. `/main.typ` can't be removed. |
 | `set_inputs(inputs)` | `void` | Sets `sys.inputs`. Throws unless every value is a string, as with the CLI's `--input key=value`. |
 | `compile_html()` | `HtmlResult` | Compiles with the HTML target. |
-| `compile_svg_changed()` | `SvgChangedResult` | Compiles paged and exports SVG for the pages whose content changed since the last successful call. |
+| `compile_svg_changed(drawings?)` | `SvgChangedResult` | Compiles paged and exports SVG for the pages whose content changed since the last successful call. With `drawings`, pages come as drawings for a canvas instead, except those it can't draw (gradients, tilings, colour glyphs). |
 | `reset_pages()` | `void` | Forgets the page hashes, so the next `compile_svg_changed` sends every page (a new document, or the renderer lost its DOM). |
 | `check_paged()` | `CheckResult` | Compiles paged without exporting: diagnostics and the page count, for validation. Leaves the changed-page baseline alone. |
 | `compile_pdf()` | `PdfResult` | Compiles paged and exports PDF. |
@@ -119,14 +119,18 @@ keeps the previous pages as the baseline, so the next success diffs against what
 | `index` | `number` | Page index, from 0. |
 | `hash` | `string` | 32 hex digits identifying the page's content: equal hashes mean identical pages. |
 | `width`, `height` | `number` | Page size in Typst points. |
-| `svg` | `string` | The page as SVG. Glyphs are paths. |
+| `svg` | `string` | The page as SVG. Glyphs are paths. Empty when the page comes as a `drawing`. |
+| `drawing` | `PageDrawing?` | With `drawings`: the page as drawing operations for a canvas, what `@typstream/dom`'s paged view paints. `ops` (little-endian 32-bit floats, the format in `src/draw.rs`), `strings` they name, `glyphs` (`[key, path]`: outlines in font units, one key one outline on every page), `links` (URL and box in points). |
 | `text` | `TextRun[]` | The page's text runs as Typst laid them out, for a selectable text layer. |
 | `structure` | `TextNode[]` | Structure elements around the runs (headings, lists, tables), for accessibility. |
 | `lang` | `string` | The document's language as typst-html writes it (`ar`, `zh-CN`). |
 | `dir` | `"ltr" \| "rtl"` | The document's direction. |
 
 Frame hashes include source spans, so the same text parsed afresh or reparsed incrementally can hash differently.
-Compare SVGs, not hashes, to check that two separate compiles look the same.
+Compare SVGs (or drawings), not hashes, to check that two separate compiles look the same.
+
+A drawing costs less to export than SVG (a dense page: 3.5 ms against 10.7 ms, text runs included) and is about a third
+of its size.
 
 | `TextRun` field | Type | Meaning |
 | --- | --- | --- |

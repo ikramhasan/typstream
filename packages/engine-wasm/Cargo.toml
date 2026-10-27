@@ -32,6 +32,8 @@ js-sys = "0.3"
 serde_json = "1"
 # Strong directions of characters, for text runs (text.rs); typst-layout already depends on it.
 unicode-bidi = "0.3"
+# Glyph outlines for canvas drawings (draw.rs); typst-library already depends on it.
+ttf-parser = "0.25"
 # Scripts of characters, for math fonts' fallback coverage (fonts.rs); typst-layout already depends on it.
 unicode-script = "0.5"
 

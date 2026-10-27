@@ -108,7 +108,7 @@ Pass `lazy: false` to open the document right away. You need it for an element t
 
 ### Pages
 
-`mountPaged` shows a document as SVG pages and redraws only the pages that changed:
+`mountPaged` shows a document as pages, painted on canvases from drawings the engine sends, and redraws only the pages that changed (`renderer: "svg"` for SVG pages):
 
 ```ts
 import { mountPaged } from "@typstream/dom";

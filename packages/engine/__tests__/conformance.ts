@@ -329,6 +329,27 @@ export const conformance = (name: string, spawn: () => SpawnEngine, timeout = 30
         expect(all.pages.map((p) => p.index)).toEqual([0, 1]);
       });
 
+      it("sends pages as drawings when asked, and every page when the format changes", async () => {
+        const c = await ready();
+        const uri = await open(c, threePages("Three"));
+        await c.compile({ uri, rev: 1, target: "paged" });
+        const drawn = paged(await c.compile({ uri, rev: 1, target: "paged", pageFormat: "drawing" }));
+        expect(drawn.base).toBeNull();
+        expect(drawn.pages.map((p) => p.index)).toEqual([0, 1, 2]);
+        // A server without drawings sends SVG pages; one with them, drawings with an empty `svg`.
+        for (const page of drawn.pages) {
+          if (page.drawing) {
+            expect(page.svg).toBe("");
+            expect(page.drawing.ops).toBeInstanceOf(Uint8Array);
+          } else expect(page.svg).toMatch(/^<svg/);
+        }
+        const again = paged(await c.compile({ uri, rev: 1, target: "paged", pageFormat: "drawing" }));
+        expect(again).toMatchObject({ base: 1, pages: [] });
+        const svg = paged(await c.compile({ uri, rev: 1, target: "paged" }));
+        expect(svg.base).toBeNull();
+        expect(svg.pages.every((p) => p.svg.startsWith("<svg") && !p.drawing)).toBe(true);
+      });
+
       it("diffs against the last paged artifact, not a failed compile or an HTML one", async () => {
         const c = await ready();
         const uri = await open(c, threePages("Three"));

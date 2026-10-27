@@ -17,7 +17,7 @@ packages/engine   @typstream/engine: main-thread client (heal → scheduler → 
                   the worker half (`/server`: protocol server, EngineAdapter, engine-wasm adapter, Layer 3 fixers, Layer 4
                   fallback (block isolation, stable prefix) and the Typst runtime library they insert; `worker.ts`, spawned
                   by `engineWorker()`).
-packages/engine-wasm  @typstream/engine-wasm: Typst 0.15.1 as wasm (Rust crate + wasm-bindgen glue): HTML, changed-page SVG, PDF, UTF-16 diagnostics.
+packages/engine-wasm  @typstream/engine-wasm: Typst 0.15.1 as wasm (Rust crate + wasm-bindgen glue): HTML, changed pages (SVG, or drawings for canvases), PDF, UTF-16 diagnostics.
 packages/html-compat  @typstream/html-compat: Typst prelude + CSS so HTML export keeps grid, align, shapes, place, … (tests need the engine).
 packages/universe @typstream/universe: the Typst Universe packages allowed by default (CeTZ, fletcher, cetz-plot, physica, unify,
                   chemformula, alchemist), vendored tarballs + integrity, as an allowlist plugin. The engine loads packages
@@ -28,7 +28,7 @@ packages/google-fonts  @typstream/google-fonts: any Google Fonts family by name,
 packages/edu      @typstream/edu: the Typst vocabulary for teachers' documents (templates, questions, answers and keys, callouts,
                   rubrics, drawings, `ce`), its CSS and prompt catalogue, as a plugin (tests need the engine and native typst).
 packages/dom      @typstream/dom: framework-free renderers. `src/html/`: HTML renderer (string block split, sanitizer, source
-                  anchors, word fade-in, caret, theme CSS). `src/paged/`: SVG pages (changed pages, visible first, text layer).
+                  anchors, word fade-in, caret, theme CSS). `src/paged/`: pages painted on canvases from the engine's drawings, SVG for what they can't draw (changed pages, visible first, text layer).
                   `src/mount.ts`: `mountTypstream`, a document on an engine in an element (what the bindings wrap).
                   `src/export/`: `standaloneHtml`, a downloadable file from an HTML export (theme, CSS, CSP).
 packages/react    @typstream/react: <Typstream>, TypstreamProvider, useTypstream(); a thin layer over mountTypstream.
@@ -111,12 +111,12 @@ In `packages/edu`:
 
 In `packages/dom`:
 - `pnpm test`: node tests (the HTML block splitter, paged helpers). `pnpm test:browser`: the renderers in Chromium, Firefox and WebKit, fed by the real engine worker with html-compat and corpus documents (needs engine-wasm's `dist/`). `BROWSERS=chromium` runs one.
-- `pnpm size`: HTML renderer ≤ 9.8 KB gzipped (with its CSS), paged renderer ≤ 4 KB, standalone HTML export ≤ 2 KB.
+- `pnpm size`: HTML renderer ≤ 9.8 KB gzipped (with its CSS), paged renderer ≤ 5.6 KB, standalone HTML export ≤ 2 KB.
 - Its API report needs DOM types, so its `api-extractor.json` overrides the shared compiler settings.
 
 In `packages/react`:
 - `pnpm test`: Node tests (provider merging, the shared engine's lifetime). `pnpm test:browser`: `<Typstream>` with React Testing Library against the real engine worker in Chromium, Firefox and WebKit (StrictMode, lazy opening, worker cleanup). `BROWSERS=chromium` runs one. Needs engine-wasm's `dist/`.
-- `pnpm size`: ≤ 17.3 KB gzipped including `@typstream/dom` (React and the engine external).
+- `pnpm size`: ≤ 19 KB gzipped including `@typstream/dom` (React and the engine external).
 - Its bundle starts with `"use client"` (tsup banner), as does `typstream`'s, for Next.js's App Router.
 
 In `examples/strict-csp`: `pnpm test` builds the page, serves it with the policy in `csp.mjs` and fails on any CSP violation or console error in Chromium, Firefox and WebKit (`BROWSERS=` picks some). Build the packages first (`pnpm turbo run build --filter=@typstream/example-strict-csp^...`). CI runs it in each browser's `Engine (<browser>)` job. Hostile documents go in `corpus/adversarial/hostile-*.typ` (category `hostile-…`); the engine's and the browser suites' `security.test.ts` run them all.
@@ -209,5 +209,8 @@ Spikes (reference only):
 - The shell prints a zoxide warning on every command; set `_ZO_DOCTOR=0` to silence it.
 - Visual baselines made outside Docker (plain `vitest` in `tools/browser-suites`) differ from CI's in fonts and
   antialiasing: the `visual` project only exists when `scripts/visual.mjs` runs it in the container.
+- Paged pages are canvases by default (`mountPaged`, `mountTypstream` and `<Typstream>` ask the engine for drawings, #14).
+  A test that inspects a page's SVG (its `<use>`s, `<image>`s, `<a>`s in the shadow root) passes `renderer: "svg"`, or
+  opens the document without `pageFormat: "drawing"`.
 - Vite rewrites only `new URL("literal", import.meta.url)` to files outside a package's root (workers, fonts): a URL
   built from a variable base 404s in browser tests.

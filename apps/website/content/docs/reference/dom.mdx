@@ -10,8 +10,8 @@ them on its own:
 - **`mountTypstream`** shows a streaming document in an element: it opens the document on an engine, feeds it, and
   draws each artifact with the renderer for its target. This is what the framework bindings wrap.
 - **The renderers**: `createHtmlRenderer` for the HTML target (sanitized, block-diffed Typst HTML with word fade-in
-  and a caret) and `createPagedView` for the paged target (SVG pages, changed pages only, with a selectable text
-  layer).
+  and a caret) and `createPagedView` for the paged target (pages painted on canvases, or SVG, changed pages only,
+  with a selectable text layer).
 - **`standaloneHtml`**, which makes an HTML export a file that opens on its own.
 
 ## When to use it
@@ -202,19 +202,27 @@ const createPagedView: (container: HTMLElement, options?: PagedViewOptions) => P
 The paged renderer without a document: it appends a `.typstream-paged` element to `container`; call
 `view.render(artifact)` with any paged artifact, complete or changed pages only.
 
+- **Canvas or SVG, per page.** A page that comes as a drawing (`pageFormat: "drawing"`, which `mountPaged` and
+  `mountTypstream` ask for) is painted on a `<canvas>`: about a millisecond for a dense page in Chromium and Safari,
+  10–15 ms in Firefox, against 12–31 ms for the same page as SVG. A page that comes as SVG goes in a shadow root.
 - **Only changed pages are redrawn.** Pages are matched by index and redrawn when their hash changes, so a streamed
   update usually touches the last page. Pages past the new page count are removed.
 - **Visible pages first.** Changed pages on screen are drawn at the next frame. Offscreen ones, and every text layer,
   wait for idle time (`requestIdleCallback`, a timer in WebKit), or are drawn as soon as they scroll into view.
-  `view.flush()` draws everything now, for example before printing.
-- **One shadow root per page.** Typst's SVG gives glyph definitions ids that repeat on every page. A shadow root per
-  page scopes them (in one document, Chromium would re-resolve every glyph on every page whenever one changed), and
-  keeps your CSS off the SVG. Pages have `content-visibility: auto`.
-- **Text layer.** The SVG draws glyphs as paths, so invisible HTML text is laid over each page from the engine's text
-  runs. Selection, copy (with line breaks), find-in-page and screen readers use it, and the SVG is `aria-hidden`.
-  Headings, lists and tables in it carry ARIA roles.
-- **Links.** Only `http(s)` and `mailto` links keep their `href` (see `isSafeHref`); they open in `linkTarget`.
-  Links within the document stay inert. Images load only from `data:` URLs.
+  `view.flush()` draws everything now.
+- **Canvas pixels.** Canvases are painted at `devicePixelRatio`, again when it changes and after a pinch zoom
+  settles, and every page is painted before the browser prints. Only pages near the viewport keep their pixels (8–14
+  MB per A4 page at a ratio of 2): a page that scrolls away gives them up a second later, and is painted again when it
+  comes back. Offscreen canvas pages need no idle time: they are painted when they come into view.
+- **SVG pages: one shadow root each.** Typst's SVG gives glyph definitions ids that repeat on every page. A shadow
+  root per page scopes them (in one document, Chromium would re-resolve every glyph on every page whenever one
+  changed), and keeps your CSS off the SVG. Their hosts have `content-visibility: auto`.
+- **Text layer.** Pages draw glyphs as shapes, so invisible HTML text is laid over each page from the engine's text
+  runs. Selection, copy (with line breaks), find-in-page and screen readers use it, and the canvas or SVG is
+  `aria-hidden`. Headings, lists and tables in it carry ARIA roles.
+- **Links.** Only `http(s)` and `mailto` links keep their `href` (see `isSafeHref`); they open in `linkTarget`. On a
+  canvas page they are `<a>` elements over their area (`.typstream-links`). Links within the document stay inert.
+  Images load only from `data:` URLs.
 - **Strict CSP.** Styles are added once per document as a constructed stylesheet, and the text layer is positioned
   through the CSSOM, so no `'unsafe-inline'` is needed.
 
@@ -242,7 +250,7 @@ const mountPaged: (container: HTMLElement, doc: EngineDocument, options?: MountP
 ```
 
 Renders an engine document as pages in `container` and keeps them up to date. It switches the document to the paged
-target. Use it when you drive the document yourself rather than through `mountTypstream`:
+target, and asks for pages as drawings for canvases (`renderer: "svg"` asks for SVG). Use it when you drive the document yourself rather than through `mountTypstream`:
 
 ```ts
 import { mountPaged } from "@typstream/dom";

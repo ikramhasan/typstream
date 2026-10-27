@@ -23,6 +23,7 @@ import {
   appOptions,
   type CorpusDocument,
   finished,
+  graphicsOf,
   host,
   loadCorpus,
   loadMathFont,
@@ -30,7 +31,6 @@ import {
   shown,
   startEngine,
   steady,
-  svgOf,
   type Target,
   textLayerOf,
   until,
@@ -166,8 +166,8 @@ describe(`accessibility in ${browser}`, () => {
       problems.push(...(await audit(paged.el)).map((v) => `${entry.name}: ${v}`));
       const pages = pageEls(paged.el);
       for (const [i, page] of pages.entries()) {
-        if (svgOf(page)?.getAttribute("aria-hidden") !== "true")
-          problems.push(`${entry.name}: page ${i + 1}'s SVG is exposed`);
+        if (graphicsOf(page)?.getAttribute("aria-hidden") !== "true")
+          problems.push(`${entry.name}: page ${i + 1}'s SVG or canvas is exposed`);
       }
       const layers = pages.map((p) => textLayerOf(p) as HTMLElement);
       const layerText = layers.map((l) => l.textContent ?? "").join("\n");

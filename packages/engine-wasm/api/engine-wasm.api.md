@@ -15,6 +15,7 @@ export type ChangedPage = {
     width: number;
     height: number;
     svg: string;
+    drawing?: PageDrawing;
     text: TextRun[];
     structure: TextNode[];
     lang: string;
@@ -47,7 +48,7 @@ export class Engine {
     check_paged(): CheckResult;
     compile_html(): HtmlResult;
     compile_pdf(): PdfResult;
-    compile_svg_changed(): SvgChangedResult;
+    compile_svg_changed(drawings?: boolean | null): SvgChangedResult;
     static features(): string[];
     static font_info(bytes: Uint8Array): string;
     // (undocumented)
@@ -91,7 +92,7 @@ export interface InitOutput {
     // (undocumented)
     readonly engine_compile_pdf: (a: number) => number;
     // (undocumented)
-    readonly engine_compile_svg_changed: (a: number) => number;
+    readonly engine_compile_svg_changed: (a: number, b: number) => number;
     // (undocumented)
     readonly engine_features: (a: number) => void;
     // (undocumented)
@@ -120,6 +121,17 @@ export interface InitOutput {
 
 // @public
 export function initSync(module: { module: SyncInitInput } | SyncInitInput): InitOutput;
+
+// @public
+export type PageDrawing = {
+    ops: Uint8Array;
+    strings: string[];
+    glyphs: [string, string][];
+    links: PageLink[];
+};
+
+// @public
+export type PageLink = { url: string; x: number; y: number; width: number; height: number };
 
 // @public
 export type PdfResult = CompileResult & { pdf?: Uint8Array; pageCount?: number };

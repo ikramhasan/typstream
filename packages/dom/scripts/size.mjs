@@ -27,7 +27,8 @@ const ok = [
   // 9 KB until plugins' stylesheets (#27, 24 bytes) came in after #29 and #63 had left 7 bytes; 9.5 KB until
   // font catalogues' web fonts (`registerLoadedFont`, 0.29 KB) took it to 9.78 KB.
   await measure("@typstream/dom (HTML renderer, incl. its CSS)", "src/html/index.ts", 9.8 * 1024),
-  await measure("@typstream/dom (paged renderer)", "src/paged/index.ts", 4 * 1024),
+  // 4 KB until canvas pages (#14): the painter, the drawing's decoder, the link layer and pixel management, 1.8 KB.
+  await measure("@typstream/dom (paged renderer)", "src/paged/index.ts", 5.6 * 1024),
   await measure("@typstream/dom (standalone HTML export)", "src/export/index.ts", 2 * 1024),
 ];
 process.exitCode = ok.every(Boolean) ? 0 : 1;

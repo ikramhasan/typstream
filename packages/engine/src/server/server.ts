@@ -28,6 +28,7 @@ import {
   isClientNotification,
   isError,
   mapDiagnostic,
+  type PageFormat,
   type ParamsOf,
   PROTOCOL_VERSION,
   ProtocolError,
@@ -174,6 +175,8 @@ interface Doc {
   inputs: string | null;
   /** Revision of the last paged artifact sent, which the adapter's changed pages diff against; `null` after HTML. */
   pagedBase: Revision | null;
+  /** The `pageFormat` of the pages since `pagedBase`. */
+  pageFormat: PageFormat;
   /** What the fallback learnt about the text; forgotten when files or inputs change. */
   memo: RecoverMemo | null;
   /** The text the last artifact compiled, unless it showed the tail as plain text (fallback level 1, #65). */
@@ -453,11 +456,17 @@ class Server implements EngineServer {
   }
 
   /** One compile of what `/main.typ` holds, with diagnostics in its text's coordinates. */
-  private async compileMain(doc: Doc, target: CompileTarget, mode: CompileMode, fullPages: boolean): Promise<Compiled> {
+  private async compileMain(
+    doc: Doc,
+    target: CompileTarget,
+    mode: CompileMode,
+    fullPages: boolean,
+    drawings: boolean,
+  ): Promise<Compiled> {
     const r =
       target === "html"
         ? await doc.compiler.compileHtml({ mode })
-        : await doc.compiler.compilePaged({ fullPages, mode });
+        : await doc.compiler.compilePaged({ fullPages, drawings, mode });
     return { ...r, diagnostics: this.diagnostics(doc, r.diagnostics) };
   }
 
@@ -666,6 +675,7 @@ class Server implements EngineServer {
         offset: 0,
         inputs: null,
         pagedBase: null,
+        pageFormat: "svg",
         memo: null,
         shown: null,
         waiting: null,
@@ -729,7 +739,10 @@ class Server implements EngineServer {
           ? Math.max(0, Math.min(params.settled, doc.text.length))
           : doc.text.length;
       // Changed pages only when the client can apply them to the pages it has.
-      let full = params.fullPages === true || !this.client.pagedDiff || doc.pagedBase === null;
+      const pageFormat = params.pageFormat ?? "svg";
+      const drawings = pageFormat === "drawing";
+      let full =
+        params.fullPages === true || !this.client.pagedDiff || doc.pagedBase === null || doc.pageFormat !== pageFormat;
       // The last compile, whose output is published, and the time spent in Typst.
       let r: Compiled | null = null;
       // What the fixers fixed in the last attempt, whose compile is `r`.
@@ -743,7 +756,7 @@ class Server implements EngineServer {
       // again once it arrives.
       const pending: Promise<void>[] = [];
       const compile = async (): Promise<Compiled> => {
-        r = await this.compileMain(doc, target, mode, full);
+        r = await this.compileMain(doc, target, mode, full, drawings);
         count(r.compileMs);
         const lacking = this.lacking(doc, r);
         if (lacking) pending.push(lacking);
@@ -818,7 +831,7 @@ class Server implements EngineServer {
         if (doc.compiler.check) c = await doc.compiler.check({ target, mode });
         else if (target === "html") c = await doc.compiler.compileHtml({ mode });
         else {
-          const paged = await doc.compiler.compilePaged({ fullPages: true, mode });
+          const paged = await doc.compiler.compilePaged({ fullPages: true, drawings, mode });
           // It moved the adapter's baseline: the artifact sends every page.
           if (paged.output) full = true;
           c = paged;
@@ -898,6 +911,7 @@ class Server implements EngineServer {
           },
         });
         doc.pagedBase = rev;
+        doc.pageFormat = pageFormat;
       }
       this.await(doc, params, pending);
       const ok = out !== null && ("html" in out ? out.html !== null : out.output !== null);

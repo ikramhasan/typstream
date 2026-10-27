@@ -40,7 +40,7 @@ compressed and cacheable. See [Self-hosting the engine](/docs/guides/self-hostin
 import { createEngine, engineWorker } from "@typstream/engine";
 
 const engine = createEngine({ spawn: engineWorker() });
-const doc = engine.open({ target: "html" }); // or "paged": SVG pages
+const doc = engine.open({ target: "html" }); // or "paged": pages as SVG, or drawings with pageFormat: "drawing"
 
 doc.subscribe(({ status, artifact, diagnostics }) => render(artifact, status, diagnostics));
 for await (const chunk of llmStream) doc.push(chunk);

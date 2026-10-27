@@ -50,10 +50,10 @@ const until = (view: MountedTypstream, done: (s: DocumentState) => boolean, ms =
     check();
   });
 
-const mount = async (target: "html" | "paged") => {
+const mount = async (target: "html" | "paged", renderer?: "canvas" | "svg") => {
   const el = document.createElement("div");
   document.body.append(el);
-  const view = mountTypstream(el, { engine, source: SOURCE, target, lazy: false });
+  const view = mountTypstream(el, { engine, source: SOURCE, target, lazy: false, ...(renderer ? { renderer } : {}) });
   await until(view, (s) => s.status === "done" && s.artifact?.target === target);
   return { el, view };
 };
@@ -71,23 +71,31 @@ describe(`Trusted Types in ${browser}`, () => {
     }).toThrow(TypeError);
   });
 
-  it.each(["html", "paged"] as const)("renders the %s target through the typstream policy, twice", async (target) => {
+  it.each([
+    ["html", undefined],
+    ["paged", "svg"],
+    ["paged", "canvas"],
+  ] as const)("renders the %s target (%s) through the typstream policy, twice", async (target, renderer) => {
     // Two mounts side by side, and one after the first is gone: the policy is created once and reused.
-    const first = await mount(target);
-    const second = await mount(target);
+    const first = await mount(target, renderer);
+    const second = await mount(target, renderer);
     for (const { el } of [first, second]) expect(await textOf(el)).toContain("A paragraph with markup");
     if (target === "html") {
       expect(first.el.querySelector("strong")?.textContent).toBe("markup");
       expect(first.el.querySelector("a")?.getAttribute("href")).toBe("https://typst.app");
-    } else {
+    } else if (renderer === "svg") {
       const page = first.el.querySelector(".typstream-page > div")?.shadowRoot;
       expect(page?.querySelector("svg")).not.toBeNull();
       // Links are filtered in the template, before the page sees them.
       expect(page?.querySelector("a")?.getAttribute("target")).toBe("_blank");
+    } else {
+      // A canvas parses no markup: links are built as elements.
+      expect(first.el.querySelector(".typstream-page > canvas")).not.toBeNull();
+      expect(first.el.querySelector(".typstream-links a")?.getAttribute("target")).toBe("_blank");
     }
     first.view.destroy();
     second.view.destroy();
-    const third = await mount(target);
+    const third = await mount(target, renderer);
     expect(await textOf(third.el)).toContain("A paragraph with markup");
     third.view.destroy();
     expect(violations).toEqual([]);

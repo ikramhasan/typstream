@@ -34,6 +34,7 @@ export interface TypstreamDefaults
       | "theme"
       | "linkTarget"
       | "textLayer"
+      | "renderer"
       | "lazy"
     >,
     TelemetryHooks {

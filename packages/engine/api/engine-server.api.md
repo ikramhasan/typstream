@@ -41,6 +41,7 @@ export interface AdapterDocument {
     compileHtml(options?: AdapterCompileOptions): MaybePromise<AdapterHtmlResult>;
     compilePaged(options: {
         fullPages: boolean;
+        drawings?: boolean;
     } & AdapterCompileOptions): MaybePromise<AdapterPagedResult>;
     exportPdf?(options?: AdapterCompileOptions): MaybePromise<AdapterCompileResult & {
         pdf: Uint8Array | null;

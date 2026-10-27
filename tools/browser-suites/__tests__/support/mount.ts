@@ -177,8 +177,13 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 export const frame = () => new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
 
 export const pageEls = (el: HTMLElement) => [...el.querySelectorAll<HTMLElement>(".typstream-page")];
+/** A page's SVG, when it came as SVG (in a shadow root). */
 export const svgOf = (page: HTMLElement) =>
   page.firstElementChild?.shadowRoot?.firstElementChild as SVGSVGElement | null | undefined;
+/** A page's canvas, when it came as a drawing (mountTypstream's default renderer). */
+export const canvasOf = (page: HTMLElement) => page.querySelector<HTMLCanvasElement>(":scope > canvas");
+/** What draws a page: its SVG or its canvas. */
+export const graphicsOf = (page: HTMLElement): Element | null => canvasOf(page) ?? svgOf(page) ?? null;
 export const textLayerOf = (page: HTMLElement) => page.querySelector<HTMLElement>(".typstream-text-layer");
 
 const uses = (svg: string) => svg.match(/<use /g)?.length ?? 0;
@@ -203,11 +208,22 @@ const quiet = (el: HTMLElement, ms = 40) =>
     }
   });
 
+const letters = (text: string) => text.replace(/\s+/g, "");
+
+/** Whether `page` shows in the viewport and in `el` (a panel clips what is below it), where its canvas has pixels. */
+const onScreen = (page: HTMLElement, el: HTMLElement) => {
+  const box = page.getBoundingClientRect();
+  const clip = el.getBoundingClientRect();
+  return box.bottom > Math.max(0, clip.top) && box.top < Math.min(innerHeight, clip.bottom);
+};
+
 /**
- * Waits until the paged view has drawn `artifact` whole: every page's SVG (the
- * paged view draws visible pages at the next frame, the others in idle time) and
- * its text layer. Glyph counts tell an old page from a new one, mostly: two
- * versions of a page can have as many, so it also waits for the view to settle.
+ * Waits until the paged view has drawn `artifact` whole: every page's SVG or
+ * canvas (the paged view draws visible pages at the next frame, the others in
+ * idle time; canvases on screen are painted) and its text layer. Glyph counts
+ * tell an old SVG page from a new one, and a text layer's letters an old drawn
+ * page, mostly: two versions of a page can have as many, so it also waits for
+ * the view to settle.
  */
 export const pagesDrawn = async (el: HTMLElement, artifact: PagedArtifact, ms = 30_000) => {
   const end = performance.now() + ms;
@@ -216,10 +232,19 @@ export const pagesDrawn = async (el: HTMLElement, artifact: PagedArtifact, ms = 
     const done =
       els.length === artifact.pageCount &&
       els.every((page, i) => {
+        const want = artifact.pages[i];
+        const layer = textLayerOf(page);
+        if (!want || !layer) return false;
+        if (want.drawing) {
+          const canvas = canvasOf(page);
+          return (
+            !!canvas &&
+            (canvas.width > 0 || !onScreen(page, el)) &&
+            letters(layer.textContent ?? "") === letters((want.text ?? []).map((r) => r.text).join(""))
+          );
+        }
         const svg = svgOf(page);
-        return (
-          !!svg && svg.querySelectorAll("use").length === uses(artifact.pages[i]?.svg ?? "") && !!textLayerOf(page)
-        );
+        return !!svg && svg.querySelectorAll("use").length === uses(want.svg);
       });
     if (done) break;
     if (performance.now() > end) throw new Error(`pages not drawn: ${els.length} of ${artifact.pageCount}`);

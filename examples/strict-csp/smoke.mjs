@@ -67,7 +67,10 @@ try {
         const html = document.getElementById("html");
         const paged = document.getElementById("paged");
         const grid = html.querySelector("[style*=grid-template-columns]");
-        const svgs = [...paged.querySelectorAll(".typstream-page")].map((p) => p.firstElementChild?.shadowRoot);
+        // A page is painted on a canvas, or an SVG in a shadow root (what the engine can't draw).
+        const drawn = [...paged.querySelectorAll(".typstream-page")].filter(
+          (p) => p.querySelector(":scope > canvas")?.width > 0 || p.firstElementChild?.shadowRoot?.querySelector("svg"),
+        );
         return {
           errors: [html.dataset.error, paged.dataset.error].filter(Boolean),
           htmlText: html.textContent,
@@ -76,7 +79,7 @@ try {
           gridColumns: grid ? getComputedStyle(grid).gridTemplateColumns.split(" ").length : 0,
           // The CeTZ canvas (a package from this origin) as a drawing.
           diagram: html.querySelectorAll(".ts-frame svg, svg").length,
-          pages: svgs.filter((root) => root?.querySelector("svg")).length,
+          pages: drawn.length,
           pagedText: paged.querySelector(".typstream-text-layer")?.textContent ?? "",
           violations: window.__violations,
         };
