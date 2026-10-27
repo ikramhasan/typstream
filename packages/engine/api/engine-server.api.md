@@ -90,6 +90,8 @@ export interface EngineConnection {
 // @public
 export interface EngineEvents {
     error(error: unknown): void;
+    // @beta
+    lost(error: unknown): void;
     message(message: ServerMessage): void;
 }
 
@@ -162,14 +164,32 @@ export interface ServerOptions {
     packages?: PackageOptions;
 }
 
+// @beta
+export interface SpawnDefaults {
+    spare?: boolean;
+    watchdog?: Partial<WatchdogOptions>;
+}
+
 // @public
-export type SpawnEngine = (events: EngineEvents) => EngineConnection;
+export interface SpawnEngine {
+    (events: EngineEvents): EngineConnection;
+    // @beta
+    readonly defaults?: SpawnDefaults;
+}
 
 // @public
 export const tailCut: DiagnosticFixer;
 
 // @public
 export const TYPST_VERSION = "0.15.1";
+
+// @public
+export interface WatchdogOptions {
+    finalMs: number;
+    probeMs: number;
+    streamingMs: number;
+    strikes: number;
+}
 
 // @public
 export interface WorkerScope {

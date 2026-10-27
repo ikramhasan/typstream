@@ -9,11 +9,14 @@ export default defineConfig({
   },
   resolve: {
     // Test against the source of sibling packages, not their builds (engine-wasm has no source to alias).
-    alias: {
-      "@typstream/core": new URL("../core/src/index.ts", import.meta.url).pathname,
-      "@typstream/engine/server": new URL("../engine/src/server.ts", import.meta.url).pathname,
-      "@typstream/heal": new URL("../heal/src/index.ts", import.meta.url).pathname,
-      "@typstream/corpus": new URL("../../corpus/src/index.ts", import.meta.url).pathname,
-    },
+    // Exact matches: an alias of a bare name also catches its subpaths.
+    alias: [
+      ["@typstream/core", "../core/src/index.ts"],
+      ["@typstream/engine", "../engine/src/index.ts"],
+      ["@typstream/engine/server", "../engine/src/server.ts"],
+      ["@typstream/engine/websocket", "../engine/src/websocket.ts"],
+      ["@typstream/heal", "../heal/src/index.ts"],
+      ["@typstream/corpus", "../../corpus/src/index.ts"],
+    ].map(([name, path]) => ({ find: new RegExp(`^${name}$`), replacement: new URL(path, import.meta.url).pathname })),
   },
 });

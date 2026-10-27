@@ -15,6 +15,7 @@ icon: Cpu
   showable when a document still doesn't compile.
 
 `@typstream/engine/worker` is the default worker script that joins the two; `engineWorker()` spawns it.
+`@typstream/engine/websocket` connects the client to a server instead: [`fromWebSocket`](#typstreamenginewebsocket).
 
 ## When to use it
 
@@ -168,6 +169,7 @@ What `engine.onEvent` receives, discriminated by `type`:
 | `ready` | `info: InitializeResult` | A worker finished `initialize` (the first one and every replacement). |
 | `watchdog` | `uri`, `rev`, `budgetMs` | A compile or export ran past its budget; the worker was terminated. |
 | `crash` | `error` | A worker failed outside the protocol. |
+| `disconnect` | `error` | The connection to a [remote engine](/docs/guides/remote-engine) dropped; a new one opens, and what it was running is retried. |
 | `recycle` | `memoryBytes` | A worker was replaced because it used too much memory. |
 | `log` | `level`, `message` | A log message from the worker. |
 | `failed` | `error: Error` | The engine can't run; every document is in `error`. |
@@ -301,11 +303,19 @@ a fresh worker.
 #### `SpawnEngine`
 
 ```ts
-type SpawnEngine = (events: EngineEvents) => EngineConnection;
+interface SpawnEngine {
+  (events: EngineEvents): EngineConnection;
+  readonly defaults?: SpawnDefaults; // beta
+}
 ```
 
-Starts a worker running the engine server and routes its messages and errors to `events`. Implement it yourself for
-other transports, such as a WebSocket to a [remote engine](/docs/guides/remote-engine).
+Starts a worker running the engine server and routes its messages and errors to `events`. `engineWorker`, `fromWorker`
+and [`fromWebSocket`](#typstreamenginewebsocket) make one; implement it yourself for other transports.
+
+`defaults` (beta) are the options that suit the transport, for those `createEngine` isn't given: `fromWebSocket` sets
+longer budgets and no spare. `createEngine`'s own `watchdog` and `spare` win.
+
+<auto-type-table path="packages/engine/src/connection.ts" name="SpawnDefaults" />
 
 #### `WorkerLike`
 
@@ -605,8 +615,53 @@ document as `span`. For adapters and custom servers.
 
 ### Re-exported types
 
-`EngineConnection`, `EngineEvents` and `SpawnEngine` (what `inProcess` returns) are the same types as the main
-entry's; see [`SpawnEngine`](#spawnengine).
+`EngineConnection`, `EngineEvents`, `SpawnEngine`, `SpawnDefaults` and `WatchdogOptions` (what `inProcess` returns)
+are the same types as the main entry's; see [`SpawnEngine`](#spawnengine).
+
+## `@typstream/engine/websocket`
+
+The client's transport to an engine on a server, such as [`@typstream/node`'s](/docs/guides/remote-engine). It is its
+own entry point, so apps that compile in a worker don't download it (about 1 KB gzipped).
+
+### `fromWebSocket` (beta)
+
+```ts
+const fromWebSocket: (url: string | URL | (() => string | URL), options?: WebSocketOptions) => SpawnEngine;
+```
+
+<Callout type="warn" title="Beta">
+`fromWebSocket` may change before the first stable release.
+</Callout>
+
+A `SpawnEngine` over a WebSocket. Each call opens a connection, which is a session on the server with its own
+documents; messages are core's [wire format](/docs/guides/remote-engine#the-wire-format). Pass a function as `url` to
+compute it for every connection, to sign each one afresh, say.
+
+```ts
+import { createEngine } from "@typstream/engine";
+import { fromWebSocket } from "@typstream/engine/websocket";
+
+const engine = createEngine({ spawn: fromWebSocket("wss://typst.example.com/typst") });
+```
+
+- **Watchdog.** A compile past its budget closes the connection; the server cancels what the session had queued, and a
+  new connection opens. The default budgets (`WEBSOCKET_DEFAULTS`: 10 s streaming, 30 s final and per hang probe) sit
+  above the most a `@typstream/node` server takes with its default timeouts (about 4.5 s and 15 s), so the server's own
+  timeout answers first and costs one compile, not the session.
+- **No spare.** A spare would be a second session per page; with the server's watchdog answering first, replacements
+  are rare.
+- **Opening.** An attempt to open a connection that fails is retried `retries` times (4), after `retryDelayMs` (500 ms),
+  doubled each time. When every attempt fails, the engine fails (an engine `failed` event), or the replacement does.
+- **Dropped connections** report `lost`: the engine emits `disconnect`, opens a new connection, documents open
+  themselves there, and the compile or export that was running is retried, without a watchdog strike. Three losses in
+  a row with requests in flight make the next one a crash (a strike), so a request that drops the connection every time
+  (larger than the server's `maxPayload`, say) stops. A connection that closes before it answers `initialize` (a server
+  that refuses it) fails the engine rather than reconnecting in a loop.
+
+<auto-type-table path="packages/engine/src/websocket.ts" name="WebSocketOptions" />
+
+`WebSocketLike` is the part of the WHATWG `WebSocket` it uses: `readyState`, `send`, `close`, and `open`, `message` and
+`close` events.
 
 ## `@typstream/engine/worker`
 

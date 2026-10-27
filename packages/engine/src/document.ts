@@ -884,7 +884,7 @@ export class DocumentImpl implements EngineDocument {
           });
         }
       } else if (e instanceof WorkerGone) {
-        // Recycled or replaced under it: the retry reports the healing that led to it.
+        // Recycled, replaced or disconnected under it: the retry reports the healing that led to it.
         this.needsCompile = true;
         if (job) this.healMs += job.healMs;
       } else if (!(e instanceof ProtocolError && e.code === "request-cancelled")) {

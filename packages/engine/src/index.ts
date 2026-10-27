@@ -3,7 +3,14 @@
 // `@typstream/engine/server`; `engineWorker()` spawns the default worker.
 
 export type { Clock } from "./clock";
-export { type EngineConnection, type EngineEvents, fromWorker, type SpawnEngine, type WorkerLike } from "./connection";
+export {
+  type EngineConnection,
+  type EngineEvents,
+  fromWorker,
+  type SpawnDefaults,
+  type SpawnEngine,
+  type WorkerLike,
+} from "./connection";
 export type {
   CompileFailure,
   DocumentOptions,
