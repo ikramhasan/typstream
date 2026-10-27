@@ -131,6 +131,9 @@ export interface LazyFontInput {
 // @public
 export type MaybePromise<T> = T | Promise<T>;
 
+// @public
+export const missingImage: DiagnosticFixer;
+
 // @beta
 export interface PackageOptions {
     allowlist?: readonly PackageSpec[];

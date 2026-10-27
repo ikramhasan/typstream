@@ -57,7 +57,11 @@ describe("final mode: every corpus document renders", () => {
     const isolated = out.result.fallback?.isolated ?? [];
     const blocks = blockStarts(source).length;
     rows.push({ id: entry.id, blocks, isolated: isolated.length, checks: out.checks, compiles: out.compiles, ms });
-    expect(isolated.length > 0).toBe(entry.meta.expect === "error" || entry.id === "adversarial/deep-nesting-64");
+    // An image Typst can't read is a placeholder, not an error block (the missing-image fixer).
+    const placeholder = entry.id === "adversarial/hostile-image-url";
+    expect(isolated.length > 0).toBe(
+      (entry.meta.expect === "error" && !placeholder) || entry.id === "adversarial/deep-nesting-64",
+    );
     // Bisection: at most ⌈log₂ n⌉ checks per isolated block.
     expect(out.checks).toBeLessThanOrEqual(isolated.length * Math.ceil(Math.log2(Math.max(blocks, 2))));
   });

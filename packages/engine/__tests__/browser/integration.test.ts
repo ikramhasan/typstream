@@ -251,8 +251,11 @@ describe(`fallback ladder in ${browser}`, { timeout: 300_000 }, () => {
       const blocks = (html.match(/typstream-error-block/g) ?? []).length;
       results.push(`${entry.name}: ${s.status}${blocks ? `, ${blocks} error block(s)` : ""}`);
       expect.soft(s.status, entry.name).toBe("done");
-      // 64-deep nesting compiles to pages, but exceeds Typst's maximum HTML depth.
-      expect.soft(blocks > 0, entry.name).toBe(entry.expect !== "ok" || entry.name === "deep-nesting-64");
+      // 64-deep nesting compiles to pages, but exceeds Typst's maximum HTML depth. An image Typst can't read is a
+      // placeholder (the missing-image fixer), not an error block.
+      expect
+        .soft(blocks > 0, entry.name)
+        .toBe((entry.expect !== "ok" && entry.name !== "hostile-image-url") || entry.name === "deep-nesting-64");
       doc.dispose();
     }
     console.info(results.join("\n"));
