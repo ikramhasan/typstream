@@ -9,9 +9,9 @@
 //
 // An island is an overlay over its own fallback: the host is positioned over
 // the marker, which keeps the fallback's size, so nothing moves when it
-// mounts. The fallback stays visible under it until the island paints its own
-// background (its code may still be loading), and printing hides the host
-// (the renderers' CSS). Assistive technology reads the island, not the
+// mounts. The fallback shows until the island renders something into its host
+// (its code may still be loading), and printing hides the host and shows the
+// fallback again (the renderers' CSS). Assistive technology reads the island, not the
 // fallback under it.
 
 import type { CompileTarget, FileContent, IslandProps, IslandSpec, TypstreamPlugin } from "@typstream/core";

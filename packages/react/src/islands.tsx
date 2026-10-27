@@ -13,8 +13,8 @@ import { createPortal } from "react-dom";
 
 /**
  * A React component for an island: it renders into an element positioned
- * over the marker's fallback, which stays visible under it until it paints its
- * own background (while its code loads, say). @beta
+ * over the marker's fallback, which shows until the component renders
+ * something (while its code loads, say); paint your own background. @beta
  */
 // biome-ignore lint/suspicious/noExplicitAny: each component narrows its own data.
 export type IslandComponent<Data = any> = ComponentType<IslandProps<Data>>;

@@ -120,8 +120,8 @@ export const htmlRendererCss: string = `${THEME_CSS}
   height: auto !important;
   margin-inline: auto;
 }
-:where(.typstream typstream-island[data-typstream-island] > svg) {
-  overflow: hidden !important;
+:where(.typstream typstream-island:has(> .typstream-island:not(:empty)) > svg) {
+  visibility: hidden;
 }
 :where(.typstream .typstream-island) {
   position: absolute;
@@ -130,6 +130,9 @@ export const htmlRendererCss: string = `${THEME_CSS}
 @media print {
   :where(.typstream .typstream-island) {
     display: none;
+  }
+  :where(.typstream typstream-island > svg) {
+    visibility: visible;
   }
 }
 @keyframes typstream-fadeIn {

@@ -155,8 +155,8 @@ Keep the `islands` object the same between updates: a new one mounts every islan
 
 ## Styling
 
-- **Paint your own background.** The host is positioned over the fallback, which stays under it (nothing moves when the
-  island mounts). `background: var(--typstream-island-background, Canvas)` matches the page; the paged view sets
+- **Paint your own background.** The host is positioned over the fallback, which keeps its box (nothing moves when the
+  island mounts) and is hidden once the host has content; until then, while your code loads, it shows. `background: var(--typstream-island-background, Canvas)` matches the page; the paged view sets
   white, the paper.
 - **The document's element rules reach in.** The HTML renderer styles elements with zero specificity
   (`:where(.typstream) svg { max-width: 100% }`), so any class rule of yours overrides them; reset what you need.
