@@ -1,0 +1,252 @@
+---
+title: Worksheets, quizzes and answer keys
+description: Use @typstream/edu to render teachers' documents with numbered questions, hidden answers, a teacher's copy and an answer key, in English, Arabic or Bengali.
+---
+
+`@typstream/edu` is a Typst vocabulary for teachers' documents: templates (worksheet, quiz, exam, lesson plan,
+handout), questions with points, answer spaces, answers that only the teacher's copy shows, callouts, rubrics and
+drawings. Every function renders in both targets, so a quiz looks right as live HTML and as printed pages. This guide
+goes from adding the plugin to exporting a student's and a teacher's PDF. Every function is listed, with a live
+example, in the [edu vocabulary](/docs/reference/edu/vocabulary).
+
+## Add the plugin
+
+```npm
+npm install typstream @typstream/edu
+```
+
+```tsx
+import { edu } from "@typstream/edu";
+import { Typstream } from "typstream";
+
+<Typstream source={text} isStreaming={status === "streaming"} plugins={[edu]} />;
+```
+
+To give every document on the page the vocabulary, put it on a provider instead:
+`<TypstreamProvider plugins={[edu]}>`. Without React, pass it the same way: `mountTypstream(element, { engine, plugins: [edu] })`
+or `engine.open({ plugins: [edu] })`.
+
+The plugin brings:
+
+- **The Typst package**, mounted as a local package under `@typstream/edu:0.1.0`. Nothing is downloaded and it
+  needs no [package allowlist](/docs/guides/typst-packages) entry.
+- **A preamble** that imports every public function, so documents call `#question(…)` directly, with no `#import`.
+- **Templates** your app can apply by name (see [Templates](#templates)).
+- **A stylesheet** for the HTML its functions write: answer lines, boxes, option letters. It follows the renderer's
+  theme, so dark mode works. Without it the HTML keeps its content but loses its rules and frames.
+- **The prompt kit**: rules, a function catalogue and example documents for the model. See
+  [Prompting the model](/docs/guides/prompting).
+
+## A quiz
+
+A document applies one template on its first line, then writes questions. Each `#question` is numbered through the
+document, and its points add up to the total in the header. The answers go into the functions, never into the text:
+
+<TypstPreview edu answers target="paged" height={520}>
+
+```typst
+#show: quiz.with(title: [Fractions Check-in], subject: [Mathematics], grade: [Grade 5])
+
+#question(points: 1)[
+  Which fraction is equal to $1/2$?
+  #mcq([$2/3$], [$3/6$], [$3/4$], [$5/8$], answer: 2)
+]
+
+#question(points: 1)[
+  $2/5 + 1/5 =$ #blank(answer: $3/5$)
+]
+
+#question(points: 1)[
+  #true-false(answer: false)[$3/4$ is smaller than $2/3$.]
+]
+
+#question(points: 2)[
+  Explain why $4/8$ and $1/2$ are the same amount.
+  #answer-lines(count: 2, answer: [Divide the top and bottom of $4/8$ by 4 to get $1/2$.])
+]
+
+#answer-key()
+```
+
+</TypstPreview>
+
+Tick **Show answers** to see the teacher's copy: the correct option circled, the blank and the lines filled in red,
+the statement marked, and the answer key listed under the question numbers. The functions used:
+
+| Function | What it writes | `answer` |
+|---|---|---|
+| [`quiz`](/docs/reference/edu/vocabulary#quiz) | Title, subject, grade, total points, student fields | |
+| [`question`](/docs/reference/edu/vocabulary#question) | A numbered question with its points | |
+| [`mcq`](/docs/reference/edu/vocabulary#mcq) | Lettered options | The correct option's number, from 1, or an array |
+| [`blank`](/docs/reference/edu/vocabulary#blank) | An inline blank | The expected answer (content) |
+| [`true-false`](/docs/reference/edu/vocabulary#true-false) | A statement to mark | `true` or `false` |
+| [`answer-lines`](/docs/reference/edu/vocabulary#answer-lines) | Ruled lines for a written answer | A model answer |
+| [`answer-key`](/docs/reference/edu/vocabulary#answer-key) | Every answer, by question number | |
+
+Others you'll use often: [`answer-space`](/docs/reference/edu/vocabulary#answer-space) for working space,
+[`matching`](/docs/reference/edu/vocabulary#matching), [`answer`](/docs/reference/edu/vocabulary#answer) for a worked
+solution, [`callout`](/docs/reference/edu/vocabulary#callout), [`rubric`](/docs/reference/edu/vocabulary#rubric),
+and drawings such as [`number-line`](/docs/reference/edu/vocabulary#number-line) and
+[`coordinate-plane`](/docs/reference/edu/vocabulary#coordinate-plane). Chemistry is
+[`ce`](/docs/reference/edu/vocabulary#ce): `#ce("2H2 + O2 -> 2H2O")`.
+
+Every parameter has a default and accepts what a stream cut leaves behind, so a half-written `#mcq(` renders as
+the options so far instead of failing the compile.
+
+## The teacher's copy
+
+Answers appear only when the Typst input `showAnswers` is `"true"`. Otherwise they produce no output at all, in either
+target: they aren't hidden with CSS, and they aren't in the PDF's text. A student's copy can't leak them.
+
+So the teacher's copy is the same document compiled with one more input. You don't ask the model again:
+
+```tsx
+import { edu, SHOW_ANSWERS_INPUT } from "@typstream/edu";
+import { useState } from "react";
+import { Typstream } from "typstream";
+
+export function QuizPreview({ source, isStreaming }: { source: string; isStreaming: boolean }) {
+  const [teacher, setTeacher] = useState(false);
+  return (
+    <>
+      <label>
+        <input type="checkbox" checked={teacher} onChange={(e) => setTeacher(e.target.checked)} /> Show answers
+      </label>
+      <Typstream
+        source={source}
+        isStreaming={isStreaming}
+        plugins={[edu]}
+        inputs={teacher ? { [SHOW_ANSWERS_INPUT]: "true" } : undefined}
+      />
+    </>
+  );
+}
+```
+
+`SHOW_ANSWERS_INPUT` is the string `"showAnswers"`. Changing `inputs` recompiles the document in place; the source
+and the stream are untouched.
+
+## Templates
+
+There are two ways to apply a template, and a document should use exactly one.
+
+**In the document** (the default). The model writes the template line, with the document's own title:
+
+```typst
+#show: worksheet.with(title: [Adding Fractions], subject: [Mathematics], grade: [Grade 5])
+```
+
+This is what the prompt kit asks for, and the only way to set a title, subject, grade, instructions or language.
+
+**From the app.** If the teacher picks the document type in your UI and the model writes only the body, pass the
+template's name:
+
+```tsx
+<Typstream source={body} plugins={[edu]} template="worksheet" />
+```
+
+The `template` prop applies `#show: worksheet` with its defaults before the document. Tell the model not to write a
+template line then: one applied twice renders its header twice.
+
+| Template | For |
+|---|---|
+| [`worksheet`](/docs/reference/edu/vocabulary#worksheet) | Title, subject and grade, and name, date and class lines. |
+| [`quiz`](/docs/reference/edu/vocabulary#quiz) | A worksheet with the total of the questions' points. |
+| [`exam`](/docs/reference/edu/vocabulary#exam) | Duration and total points, student fields, an instructions box and a running header. |
+| [`lesson-plan`](/docs/reference/edu/vocabulary#lesson-plan) | A table of subject, grade, duration, date and teacher; no student fields. |
+| [`handout`](/docs/reference/edu/vocabulary#handout) | Title and subtitle, with no student fields. |
+
+Every template takes `paper` (`"a4"` by default, or `"us-letter"`). Worksheets, quizzes and exams also take `info`,
+the student fields (`none` for none), and `points-label`, the word after the points (`"marks"`, say).
+
+## Languages
+
+Pass `lang` to the template, and everything edu writes itself follows the language: field labels, the points word,
+option letters, true and false, callout and key titles. Arabic and Bengali are supported alongside English, and
+right-to-left layout follows from the language in both targets.
+
+<TypstPreview edu answers target="paged" height={300}>
+
+```typst
+#show: quiz.with(lang: "ar", title: [المجموعة الشمسية], subject: [العلوم], grade: [الصف الخامس])
+
+#question(points: 1)[
+  ما هو أقرب كوكب إلى الشمس؟
+  #mcq([الزهرة], [عطارد], [المريخ], [الأرض], answer: 2)
+]
+
+#question(points: 2)[
+  #true-false(answer: true)[المريخ هو الكوكب الأحمر.]
+]
+```
+
+</TypstPreview>
+
+| | English | Arabic (`"ar"`) | Bengali (`"bn"`) |
+|---|---|---|---|
+| Option letters | (a), (b), (c) | (أ), (ب), (ج) | (ক), (খ), (গ) |
+| Points | 1 point, 2 points | درجة واحدة, درجتان, 3 درجات | 1 নম্বর |
+| Direction | left to right | right to left | left to right |
+
+Arabic counts with its own forms for one and two. Other languages get the English words. The Arabic and Bengali
+fonts are downloaded the first time a document uses them; see [Fonts and languages](/docs/guides/fonts-and-languages).
+
+## Export the student's and teacher's PDFs
+
+Exports compile the document again in final mode with the inputs you give, so one document makes both copies. In
+React, the document is on `useTypstream()`:
+
+```tsx
+"use client";
+import { edu, SHOW_ANSWERS_INPUT } from "@typstream/edu";
+import { Typstream, useTypstream } from "typstream";
+
+const save = (pdf: Uint8Array, name: string) => {
+  // TypeScript 5.7+ types Blob parts as ArrayBuffer-backed views.
+  const url = URL.createObjectURL(new Blob([pdf as Uint8Array<ArrayBuffer>], { type: "application/pdf" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = name;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+};
+
+export function Quiz({ source, isStreaming }: { source: string; isStreaming: boolean }) {
+  const t = useTypstream();
+  const exportCopy = async (teacher: boolean) => {
+    if (!t.document) return;
+    const pdf = await t.document.exportPdf({ inputs: teacher ? { [SHOW_ANSWERS_INPUT]: "true" } : {} });
+    save(pdf, teacher ? "quiz-teacher.pdf" : "quiz.pdf");
+  };
+  return (
+    <>
+      <Typstream ref={t.ref} source={source} isStreaming={isStreaming} plugins={[edu]} />
+      <button type="button" disabled={!t.document || isStreaming} onClick={() => exportCopy(false)}>
+        Student PDF
+      </button>
+      <button type="button" disabled={!t.document || isStreaming} onClick={() => exportCopy(true)}>
+        Teacher PDF
+      </button>
+    </>
+  );
+}
+```
+
+Pass `inputs` explicitly on both exports. Without it an export uses the document's current inputs: if the preview is
+showing answers, so would the "student" PDF.
+
+On the server, `@typstream/node` renders the same document. Give it edu's files and preamble:
+
+```ts
+import { writeFile } from "node:fs/promises";
+import { eduFiles, eduPreamble, SHOW_ANSWERS_INPUT } from "@typstream/edu";
+import { render } from "@typstream/node";
+
+const options = { files: eduFiles, preamble: eduPreamble };
+const student = await render(source, "pdf", options);
+const teacher = await render(source, "pdf", { ...options, inputs: { [SHOW_ANSWERS_INPUT]: "true" } });
+if (student.ok) await writeFile("quiz.pdf", student.data);
+if (teacher.ok) await writeFile("quiz-teacher.pdf", teacher.data);
+```
+
+[Exports](/docs/guides/exports) covers HTML exports, errors and timeouts.

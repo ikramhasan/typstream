@@ -16,4 +16,4 @@ It is `@typstream/react`'s `<Typstream>` with defaults an app wants:
 
 It also re-exports `TypstreamProvider`, `useTypstream`, the engine (`createEngine`, `engineWorker`), the healer (`createHealer`, `heal`), html-compat and the vendored packages. See `@typstream/react`'s README for the props, and `examples/nextjs-ai-sdk` for a chat with the Vercel AI SDK.
 
-Documents are untrusted code: what they can't do, and the Content-Security-Policy to serve typstream under (no `'unsafe-inline'` or `'unsafe-eval'`, just `'wasm-unsafe-eval'`), are in [`docs/security.md`](../../docs/security.md).
+Documents are untrusted code: what they can't do, and the Content-Security-Policy to serve typstream under (no `'unsafe-inline'` or `'unsafe-eval'`, just `'wasm-unsafe-eval'`), are in [Security](../../apps/website/content/docs/guides/security.mdx).

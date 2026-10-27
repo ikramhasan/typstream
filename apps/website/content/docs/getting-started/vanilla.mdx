@@ -1,0 +1,151 @@
+---
+title: Without a framework
+description: Render streamed Typst in plain TypeScript with @typstream/dom's mountTypstream, or drive the engine and the renderers yourself.
+---
+
+`@typstream/dom` renders typstream's output with no framework. `mountTypstream` puts a streaming document in an element: it opens the document on an engine, feeds it, and shows each result with the renderer for its target. It is what `@typstream/react` wraps, so it behaves the same, and it is the starting point for Vue, Svelte or Solid bindings of your own.
+
+```npm
+npm install @typstream/dom @typstream/engine @typstream/engine-wasm @typstream/html-compat @typstream/universe
+```
+
+`@typstream/engine-wasm` is there for the math font's URL, and html-compat and universe are plugins that `typstream`'s React component adds for you. Here you add them yourself.
+
+## Mount a document
+
+```ts title="main.ts"
+import { mountTypstream, registerMathFont } from "@typstream/dom";
+import { createEngine, engineWorker } from "@typstream/engine";
+import { baseFonts } from "@typstream/engine-wasm/fonts";
+import { htmlCompat } from "@typstream/html-compat";
+import { universe } from "@typstream/universe";
+
+// One engine per page: every document on it shares one worker.
+const engine = createEngine({ spawn: engineWorker() });
+
+// MathML needs a math font to stretch delimiters; html-compat's CSS asks for this one.
+const mathFont = baseFonts.find((url) => url.pathname.includes("NewCMMath"));
+if (mathFont) void registerMathFont(mathFont);
+
+const options = {
+  engine,
+  plugins: [htmlCompat, universe],
+  isStreaming: true,
+  animated: true,
+  caret: true,
+};
+
+const view = mountTypstream(document.querySelector<HTMLElement>("#preview")!, { ...options, source: "" });
+
+let text = "";
+for await (const chunk of llmStream) {
+  text += chunk;
+  view.update({ ...options, source: text });
+}
+view.update({ ...options, source: text, isStreaming: false }); // finished: strict compile, no caret
+```
+
+`llmStream` is any async iterable of text chunks from your model.
+
+Without `htmlCompat`, grids, alignment, boxes and shapes come out empty in the HTML target ([html-compat](/docs/reference/html-compat)). Without `universe`, documents can't import CeTZ, fletcher and the other vendored packages ([Typst packages](/docs/guides/typst-packages)). Without the math font, MathML falls back to whatever math font the browser has.
+
+## `update()` takes all options, every time
+
+`update(options)` replaces the options, it doesn't merge them: anything you leave out goes back to its default. Keep the options in one object, as above, and pass the whole set each time. `update()` compares and acts only on what changed:
+
+- **`source`** that extends the previous one is pushed as the new text; any other change replaces the text.
+- **`isStreaming`** turning false finishes the document: it is healed strictly and compiled in final mode, and the caret goes away. Turning true again starts the document over, for a regenerated answer.
+- **`target`, `inputs` and `files`** change in place.
+- **A different `engine`, `plugins`, `preamble` (including a template's), `heal` or `schedule`** opens a new document. The old output stays until the new document's first compile.
+
+Plain objects and arrays are compared by value, so building `heal: { lint: { "currency-dollar": "fix" } }` or `inputs` afresh on every call doesn't reopen or recompile anything.
+
+## Or pass a stream
+
+Instead of `source`, give `stream`: an `AsyncIterable<string>` of chunks. The mount reads it, and the document is finished when the stream ends. A new stream starts the document over.
+
+```ts
+const view = mountTypstream(element, { engine, plugins: [htmlCompat, universe], stream: llmStream });
+```
+
+If the stream throws, what arrived is shown and finished, and the error is passed to `reportError`.
+
+## Read the state
+
+```ts
+const stop = view.subscribe(() => {
+  const state = view.getState(); // null until the document opens
+  if (!state) return;
+  statusLine.textContent = state.status; // "idle" | "compiling" | "stale" | "error" | "done"
+});
+```
+
+`getState()` returns the engine document's `DocumentState`: `status`, `diagnostics` (offsets into your `source`, in UTF-16), `heal` (the healed source and the constructs still open), `failure` and the last good `artifact`. For changes only, pass callbacks instead: `onStatusChange`, `onDiagnostics`, and the telemetry hooks `onRendered`, `onFallback` and `onWatchdog` ([Telemetry](/docs/guides/telemetry)).
+
+## Export
+
+```ts
+const pdf = await view.exportPdf(); // Uint8Array
+const html = await view.exportHtml({ title: "Fractions" }); // a standalone HTML file, as a string
+const source = view.exportSource(); // the healed Typst the exports compile
+```
+
+Exports compile on the same engine as the preview. `exportHtml` returns a file that opens on its own, with the mount's plugins' CSS, your `stylesheets` and theme; pass `mathFont` among its options (the font's bytes to embed, or an absolute URL) so readers' browsers have the math font. An export opens the document first if it hasn't opened yet. Details in [Exports](/docs/guides/exports).
+
+## Clean up
+
+`view.destroy()` disposes the document and removes what it rendered. The engine is yours: call `engine.dispose()` when no document needs it any more, which terminates its workers.
+
+## Lazy by default
+
+A mounted document opens and compiles only when its element comes within one screen of the viewport, or as soon as it streams. Offscreen, finished documents apply changes when they scroll back into view. A page of fifty finished documents on one engine compiles only the ones a reader can see.
+
+Pass `lazy: false` to open the document right away. You need it for an element that is hidden (`display: none`, a closed tab) and should still compile, since a hidden element never comes into view. `view.document` and `getState()` are `null` until the document opens.
+
+## Lower level: the engine and the renderers
+
+`mountTypstream` is a convenience. When you need control over what is shown (a custom layout around pages, your own handling of failures), open a document on the engine and render its artifacts yourself.
+
+### Pages
+
+`mountPaged` shows a document as SVG pages and redraws only the pages that changed:
+
+```ts
+import { mountPaged } from "@typstream/dom";
+import { createEngine, engineWorker } from "@typstream/engine";
+
+const engine = createEngine({ spawn: engineWorker() });
+const doc = engine.open({ target: "paged" });
+const { destroy } = mountPaged(document.querySelector<HTMLElement>("#preview")!, doc);
+
+for await (const chunk of llmStream) doc.push(chunk);
+doc.finish(); // strict heal, final compile → status "done" or "error"
+```
+
+`createPagedView(container, options)` is the same renderer without a document: call `view.render(artifact)` with any paged artifact.
+
+### HTML
+
+`createHtmlRenderer` shows an HTML artifact. It sanitizes the markup, updates only the blocks that changed, and adds the fade-in and the caret. Give it the document's resolved plugins, so html-compat's sanitizer allowances and CSS apply:
+
+```ts
+import { createHtmlRenderer } from "@typstream/dom";
+import { createEngine, engineWorker } from "@typstream/engine";
+import { htmlCompat } from "@typstream/html-compat";
+
+const engine = createEngine({ spawn: engineWorker() });
+const doc = engine.open({ target: "html", plugins: [htmlCompat] });
+const renderer = createHtmlRenderer(document.querySelector<HTMLElement>("#preview")!, { plugins: doc.plugins });
+
+doc.subscribe((state) => {
+  if (state.artifact?.target !== "html") return;
+  renderer.update(state.artifact.html, { animate: !state.final, caret: !state.final });
+});
+
+for await (const chunk of llmStream) doc.push(chunk);
+doc.finish();
+```
+
+`doc.subscribe` calls back on every state change, not only new artifacts; `renderer.update` with the same HTML changes nothing. Call `renderer.dispose()` and `doc.dispose()` when you are done.
+
+An `EngineDocument` also has `set(text)` (replace the text), `applyEdit({ from, to, insert })`, `reset()`, `setTarget()`, `setInputs()`, `setFiles()`, `onEvent()` and the exports. The [engine reference](/docs/reference/engine) and the [dom reference](/docs/reference/dom) list everything.

@@ -1,0 +1,102 @@
+---
+title: "Fixers and fallback"
+description: "What the engine does when a healed document still doesn't compile: diagnostic fixers that repair errors only the compiler finds, and a fallback ladder that always leaves something to show."
+---
+
+Healing guarantees that a source parses, not that it compiles. `#text(` heals to `#text()`, which fails because the function needs its body; `@fig-cell` fails until the `<fig-cell>` label arrives; a settled block can simply be wrong. The engine handles these in the worker, after compiling, in two layers: **fixers** (Layer 3) turn compile errors into edits and recompile, and the **fallback ladder** (Layer 4) decides what to show when the errors stay. Both are on by default, in the browser worker and in `@typstream/node`'s server alike.
+
+The result: a document never turns into an error screen. Here the third block can't compile, and the rest renders around it:
+
+<TypstPreview height={340}>
+
+```typst
+= Fractions
+
+Add the fractions: $1/2 + 1/4 = 3/4$.
+
+#let total = sum(1, 2)
+
+The rest of the worksheet still renders, including $2/3 + 1/6 = 5/6$.
+```
+
+</TypstPreview>
+
+## Fixers (Layer 3)
+
+When a compile fails, each error is offered to the fixers in priority order, and the first fixer that returns edits fixes it. A round is applied only when every error has a fix, since one left over would fail the recompile anyway. The worker applies the edits and compiles again, **at most 2 rounds per revision**, each starting only while the compile has taken under 1 s (streaming) or 3 s (final mode), a third of the watchdog's budgets. Only a round that ends without errors counts; otherwise the client gets the first compile's diagnostics and the fallback takes over.
+
+Three fixers are built in:
+
+| Fixer | Priority | Modes | What it fixes |
+|---|---|---|---|
+| `pending-ref` | 10 | streaming, final | A reference to a label that doesn't exist yet: `@key` (or `ref(<key>)` in code) becomes a muted placeholder showing the key. Common while streaming (a citation before `#bibliography`). In final mode the placeholder shows and the error is still reported. |
+| `package-stub` | 20 | streaming, final | An import of a package the document can't have (not allowed, still loading, failed to load): the imported names become placeholders that show the package's spec. A wildcard import, or a module whose fields are used (`cetz.draw`), can't be stood in for; the error stays and the fallback isolates the block. |
+| `tail-cut` | 100 | streaming | An error in the text still being typed (after heal's stable offset), or a call there in the error's trace: cut the source at that point and heal it again. `#text(` without its body, `#v(1` (an integer, not yet a length), `rgb("#e` and closure parameters before `=>` drop out until the next tokens bring them back. A cut that leaves a call empty drops the call too. |
+
+`tail-cut` is what makes streamed prefixes compile: over typstream's corpus, healing alone makes 88% of stream prefixes compile, and with the fixers 99.9% do. It never touches settled text, and it doesn't run in final mode, where a document's errors are reported rather than hidden.
+
+**Reporting.** While streaming, the errors a fixer fixed are reported as `info` diagnostics, with the fixer's name as `source`, so the output is clean but you can still see what happened. In final mode they are reported as the errors they are. `state.lastCompile.fixes` lists the fixes behind the current output.
+
+**Placeholders** come from a small Typst library the worker mounts at `/@typstream/runtime.typ` and imports only into compiles it fixed, so valid documents compile exactly as written. In HTML, placeholders carry the classes `typstream-pending-ref`, `typstream-missing-package`, `typstream-pending-text` and `typstream-error-block` for styling; a document's own file at that path replaces the library.
+
+**Your own fixers** ship in a plugin's `engine.fixerModules`: ES modules, loaded in the worker, whose default export is a `DiagnosticFixer` or an array of them. See [Writing a plugin](/docs/guides/writing-a-plugin).
+
+## The fallback ladder (Layer 4)
+
+When errors remain after the fixers, the worker tries each rung in turn:
+
+| Level | When | What the reader sees |
+|---|---|---|
+| 1. Last good render | Streaming, a compile failed | The previous output stays; the status is `stale`. The next tokens usually fix it. |
+| 2. Stable prefix | Streaming, compiles have failed for 1.5 s (`schedule.staleMs`) | The settled text, compiled, with the unsettled tail below it as muted plain text. |
+| 3. Error blocks | Streaming (settled blocks only) and final mode | Each failing top-level block replaced by a "This part couldn't be displayed" box; everything else renders. |
+| 4. Whole document | Final mode, nothing else compiled in time | The whole document as one error box showing its source. |
+
+### Error blocks
+
+A document is split into **top-level blocks** at the start of the text, after a blank line, and at headings, never in the middle of a list or detaching a label. Typst state flows forward (a `#let` or `#set` affects everything after it), so blocks can't be compiled one by one. Instead the worker finds the first failing block by bisecting prefixes: prefix `k` compiles, prefix `k + 1` doesn't. These are check compiles, which produce diagnostics without exporting anything. That block is replaced by an error block and the search continues after it.
+
+- It costs about log₂(n) checks and one compile per failing block, for a document of n blocks. A block where the parser finds a syntax error needs no check.
+- A block that uses an isolated block's definitions is isolated too, and a function that fails is blamed where it is called, not where it is defined.
+- References to labels that come later don't count as failures during the search.
+- While streaming, only settled blocks are isolated: the block being written is left to the fixers and the stable prefix. What the search found is remembered for the next revision, so a lasting error costs about one extra compile per update.
+
+The error box shows "This part couldn't be displayed.", the error, and the block's source (folded away under "Source" in HTML, up to 2,000 characters). In HTML it is a `div.typstream-error-block` with `role="note"`; in paged output, a dashed box with the source as code.
+
+### Hangs and crashes
+
+A compile that runs past the watchdog's budget or crashes the worker can't be bisected by the worker: it never answers. So in final mode, the client searches. It compiles prefixes of the document with the rest skipped, each under its own budget (`watchdog.probeMs`, 5 s), at most 16 compiles per search. The block that doesn't finish is shown as an error box ("Compiling this part took too long." or "Compiling this part crashed the engine.") and is skipped from then on, while the source stays the same. Its diagnostic has the code `timeout` or `engine-crashed`.
+
+While streaming, timeouts and crashes stay watchdog strikes: after 3, live compiling stops until the document is finished ([The engine](/docs/concepts/engine#watchdog)).
+
+### The tail never shows less
+
+A compile can succeed and still be worse than the last one: a cut that keeps a prefix compiling may take text that had already rendered with it. While streaming, such a compile is held back (level 1) until the tail shows as much again or that text settles, so content doesn't flash away and back. See [Streaming and final mode](/docs/concepts/streaming#the-tail-never-shows-less-than-it-did).
+
+## Observing it
+
+- **`state.lastCompile.fallback`** (`doc.getState()`, or `useTypstream().document`) is set when the output came from levels 2–4: `level`, `isolated` (the ranges shown as error boxes) and `plainFrom` (where the plain-text tail starts).
+- **Diagnostics**: the errors of isolated blocks stay errors, at their place in the document. Under the stable prefix, the tail's errors are `info` with `source: "stable-prefix"`. Because there is an output, the status is `idle` while streaming and `done` in final mode.
+- **`onFallback`** (on `<Typstream>`, `TypstreamProvider` and `mountTypstream`, or `doc.onEvent`) fires with every compile whose output isn't the text as it is, levels 1 to 4. The event has `level`, `isolated`, `plainFrom`, `consecutive` (how many in a row), the diagnostics, and the `input` and healed `source`, which make a reproducible test case.
+
+```tsx
+<Typstream
+  source={text}
+  isStreaming={streaming}
+  onFallback={(e) => {
+    if (e.level >= 3 && e.consecutive === 1) console.info("fallback", { level: e.level, length: e.input.length });
+  }}
+/>
+```
+
+Documents are user content: ask for consent before collecting `input` or `source`. See [Telemetry](/docs/guides/telemetry).
+
+## Turning it off
+
+The fallback is per document: `engine.open({ fallback: false })` turns off levels 2–4, and a failed compile keeps the last good artifact instead. The bindings (`<Typstream>`, `mountTypstream`) always use the fallback; there is no prop for it yet. The fixers stay on either way; a custom worker can replace or remove them (`serve(engineWasm(), undefined, { fixers: [] })`).
+
+## Limits
+
+- Exports (`exportPdf()`, `exportHtml()`) don't use fixers or the fallback: they export what compiles, or reject with the diagnostics.
+- While streaming, a block that hangs isn't isolated; it costs watchdog strikes instead.
+- An error with no position in the document, such as a panic inside a package on a half-typed argument, can't be cut by `tail-cut` ([#72](https://github.com/ikramhasan/typstream/issues/72)); the last good render covers it while streaming.

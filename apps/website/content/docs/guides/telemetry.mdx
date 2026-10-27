@@ -1,0 +1,239 @@
+---
+title: Telemetry and events
+description: What typstream reports about each compile and render, where to listen for it, and how to send it to your own analytics without collecting documents.
+---
+
+typstream sends nothing anywhere. It reports what happened to each document (how long healing, compiling and drawing took, which fixes it needed, when it fell back, when the watchdog stopped a compile) and your app decides what to log or collect. Every event is plain data, so you can `JSON.stringify` it as it is.
+
+Use these events to watch rendering latency in production, to find the prompts that produce broken Typst, and to collect real failures as test cases.
+
+## Where to listen
+
+| Where | What you get | Use it when |
+|---|---|---|
+| `onRendered`, `onFallback`, `onWatchdog`, `onDiagnostics` on `<TypstreamProvider>` or `<Typstream>` | One callback per event, for every document below the provider | You use React (`typstream` or `@typstream/react`) |
+| The same options on `mountTypstream` | The same callbacks, for one mounted element | You use `@typstream/dom` |
+| `onStatusChange` on `<Typstream>` or `mountTypstream` | The document's status (`idle`, `compiling`, `stale`, `error`, `done`) | You show your own loading or error state |
+| `doc.onEvent(listener)` on an `EngineDocument` | Every `DocumentEvent` of one document | You drive the engine yourself |
+| `engine.onEvent(listener)` on an `Engine` | The workers' events, and every document's events as `{ type: "document", event }` | You want one listener for the whole page |
+
+The quickest start is a provider around your app:
+
+```tsx title="app/providers.tsx"
+"use client";
+
+import type { ReactNode } from "react";
+import { TypstreamProvider } from "typstream";
+
+export const Providers = ({ children }: { children: ReactNode }) => (
+  <TypstreamProvider
+    onRendered={(e) => console.info(`${e.uri} rev ${e.rev}: compile ${e.compileMs} ms, render ${e.renderMs} ms`)}
+    onFallback={(e) => console.warn(`fallback level ${e.level}`, e.diagnostics[0]?.message)}
+    onWatchdog={(e) => console.warn(`${e.reason} after ${e.budgetMs} ms, strike ${e.strikes}`)}
+  >
+    {children}
+  </TypstreamProvider>
+);
+```
+
+## The events of one compile
+
+Each compile of a document reports, in this order, before the state it leads to is published:
+
+1. `diagnostics`: the compile's errors and warnings, in input coordinates (UTF-16 offsets into the text you passed). It fires with every compile, even when they didn't change.
+2. `compiled`: what the compile cost and what it took to make the text compile.
+3. `fallback`, if the output isn't the text as it is (see [the fallback ladder](/docs/concepts/fallback)).
+
+A compile that runs past the watchdog's budget or crashes the worker reports `watchdog` instead. While a finished document is searched for the block that hangs it, those probe compiles aren't reported; the `watchdog` event that started the search is.
+
+Every document event carries `uri`, `rev` (the revision compiled; revisions count the worker's copies of the document, not your input's chunks), `target` (`html` or `paged`) and `mode` (`streaming`, or `final` once the input is complete).
+
+### compiled
+
+`status` is `ok` when the compile published an artifact (perhaps from the fallback) and `error` when the last good one stays. The rest is the compile report, shared with `onRendered`:
+
+<auto-type-table path="packages/core/src/telemetry.ts" name="CompileReport" />
+
+`patchReasons` counts heal's patches by reason, such as `"close:]"` for a bracket closed at the end of the stream or `"lint:email-at"` for an `@` that was escaped. `fixersApplied` lists the compile errors the worker's fixers fixed, as `{ fixer, message }`.
+
+### fallback
+
+<auto-type-table path="packages/core/src/telemetry.ts" name="FallbackEvent" />
+
+The levels:
+
+| `level` | What the reader saw |
+|---|---|
+| `1` | The compile failed; the last good render stayed. |
+| `2` | The settled text, with the unsettled tail as plain text (streaming). |
+| `3` | Failing or hanging blocks shown as error boxes. |
+| `4` | Nothing compiled: the whole document shown as its source (final mode). |
+
+A lasting error in a stream fires `fallback` once per revision. `consecutive` tells a new failure (`1`) from a lasting one. `input` and `source` are what to replay to reproduce it: a ready-made test case, if your users agree to share it.
+
+### watchdog
+
+<auto-type-table path="packages/core/src/telemetry.ts" name="WatchdogEvent" />
+
+By default a compile gets 3 s while streaming and 10 s in final mode, and live preview stops after 3 strikes (`live: false`). The finished document compiles again. See [the engine](/docs/concepts/engine) for the watchdog's options.
+
+### diagnostics
+
+<auto-type-table path="packages/core/src/telemetry.ts" name="DiagnosticsEvent" />
+
+## Render hooks
+
+`@typstream/dom`'s `mountTypstream`, and so `<Typstream>`, turns these events into callbacks:
+
+| Option | Called with | When |
+|---|---|---|
+| `onRendered` | `RenderedEvent` | An artifact was handed to the renderer. |
+| `onFallback` | `FallbackEvent` | A compile's output wasn't the document as it is. |
+| `onWatchdog` | `WatchdogEvent` | A compile ran past its budget or crashed the worker. |
+| `onDiagnostics` | `(diagnostics, state)` | A compile replaced the document's diagnostics. |
+| `onStatusChange` | `(status, state)` | The document's status changed. |
+
+`onRendered` gets the report of the compile that made the artifact, plus what drawing it cost:
+
+<auto-type-table path="packages/core/src/telemetry.ts" name="RenderedEvent" />
+
+For the paged target, `pages` is the page count of the artifact shown. Pages that are offscreen draw later, so `renderMs` covers handing the artifact over, not drawing every page.
+
+Without React, pass the same options to `mountTypstream`:
+
+```ts
+import { mountTypstream } from "@typstream/dom";
+import { createEngine, engineWorker } from "@typstream/engine";
+
+const engine = createEngine({ spawn: engineWorker() });
+const view = mountTypstream(document.getElementById("answer")!, {
+  engine,
+  source: "= Hello",
+  onRendered: (e) => console.info(`compile ${e.compileMs} ms, render ${e.renderMs} ms, ${e.blocks} blocks`),
+  onFallback: (e) => console.warn(`fallback level ${e.level}`),
+  onStatusChange: (status) => console.info(status),
+});
+```
+
+### Hooks on a provider
+
+Unlike other settings, a provider's hooks don't give way to a component's. When both a `<TypstreamProvider>` and a `<Typstream>` below it have `onRendered` (or `onFallback`, `onWatchdog`, `onDiagnostics`), both are called, the outer one first. Nested providers work the same way. So you can wire analytics once at the top and still add a hook to one component.
+
+`onStatusChange` is per document: it goes on `<Typstream>` or `mountTypstream`, not on the provider.
+
+## Engine events
+
+If you use `@typstream/engine` directly, listen on a document or on the engine:
+
+```ts
+import { createEngine, engineWorker } from "@typstream/engine";
+
+const engine = createEngine({ spawn: engineWorker() });
+
+engine.onEvent((event) => {
+  switch (event.type) {
+    case "document":
+      // Every document's events: event.event is a DocumentEvent.
+      if (event.event.type === "compiled") console.info(event.event.uri, event.event.compileMs);
+      break;
+    case "log":
+      console[event.level === "error" ? "error" : "info"](`[engine] ${event.message}`);
+      break;
+    case "failed":
+      console.error("the engine can't run", event.error);
+      break;
+  }
+});
+
+const doc = engine.open();
+const stop = doc.onEvent((event) => {
+  if (event.type === "fallback") console.warn(event.level, event.diagnostics);
+});
+```
+
+Both `onEvent` calls return a function that removes the listener. Besides `document`, the engine reports what its workers did:
+
+| `type` | Fields | When |
+|---|---|---|
+| `ready` | `info` | A worker finished starting (the first one, and every replacement). `info.serverInfo.typstVersion` is `0.15.1`. |
+| `watchdog` | `uri`, `rev`, `budgetMs` | A compile or export ran past its budget; the worker was terminated. |
+| `crash` | `error` | A worker failed outside the protocol. |
+| `recycle` | `memoryBytes` | A worker was replaced because it used too much memory (256 MiB by default). |
+| `log` | `level`, `message` | A log message from the worker, such as a plugin's fixer module that failed to load. |
+| `failed` | `error` | The engine can't run; every document is in `error`. |
+| `document` | `event` | An event of one of the engine's documents. |
+
+## Sending events to your analytics
+
+This is the pattern from the [Next.js and AI SDK example](/docs/getting-started/nextjs-ai-sdk): hooks on the provider batch events and post them to an endpoint of your app once a second, and when the page is hidden.
+
+```tsx title="app/telemetry.tsx"
+"use client";
+
+import type { ReactNode } from "react";
+import { type FallbackEvent, type RenderedEvent, TypstreamProvider, type WatchdogEvent } from "typstream";
+
+type Event = RenderedEvent | FallbackEvent | WatchdogEvent;
+
+let batch: object[] = [];
+let timer: ReturnType<typeof setTimeout> | undefined;
+
+const flush = () => {
+  clearTimeout(timer);
+  if (batch.length === 0) return;
+  const body = JSON.stringify(batch);
+  batch = [];
+  // sendBeacon survives the page closing; fetch is the fallback where it's missing.
+  if (!navigator.sendBeacon?.("/api/telemetry", body)) void fetch("/api/telemetry", { method: "POST", body });
+};
+
+if (typeof window !== "undefined") {
+  addEventListener("pagehide", flush);
+  addEventListener("visibilitychange", () => document.visibilityState === "hidden" && flush());
+}
+
+const send = (event: Event) => {
+  if (event.type === "fallback") {
+    // Lengths, not text: the input and source are your users' documents.
+    const { input, source, diagnostics, ...rest } = event;
+    batch.push({ ...rest, inputLength: input.length, errors: diagnostics.map((d) => d.message) });
+  } else batch.push(event);
+  clearTimeout(timer);
+  timer = setTimeout(flush, 1000);
+};
+
+export const Telemetry = ({ children }: { children: ReactNode }) => (
+  <TypstreamProvider
+    onRendered={send}
+    onFallback={(e) => {
+      // While streaming, a lasting error falls back once per revision: you may want only the first of a run.
+      if (e.consecutive === 1 || e.mode === "final") send(e);
+    }}
+    onWatchdog={send}
+  >
+    {children}
+  </TypstreamProvider>
+);
+```
+
+And the endpoint, which here only prints a line per event:
+
+```ts title="app/api/telemetry/route.ts"
+export async function POST(req: Request) {
+  const events = (await req.json()) as { type: string; uri: string; rev: number; mode: string }[];
+  for (const e of events) console.log(`[telemetry] ${e.type} ${e.uri} rev ${e.rev} (${e.mode})`);
+  return new Response(null, { status: 204 });
+}
+```
+
+<Callout type="warn" title="Documents are your users' data">
+  A `fallback` event holds the document's input and healed source. Collecting them needs your users' consent. Without it, send lengths and error messages, as above.
+</Callout>
+
+## What is worth collecting
+
+- **Latency by document size**: `compileMs`, `healMs` and `renderMs` against `sourceLength`. `onRendered` fires for every compile while streaming; `mode === "final"` picks the finished document's.
+- **Heal patches by reason** (`patchReasons`): Markdown habits and other mistakes the model makes often. They are candidates for your prompt.
+- **Fixer hits by error** (`fixersApplied`): compile errors that needed a fix to render. Telling the model not to write them improves the output.
+- **Fallback levels**: how often readers saw less than the whole document, and which errors caused it.
+- **Watchdog stops**: documents too complex for live preview, by `reason` and `sourceLength`.

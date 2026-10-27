@@ -1,0 +1,16 @@
+{
+  "title": "Packages",
+  "pages": [
+    "typstream",
+    "react",
+    "dom",
+    "engine",
+    "heal",
+    "node",
+    "edu",
+    "html-compat",
+    "universe",
+    "engine-wasm",
+    "core"
+  ]
+}

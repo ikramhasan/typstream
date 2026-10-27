@@ -1,0 +1,6 @@
+/.source
+/.next
+next-env.d.ts
+*.tsbuildinfo
+# Written by scripts/generate.mjs from the packages
+/content/docs/reference/edu/vocabulary.mdx

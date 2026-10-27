@@ -1,0 +1,158 @@
+---
+title: Node.js (server)
+description: Validate, render and repair LLM-written Typst on the server with @typstream/node, including a fix loop that sends Typst's errors back to the model.
+---
+
+`@typstream/node` is for the server side of an app that saves LLM-written documents. It checks a finished document before you save it, renders it to PDF, HTML or SVG, and turns Typst's errors into a repair prompt for the model. It runs the same Typst build as the browser (Typst 0.15.1 compiled to WebAssembly) on worker threads, so a document that validates here renders the same in the preview.
+
+```npm
+npm install @typstream/node
+```
+
+It needs Node.js 20 or later, and is ESM only.
+
+## Validate
+
+```ts
+import { validate } from "@typstream/node";
+
+const { ok, diagnostics, pageCount } = await validate(source);
+```
+
+`validate` compiles the document without exporting it and adds typstream's lint findings as warnings: Markdown habits that compile but render wrongly, such as `**bold**` or `$5 and $10`. `ok` is true when there are no errors; warnings don't count. Diagnostics have UTF-16 offsets into `source` (`source.slice(d.span.from, d.span.to)` is the offending text), as everywhere in typstream.
+
+It never throws for a broken document. A compile that runs past the watchdog comes back as an error diagnostic with `code: "timeout"`, and one that crashes the engine (out of memory, say) with `code: "engine-crashed"`.
+
+| Option | Default | |
+|---|---|---|
+| `target` | `"paged"` | `"html"` also catches problems specific to HTML export. |
+| `lint` | `true` | `false` to skip the lint rules, or per-rule settings such as `{ "currency-dollar": "off" }`. |
+| `preamble` | | Typst evaluated before the document (a theme, imports). |
+| `files` | | Files the document reads (images, data, other `.typ` files), by path relative to the document. |
+| `inputs` | | `sys.inputs`, e.g. `{ showAnswers: "true" }`. |
+| `timeoutMs` | the engine's | Watchdog budget for this compile. |
+| `engine` | a shared default | An engine from `createEngine()`. |
+
+## Render
+
+```ts
+import { render } from "@typstream/node";
+
+const pdf = await render(source, "pdf"); // data: Uint8Array
+const html = await render(source, "html"); // data: string, an HTML document
+const svg = await render(source, "svg"); // data: string[], one SVG per page
+
+if (pdf.ok) await writeFile("worksheet.pdf", pdf.data);
+else console.error(pdf.diagnostics);
+```
+
+`render` takes the same options as `validate` except `target` and `lint`. It reports Typst's diagnostics only. `ok: false` means the document didn't compile and there is no `data`.
+
+## Turn errors into a repair prompt
+
+```ts
+import { formatDiagnosticsForLLM, validate } from "@typstream/node";
+
+const { ok, diagnostics } = await validate(source);
+if (!ok) console.log(formatDiagnosticsForLLM(source, diagnostics));
+```
+
+The prompt looks like the Typst CLI's output: a summary line, then each problem with its message, `--> line, column`, the source line with `^^^` under the problem, and its hints, then an instruction to reply with the corrected document.
+
+```text
+The Typst document has 1 error.
+
+error: unknown variable: hilight
+ --> line 4, column 2
+  |
+3 | Read the passage.
+4 | #hilight[Underline every verb.]
+  |  ^^^^^^^
+5 |
+
+Fix every error, and the warnings where they point at a real mistake. Reply with the complete corrected Typst document only.
+```
+
+Lint findings appear as warnings with their rule, and a hint that says exactly what to change:
+
+```text
+warning[markdown-bold]: Markdown `**`; Typst uses single `*`
+ --> line 4, column 1
+  |
+3 | A pen costs \$5 and a book \$10.
+4 | **Note:** bring a pencil.
+  | ^^^^^^^^^
+5 |
+  = hint: replace `**Note:**` with `*Note:*`
+```
+
+Errors come first, repeats are dropped, and at most `maxDiagnostics` (10) are shown, so the prompt stays small for long documents. Options: `maxDiagnostics`, `contextLines` (1), `includeWarnings` (true), and `instructions` (the closing sentence; `""` for none).
+
+## The fix loop
+
+`fixLoop` validates the document, asks your model to repair it while it has errors, and validates each reply, for at most `maxRounds` rounds (3). Your `generate` function gets the current `source`, its `diagnostics`, the ready-made `prompt` and the `round`, and returns the model's reply. A ```` ```typst ```` fence around the reply is removed.
+
+With the Anthropic SDK:
+
+```ts
+import Anthropic from "@anthropic-ai/sdk";
+import { fixLoop, render } from "@typstream/node";
+
+const client = new Anthropic();
+
+const result = await fixLoop({
+  source,
+  generate: async ({ prompt, source }) => {
+    const reply = await client.messages.create({
+      model: "claude-opus-5-5",
+      max_tokens: 16000,
+      messages: [{ role: "user", content: `${prompt}\n\n${source}` }],
+    });
+    return reply.content[0].type === "text" ? reply.content[0].text : "";
+  },
+});
+
+if (result.ok) {
+  const pdf = await render(result.source, "pdf");
+  if (pdf.ok) await save(pdf.data);
+}
+```
+
+`result.source` is the best attempt, ranked by fewest errors, then fewest warnings, then the latest. A reply that makes things worse never replaces a better version. `result.attempts` lists every version, starting with the original. With `strict: true` the loop also repairs documents that have only warnings, such as Markdown `**bold**`. `fixLoop` takes `validate`'s options too, plus `format` for `formatDiagnosticsForLLM`.
+
+## The engine
+
+`validate` and `render` use a default engine, created on first use. Create your own to set workers, fonts and budgets, and share it across calls:
+
+```ts
+import { createEngine, validate } from "@typstream/node";
+
+const engine = createEngine({
+  workers: 4, // most worker threads; default min(4, cores - 1), at least 1
+  timeoutMs: 10_000, // watchdog budget per compile (default 10 s)
+  fontPaths: ["/srv/fonts/noto"], // more fonts, searched recursively, like typst --font-path
+});
+
+await validate(source, { engine });
+await engine.close();
+```
+
+| Option | Default | |
+|---|---|---|
+| `workers` | `min(4, cores - 1)` | Most worker threads; each compiles one document at a time. |
+| `timeoutMs` | `10000` | Watchdog budget per compile. A compile over budget is stopped by terminating its worker. |
+| `maxMemoryBytes` | 1 GiB | Replace a worker once its wasm memory exceeds this (wasm memory never shrinks). |
+| `typstFonts` | `true` | Typst's bundled fonts: Libertinus Serif, New Computer Modern, DejaVu Sans Mono. |
+| `scriptFonts` | `true` | Noto Naskh Arabic, Noto Serif Bengali and Noto Serif Devanagari, regular and bold. |
+| `fontPaths` | | Directories searched recursively for font files. |
+| `fonts` | | Font files as bytes (TTF, OTF, TTC). |
+
+Nothing starts until the first compile. Workers start on demand, keep Typst's caches warm between calls, and don't keep the process alive while idle, so a script that validates one document exits without `close()`. A long-running server should call `engine.close()` on shutdown; pending compiles fail and the engine can't be used afterwards.
+
+A runaway document (a loop that never ends, a memory bomb) costs one worker, which is replaced; the process is unaffected. Documents can read only the `files` you pass: not the server's filesystem, not the network.
+
+## Next steps
+
+- [The server fix loop](/docs/guides/server-fix-loop): when to validate, what to send the model, and what to do when the loop gives up.
+- [Remote engine](/docs/guides/remote-engine): serve the engine protocol over WebSocket with `createProtocolServer` and `handleWebSocket`, for browsers that shouldn't download the 6 MB engine.
+- [`@typstream/node` reference](/docs/reference/node).

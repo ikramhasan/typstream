@@ -1,0 +1,349 @@
+---
+title: "@typstream/dom"
+description: Framework-free renderers for typstream's output (HTML and SVG pages), mountTypstream to show an engine document in an element, and standalone HTML exports.
+icon: LayoutTemplate
+---
+
+`@typstream/dom` turns the engine's output into DOM, with no framework. It has three layers, and you can use any of
+them on its own:
+
+- **`mountTypstream`** shows a streaming document in an element: it opens the document on an engine, feeds it, and
+  draws each artifact with the renderer for its target. This is what the framework bindings wrap.
+- **The renderers**: `createHtmlRenderer` for the HTML target (sanitized, block-diffed Typst HTML with word fade-in
+  and a caret) and `createPagedView` for the paged target (SVG pages, changed pages only, with a selectable text
+  layer).
+- **`standaloneHtml`**, which makes an HTML export a file that opens on its own.
+
+## When to use it
+
+Use `@typstream/dom` in apps without React (vanilla JS, Vue, Svelte, Solid, Angular), or to build bindings for another
+framework. In React, use [`typstream`](/docs/reference/typstream) or [`@typstream/react`](/docs/reference/react),
+which wrap `mountTypstream`. Use the renderers directly only when you drive an
+[`EngineDocument`](/docs/reference/engine#enginedocument) yourself.
+
+## Install
+
+```npm
+npm install @typstream/dom @typstream/engine
+```
+
+`mountTypstream` takes an engine from [`@typstream/engine`](/docs/reference/engine). For html-compat's layout support
+in the HTML target, add [`@typstream/html-compat`](/docs/reference/html-compat) and pass its plugin.
+
+## Example
+
+```ts
+import { mountTypstream } from "@typstream/dom";
+import { createEngine, engineWorker } from "@typstream/engine";
+import { htmlCompat } from "@typstream/html-compat";
+
+const engine = createEngine({ spawn: engineWorker() });
+const options = { engine, plugins: [htmlCompat], isStreaming: true, animated: true, caret: true };
+
+const view = mountTypstream(document.querySelector("#answer")!, { ...options, source: "" });
+let text = "";
+for await (const chunk of llmStream) view.update({ ...options, source: (text += chunk) });
+view.update({ ...options, source: text, isStreaming: false }); // finish: strict compile, no caret
+```
+
+The [vanilla JS guide](/docs/getting-started/vanilla) walks through it step by step.
+
+## How `mountTypstream` behaves
+
+- **`update(options)` takes all options each time** and acts only on what changed. Anything left out goes back to its
+  default. Plain objects and arrays are compared by value, so passing a fresh `inputs` object doesn't reopen the
+  document.
+- **Source.** A `source` that extends the last one is pushed as a chunk; any other `source` replaces the text.
+  `isStreaming` turning false finishes the document (strict heal, final compile); turning true again starts it over,
+  as for a regenerated answer. `stream` (an `AsyncIterable<string>`) is the alternative to `source`: a new stream
+  starts the document over, and the document finishes when the stream ends. If the stream throws, what arrived is
+  finished and the error goes to `reportError`.
+- **In place or a new document.** `target`, `inputs` and `files` change in place. A different `engine`, `plugins`,
+  `preamble` or `template`, `heal` or `schedule` options, or switching to or from the fit-width layout opens a new
+  document; the old output stays until its first compile.
+- **Lazy.** The document opens when the element comes within one screen of the viewport, or as soon as it streams.
+  Offscreen, finished documents apply changes when they scroll back. `lazy: false` opens it right away.
+- **Renderers follow the artifact's target**, so after `target` changes the old output stays until the first
+  artifact of the new target.
+- **Callbacks.** `onStatusChange` and `onDiagnostics` follow the document's state. `onRendered` fires for each
+  artifact drawn, with its compile's report plus `renderMs` and `blocks` (HTML) or `pages` (paged). `onFallback` and
+  `onWatchdog` pass on the document's [events](/docs/reference/core#telemetry-events).
+- **`destroy()`** disposes the document and removes what was rendered. The engine is yours and stays.
+
+## API
+
+### `mountTypstream`
+
+```ts
+const mountTypstream: (element: HTMLElement, initial: TypstreamOptions) => MountedTypstream;
+```
+
+Renders a streaming Typst document into `element` and keeps it up to date. The renderers are added inside `element`
+(the HTML renderer in a child `<div>`, the pages in a `.typstream-paged` child).
+
+#### `TypstreamOptions`
+
+<auto-type-table path="packages/dom/src/mount.ts" name="TypstreamOptions" />
+
+#### `MountedTypstream`
+
+<auto-type-table path="packages/dom/src/mount.ts" name="MountedTypstream" />
+
+The exports compile the document in final mode with the template's and your `inputs`, without the fit-width page
+size, so they come out at the document's own size. They reject with the engine's
+[`ExportError`](/docs/reference/engine#exporterror). See [Exports](/docs/guides/exports).
+
+```ts
+const pdf = await view.exportPdf();
+const file = await view.exportHtml({ title: "Fractions worksheet" });
+```
+
+### `createHtmlRenderer`
+
+```ts
+const createHtmlRenderer: (root: HTMLElement, options?: HtmlRendererOptions) => HtmlRenderer;
+```
+
+Renders Typst HTML artifacts into `root`, keeping the DOM of unchanged blocks across updates. Each update splits the
+HTML into top-level blocks as strings, keeps every block whose string is unchanged (its DOM nodes are never
+re-created), and parses, sanitizes and inserts only the rest. A stream usually changes only the last block.
+
+```ts
+const renderer = createHtmlRenderer(element, { plugins: [htmlCompat] });
+doc.subscribe((s) => {
+  if (s.artifact?.target === "html") renderer.update(s.artifact.html, { animate: !s.final, caret: !s.final });
+});
+```
+
+What the renderer does with the HTML:
+
+- **Sanitizes it.** The document's HTML is untrusted. It is parsed into an inert `<template>` and cleaned by an
+  allowlist of the HTML, MathML and SVG Typst writes; plugins' `sanitize` facets allow more. The cleaned nodes are
+  moved into the page, never serialized and parsed again. Inline styles are applied through the CSSOM, so a strict
+  CSP needs no `'unsafe-inline'` for styles.
+- **Scopes ids.** Ids and the links to them get a prefix (`idPrefix`), so documents on one page don't collide.
+- **Opens external links in a new tab** (`linkTarget`, default `_blank`).
+- **Marks source anchors.** Each top-level block's first element gets `data-typstream-src`, its offset in the
+  compiled source.
+- **Sets the language and direction** on `root` from the document's `lang`, so right-to-left documents order lists
+  and tables correctly.
+
+#### `HtmlRendererOptions`
+
+<auto-type-table path="packages/dom/src/html/renderer.ts" name="HtmlRendererOptions" />
+
+#### `HtmlRenderer`
+
+<auto-type-table path="packages/dom/src/html/renderer.ts" name="HtmlRenderer" />
+
+<Callout type="warn" title="Beta">
+`sourceRange()` and `blockAt()` are beta: they may change before the first stable release. Their offsets are in the
+compiled (healed) source, without the preamble; map them to the raw stream with heal's `map.toInput`.
+</Callout>
+
+#### `HtmlUpdateOptions`
+
+<auto-type-table path="packages/dom/src/html/renderer.ts" name="HtmlUpdateOptions" />
+
+#### `HtmlUpdateResult`
+
+<auto-type-table path="packages/dom/src/html/renderer.ts" name="HtmlUpdateResult" />
+
+#### `AnimateOptions`
+
+Word fade-in settings: `animated` in `TypstreamOptions`, `animation` in `HtmlRendererOptions`. Only blocks whose HTML
+changed are touched, and only their new text fades in. Words still fading in when their block changes continue where
+they were instead of popping in. Under `prefers-reduced-motion: reduce` nothing animates.
+
+<auto-type-table path="packages/dom/src/html/animate.ts" name="AnimateOptions" />
+
+### `htmlRendererCss`
+
+```ts
+const htmlRendererCss: string;
+```
+
+The HTML renderer's CSS: theme variables, word fade-in, the caret, and Typst's MathML rules. The renderer injects it
+(once per document or shadow root, as a constructed stylesheet where supported) unless you pass
+`injectStyles: false` to ship it yourself.
+
+### `registerMathFont`
+
+```ts
+const registerMathFont: (url: string | URL, doc?: Document) => Promise<void>;
+```
+
+Registers New Computer Modern Math as a web font in `doc` (default `document`), for MathML. Without a math font,
+browsers can't stretch delimiters. Pass the URL of the engine's copy (from `@typstream/engine-wasm/fonts`) or your
+own. It uses the FontFace API, so no `font-src` exception for inline CSS is needed, and it does nothing if the family
+is already registered. The `typstream` package does this for you.
+
+### `createPagedView`
+
+```ts
+const createPagedView: (container: HTMLElement, options?: PagedViewOptions) => PagedView;
+```
+
+The paged renderer without a document: it appends a `.typstream-paged` element to `container`; call
+`view.render(artifact)` with any paged artifact, complete or changed pages only.
+
+- **Only changed pages are redrawn.** Pages are matched by index and redrawn when their hash changes, so a streamed
+  update usually touches the last page. Pages past the new page count are removed.
+- **Visible pages first.** Changed pages on screen are drawn at the next frame. Offscreen ones, and every text layer,
+  wait for idle time (`requestIdleCallback`, a timer in WebKit), or are drawn as soon as they scroll into view.
+  `view.flush()` draws everything now, for example before printing.
+- **One shadow root per page.** Typst's SVG gives glyph definitions ids that repeat on every page. A shadow root per
+  page scopes them (in one document, Chromium would re-resolve every glyph on every page whenever one changed), and
+  keeps your CSS off the SVG. Pages have `content-visibility: auto`.
+- **Text layer.** The SVG draws glyphs as paths, so invisible HTML text is laid over each page from the engine's text
+  runs. Selection, copy (with line breaks), find-in-page and screen readers use it, and the SVG is `aria-hidden`.
+  Headings, lists and tables in it carry ARIA roles.
+- **Links.** Only `http(s)` and `mailto` links keep their `href` (see `isSafeHref`); they open in `linkTarget`.
+  Links within the document stay inert. Images load only from `data:` URLs.
+- **Strict CSP.** Styles are added once per document as a constructed stylesheet, and the text layer is positioned
+  through the CSSOM, so no `'unsafe-inline'` is needed.
+
+#### `PagedViewOptions`
+
+<auto-type-table path="packages/dom/src/paged/view.ts" name="PagedViewOptions" />
+
+#### `PagedView`
+
+<auto-type-table path="packages/dom/src/paged/view.ts" name="PagedView" />
+
+#### `DrawInfo` (beta)
+
+<Callout type="warn" title="Beta">
+`DrawInfo` and the `onDraw` option are beta: meant for telemetry and tests, and may change before the first stable
+release.
+</Callout>
+
+<auto-type-table path="packages/dom/src/paged/view.ts" name="DrawInfo" />
+
+### `mountPaged`
+
+```ts
+const mountPaged: (container: HTMLElement, doc: EngineDocument, options?: MountPagedOptions) => MountedPaged;
+```
+
+Renders an engine document as pages in `container` and keeps them up to date. It switches the document to the paged
+target. Use it when you drive the document yourself rather than through `mountTypstream`:
+
+```ts
+import { mountPaged } from "@typstream/dom";
+import { createEngine, engineWorker } from "@typstream/engine";
+
+const engine = createEngine({ spawn: engineWorker() });
+const doc = engine.open({ target: "paged" });
+const { destroy } = mountPaged(document.querySelector("#preview")!, doc);
+
+for await (const chunk of llmStream) doc.push(chunk);
+doc.finish();
+```
+
+With `layout: "fit-width"`, it compiles pages as wide as the container through `sys.inputs`, and recompiles after a
+resize once resizing pauses (`resizeDebounce`); meanwhile the old pages scale. Open the document with
+`FIT_WIDTH_PREAMBLE` in its preamble for that to work.
+
+#### `MountPagedOptions`
+
+<auto-type-table path="packages/dom/src/paged/mount.ts" name="MountPagedOptions" />
+
+#### `MountedPaged`
+
+<auto-type-table path="packages/dom/src/paged/mount.ts" name="MountedPaged" />
+
+### `FIT_WIDTH_PREAMBLE`
+
+```ts
+const FIT_WIDTH_PREAMBLE: string;
+```
+
+Typst for a document's preamble that sets the page size from `sys.inputs` in the fit-width layout, and does nothing
+without those inputs. A document's own `#set page(width: …)` or `paper` comes later and wins: Typst has no rule that
+applies after the document, so fit-width only sets the default page. `mountTypstream` adds it for you when
+`layout` is `"fit-width"`.
+
+```ts
+const doc = engine.open({ target: "paged", preamble: FIT_WIDTH_PREAMBLE });
+mountPaged(container, doc, { layout: "fit-width" });
+```
+
+### `fitWidthInputs`
+
+```ts
+const fitWidthInputs: (
+  widthPx: number,
+  pageHeight?: "a4" | "auto",
+  inputs?: Record<string, string>,
+) => Record<string, string>;
+```
+
+The `sys.inputs` that make `FIT_WIDTH_PREAMBLE` lay pages out `widthPx` CSS pixels wide, added to `inputs`. With
+`pageHeight` `"a4"` (default) pages keep A4's proportions at that width, so long documents still update page by page;
+`"auto"` makes one page as tall as the content, for short documents. Widths are rounded to half a point, so subpixel
+resizes don't recompile.
+
+### `isSafeHref`
+
+```ts
+const isSafeHref: (href: string) => boolean;
+```
+
+Whether a link URL from a document may be followed: `http:`, `https:` and `mailto:` only. Relative URLs are refused
+too, since a page has no base the document controls. Control characters and whitespace are ignored the way browsers
+ignore them, so `java\tscript:` is refused. The paged renderer uses it on every page link.
+
+### `standaloneHtml`
+
+```ts
+const standaloneHtml: (html: string, options?: StandaloneHtmlOptions) => string;
+```
+
+Makes an HTML export (`EngineDocument.exportHtml()`) a file that opens on its own. It adds:
+
+- the renderer's theme, the plugins' stylesheets and `stylesheets`, inline, and the class `typstream` on `<body>`;
+- an optional math font (embedded bytes or a URL);
+- a Content-Security-Policy, first in `<head>`, that keeps the document from running scripts or loading anything
+  except inline styles and `data:` images and fonts (plus `mathFont`'s origin when it is a URL);
+- `dir="rtl"` on `<html>` for a right-to-left language (Typst writes the language but no direction).
+
+It also removes `<meta http-equiv="refresh">`. It is a string transform, so it runs anywhere, including Node.
+`MountedTypstream.exportHtml()` calls it with the mount's plugins, stylesheets and theme.
+
+```ts
+const file = standaloneHtml(await doc.exportHtml(), { plugins: [htmlCompat], title: "Worksheet" });
+const url = URL.createObjectURL(new Blob([file], { type: "text/html" }));
+```
+
+#### `StandaloneHtmlOptions`
+
+<auto-type-table path="packages/dom/src/export/standalone.ts" name="StandaloneHtmlOptions" />
+
+## Class names and CSS variables
+
+Use these to theme the output; [Theming](/docs/guides/theming) has the details.
+
+| Selector | What it is |
+| --- | --- |
+| `.typstream` | The HTML renderer's root. `data-typstream-theme="light"` or `"dark"` when the theme is forced. |
+| `.typstream-caret` | The caret after the last text while streaming (`aria-hidden`). |
+| `[data-typstream-src]` | A top-level block's first element; the value is its offset in the compiled source. |
+| `[data-typstream-animate]` | A word fading in. |
+| `.typstream-paged` | The paged view, with `data-layout="fixed"` or `"fit-width"`. |
+| `.typstream-page` | One page, with `data-page` (1-based). |
+| `.typstream-text-layer` | A page's invisible, selectable text. |
+
+The HTML renderer's theme reads `--typstream-foreground`, `--typstream-muted`, `--typstream-link`,
+`--typstream-highlight` and `--typstream-caret-color`, set with `light-dark()` so the `auto` theme follows the page's
+`color-scheme`. `--typstream-caret` replaces the caret character. The renderer sets `--typstream-animation`,
+`--typstream-duration` and `--typstream-easing` on its root from `AnimateOptions`.
+
+## See also
+
+- [Vanilla JS](/docs/getting-started/vanilla)
+- [Render targets](/docs/concepts/render-targets)
+- [Theming](/docs/guides/theming)
+- [Exports](/docs/guides/exports)
+- [Security](/docs/guides/security)
+- [`@typstream/engine`](/docs/reference/engine), which compiles what these renderers show

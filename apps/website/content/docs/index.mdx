@@ -1,0 +1,117 @@
+---
+title: Introduction
+description: What typstream is, the problem it solves, and which package to start with.
+icon: BookOpen
+---
+
+typstream renders **Typst** while a language model is still writing it. Every token, it turns whatever has arrived
+into a document that compiles, compiles it with the real Typst compiler in a Web Worker, and updates only what
+changed on the page. It was built for AI tools that write educational documents: worksheets, quizzes, exams, lesson
+plans and handouts.
+
+```tsx
+import { Typstream } from "typstream";
+
+<Typstream source={text} isStreaming={status === "streaming"} animated caret />;
+```
+
+That is the whole integration in a React app: `source` is the model's text so far, and `isStreaming` says whether more
+is coming.
+
+<TypstPreview edu answers target="paged" height={420}>
+
+```typst
+#show: quiz.with(title: [Fractions], subject: [Mathematics], grade: [Grade 5])
+
+#question(points: 2)[$1/2 + 1/4 =$ #blank(answer: $3/4$)]
+
+#question(points: 1)[
+  Which fraction is the largest?
+  #mcq([$1/2$], [$2/3$], [$3/5$], answer: 2)
+]
+
+#question(points: 3)[
+  Explain how you compare two fractions.
+  #answer-lines(count: 2, answer: [Rewrite them with a common denominator, then compare the numerators.])
+]
+```
+
+</TypstPreview>
+
+Press **Replay as a stream** to watch the document above arrive a few characters at a time, the way a model writes
+it. Every step renders.
+
+## Why Typst, and why it's hard to stream
+
+Markdown degrades gracefully: half a table is still some text. Typst is a typesetting language with real layout,
+math, tables, templates and scripting, which makes it a far better format for documents people print. But it is a
+*compiled language*. One unclosed `[` or a `#table(` cut mid-argument and the whole document fails to compile, so a
+naive renderer shows nothing until the model is done.
+
+typstream closes that gap in four layers:
+
+1. **Healing** (`@typstream/heal`) runs on the main thread on every token. A faithful port of Typst's own parser
+   finds what is still open at the end of the text, closes it or cuts it, and fixes Markdown habits such as `**bold**`
+   in text that has settled.
+2. **Scheduling** compiles the newest healed source as often as the engine keeps up, never a stale one, in a worker
+   with a watchdog, so a runaway `while` loop can't freeze the tab.
+3. **Fixers** in the worker repair what parses but doesn't compile yet: a reference to a label that hasn't arrived, a
+   package still loading, an argument cut mid-value.
+4. **Fallback** keeps something on screen whatever happens: the last good render, the settled text with the tail as
+   plain text, or the one block that fails shown as an error box while the rest renders.
+
+[How it works](/docs/concepts/how-it-works) walks through the whole pipeline.
+
+## What you get
+
+- **Two render targets from one document.** `html` gives semantic HTML and MathML that reflows, themes and animates;
+  `paged` gives print-faithful SVG pages with a selectable text layer. See [Render targets](/docs/concepts/render-targets).
+- **The real compiler.** Typst 0.15.1 compiled to WebAssembly, the same build in the browser and on the server, so a
+  document that validates on the server renders the same in the preview.
+- **Safe by default.** Documents are untrusted code: no network, no files beyond what you pass, a sanitized DOM, and
+  it runs under a strict Content-Security-Policy. See [Security](/docs/guides/security).
+- **A vocabulary for teachers.** `@typstream/edu` adds `#question`, `#mcq`, `#blank`, answer keys, rubrics and
+  templates, with answers that only the teacher's copy shows. See [Worksheets, quizzes and answer keys](/docs/guides/edu-documents).
+- **Exports.** PDF, standalone HTML and the healed source, from the engine that renders the preview.
+- **Server tools.** Validate before you save, render to PDF, and repair broken documents with your model in a loop
+  ([`@typstream/node`](/docs/reference/node)).
+
+## Packages
+
+| Package | What it is |
+| --- | --- |
+| [`typstream`](/docs/reference/typstream) | The one most React apps install: `<Typstream>` with html-compat, the math font and the vendored Typst packages set up. |
+| [`@typstream/react`](/docs/reference/react) | `<Typstream>`, `TypstreamProvider` and `useTypstream()`, without the defaults. |
+| [`@typstream/dom`](/docs/reference/dom) | Framework-free: `mountTypstream`, the HTML and paged renderers, standalone HTML export. |
+| [`@typstream/engine`](/docs/reference/engine) | The compile engine: main-thread client (healing, scheduling, watchdog) and the worker. |
+| [`@typstream/heal`](/docs/reference/heal) | Healing on its own: any prefix of streamed Typst in, a source that parses out. |
+| [`@typstream/node`](/docs/reference/node) | Server-side validate, render, repair loop and a WebSocket engine server. |
+| [`@typstream/edu`](/docs/reference/edu) | Typst functions and templates for teachers' documents, and the prompt kit. |
+| [`@typstream/html-compat`](/docs/reference/html-compat) | Keeps grids, alignment, boxes and shapes in Typst's HTML export. |
+| [`@typstream/universe`](/docs/reference/universe) | The Typst packages allowed by default: CeTZ, fletcher, physica, chemformula and more. |
+| [`@typstream/engine-wasm`](/docs/reference/engine-wasm) | Typst 0.15.1 compiled to WebAssembly, the low-level compiler. |
+| [`@typstream/core`](/docs/reference/core) | Shared contracts: text edits, diagnostics, the worker protocol, plugins and events. |
+
+## For AI agents
+
+These docs are written to be read by coding agents too. Every page has a Markdown version: add `.md` to its URL
+(`/docs/concepts/healing.md`), or request the page with `Accept: text/markdown`. [`/llms.txt`](/llms.txt) indexes them
+all, and [`/llms-full.txt`](/llms-full.txt) is the whole documentation in one file. The **Copy Markdown** button at the
+top of each page puts the same text on your clipboard.
+
+## Start here
+
+<Cards>
+  <Card title="Installation" href="/docs/getting-started/installation">
+    Which package to install, and what the engine downloads.
+  </Card>
+  <Card title="React" href="/docs/getting-started/react">
+    A streaming document in a React app in five minutes.
+  </Card>
+  <Card title="Next.js and the AI SDK" href="/docs/getting-started/nextjs-ai-sdk">
+    A chat whose answers are Typst documents.
+  </Card>
+  <Card title="Node.js" href="/docs/getting-started/node">
+    Validate, render and repair documents on the server.
+  </Card>
+</Cards>

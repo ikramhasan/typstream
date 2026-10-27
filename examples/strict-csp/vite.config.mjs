@@ -2,7 +2,7 @@ import { defineConfig } from "vite";
 import { CSP } from "./csp.mjs";
 
 // The dev server and `vite preview` send the strict policy, so what works here
-// works behind it. A production server sends the same header (docs/security.md).
+// works behind it. A production server sends the same header (apps/website/content/docs/guides/security.mdx).
 const headers = { "Content-Security-Policy": CSP };
 
 export default defineConfig({

@@ -1,0 +1,189 @@
+---
+title: "@typstream/universe"
+description: The Typst Universe packages typstream allows by default (CeTZ, fletcher, cetz-plot, physica, unify, chemformula, alchemist), vendored with integrity hashes as a plugin.
+icon: Package
+---
+
+`@typstream/universe` vendors the [Typst Universe](https://typst.app/universe) packages typstream allows by default,
+for diagrams, math and chemistry, with their integrity hashes. It is a plugin: it gives the engine an allowlist of
+packages documents may import, and gives the prompt kit a rule naming them, so the model imports only what will
+compile.
+
+## When to use it
+
+The `typstream` package's `<Typstream>` adds it by default (`packages={false}` turns it off). Add it yourself when you
+use `@typstream/react`, `@typstream/dom` or `@typstream/engine` and want documents to import these packages, and pass
+it to `buildSystemPrompt` so the model knows about them.
+
+Leave it out if you can't ship LGPL code (see [Licenses](#licenses)), or if you want a different set of packages: pass
+your own allowlist instead. [Typst packages](/docs/guides/typst-packages) covers both.
+
+## Install
+
+```npm
+npm install @typstream/universe
+```
+
+## Example
+
+```tsx
+import { universe } from "@typstream/universe";
+import { Typstream } from "@typstream/react";
+
+// As a plugin on a document: the engine's allowlist and the prompt rules.
+<Typstream source={text} plugins={[universe]} />;
+```
+
+```ts
+import { createEngine, engineWorker } from "@typstream/engine";
+import { universe } from "@typstream/universe";
+
+// Or engine-wide: every document on this engine may import them.
+const engine = createEngine({ spawn: engineWorker(), plugins: [universe] });
+```
+
+A document then imports a package as it would with the Typst CLI:
+
+```typst
+#import "@preview/cetz:0.5.3"
+
+#cetz.canvas({
+  import cetz.draw: *
+  line((0, 0), (4, 0), (2, 3), close: true)
+  content((2, -0.5), [4 cm])
+})
+```
+
+## Packages
+
+| For | Package | Import |
+| --- | --- | --- |
+| Diagrams | `@preview/cetz:0.5.3` | `#import "@preview/cetz:0.5.3"` |
+| Diagrams | `@preview/fletcher:0.5.8` | `#import "@preview/fletcher:0.5.8": diagram, node, edge` |
+| Math | `@preview/cetz-plot:0.1.4` | `#import "@preview/cetz-plot:0.1.4": plot` |
+| Math | `@preview/physica:0.9.8` | `#import "@preview/physica:0.9.8": *` |
+| Math | `@preview/unify:0.8.1` | `#import "@preview/unify:0.8.1": num, qty, unit` |
+| Chemistry | `@preview/chemformula:0.1.3` | `#import "@preview/chemformula:0.1.3": ch` |
+| Chemistry | `@preview/alchemist:0.2.0` | `#import "@preview/alchemist:0.2.0": *` |
+
+Their dependencies come too, pinned as the packages pin them: cetz 0.5.2 and 0.3.4, and oxifmt 1.0.0 and 0.2.1.
+
+A document that imports another version of an allowed package gets the closest one (the newest with the same major and
+minor version, else the newest) and a warning: "package @preview/cetz:0.5.0 isn't available here; using
+@preview/cetz:0.5.3". A package that isn't allowed fails with "package … is not allowed" and a hint listing the allowed
+ones.
+
+## How packages load
+
+- **Tarballs.** The package ships the `.tar.gz` files exactly as packages.typst.org serves them. Each `url` is written
+  as `new URL("../vendor/…", import.meta.url)`, which bundlers emit as an asset, so the engine fetches packages from
+  your own origin, not from typst.org. It fetches one only when a document imports it, and keeps it in Cache Storage
+  after that.
+- **Integrity.** Every tarball is checked against its `integrity` before use. The hash is the SHA-256 of the
+  *uncompressed* tar, so it holds even when a server sends the `.gz` with `Content-Encoding: gzip` (Vite's dev server
+  does) and the browser hands over the tar.
+- **Plugins.** CeTZ calls its `cetz-core` wasm plugin for geometry, so the engine keeps Typst's plugin support.
+- **Strict CSP.** The tarballs are fetched from your origin, so `connect-src 'self'` covers them. See
+  [Security](/docs/guides/security).
+
+`@typstream/node` doesn't fetch packages: its documents can import one only if you mount the package's files under its
+spec yourself.
+
+## HTML target
+
+With `@typstream/html-compat`, CeTZ canvases (cetz, cetz-plot, alchemist) become inline SVG in the HTML target.
+**fletcher diagrams stay empty in HTML**: its CeTZ 0.3.4 canvas calls `layout` where html-compat can't reach. They
+render in the paged target. See [html-compat's known gaps](/docs/reference/html-compat#known-gaps).
+
+## Licenses
+
+Each tarball carries its package's own license, unmodified:
+
+| License | Packages |
+| --- | --- |
+| LGPL-3.0-or-later | cetz (every version), cetz-plot |
+| MIT | fletcher, physica, unify, chemformula, alchemist |
+| MIT OR Apache-2.0 | oxifmt 1.0.0 |
+| MIT-0 | oxifmt 0.2.1 |
+
+<Callout type="warn" title="LGPL">
+cetz and cetz-plot are LGPL-3.0-or-later. An app that can't ship LGPL code should leave this plugin out (with
+`typstream`, `packages={false}`) and pass its own allowlist.
+</Callout>
+
+## API
+
+| Export | What it is |
+| --- | --- |
+| [`universe`](#universe) | The plugin: the engine's package allowlist and prompt rules. |
+| [`UNIVERSE_PACKAGES`](#universe_packages) | Every vendored package, dependencies included. |
+| [`UniversePackage`](#universepackage) | A vendored package: a `PackageSpec` with `url` and `integrity` set. |
+| [`UniverseTopic`](#universepackage) | `"diagrams" \| "math" \| "chemistry"`. |
+
+### universe
+
+```ts
+const universe: {
+  key: string;
+  engine: { packages: { namespace: string; name: string; version: string; url: string; integrity: string }[] };
+  prompt: { rules: string[] };
+};
+```
+
+The vendored packages as a typstream plugin, with key `"universe"`. `engine.packages` is the allowlist: every entry of
+`UNIVERSE_PACKAGES` with its URL and integrity. `prompt.rules` tells the model to import only these packages at exactly
+these versions, then lists each importable one with its topic, how to import it and a one-line usage example.
+`buildSystemPrompt` from `@typstream/edu` includes them:
+
+```ts
+import { buildSystemPrompt, edu } from "@typstream/edu";
+import { universe } from "@typstream/universe";
+
+const system = buildSystemPrompt([edu, universe]);
+```
+
+### UNIVERSE_PACKAGES
+
+```ts
+const UNIVERSE_PACKAGES: readonly UniversePackage[];
+```
+
+Every vendored package, dependencies included (eleven entries). The packages documents import have a `topic` and a
+`summary`; dependencies don't. Use it to build your own allowlist, for example without the LGPL packages:
+
+```ts
+import { UNIVERSE_PACKAGES } from "@typstream/universe";
+
+const keep = new Set(["physica", "unify", "chemformula"]);
+const permissive = UNIVERSE_PACKAGES.filter((p) => keep.has(p.name));
+```
+
+fletcher, cetz-plot and alchemist import cetz (and cetz imports oxifmt), so dropping cetz means dropping them too.
+physica, unify and chemformula have no dependencies. To use such a list, put it in a plugin's `engine.packages` facet
+(beta in `@typstream/core`) and pass that instead of `universe`:
+
+```tsx
+import { definePlugin } from "@typstream/core";
+import { Typstream } from "typstream";
+
+const packages = definePlugin({ key: "packages", engine: { packages: permissive } });
+
+<Typstream packages={false} plugins={[packages]} source={text} />;
+```
+
+### UniversePackage
+
+<auto-type-table path="packages/universe/src/index.ts" name="UniversePackage" />
+
+It extends `@typstream/core`'s `PackageSpec` (beta):
+
+<auto-type-table path="packages/core/src/plugin.ts" name="PackageSpec" />
+
+`UniverseTopic` is `"diagrams" | "math" | "chemistry"`: what a document imports the package for.
+
+## See also
+
+- [Typst packages](/docs/guides/typst-packages): allowlists, your own packages, and packages in prompts.
+- [@typstream/html-compat](/docs/reference/html-compat): how drawings render in the HTML target.
+- [Prompting](/docs/guides/prompting): the prompt kit these rules join.
+- [Self-hosting](/docs/guides/self-hosting): serving the engine, fonts and tarballs from your origin.

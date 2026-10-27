@@ -1,0 +1,82 @@
+---
+title: Plugins
+description: The plugin model that extends every typstream package at once, how plugins are ordered and scoped, and the plugins typstream ships.
+---
+
+A plugin is one plain object: a `key` plus any of a set of optional **facets**. Each typstream package reads the facets it understands and ignores the rest, so one plugin can bring Typst files to the engine, heal rules to the main thread, CSS to the renderer and documentation to your system prompt, and it keeps working when new packages add facets of their own. typstream's own extensions are plugins too.
+
+```ts
+import { definePlugin } from "@typstream/core";
+
+export const chemistry = definePlugin({
+  key: "acme/chemistry",
+  dependencies: ["edu"],
+  engine: {
+    files: { "@acme/chemistry:1.0.0/lib.typ": LIB, "@acme/chemistry:1.0.0/typst.toml": TOML },
+    preamble: '#import "@acme/chemistry:1.0.0": *',
+  },
+  stylesheets: [CSS],
+});
+```
+
+`definePlugin` only type-checks the object; a plugin needs no code from typstream at runtime. How to write one, step by step: [Writing a plugin](/docs/guides/writing-a-plugin). Every facet's type: [`@typstream/core`](/docs/reference/core).
+
+## Why most extensions are Typst
+
+Teachers' documents are best described in Typst itself: a question, a blank, an answer key are Typst functions that the model calls and that render the same in both targets and in the PDF. So the heart of most plugins is a Typst library, mounted as a local package and imported by a preamble. The other facets support it: CSS for the HTML it writes, sanitizer allowances for the tags it needs, prompt text that tells the model how to call it.
+
+## Facets and who reads them
+
+| Facet | Read by | What it brings |
+|---|---|---|
+| `heal.handlers`, `heal.lint` | heal, main thread | Product-specific fixes on settled text or the healed source; overrides of built-in lint rules by id. |
+| `engine.files`, `engine.preamble` | engine | Files mounted for every document (keys like `@ns/name:x.y.z/path` make a local Typst package), and Typst evaluated before the document. |
+| `engine.packages` | engine | Typst Universe packages the document may import. |
+| `engine.fixerModules` | engine worker | ES module URLs whose default export is a diagnostic fixer, loaded inside the worker. |
+| `engine.fonts` | engine worker | Fonts; engine-wide only (see below). |
+| `templates` | dom, react | Named document setups (`template="worksheet"`): a preamble and default `sys.inputs`. |
+| `sanitize` | dom | Extra tags and attributes the HTML sanitizer lets through. Scripts, event handlers and URL attributes stay blocked. |
+| `stylesheets` | dom | CSS for the HTML the plugin's Typst writes, in the renderer and in standalone HTML exports. |
+| `prompt` | your app | The function catalogue, rules and examples to give the model. |
+| `islands`, `editor` | reserved | Interactive components ([#28](https://github.com/ikramhasan/typstream/issues/28)) and the future editor. Typed, but nothing reads them yet. |
+
+Everything except `heal.handlers` is plain data. The `engine` facet is posted to the worker, which can't receive functions, so code that runs there is referenced by URL.
+
+## Order, duplicates and dependencies
+
+Plugins are resolved once, the same way everywhere (`resolvePlugins` in `@typstream/core`):
+
+- **Order.** Plugins load in the order given, except that a plugin always comes after its `dependencies`: a dependency listed later moves up to just before the first plugin that needs it. Order matters where facets add up: preambles run in that order, a later plugin's file replaces an earlier one's at the same path, and later stylesheets come later in the cascade.
+- **Duplicates.** A key given more than once loads once, as its last definition, at the place of its first. A component's plugin can override a provider's with the same key.
+- **Errors.** A dependency that isn't among the plugins, a cycle, or a plugin without a key throws when the document opens. A half-loaded set of plugins would compile documents differently without anyone noticing.
+- **Unknown facets** are ignored, so a plugin written for a newer typstream still loads.
+
+## Document scope and engine scope
+
+Plugins apply in two places:
+
+- **Per document**: `<Typstream plugins>`, `TypstreamProvider plugins` (added to every document below it), `mountTypstream(el, { plugins })` and `engine.open({ plugins })`. A document's plugins bring their files, packages, preambles, heal handlers and lint settings, templates, sanitizer allowances, stylesheets, and fixer modules, which the worker loads for that document.
+- **Per engine**: `createEngine({ plugins })`. Its plugins' worker-wide facets (`engine.fonts`, `engine.packages`, `engine.fixerModules`) are sent to every worker the engine starts, replacements included.
+
+**Fonts are engine-only.** Fonts belong to the wasm instance that every document on the worker shares, so a document's plugin can't scope them. Give a plugin with `engine.fonts` to the engine (`createEngine({ spawn, plugins: [bengali] })`, then pass that engine to your components). A document whose plugin brings fonts the engine doesn't have logs a warning.
+
+## Plugins typstream ships
+
+| Plugin | Package | What it brings |
+|---|---|---|
+| `htmlCompat` (key `html-compat`) | `@typstream/html-compat` | The prelude that keeps grids, alignment, boxes, shapes and drawings in the HTML target: its file, preamble, sanitizer allowances and CSS. |
+| `universe` | `@typstream/universe` | The Typst Universe packages allowed by default (CeTZ, fletcher, cetz-plot, physica, unify, chemformula, alchemist) as `engine.packages`, with prompt rules naming them. |
+| `edu` | `@typstream/edu` | The vocabulary for teachers' documents: a local Typst package and its preamble, templates (worksheet, quiz, exam, …), CSS, and a prompt kit. |
+
+The `typstream` package adds `htmlCompat` and `universe` before the plugins you give it (`htmlCompat={false}` and `packages={false}` turn them off). `edu` you add yourself:
+
+```tsx
+import { edu } from "@typstream/edu";
+import { TypstreamProvider } from "typstream";
+
+<TypstreamProvider plugins={[edu]}>
+  <App />
+</TypstreamProvider>;
+```
+
+See [Edu documents](/docs/guides/edu-documents) and [Typst packages](/docs/guides/typst-packages).

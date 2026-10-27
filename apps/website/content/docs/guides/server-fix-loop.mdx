@@ -1,0 +1,270 @@
+---
+title: Validating and repairing on the server
+description: Check an LLM-written Typst document before you save it, ask the model to fix what doesn't compile, and render the result to PDF with @typstream/node.
+---
+
+The browser preview always shows something: while a document streams, typstream heals and works around errors. The document you save should not need that. `@typstream/node` checks a finished document on your server, turns its errors into a repair prompt for the model, and renders it to PDF, HTML or SVG.
+
+It runs `@typstream/engine-wasm` (Typst 0.15.1) on worker threads. That's the same build browsers run, so a document that validates here renders the same in the preview.
+
+```npm
+npm install @typstream/node
+```
+
+## The whole flow
+
+```ts title="save-document.ts"
+import { fixLoop, render, validate } from "@typstream/node";
+
+export async function saveDocument(source: string) {
+  const result = await fixLoop({
+    source,
+    generate: async ({ prompt, source }) => callYourModel(`${prompt}\n\n${source}`),
+  });
+  if (!result.ok) throw new Error(`still broken after ${result.attempts.length - 1} rounds`);
+
+  const pdf = await render(result.source, "pdf");
+  if (pdf.ok) await store(result.source, pdf.data);
+}
+```
+
+`fixLoop` validates the source first and calls the model only if it has errors. Run this in a Node runtime (not an edge runtime): the engine uses worker threads.
+
+## Validate
+
+```ts
+import { formatDiagnosticsForLLM, validate } from "@typstream/node";
+
+const { ok, diagnostics, pageCount, ms } = await validate(source);
+if (!ok) console.log(formatDiagnosticsForLLM(source, diagnostics));
+```
+
+`validate` compiles the document without exporting it and never throws for a broken document. `ok` means no errors; warnings don't count. Diagnostics are sorted and deduplicated, and their positions are UTF-16 offsets into `source`.
+
+It also reports `@typstream/heal`'s lint findings as warnings. They catch Markdown habits that compile but render wrongly, such as `**bold**` (Typst's bold is `*bold*`) or the `@` in `teacher@school.org`, which Typst reads as a reference. Each has a `code` (the lint rule's id, such as `markdown-bold`) and a hint saying what to replace. Pass `lint: false` to skip them, or heal's per-rule settings (`lint: { "markdown-bold": "off" }`).
+
+<auto-type-table path="packages/node/src/validate.ts" name="ValidateOptions" />
+
+**Target.** The default, `paged`, checks what gets printed. `target: "html"` compiles for the HTML target instead, which also catches problems specific to it.
+
+**Preamble, files and inputs.** If your app renders documents with a preamble (a template, your own imports), validate with the same one, or the model's text won't find the functions it uses. Diagnostics inside the preamble carry `file: { path: "<preamble>" }`. For `@typstream/edu` documents:
+
+```ts
+import { eduFiles, eduPreamble } from "@typstream/edu";
+import { validate } from "@typstream/node";
+
+const result = await validate(source, { preamble: eduPreamble, files: eduFiles });
+```
+
+`files` maps paths relative to the document (`img/diagram.png`) to strings or bytes. Keys of the form `@ns/name:x.y.z/path`, as in `eduFiles`, are files of a local Typst package, so `#import "@typstream/edu:0.1.0"` works with nothing downloaded. Documents can't read the server's filesystem or the network, only the `files` you pass.
+
+## Turn diagnostics into a repair prompt
+
+`formatDiagnosticsForLLM(source, diagnostics)` writes the problems the way the Typst CLI prints them: a summary line, then each problem's message, its location, the source line with the problem underlined, and hints. Errors come first, repeats are dropped, at most 10 problems are shown, and long lines are clipped, so the prompt stays small for large documents. Instructions for the model come last.
+
+For this worksheet:
+
+```typst title="worksheet.typ"
+= Fractions worksheet
+**Name:** #box(width: 4cm, repeat[.])
+
+#set enum(numbering: "1.")
++ Simplify $3/6$ and #hilight[show your steps].
++ Which is larger, $1/2$ or $2/3$? Explain.
++ Fill in the table:
+  #table(columns: 2, [*Fraction*], [*Decimal*], [$1/4$], [], [$3/4$], [])
+
+Send questions to teacher@school.org before Friday.
+```
+
+the prompt is:
+
+```text
+The Typst document has 1 error and 4 warnings.
+
+error: unknown variable: hilight
+ --> line 5, column 23
+  |
+4 | #set enum(numbering: "1.")
+5 | + Simplify $3/6$ and #hilight[show your steps].
+  |                       ^^^^^^^
+6 | + Which is larger, $1/2$ or $2/3$? Explain.
+
+warning: no text within stars
+ --> line 2, column 1
+  |
+1 | = Fractions worksheet
+2 | **Name:** #box(width: 4cm, repeat[.])
+  | ^^
+3 |
+  = hint: using multiple consecutive stars (e.g. **) has no additional effect
+
+warning[markdown-bold]: Markdown `**`; Typst uses single `*`
+ --> line 2, column 1
+  |
+1 | = Fractions worksheet
+2 | **Name:** #box(width: 4cm, repeat[.])
+  | ^^^^^^^^^
+3 |
+  = hint: replace `**Name:**` with `*Name:*`
+
+warning: no text within stars
+ --> line 2, column 8
+  |
+1 | = Fractions worksheet
+2 | **Name:** #box(width: 4cm, repeat[.])
+  |        ^^
+3 |
+  = hint: using multiple consecutive stars (e.g. **) has no additional effect
+
+warning[email-at]: `@` inside a word is read as a reference
+ --> line 10, column 26
+   |
+ 9 |
+10 | Send questions to teacher@school.org before Friday.
+   |                          ^^^^^^^^^^^
+11 |
+   = hint: replace `@school.org` with `\@school.org`
+
+Fix every error, and the warnings where they point at a real mistake. Reply with the complete corrected Typst document only.
+```
+
+Lines and columns count from 1. A problem whose cause is in the preamble or a package says so after its location (`called from here; the problem is in …`).
+
+<auto-type-table path="packages/node/src/llm.ts" name="FormatOptions" />
+
+Pass `instructions: ""` to leave the instructions out, for example when your own prompt asks for a diff rather than the whole document.
+
+## Run the fix loop
+
+`fixLoop` validates the source. While it has errors, it asks your `generate` callback for a corrected document and validates the reply, for at most `maxRounds` rounds (3 by default).
+
+```ts
+const result = await fixLoop({
+  source,
+  generate: async ({ prompt, source, diagnostics, round }) => {
+    // Return the model's corrected document as a string.
+  },
+});
+```
+
+`generate` receives:
+
+<auto-type-table path="packages/node/src/llm.ts" name="FixRequest" />
+
+Send the model `prompt` and the current `source`; the prompt already ends with the instructions. Models often wrap their reply in a Markdown fence: a ```` ```typst ```` (or ```` ```typ ````) fence around the reply is removed before it is validated.
+
+`fixLoop` returns the **best** attempt, not the last: the one with the fewest errors, then the fewest warnings, then the latest. A reply that makes things worse never replaces a better one.
+
+<auto-type-table path="packages/node/src/llm.ts" name="FixLoopResult" />
+
+`strict: true` also repairs documents that only have warnings, until none are left, and `ok` then means no warnings either. Use it when lint warnings (Markdown bold, a stray `@`) matter to you; they render, but not as the model meant. The other options are `validate`'s (`preamble`, `files`, `inputs`, `target`, `lint`, `engine`, `timeoutMs`), applied to every round, and `format`, passed to `formatDiagnosticsForLLM`.
+
+<auto-type-table path="packages/node/src/llm.ts" name="FixLoopOptions" />
+
+### With the Anthropic SDK
+
+```ts title="repair.ts"
+import Anthropic from "@anthropic-ai/sdk";
+import { fixLoop, render } from "@typstream/node";
+
+const client = new Anthropic(); // reads ANTHROPIC_API_KEY
+
+export async function repair(source: string) {
+  const result = await fixLoop({
+    source,
+    strict: true,
+    generate: async ({ prompt, source }) => {
+      const reply = await client.messages.create({
+        model: "claude-opus-5-5",
+        max_tokens: 16000,
+        messages: [{ role: "user", content: `${prompt}\n\n${source}` }],
+      });
+      return reply.content.flatMap((block) => (block.type === "text" ? [block.text] : [])).join("");
+    },
+  });
+  if (!result.ok) return { ok: false as const, diagnostics: result.diagnostics };
+
+  const pdf = await render(result.source, "pdf");
+  return pdf.ok ? { ok: true as const, source: result.source, pdf: pdf.data } : { ok: false as const, diagnostics: pdf.diagnostics };
+}
+```
+
+Each round is one request. If the document came from a conversation, you can send that conversation's system prompt too, so the model keeps writing in the same vocabulary (see [Prompting](/docs/guides/prompting)).
+
+### With any model
+
+`generate` only has to return a string, so any client works. With the AI SDK:
+
+```ts
+import { anthropic } from "@ai-sdk/anthropic";
+import { fixLoop } from "@typstream/node";
+import { generateText } from "ai";
+
+const result = await fixLoop({
+  source,
+  generate: async ({ prompt, source }) => {
+    const { text } = await generateText({ model: anthropic("claude-opus-5-5"), prompt: `${prompt}\n\n${source}` });
+    return text;
+  },
+});
+```
+
+`examples/node-validate` in the repository runs the whole flow offline, with a stand-in model that fixes exactly what the prompt reports: it repairs the worksheet above in two rounds and writes the PDF.
+
+## Render
+
+```ts
+import { render } from "@typstream/node";
+
+const pdf = await render(source, "pdf"); // data: Uint8Array
+const html = await render(source, "html"); // data: string, a whole HTML document
+const svg = await render(source, "svg"); // data: string[], one SVG per page
+if (pdf.ok) await writeFile("worksheet.pdf", pdf.data);
+```
+
+`render` takes the same `preamble`, `files`, `inputs`, `engine` and `timeoutMs` options as `validate`. Its diagnostics are Typst's only (no lint). `ok: false` means the document didn't compile and there's no `data`. For a teacher's copy of an `@typstream/edu` document, render with `inputs: { showAnswers: "true" }`.
+
+## The engine
+
+`validate`, `render` and `fixLoop` compile on a default engine, created on first use. Create your own to set workers, fonts and budgets, and share it for the life of the process:
+
+```ts title="engine.ts"
+import { createEngine } from "@typstream/node";
+
+export const engine = createEngine({
+  workers: 4, // most worker threads; default min(4, cores - 1), at least 1
+  timeoutMs: 10_000, // watchdog per compile
+  fontPaths: ["/srv/fonts/noto"], // more fonts, searched recursively (like typst --font-path)
+});
+
+// Pass it to every call.
+await validate(source, { engine });
+
+// On shutdown: stops every worker. Pending compiles fail; the engine can't be used afterwards.
+await engine.close();
+```
+
+<auto-type-table path="packages/node/src/engine.ts" name="EngineOptions" />
+
+Nothing starts until the first compile: then the wasm module is compiled once, fonts are loaded, and workers start as they are needed. Workers keep Typst's caches warm between calls, and idle workers don't keep the process alive, so a script exits without `close()`.
+
+The bundled fonts are Libertinus Serif, New Computer Modern and DejaVu Sans Mono, the set `typst compile --ignore-system-fonts` uses, plus the script fonts for Arabic, Bengali and Devanagari (Noto Naskh Arabic, Noto Serif Bengali, Noto Serif Devanagari). `typstFonts: false` and `scriptFonts: false` leave them out.
+
+## Timeouts and crashes
+
+A compile that runs past its budget is stopped by terminating its worker, and comes back as an error diagnostic with `code: "timeout"`:
+
+```text
+error[timeout]: compiling took longer than 10000 ms and was stopped
+  = hint: a loop or recursion that never ends, or a document far larger than usual, causes this
+```
+
+A document that exhausts wasm memory (allocations fail at about 2 GiB in wasm32), or crashes the compiler, comes back with `code: "engine-crashed"`, such as `the compiler ran out of memory or crashed (unreachable)` for `#for i in range(1000000000) { … }`. Either way the worker is replaced and your process is unaffected. That's why typstream runs Typst as wasm on the server rather than as a native addon, whose compiles can't be interrupted.
+
+Both are ordinary errors to `fixLoop`, so the model is told about them like any other. Set a shorter budget for one call with `timeoutMs`, and a default for all with `createEngine({ timeoutMs })`.
+
+## Next steps
+
+- [Running the engine on a server](/docs/guides/remote-engine): serve live previews from the same engine over WebSocket.
+- [`@typstream/node` reference](/docs/reference/node).

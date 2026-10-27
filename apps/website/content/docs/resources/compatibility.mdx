@@ -1,0 +1,91 @@
+---
+title: Compatibility
+description: The Typst version typstream compiles with, the browsers, frameworks and Node.js versions it runs on, module formats, bundle sizes, fonts and Typst packages.
+---
+
+## Typst 0.15.1
+
+typstream compiles with **Typst 0.15.1**, and only that version. The engine (Typst compiled to WebAssembly), the healer's parser (a port of Typst 0.15.1's lexer and parser, checked against Typst's own) and the server package are pinned to it together. Upgrading Typst is a deliberate release, not something a dependency update does.
+
+For your documents, that means:
+
+- **Typst 0.15 syntax and standard library.** Functions and parameters added in later Typst versions don't exist yet. Tell the model which version it writes for; the prompts in these docs say "Typst 0.15 markup".
+- **The paged target** (SVG pages, PDF) is Typst's own layout, the same as `typst compile` 0.15.1 produces.
+- **The HTML target** is Typst 0.15.1's HTML export, which Typst still develops. It writes semantic HTML and MathML, but drops layout it can't express (grids, alignment, boxes, shapes); [html-compat](/docs/reference/html-compat) brings most of it back. Page settings (headers, footers, page numbers, margins) have no HTML equivalent and stay missing. See [Render targets](/docs/concepts/render-targets).
+- **Typst packages** come from an allowlist of pinned versions (below). A document that imports another version of an allowed package gets the nearest allowed one, with a warning.
+
+## Browsers
+
+The browser tests run in **Chromium, Firefox and WebKit** (Playwright 1.64), for the engine worker, the renderers, the React bindings, and a page under a strict Content-Security-Policy. typstream needs:
+
+| Feature | Used for | Without it |
+|---|---|---|
+| WebAssembly | The Typst engine | Nothing renders. Under a CSP, allow `'wasm-unsafe-eval'` in `script-src`. |
+| Module workers | The engine runs in `new Worker(url, { type: "module" })` | Nothing renders. |
+| Constructed stylesheets | Adding the renderers' CSS without inline styles | A `<style>` element instead, which a strict CSP refuses without `'unsafe-inline'` (Safari before 16.4). |
+| MathML | Math in the HTML target | Math doesn't render in the HTML target. The paged target draws math itself. |
+| `IntersectionObserver` | Opening documents only near the viewport | Documents open right away. |
+| `ResizeObserver` | The paged `fit-width` layout | |
+| Cache Storage | Keeping fonts and package tarballs across sessions | They come from the HTTP cache. |
+
+Cross-origin isolation (COOP/COEP) and SharedArrayBuffer are not needed. Trusted Types (`require-trusted-types-for 'script'`) is not supported yet ([#70](https://github.com/ikramhasan/typstream/issues/70)). The CSP that works is in [Security](/docs/guides/security).
+
+## Frameworks and runtimes
+
+| | Supported | Tested with |
+|---|---|---|
+| React | 19 (`react` `^19.0.0` is a peer dependency of `typstream` and `@typstream/react`) | 19.3 |
+| Next.js | App Router; the React bundles are marked `"use client"` | 16.4, Turbopack (webpack needs no configuration either) |
+| Vite | No configuration | 8.3 |
+| Vercel AI SDK | `<Typstream>` takes the text so far from any source; the example uses `useChat` | `ai` 7, `@ai-sdk/react` 4 |
+| Node.js (`@typstream/node`) | 20 or later | 24 |
+
+Without React, `@typstream/dom` works in any framework or none: see [Without a framework](/docs/getting-started/vanilla). On the server, `<Typstream>` renders an empty `<div>` and starts in the browser.
+
+## Module format
+
+Every package is **ESM only**, with TypeScript types included. There is no CommonJS build: use `import`, not `require()`. Offsets in every API (diagnostics, edits, heal's source map) are UTF-16 indices, the way JavaScript strings index.
+
+## Bundle sizes
+
+Budgets in minified and gzipped ESM. Each is checked on every change, so they are upper bounds, not estimates.
+
+| Part | Budget | Notes |
+|---|---|---|
+| `@typstream/heal` | ≤ 15.5 KB | With `@typstream/core`'s helpers inlined. |
+| `@typstream/engine`, main thread | ≤ 8.5 KB | Without heal. |
+| `@typstream/react`, with `@typstream/dom` | ≤ 16.5 KB | Without React and the engine. |
+| `@typstream/dom` HTML renderer | ≤ 9.5 KB | Including its CSS. |
+| `@typstream/dom` paged renderer | ≤ 4 KB | |
+| `@typstream/dom` standalone HTML export | ≤ 2 KB | |
+| Engine worker JS | ≤ 40 KB | Loaded in the worker, not your bundle. Without the wasm and fonts. |
+| Typst wasm (`@typstream/engine-wasm`) | ≤ 6.3 MB brotli | About 19 MB uncompressed; HTML, SVG and PDF in one build. |
+
+In practice, `typstream` adds about 50 KB gzipped to a React app's main bundle (React itself excluded): the bindings, renderers, engine client and healer, plus html-compat's prelude and CSS and the package list. Plugins you add, such as edu, come on top. The wasm, the fonts and the packages are separate files, fetched by the worker when it starts or when a document needs them: see [what gets downloaded, and when](/docs/getting-started/installation#what-gets-downloaded-and-when).
+
+## Fonts
+
+| Fonts | Scripts | Loaded |
+|---|---|---|
+| Libertinus Serif (regular, bold, italic) | Latin, Greek, Cyrillic, Hebrew | When the engine starts (2.6 MB with the two below) |
+| New Computer Modern Math | Math | When the engine starts; also registered as a web font for MathML |
+| DejaVu Sans Mono | Code | When the engine starts |
+| Noto Naskh Arabic (regular, bold) | Arabic | The first time a document needs it (47–79 KB brotli per face) |
+| Noto Serif Bengali (regular, bold) | Bengali | The first time a document needs it |
+| Noto Serif Devanagari (regular, bold) | Devanagari | The first time a document needs it |
+
+These are the fonts the engine draws with: in the paged target, PDF exports, and drawings inside HTML. In the HTML target the browser draws the text, with your page's fonts.
+
+**CJK fonts are not included**: a single weight of Noto Serif SC is 11.6 MB. Add the fonts you need through a plugin on `createEngine`; see [Fonts and languages](/docs/guides/fonts-and-languages). `@typstream/node` loads Typst's bundled fonts and the script fonts up front, and takes more with `fontPaths` or `fonts`.
+
+## Typst packages
+
+Documents can import these [Typst Universe](https://typst.app/universe) packages by default. They are vendored with integrity hashes and served from your own origin, fetched only when a document imports one:
+
+| For | Package |
+|---|---|
+| Diagrams | `@preview/cetz:0.5.3`, `@preview/fletcher:0.5.8` |
+| Math | `@preview/cetz-plot:0.1.4`, `@preview/physica:0.9.8`, `@preview/unify:0.8.1` |
+| Chemistry | `@preview/chemformula:0.1.3`, `@preview/alchemist:0.2.0` |
+
+fletcher diagrams render in the paged target only; in the HTML target they stay empty for now. Other packages aren't fetched unless you add them to the allowlist. Details in [`@typstream/universe`](/docs/reference/universe) and [Typst packages](/docs/guides/typst-packages).

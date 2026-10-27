@@ -47,7 +47,7 @@ doc.finish();
 
 `createPagedView(container, options)` is the renderer without the document: call `view.render(artifact)` with any `PagedArtifact`, complete or changed pages only.
 
-Styles are added once per document as a constructed stylesheet, and the text layer's positions are set through the CSSOM, so a strict CSP doesn't need `'unsafe-inline'` for styles (nor does the HTML renderer, which applies Typst's inline styles through the CSSOM; `docs/security.md` has the whole policy). Classes for theming: `.typstream-paged` (with `data-layout`), `.typstream-page` (with `data-page`, 1-based), `.typstream-text-layer`.
+Styles are added once per document as a constructed stylesheet, and the text layer's positions are set through the CSSOM, so a strict CSP doesn't need `'unsafe-inline'` for styles (nor does the HTML renderer, which applies Typst's inline styles through the CSSOM; the [security guide](../../apps/website/content/docs/guides/security.mdx) has the whole policy). Classes for theming: `.typstream-paged` (with `data-layout`), `.typstream-page` (with `data-page`, 1-based), `.typstream-text-layer`.
 
 ## Tests
 

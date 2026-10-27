@@ -1,0 +1,100 @@
+---
+title: Render targets
+description: The two ways typstream shows a document, semantic HTML or SVG pages, how each one renders and updates, and which to pick.
+---
+
+Typst compiles one source to two kinds of output, and typstream renders both. **HTML** is Typst's HTML export: semantic elements and MathML that reflow like a web page. **Paged** is SVG pages, laid out exactly as the document prints. You choose with `target`:
+
+```tsx
+<Typstream source={text} isStreaming={streaming} target="paged" />
+```
+
+Switch between them below. The document has a heading, an `#align`, a `#grid` of boxes and a display equation.
+
+<TypstPreview target="html" height={380}>
+
+```typst
+= Plant cells
+
+#align(center)[_Two parts to label on your diagram._]
+
+#grid(
+  columns: (1fr, 1fr),
+  gutter: 12pt,
+  rect(width: 100%, inset: 8pt)[*Nucleus* \ holds the cell's DNA],
+  rect(width: 100%, inset: 8pt)[*Chloroplast* \ turns light into sugar],
+)
+
+Photosynthesis, balanced:
+$ 6 "CO"_2 + 6 "H"_2"O" -> "C"_6"H"_12"O"_6 + 6 "O"_2 $
+```
+
+</TypstPreview>
+
+## At a glance
+
+| | HTML (`"html"`) | Paged (`"paged"`) |
+|---|---|---|
+| Output | Semantic HTML (`h2`, `p`, `table`, `figure`) and MathML | One SVG per page |
+| Layout | Reflows to the element's width | As printed: the document's page size, margins, headers and footers |
+| Fidelity | Close; some layout needs html-compat, and page furniture is missing | Identical to Typst's own output and the PDF |
+| Theme | Light, dark or the page's `color-scheme`; CSS custom properties | Pages look like paper |
+| Text | Real text: selectable, searchable, read by screen readers | An invisible text layer over each page does the same |
+| Updates | Only changed blocks are replaced | Only changed pages are redrawn, visible ones first |
+| Streaming effects | Word fade-in, caret | None |
+| Compile cost | Lower: no page layout | Higher: full layout and SVG export |
+
+## HTML
+
+The HTML target shows Typst's HTML export: headings, paragraphs, lists, tables, figures with captions, resolved references, footnotes and MathML. It reads like part of your page: it wraps at any width, takes your theme, and its text is ordinary text.
+
+**Sanitized.** The HTML comes from a document a model wrote, so the renderer treats it as untrusted. Each block is parsed in an inert template, cleaned against an allowlist, and those same nodes are moved into the page (nothing is serialized again). Scripts, forms, event handlers and `data-*` attributes are removed; links may only be `http(s)`, `mailto` or `#fragment`, and external ones open in a new tab (`linkTarget`); images may only be `data:` or `blob:` URLs; CSS that loads anything or uses `position: fixed` is dropped. Ids get a prefix per renderer, so two documents on one page don't clash. See [Security](/docs/guides/security).
+
+**Block diffing.** The artifact is split into top-level blocks as a string, and a block's HTML is its identity. On each update the renderer keeps unchanged blocks, and parses, sanitizes and inserts only new ones. A streamed token usually touches one block, so an update takes about a millisecond, and text you are selecting isn't replaced underneath you.
+
+**Source anchors.** In HTML compiles, the engine marks where each top-level block starts in the source, and the renderer records it as a `data-typstream-src` attribute on the block, so a block can be traced back to the text that made it.
+
+<Callout type="warn" title="Beta">
+The renderer's methods that read source anchors, `blockAt(offset)` and `sourceRange(node)`, are `@beta` and may change.
+</Callout>
+
+**Layout needs html-compat.** Typst 0.15.1's HTML export drops layout elements it can't express, and the text inside them: `#grid`, `#align`, `#rect`, `#place`, `#stack`, `#columns` come out empty. `@typstream/html-compat` is a Typst prelude that maps each one to HTML and CSS (grids become CSS grids, shapes become styled boxes) and draws what only a drawing can express (curves, polygons, CeTZ canvases) as inline SVG. The `typstream` package includes it; with `@typstream/react` or `@typstream/dom`, add the `htmlCompat` plugin. It doesn't change paged output.
+
+**Math needs a math font.** Browsers can't stretch delimiters or set math italics well without one. `typstream` registers New Computer Modern Math for MathML; with `@typstream/react`, pass its URL as `mathFont`, and with `@typstream/dom`, call `registerMathFont(url)`.
+
+What HTML can't show, even with html-compat:
+
+- **Page furniture**: `#set page(…)` has no HTML equivalent, so headers, footers, page numbers and margins are missing, and the outline has no page numbers.
+- **Text styling** set with `text(size:, weight:, fill:, font:)` isn't carried over; `strong`, `emph`, `underline`, `highlight`, sub- and superscripts are.
+- **Fractional spacing** (`h(1fr)`) becomes a small fixed gap, and vertical alignment inside `align`, `box` and `block` is dropped.
+- **Drawings** are SVG: their text is in an `aria-label`, not selectable. fletcher diagrams stay empty.
+
+Details: [`@typstream/html-compat`](/docs/reference/html-compat).
+
+## Paged
+
+The paged target shows each page as an SVG, drawn by Typst's own SVG exporter: what you see is what prints, down to the page numbers. Use it wherever the document is a document: worksheets, exams, anything a teacher will print.
+
+**Changed pages only.** The engine compares each page with the previous compile and sends only pages that changed, usually the last one or two while streaming. The renderer keeps one element per page and redraws a page only when its SVG differs. Changed pages on screen are drawn at the next frame; offscreen pages and text layers wait for idle time, or are drawn as soon as they scroll into view.
+
+**One shadow root per page.** Typst's SVG repeats glyph definitions under the same ids on every page. Inline in one document, Chromium re-resolves every glyph reference on the page whenever one page changes, which makes long documents slow. Each page's SVG lives in its own shadow root, which scopes those ids and keeps your app's CSS off the SVG.
+
+**Text layer.** The SVG draws glyphs as shapes, so invisible HTML text is laid over each page from the engine's text runs, stretched to each run's width. Selection, copy (with line breaks), find-in-page and screen readers use it, and it carries structure: headings with their level, lists, tables with rows and header cells, and the text's language and direction (Arabic reads right to left). The SVG itself is hidden from assistive technology. `textLayer: false` turns the layer off.
+
+**Links.** Only `http(s)` and `mailto` links keep their target and open in a new tab. Links within the document (to a heading or a figure) stay inert for now.
+
+**Layouts.**
+
+- `layout: "fixed"` (default) shows pages at their authored size, scaled down to fit the element.
+- `layout: "fit-width"` compiles pages as wide as the element, recompiling after a resize (150 ms after it stops). It sets the default page size, so a document with its own `#set page(paper: …)` keeps it. Pages keep A4 proportions by default, so a long document still updates page by page; `pageHeight: "auto"` makes one page as tall as the content, for short documents.
+
+Exports print at the document's own page size, not the fit-width size.
+
+## Which to pick
+
+- **A document panel, a print preview, anything that will be printed: paged.** It is exactly the PDF, page breaks and all, and it is typstream's primary surface, tested and polished first.
+- **Short answers inline in a chat: HTML.** It flows with the conversation, takes your theme and dark mode, animates words as they arrive, and costs less to compile and draw.
+
+The default `target` is still `"html"`, so set `target="paged"` for a document panel; for a panel that resizes, add `layout="fit-width"`.
+
+You can switch at any time. Switching keeps the document and its text; the old output stays until the first compile in the new target. Whatever the preview shows, `exportPdf()` and `exportHtml()` export the same source ([Exports](/docs/guides/exports)).

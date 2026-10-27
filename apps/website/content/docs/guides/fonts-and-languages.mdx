@@ -1,0 +1,199 @@
+---
+title: Fonts and languages
+description: The fonts the engine ships, how Arabic, Bengali and Devanagari fonts load on demand, right-to-left text in both targets, and how to add fonts such as CJK.
+---
+
+The engine compiles with its own fonts, not the reader's system fonts, so a page looks the same on every machine and
+in the exported PDF. It ships a small base set and downloads fonts for other scripts only when a document uses them.
+This page covers both, right-to-left text, and how to add fonts of your own.
+
+## The fonts the engine ships
+
+| Fonts | Covers | Loaded |
+|---|---|---|
+| Libertinus Serif (regular, bold, italic) | Latin, Greek, Cyrillic, Hebrew | When the engine starts |
+| New Computer Modern Math | Math | When the engine starts |
+| DejaVu Sans Mono | Raw text and code | When the engine starts |
+| Noto Naskh Arabic (regular, bold) | Arabic | The first time a document uses it |
+| Noto Serif Bengali (regular, bold) | Bengali | The first time a document uses it |
+| Noto Serif Devanagari (regular, bold) | Devanagari (Hindi, Marathi, Nepali, …) | The first time a document uses it |
+
+The base fonts are about 2.6 MB. Each script font file is 47–79 KB compressed and is fetched on its own, so a
+document with regular-weight Arabic text downloads one file. All of them are served from your own origin: your
+bundler emits them as assets next to `@typstream/engine-wasm`'s JavaScript. Their licenses are in
+`@typstream/engine-wasm`'s `dist/fonts/NOTICE` and `dist/fonts/LICENSE-Noto.txt`.
+
+<TypstPreview target="paged" height={260}>
+
+```typst
+#set text(size: 16pt)
+
+Good morning, class.
+
+#text(lang: "ar")[صباح الخير يا طلاب.]
+
+#text(lang: "bn")[সুপ্রভাত, শিক্ষার্থীরা।]
+```
+
+</TypstPreview>
+
+On a first visit you may see the Arabic and Bengali lines in the **Pages** view settle a moment after the English one:
+the first compile lacked their fonts, and the engine compiled again once they arrived.
+
+## How lazy fonts load
+
+Script fonts are registered when the engine starts, from metadata computed at build time (family, style, which
+characters each face covers), but without their bytes. Typst picks fonts as usual, by family or by falling back to the
+first font that covers the text, so it chooses a script font exactly as if it were loaded. Then:
+
+1. The compile notes that it wanted a font it has no bytes for, and carries on: for now the text falls back to the
+   next font or shows as boxes. The compile itself succeeds.
+2. The engine's worker fetches the font. Fetched fonts are kept in Cache Storage (`typstream-fonts`), so each
+   downloads once per browser.
+3. Once the font has arrived, the engine compiles the document again on its own, and the text appears in the right
+   font. You don't need to do anything.
+
+Exports wait for missing fonts too: an export whose compile lacked a font waits up to 3 seconds for it, then compiles
+again with it, or exports without it if it doesn't arrive in time.
+
+<Callout type="warn" title="Devanagari needs its font named">
+  New Computer Modern Math, one of the base fonts, also has Devanagari characters, and Typst's fallback reaches it
+  before Noto Serif Devanagari. The text then renders without proper shaping. Name the font for Devanagari text:
+  `#set text(font: ("Libertinus Serif", "Noto Serif Devanagari"))`. Arabic and Bengali fall back correctly.
+  Tracked in [#80](https://github.com/ikramhasan/typstream/issues/80).
+</Callout>
+
+## Fonts in the HTML target
+
+In the HTML target the browser draws the text, with the reader's fonts and your CSS. The engine's fonts matter only
+where Typst draws something itself, such as the drawings `@typstream/html-compat` turns into inline SVG (CeTZ canvases,
+polygons). For Arabic or Bengali in the HTML target, the reader's system fonts are used unless your page loads web
+fonts for those scripts.
+
+Math is the exception. Typst writes math as MathML, and browsers need a math font to stretch delimiters and set
+math italics. `@typstream/html-compat`'s stylesheet asks for New Computer Modern Math, and `typstream`'s
+`<Typstream>` registers the engine's copy of it as a web font. With `@typstream/react`, pass its URL yourself:
+
+```tsx
+import { baseFonts } from "@typstream/engine-wasm/fonts";
+import { Typstream } from "@typstream/react";
+
+const mathFont = baseFonts.find((url) => url.pathname.includes("NewCMMath"));
+
+<Typstream source={text} mathFont={mathFont} />;
+```
+
+Without React, `registerMathFont(url)` from `@typstream/dom` does the same. It uses the FontFace API, so it needs no
+`font-src` exception for inline CSS.
+
+## Right-to-left text
+
+Set the language, and Typst sets the direction: `#set text(lang: "ar")` for a whole document, `#text(lang: "ar")[…]`
+for a passage. `@typstream/edu`'s templates take `lang: "ar"` and do this for you.
+
+**Paged target.** Typst lays out right-to-left text itself. The selectable text layer over each page carries the
+page's and each run's `lang` and `dir`, so selecting, copying and screen readers follow the text's direction.
+
+**HTML target.** Typst's HTML export writes the document's language but no direction. The renderer adds it: it sets
+`lang` and `dir` on its root element from the document's language, which orders lists and tables right to left.
+Within the document, the theme gives paragraphs, list items, headings and table cells `unicode-bidi: plaintext`, so
+each takes its direction from its first strong letter: an Arabic paragraph in an English document aligns right, and
+the other way round. Standalone HTML exports get `dir="rtl"` on `<html>` the same way.
+
+## Add your own fonts
+
+CJK fonts aren't in the default set (one weight of Noto Serif SC is 11.6 MB), and you may want a brand font. Fonts
+are given to the engine as `FontSource`s:
+
+| Shape | Loaded |
+|---|---|
+| `{ kind: "url", url, info }` | Lazily: registered from `info`, fetched the first time a document uses it. |
+| `{ kind: "url", url }` | When the engine starts. |
+| `{ kind: "bytes", data }` | When the engine starts. |
+
+`family` and `scripts` (ISO 15924 codes, such as `["Hani"]`) are informational. The URL is fetched by the engine's
+worker, so give an absolute URL; under a strict Content-Security-Policy it must be allowed by `connect-src`.
+
+<Callout type="warn" title="Beta">
+  `FontSource`, the plugin facet `engine.fonts` and `createEngine`'s `initialize` are `@beta`.
+</Callout>
+
+### Compute `info`
+
+`info` is the engine's metadata for the file: Typst's `FontInfo` for each face, as JSON. Compute it once, at build
+time, with the version of `@typstream/engine-wasm` your app ships:
+
+```js title="scripts/font-info.mjs"
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { Engine, initSync } from "@typstream/engine-wasm";
+
+const require = createRequire(import.meta.url);
+initSync({ module: readFileSync(require.resolve("@typstream/engine-wasm/engine_bg.wasm")) });
+
+const info = Engine.font_info(readFileSync(process.argv[2]));
+console.log(`export const info = ${JSON.stringify(info)};`);
+```
+
+```bash
+node scripts/font-info.mjs public/fonts/NotoSerifSC-Regular.otf > src/noto-serif-sc-info.ts
+```
+
+### Give them to the engine
+
+Fonts belong to the engine, not to a document: every document on an engine sees the same fonts. So create an engine
+with them and hand it to your components:
+
+```tsx title="app/preview-provider.tsx"
+"use client";
+import { type ReactNode, useEffect, useState } from "react";
+import { createEngine, type Engine, engineWorker, TypstreamProvider } from "typstream";
+import { info } from "../src/noto-serif-sc-info";
+
+export function PreviewProvider({ children }: { children: ReactNode }) {
+  const [engine, setEngine] = useState<Engine | null>(null);
+  useEffect(() => {
+    const created = createEngine({
+      spawn: engineWorker(),
+      initialize: {
+        fonts: [
+          {
+            kind: "url",
+            url: new URL("/fonts/NotoSerifSC-Regular.otf", location.origin).href,
+            family: "Noto Serif SC",
+            scripts: ["Hani"],
+            info,
+          },
+        ],
+      },
+    });
+    setEngine(created);
+    return () => created.dispose();
+  }, []);
+  if (!engine) return null;
+  return <TypstreamProvider engine={engine}>{children}</TypstreamProvider>;
+}
+```
+
+The engine is created in an effect because it starts a Web Worker, which exists only in the browser. Every
+`<Typstream>` under the provider uses it.
+
+A plugin can carry fonts too, in `engine.fonts`. They load only when the plugin is passed to
+`createEngine({ plugins })`. A plugin given only to a document (the `plugins` prop) can't add fonts to an engine that
+is already running: the engine logs a warning (`plugin "…" brings fonts the engine doesn't have`) and the document
+compiles without them.
+
+## Fonts on the server
+
+`@typstream/node` loads its fonts from disk when a worker starts. By default it has Typst's bundled set (Libertinus
+Serif, New Computer Modern, DejaVu Sans Mono) and the three script fonts, all loaded up front. Add more with
+`fontPaths` (directories searched recursively, like `typst --font-path`) or `fonts` (file bytes):
+
+```ts
+import { createEngine, render } from "@typstream/node";
+
+const engine = createEngine({ fontPaths: ["/srv/fonts/noto-cjk"] });
+const pdf = await render(source, "pdf", { engine });
+```
+
+`typstFonts: false` and `scriptFonts: false` leave out the default sets.

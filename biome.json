@@ -13,6 +13,7 @@
       ".dependency-cruiser.mjs",
       "!**/dist",
       "!**/.next",
+      "!**/.source",
       "!**/next-env.d.ts",
       "!**/node_modules",
       "!**/target",
@@ -27,5 +28,8 @@
   },
   "formatter": { "indentStyle": "space", "lineWidth": 120 },
   "linter": { "rules": { "recommended": true } },
-  "overrides": [{ "includes": ["**/api-extractor*.json"], "json": { "parser": { "allowComments": true } } }]
+  "overrides": [
+    { "includes": ["**/api-extractor*.json"], "json": { "parser": { "allowComments": true } } },
+    { "includes": ["apps/website/**/*.css"], "css": { "parser": { "tailwindDirectives": true } } }
+  ]
 }

@@ -1,0 +1,193 @@
+---
+title: Security
+description: What a hostile document can and can't do to a page that renders it, the defences in each layer, and how to serve typstream under a strict Content-Security-Policy.
+---
+
+typstream renders Typst that a language model writes. This page explains what a hostile document can and can't do to a page that shows it, what holds that line, and how to serve typstream under a strict Content-Security-Policy.
+
+<Callout type="warn" title="Treat documents as untrusted code">
+  Typst is a programming language, and the model writing it can be wrong or steered. A prompt can be injected through anything the model reads: a pasted article, a student's answer, a web page. Design as if every document were written by an attacker.
+</Callout>
+
+## Threat model
+
+**The attacker** is whoever controls the document text: the model, or someone steering it. A typstream server (`@typstream/node`) faces a second attacker: any client that can reach it.
+
+**What they want:**
+
+- To run script in the host page's origin: steal its session, act as the user.
+- To make the browser fetch something: track the reader, leak data in a URL, probe the app's own origin.
+- To read files the app didn't mean to show: other documents' files, the app's static files, the server's disk.
+- To take the page down: hang the tab, exhaust memory, crash the worker for good.
+- To deceive the reader: links to other schemes, content that covers the app's own interface.
+
+**Where the document goes:** text → the healer (main thread) → the engine worker (Typst compiled to WebAssembly) → an artifact (HTML, or page SVGs) → the renderer (DOM). Each step is a boundary below.
+
+## The engine's world: no files, no network, no host
+
+Typst sees a virtual file system that the app fills. It holds the document, its preamble, the files the app passes (`files`), and the packages the app allows. There is no network, no environment and no clock beyond the date, and `#read`, `#image`, `#json`, `#xml`, `#plugin` and imports resolve inside that file system only:
+
+| A document tries | What happens |
+|---|---|
+| `#read("/etc/passwd")`, `#read("file:///etc/passwd")` | `file not found (searched at /etc/passwd)`: paths name virtual files only |
+| `#read("../../../etc/passwd")` | `path … would escape the project root` |
+| `#image("https://tracker.example/pixel.png")` | `file not found`: a URL is just a path |
+| reading another document's files | `file not found`: each document's engine mounts only its own files |
+| `#import "@local/…"`, a package not on the allowlist | `package … is not allowed`, and nothing is fetched |
+| a wasm plugin importing a host function | `cannot find definition for import env::fetch`: plugins get only Typst's two protocol functions |
+| an XML external entity, entity expansion, an SVG `use` bomb | refused by Typst's XML and SVG parsers (unknown entity, entity loop, nodes limit) |
+
+Diagnostics name virtual paths only, never the server's or the machine's.
+
+Packages come from an allowlist with pinned versions and integrity hashes, served from the app's own origin by default (`@typstream/universe`; see [Typst packages](/docs/guides/typst-packages)). A server facing untrusted clients ignores the lists they send (`trustClient: false`, which `@typstream/node` sets), and the fixer modules they name (`clientFixers: false`, also set), since importing a module runs its code.
+
+<Callout type="error" title="Keep the engine offline">
+  Don't give typstream an engine whose file access goes to the network. typst.ts's `FetchAccessModel`, for example, turns every path a document names into a request to your origin.
+</Callout>
+
+## Compute: the watchdog, traps and limits
+
+Typst stops some runaways itself: infinite `while` loops, deep recursion, show rules that never terminate, and layout that doesn't converge (five attempts). It doesn't stop the rest: long finite loops, recursion with distinct arguments, memory bombs, and wasm plugins that never return (plugins have no fuel limit).
+
+- **The watchdog** gives every compile a budget (3 s streaming, 10 s final). Past it, the main thread terminates the worker and continues on a fresh one. Three strikes stop live preview; the finished document compiles once more, and then the [fallback ladder](/docs/concepts/fallback) finds the blocks that hang and shows them as error boxes.
+- **Traps.** A Typst panic, running out of wasm memory, or content nested so deep that the wasm stack overflows ends the worker without an answer. The client counts it like a timeout and replaces the worker. The stack overflow surfaces as the host's error (`RangeError` in V8 and JavaScriptCore, `InternalError` in SpiderMonkey), not a wasm trap, and leaves the instance unusable, so the server treats it as fatal too.
+- **Memory.** Typst's caches are evicted after every compile. A worker that reports more than 256 MiB is replaced (`recycleBytes`).
+- **Limits** (`createEngine({ limits })`):
+  - `maxLength` (default 1 MiB of UTF-16 code units): longer input isn't healed or compiled, which protects the main thread. The document reports `too-large`, keeps its last render, and refuses exports until `set()` or `reset()` brings it back under the limit.
+  - `livePages` (default 100): a streaming compile with more pages stops live preview (`too-complex`). The finished document compiles in full.
+  - `@typstream/node` refuses documents over `maxTextLength` (1,000,000).
+
+## Output: what reaches the DOM
+
+Typst writes what `html.elem` asks for, verbatim: `<script>`, `onerror=`, `href="javascript:…"`, `<iframe srcdoc>`, `<base>`, `<meta http-equiv=refresh>`. The renderers are where these stop.
+
+### HTML target
+
+The renderer parses markup into an inert `<template>`, so nothing runs or loads while it is parsed. It cleans that tree with an allowlist sanitizer and moves the cleaned nodes into the page; nothing is serialized and parsed again, so mutation XSS can't happen. The sanitizer keeps:
+
+- the HTML elements Typst writes, MathML Core and drawing SVG;
+- links to `http(s)`, `mailto` and `#fragments` (external links get `rel="noopener noreferrer"`), read the way URL parsers read them (`java\tscript:` is `javascript:`);
+- images from `data:image/*` and `blob:` only;
+- CSS that loads nothing (no `url()`, `image-set()`, `expression()`, bindings) and isn't `position: fixed`.
+
+Everything else goes: scripts, styles, frames, objects, forms, `on*` handlers, `data-*`, `name`, `is`, `srcset`, `ping`, SVG animation and `foreignObject`. Ids get a per-renderer prefix, so a label can't clobber a global (`window.location`). Plugins can allow more tags and attributes (the `sanitize` facet), but never handlers, scripts or URL attributes.
+
+### Paged target
+
+Pages are typst-svg's output: glyphs as paths, images as `data:` URLs, and attribute values escaped by its XML writer. A page lives in its own shadow root, where the app's CSS can't reach it. The view keeps links to `http(s)` and `mailto` only, and images with `data:` URLs only. It trusts typst-svg's serializer for the rest. The hostile documents check that on every Typst upgrade.
+
+### Standalone HTML exports
+
+Standalone HTML exports (`standaloneHtml` from `@typstream/dom`, which a mounted document's `exportHtml()` uses) aren't sanitized. A downloaded file carries its own Content-Security-Policy (no scripts, no network, no forms), which stops what the document wrote in Chromium, Firefox and WebKit. See [Exports](/docs/guides/exports).
+
+The engine's `doc.exportHtml()` (and `@typstream/node`'s `render(source, "html")`) return Typst's HTML as it is: unsanitized, and without that policy. Wrap it with `standaloneHtml` before you offer it as a file, and never insert it into your page.
+
+## Privacy
+
+Nothing is fetched from third parties by default. The engine, its fonts and packages come from the app's origin and are cached in Cache Storage. typstream sends no telemetry; the [events it reports](/docs/guides/telemetry) go only where your app sends them.
+
+## Content-Security-Policy
+
+typstream works under a strict policy: no inline script, no inline style and no `eval`, with everything served from your own origin. typstream's CI serves a page with exactly this policy and opens it in Chromium, Firefox and WebKit, failing on any violation:
+
+```text title="Content-Security-Policy"
+default-src 'none';
+script-src 'self' 'wasm-unsafe-eval';
+worker-src 'self';
+connect-src 'self';
+img-src 'self' data: blob:;
+font-src 'self';
+style-src 'self';
+base-uri 'none';
+form-action 'none';
+frame-ancestors 'none'
+```
+
+What each directive is for:
+
+| Directive | Why typstream needs it |
+|---|---|
+| `script-src 'wasm-unsafe-eval'` | The engine is WebAssembly. Compiling a module needs this keyword: it allows `WebAssembly.compile*`, not `eval`. The worker gets the policy from its own response, so send the header on the worker script too. |
+| `worker-src 'self'` | The engine runs in a module worker loaded from your origin (`engineWorker()`). Bundling setups that inline workers as `blob:` URLs need `blob:` here. |
+| `connect-src 'self'` | The worker fetches the wasm, the fonts (script fonts lazily, when a document uses them) and package tarballs. Add the origin if you serve these from a CDN ([Self-hosting](/docs/guides/self-hosting#loading-from-a-cdn)), and the WebSocket's origin for a [remote engine](/docs/guides/remote-engine). |
+| `img-src data: blob:` | Typst writes a document's images as `data:` URLs, and apps may pass `blob:` ones. |
+| `font-src 'self'` | `registerMathFont` loads New Computer Modern Math for MathML through the FontFace API. |
+| `style-src 'self'` | Enough. The renderers inject their CSS as constructed stylesheets (`adoptedStyleSheets`), and apply the inline styles of Typst's HTML (layout from html-compat, fills, colours) through the CSSOM. A strict policy refuses `style` attributes parsed from markup, so they never reach the parser. Browsers without constructed stylesheets (Safari before 16.4) get a `<style>` element instead, which needs `'unsafe-inline'`. |
+
+Not needed: `'unsafe-eval'`, `'unsafe-inline'`, cross-origin isolation (COOP/COEP), or any third-party origin.
+
+Not supported yet: **Trusted Types** (`require-trusted-types-for 'script'`). The renderers parse markup with `innerHTML`, which Trusted Types refuses without a policy ([#70](https://github.com/ikramhasan/typstream/issues/70)).
+
+### Sending the header
+
+Prefer the header to a `<meta>` tag: `frame-ancestors` is ignored in `<meta>`, and the header covers the worker script too. Keep the policy in one place:
+
+```js title="csp.mjs"
+export const CSP = [
+  "default-src 'none'",
+  "script-src 'self' 'wasm-unsafe-eval'",
+  "worker-src 'self'",
+  "connect-src 'self'",
+  "img-src 'self' data: blob:",
+  "font-src 'self'",
+  "style-src 'self'",
+  "base-uri 'none'",
+  "form-action 'none'",
+  "frame-ancestors 'none'",
+].join("; ");
+```
+
+<Tabs items={["Vite", "Next.js"]}>
+<Tab value="Vite">
+
+The dev server and `vite preview` send the policy, so what works in development works behind it:
+
+```js title="vite.config.mjs"
+import { defineConfig } from "vite";
+import { CSP } from "./csp.mjs";
+
+const headers = { "Content-Security-Policy": CSP };
+
+export default defineConfig({
+  server: { headers },
+  preview: { headers },
+  // The engine worker is a module worker; its chunks must be ES modules too.
+  worker: { format: "es" },
+  // Vite inlines small assets as data: URLs; keep fonts and package tarballs as files.
+  build: { assetsInlineLimit: 0 },
+});
+```
+
+In production, send the same header from your server or static host.
+
+</Tab>
+<Tab value="Next.js">
+
+`headers()` in `next.config` sends it on every route, the worker script and its assets included:
+
+```js title="next.config.mjs"
+import { CSP } from "./csp.mjs";
+
+export default {
+  async headers() {
+    return [{ source: "/:path*", headers: [{ key: "Content-Security-Policy", value: CSP }] }];
+  },
+};
+```
+
+Next.js's own pages need more than typstream does: its App Router writes inline scripts, and its development server uses `eval`. Follow Next.js's Content Security Policy guide (nonces) for its part, and add the directives in the table above for typstream's.
+
+</Tab>
+</Tabs>
+
+For any other static host, use its header configuration.
+
+## Known gaps
+
+- A document can draw outside its element in the HTML target: absolutely positioned content sized to the viewport, or the host page's own utility classes (`fixed inset-0`), can cover the app around it ([#69](https://github.com/ikramhasan/typstream/issues/69)). Script, network and navigation stay blocked; this is about deception.
+- Trusted Types ([#70](https://github.com/ikramhasan/typstream/issues/70)).
+- The paged view trusts typst-svg's serializer (above): the hostile documents run again on every Typst upgrade, as they do for the plugin sandbox.
+
+## How this is tested
+
+A corpus of hostile documents (reads, images, imports, plugins and XML outside the sandbox; links to other schemes; `html.elem` scripts, handlers, frames, forms and CSS; runaway plugins; content nested too deep; huge dimensions) streams into the real renderers in CI, in Chromium, Firefox and WebKit, in both targets, along with the sanitizer's XSS and mutation-XSS cases and the strict-CSP page above.

@@ -1,0 +1,85 @@
+---
+title: Streaming and final mode
+description: The lifecycle of a typstream document, from the first token to the finished answer, its statuses, what final mode changes, and how regenerating and editing work.
+---
+
+A typstream document has two modes. While the model is writing it is **streaming**: typstream hides what is unfinished and keeps the preview steady. Once the text is complete it is **final**: typstream compiles it strictly and reports what is wrong. Your app says which one applies; everything else follows from it.
+
+## Feeding a document
+
+There are two ways to give a document its text.
+
+**`source`**: the whole text so far, as a string that grows. This is what a chat UI usually has (an AI SDK message's text), and it pairs with `isStreaming`:
+
+```tsx
+import { Typstream } from "typstream";
+
+<Typstream source={message.text} isStreaming={status === "streaming"} animated caret />;
+```
+
+A new `source` that extends the previous one is appended; any other change replaces the text, and the healer diffs it into an edit, so it stays cheap. When `isStreaming` turns false, the document is finished.
+
+**`stream`**: an `AsyncIterable<string>` of chunks. The document reads it to the end and finishes when it ends, so `isStreaming` is ignored. Create the stream once (in `useMemo`, for example): a new stream starts the document over.
+
+```tsx
+const stream = useMemo(() => readChunks(response), [response]);
+<Typstream stream={stream} />;
+```
+
+Without React, `mountTypstream(element, options)` takes the same options and `view.update(options)` applies changes. On the engine directly, `doc.push(chunk)`, `doc.set(text)` and `doc.finish()` do the same.
+
+## Statuses
+
+Every document reports a status (`onStatusChange`, `useTypstream().status`, `doc.getState().status`):
+
+| Status | Meaning |
+|---|---|
+| `idle` | The output shows the latest input; waiting for more. |
+| `compiling` | A compile is scheduled or running. |
+| `stale` | Streaming, and the latest compile failed. The output is the last good one, and it stays `stale` until a compile succeeds. |
+| `error` | The finished document failed to compile, or the engine can't run. |
+| `done` | The finished document compiled. |
+
+While streaming, the status moves between `idle` and `compiling`, with `stale` when a compile fails; `stale` wins over `compiling` until a compile succeeds. When the document is finished it ends in `done` or `error`. Because the fallback isolates broken blocks, a finished document with errors often ends in `done` with error boxes in its output, and its errors in `diagnostics`.
+
+`state.failure` says why there's no new output (`diagnostics`, `timeout`, `crash`, `too-complex`, `too-large`, `engine`), and `state.live` turns false once the watchdog has stopped live compiling. See [The engine](/docs/concepts/engine).
+
+## What final mode changes
+
+| | Streaming | Final |
+|---|---|---|
+| Healing | Tail repair closes and cuts what is unfinished. | No tail repair: what is still open is an error (`unclosed delimiter`). A truncated answer shows as an error instead of being completed. |
+| Lint | Settled text only. | The whole document. |
+| Fixers | `tail-cut` cuts text still being typed; `pending-ref` shows missing labels as placeholders. | No `tail-cut`. `pending-ref` still shows the placeholder, and the error is reported. |
+| Fallback | Settled blocks are isolated; once compiles have failed for 1.5 s, the settled text renders with the tail as plain text. | Every failing block is isolated. A block that hangs or crashes the engine is found and skipped. As a last resort, the whole document shows as its source. |
+| Watchdog | 3 s per compile; after 3 strikes live compiling stops. | 10 s per compile. A finished document always compiles once, even after live compiling stopped. |
+| Caret and fade-in | Shown, if enabled. | No caret; new text appears without animation. |
+
+Final mode is the state to save and export: `exportPdf()` and `exportHtml()` compile the same source in final mode. Edits after `finish()` still compile, in final mode.
+
+## Regenerating
+
+When `isStreaming` goes back to true on a finished document (the user asked to regenerate the answer), the document **starts over**: the healer resets to the new text, and watchdog strikes are forgotten. The last output stays on screen until the first compile of the new text, so there is no blank flash. On the engine, that is `doc.reset(text)`.
+
+## Edits
+
+A document is text plus edits, not only appends. The engine's `doc.applyEdit({ from, to, insert })` changes any part of it (offsets are UTF-16 indices into the input), and the bindings turn a `source` that isn't an extension of the previous one into an edit. The healer re-parses from the last checkpoint before the edit and stops once it is back in step, so an edit costs about as much as the text around it, not the whole document. Edits reach the worker as one diff of the healed source, right before the next compile.
+
+**Streaming into the middle.** When a model rewrites one section of an existing document, the text being written isn't at the end. The healer handles that with a streaming range: `setStreamingRange({ from, to })` heals the region as if it were the tail and leaves the text after it as it is ([Healing](/docs/concepts/healing#streaming-into-the-middle-of-a-document)). The engine document and the bindings don't expose streaming ranges yet; that is planned with [#34](https://github.com/ikramhasan/typstream/issues/34).
+
+## The tail never shows less than it did
+
+Healing and the `tail-cut` fixer keep a streamed prefix compiling by cutting what is still being typed. Sometimes a cut takes text that had already rendered with it. A spread such as `..rows.map(r => (r.name, r.score` is an array of arrays until its closing `.flatten()` arrives, so the fix that makes it compile drops the whole spread, and a table would lose the rows it was showing.
+
+So while streaming, a compile that succeeds but shows less of the unsettled tail than the last output did is held back: the last output stays (status `stale`) until the tail shows as much again, or that text settles. Content doesn't flash away and back as tokens arrive. Edits before the settled point, or a reference that starts resolving, show at once.
+
+## Word fade-in and the caret
+
+Two options make streaming feel live in the HTML target:
+
+- `animated` fades in new words as they arrive. Only new text in changed blocks animates; a block that is re-created continues its words' animation instead of popping in again. Math, drawings and images fade in whole, code blocks don't animate, and `prefers-reduced-motion` turns it off. Pass `true`, or the options below.
+- `caret` shows a caret after the last text while streaming: at the end of the deepest last element holding text, such as the last table cell, never in the footnotes. It is hidden from assistive technology and disappears in final mode.
+
+Both default to off, and neither applies to the paged target, where a changed page is swapped whole.
+
+<auto-type-table path="packages/dom/src/html/animate.ts" name="AnimateOptions" />

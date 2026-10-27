@@ -1,0 +1,228 @@
+---
+title: Typst packages
+description: Let documents import Typst Universe packages such as CeTZ from an allowlist, add your own, and mount local packages.
+---
+
+Typst documents extend themselves with packages: `#import "@preview/cetz:0.5.3"` brings in CeTZ for drawings. In
+typstream a document can import a package only if it is on an **allowlist**. The engine downloads an allowed package
+the first time a document imports it, checks it against its hash, and keeps it for later. Nothing else is ever
+fetched.
+
+<TypstPreview target="paged" height={320}>
+
+```typst
+#import "@preview/cetz:0.5.3"
+
+#cetz.canvas({
+  import cetz.draw: *
+  circle((0, 0), radius: 1.5)
+  line((0, 0), (1.5, 0), stroke: blue)
+  content((0.75, 0.3), [$r$])
+  line((3, -1.5), (6, -1.5), (4.5, 1.5), close: true, fill: yellow.lighten(60%))
+  content((4.5, -1.9), [base])
+})
+```
+
+</TypstPreview>
+
+## The default set
+
+`@typstream/universe` vendors a set of [Typst Universe](https://typst.app/universe) packages for diagrams, math and
+chemistry, as the unmodified tarballs packages.typst.org serves:
+
+| For | Package | Import |
+|---|---|---|
+| Diagrams | `@preview/cetz:0.5.3` | `#import "@preview/cetz:0.5.3"` |
+| Diagrams | `@preview/fletcher:0.5.8` | `#import "@preview/fletcher:0.5.8": diagram, node, edge` |
+| Math | `@preview/cetz-plot:0.1.4` | `#import "@preview/cetz-plot:0.1.4": plot` |
+| Math | `@preview/physica:0.9.8` | `#import "@preview/physica:0.9.8": *` |
+| Math | `@preview/unify:0.8.1` | `#import "@preview/unify:0.8.1": num, qty, unit` |
+| Chemistry | `@preview/chemformula:0.1.3` | `#import "@preview/chemformula:0.1.3": ch` |
+| Chemistry | `@preview/alchemist:0.2.0` | `#import "@preview/alchemist:0.2.0": *` |
+
+Their dependencies come too, at the versions those packages pin: cetz 0.5.2 and 0.3.4, and oxifmt 1.0.0 and 0.2.1.
+
+`typstream`'s `<Typstream>` adds this set by default. Turn it off with `packages={false}`:
+
+```tsx
+import { Typstream } from "typstream";
+
+<Typstream source={text} packages={false} />;
+```
+
+With `@typstream/react`, `@typstream/dom` or `@typstream/engine` directly, add the `universe` plugin yourself:
+
+```tsx
+import { Typstream } from "@typstream/react";
+import { universe } from "@typstream/universe";
+
+<Typstream source={text} plugins={[universe]} />;
+```
+
+The plugin also carries prompt rules that list these imports, with a one-line usage for each. Include it in
+[`buildSystemPrompt`](/docs/guides/prompting) so the model imports what the engine allows, at the right versions.
+
+In the HTML target, CeTZ canvases become inline SVG with [`@typstream/html-compat`](/docs/reference/html-compat).
+fletcher diagrams are empty in HTML for now and render in the paged target.
+
+## How loading works
+
+Before each compile, the engine scans the document (and its preamble) for package specs in string literals, such as
+`"@preview/cetz:0.5.3"`. A spec still being streamed (`"@preview/cet`) doesn't match, so nothing is requested early.
+For each spec it finds:
+
+1. **Allowed?** If the package isn't on the allowlist, it is never requested. The compile fails with
+   `package @preview/x:1.0.0 is not allowed`, with a hint listing the packages that are.
+2. **Which version?** Models write the versions they saw in training (`cetz:0.2.2`). A request for another version
+   of an allowed package gets the nearest allowed one: the same `major.minor` if there is one, else the newest
+   allowed version. The document gets a warning on the import: `package @preview/cetz:0.2.2 isn't available here; using @preview/cetz:0.5.3`.
+3. **Fetch.** The tarball comes from the allowlist entry's `url`. The universe packages' URLs point at files your
+   bundler emits next to your app's JavaScript, so they load from your own origin. A fetched tarball is kept in
+   Cache Storage (`typstream-packages`), so it downloads once per browser.
+4. **Check.** The archive must match the entry's `integrity` hash before it is used.
+5. **Mount.** The package is unpacked into the document's files. Its own imports are scanned the same way, and must
+   be allowed too.
+
+The compile waits for packages, but only briefly: about one second while streaming, three seconds for a final
+compile or an export. If a package arrives later, the document compiles again on its own. Until then the import fails
+with `package … is still loading`; a download that failed reports `package … failed to load (reason)` and is retried
+after ten seconds.
+
+### While a package loads
+
+A failed import would fail the whole document. So while streaming, the engine's `package-stub` fixer replaces an
+import it can't satisfy (not allowed, still loading, failed) with placeholders. `#import "@preview/x:1.0.0": a, b`
+binds `a` and `b` to a stand-in that shows the package's name where it is called, and the rest of the document
+renders. A wildcard import (`: *`), or a module whose fields are used (`cetz.draw`), can't be stood in for, and the
+error stays. A finished document shows the placeholders too, and reports the error.
+
+## Add your own package
+
+An allowlist entry is a `PackageSpec`:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `namespace` | `string` | `"preview"` for Typst Universe packages. |
+| `name` | `string` | The package's name. |
+| `version` | `string` | `major.minor.patch`. |
+| `url` | `string` | Where to fetch the `.tar.gz`, as packages.typst.org serves it. |
+| `integrity` | `string` | A subresource-integrity hash (`sha256-…`, `sha384-…` or `sha512-…`). |
+
+<Callout type="warn" title="Beta">
+  `PackageSpec`, the plugin facet `engine.packages`, `createEngine`'s `initialize` and the document option
+  `packages` are `@beta`: their shape may change before 1.0.
+</Callout>
+
+Download the tarball into your source tree, next to the module that will list it:
+
+```bash
+curl -o src/typst/my-package-1.0.0.tar.gz https://packages.typst.org/preview/my-package-1.0.0.tar.gz
+```
+
+Then compute its integrity. Hash the **uncompressed tar**, not the `.tar.gz`: servers often send `.gz` files with
+`Content-Encoding: gzip`, and the browser then hands the engine the tar. A hash of the tar holds however the archive
+travelled. (The engine accepts a hash of either.)
+
+```js title="integrity.mjs"
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { gunzipSync } from "node:zlib";
+
+const tar = gunzipSync(readFileSync(process.argv[2]));
+console.log(`sha256-${createHash("sha256").update(tar).digest("base64")}`);
+```
+
+```bash
+node integrity.mjs src/typst/my-package-1.0.0.tar.gz
+```
+
+Put the entry in a plugin, with a prompt rule so the model knows it may import it:
+
+```tsx title="src/typst/packages.ts"
+import { definePlugin } from "@typstream/core";
+
+export const myPackages = definePlugin({
+  key: "acme/packages",
+  engine: {
+    packages: [
+      {
+        namespace: "preview",
+        name: "my-package",
+        version: "1.0.0",
+        // A literal `new URL(…, import.meta.url)`: bundlers emit the file as an asset.
+        url: new URL("./my-package-1.0.0.tar.gz", import.meta.url).href,
+        integrity: "sha256-…",
+      },
+    ],
+  },
+  prompt: { rules: ['`#import "@preview/my-package:1.0.0": *` for …'] },
+});
+```
+
+```tsx
+<Typstream source={text} plugins={[myPackages]} />
+```
+
+This is how `@typstream/universe` lists its tarballs, so they load from your own origin. If you serve the file some
+other way, give an absolute URL: the engine fetches from its worker, which resolves a relative URL against the worker
+script's location, not your page's. If the package imports other packages, add entries for those too.
+
+### Engine-wide or per document
+
+The allowlist is the union of two lists:
+
+- **Engine-wide**: `createEngine({ initialize: { packages } })`, or the `engine.packages` of plugins passed to
+  `createEngine({ plugins })`. Every document on the engine may import these.
+- **Per document**: the `engine.packages` of the plugins a document is opened with (the `plugins` prop, or
+  `engine.open({ plugins })`), and `engine.open({ packages })`. Only that document may import these.
+
+```ts
+import { createEngine, engineWorker, UNIVERSE_PACKAGES } from "typstream";
+
+const engine = createEngine({
+  spawn: engineWorker(),
+  initialize: { packages: [...UNIVERSE_PACKAGES] },
+});
+```
+
+A downloaded package is shared by every document of the engine either way, so it is fetched once.
+
+A server facing untrusted clients ignores the lists clients send, since any client could otherwise make it fetch
+any URL. `@typstream/node`'s protocol server does; see [Remote engine](/docs/guides/remote-engine).
+
+## Local packages
+
+A package doesn't have to be downloaded. Files whose keys start with a package spec, `@namespace/name:x.y.z/` followed
+by a path, form a package rooted there, and `#import "@namespace/name:x.y.z"` reads it: its `typst.toml`, then its
+entry point. A local package needs no allowlist entry, since nothing is fetched.
+
+```tsx
+import { definePlugin } from "@typstream/core";
+
+const school = definePlugin({
+  key: "acme/school",
+  engine: {
+    files: {
+      "@acme/school:1.0.0/typst.toml": '[package]\nname = "school"\nversion = "1.0.0"\nentrypoint = "lib.typ"\n',
+      "@acme/school:1.0.0/lib.typ": "#let motto = [Learn, then teach.]\n",
+    },
+  },
+});
+```
+
+```typst
+#import "@acme/school:1.0.0": motto
+
+#motto
+```
+
+This is how `@typstream/edu` ships: its files are mounted under `@typstream/edu:0.1.0/…`. The same keys work in the
+`files` of a document (`engine.open({ files })`, the `files` prop) and of `@typstream/node`'s `render` and `validate`.
+`@typstream/node` fetches no packages, so on the server you mount the packages a document imports this way.
+
+## Licenses
+
+Each vendored tarball carries its package's own license, unmodified. cetz and cetz-plot are LGPL-3.0-or-later;
+fletcher, physica, unify, chemformula and alchemist are MIT; oxifmt 1.0.0 is MIT OR Apache-2.0 and 0.2.1 is MIT-0.
+The tarballs are served to your users' browsers, so check that these terms suit your app. An app that can't ship
+LGPL code can leave out the universe plugin (`packages={false}`) and pass its own allowlist.

@@ -1,0 +1,187 @@
+---
+title: Next.js and the AI SDK
+description: A Next.js App Router chat whose answers are Typst documents, streamed with the Vercel AI SDK's streamText and useChat and rendered with the Typstream component.
+---
+
+This page builds a chat where the model answers in Typst and every answer renders as a live document. A route handler streams the model's text with `streamText`, `useChat` receives it on the client, and each assistant text part goes into its own `<Typstream>`.
+
+It follows `examples/nextjs-ai-sdk` in the repository, which was written against Next.js 16, AI SDK 7 (`ai`), `@ai-sdk/react` 4 and `@ai-sdk/anthropic` 4.
+
+<Files>
+  <Folder name="app" defaultOpen>
+    <Folder name="api" defaultOpen>
+      <Folder name="chat" defaultOpen>
+        <File name="route.ts" />
+      </Folder>
+    </Folder>
+    <File name="layout.tsx" />
+    <File name="page.tsx" />
+  </Folder>
+  <File name="next.config.ts" />
+</Files>
+
+<Steps>
+<Step>
+
+### Install
+
+```npm
+npm install typstream ai @ai-sdk/react @ai-sdk/anthropic
+```
+
+Set `ANTHROPIC_API_KEY` in `.env.local`. Any AI SDK provider works the same way.
+
+</Step>
+<Step>
+
+### The route handler
+
+The server asks the model for a Typst document and streams the reply as a UI message stream. The instructions matter: models default to Markdown, and the healer can only fix so much of it.
+
+```ts title="app/api/chat/route.ts"
+import { anthropic } from "@ai-sdk/anthropic";
+import { convertToModelMessages, streamText, type UIMessage } from "ai";
+
+export const maxDuration = 60;
+
+const INSTRUCTIONS = `You write educational documents (worksheets, quizzes, handouts) in Typst 0.15 markup.
+Reply with the Typst source only: no Markdown, no code fences, no commentary before or after.
+- Headings are "= Title", "== Section"; *bold*, _italic_; "- " bullets and "+ " numbered items.
+- Math goes between dollar signs: $a^2 + b^2 = c^2$, with a space inside for display math: $ x = 1/2 $.
+- Tables: #table(columns: 3, [Header], [Header], [Header], [cell], [cell], [cell]).
+- Write a literal dollar sign, hash or at sign as \\$, \\#, \\@.
+- Leave room for answers with #v(2em) or #line(length: 100%).`;
+
+export async function POST(request: Request) {
+  const { messages }: { messages: UIMessage[] } = await request.json();
+  const result = streamText({
+    model: anthropic("claude-sonnet-5-5"),
+    instructions: INSTRUCTIONS,
+    messages: await convertToModelMessages(messages),
+  });
+  return result.toUIMessageStreamResponse();
+}
+```
+
+In AI SDK 7, `instructions` is the system prompt (`system` still works but is deprecated).
+
+</Step>
+<Step>
+
+### The chat page
+
+The page is a client component: `useChat` holds the messages and posts to `/api/chat`, and each assistant text part renders as a `<Typstream>`.
+
+```tsx title="app/page.tsx"
+"use client";
+
+import { useChat } from "@ai-sdk/react";
+import { useState } from "react";
+import { Typstream } from "typstream";
+
+export default function Page() {
+  const { messages, sendMessage, status } = useChat();
+  const [input, setInput] = useState("");
+  const last = messages[messages.length - 1];
+  const busy = status === "streaming" || status === "submitted";
+
+  return (
+    <main>
+      {messages.map((message) =>
+        message.parts.map((part, i) => {
+          if (part.type !== "text") return null;
+          const key = `${message.id}-${i}`;
+          if (message.role === "user") return <p key={key}>{part.text}</p>;
+          return (
+            <Typstream
+              key={key}
+              source={part.text}
+              isStreaming={status === "streaming" && message.id === last?.id}
+              animated
+              caret
+            />
+          );
+        }),
+      )}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!input.trim() || busy) return;
+          void sendMessage({ text: input });
+          setInput("");
+        }}
+      >
+        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask for a worksheet…" />
+        <button type="submit" disabled={busy}>
+          Send
+        </button>
+      </form>
+    </main>
+  );
+}
+```
+
+Run `npm run dev` and ask for "A one-page worksheet on the Pythagorean theorem for grade 8".
+
+</Step>
+</Steps>
+
+## How it fits together
+
+- **One `<Typstream>` per assistant text part.** `part.text` is the whole text of the part so far, which is what `source` expects. Key it by message id and part index, so React keeps each document's component (and its rendered output) across updates.
+- **`isStreaming` only for the message being written.** `status === "streaming"` is true for the whole chat while any answer streams; combine it with "this is the last message", or every earlier answer would go back to streaming and start over. When it turns false, the answer is compiled in final mode and the caret disappears.
+- **One worker for the whole chat.** Every `<Typstream>` shares one engine worker, and only answers near the viewport or still streaming compile. A long conversation stays cheap.
+- **`"use client"`.** `useChat` already makes the page a client component. The `typstream` bundle is marked `"use client"` itself, so you can also render `<Typstream>` from a Server Component with a fixed `source`. On the server it renders an empty `<div>`; the document appears in the browser.
+- **No Next.js configuration.** The engine's worker, the wasm and the fonts are `new URL(…, import.meta.url)` assets that Turbopack and webpack emit. The example's `next.config.ts` sets only `turbopack.root`, because it lives in a pnpm monorepo whose packages are symlinked from outside the app; a standalone app doesn't need it.
+
+## Show progress under each answer
+
+`useTypstream()` reads one document's state. Move the `<Typstream>` into its own component to show a status line under each answer:
+
+```tsx title="app/answer.tsx"
+"use client";
+
+import { Typstream, useTypstream } from "typstream";
+
+export function Answer({ text, streaming }: { text: string; streaming: boolean }) {
+  const t = useTypstream();
+  const frame = t.openFrames[0]?.frame;
+  return (
+    <article>
+      <Typstream ref={t.ref} source={text} isStreaming={streaming} layout="fit-width" animated caret />
+      <footer>
+        {t.status}
+        {streaming && frame ? ` · writing ${frame}…` : ""}
+        {t.diagnostics.length ? ` · ${t.diagnostics.length} diagnostics` : ""}
+      </footer>
+    </article>
+  );
+}
+```
+
+`layout="fit-width"` only applies to the paged target (`target="paged"`): it lays pages out as wide as the answer. The example has a switch between the HTML and paged targets.
+
+## Better prompts with the edu plugin
+
+The instructions above are short. For worksheets, quizzes and exams, `@typstream/edu` gives the model a vocabulary (`#question`, `#mcq`, `#blank`, answer keys) and `buildSystemPrompt` writes the system prompt for it: Typst rules that target the mistakes models actually make, each function's signature and example, and example documents.
+
+<Callout type="warn" title="Beta">
+`buildSystemPrompt` is `@beta`: its output and options may change before 1.0.
+</Callout>
+
+```ts title="app/api/chat/route.ts"
+import { buildSystemPrompt, edu } from "@typstream/edu";
+import { universe } from "@typstream/universe";
+
+const INSTRUCTIONS = buildSystemPrompt([edu, universe]); // deterministic, so it caches
+```
+
+Import `universe` from `@typstream/universe` here, not from `typstream`: the `typstream` bundle is a client module. Then render with the same plugin on the client, so the functions the model was told about exist:
+
+```tsx
+import { edu } from "@typstream/edu";
+
+<Typstream source={part.text} isStreaming={isLast} plugins={[edu]} animated caret />;
+```
+
+[Prompting](/docs/guides/prompting) covers the prompt kit, and [Telemetry](/docs/guides/telemetry) shows how the example wires typstream's events to an analytics endpoint with `<TypstreamProvider>`.

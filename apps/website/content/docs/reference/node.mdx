@@ -1,0 +1,317 @@
+---
+title: "@typstream/node"
+description: Typst on the server, to validate and render documents, run the LLM fix loop, and serve the engine protocol over WebSocket.
+icon: Server
+---
+
+`@typstream/node` runs Typst 0.15.1 on Node's worker threads, for apps that save documents a model wrote. It runs
+`@typstream/engine-wasm`, the same build browsers run, so a document that validates on the server renders the same in
+the preview. A watchdog stops runaway documents without taking the process down.
+
+## When to use it
+
+Use it on the server, where `@typstream/engine` (a Web Worker) doesn't run:
+
+- **validate** a document before you save it, with lint warnings for Markdown habits;
+- **render** it to PDF, HTML or SVG pages;
+- turn its diagnostics into a **repair prompt** and run the **fix loop** with your model;
+- **serve the engine protocol** over WebSocket to browsers that shouldn't download the 6 MB engine.
+
+For live rendering in the browser, use [`typstream`](/docs/reference/typstream) or
+[`@typstream/react`](/docs/reference/react) instead. Node 20 or later is required.
+
+## Install
+
+```npm
+npm install @typstream/node
+```
+
+## Example
+
+```ts
+import { fixLoop, formatDiagnosticsForLLM, render, validate } from "@typstream/node";
+
+const { ok, diagnostics } = await validate(source);
+if (!ok) console.log(formatDiagnosticsForLLM(source, diagnostics));
+
+const result = await fixLoop({
+  source,
+  generate: async ({ prompt, source }) => callYourModel(`${prompt}\n\n${source}`),
+});
+if (result.ok) {
+  const pdf = await render(result.source, "pdf");
+  if (pdf.ok) save(pdf.data);
+}
+```
+
+[Server fix loop](/docs/guides/server-fix-loop) walks through this with a real model.
+
+## Document options
+
+Every compile (`validate`, `render`, `fixLoop`) takes these options. Positions in diagnostics are UTF-16 offsets into
+`source`, as everywhere in typstream; a diagnostic inside the preamble carries `file: { path: "<preamble>" }`.
+
+<auto-type-table path="packages/node/src/engine.ts" name="DocumentOptions" />
+
+Documents can't read the server's filesystem or reach the network: they see only the `files` you pass. A file path is
+relative to the document (`img/a.png`); paths that escape it (`..`) are rejected. To compile documents written in a
+plugin's vocabulary, pass its preamble and files, for example `@typstream/edu`'s:
+
+```ts
+import { eduFiles, eduPreamble } from "@typstream/edu";
+import { validate } from "@typstream/node";
+
+const result = await validate(source, {
+  preamble: eduPreamble,
+  files: eduFiles,
+  inputs: { showAnswers: "true" }, // the teacher's copy
+});
+```
+
+Typst Universe packages are not fetched. A document can import one only if you mount its files yourself, under its spec
+(`@preview/cetz:0.5.3/lib.typ` and so on).
+
+## API
+
+| Export | What it does |
+| --- | --- |
+| [`validate(source, options?)`](#validate) | Compiles without exporting and adds lint warnings: `{ ok, diagnostics, pageCount?, ms }`. |
+| [`render(source, format, options?)`](#render) | Compiles and exports `"pdf"`, `"html"` or `"svg"`. |
+| [`formatDiagnosticsForLLM(source, diagnostics, options?)`](#formatdiagnosticsforllm) | A compact repair prompt in the Typst CLI's layout. |
+| [`fixLoop(options)`](#fixloop) | Validate, ask the model for a fix, repeat, and keep the best attempt. |
+| [`createEngine(options?)`](#createengine) | A worker pool with its own fonts and budgets. |
+| [`defaultEngine()`](#defaultengine) | The shared engine used when you pass none. |
+| [`createProtocolServer(options?)`](#createprotocolserver) | The engine protocol, served from Node. |
+| [`handleWebSocket(socket, server)`](#handlewebsocket) | Serves one WebSocket connection with a protocol server. |
+
+### validate
+
+```ts
+const validate: (source: string, options?: ValidateOptions) => Promise<ValidateResult>;
+```
+
+Checks a finished document before it is saved: compiles it without exporting and adds `@typstream/heal`'s lint findings
+as warnings (source `"heal"`, the rule id as `code`, with a hint saying what to replace). Those catch Markdown habits
+that compile but render wrongly, such as `**bold**` or `$5 and $10`. It never throws for a broken document. `ok` is true
+when there are no errors; warnings don't count.
+
+```ts
+const { ok, diagnostics, pageCount } = await validate(source, { target: "html" });
+```
+
+<auto-type-table path="packages/node/src/validate.ts" name="ValidateOptions" />
+
+<auto-type-table path="packages/node/src/validate.ts" name="ValidateResult" />
+
+### render
+
+```ts
+const render: <F extends RenderFormat>(source: string, format: F, options?: DocumentOptions) => Promise<RenderResult<F>>;
+type RenderFormat = "pdf" | "html" | "svg";
+```
+
+Compiles and exports a document. `data` is PDF bytes (`Uint8Array`) for `"pdf"`, an HTML document (`string`) for
+`"html"`, and one SVG string per page (`string[]`) for `"svg"`. Diagnostics are Typst's only (no lint). `ok: false`
+means it didn't compile and there is no `data`.
+
+```ts
+const pdf = await render(source, "pdf", { preamble: eduPreamble, files: eduFiles });
+if (pdf.ok) await writeFile("worksheet.pdf", pdf.data);
+else console.error(pdf.diagnostics);
+```
+
+```ts
+type RenderResult<F extends RenderFormat = RenderFormat> =
+  | { ok: true; diagnostics: Diagnostic[]; data: RenderData[F]; pageCount?: number; ms: number }
+  | { ok: false; diagnostics: Diagnostic[]; ms: number };
+
+interface RenderData {
+  pdf: Uint8Array;
+  html: string;
+  svg: string[];
+}
+```
+
+### formatDiagnosticsForLLM
+
+```ts
+const formatDiagnosticsForLLM: (source: string, diagnostics: readonly Diagnostic[], options?: FormatOptions) => string;
+```
+
+Formats diagnostics as a compact repair prompt: a summary line, then each problem the way the Typst CLI prints it
+(message, location, the source line with the span underlined, notes and hints), then instructions. Errors come first,
+repeats are dropped, output is capped by `maxDiagnostics` and long lines are clipped, so the prompt stays small for
+large documents. With no diagnostics it returns `"The Typst document compiles without problems."`.
+
+```ts
+const { diagnostics } = await validate("= Results\n*Total*: #hilight[12]\n");
+formatDiagnosticsForLLM(source, diagnostics);
+```
+
+```text
+The Typst document has 1 error.
+
+error: unknown variable: hilight
+ --> line 2, column 11
+  |
+1 | = Results
+2 | *Total*: #hilight[12]
+  |           ^^^^^^^
+3 |
+
+Fix every error, and the warnings where they point at a real mistake. Reply with the complete corrected Typst document only.
+```
+
+<auto-type-table path="packages/node/src/llm.ts" name="FormatOptions" />
+
+### fixLoop
+
+```ts
+const fixLoop: (options: FixLoopOptions) => Promise<FixLoopResult>;
+```
+
+Validates `source`; while it has errors, asks `generate` for a corrected document and validates that, for at most
+`maxRounds` rounds. It returns the best attempt (fewest errors, then fewest warnings, then the latest), so a reply that
+makes things worse never replaces a better one. A Markdown code fence around the model's reply is removed. With
+`strict`, documents that only have warnings are repaired too.
+
+`FixLoopOptions` extends [`ValidateOptions`](#validate), so `preamble`, `files`, `inputs`, `target`, `lint` and `engine`
+apply to every round.
+
+```ts
+const result = await fixLoop({
+  source,
+  strict: true, // also repair lint warnings such as **bold**
+  maxRounds: 2,
+  generate: async ({ prompt, source, round }) => {
+    const reply = await callYourModel(`${prompt}\n\n${source}`);
+    return reply.text;
+  },
+});
+console.log(result.ok, result.attempts.length - 1, "rounds");
+```
+
+<auto-type-table path="packages/node/src/llm.ts" name="FixLoopOptions" />
+
+<auto-type-table path="packages/node/src/llm.ts" name="FixRequest" />
+
+<auto-type-table path="packages/node/src/llm.ts" name="FixLoopResult" />
+
+<auto-type-table path="packages/node/src/llm.ts" name="FixAttempt" />
+
+### createEngine
+
+```ts
+const createEngine: (options?: EngineOptions) => NodeEngine;
+```
+
+Creates an engine: a pool of worker threads, each running engine-wasm and compiling one document at a time. Create one
+per process and share it; pass it as `engine` to the calls above. Nothing starts until the first compile. Then the wasm
+module is compiled once, fonts are loaded, and workers start as needed. Workers keep Typst's caches warm between calls,
+and idle workers don't keep the process alive.
+
+```ts
+import { createEngine, validate } from "@typstream/node";
+
+const engine = createEngine({
+  workers: 4, // most worker threads; default min(4, cores - 1)
+  timeoutMs: 10_000, // watchdog per compile
+  fontPaths: ["/srv/fonts/noto"], // more fonts, searched recursively (like typst --font-path)
+});
+await validate(source, { engine });
+await engine.close();
+```
+
+<auto-type-table path="packages/node/src/engine.ts" name="EngineOptions" />
+
+<auto-type-table path="packages/node/src/engine.ts" name="NodeEngine" />
+
+**Timeouts and crashes.** A compile over budget is stopped by terminating its worker, and the result is an error
+diagnostic with `source: "typstream"` and `code: "timeout"`. A document that exhausts wasm memory (allocations fail at
+about 2 GiB in wasm32) comes back as `code: "engine-crashed"`. Either way the worker is replaced and the process is
+unaffected. That's why typstream runs Typst as wasm rather than as a native addon, whose compiles can't be interrupted.
+A worker whose memory grows past `maxMemoryBytes` is replaced too, since wasm memory never shrinks.
+
+```ts
+const { diagnostics } = await validate(source, { timeoutMs: 2_000 });
+if (diagnostics.some((d) => d.code === "timeout")) {
+  // a loop that never ends, or a document far larger than usual
+}
+```
+
+**Fonts.** By default the engine loads Typst's bundled fonts (Libertinus Serif, New Computer Modern and DejaVu Sans
+Mono, the set `typst compile --ignore-system-fonts` uses) and engine-wasm's script fonts (Noto Naskh Arabic, Noto Serif
+Bengali and Noto Serif Devanagari, regular and bold). Unlike the browser, which downloads script fonts when a document
+first needs them, the server loads them up front. Add your own with `fonts` (bytes) or `fontPaths` (directories). See
+[Fonts and languages](/docs/guides/fonts-and-languages).
+
+<auto-type-table path="packages/node/src/fonts.ts" name="FontOptions" />
+
+### defaultEngine
+
+```ts
+const defaultEngine: () => NodeEngine;
+```
+
+The engine `validate`, `render`, `fixLoop` and `createProtocolServer` use when you don't pass one. It is created on
+first use with default options.
+
+### createProtocolServer
+
+```ts
+const createProtocolServer: (options?: ProtocolServerOptions) => ProtocolServer;
+```
+
+Serves typstream's engine protocol (the one `@typstream/core` defines and the browser worker speaks) from Node, so a
+browser can render through your server instead of downloading the engine. It is `@typstream/engine`'s own server code,
+over an adapter that compiles on this package's worker pool. [Remote engine](/docs/guides/remote-engine) shows the
+client side.
+
+```ts
+import { WebSocketServer } from "ws";
+import { createProtocolServer, handleWebSocket } from "@typstream/node";
+
+const server = createProtocolServer({ timeouts: { streaming: 3_000, final: 10_000 }, maxDocuments: 32 });
+new WebSocketServer({ port: 8080, maxPayload: 8 << 20 }).on("connection", (ws) => handleWebSocket(ws, server));
+```
+
+- **Sessions.** Each connection is a session with its own documents. Closing it cancels its queued requests and frees
+  its documents.
+- **What it offers.** The HTML and paged targets (paged with changed-page updates), and PDF and HTML exports. No
+  `resolve/*` requests.
+- **Untrusted clients.** Messages are checked before the server reads them; malformed requests, too many documents or
+  too long a text get an `invalid-params` error. Clients can't make the server fetch packages or load fixer modules, and
+  the fonts and packages a client sends in `initialize` or `document/open` are ignored: the server uses its engine's
+  fonts.
+- **Watchdog.** Documents live on the main thread and workers only compile, so a watchdog kill costs one compile, not
+  the session.
+
+<auto-type-table path="packages/node/src/server.ts" name="ProtocolServerOptions" />
+
+<auto-type-table path="packages/node/src/server.ts" name="ProtocolServer" />
+
+<auto-type-table path="packages/node/src/server.ts" name="ProtocolConnection" />
+
+To serve the protocol over another transport, call `server.connect(send)` yourself and feed each client message to the
+connection's `receive`.
+
+### handleWebSocket
+
+```ts
+const handleWebSocket: (socket: WebSocketLike, server: ProtocolServer) => ProtocolConnection;
+```
+
+Serves one WebSocket. Each text message is a client message in the protocol's wire format: JSON, with bytes as
+`{ "$bytes": "<base64>" }` (`serializeMessage` and `deserializeMessage` from `@typstream/core` read and write it).
+Replies go back the same way, and the connection closes with the socket. `ws`'s `WebSocket` fits `WebSocketLike`, and
+so does anything with the same `on`, `send` and `close`. Cap message sizes on the socket server (`ws`'s `maxPayload`).
+
+<auto-type-table path="packages/node/src/server.ts" name="WebSocketLike" />
+
+## See also
+
+- [Getting started on Node](/docs/getting-started/node): a first validate-and-render script.
+- [Server fix loop](/docs/guides/server-fix-loop): validate, repair with a model, render.
+- [Remote engine](/docs/guides/remote-engine): browsers that render through your server.
+- [Security](/docs/guides/security): what documents can and can't reach.
+- [@typstream/engine-wasm](/docs/reference/engine-wasm): the compiler this package runs.

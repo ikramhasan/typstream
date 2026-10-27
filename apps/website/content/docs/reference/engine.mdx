@@ -1,0 +1,625 @@
+---
+title: "@typstream/engine"
+description: Compiles streamed Typst in a Web Worker, with a main-thread client that heals, schedules and supervises compiles, and the worker-side server you can host yourself.
+icon: Cpu
+---
+
+`@typstream/engine` compiles streamed Typst in a worker. It has two halves:
+
+- **The client** (`@typstream/engine`), on the main thread. It heals each document with
+  [`@typstream/heal`](/docs/reference/heal), decides when to compile, and keeps the preview alive when compiles fail,
+  hang or crash. You open a document, feed it text, and subscribe to its state.
+- **The server** (`@typstream/engine/server`), in the worker. It runs Typst 0.15.1
+  ([`@typstream/engine-wasm`](/docs/reference/engine-wasm)) behind the protocol in
+  [`@typstream/core`](/docs/reference/core#protocol), fixes errors a stream causes, and falls back to something
+  showable when a document still doesn't compile.
+
+`@typstream/engine/worker` is the default worker script that joins the two; `engineWorker()` spawns it.
+
+## When to use it
+
+Use the engine directly when you render the artifacts yourself, run your own worker, or share one engine across
+several roots. To show documents in the page, [`@typstream/dom`](/docs/reference/dom)'s `mountTypstream` and the
+React bindings ([`typstream`](/docs/reference/typstream), [`@typstream/react`](/docs/reference/react)) drive an engine
+for you. On a server, use [`@typstream/node`](/docs/reference/node).
+
+## Install
+
+```npm
+npm install @typstream/engine
+```
+
+The default worker loads the wasm and the base fonts as assets next to its own script. Vite and Next.js (Turbopack or
+webpack) need no configuration. The wasm is about 19 MB (about 6 MB with brotli) and the fonts 2.6 MB: serve them
+compressed and cacheable. See [Self-hosting the engine](/docs/guides/self-hosting) to load them from elsewhere.
+
+## Example
+
+```ts
+import { createEngine, engineWorker } from "@typstream/engine";
+
+const engine = createEngine({ spawn: engineWorker() });
+const doc = engine.open({ target: "html" }); // or "paged": SVG pages
+
+doc.subscribe(({ status, artifact, diagnostics }) => render(artifact, status, diagnostics));
+for await (const chunk of llmStream) doc.push(chunk);
+doc.finish(); // strict heal, final compile → status "done" or "error"
+```
+
+`state.artifact` is `{ target: "html", html }` or `{ target: "paged", pageCount, pages }`. Hand it to
+[`createHtmlRenderer`](/docs/reference/dom#createhtmlrenderer) or [`createPagedView`](/docs/reference/dom#createpagedview)
+rather than inserting it yourself: Typst's HTML is untrusted and needs sanitizing.
+
+## What the client does
+
+- **Heals on the main thread.** Every `push`, `set` and `applyEdit` runs the incremental healer. A change that heals to
+  the same source doesn't compile.
+- **Latest wins.** The engine runs one compile at a time across all its documents. Each document has at most one
+  compile pending, and it reads the newest healed source when its turn comes. Edits reach the worker as one diff right
+  before the compile.
+- **Adaptive interval.** Compiles start at most every `clamp(minInterval, 1.25 × average compile time, maxInterval)`
+  (33 to 500 ms by default). When a line or block has just finished (heal's `stableOffset` advanced), the next compile
+  is due after `minInterval` instead.
+- **Stale output is dropped.** Diagnostics and artifacts count only for the revision last sent. Diagnostics are mapped
+  back to input positions (UTF-16 offsets into the text you pushed).
+- **Last good.** A failed compile keeps the previous artifact. While streaming the status is `stale`; in final mode it
+  is `error`. Before it comes to that, the worker's fixers and fallback usually find something to show.
+- **Watchdog.** Each compile gets 3 s while streaming and 10 s in final mode. Past that, the worker is terminated and
+  an initialized spare takes over. After 3 timeouts or crashes, live compiling stops (`failure.reason` is
+  `"too-complex"`); `finish()` still compiles once.
+- **Recycling.** A worker that reports more than 256 MiB after a compile is swapped for the spare between compiles.
+- **Limits.** Input longer than `maxLength` (1 MiB of UTF-16 code units) isn't healed or compiled: the document
+  reports `too-large` and keeps its last artifact until `set()` or `reset()` brings it back under the limit. A
+  streaming paged compile with more than `livePages` (100) pages stops live compiling; `finish()` compiles every page.
+- **Paged output.** The worker sends changed pages only; the client merges them, so `state.artifact` always has every
+  page.
+
+A document's status goes `idle` → `compiling` → `idle` while streaming, `stale` after a failed compile, and `done` or
+`error` once finished. Everything runs on injected timers (`clock`), so the client also works in Node.
+
+[The engine](/docs/concepts/engine) explains the design behind these rules.
+
+## Fixers and fallback
+
+When a compile fails, the server tries its diagnostic fixers and recompiles, at most twice per revision, so streamed
+text that heals but doesn't compile yet still renders:
+
+| Fixer | What it does |
+| --- | --- |
+| `tail-cut` | Streaming only. An error in the text still being typed (after heal's `stableOffset`) cuts the text there and heals the rest again. `#text(` without its body, `#v(1`, `rgb("#e` and closure parameters before `=>` drop out until the next tokens bring them back. |
+| `pending-ref` | A reference to a label that doesn't exist yet (a citation before `#bibliography`) shows its key as a muted placeholder. In final mode the error is still reported. |
+| `package-stub` | An import of a package the document can't have (not allowed, still loading, failed to load) binds the names it imports to placeholders showing the package's spec. Wildcard imports and modules whose fields are used can't be stood in for. |
+
+Fixed errors are reported as `info` diagnostics while streaming, with the fixer's name as `source`. Plugins add
+fixers as ES modules loaded in the worker; see [Writing a plugin](/docs/guides/writing-a-plugin).
+
+What still fails after the fixers is never a blank screen. The server shows failing top-level blocks as "This part
+couldn't be displayed" boxes, shows the unsettled tail as plain text once the last good render is 1.5 s old, and in
+final mode the client finds and skips blocks that hang or crash the engine. `state.lastCompile.fallback` says what was
+isolated. `fallback: false` on a document turns this off. [Fallback](/docs/concepts/fallback) has the whole ladder.
+
+## Events
+
+The library sends nothing anywhere: it reports, and the app decides what to collect. `doc.onEvent(listener)` hears
+one document. `engine.onEvent(listener)` hears the workers and, as `{ type: "document", event }`, every document's
+events too. A compile reports, in this order and before the state it leads to is published:
+
+| Event | When |
+| --- | --- |
+| `diagnostics` | The worker reported diagnostics (with every compile, and when it recompiles on its own). |
+| `compiled` | A compile finished, with its timings, heal time and patches, the fixers applied and the fallback level. |
+| `fallback` | The output isn't the text as it is (levels 1 to 4), with the input and healed source to replay as a test case. |
+| `watchdog` | A compile ran past its budget or crashed the worker. |
+
+The event shapes are in [`@typstream/core`](/docs/reference/core#telemetry-events). See
+[Telemetry](/docs/guides/telemetry).
+
+## Typst packages
+
+Documents may `#import "@preview/…"` packages from an allowlist: the `packages` of `initialize` (engine-wide) plus
+those of each document (`engine.open({ packages })`, which `mountTypstream` fills from plugins' `engine.packages`).
+Nothing outside the allowlist is fetched; an empty allowlist means no network. Allowed packages are fetched when a
+document imports one, checked against their `integrity`, and kept in Cache Storage (`typstream-packages`) so they work
+offline after the first load. A version that isn't allowed resolves to the nearest allowed one, with a warning.
+Files keyed `@namespace/name:x.y.z/path` in a document's or plugin's `files` make a local package importable with no
+download. [`@typstream/universe`](/docs/reference/universe) lists the packages typstream allows by default; see
+[Typst packages](/docs/guides/typst-packages).
+
+## API
+
+Everything in this section is exported from `@typstream/engine`.
+
+### `createEngine`
+
+```ts
+const createEngine: (options: EngineOptions) => Engine;
+```
+
+Creates the engine client and starts its worker (and, by default, a spare). Create one per page or per app and open a
+document per rendered Typst source; documents share the worker.
+
+```ts
+const engine = createEngine({
+  spawn: engineWorker(),
+  watchdog: { streamingMs: 5000 },
+  schedule: { minInterval: 50 },
+});
+```
+
+#### `EngineOptions`
+
+<auto-type-table path="packages/engine/src/engine.ts" name="EngineOptions" />
+
+<Callout type="warn" title="Beta">
+`initialize` (fonts, packages and fixer modules shared by every document) is beta. Prefer `plugins`, whose
+`engine.fonts`, `engine.packages` and `engine.fixerModules` join it.
+</Callout>
+
+#### `Engine`
+
+<auto-type-table path="packages/engine/src/engine.ts" name="Engine" />
+
+#### `EngineEvent`
+
+What `engine.onEvent` receives, discriminated by `type`:
+
+| `type` | Fields | When |
+| --- | --- | --- |
+| `ready` | `info: InitializeResult` | A worker finished `initialize` (the first one and every replacement). |
+| `watchdog` | `uri`, `rev`, `budgetMs` | A compile or export ran past its budget; the worker was terminated. |
+| `crash` | `error` | A worker failed outside the protocol. |
+| `recycle` | `memoryBytes` | A worker was replaced because it used too much memory. |
+| `log` | `level`, `message` | A log message from the worker. |
+| `failed` | `error: Error` | The engine can't run; every document is in `error`. |
+| `document` | `event: DocumentEvent` | An event of one of the engine's documents. |
+
+### `EngineDocument`
+
+A document being streamed or edited, returned by `engine.open()`. Feed it input; it heals, compiles in the engine's
+worker and publishes `DocumentState`s. Calls after `dispose()` are ignored.
+
+<auto-type-table path="packages/engine/src/document.ts" name="EngineDocument" />
+
+`push`, `set` and `applyEdit` are three ways to change the input. Use `push` for a stream, `set` when you have the
+whole text so far (a growing `source` prop), and `applyEdit` for edits in the middle (editors, AI rewrites of a
+section). `reset` starts over in streaming mode, as for a regenerated answer.
+
+#### `DocumentOptions`
+
+What `engine.open()` takes.
+
+<auto-type-table path="packages/engine/src/document.ts" name="DocumentOptions" />
+
+<Callout type="warn" title="Beta">
+`packages` is beta. Plugins' `engine.packages` are the usual way to allow packages for a document.
+</Callout>
+
+#### `DocumentState`
+
+A snapshot of a document: a new object whenever anything in it changes, so it can be compared by identity (React's
+`useSyncExternalStore`).
+
+<auto-type-table path="packages/engine/src/document.ts" name="DocumentState" />
+
+#### `DocumentStatus`
+
+```ts
+type DocumentStatus = "idle" | "compiling" | "stale" | "error" | "done";
+```
+
+| Status | Meaning |
+| --- | --- |
+| `idle` | The artifact shows the latest input; waiting for more. |
+| `compiling` | A compile is scheduled or running. |
+| `stale` | Streaming, and the latest compile failed (see `failure`). The artifact is the last good one. It stays `stale` until a compile succeeds. |
+| `error` | The finished document failed to compile, or the engine can't run. |
+| `done` | The finished document compiled. |
+
+#### `CompileFailure`
+
+Why the latest compile produced no artifact. Set while the status is `stale` or `error`.
+
+<auto-type-table path="packages/engine/src/document.ts" name="CompileFailure" />
+
+| `reason` | Meaning |
+| --- | --- |
+| `diagnostics` | The source has errors (they are in `diagnostics`). |
+| `timeout` | The watchdog stopped a compile that ran past its budget. |
+| `crash` | The worker died during the compile. |
+| `too-complex` | Repeated timeouts or crashes, or more pages than `limits.livePages`, stopped live compiling. The document compiles once more when it is finished. |
+| `too-large` | The input is longer than `limits.maxLength`. It isn't healed or compiled until `set()` or `reset()` makes it shorter. |
+| `engine` | The worker refused the request or couldn't start. |
+
+### Exports
+
+`EngineDocument.exportPdf()` and `exportHtml()` compile `exportSource()` (the healed input) in final mode with the
+document's preamble and files, by the same engine as the preview. They run before compiles that are waiting, under the
+final watchdog budget. Call `finish()` first to export the finished document. HTML exports have no source anchors and
+are not sanitized; [`standaloneHtml`](/docs/reference/dom#standalonehtml) makes them a safe file. See
+[Exports](/docs/guides/exports).
+
+```ts
+doc.finish();
+const pdf = await doc.exportPdf();
+const html = await doc.exportHtml({ inputs: { showAnswers: "true" } });
+```
+
+#### `ExportOptions`
+
+<auto-type-table path="packages/engine/src/document.ts" name="ExportOptions" />
+
+#### `ExportError`
+
+```ts
+class ExportError extends Error {
+  readonly name: "ExportError";
+  readonly reason: "diagnostics" | "unsupported" | "timeout" | "crash" | "too-large" | "engine";
+  readonly diagnostics: Diagnostic[];
+}
+```
+
+What `exportPdf()` and `exportHtml()` reject with. `diagnostics` are the export's diagnostics in input coordinates;
+with `reason: "diagnostics"` there is at least one error.
+
+| `reason` | Meaning |
+| --- | --- |
+| `diagnostics` | The source has errors. |
+| `unsupported` | The engine doesn't offer this format (see `capabilities.exports` in `engine.ready`'s result). |
+| `timeout` | The export ran past the final watchdog budget; the worker was replaced. |
+| `crash` | The worker died during the export. |
+| `too-large` | The input is longer than `limits.maxLength`. |
+| `engine` | The engine can't run, was disposed or refused the request, or the document was disposed. |
+
+### `engineWorker`
+
+```ts
+const engineWorker: () => SpawnEngine;
+```
+
+Spawns the default engine worker: engine-wasm (Typst 0.15.1) with the base fonts (Libertinus Serif, New Computer
+Modern Math, DejaVu Sans Mono), and script fonts that download the first time a document uses them. Pass it to
+`createEngine` in a browser. It is written as `new Worker(new URL("./worker.js", import.meta.url), { type: "module" })`,
+and the worker refers to the wasm and fonts the same way, so bundlers emit all of them as assets.
+
+### `fromWorker`
+
+```ts
+const fromWorker: (create: () => WorkerLike) => SpawnEngine;
+```
+
+A `SpawnEngine` for Web Workers, or anything shaped like one. Use it to spawn your own worker script:
+
+```ts
+const engine = createEngine({
+  spawn: fromWorker(() => new Worker(new URL("./engine.worker.ts", import.meta.url), { type: "module" })),
+});
+```
+
+`create` is called once at startup and again for every replacement (watchdog, crash, recycling); each call must start
+a fresh worker.
+
+#### `SpawnEngine`
+
+```ts
+type SpawnEngine = (events: EngineEvents) => EngineConnection;
+```
+
+Starts a worker running the engine server and routes its messages and errors to `events`. Implement it yourself for
+other transports, such as a WebSocket to a [remote engine](/docs/guides/remote-engine).
+
+#### `WorkerLike`
+
+<auto-type-table path="packages/engine/src/connection.ts" name="WorkerLike" />
+
+#### `EngineConnection`
+
+<auto-type-table path="packages/engine/src/connection.ts" name="EngineConnection" />
+
+#### `EngineEvents`
+
+<auto-type-table path="packages/engine/src/connection.ts" name="EngineEvents" />
+
+### Defaults and tuning
+
+#### `ScheduleOptions` and `DEFAULT_SCHEDULE`
+
+How often a document compiles while it streams. Set them for every document (`createEngine({ schedule })`) or one
+(`engine.open({ schedule })`, the `schedule` prop).
+
+```ts
+const DEFAULT_SCHEDULE: Readonly<ScheduleOptions>; // { minInterval: 33, maxInterval: 500, boundaryBias: true, staleMs: 1500 }
+```
+
+<auto-type-table path="packages/engine/src/schedule.ts" name="ScheduleOptions" />
+
+#### `WatchdogOptions` and `DEFAULT_WATCHDOG`
+
+```ts
+const DEFAULT_WATCHDOG: Readonly<WatchdogOptions>; // { streamingMs: 3000, finalMs: 10000, strikes: 3, probeMs: 5000 }
+```
+
+<auto-type-table path="packages/engine/src/document.ts" name="WatchdogOptions" />
+
+#### `LimitOptions` and `DEFAULT_LIMITS`
+
+What a document may cost. Hostile or runaway input stops here instead of loading the main thread (healing) or the
+page (pages). See [Security](/docs/guides/security).
+
+```ts
+const DEFAULT_LIMITS: Readonly<LimitOptions>; // { maxLength: 1048576, livePages: 100 }
+```
+
+<auto-type-table path="packages/engine/src/document.ts" name="LimitOptions" />
+
+#### `DEFAULT_RECYCLE_BYTES`
+
+```ts
+const DEFAULT_RECYCLE_BYTES: number; // 256 MiB
+```
+
+The engine memory past which a worker is replaced after a compile (`recycleBytes`). A safety net: the default engine
+evicts Typst's caches after every compile and stays flat. `Infinity` disables recycling.
+
+#### `Clock`
+
+The timers the engine uses for scheduling and the watchdog. Defaults to the global `setTimeout`, `clearTimeout` and
+`Date.now`; tests pass fake ones.
+
+<auto-type-table path="packages/engine/src/clock.ts" name="Clock" />
+
+## Server API (`@typstream/engine/server`)
+
+The worker half. Import it in a worker script of your own to load the wasm or fonts from elsewhere, replace the
+fixers, or host the engine over another transport. The default worker is one line of it:
+
+```ts title="engine.worker.ts"
+import { engineWasm, serve } from "@typstream/engine/server";
+
+serve(engineWasm({ wasm: "https://cdn.example.com/typst-0.15.1.wasm", fonts: ["/fonts/Libertinus.otf"] }));
+```
+
+Spawn it with [`fromWorker`](#fromworker). The server keeps each document's text, preamble (evaluated before the
+document; diagnostics stay in document coordinates), files and inputs, and sends changed pages only. A wasm trap (a
+Typst panic, or out of memory) ends the worker so the client replaces it.
+
+### `serve`
+
+```ts
+const serve: (
+  adapter: EngineAdapter,
+  scope?: WorkerScope,
+  options?: Pick<ServerOptions, "fixers" | "packages">,
+) => EngineServer;
+```
+
+Runs the engine server in this worker, answering the client's messages with `adapter`. `scope` defaults to the
+worker's global scope. `options.fixers` replaces the built-in fixers (`[]` turns them off); `options.packages`
+configures Typst packages (by default the client's allowlist is used).
+
+```ts
+serve(engineWasm(), undefined, { fixers: [pendingRef, myFixer, tailCut] });
+```
+
+#### `WorkerScope`
+
+<auto-type-table path="packages/engine/src/server/serve.ts" name="WorkerScope" />
+
+### `engineWasm`
+
+```ts
+const engineWasm: (options?: EngineWasmOptions) => EngineAdapter;
+```
+
+The default adapter: [`@typstream/engine-wasm`](/docs/reference/engine-wasm). It targets HTML and paged output
+(changed-page SVG) and exports HTML, and PDF when the wasm has it (engine-wasm's own build does). Each document gets
+its own compiler state; all share the wasm instance, the fonts and Typst's memoization cache. Lazy fonts are registered
+from their metadata; a compile that needs one fetches it and the document recompiles once it arrives.
+
+#### `EngineWasmOptions`
+
+<auto-type-table path="packages/engine/src/server/engine-wasm.ts" name="EngineWasmOptions" />
+
+#### `FontInput`
+
+```ts
+type FontInput = string | URL | Uint8Array;
+```
+
+A font: a URL to fetch, or the bytes of a font file (TTF, OTF or TTC).
+
+#### `LazyFontInput`
+
+A font downloaded only when a document uses it, as in `scriptFonts` from `@typstream/engine-wasm/fonts`.
+
+<auto-type-table path="packages/engine/src/server/engine-wasm.ts" name="LazyFontInput" />
+
+#### `TYPST_VERSION`
+
+```ts
+const TYPST_VERSION = "0.15.1";
+```
+
+The Typst version engine-wasm compiles with.
+
+#### `InitInput`
+
+Re-exported from [`@typstream/engine-wasm`](/docs/reference/engine-wasm): what `wasm` accepts (a URL, a `Response`,
+the bytes, or a compiled `WebAssembly.Module`).
+
+### `inProcess` (beta)
+
+```ts
+const inProcess: (
+  createAdapter: () => EngineAdapter,
+  options?: Pick<ServerOptions, "fixers" | "packages">,
+) => SpawnEngine;
+```
+
+<Callout type="warn" title="Beta">
+`inProcess` may change before the first stable release.
+</Callout>
+
+A `SpawnEngine` that runs the server on the calling thread, for tests and Node. Messages are structured-cloned and
+delivered on later tasks, as a worker's would be, but compiles block the thread and `terminate` can't stop one that is
+running, so the watchdog can't rescue a runaway document. `createAdapter` is called once per spawn.
+
+```ts title="Node"
+import { readFileSync } from "node:fs";
+import { createEngine } from "@typstream/engine";
+import { engineWasm, inProcess } from "@typstream/engine/server";
+import { baseFonts } from "@typstream/engine-wasm/fonts";
+
+// Node's fetch can't read files, so pass the wasm and fonts as bytes.
+const wasm = readFileSync(new URL(import.meta.resolve("@typstream/engine-wasm/engine_bg.wasm")));
+const fonts = baseFonts.map((url) => new Uint8Array(readFileSync(url)));
+const engine = createEngine({ spawn: inProcess(() => engineWasm({ wasm, fonts })), spare: false });
+```
+
+For servers, [`@typstream/node`](/docs/reference/node) packages this up.
+
+### `createServer`
+
+```ts
+const createServer: (
+  adapter: EngineAdapter,
+  post: (message: ServerMessage) => void,
+  options?: ServerOptions,
+) => EngineServer;
+```
+
+Creates a server that compiles with `adapter` and answers through `post`. Use `serve` in a worker; this is for other
+transports, such as a socket. Feed it the client's messages with `server.receive(message)`. Over a transport that
+can't structured-clone, write messages with [`serializeMessage`](/docs/reference/core#serializemessage).
+
+#### `EngineServer`
+
+<auto-type-table path="packages/engine/src/server/server.ts" name="EngineServer" />
+
+#### `ServerOptions`
+
+<auto-type-table path="packages/engine/src/server/server.ts" name="ServerOptions" />
+
+<Callout type="warn" title="Untrusted clients">
+A server that accepts connections from clients it doesn't control must set `clientFixers: false` and
+`packages: { trustClient: false }`. Otherwise any client can make it import code (fixer modules) or fetch any URL
+(packages). [`@typstream/node`](/docs/reference/node) sets both.
+</Callout>
+
+#### `PackageOptions` (beta)
+
+<Callout type="warn" title="Beta">
+`PackageOptions` and the `packages` server option are beta.
+</Callout>
+
+<auto-type-table path="packages/engine/src/server/packages.ts" name="PackageOptions" />
+
+### Fixers
+
+```ts
+const DEFAULT_FIXERS: readonly DiagnosticFixer[]; // [pendingRef, packageStub, tailCut]
+const pendingRef: DiagnosticFixer;
+const packageStub: DiagnosticFixer;
+const tailCut: DiagnosticFixer;
+```
+
+The built-in Layer 3 fixers described [above](#fixers-and-fallback), exported so a custom worker can keep some of them
+next to its own. Fixers are tried by `priority` (`pendingRef` runs at 10, `tailCut`, the catch-all, at 100). Write your
+own as a [`DiagnosticFixer`](/docs/reference/core#diagnosticfixer).
+
+### Writing an adapter
+
+The server keeps documents, revisions, preambles and changed-page bookkeeping; an adapter only holds files and
+compiles them. `engineWasm()` is one. Implement `EngineAdapter` to host another Typst build.
+
+#### `EngineAdapter`
+
+<auto-type-table path="packages/engine/src/server/adapter.ts" name="EngineAdapter" />
+
+#### `AdapterDocument`
+
+One document's files and compiler state. Paths are absolute virtual paths; `/main.typ` is the entry point and holds
+the document after its preamble.
+
+<auto-type-table path="packages/engine/src/server/adapter.ts" name="AdapterDocument" />
+
+#### `AdapterCompileOptions`
+
+How a compile will be used. Adapters may budget or fix differently per mode; engine-wasm ignores it.
+
+| Property | Type | Description |
+| --- | --- | --- |
+| `mode` | `CompileMode` (`"streaming" \| "final"`), optional | The `compile` request's mode (default `streaming`); exports are `final`. |
+
+#### `AdapterCompileResult`
+
+What every compile returns. Diagnostics are in `/main.typ` coordinates (UTF-16); the server moves them past the
+preamble.
+
+<auto-type-table path="packages/engine/src/server/adapter.ts" name="AdapterCompileResult" />
+
+#### `AdapterHtmlResult`
+
+<auto-type-table path="packages/engine/src/server/adapter.ts" name="AdapterHtmlResult" />
+
+#### `AdapterPagedResult`
+
+<auto-type-table path="packages/engine/src/server/adapter.ts" name="AdapterPagedResult" />
+
+#### `MaybePromise`
+
+```ts
+type MaybePromise<T> = T | Promise<T>;
+```
+
+### Paths and coordinates
+
+#### `RUNTIME_PATH`
+
+```ts
+const RUNTIME_PATH = "/@typstream/runtime.typ";
+```
+
+Where typstream's runtime library is mounted in every document's files: the Typst functions fixes and fallbacks insert
+(`pending-ref`, `pending-text`, `error-block`, `missing-package`), imported as `typstream` by compiles the worker
+changed. A document's own file at this path replaces it, for example to restyle the placeholders. In HTML they carry
+the classes `typstream-pending-ref`, `typstream-pending-text` and `typstream-error-block`.
+
+#### `PREAMBLE_PATH`
+
+```ts
+const PREAMBLE_PATH = "<preamble>";
+```
+
+The `Diagnostic.file.path` of problems inside a document's preamble. The preamble isn't a file the document can
+import; it is evaluated in front of it.
+
+#### `fromMain`
+
+```ts
+const fromMain: (d: Diagnostic, offset: number) => Diagnostic;
+```
+
+Moves a diagnostic from `/main.typ` (preamble + document) into document coordinates, where `offset` is the length of
+what precedes the document. Problems inside the preamble report it as their `file`, with the nearest call site in the
+document as `span`. For adapters and custom servers.
+
+### Re-exported types
+
+`EngineConnection`, `EngineEvents` and `SpawnEngine` (what `inProcess` returns) are the same types as the main
+entry's; see [`SpawnEngine`](#spawnengine).
+
+## `@typstream/engine/worker`
+
+The default worker script: `serve(engineWasm({ fonts: baseFonts, lazyFonts: scriptFonts }))`, with the fonts from
+`@typstream/engine-wasm/fonts`. It has no exports; importing it starts the server in the current worker.
+`engineWorker()` spawns it, so you rarely need it directly.
+
+## See also
+
+- [The engine](/docs/concepts/engine)
+- [Fallback](/docs/concepts/fallback)
+- [Self-hosting the engine](/docs/guides/self-hosting)
+- [Remote engine](/docs/guides/remote-engine)
+- [Exports](/docs/guides/exports)
+- [Telemetry](/docs/guides/telemetry)
+- [`@typstream/core`](/docs/reference/core), for the protocol and event types

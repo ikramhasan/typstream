@@ -1,0 +1,108 @@
+---
+title: "typstream"
+description: The convenience package for React apps, with the Typstream component from @typstream/react already set up with html-compat, the math font and the vendored Typst packages.
+icon: Sparkles
+---
+
+`typstream` is the package most React apps install. Its `<Typstream>` is [`@typstream/react`](/docs/reference/react)'s
+component with the defaults an app wants already applied: layout that survives the HTML target, a math font for
+MathML, and a set of Typst packages documents may import. It also re-exports the rest of `@typstream/react`, the engine
+client and the healer, so one import covers a typical app.
+
+## When to use it
+
+Use `typstream` in any React app, including Next.js. Use [`@typstream/react`](/docs/reference/react) instead when you
+want to choose every plugin yourself, [`@typstream/dom`](/docs/reference/dom) when you don't use React, and
+[`@typstream/node`](/docs/reference/node) to validate or render documents on a server.
+
+## Install
+
+```npm
+npm install typstream
+```
+
+React 19 is a peer dependency. The engine runs in a Web Worker that loads Typst as WebAssembly. Vite and Next.js (Turbopack or webpack) bundle the
+worker, the wasm and the fonts as assets with no configuration. See [Installation](/docs/getting-started/installation)
+for the details.
+
+## Example
+
+Pass the model's text so far as `source`, and say whether more is coming with `isStreaming`:
+
+```tsx title="Answer.tsx"
+"use client";
+import { Typstream } from "typstream";
+
+export function Answer({ text, streaming }: { text: string; streaming: boolean }) {
+  return <Typstream source={text} isStreaming={streaming} animated caret />;
+}
+```
+
+While `isStreaming` is true, every prefix is healed so it compiles, and the last good render stays on screen while a
+prefix doesn't. When it turns false, the document is compiled strictly (final mode) and the caret goes away. The
+[React guide](/docs/getting-started/react) and the [Next.js + AI SDK guide](/docs/getting-started/nextjs-ai-sdk) build
+a full chat around it.
+
+## What it adds to `@typstream/react`
+
+| Default | What it does | Turn it off |
+| --- | --- | --- |
+| [html-compat](/docs/reference/html-compat) | Adds the `htmlCompat` plugin: its Typst preamble, the sanitizer allowances and its stylesheet, so grids, alignment, boxes and shapes survive the HTML target. | `htmlCompat={false}` |
+| The math font | Registers the engine's copy of New Computer Modern Math (from `@typstream/engine-wasm/fonts`) as a web font, so MathML delimiters stretch. | Pass your own `mathFont` URL to use another copy. |
+| [Typst packages](/docs/reference/universe) | Adds the `universe` plugin: documents may import CeTZ and fletcher (diagrams), cetz-plot, physica and unify (math), chemformula and alchemist (chemistry), at the vendored versions. The tarballs are served from your app's origin (your bundler emits them as assets) and fetched only when a document imports one. | `packages={false}` |
+
+The two plugins go before any `plugins` you pass, so your own plugins apply after them.
+
+<Callout type="info">
+Documents are untrusted code written by a model. The [security guide](/docs/guides/security) covers what they can't
+do and the Content-Security-Policy to serve typstream under (no `'unsafe-inline'` or `'unsafe-eval'`, only
+`'wasm-unsafe-eval'`).
+</Callout>
+
+## API
+
+### `Typstream`
+
+```ts
+const Typstream: (props: TypstreamProps) => JSX.Element;
+```
+
+Renders a streaming Typst document. It takes every prop of
+[`@typstream/react`'s `<Typstream>`](/docs/reference/react#typstream), plus `htmlCompat` and `packages`. Settings it
+doesn't receive come from the nearest [`TypstreamProvider`](/docs/reference/react#typstreamprovider), then the
+defaults.
+
+```tsx
+<Typstream source={text} isStreaming={status === "streaming"} target="paged" layout="fit-width" />
+```
+
+### `TypstreamProps`
+
+<auto-type-table path="packages/typstream/src/index.tsx" name="TypstreamProps" />
+
+### Re-exports
+
+Everything else in `typstream` comes from another package and is documented there:
+
+| Export | From | Reference |
+| --- | --- | --- |
+| `TypstreamProvider`, `useTypstream` | `@typstream/react` | [React](/docs/reference/react) |
+| Types: `TypstreamProviderProps`, `TypstreamDefaults`, `TypstreamHandle`, `TypstreamInfo`, `TelemetryHooks` | `@typstream/react` | [React](/docs/reference/react) |
+| Types: `Engine`, `DocumentState`, `DocumentStatus` | `@typstream/engine` (through `@typstream/react`) | [Engine](/docs/reference/engine) |
+| `createEngine`, `engineWorker`, type `EngineOptions` | `@typstream/engine` | [Engine](/docs/reference/engine) |
+| `createHealer`, `heal`, types `Healer`, `HealOptions`, `HealResult` | `@typstream/heal` | [Heal](/docs/reference/heal) |
+| `htmlCompat`, `htmlCompatCss` | `@typstream/html-compat` | [html-compat](/docs/reference/html-compat) |
+| `universe`, `UNIVERSE_PACKAGES`, type `UniversePackage` | `@typstream/universe` | [Universe](/docs/reference/universe) |
+| Types: `AppliedFix`, `CompiledEvent`, `CompileReport`, `DocumentEvent`, `FallbackEvent`, `FallbackLevel`, `RenderedEvent`, `WatchdogEvent` | `@typstream/core` (through `@typstream/react`) | [Core](/docs/reference/core#telemetry-events) |
+
+`createEngine` and `engineWorker` are there for apps that share one engine across several roots or tune it (pass the
+result as the `engine` prop). `heal` and `createHealer` are there for apps that heal text themselves, for example to
+show the healed source next to the preview.
+
+## See also
+
+- [Rendering in React](/docs/getting-started/react)
+- [Next.js and the AI SDK](/docs/getting-started/nextjs-ai-sdk)
+- [How it works](/docs/concepts/how-it-works)
+- [Using Typst packages](/docs/guides/typst-packages)
+- [Theming](/docs/guides/theming)

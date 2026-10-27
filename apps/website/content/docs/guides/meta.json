@@ -1,0 +1,17 @@
+{
+  "title": "Guides",
+  "pages": [
+    "prompting",
+    "edu-documents",
+    "typst-packages",
+    "fonts-and-languages",
+    "exports",
+    "theming",
+    "telemetry",
+    "writing-a-plugin",
+    "server-fix-loop",
+    "self-hosting",
+    "remote-engine",
+    "security"
+  ]
+}

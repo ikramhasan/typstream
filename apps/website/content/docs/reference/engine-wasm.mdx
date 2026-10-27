@@ -1,0 +1,259 @@
+---
+title: "@typstream/engine-wasm"
+description: Typst 0.15.1 compiled to WebAssembly, the low-level compiler behind typstream, with HTML, changed-page SVG, PDF and UTF-16 diagnostics.
+icon: Binary
+---
+
+`@typstream/engine-wasm` is Typst 0.15.1 compiled to WebAssembly. It compiles an in-memory project to HTML, to SVG for
+only the pages that changed since the last compile, or to PDF, and returns diagnostics with UTF-16 spans. It is the
+compiler behind `@typstream/engine` (in a Web Worker) and `@typstream/node` (on worker threads).
+
+## When to use it
+
+<Callout type="info">
+Most apps never use this package directly. `typstream`, `@typstream/react` and `@typstream/dom` run it through
+`@typstream/engine`, which adds healing, scheduling, a watchdog, lazy fonts and packages. On the server,
+`@typstream/node` runs it for you.
+</Callout>
+
+Use it directly when you build your own pipeline around the compiler: a custom worker or engine adapter, a build-time
+renderer, or a test harness. It runs synchronously on the thread that calls it, so in a browser call it from a worker,
+never the main thread. It has no watchdog: a document that never terminates blocks the thread until you terminate the
+worker.
+
+## Install
+
+```npm
+npm install @typstream/engine-wasm
+```
+
+## Example
+
+```ts title="worker.ts"
+import init, { Engine } from "@typstream/engine-wasm";
+import { baseFonts } from "@typstream/engine-wasm/fonts";
+
+await init(); // fetches engine_bg.wasm next to engine.js
+for (const url of baseFonts) Engine.add_font(new Uint8Array(await (await fetch(url)).arrayBuffer()));
+
+const engine = new Engine();
+engine.set_source("/main.typ", "= Hello\nInline math $x^2$.");
+const { ok, html, diagnostics } = engine.compile_html();
+
+// Paged preview: only the pages whose content changed.
+const { pageCount, changed } = engine.compile_svg_changed(); // changed: { index, hash, width, height, svg, … }[]
+```
+
+In Node, or a worker that already has the bytes, initialize synchronously:
+
+```ts
+import { readFileSync } from "node:fs";
+import { Engine, initSync } from "@typstream/engine-wasm";
+import { baseFonts } from "@typstream/engine-wasm/fonts";
+
+initSync({ module: readFileSync(new URL(import.meta.resolve("@typstream/engine-wasm/engine_bg.wasm"))) });
+for (const url of baseFonts) Engine.add_font(readFileSync(url));
+```
+
+## Initialization
+
+| Export | What it does |
+| --- | --- |
+| `init(input?)` (default export) | Loads and instantiates the wasm asynchronously. Without an argument it fetches `engine_bg.wasm` next to `engine.js`. Otherwise pass `{ module_or_path }` with a URL, a `Response`, bytes or a `WebAssembly.Module`. Returns a promise. |
+| `initSync(input)` | Instantiates synchronously from bytes or a `WebAssembly.Module`: `initSync({ module: bytes })`. |
+
+Call one of them once per thread before creating an `Engine`.
+
+## Engine
+
+`new Engine()` creates an empty project with an empty `/main.typ`. An engine holds source and binary files and
+`sys.inputs`; fonts are global to the wasm instance and shared by every engine in it.
+
+### Static methods
+
+| Method | Returns | What it does |
+| --- | --- | --- |
+| `Engine.add_font(bytes)` | `number` | Adds a font file (TTF, OTF or TTC) for every engine in the instance. Returns its number of faces (a TTC has several). Adding a file again does nothing. |
+| `Engine.font_info(bytes)` | `string` | Typst's `FontInfo` for each face of a font file, as JSON, for `register_font`. |
+| `Engine.register_font(info)` | `number` | Registers a font file from its info, without its bytes; returns its id. The same info gets the same id. Throws on invalid info. |
+| `Engine.load_font(id, bytes)` | `void` | Gives a registered font its bytes. Throws unless they are the file the info came from. Loading a file again does nothing. |
+| `Engine.features()` | `string[]` | The optional features in this build: always `"html"` and `"svg"`, plus `"pdf"`. |
+| `Engine.memory_bytes()` | `number` | Wasm linear memory in bytes, shared by all engines in the instance. A high-water mark: it never shrinks. |
+
+### Instance methods
+
+| Method | Returns | What it does |
+| --- | --- | --- |
+| `set_source(path, text)` | `void` | Sets a source file. `/main.typ` is the entry point. Existing sources are updated incrementally. |
+| `set_file(path, bytes)` | `void` | Sets a binary file: images, data, a package's `typst.toml` or wasm plugins. |
+| `remove_file(path)` | `void` | Removes a source or binary file. `/main.typ` can't be removed. |
+| `set_inputs(inputs)` | `void` | Sets `sys.inputs`. Throws unless every value is a string, as with the CLI's `--input key=value`. |
+| `compile_html()` | `HtmlResult` | Compiles with the HTML target. |
+| `compile_svg_changed()` | `SvgChangedResult` | Compiles paged and exports SVG for the pages whose content changed since the last successful call. |
+| `reset_pages()` | `void` | Forgets the page hashes, so the next `compile_svg_changed` sends every page (a new document, or the renderer lost its DOM). |
+| `check_paged()` | `CheckResult` | Compiles paged without exporting: diagnostics and the page count, for validation. Leaves the changed-page baseline alone. |
+| `compile_pdf()` | `PdfResult` | Compiles paged and exports PDF. |
+| `free()` / `[Symbol.dispose]()` | `void` | Frees the engine's wasm memory for reuse. Fonts and the instance's memory stay. |
+
+Methods that compile never throw for document errors; those come back as diagnostics. Methods that take a path throw
+on an invalid one (`invalid virtual path: …`).
+
+## Results
+
+Every compile returns a `CompileResult`, extended per method:
+
+| Type | Fields |
+| --- | --- |
+| `CompileResult` | `ok: boolean`, `diagnostics: Diagnostic[]`, `ms: number` (time in the call: compile, export and cache eviction), `missingFonts: number[]` (see [Lazy fonts](#lazy-fonts)) |
+| `HtmlResult` | `CompileResult` and `html?: string`, the document when `ok` |
+| `SvgChangedResult` | `CompileResult` and `pageCount?: number`, `changed?: ChangedPage[]`, `compileMs: number`, `exportMs: number` |
+| `CheckResult` | `CompileResult` and `pageCount?: number` |
+| `PdfResult` | `CompileResult` and `pdf?: Uint8Array`, `pageCount?: number` |
+
+**Changed pages.** `changed` holds only the pages whose content changed since the last successful call (all of them
+after `reset_pages`); indices refer to the new document, and pages at or past `pageCount` are gone. A failed compile
+keeps the previous pages as the baseline, so the next success diffs against what is on screen.
+
+| `ChangedPage` field | Type | Meaning |
+| --- | --- | --- |
+| `index` | `number` | Page index, from 0. |
+| `hash` | `string` | 32 hex digits identifying the page's content: equal hashes mean identical pages. |
+| `width`, `height` | `number` | Page size in Typst points. |
+| `svg` | `string` | The page as SVG. Glyphs are paths. |
+| `text` | `TextRun[]` | The page's text runs as Typst laid them out, for a selectable text layer. |
+| `structure` | `TextNode[]` | Structure elements around the runs (headings, lists, tables), for accessibility. |
+| `lang` | `string` | The document's language as typst-html writes it (`ar`, `zh-CN`). |
+| `dir` | `"ltr" \| "rtl"` | The document's direction. |
+
+Frame hashes include source spans, so the same text parsed afresh or reparsed incrementally can hash differently.
+Compare SVGs, not hashes, to check that two separate compiles look the same.
+
+| `TextRun` field | Type | Meaning |
+| --- | --- | --- |
+| `text` | `string` | The run's text. |
+| `x`, `y` | `number` | Start of the baseline, in points from the page's top left. |
+| `size` | `number` | Font size. |
+| `width` | `number` | The run's advance. |
+| `matrix` | `[a, b, c, d]?` | An SVG matrix (translation in `x`/`y`), set only when the text is rotated, skewed or scaled. |
+| `lang`, `dir` | `string?`, `"ltr" \| "rtl"?` | Set only when they differ from the page's. |
+
+| `TextNode` field | Type | Meaning |
+| --- | --- | --- |
+| `role` | `"heading" \| "list" \| "listitem" \| "table" \| "row" \| "cell" \| "columnheader"` | An ARIA role. |
+| `level` | `number?` | A heading's `aria-level`: Typst's level + 1 (as typst-html's `<h2>` for `=`); the document's title is 1. |
+| `from`, `to` | `number` | The range of the page's runs it covers (empty for an empty cell). |
+| `children` | `TextNode[]?` | Nested elements. Rows group a table's cells by row. |
+
+## Diagnostics
+
+A `Diagnostic` has the shape of `@typstream/core`'s, with `/main.typ` as the document:
+
+```ts
+type Diagnostic = {
+  severity: "error" | "warning";
+  span: Range | null; // { from, to } in UTF-16 code units of /main.typ
+  message: string;
+  hints: string[];
+  trace: TraceItem[]; // { message, span: Range | null }, innermost first
+  file?: { path: string; span: Range | null };
+  source: "typst";
+};
+```
+
+Spans are **UTF-16 code units**, so `source.slice(span.from, span.to)` is the offending text. For a problem in another
+file, `span` is the nearest call site in `/main.typ` (or `null`) and `file` holds the original location. `trace` lists
+the calls, show rules and imports the error came through, innermost first; each item has a span only where it is in
+`/main.typ`. The warning Typst emits on every HTML compile ("html export is under active development") is dropped.
+
+```ts
+engine.set_source("/main.typ", "= Hello\nInline math $x^2$. #hilight[x]");
+engine.compile_html().diagnostics;
+// [{ severity: "error", message: "unknown variable: hilight", span: { from: 28, to: 35 }, hints: [], trace: [], source: "typst" }]
+```
+
+If you prepend a preamble to `/main.typ`, shift spans back by its length yourself.
+
+## Paths and packages
+
+Paths are virtual and absolute: `/main.typ`, `/img/a.png`, `/data/scores.csv`. A document can read only what you set on
+the engine.
+
+A path that starts with a package spec is a file of that package, rooted at it: `@preview/cetz:0.5.3/src/lib.typ` is
+`src/lib.typ` inside `@preview/cetz:0.5.3`. Mount a package's files (including its `typst.toml`) that way, and
+`#import "@preview/cetz:0.5.3"` reads its manifest and entry point. A package with nothing mounted is "package not
+found". The engine never fetches packages itself; `@typstream/engine`'s worker fetches, checks and mounts allowed ones,
+and `@typstream/edu` mounts itself the same way under `@typstream/edu:0.1.0`.
+
+```ts
+for (const [path, text] of Object.entries(eduFiles)) engine.set_source(path, text); // "@typstream/edu:0.1.0/lib.typ", …
+engine.set_source("/main.typ", `${eduPreamble}#question(points: 1)[Hi]`);
+```
+
+## Lazy fonts
+
+Scripts the base fonts don't cover have **script fonts**, registered without their bytes and downloaded the first time
+a document uses them: Noto Naskh Arabic, Noto Serif Bengali and Noto Serif Devanagari, regular and bold (47–79 KB
+brotli each). Libertinus Serif already covers Latin, Greek, Cyrillic and Hebrew.
+
+```ts
+import { scriptFonts } from "@typstream/engine-wasm/fonts";
+
+const ids = scriptFonts.map((font) => Engine.register_font(font.info)); // in the font book, no bytes yet
+const r = engine.compile_svg_changed(); // r.missingFonts: ids of registered fonts this compile wanted
+for (const id of r.missingFonts) {
+  const font = scriptFonts[ids.indexOf(id)];
+  Engine.load_font(id, new Uint8Array(await (await fetch(font.url)).arrayBuffer()));
+}
+engine.compile_svg_changed(); // now with them
+```
+
+Typst selects a registered face by family or for fallback (the first font covering the text) exactly as if it were
+loaded. Without its bytes, the compile records the miss and Typst moves on to the next family or draws tofu, so the
+compile still succeeds. Every compile lists `missingFonts`, cached compiles included. In the HTML target the browser
+draws the text, so only drawn content (`html.frame`) needs fonts. `@typstream/engine` does all this for you in its
+worker and recompiles once a font arrives.
+
+To register other fonts lazily (CJK, say), compute their info once with `Engine.font_info(bytes)` and ship it with the
+font's URL. See [Fonts and languages](/docs/guides/fonts-and-languages).
+
+## Fonts subpath
+
+`@typstream/engine-wasm/fonts` lists the fonts that ship in the package. Each URL is written as
+`new URL("./fonts/…", import.meta.url)`, so bundlers emit the files as assets.
+
+| Export | Type | What it is |
+| --- | --- | --- |
+| `baseFonts` | `URL[]` | The base set: Libertinus Serif (regular, bold, italic), New Computer Modern Math and DejaVu Sans Mono, about 2.6 MB. Add them with `Engine.add_font`. |
+| `scriptFonts` | `ScriptFont[]` | The script fonts above, to register lazily. |
+
+| `ScriptFont` field | Type | Meaning |
+| --- | --- | --- |
+| `url` | `URL` | Where the file is. |
+| `file` | `string` | The file's name in `dist/fonts/`, e.g. to serve the fonts from another origin. |
+| `family` | `string` | Font family. |
+| `scripts` | `string[]` | ISO 15924 codes of the scripts it is for, e.g. `["Beng"]`. |
+| `info` | `string` | `Engine.font_info` of the file, computed at build time: pass it to `Engine.register_font`. |
+
+The package also exports `./engine_bg.wasm` and `./fonts/*` as files, for loaders that need their paths. Font licenses
+are in `dist/fonts/NOTICE` and `dist/fonts/LICENSE-Noto.txt`.
+
+## Things to know
+
+- **Every compile evicts Typst's memoization cache** (`comemo::evict(2)`). Without it the cache would grow by about
+  4 MiB per compile; with it, memory stays flat over hundreds of streaming compiles.
+- **Fonts, the memoization cache and memory are global to the wasm instance**, shared by every `Engine` in it. Wasm
+  memory never shrinks: watch `Engine.memory_bytes()` and recycle the worker to give it back. `@typstream/engine` does
+  this for you.
+- **No network or filesystem.** A document can read only the files, packages and fonts you set on the engine.
+- `datetime.today()` is the local date, as in the Typst CLI.
+- PDF export is in the build, so an export reuses the preview's warm compile instead of loading a second engine.
+- The wasm is about 6 MB with brotli compression. Serve it with compression and a long cache lifetime; see
+  [Self-hosting](/docs/guides/self-hosting).
+
+## See also
+
+- [The engine](/docs/concepts/engine): how `@typstream/engine` runs this in a worker.
+- [@typstream/engine](/docs/reference/engine): the client and worker built on it.
+- [@typstream/node](/docs/reference/node): the same compiler on Node's worker threads.
+- [Fonts and languages](/docs/guides/fonts-and-languages): base fonts, script fonts, your own fonts.
+- [Self-hosting](/docs/guides/self-hosting): serving the wasm and fonts.

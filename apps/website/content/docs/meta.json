@@ -1,0 +1,18 @@
+{
+  "title": "typstream",
+  "description": "Render Typst streamed from an LLM, live.",
+  "root": true,
+  "pages": [
+    "index",
+    "---Getting started---",
+    "...getting-started",
+    "---Concepts---",
+    "...concepts",
+    "---Guides---",
+    "...guides",
+    "---Packages---",
+    "...reference",
+    "---Resources---",
+    "...resources"
+  ]
+}

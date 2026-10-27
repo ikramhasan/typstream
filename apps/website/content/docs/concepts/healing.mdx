@@ -1,0 +1,217 @@
+---
+title: Healing
+description: How @typstream/heal turns any prefix of a model's Typst output into a source that parses, which text it never touches, and the lint rules that fix Markdown habits.
+---
+
+`@typstream/heal` takes any prefix of a model's Typst output and returns a source that parses: it closes what is open, drops what can't be completed yet, and fixes common Markdown habits in text that has settled. It runs on the main thread on every chunk, with no dependencies and no compiler. The engine client heals for you; you use the package directly to heal on a server, in a custom pipeline, or to show "writing a table…" in your UI.
+
+Scrub through a stream below to see what the healer closes, cuts and fixes at each prefix.
+
+<HealPlayground />
+
+## In one call
+
+```ts
+import { heal } from "@typstream/heal";
+
+heal("#table(columns: 2, [a], [b").source; // "#table(columns: 2, [a], [b])"
+heal("Hello *bold").source; // "Hello *bold*"
+heal("$x^").source; // "$x$"
+heal("#let x = ").source; // ""  (an incomplete statement is dropped, not guessed)
+heal("#set text(size: 12").source; // ""  (half-written rules are never applied)
+heal("```typst\n= Quiz\n\nText").source; // "= Quiz\n\nText"  (the fence is stripped)
+```
+
+`heal()` is stateless. For a stream, use the incremental healer, which re-parses only from the last checkpoint before each change:
+
+```ts
+import { createHealer } from "@typstream/heal";
+
+const healer = createHealer();
+for await (const chunk of stream) {
+  const { source, stableOffset, openFrames } = healer.push(chunk);
+  compile(source); // always parses
+}
+const done = healer.finish(); // complete document: lint everything, report what's still broken
+```
+
+## What happens to a prefix
+
+### 1. Normalize
+
+The raw output is cleaned before anything parses it. A Markdown code fence around the whole document (```` ```typst ```` or ```` ```typ ````) is stripped, with its closing fence, and so is a byte order mark. While streaming, half a surrogate pair at the very end is held back until its other half arrives, so the compiler never sees a broken character. Normalization only looks at the start and end of the text, so it costs nothing per chunk. `unwrapFences: "never"` keeps fences.
+
+### 2. Recognize
+
+The healer contains a faithful TypeScript port of Typst 0.15.1's lexer and parser, used as a recognizer: the same grammar, lookahead and mode switches between markup, code and math, without building a tree. It is tested against Typst's own parser, compiled from the pinned Typst release, on documents, every one of their prefixes and random input. When a construct meets the end of the text, the recognizer records what it needs:
+
+- **close**: append the closing delimiter (`]`, `)`, `*`, `$`, `"`, a matching run of backticks);
+- **cut**: drop the incomplete construct back to where it started.
+
+A hand-written approximation of Typst's grammar would disagree with Typst at the edges (`$ [0, 1) $` is valid math, `/* /* */ */` nests, `https://a//b` is a link and not a comment). A port of the real parser doesn't.
+
+### 3. Repair the tail
+
+Repair cuts first, then closes, innermost construct first. Each candidate is recognized again before it's accepted, so the result always parses; if a closer would merge with the last token (`\` followed by `*`), the healer separates them or drops that token.
+
+**Close or cut?** Content and delimiters are closed, because what is there is already right and more of it is coming: `[b` becomes `[b]`, `$frac(1, 2` becomes `$frac(1, 2)$`, a display equation keeps its trailing space so it doesn't flip between inline and display as it streams. Statements are cut, because no closing makes them mean what the model will write:
+
+| Input ends with | Healed | Why |
+|---|---|---|
+| `#let x = ` | dropped | No value to bind yet. |
+| `#set text(size: 12` | dropped | A `#set` or `#show` rule restyles everything after it. Applied half-written, it would restyle the whole document, then again when it completes. |
+| `#tabl` | dropped | A name still being typed: `tabl` is not a function. |
+| `Some text #` | `Some text ` | A bare `#` starts no expression. |
+| `$x^` | `$x$` | A trailing operator in math has no operand yet. |
+
+Half-written `#set`, `#show`, `#import` and `#include` statements are dropped by default. `dropIncompleteRules: false` closes them instead (`#set text(size: 12)`), for callers who prefer seeing a rule early to stable output.
+
+Some cuts can't be known from syntax alone: `#text(` closes to `#text()`, which parses but needs its body. The engine's fixers handle those after compiling ([Fixers and fallback](/docs/concepts/fallback)).
+
+### 4. Lint settled text
+
+Settled text is checked for mistakes that are permanent, not streaming artifacts: Markdown habits and stray delimiters. See [Lint rules](#lint-rules).
+
+## Settled text and the stable offset
+
+`stableOffset` is the offset in `source` before which the text is **settled**: appending more can't change how it parses. It sits at the start of a top-level line (a root checkpoint) whose first character is already followed by another, so a line-start `/` that could still become `//` doesn't count yet.
+
+- It only moves forward while text is appended, however the stream is chunked.
+- The healer never rewrites settled text, except for lint fixes. Tail repair only touches text after it.
+- Lint rules run only on settled text while streaming (on everything in final mode), so a `**` that is still being typed isn't "fixed" halfway.
+- The engine sends it with every compile, so the `tail-cut` fixer only cuts text that is still being written, and the fallback isolates only settled blocks.
+
+## Lint rules
+
+Each rule has a severity: `fix` applies the change, `warn` only reports it as a finding, `off` disables it. Defaults:
+
+| Rule | Default | Detects | Fix |
+|---|---|---|---|
+| `markdown-heading` | fix | `# Heading` at a line start (indented too) | `= Heading`, one `=` per `#` |
+| `markdown-bold` | fix | `**bold**` or `__bold__` | `*bold*` or `_bold_` |
+| `markdown-link` | fix | `[text](https://…)` | `#link("https://…")[text]` |
+| `email-at` | fix | `@` inside a word, which Typst reads as a reference (`me@school.org`) | `me\@school.org` |
+| `bare-hash` | fix | `#` followed by a space, which starts no expression (`Item # 5`) | `\#` |
+| `stray-closer` | fix | A `]` with nothing open | `\]` |
+| `unclosed-delim` | fix | A `*` or `_` never closed in its paragraph (a hard error in Typst) | `\*`, `\_` |
+| `math-lone-script` | fix | An equation that starts with `^` or `_`: units written as `m/s$^2$`, `H$_2$O` | An empty base: `m/s$""^2$` |
+| `unclosed-block-comment` | warn | A `/*` that is never closed: it compiles, but hides the rest of the document | none |
+| `currency-dollar` | warn | Prices read as math: `costs $5 and $10` | `\$5`, `\$10` |
+
+Rules fire only in markup, so `**` inside raw text or a string is left alone. `currency-dollar` warns by default because it is a guess; it doesn't fire on equations that start with a number and go on with math (`$0.4 times 0.3 =$`).
+
+```ts
+heal(text, { lint: { "currency-dollar": "fix", "markdown-link": "off" } });
+```
+
+Findings are in `result.findings` (`rule`, `severity`, `start`, `end` in input offsets, `message`). Plugins and `<Typstream heal={…}>` take the same settings.
+
+## Open frames
+
+`openFrames` lists the constructs still open at the end of the input, innermost first, with the input offset of each opening delimiter. Use it to tell the reader what the model is writing:
+
+```ts
+const result = heal("= Results\n\n#table(columns: 2, [a], [b");
+result.openFrames;
+// [{ frame: "content", open: 35 }, { frame: "args", open: 17 }]
+// The outermost frame's opener is the `(` of `#table(`: "writing a table…"
+```
+
+Frame kinds are syntactic (`content`, `args`, `math`, `strong`, `raw`, …). Read the text just before an `args` frame's `open` to find the function name. `useTypstream()` exposes the same list as `openFrames`.
+
+## The source map
+
+Healing changes offsets: lint fixes insert characters, the fence is stripped, closers are appended. `result.map` converts between the two texts:
+
+```ts
+const result = heal("```typst\nHello *bold");
+result.source; // "Hello *bold*"
+result.map.toSource(9); // 0: input offset → source offset
+result.map.toInput(0); // 9: source offset → input offset
+```
+
+`toInput(pos, -1)` maps a position inside removed input text to before it (the default is after). The engine uses the map to report diagnostics in your input's coordinates, so an error points at the text the model wrote, not the healed text. `result.patches` lists the changes from the normalized input (fence and byte order mark already stripped) to the source, each with its reason: `heal:close`, `heal:cut`, `lint:markdown-bold`, and so on.
+
+## The incremental healer
+
+`createHealer(options)` keeps the recognition between calls and resumes at the last checkpoint before each change. After an edit, it re-parses until it is back in step with the old parse, then reuses the rest, so a one-character edit in the middle of a long document re-reads only a few lines.
+
+| Method | What it does |
+|---|---|
+| `push(chunk)` | Appends streamed text. |
+| `set(input)` | Replaces the whole input, for example a `source` prop that grows. It diffs against the previous input, so an extension is as cheap as `push`. |
+| `applyEdit({ from, to, insert })` | Applies an edit (editors, collaboration, an AI rewriting a section). Offsets are UTF-16 indices into the input. |
+| `setStreamingRange(range)` | Marks `[from, to)` of the input as being written by a model. `null` heals the whole tail again. |
+| `finish()` | The stream ended: heal the complete document. |
+| `result()` | The latest result. |
+| `reset(input?)` | Starts over, with the options the healer was created with. |
+
+Every call returns a `HealResult`, and the result is always the same as `heal()` on the whole input with the same options.
+
+### Streaming into the middle of a document
+
+When a model rewrites one section of an existing document ("add an answer key below question 3"), the text it writes is in the middle, not at the end. `setStreamingRange` heals that region as if it were the tail, closing only what opened inside it, and leaves the text after it untouched:
+
+```ts
+const healer = createHealer();
+healer.set(document);
+healer.setStreamingRange({ from: at, to: at }); // the model writes at `at`
+healer.applyEdit({ from: at, to: at, insert: "#table(columns: 2, [a" }); // the range grows with it
+healer.setStreamingRange(null); // done
+```
+
+Text inserted at the end of the range extends it. The engine document and the bindings don't expose streaming ranges yet; streaming edits there are planned with [#34](https://github.com/ikramhasan/typstream/issues/34).
+
+### Final mode
+
+`finish()`, or `heal(text, { final: true })`, heals a complete document:
+
+- no tail repair: what is still open is reported in `errors` (`unclosed delimiter`) instead of being closed;
+- every lint rule runs on the whole text;
+- `stableOffset` is the end of the text.
+
+```ts
+heal("#table(columns: 2, [a], [b", { final: true });
+// source unchanged; errors: two "unclosed delimiter" at offsets 24 and 6
+```
+
+A truncated answer is then visible as an error rather than silently completed. `@typstream/node`'s `validate()` reports lint findings of finished documents as warnings, for a [server fix loop](/docs/guides/server-fix-loop).
+
+## Handlers
+
+Handlers add product-specific fixes, run alongside the built-in rules. A handler has a `name`, a `phase` and a `run(ctx)` that returns edits:
+
+- `settled` handlers see newly settled text (`ctx.from` to `ctx.to` of the normalized text), with `ctx.modeAt(pos)` to stay out of code and math. They run like lint rules, with their edits reported as findings under the handler's name.
+- `output` handlers see the whole healed source, after repair.
+
+```ts
+import { heal, type HealHandler } from "@typstream/heal";
+
+// `[[blank]]` in prose becomes an answer line.
+const blanks: HealHandler = {
+  name: "acme/blank-shorthand",
+  phase: "settled",
+  run: ({ text, from, to, modeAt }) =>
+    [...text.slice(from, to).matchAll(/\[\[blank\]\]/g)]
+      .map((m) => from + m.index)
+      .filter((at) => modeAt(at) === "markup")
+      .map((at) => ({ from: at, to: at + 9, insert: "#box(width: 3em, stroke: (bottom: 0.5pt))" })),
+};
+
+heal("The capital of France is [[blank]].\n\nNext", { handlers: [blanks] }).source;
+// "The capital of France is #box(width: 3em, stroke: (bottom: 0.5pt)).\n\nNext"
+```
+
+Edits must be non-overlapping and inside `[ctx.from, ctx.to)`. `priority` orders handlers (lower first; the built-in rules run at 50). Plugins ship handlers in their `heal.handlers` facet ([Plugins](/docs/concepts/plugins)).
+
+## What healing guarantees
+
+These hold for every prefix of every valid document, and are checked by property tests against Typst's real parser:
+
+- **Healed prefixes parse.** Typst's parser finds no syntax error in the healed source.
+- **Settled text is untouched.** Only a bounded tail (the incomplete atom or statement) is lost; settled text is changed only by lint fixes.
+- **Healing is idempotent.** Healing a healed source returns it unchanged.
+- **Valid documents come back unchanged.** With lint off, a complete valid document is returned as is: the healer never "fixes" correct Typst.
+- **Incremental equals stateless.** Pushing chunks, setting a growing string, or applying random edits gives the same result as `heal()` on the whole text, however the input is split.
+
+Parsing is not compiling: a healed prefix can still fail to compile (`#text()` without its body, a reference to a label that comes later). The engine's [fixers and fallback](/docs/concepts/fallback) take it from there. Reference: [`@typstream/heal`](/docs/reference/heal).

@@ -1,0 +1,233 @@
+---
+title: Prompting the model
+description: How to get Typst that compiles from an LLM, with @typstream/edu's buildSystemPrompt or a short hand-written prompt.
+---
+
+typstream renders whatever the model writes, and heals what a stream cut leaves open. It can't make a wrong
+document right. The system prompt is where you get documents that compile, and with the right one most models
+write valid Typst almost every time.
+
+## Why the prompt matters
+
+Models have read far more Markdown than Typst. Left to themselves they write `## Heading`, `**bold**` and code fences,
+put a lone `$^2$` after a unit, or write a price as `$5`, which opens math in Typst. Most compile errors in real model
+output are habits like these, not gaps in the model's knowledge of Typst.
+
+typstream's prompt kit was tuned on real streams: 29 teachers' requests (worksheets, quizzes, exams in English,
+Arabic and Bengali), sent to Claude Sonnet and Claude Haiku and compiled the way typstream compiles a finished
+document. Each rule in it targets an error class those runs produced. With the current kit:
+
+| Model | Documents with a compile error (final mode) |
+|---|---|
+| Claude Sonnet | 0 of 29 |
+| Claude Haiku | 3.4% (4 of 116) |
+
+A naive prompt that only says "write Typst, no Markdown" left about 10% of documents with errors. The remaining
+errors are one-offs, which healing, the engine's fixers and a [server fix loop](/docs/guides/server-fix-loop) handle.
+
+## The prompt kit: `buildSystemPrompt`
+
+<Callout type="warn" title="Beta">
+  `buildSystemPrompt`, `SystemPromptOptions` and `typstPromptRules` are `@beta`: their output may change between
+  releases as the kit is re-measured. Prompting may also move out of the packages into a skill
+  ([#75](https://github.com/ikramhasan/typstream/issues/75)).
+</Callout>
+
+`@typstream/edu` builds a system prompt from the plugins your app renders with:
+
+```npm
+npm install typstream @typstream/edu @typstream/universe
+```
+
+```ts title="app/api/chat/route.ts"
+import { anthropic } from "@ai-sdk/anthropic";
+import { buildSystemPrompt, edu } from "@typstream/edu";
+import { convertToModelMessages, streamText, type UIMessage } from "ai";
+import { universe } from "@typstream/universe";
+
+// Computed once: the same plugins always give the same prompt.
+const SYSTEM = buildSystemPrompt([edu, universe]);
+
+export async function POST(request: Request) {
+  const { messages }: { messages: UIMessage[] } = await request.json();
+  const result = streamText({
+    model: anthropic("claude-sonnet-5-5"),
+    instructions: SYSTEM,
+    messages: await convertToModelMessages(messages),
+  });
+  return result.toUIMessageStreamResponse();
+}
+```
+
+Import `universe` from `@typstream/universe` in server code: `typstream` is a client-side React package. On the
+client, render with the same plugins, so the model is told about exactly what the engine can compile:
+
+```tsx
+import { edu } from "@typstream/edu";
+import { Typstream } from "typstream";
+
+// typstream adds the universe plugin by default; edu you add yourself.
+<Typstream source={text} isStreaming={status === "streaming"} plugins={[edu]} />;
+```
+
+If you turn packages off on the client (`packages={false}`), leave `universe` out of `buildSystemPrompt` too, or the
+model will import packages the engine refuses.
+
+### What it assembles
+
+`buildSystemPrompt(plugins, options?)` returns one string, in this order:
+
+1. A fixed introduction: the model writes documents for teachers in Typst 0.15, and they are rendered as it writes.
+2. `## Typst`: `typstPromptRules`, the Typst habits models get wrong whatever the vocabulary (below).
+3. For each plugin, in the order given, its `prompt` facet: `## Rules (key)` with its rules, then
+   `## Functions (key)` with its catalogue, one entry per function (signature, description, example).
+4. `## Examples`: every plugin's few-shot documents, each wrapped in `<example>`, with the request it answers.
+
+With `[edu, universe]` that's edu's rules and catalogue (generated from the doc comments of its Typst functions, so
+it can't drift from what the engine mounts), the list of packages documents may import, and four complete example
+documents (English, chemistry, Arabic, Bengali). It comes to about 19,000 characters; the measured runs counted
+about 8,400 tokens.
+
+The output is deterministic for the same plugins, so it works with your provider's prompt caching: put it first and
+mark it cacheable, and only the first request of a cache window pays for it in full.
+
+The introduction is written for teachers' documents. For another domain, write your own prompt (see
+[Without the kit](#without-the-kit)) and reuse the parts you want.
+
+### The Typst rules
+
+`typstPromptRules` (exported from `@typstream/edu`) is the first group of the prompt. Each rule targets a measured
+error class:
+
+- Reply with the Typst document only: no code fence around it, nothing before or after it.
+- This is Typst, not Markdown: `= Heading`, `*bold*`, `_italic_`, `- item`, `+ numbered item`,
+  `#link("https://…")[text]`. `*` and `_` only work around whole words.
+- A superscript or subscript needs its base inside the same `$…$`: `$9.8 "m/s"^2$`, not `m/s$^2$`. Chemistry goes
+  through `#ce`.
+- In math, a name of two or more letters is a variable or symbol: use `<=`, `times`, `dot`; space single letters
+  (`$2 x y$`); quote words and units.
+- Text and math passed to a function are content, in brackets: `f([$6$ cm], [Name])`.
+- Escape what you mean literally: `\$` (money), `\#`, `\@` (emails), `\*`, `\_`, and a `/` that would start a term
+  list.
+
+The exported array holds the exact wording.
+
+### Options
+
+| Option | Type | Default | Effect |
+|---|---|---|---|
+| `examples` | `boolean` | `true` | Include the plugins' few-shot examples. Leaving them out saves about a fifth of the prompt. |
+| `typstRules` | `readonly string[]` | `typstPromptRules` | Replaces the Typst rules group. |
+
+```ts
+import { buildSystemPrompt, edu, typstPromptRules } from "@typstream/edu";
+import { universe } from "@typstream/universe";
+
+const system = buildSystemPrompt([edu, universe], {
+  examples: false,
+  typstRules: [...typstPromptRules, "Write British spelling."],
+});
+```
+
+The rules were chosen by measuring. Adding rules is cheap to try, but each one costs tokens on every request, and
+removing one brings its error class back.
+
+### Templates chosen by the app
+
+edu's rules tell the model to start with a template line such as `#show: quiz.with(title: […])`. If your app applies
+the template itself through the `template` prop (see [Worksheets, quizzes and answer keys](/docs/guides/edu-documents#templates)),
+tell the model not to write one, for example by appending an instruction to the prompt. A template applied twice
+renders its header twice.
+
+## Your own vocabulary: the `prompt` facet
+
+Any [plugin](/docs/concepts/plugins) can teach the model its Typst API through its `prompt` facet. `buildSystemPrompt`
+reads three fields:
+
+| Field | Type | Becomes |
+|---|---|---|
+| `rules` | `string[]` | Bullets under `## Rules (key)`. |
+| `catalogue` | `FunctionDoc[]` | Entries under `## Functions (key)`: `name`, `signature`, `description` and an optional `example`. |
+| `examples` | `PromptExample[]` | Few-shot documents: `output` (the Typst), with an optional `request` (what the user asked) and `title`. |
+
+```ts title="school-plugin.ts"
+import { definePlugin } from "@typstream/core";
+
+export const school = definePlugin({
+  key: "acme/school",
+  engine: {
+    preamble: `#let motto = [Learn, then teach.]
+#let house-points(house, points) = [*#house*: #points points]`,
+  },
+  prompt: {
+    rules: ["End every worksheet with `#motto`."],
+    catalogue: [
+      {
+        name: "house-points",
+        signature: "house-points(house: str, points: int) -> content",
+        description: "A line awarding points to a school house.",
+        example: '#house-points("Ash", 10)',
+      },
+    ],
+    examples: [
+      {
+        request: "A one-question spelling check",
+        output: "#question(points: 1)[Spell the word for a baby cat: #blank(answer: [kitten])]\n\n#motto",
+      },
+    ],
+  },
+});
+```
+
+```ts
+const system = buildSystemPrompt([edu, universe, school]);
+```
+
+Keep the catalogue and the functions in step. edu generates its catalogue from the `///` comments of its Typst
+sources for that reason; a hand-written catalogue drifts as soon as a parameter changes.
+
+## Without the kit
+
+If you don't use edu's vocabulary, a short hand-written prompt goes most of the way. The
+[Next.js example](https://github.com/ikramhasan/typstream/blob/main/examples/nextjs-ai-sdk/app/api/chat/route.ts)
+uses this one:
+
+```text
+You write educational documents (worksheets, quizzes, handouts) in Typst 0.15 markup.
+Reply with the Typst source only: no Markdown, no code fences, no commentary before or after.
+- Headings are "= Title", "== Section"; *bold*, _italic_; "- " bullets and "+ " numbered items.
+- Math goes between dollar signs: $a^2 + b^2 = c^2$, with a space inside for display math: $ x = 1/2 $.
+- Tables: #table(columns: 3, [Header], [Header], [Header], [cell], [cell], [cell]).
+- Write a literal dollar sign, hash or at sign as \$, \#, \@.
+- Leave room for answers with #v(2em) or #line(length: 100%).
+```
+
+The essentials are the same whatever the domain:
+
+- **No Markdown.** Say it explicitly and show Typst's equivalents: `=` headings, single `*` for bold, `-` and `+`
+  lists, `#link`.
+- **No code fences, no preamble.** The reply is the document. A code fence tagged `typst` or `typ` around the
+  whole reply is stripped by healing, but text before or after it is rendered.
+- **Escape `$`, `#` and `@`** when they are literal: `\$5`, `\#1`, `name\@school.org`. Unescaped, they open math, code
+  and a reference.
+- **Name the packages** the document may import, at their exact versions (see [Typst packages](/docs/guides/typst-packages)).
+
+You can also append `typstPromptRules` to your own prompt: it's a plain array of strings, and it holds the rules that
+moved the error rate most.
+
+```ts
+import { typstPromptRules } from "@typstream/edu";
+
+const system = `You write product briefs in Typst 0.15 markup.\n\n${typstPromptRules.map((r) => `- ${r}`).join("\n")}`;
+```
+
+## The safety net: lint
+
+Whatever the prompt, some slips get through. typstream's healer lints the stream as it settles and fixes the common
+ones before they reach the compiler: Markdown headings, bold and links, bare `@` in emails, a `#` that isn't code,
+a lone `$^2$` after a unit, stray closing brackets. A `$` that looks like money is reported as a warning rather than
+rewritten, since it's often real math. See [Healing](/docs/concepts/healing) for the rules and how to configure them.
+
+Lint is a safety net, not a substitute: a fixed document still isn't what the model meant, and it costs a compile
+round. A good prompt makes the net rarely needed. For documents you save, run them through
+[the server fix loop](/docs/guides/server-fix-loop), which sends the remaining errors back to the model.

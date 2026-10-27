@@ -1,0 +1,120 @@
+@import "tailwindcss";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+
+/* Paper and ink: typstream renders documents, so the site looks like one. Warm paper, ink text,
+   and Typst's teal for what you can act on. */
+@theme {
+  --color-fd-background: oklch(0.985 0.005 85);
+  --color-fd-foreground: oklch(0.21 0.018 255);
+  --color-fd-muted: oklch(0.955 0.008 85);
+  --color-fd-muted-foreground: oklch(0.48 0.015 255);
+  --color-fd-popover: oklch(0.995 0.003 85);
+  --color-fd-popover-foreground: oklch(0.21 0.018 255);
+  --color-fd-card: oklch(0.995 0.003 85);
+  --color-fd-card-foreground: oklch(0.21 0.018 255);
+  --color-fd-border: oklch(0.89 0.012 85);
+  --color-fd-primary: oklch(0.5 0.095 205);
+  --color-fd-primary-foreground: oklch(0.99 0.004 85);
+  --color-fd-secondary: oklch(0.955 0.01 85);
+  --color-fd-secondary-foreground: oklch(0.21 0.018 255);
+  --color-fd-accent: oklch(0.93 0.025 200 / 0.6);
+  --color-fd-accent-foreground: oklch(0.21 0.018 255);
+  --color-fd-ring: oklch(0.63 0.1 205);
+
+  --color-paper: oklch(0.995 0.003 85);
+  --color-ink: oklch(0.21 0.018 255);
+  --color-teal: oklch(0.63 0.1 205);
+  /* The logo's caret: the other theme's primary, so it stands out from the square. */
+  --color-logo-caret: oklch(0.8 0.11 200);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-newsreader), ui-serif, Georgia, serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, monospace;
+}
+
+.dark {
+  --color-fd-background: oklch(0.165 0.014 255);
+  --color-fd-foreground: oklch(0.94 0.008 85);
+  --color-fd-muted: oklch(0.21 0.016 255);
+  --color-fd-muted-foreground: oklch(0.7 0.015 255);
+  --color-fd-popover: oklch(0.19 0.016 255);
+  --color-fd-popover-foreground: oklch(0.94 0.008 85);
+  --color-fd-card: oklch(0.195 0.016 255);
+  --color-fd-card-foreground: oklch(0.94 0.008 85);
+  --color-fd-border: oklch(0.3 0.018 255 / 0.7);
+  --color-fd-primary: oklch(0.8 0.11 200);
+  --color-fd-primary-foreground: oklch(0.18 0.02 255);
+  --color-fd-secondary: oklch(0.23 0.018 255);
+  --color-fd-secondary-foreground: oklch(0.94 0.008 85);
+  --color-fd-accent: oklch(0.32 0.04 210 / 0.45);
+  --color-fd-accent-foreground: oklch(0.94 0.008 85);
+  --color-fd-ring: oklch(0.8 0.11 200);
+  --color-paper: oklch(0.985 0.005 85);
+  --color-logo-caret: oklch(0.5 0.095 205);
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+body {
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Page titles set like a document's title. */
+#nd-page h1,
+.font-display {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+}
+
+#nd-page h1 {
+  font-size: 2.4rem;
+  line-height: 1.1;
+}
+
+.prose :where(h2, h3):not(:where(.not-prose *)) {
+  letter-spacing: -0.01em;
+}
+
+/* A faint baseline grid behind the landing page, like ruled paper. */
+.paper-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in oklab, var(--color-fd-border) 55%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--color-fd-border) 55%, transparent) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 75%);
+}
+
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.stream-caret {
+  animation: caret-blink 1s steps(1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stream-caret {
+    animation: none;
+  }
+}
+
+/* Pages in the landing demo and the docs previews: sheets of paper on a desk. The paged view's own
+   sheet is an adopted stylesheet, which comes later in the cascade, hence the extra specificity. */
+.demo-sheets .typstream-paged[data-layout] {
+  gap: 20px;
+}
+
+.demo-sheets .typstream-paged .typstream-page {
+  border-radius: 2px;
+  box-shadow:
+    0 1px 0 oklch(0 0 0 / 0.04),
+    0 12px 32px -12px oklch(0.2 0.03 255 / 0.25),
+    0 40px 80px -40px oklch(0.2 0.03 255 / 0.3);
+}

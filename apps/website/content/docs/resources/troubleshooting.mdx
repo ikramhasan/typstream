@@ -1,0 +1,119 @@
+---
+title: Troubleshooting
+description: Common problems when rendering streamed Typst with typstream, what causes them, and how to fix them.
+---
+
+Start with the document's state: `useTypstream()` in React, or `getState()` on a mount. `status` says where the document is, `failure.reason` why the latest compile produced nothing, and `diagnostics` holds Typst's messages. `engine.onEvent` reports workers that fail to start, crash or hit the watchdog.
+
+## Rendering
+
+<Accordions>
+<Accordion title="Nothing renders at all">
+
+Check, in this order:
+
+- **The worker and the wasm load.** In the browser's network panel, look for the worker script, `engine_bg.wasm` and the fonts. A 404 means they weren't emitted with your build or aren't served; a bundler that doesn't handle `new URL(…, import.meta.url)` needs a worker of your own ([Self-hosting](/docs/guides/self-hosting)). When the engine can't start, `engine.onEvent` reports a `failed` event and every document's `failure.reason` is `"engine"`.
+- **The Content-Security-Policy allows WebAssembly.** The page needs `script-src 'wasm-unsafe-eval'`, `worker-src 'self'` and `connect-src 'self'`, and the worker script's own response needs the policy too. The console shows the violation. See [Security](/docs/guides/security).
+- **The element is near the viewport.** Documents are lazy: one that isn't streaming opens only when its element comes within a screen of the viewport. An element that is hidden (`display: none`, a closed tab or accordion) never does. Pass `lazy={false}` (or `lazy: false` to `mountTypstream`) to open it right away.
+
+</Accordion>
+<Accordion title="The status stays &quot;stale&quot; while the model writes">
+
+That is normal. `stale` means the document is still streaming and the latest prefix didn't compile, so the last good render stays on screen. Most prefixes heal into something that compiles, but some don't until a few more tokens arrive: a half-written argument, a reference to a label defined further down. When the stream ends and `isStreaming` turns false, the document compiles in final mode and ends as `done` or `error`. Show `stale` as "updating", not as an error. See [Streaming](/docs/concepts/streaming).
+
+</Accordion>
+<Accordion title="Live preview stopped with &quot;too-complex&quot;">
+
+The watchdog gives each compile 3 seconds while streaming and 10 seconds for the finished document. A compile past its budget is stopped by replacing the worker. After 3 such strikes (timeouts or crashes), live compiling stops for that document and `failure.reason` is `too-complex`; the finished document is still compiled once. A streaming paged document with more than 100 pages stops live compiling the same way, and compiles every page when finished.
+
+Usually the document contains a long loop or a huge drawing. If your documents are legitimately heavy, raise the budgets on your engine: `createEngine({ spawn: engineWorker(), watchdog: { streamingMs: 5000 }, limits: { livePages: 200 } })`, and pass it as `engine`. See [Engine](/docs/concepts/engine).
+
+</Accordion>
+<Accordion title="The document reports &quot;too-large&quot;">
+
+Input longer than 1 MiB (1,048,576 UTF-16 code units) isn't healed or compiled, to protect the page. The document keeps its last render and refuses exports until `set()` or `reset()` brings the text back under the limit. Raise it with `createEngine({ limits: { maxLength } })` if you really need longer documents. `@typstream/node`'s protocol server has its own limit, `maxTextLength`.
+
+</Accordion>
+<Accordion title="A block shows &quot;This part couldn't be displayed&quot;">
+
+That is the fallback: a block that doesn't compile is shown as an error box with Typst's message and the block's source, and the rest of the document renders around it. The error is in `diagnostics`. Feed the finished document to `@typstream/node`'s `fixLoop` to have the model repair it, or improve the prompt for that error class. See [Fallback](/docs/concepts/fallback) and [The server fix loop](/docs/guides/server-fix-loop).
+
+</Accordion>
+<Accordion title="On the server, the component renders an empty div">
+
+That is by design. `<Typstream>` compiles in a Web Worker, which only exists in the browser, so on the server it renders an empty `<div>` and starts after hydration. The `typstream` and `@typstream/react` bundles are marked `"use client"`, so Next.js's App Router treats them as client components. If you need the document in the server's HTML (for SEO, or a page without JavaScript), render it on the server with `@typstream/node`'s `render(source, "html")` ([Node.js](/docs/getting-started/node)).
+
+</Accordion>
+</Accordions>
+
+## Output looks wrong
+
+<Accordions>
+<Accordion title="Math looks off in the HTML target: delimiters don't stretch">
+
+MathML needs a math font, and browsers' defaults are poor or missing. html-compat's CSS asks for New Computer Modern Math, which `typstream`'s `<Typstream>` registers for you. With `@typstream/react` or `@typstream/dom`, register it yourself: pass `mathFont` to `<Typstream>`, or call `registerMathFont(url)` from `@typstream/dom` with the URL from `@typstream/engine-wasm/fonts`. Under a CSP, `font-src 'self'` must allow it. See [Without a framework](/docs/getting-started/vanilla#mount-a-document).
+
+</Accordion>
+<Accordion title="Grids, alignment or boxes are empty in the HTML target">
+
+Typst's HTML export drops layout it can't express, and the content inside it: `#grid`, `#align`, `#rect`, `#place`, `#stack` and others come out empty. html-compat maps them to HTML and CSS. `typstream`'s `<Typstream>` adds it unless you pass `htmlCompat={false}`; with `@typstream/react` or `@typstream/dom`, add `htmlCompat` to `plugins`. The [html-compat reference](/docs/reference/html-compat) lists what it covers and its gaps.
+
+</Accordion>
+<Accordion title="fletcher diagrams are empty in the HTML target">
+
+A known gap: fletcher 0.5.8 draws on a CeTZ 0.3.4 canvas that html-compat can't reach, so its diagrams stay empty in HTML. They render in the paged target. CeTZ 0.5 canvases (CeTZ itself, cetz-plot, alchemist) do become SVG in HTML. Use `target="paged"` for documents with fletcher diagrams, or prompt for CeTZ instead. See [Typst packages](/docs/guides/typst-packages).
+
+</Accordion>
+<Accordion title="Headers, footers or page numbers are missing in the HTML target">
+
+`#set page(…)` has no HTML equivalent: headers, footers, page numbers, margins and page columns aren't in Typst's HTML output, and the outline has no page numbers. Text styling through `#text(size:, fill:, font:)` isn't carried over either. Use the paged target, or a PDF export, when the page layout matters. See [Render targets](/docs/concepts/render-targets).
+
+</Accordion>
+<Accordion title="Arabic, Bengali or Devanagari text shows boxes (tofu)">
+
+In the paged target and in PDFs, the engine draws these scripts with Noto fonts that it downloads the first time a document needs them, then recompiles. The first render can show boxes for a moment. If they stay, the font download failed: check that the font files are served (network panel), and that the CSP's `connect-src` allows their origin. A failed font is tried again after 30 seconds.
+
+In the HTML target the browser draws the text, with your page's fonts. Make sure your CSS includes a font for the script, or that readers' systems have one. See [Fonts and languages](/docs/guides/fonts-and-languages).
+
+</Accordion>
+<Accordion title="Chinese, Japanese or Korean text shows boxes">
+
+CJK fonts aren't included: one weight of Noto Serif SC alone is 11.6 MB. Add the fonts you need through a plugin passed to `createEngine`, with their metadata so they too load only when used, and give that engine to your components. See [Fonts and languages](/docs/guides/fonts-and-languages). In the HTML target, the browser's fonts apply.
+
+</Accordion>
+<Accordion title="&quot;package … is not allowed&quot; or &quot;is still loading&quot;">
+
+Documents can import only packages on the engine's allowlist. `typstream`'s `<Typstream>` allows the vendored ones (CeTZ, fletcher, cetz-plot, physica, unify, chemformula, alchemist); with `@typstream/react` or `@typstream/dom`, add the `universe` plugin. Anything else is reported as `package … is not allowed`, with the allowed packages as a hint, and nothing is fetched.
+
+`is still loading` is temporary: a package is downloaded the first time a document imports it, and the document compiles again when it arrives. Meanwhile the names it imports render as placeholders. `failed to load (reason)` means the tarball couldn't be fetched: check that it is served and that `connect-src` allows it. See [Typst packages](/docs/guides/typst-packages).
+
+</Accordion>
+</Accordions>
+
+## The model's output
+
+<Accordions>
+<Accordion title="The model writes Markdown">
+
+Models fall back to Markdown habits. The healer fixes the common ones in text that has settled: `# Heading` becomes `= Heading`, `**bold**` becomes `*bold*`, `[text](url)` becomes a link, and a ```` ```typst ```` fence around the whole document is removed. These are the lint rules `markdown-heading`, `markdown-bold` and `markdown-link`. It can't turn a Markdown document into Typst, though: tell the model to write Typst only. [Prompting](/docs/guides/prompting) has the instructions and the prompt kit that measurably lower error rates, and [Healing](/docs/concepts/healing) lists every rule.
+
+</Accordion>
+<Accordion title="Dollar signs in prose turn into math">
+
+In Typst, `$` starts math, so "costs $5 and $10" becomes an equation. The `currency-dollar` lint rule spots this and warns by default. To escape such dollars automatically, set it to `fix`:
+
+```tsx
+<TypstreamProvider heal={{ lint: { "currency-dollar": "fix" } }}>
+```
+
+Better still, tell the model to write a literal dollar sign as `\$`, as the prompts in these docs do.
+
+</Accordion>
+<Accordion title="Answers show in the student's copy">
+
+edu's answers (`answer:` parameters, `#answer[…]`, `#answer-key()`) produce output only when `sys.inputs.showAnswers` is `"true"`. If they show, that input is set somewhere: on a `<TypstreamProvider>`, which every document below inherits, or in a template's default `inputs`. Set `inputs={{ showAnswers: "true" }}` only on the teacher's view. Answers the model writes as plain text, outside edu's functions, are ordinary content and always show; the edu prompt tells the model to use the functions. See [Edu documents](/docs/guides/edu-documents).
+
+</Accordion>
+</Accordions>
+
+If your problem isn't here, the [issue tracker](https://github.com/ikramhasan/typstream/issues) is the place to report it. A `fallback` event ([Telemetry](/docs/guides/telemetry)) carries the input and the healed source, which makes a good reproduction.
