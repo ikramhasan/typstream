@@ -13,9 +13,19 @@ import {
   type TypstreamOptions,
 } from "@typstream/dom";
 import type { DocumentState, EngineDocument } from "@typstream/engine";
-import { type CSSProperties, type Ref, useEffect, useImperativeHandle, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type Ref,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { mergeDefaults, type TypstreamDefaults, useTypstreamDefaults } from "./context";
 import { acquireEngine, releaseEngine } from "./engine";
+import { createIslandStore, islandPortals } from "./islands";
 
 /**
  * Props of {@link Typstream}: the document (`source` or `stream`), how to
@@ -142,7 +152,16 @@ const useMathFont = (url: string | URL | undefined) => {
  * @public
  */
 export const Typstream = ({ ref, className, style, id, ...props }: TypstreamProps) => {
-  const { engine: explicit, mathFont, ...options } = mergeDefaults(useTypstreamDefaults(), props);
+  const { engine: explicit, mathFont, islands: components, ...rest } = mergeDefaults(useTypstreamDefaults(), props);
+  // dom gets renderers that record islands in the store; they change only with the names, since
+  // new renderers remount every island. The components are read at render.
+  const [store] = useState(createIslandStore);
+  const names = Object.keys(components ?? {})
+    .sort()
+    .join("\n");
+  const islands = useMemo(() => (names ? store.renderers(names.split("\n")) : undefined), [store, names]);
+  const entries = useSyncExternalStore(store.subscribe, store.get, store.get);
+  const options: Omit<TypstreamOptions, "engine"> = islands ? { ...rest, islands } : rest;
   const element = useRef<HTMLDivElement>(null);
   const mounted = useRef<{ view: MountedTypstream; engine: TypstreamOptions["engine"] } | null>(null);
   const [{ handle, attach }] = useState(createHandle);
@@ -175,6 +194,14 @@ export const Typstream = ({ ref, className, style, id, ...props }: TypstreamProp
   });
 
   return (
-    <div ref={element} className={className ? `typstream-host ${className}` : "typstream-host"} style={style} id={id} />
+    <>
+      <div
+        ref={element}
+        className={className ? `typstream-host ${className}` : "typstream-host"}
+        style={style}
+        id={id}
+      />
+      {islandPortals(entries, components)}
+    </>
   );
 };

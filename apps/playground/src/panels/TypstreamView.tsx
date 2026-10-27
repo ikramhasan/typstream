@@ -3,10 +3,14 @@
 // `isStreaming` until final mode. It compiles on the playground's engine, so
 // the inspector's engine events cover it too. The raw engine and DOM views
 // beside it show one artifact without the component, for telling a bug in the
-// bindings from one in the renderers or the engine.
+// bindings from one in the renderers or the engine. It loads @typstream/mindmap
+// and its island (#28), so a document can write `#mindmap[…]` (corpus/islands)
+// and the map is interactive; the other views show its drawing.
 import type { CompileTarget } from "@typstream/core";
 import type { HealOptions } from "@typstream/heal";
 import { htmlCompat } from "@typstream/html-compat";
+import { mindmap } from "@typstream/mindmap";
+import { mindmapIslands } from "@typstream/mindmap/react";
 import { type RenderedEvent, Typstream, type TypstreamInfo } from "@typstream/react";
 import { useCallback, useRef, useState } from "react";
 import { sharedEngine } from "../engine";
@@ -27,7 +31,8 @@ interface Props {
   follow: boolean;
 }
 
-const COMPAT_PLUGINS = [htmlCompat];
+const PLUGINS = [mindmap];
+const COMPAT_PLUGINS = [htmlCompat, mindmap];
 
 const describe = (info: RenderedEvent) =>
   info.target === "html"
@@ -71,7 +76,8 @@ export const TypstreamView = ({ typstream, docKey, input, final, target, compat,
           isStreaming={!final}
           target={target}
           heal={heal}
-          {...(compat ? { plugins: COMPAT_PLUGINS } : {})}
+          plugins={compat ? COMPAT_PLUGINS : PLUGINS}
+          islands={mindmapIslands}
           {...(MATH_FONT ? { mathFont: MATH_FONT } : {})}
           animated
           caret

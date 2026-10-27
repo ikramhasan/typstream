@@ -6,6 +6,7 @@
 import { anthropic } from "@ai-sdk/anthropic";
 import { buildSystemPrompt, edu } from "@typstream/edu";
 import { googleFonts } from "@typstream/google-fonts";
+import { mindmap } from "@typstream/mindmap";
 import { universe } from "@typstream/universe";
 import {
   convertToModelMessages,
@@ -24,13 +25,14 @@ export const maxDuration = 120;
 // edu's prompt kit: Typst rules that target the mistakes models make, the vocabulary (templates,
 // questions, answers, rubrics) with each function's signature and example, and example documents.
 // The page renders with the same plugins, so every function and font the model is told about exists:
-// googleFonts adds rules for naming any Google Fonts family. Import `universe` from @typstream/universe
+// googleFonts adds rules for naming any Google Fonts family, and mindmap teaches `#mindmap`, which the page shows
+// as an interactive map (a render island) over its Typst drawing. Import `universe` from @typstream/universe
 // here: the typstream bundle is a client module. It's ~8.6K tokens and the same for every request, so
 // it's marked for Anthropic's prompt cache.
 const INSTRUCTIONS: SystemModelMessage[] = [
   {
     role: "system",
-    content: buildSystemPrompt([edu, universe, googleFonts]),
+    content: buildSystemPrompt([edu, universe, googleFonts, mindmap]),
     providerOptions: { anthropic: { cacheControl: { type: "ephemeral" } } },
   },
   // This example's addition, after the measured kit: images from Wikimedia Commons (./images.ts).

@@ -4,6 +4,8 @@
 // compiling shows it. "Replay as a stream" feeds the same text a few characters at a time.
 
 import { edu } from "@typstream/edu";
+import { mindmap } from "@typstream/mindmap";
+import { mindmapIslands } from "@typstream/mindmap/react";
 import { FileText, LayoutTemplate, Play, Square } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Typstream, useTypstream } from "typstream";
@@ -16,6 +18,8 @@ export interface TypstPreviewProps {
   edu?: boolean;
   /** Show a toggle for edu's answers (`sys.inputs.showAnswers`). */
   answers?: boolean;
+  /** Load `@typstream/mindmap`, with its interactive island. */
+  mindmap?: boolean;
   /** Initial target. */
   target?: "html" | "paged";
   /** Height of the preview, in pixels. */
@@ -23,12 +27,15 @@ export interface TypstPreviewProps {
   children?: ReactNode;
 }
 
-const PLUGINS = [edu];
+const EDU = [edu];
+const MINDMAP = [mindmap];
+const BOTH = [edu, mindmap];
 
 export function TypstPreview({
   source = "",
   edu: withEdu = false,
   answers = false,
+  mindmap: withMindmap = false,
   target: initialTarget = "html",
   height = 360,
   children,
@@ -115,7 +122,8 @@ export function TypstPreview({
           theme="light"
           animated
           caret
-          plugins={withEdu ? PLUGINS : undefined}
+          plugins={withEdu ? (withMindmap ? BOTH : EDU) : withMindmap ? MINDMAP : undefined}
+          islands={withMindmap ? mindmapIslands : undefined}
           inputs={showAnswers ? { showAnswers: "true" } : undefined}
         />
       </div>

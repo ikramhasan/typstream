@@ -18,6 +18,7 @@
     "@typstream/ai": "workspace:*",
     "@typstream/edu": "workspace:*",
     "@typstream/google-fonts": "workspace:*",
+    "@typstream/mindmap": "workspace:*",
     "@typstream/universe": "workspace:*",
     "ai": "^7.0.153",
     "class-variance-authority": "^0.7.1",

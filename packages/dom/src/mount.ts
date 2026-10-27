@@ -27,6 +27,7 @@ import { type StandaloneHtmlOptions, standaloneHtml } from "./export/standalone"
 import type { AnimateOptions } from "./html/animate";
 import { registerLoadedFont } from "./html/fonts";
 import { createHtmlRenderer, type HtmlRenderer } from "./html/renderer";
+import type { IslandRenderers } from "./islands";
 import { FIT_WIDTH_PREAMBLE, fitWidthInputs } from "./paged/mount";
 import { createPagedView, type PagedView } from "./paged/view";
 import { type StreamText, subscribeStream } from "./stream";
@@ -114,6 +115,12 @@ export interface TypstreamOptions {
   linkTarget?: string | null;
   /** Paged target: selectable text over the pages. Default true. */
   textLayer?: boolean;
+  /**
+   * Island renderers by name (PLAN §8.4): markers whose name a plugin
+   * declares are mounted over their fallback drawing. Changing the object
+   * remounts every island, so keep it stable. @beta
+   */
+  islands?: IslandRenderers;
   /**
    * Open and compile the document only while the element is near the viewport
    * or the document is streaming. Default true.
@@ -314,7 +321,7 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
   // Renderers: one per target, created when that target's first artifact arrives.
   let html: { renderer: HtmlRenderer; root: HTMLElement; key: unknown[] } | null = null;
   let paged: { view: PagedView; key: unknown[] } | null = null;
-  let shown: { artifact: unknown; caret: boolean } | null = null;
+  let shown: { artifact: unknown; caret: boolean; final: boolean } | null = null;
   // Families the engine loaded from font catalogues, shown in the HTML target as web fonts (PLAN §6.4).
   let fonts: { engine: Engine; root: HTMLElement; stop: () => void } | null = null;
 
@@ -366,7 +373,7 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
   /** `doc`'s plugins as the engine resolved them: dependencies first, each key once. */
   const htmlRenderer = (plugins: readonly TypstreamPlugin[]): HtmlRenderer => {
     const animation = typeof opts.animated === "object" ? opts.animated : undefined;
-    const want = [opts.theme, animation, plugins, opts.stylesheets, opts.linkTarget];
+    const want = [opts.theme, animation, plugins, opts.stylesheets, opts.linkTarget, opts.islands];
     if (html && equal(html.key, want)) return html.renderer;
     dropHtml();
     const root = element.ownerDocument.createElement("div");
@@ -377,6 +384,7 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
       ...(plugins.length ? { plugins } : {}),
       ...(opts.stylesheets ? { stylesheets: opts.stylesheets } : {}),
       ...(opts.linkTarget !== undefined ? { linkTarget: opts.linkTarget } : {}),
+      ...(opts.islands ? { islands: opts.islands, file: (path: string) => doc?.file(path) ?? null } : {}),
     });
     html = { renderer, root, key: want };
     shown = null;
@@ -413,16 +421,20 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
       const renderer = htmlRenderer(doc?.plugins ?? []);
       showFonts(renderer.root);
       const caret = (opts.caret ?? false) && !state.final;
-      if (shown?.artifact === artifact && shown.caret === caret) return;
-      shown = { artifact, caret };
-      const result = renderer.update(artifact.html, { animate: !!opts.animated && !state.final, caret });
+      if (shown?.artifact === artifact && shown.caret === caret && shown.final === state.final) return;
+      shown = { artifact, caret, final: state.final };
+      const result = renderer.update(artifact.html, {
+        animate: !!opts.animated && !state.final,
+        caret,
+        stable: state.final ? null : state.heal.stableOffset,
+      });
       const event = opts.onRendered && rendered(state, result.ms, result.blocks);
       if (event) opts.onRendered?.(event);
     } else {
       dropHtml();
       const view = pagedView();
       if (shown?.artifact === artifact) return;
-      shown = { artifact, caret: false };
+      shown = { artifact, caret: false, final: state.final };
       const start = performance.now();
       view.render(artifact);
       const event = opts.onRendered && rendered(state, performance.now() - start);

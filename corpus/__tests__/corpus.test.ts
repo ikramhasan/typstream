@@ -49,6 +49,15 @@ describe("corpus layout", () => {
     }
   });
 
+  it("has documents with render islands, each naming the plugins it compiles with (#28)", () => {
+    const islands = corpus.filter((e) => e.set === "islands");
+    expect(islands.length).toBeGreaterThanOrEqual(3);
+    for (const e of islands) {
+      expect(e.meta.plugins, e.id).toContain("mindmap");
+      for (const p of e.meta.plugins ?? []) expect(["edu", "mindmap"], e.id).toContain(p);
+    }
+  });
+
   it("gives every compiling entry a page count", () => {
     for (const e of corpus) {
       if ((e.meta.expect ?? "ok") === "ok") expect(e.meta.expectedPages, e.id).toBeGreaterThan(0);
@@ -74,7 +83,9 @@ describe("corpus layout", () => {
 });
 
 describe("synthetic streams", () => {
-  it("are lossless, ordered and deterministic for every corpus entry", () => {
+  // Every entry twice, the 1 MB adversarial document included: 0.7 s here, but 2.5–5.7 s on a loaded CI runner,
+  // past vitest's default 5 s.
+  it("are lossless, ordered and deterministic for every corpus entry", { timeout: 30_000 }, () => {
     for (const e of corpus) {
       const chunks = synthesizeStream(e.source);
       expect(joinStream(chunks), e.id).toBe(e.source);

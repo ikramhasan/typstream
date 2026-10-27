@@ -1,0 +1,6 @@
+[package]
+name = "mindmap"
+version = "0.1.0"
+entrypoint = "lib.typ"
+description = "Mind maps written as a list, drawn in plain Typst and interactive in typstream's viewers."
+compiler = "0.15.1"

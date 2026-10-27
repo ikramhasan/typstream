@@ -22,12 +22,13 @@ env:
   NODE: node@24
   # engine-wasm's own checks need native typst and cargo; only the engine jobs have them. Every job restores its
   # dist/ with ./.github/actions/engine-wasm (built with Rust and binaryen on a cache miss).
-  # The compile oracle (tools/compile-oracle) needs the built engine, and html-compat's and edu's tests compile with it
-  # (a devDependency turbo would build), so they run in the engine jobs too. So do @typstream/node and its example
+  # The compile oracle (tools/compile-oracle) needs the built engine, and html-compat's, edu's and mindmap's tests compile
+  # with it (a devDependency turbo would build), so they run in the engine jobs too. So do @typstream/node and its example
   # (its build copies Typst's fonts out of the Rust crate graph).
   # examples/nextjs-ai-sdk's and examples/strict-csp's tests drive browsers, so they run in the browser jobs.
   NOT_ENGINE: >-
     --filter=!@typstream/engine-wasm --filter=!@typstream/compile-oracle --filter=!@typstream/html-compat --filter=!@typstream/edu
+    --filter=!@typstream/mindmap
     --filter=!@typstream/node --filter=!@typstream/example-node-validate --filter=!@typstream/example-nextjs-ai-sdk
     --filter=!@typstream/example-strict-csp
 
@@ -134,7 +135,7 @@ jobs:
 
   # The Typst engine, in two parallel shards on the cached dist/ (./.github/actions/engine-wasm builds it on a miss,
   # with Rust). One runs engine-wasm's tests against native typst, its wasm size budget, API report and package lint,
-  # and html-compat's and edu's, whose tests compile with the engine (and native typst). The other runs the compile
+  # and html-compat's, edu's and mindmap's, whose tests compile with the engine (and native typst). The other runs the compile
   # oracle (#13: do heal's outputs compile with the engine?), then @typstream/node on top of it (corpus, watchdog,
   # protocol conformance) and its example. Their tests (and node's build) take Typst's fonts from the typst-assets crate, found with `cargo metadata`,
   # so each shard has cargo and the crate registry, though no target/.
@@ -150,6 +151,7 @@ jobs:
             run: >-
               pnpm exec turbo run build check-types test size check:api check:package
               --filter=@typstream/engine-wasm --filter=@typstream/html-compat --filter=@typstream/edu
+              --filter=@typstream/mindmap
           - shard: compile oracle, node
             run: >-
               pnpm exec turbo run check-types test --filter=@typstream/compile-oracle &&
@@ -183,8 +185,8 @@ jobs:
 
   # The engine worker in real browsers (packages/engine/__tests__/browser): protocol conformance, streaming through
   # client + worker + engine-wasm, and the watchdog. Then the renderers (packages/dom/__tests__/browser) and <Typstream>
-  # (packages/react/__tests__/browser) against that worker, and examples/strict-csp: both targets under a strict
-  # Content-Security-Policy, with no violation. One job per browser; Chromium's also runs examples/nextjs-ai-sdk, a
+  # (packages/react/__tests__/browser) against that worker, the mind map island (packages/mindmap/__tests__/browser),
+  # and examples/strict-csp: both targets and the island under a strict Content-Security-Policy, with no violation. One job per browser; Chromium's also runs examples/nextjs-ai-sdk, a
   # production Next.js build streaming an answer into <Typstream>.
   browsers:
     name: Engine (${{ matrix.browser }})
@@ -207,6 +209,7 @@ jobs:
       - run: node tools/repo/playwright-docker.mjs pnpm --filter @typstream/engine test:browser
       - run: node tools/repo/playwright-docker.mjs pnpm --filter @typstream/dom test:browser
       - run: node tools/repo/playwright-docker.mjs pnpm --filter @typstream/react test:browser
+      - run: node tools/repo/playwright-docker.mjs pnpm --filter @typstream/mindmap test:browser
       - run: node tools/repo/playwright-docker.mjs pnpm exec turbo run test --filter=@typstream/example-strict-csp
       - if: matrix.browser == 'chromium'
         run: node tools/repo/playwright-docker.mjs pnpm exec turbo run test --filter=@typstream/example-nextjs-ai-sdk

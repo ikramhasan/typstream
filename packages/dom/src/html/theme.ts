@@ -17,6 +17,9 @@
  * text, as on paper. Placed pieces that html-compat marks as pointing outward
  * (`ts-place-out`: a shape's dimension labels below or beside it) sit on the page,
  * so they keep the theme (`light dark` follows the OS under `auto`).
+ *
+ * An island marker (#28) is a block whose fallback drawing scales with the
+ * width, here so standalone exports, which show only the drawing, get it too.
  */
 export const THEME_CSS = `:where(.typstream) {
   --typstream-foreground: light-dark(#1c1c1e, #e8e8ea);
@@ -64,6 +67,14 @@ export const THEME_CSS = `:where(.typstream) {
 }
 :where(.typstream) img {
   height: auto;
+}
+:where(.typstream typstream-island) {
+  display: block;
+}
+:where(.typstream typstream-island > svg) {
+  max-width: 100% !important;
+  height: auto !important;
+  margin-inline: auto;
 }
 :where(.typstream) :is(p, li, dt, dd, h1, h2, h3, h4, h5, h6, th, td, figcaption, blockquote) {
   unicode-bidi: plaintext;

@@ -38,9 +38,10 @@ Teachers' documents are best described in Typst itself: a question, a blank, an 
 | `sanitize` | dom | Extra tags, attributes and classes the HTML sanitizer lets through. Scripts, event handlers and URL attributes stay blocked. |
 | `stylesheets` | dom | CSS for the HTML the plugin's Typst writes, in the renderer and in standalone HTML exports. |
 | `prompt` | your app | The function catalogue, rules and examples to give the model. |
-| `islands`, `editor` | reserved | Interactive components ([#28](https://github.com/ikramhasan/typstream/issues/28)) and the future editor. Typed, but nothing reads them yet. |
+| `islands` | the HTML renderer, `@typstream/react` | Interactive components mounted over markers the plugin's Typst writes ([Writing an island](/docs/guides/islands)). Beta. |
+| `editor` | reserved | The future editor. Typed, but nothing reads it yet. |
 
-Everything except `heal.handlers` is plain data. The `engine` facet is posted to the worker, which can't receive functions, so code that runs there is referenced by URL.
+Everything except `heal.handlers` and islands' `parse` is plain data. The `engine` facet is posted to the worker, which can't receive functions, so code that runs there is referenced by URL.
 
 ## Order, duplicates and dependencies
 

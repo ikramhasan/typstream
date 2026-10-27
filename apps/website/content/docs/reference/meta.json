@@ -12,6 +12,7 @@
     "html-compat",
     "universe",
     "google-fonts",
+    "mindmap",
     "engine-wasm",
     "core"
   ]

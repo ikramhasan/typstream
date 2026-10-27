@@ -122,6 +122,9 @@ export interface InitOutput {
 export function initSync(module: { module: SyncInitInput } | SyncInitInput): InitOutput;
 
 // @public
+export type IslandMarker = { page: number; x: number; y: number; value: string; from: number | null };
+
+// @public
 export type PdfResult = CompileResult & { pdf?: Uint8Array; pageCount?: number };
 
 // @public
@@ -132,6 +135,7 @@ export { Range_2 as Range }
 export type SvgChangedResult = CompileResult & {
     pageCount?: number;
     changed?: ChangedPage[];
+    islands?: IslandMarker[];
     compileMs: number;
     exportMs: number;
 };
