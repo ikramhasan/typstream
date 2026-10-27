@@ -1,0 +1,211 @@
+{"t":0,"text":"="}
+{"t":33,"text":" C"}
+{"t":64,"text":"ell Biology: True"}
+{"t":98,"text":" or False Quiz\n\n*"}
+{"t":132,"text":"Grade 9 Bi"}
+{"t":165,"text":"ology* #h"}
+{"t":199,"text":"(1"}
+{"t":234,"text":"fr)"}
+{"t":266,"text":" Name: #box"}
+{"t":300,"text":"(width"}
+{"t":334,"text":": 6"}
+{"t":364,"text":"c"}
+{"t":398,"text":"m, line"}
+{"t":430,"text":"(length"}
+{"t":464,"text":": 100%)) "}
+{"t":498,"text":"\n\nDate: #box(width"}
+{"t":534,"text":": 4cm, line("}
+{"t":566,"text":"length: 100%)) #"}
+{"t":600,"text":"h(1fr) Score"}
+{"t":632,"text":": #box(width: 2"}
+{"t":666,"text":"cm, line(length: "}
+{"t":700,"text":"100%)) / 12"}
+{"t":736,"text":"\n\n*"}
+{"t":770,"text":"Direct"}
+{"t":799,"text":"ions:* Read each statement"}
+{"t":832,"text":" car"}
+{"t":866,"text":"efully. Write *T"}
+{"t":899,"text":"* if"}
+{"t":932,"text":" the"}
+{"t":970,"text":" statement is true or"}
+{"t":1000,"text":" *F* if it is false on"}
+{"t":1032,"text":" the line before the"}
+{"t":1066,"text":" number.\n\n#"}
+{"t":1099,"text":"v(1"}
+{"t":1132,"text":"em)\n\n#"}
+{"t":1168,"text":"let q"}
+{"t":1201,"text":"(n"}
+{"t":1232,"text":", body) = ["}
+{"t":1299,"text":"\n  #box(width: 1"}
+{"t":1333,"text":".5cm, line(length"}
+{"t":1366,"text":": 100%)) *"}
+{"t":1404,"text":"#n."}
+{"t":1432,"text":"* #body"}
+{"t":1471,"text":"\n  #v(0"}
+{"t":1499,"text":".9"}
+{"t":1532,"text":"em)\n]\n\n#"}
+{"t":1565,"text":"q(1)"}
+{"t":1600,"text":"[All living things are made up"}
+{"t":1634,"text":" of one or more cells.]"}
+{"t":1667,"text":"\n#q(2)["}
+{"t":1703,"text":"Both plant cells and animal"}
+{"t":1736,"text":" cells contain a nucle"}
+{"t":1769,"text":"us.]\n#q(3"}
+{"t":1804,"text":")[Mitochondria"}
+{"t":1839,"text":" are the organ"}
+{"t":1869,"text":"elles where photosynthes"}
+{"t":1901,"text":"is takes place.]\n#"}
+{"t":1936,"text":"q(4)[The cell"}
+{"t":1972,"text":" membrane controls which"}
+{"t":2001,"text":" substances enter and le"}
+{"t":2035,"text":"ave the cell.]\n#"}
+{"t":2075,"text":"q(5)[Animal"}
+{"t":2102,"text":" cells have a r"}
+{"t":2142,"text":"igid cell wall made of"}
+{"t":2176,"text":" cellulose.]\n#"}
+{"t":2210,"text":"q(6)[Rib"}
+{"t":2242,"text":"osomes are"}
+{"t":2270,"text":" the struct"}
+{"t":2303,"text":"ures where"}
+{"t":2337,"text":" proteins are made.]"}
+{"t":2370,"text":"\n#q(7)[B"}
+{"t":2403,"text":"acteria are"}
+{"t":2437,"text":" prokaryotic cells"}
+{"t":2469,"text":" that"}
+{"t":2502,"text":" have a true nucleus sur"}
+{"t":2536,"text":"rounded by a"}
+{"t":2569,"text":" membrane.]\n#q"}
+{"t":2603,"text":"(8)[Chloro"}
+{"t":2636,"text":"plasts contain ch"}
+{"t":2670,"text":"lorophyll, a green"}
+{"t":2703,"text":" pigment that captures light energ"}
+{"t":2739,"text":"y.]\n#q(9"}
+{"t":2770,"text":")[Mature plant c"}
+{"t":2804,"text":"ells usually have"}
+{"t":2840,"text":" many"}
+{"t":2871,"text":" t"}
+{"t":2904,"text":"iny vacuoles and"}
+{"t":2937,"text":" no large central vacuole."}
+{"t":2971,"text":"]\n#q(10)["}
+{"t":3005,"text":"New cells come from c"}
+{"t":3039,"text":"ells that already exist.]"}
+{"t":3074,"text":"\n#q(11)[C"}
+{"t":3109,"text":"ytoplasm is the j"}
+{"t":3138,"text":"elly-like fluid that"}
+{"t":3172,"text":" fills the cell and sur"}
+{"t":3205,"text":"rounds the"}
+{"t":3239,"text":" organelles.]\n#q"}
+{"t":3274,"text":"(12)[Diffus"}
+{"t":3305,"text":"ion is"}
+{"t":3338,"text":" a process"}
+{"t":3371,"text":" in"}
+{"t":3404,"text":" which the cell must"}
+{"t":3441,"text":" always"}
+{"t":3472,"text":" use energy to move partic"}
+{"t":3512,"text":"les."}
+{"t":3539,"text":"]\n\n#pagebreak"}
+{"t":3574,"text":"()\n\n= Answer Key"}
+{"t":3604,"text":"\n\n#table"}
+{"t":3637,"text":"(\n  columns: ("}
+{"t":3671,"text":"au"}
+{"t":3706,"text":"to, auto, 1f"}
+{"t":3738,"text":"r),\n  align: ("}
+{"t":3772,"text":"center"}
+{"t":3804,"text":", center"}
+{"t":3837,"text":", left),\n  [*"}
+{"t":3870,"text":"\\"}
+{"t":3904,"text":"#*], [*"}
+{"t":3943,"text":"Answer*], [*Expl"}
+{"t":3971,"text":"anation*],\n  [1"}
+{"t":4008,"text":"], [True"}
+{"t":4037,"text":"], [The"}
+{"t":4071,"text":" cell theory states that all living"}
+{"t":4106,"text":" things"}
+{"t":4141,"text":" are made of cells.],"}
+{"t":4171,"text":"\n  [2], [True], ["}
+{"t":4206,"text":"Both are"}
+{"t":4239,"text":" eukaryotic cells"}
+{"t":4272,"text":", which have"}
+{"t":4305,"text":" a nucleus that hol"}
+{"t":4341,"text":"ds the DNA.],"}
+{"t":4372,"text":"\n  [3], [False], ["}
+{"t":4404,"text":"Phot"}
+{"t":4440,"text":"osynthesis happens in"}
+{"t":4473,"text":" chloroplasts."}
+{"t":4507,"text":" Mitochondria release energy"}
+{"t":4538,"text":" from food"}
+{"t":4573,"text":" through cellular respiration."}
+{"t":4605,"text":"],\n  [4], [True"}
+{"t":4638,"text":"], [The cell membrane"}
+{"t":4679,"text":" is selectively permeable."}
+{"t":4706,"text":"],\n  [5], [False"}
+{"t":4739,"text":"], [Anim"}
+{"t":4773,"text":"al cells have no cell w"}
+{"t":4807,"text":"all. Plant cells do"}
+{"t":4842,"text":".],\n  [6], ["}
+{"t":4874,"text":"True], [Ribosom"}
+{"t":4926,"text":"es build"}
+{"t":4942,"text":" proteins using"}
+{"t":4972,"text":" inst"}
+{"t":5008,"text":"ructions from the c"}
+{"t":5039,"text":"ell's"}
+{"t":5072,"text":" gen"}
+{"t":5107,"text":"etic material.],\n  ["}
+{"t":5139,"text":"7], [False], ["}
+{"t":5172,"text":"Prokaryotic cells"}
+{"t":5206,"text":" have"}
+{"t":5239,"text":" no n"}
+{"t":5272,"text":"ucleus. Their DN"}
+{"t":5305,"text":"A flo"}
+{"t":5339,"text":"ats in the cytoplas"}
+{"t":5372,"text":"m.],\n  [8],"}
+{"t":5408,"text":" [True], [Chl"}
+{"t":5439,"text":"orophyll absorbs"}
+{"t":5474,"text":" light energ"}
+{"t":5505,"text":"y used"}
+{"t":5538,"text":" to"}
+{"t":5573,"text":" make s"}
+{"t":5605,"text":"ugar."}
+{"t":5639,"text":"],\n  [9], [False"}
+{"t":5673,"text":"], [Mature plant c"}
+{"t":5705,"text":"ells usually have one large central v"}
+{"t":5739,"text":"acuole that stores water and"}
+{"t":5772,"text":" other mater"}
+{"t":5806,"text":"ials.],\n  [10],"}
+{"t":5841,"text":" [True], ["}
+{"t":5872,"text":"Cells divide to"}
+{"t":5907,"text":" form"}
+{"t":5939,"text":" new cells.],\n  ["}
+{"t":5972,"text":"11], [True], [Many"}
+{"t":6007,"text":" ch"}
+{"t":6039,"text":"emical reactions of"}
+{"t":6072,"text":" the cell take place in the c"}
+{"t":6106,"text":"ytoplasm.],"}
+{"t":6139,"text":"\n  [12], [False], ["}
+{"t":6172,"text":"Diffusion is pass"}
+{"t":6206,"text":"ive trans"}
+{"t":6239,"text":"port."}
+{"t":6273,"text":" Particles move from"}
+{"t":6305,"text":" high"}
+{"t":6341,"text":" to"}
+{"t":6374,"text":" low concentration without using"}
+{"t":6408,"text":" c"}
+{"t":6438,"text":"ell energy.],\n)"}
+{"t":6473,"text":"\n\n#v(1em)"}
+{"t":6508,"text":"\n*Sc"}
+{"t":6542,"text":"oring:* "}
+{"t":6572,"text":"11–"}
+{"t":6605,"text":"12 corre"}
+{"t":6638,"text":"ct = exc"}
+{"t":6673,"text":"ellent; 9"}
+{"t":6705,"text":"–10 = good; 7"}
+{"t":6747,"text":"–8 = review"}
+{"t":6772,"text":" the"}
+{"t":6805,"text":" top"}
+{"t":6842,"text":"ics you"}
+{"t":6871,"text":" missed; "}
+{"t":6905,"text":"6 or fewer = re"}
+{"t":6939,"text":"read your"}
+{"t":6973,"text":" not"}
+{"t":7007,"text":"es on cell"}
+{"t":7032,"text":" structure and function."}

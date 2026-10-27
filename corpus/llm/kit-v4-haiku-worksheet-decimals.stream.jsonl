@@ -1,0 +1,116 @@
+{"t":0,"text":"#"}
+{"t":20,"text":"show: worksheet."}
+{"t":42,"text":"with(title: [Multi"}
+{"t":58,"text":"plying Decimals], sub"}
+{"t":80,"text":"ject: [Mathematics"}
+{"t":103,"text":"], grade: [Grade"}
+{"t":123,"text":" 5], info"}
+{"t":144,"text":": (\"name\", \"date\","}
+{"t":160,"text":" \"class\"),"}
+{"t":180,"text":" instructions: [Work"}
+{"t":200,"text":" out each"}
+{"t":224,"text":" answer. Show"}
+{"t":243,"text":" your working for"}
+{"t":263,"text":" the word problems.])\n\n="}
+{"t":286,"text":" Part A: Practice"}
+{"t":307,"text":"\n\n#question(points: 1)"}
+{"t":332,"text":"["}
+{"t":350,"text":"\n  $0.4 times"}
+{"t":364,"text":" 3 =$ #bl"}
+{"t":384,"text":"ank(width"}
+{"t":410,"text":": 3"}
+{"t":425,"text":"em, answer: [1."}
+{"t":445,"text":"2])\n]\n\n#question("}
+{"t":467,"text":"points: 1)[\n  "}
+{"t":486,"text":"$2.5 times 4"}
+{"t":507,"text":" =$ #blank("}
+{"t":528,"text":"width: 3em, answer"}
+{"t":549,"text":": [10])\n]\n\n#"}
+{"t":568,"text":"question(points: 1)["}
+{"t":590,"text":"\n  $0.6 times"}
+{"t":611,"text":" 0.5 =$"}
+{"t":630,"text":" #blank(width: 3"}
+{"t":650,"text":"em, answer: [0."}
+{"t":671,"text":"3])\n]\n\n#question("}
+{"t":693,"text":"points: 1)[\n  "}
+{"t":716,"text":"$1.2 times 0"}
+{"t":734,"text":".3 =$ #bl"}
+{"t":753,"text":"ank(width: 3em,"}
+{"t":783,"text":" answer: [0.36])"}
+{"t":795,"text":"\n]\n\n#question(points:"}
+{"t":820,"text":" 1)[\n  $3"}
+{"t":841,"text":".5 times 2.4"}
+{"t":863,"text":" =$ #blank("}
+{"t":876,"text":"width: 3em, answer"}
+{"t":898,"text":": [8.4])\n]"}
+{"t":925,"text":"\n\n#question(points: 1"}
+{"t":938,"text":")[\n  $0.25"}
+{"t":965,"text":" times 4 =$"}
+{"t":978,"text":" #blank(width: 3"}
+{"t":999,"text":"em, answer: [1])"}
+{"t":1027,"text":"\n]\n\n#question(points:"}
+{"t":1055,"text":" 1)[\n  $4"}
+{"t":1062,"text":".8 times 0.5"}
+{"t":1082,"text":" =$ #blank("}
+{"t":1104,"text":"width: 3em, answer"}
+{"t":1124,"text":": [2.4])\n]"}
+{"t":1145,"text":"\n\n#question(points: 1"}
+{"t":1164,"text":")[\n  $0.08"}
+{"t":1184,"text":" times 6 =$"}
+{"t":1214,"text":" #blank(width: 3"}
+{"t":1226,"text":"em, answer: [0."}
+{"t":1245,"text":"48])\n]\n\n#question("}
+{"t":1267,"text":"points: 1)[\n  "}
+{"t":1290,"text":"$1.5 times 1"}
+{"t":1308,"text":".5 =$ #bl"}
+{"t":1335,"text":"ank(width: 3em,"}
+{"t":1350,"text":" answer: [2.25])"}
+{"t":1369,"text":"\n]\n\n#question(points:"}
+{"t":1388,"text":" 1)[\n  "}
+{"t":1409,"text":"Which product"}
+{"t":1431,"text":" is the"}
+{"t":1450,"text":" gre"}
+{"t":1469,"text":"atest?"}
+{"t":1490,"text":"\n  #mcq([$"}
+{"t":1516,"text":"0.7 times"}
+{"t":1531,"text":" 0.9$], [$"}
+{"t":1565,"text":"7"}
+{"t":1573,"text":" times 0"}
+{"t":1591,"text":".09$], [$0."}
+{"t":1618,"text":"07"}
+{"t":1632,"text":" times 90"}
+{"t":1656,"text":"$], [$70"}
+{"t":1690,"text":" times 0.9$],"}
+{"t":1699,"text":" answer: 4)\n]"}
+{"t":1714,"text":"\n\n= Part B: Word"}
+{"t":1735,"text":" problems\n\n#question(points:"}
+{"t":1756,"text":" 3)[\n  A not"}
+{"t":1776,"text":"ebook costs \\$2."}
+{"t":1796,"text":"45. Ali buys "}
+{"t":1816,"text":"3 notebooks. How"}
+{"t":1837,"text":" much does"}
+{"t":1858,"text":" he pay alt"}
+{"t":1880,"text":"ogether?\n  #answer"}
+{"t":1901,"text":"-space(height: 4"}
+{"t":1919,"text":"em, answer: [$2"}
+{"t":1941,"text":".45 times"}
+{"t":1961,"text":" 3 = 7.35"}
+{"t":1980,"text":"$,"}
+{"t":2002,"text":" so"}
+{"t":2020,"text":" Ali pays \\$7."}
+{"t":2044,"text":"35.])\n]\n\n#question"}
+{"t":2061,"text":"(points: 3)["}
+{"t":2083,"text":"\n  A rectangular gar"}
+{"t":2104,"text":"den is 2.5 m"}
+{"t":2124,"text":" long and 1.4 m"}
+{"t":2144,"text":" wide. What"}
+{"t":2164,"text":" is its area in"}
+{"t":2186,"text":" square metres?\n  #answ"}
+{"t":2206,"text":"er-space(height: 4"}
+{"t":2226,"text":"em, answer: ["}
+{"t":2250,"text":"Area $= 2.5 "}
+{"t":2274,"text":"times 1.4 = "}
+{"t":2295,"text":"3.5$, so the area"}
+{"t":2329,"text":" is $3.5 \"m"}
+{"t":2329,"text":"\"^2$.])\n]"}
+{"t":2349,"text":"\n\n#answer-key()"}

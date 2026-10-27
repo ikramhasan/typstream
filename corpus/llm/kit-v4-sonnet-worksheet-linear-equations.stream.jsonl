@@ -1,0 +1,263 @@
+{"t":0,"text":"#"}
+{"t":255,"text":"show: worksheet."}
+{"t":260,"text":"with("}
+{"t":260,"text":"\n  title: [Sol"}
+{"t":260,"text":"ving Linear Equations in"}
+{"t":260,"text":" One Variable],\n  sub"}
+{"t":260,"text":"ject: [Mathematics"}
+{"t":260,"text":"],\n  grade: ["}
+{"t":296,"text":"Grade 8],\n  inst"}
+{"t":332,"text":"ructions: [Answ"}
+{"t":368,"text":"er *all* questions."}
+{"t":403,"text":" Show each"}
+{"t":438,"text":" step of your working"}
+{"t":525,"text":" in"}
+{"t":525,"text":" the space provided. Check your"}
+{"t":546,"text":" answers"}
+{"t":581,"text":" by substituting them back into the"}
+{"t":617,"text":" equation.],\n)\n\n#"}
+{"t":654,"text":"callout(kind: \"rem"}
+{"t":688,"text":"ember\")[\n  To solve"}
+{"t":724,"text":" an equation, do the same th"}
+{"t":760,"text":"ing to both sides until"}
+{"t":795,"text":" the"}
+{"t":831,"text":" variable is alone."}
+{"t":867,"text":"\n  Use"}
+{"t":902,"text":" inverse operations:"}
+{"t":939,"text":" und"}
+{"t":974,"text":"o add"}
+{"t":1009,"text":"ition with"}
+{"t":1045,"text":" subtraction, and"}
+{"t":1081,"text":" multiplication with division."}
+{"t":1116,"text":"\n  "}
+{"t":1153,"text":"Example: $3x + 4"}
+{"t":1188,"text":" = 19$ gives"}
+{"t":1224,"text":" $3x"}
+{"t":1259,"text":" = 15$, so $x"}
+{"t":1299,"text":" = 5$.\n]"}
+{"t":1331,"text":"\n\n= Part A: One"}
+{"t":1366,"text":"-"}
+{"t":1402,"text":" and two-step equations\n\n#"}
+{"t":1438,"text":"question(points: 1)["}
+{"t":1474,"text":"\n  Solve $x +"}
+{"t":1510,"text":" 7 = 15"}
+{"t":1546,"text":"$.\n  #answer-"}
+{"t":1586,"text":"space(height: 3em,"}
+{"t":1617,"text":" answer: [$x = "}
+{"t":1653,"text":"15 - 7 = "}
+{"t":1689,"text":"8$])\n]\n\n#question"}
+{"t":1725,"text":"(points: 1)["}
+{"t":1762,"text":"\n  Solve $5"}
+{"t":1795,"text":" "}
+{"t":1831,"text":"x = 40$.\n  "}
+{"t":1867,"text":"#answer-space(height:"}
+{"t":1903,"text":" 3em, answer: ["}
+{"t":1939,"text":"$x = 40 div "}
+{"t":1974,"text":"5 = 8$])"}
+{"t":2010,"text":"\n]\n\n#question(points: "}
+{"t":2046,"text":"2)[\n  Solve"}
+{"t":2081,"text":" $3"}
+{"t":2119,"text":" x -"}
+{"t":2153,"text":" 5 = 16"}
+{"t":2189,"text":"$.\n  #answer-"}
+{"t":2224,"text":"space(height: 4em,"}
+{"t":2261,"text":" answer: [$3 x"}
+{"t":2296,"text":" = 21$, so $x"}
+{"t":2333,"text":" = 7$.])\n]"}
+{"t":2371,"text":"\n\n#question(points: 2"}
+{"t":2404,"text":")[\n  Solve $"}
+{"t":2439,"text":"x/"}
+{"t":2477,"text":"4 +"}
+{"t":2510,"text":" 3"}
+{"t":2546,"text":" = 9"}
+{"t":2584,"text":"$.\n  #answer-"}
+{"t":2620,"text":"space(height: 4em,"}
+{"t":2653,"text":" answer: [$x/4"}
+{"t":2690,"text":" = 6$, so $"}
+{"t":2725,"text":"x = 24$.])"}
+{"t":2760,"text":"\n]\n\n#question(points: "}
+{"t":2796,"text":"1)[\n  Which value"}
+{"t":2831,"text":" of"}
+{"t":2867,"text":" $x$ sol"}
+{"t":2904,"text":"ves $2 x + 9"}
+{"t":2940,"text":" = 1"}
+{"t":2974,"text":"$?\n  #mcq"}
+{"t":3010,"text":"([$x = 5$],"}
+{"t":3046,"text":" [$x = -4$],"}
+{"t":3081,"text":" [$x = 4$],"}
+{"t":3118,"text":" [$x = -5$],"}
+{"t":3155,"text":" answer: 2)\n]"}
+{"t":3189,"text":"\n\n= Part B: Vari"}
+{"t":3224,"text":"ables on both sides and"}
+{"t":3261,"text":" brackets\n\n#question(points"}
+{"t":3296,"text":": 3)[\n  "}
+{"t":3340,"text":"Solve $7 x - "}
+{"t":3367,"text":"4"}
+{"t":3405,"text":" = 3 x + "}
+{"t":3445,"text":"12$.\n  #answer"}
+{"t":3481,"text":"-space(height: 5em"}
+{"t":3511,"text":", answer: [$4"}
+{"t":3548,"text":" x = 16"}
+{"t":3582,"text":"$, so $x = 4"}
+{"t":3625,"text":"$.])\n]\n\n#question"}
+{"t":3653,"text":"(points: 3)["}
+{"t":3691,"text":"\n  Solve $4("}
+{"t":3725,"text":"x - 3"}
+{"t":3763,"text":") = 20"}
+{"t":3796,"text":"$.\n  #answer-"}
+{"t":3831,"text":"space(height: 5em,"}
+{"t":3869,"text":" answer: [$x"}
+{"t":3903,"text":" - 3 = 5$"}
+{"t":3939,"text":", so $x = 8$"}
+{"t":3975,"text":"."}
+{"t":4010,"text":" (Or exp"}
+{"t":4062,"text":"and: $4 x - "}
+{"t":4084,"text":"12 = 20$, $"}
+{"t":4119,"text":"x"}
+{"t":4156,"text":" = 8$.)])"}
+{"t":4189,"text":"\n]\n\n#question(points: "}
+{"t":4224,"text":"3"}
+{"t":4261,"text":")[\n  Solve $"}
+{"t":4296,"text":"2(3"}
+{"t":4332,"text":" x + 1"}
+{"t":4368,"text":") = 5 "}
+{"t":4405,"text":"x +"}
+{"t":4439,"text":" 9"}
+{"t":4474,"text":"$.\n  #answer-"}
+{"t":4510,"text":"space(height: 5em,"}
+{"t":4548,"text":" answer: [$6 x"}
+{"t":4582,"text":" + 2 = 5 "}
+{"t":4617,"text":"x + 9$, so $"}
+{"t":4653,"text":"x = 7$.])"}
+{"t":4689,"text":"\n]\n\n#question(points: "}
+{"t":4724,"text":"2"}
+{"t":4760,"text":")[\n  Fill in"}
+{"t":4796,"text":" the miss"}
+{"t":4832,"text":"ing steps to solve $5"}
+{"t":4868,"text":" x +"}
+{"t":4903,"text":" 8"}
+{"t":4939,"text":" = 2"}
+{"t":4974,"text":" x - 7"}
+{"t":5030,"text":"$."}
+{"t":5046,"text":"\n\n  $5 x -"}
+{"t":5082,"text":" 2 x = -"}
+{"t":5118,"text":"7 - #"}
+{"t":5153,"text":"blank(answer: ["}
+{"t":5192,"text":"$"}
+{"t":5224,"text":"8$])$\n\n  $"}
+{"t":5260,"text":"3 x = #blank("}
+{"t":5296,"text":"answer: [$-15$"}
+{"t":5332,"text":"])$\n\n  $x = #"}
+{"t":5368,"text":"blank(answer: [$"}
+{"t":5403,"text":"-5$])$\n]"}
+{"t":5439,"text":"\n\n= Part C: Fract"}
+{"t":5474,"text":"ions and word"}
+{"t":5511,"text":" problems\n\n#question(points:"}
+{"t":5547,"text":" 3)[\n  Sol"}
+{"t":5581,"text":"ve $("}
+{"t":5617,"text":"2"}
+{"t":5653,"text":" x + 1"}
+{"t":5689,"text":")/3 = ("}
+{"t":5725,"text":"x +"}
+{"t":5760,"text":" 4)/2$."}
+{"t":5796,"text":"\n  #answer-space(height"}
+{"t":5831,"text":": 6em, answer:"}
+{"t":5869,"text":" ["}
+{"t":5903,"text":"Cross-"}
+{"t":5939,"text":"multiply: $2("}
+{"t":5974,"text":"2 x + 1) ="}
+{"t":6011,"text":" 3(x + 4)"}
+{"t":6048,"text":"$, so $4 x +"}
+{"t":6082,"text":" 2 = 3"}
+{"t":6118,"text":" x + 12$"}
+{"t":6153,"text":" and $x = 10$."}
+{"t":6189,"text":"])\n]\n\n#question(points"}
+{"t":6224,"text":": 3)[\n  "}
+{"t":6260,"text":"Solve $x/2 -"}
+{"t":6296,"text":" x/3 = 4"}
+{"t":6331,"text":"$.\n  #answer-"}
+{"t":6371,"text":"space(height: 6em,"}
+{"t":6404,"text":" answer: [Multiply"}
+{"t":6439,"text":" by 6: $3 x"}
+{"t":6474,"text":" - 2 x = 24"}
+{"t":6510,"text":"$, so $x = 24"}
+{"t":6546,"text":"$.])\n]\n\n#question"}
+{"t":6582,"text":"(points: 4)["}
+{"t":6618,"text":"\n  A number"}
+{"t":6654,"text":" is mult"}
+{"t":6689,"text":"iplied by 3"}
+{"t":6725,"text":" and then "}
+{"t":6760,"text":"8 is subtracted."}
+{"t":6796,"text":" The result is the"}
+{"t":6832,"text":" same as when"}
+{"t":6867,"text":" the number is added"}
+{"t":6903,"text":" to 10"}
+{"t":6939,"text":"."}
+{"t":6974,"text":" Write an equation and"}
+{"t":7010,"text":" find the number.\n  #answ"}
+{"t":7046,"text":"er-space(height: 6"}
+{"t":7082,"text":"em, answer: [$"}
+{"t":7117,"text":"3 x - 8 ="}
+{"t":7153,"text":" x + 10$, so $"}
+{"t":7190,"text":"2 x = 18$"}
+{"t":7230,"text":" and $x = 9$."}
+{"t":7260,"text":"])\n]\n\n#question(points"}
+{"t":7297,"text":": 4)[\n  A"}
+{"t":7335,"text":" taxi char"}
+{"t":7368,"text":"ges a"}
+{"t":7403,"text":" fixed fee"}
+{"t":7441,"text":" of \\$"}
+{"t":7475,"text":"5 plus \\"}
+{"t":7510,"text":"$2 per kilometre"}
+{"t":7546,"text":". Another"}
+{"t":7581,"text":" ta"}
+{"t":7622,"text":"xi charges no"}
+{"t":7655,"text":" fix"}
+{"t":7689,"text":"ed fee but \\"}
+{"t":7727,"text":"$3."}
+{"t":7760,"text":"50 per kilometre."}
+{"t":7796,"text":" For what"}
+{"t":7833,"text":" distance do both"}
+{"t":7868,"text":" taxis c"}
+{"t":7903,"text":"ost the same?\n  #answ"}
+{"t":7942,"text":"er-space(height: 6"}
+{"t":7974,"text":"em, answer: [$5"}
+{"t":8011,"text":" + 2 x = "}
+{"t":8046,"text":"3.5 x$, so"}
+{"t":8082,"text":" $5 = 1.5"}
+{"t":8118,"text":" x$ and $x ="}
+{"t":8153,"text":" 10"}
+{"t":8189,"text":"/3 "}
+{"t":8224,"text":"approx 3.33$"}
+{"t":8260,"text":" km."}
+{"t":8297,"text":"])\n]\n\n#question(points"}
+{"t":8331,"text":": 3"}
+{"t":8371,"text":")[\n  Expl"}
+{"t":8403,"text":"ain the"}
+{"t":8439,"text":" m"}
+{"t":8474,"text":"istake in"}
+{"t":8510,"text":" this solution,"}
+{"t":8545,"text":" then sol"}
+{"t":8582,"text":"ve correctly.\n\n  $"}
+{"t":8617,"text":"3"}
+{"t":8653,"text":"(x +"}
+{"t":8689,"text":" 2) = 18"}
+{"t":8724,"text":" ar"}
+{"t":8760,"text":"row."}
+{"t":8796,"text":"r 3 x + 2"}
+{"t":8832,"text":" = 18 arrow"}
+{"t":8868,"text":".r 3 x = "}
+{"t":8903,"text":"16 arrow.r x"}
+{"t":8939,"text":" = 16/3$"}
+{"t":8974,"text":"\n  #answer-lines("}
+{"t":9010,"text":"count: 2, answer:"}
+{"t":9046,"text":" [The 3 was not mult"}
+{"t":9081,"text":"iplied by 2:"}
+{"t":9117,"text":" $3(x + 2)"}
+{"t":9153,"text":" = 3 x + 6"}
+{"t":9189,"text":"$. Correct: $3"}
+{"t":9225,"text":" x ="}
+{"t":9260,"text":" 12"}
+{"t":9295,"text":"$, so $x = 4"}
+{"t":9331,"text":"$.])\n]"}
+{"t":9367,"text":"\n\n#answer-key()"}

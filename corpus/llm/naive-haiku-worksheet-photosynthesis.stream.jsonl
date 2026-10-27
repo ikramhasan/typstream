@@ -1,0 +1,432 @@
+{"t":0,"text":"="}
+{"t":15,"text":" Photosynthesis"}
+{"t":35,"text":" Worksheet\n\n*Gr"}
+{"t":59,"text":"ade 7 Science*"}
+{"t":77,"text":" #"}
+{"t":100,"text":"h"}
+{"t":119,"text":"(1"}
+{"t":140,"text":"fr)"}
+{"t":161,"text":" Name: #"}
+{"t":178,"text":"box(width: 6"}
+{"t":200,"text":"cm, line(length: "}
+{"t":223,"text":"100%)"}
+{"t":245,"text":")"}
+{"t":260,"text":" Date: #box"}
+{"t":280,"text":"(width: 3cm,"}
+{"t":301,"text":" line(length: 100%))"}
+{"t":324,"text":"\n\n#v(0"}
+{"t":344,"text":".5em)\n\n== Part"}
+{"t":364,"text":" A: Fill in"}
+{"t":383,"text":" the Blan"}
+{"t":407,"text":"ks\n\nUse"}
+{"t":429,"text":" the words in the box"}
+{"t":444,"text":" to"}
+{"t":465,"text":" complete each sentence."}
+{"t":491,"text":" Some words will"}
+{"t":507,"text":" not be used."}
+{"t":527,"text":"\n\n#"}
+{"t":547,"text":"align"}
+{"t":568,"text":"(center)["}
+{"t":587,"text":"\n  "}
+{"t":607,"text":"#r"}
+{"t":628,"text":"ect(st"}
+{"t":648,"text":"roke: 0"}
+{"t":669,"text":".5pt, in"}
+{"t":689,"text":"set: 8"}
+{"t":710,"text":"pt)"}
+{"t":732,"text":"[\n    ch"}
+{"t":750,"text":"lorophyll #"}
+{"t":826,"text":"h"}
+{"t":838,"text":"(1em) glucose #"}
+{"t":841,"text":"h(1em) st"}
+{"t":841,"text":"omata #h(1em)"}
+{"t":853,"text":" carbon dioxide #"}
+{"t":877,"text":"h(1em) oxyg"}
+{"t":903,"text":"en #h(1em) ro"}
+{"t":913,"text":"ots #h(1em) s"}
+{"t":935,"text":"unlight #h(1em"}
+{"t":956,"text":") x"}
+{"t":976,"text":"ylem\n  ]\n]"}
+{"t":996,"text":"\n\n+ Photosynth"}
+{"t":1016,"text":"esis tak"}
+{"t":1038,"text":"es place m"}
+{"t":1059,"text":"ainly in the leaves,"}
+{"t":1079,"text":" in"}
+{"t":1097,"text":"side struct"}
+{"t":1119,"text":"ures called ch"}
+{"t":1138,"text":"loroplasts that"}
+{"t":1160,"text":" contain the"}
+{"t":1179,"text":" green pigment #"}
+{"t":1199,"text":"box(width: 3"}
+{"t":1225,"text":"."}
+{"t":1242,"text":"5cm, line(length:"}
+{"t":1261,"text":" 100%))."}
+{"t":1282,"text":"\n+ Plants abs"}
+{"t":1303,"text":"orb #box(width: "}
+{"t":1324,"text":"3.5cm, line("}
+{"t":1343,"text":"length: 100%)) from"}
+{"t":1365,"text":" the air through t"}
+{"t":1385,"text":"iny p"}
+{"t":1404,"text":"ores called #box(width: "}
+{"t":1425,"text":"3.5cm, line("}
+{"t":1446,"text":"length: 100%))."}
+{"t":1466,"text":"\n+ Water is ta"}
+{"t":1486,"text":"ken up from"}
+{"t":1508,"text":" the so"}
+{"t":1528,"text":"il by the #box(width:"}
+{"t":1550,"text":" 3.5cm, line"}
+{"t":1567,"text":"(length: 100%))."}
+{"t":1589,"text":"\n+ The energ"}
+{"t":1610,"text":"y from"}
+{"t":1632,"text":" #box(width: 3."}
+{"t":1653,"text":"5cm, line(length:"}
+{"t":1671,"text":" 100%)) is used to"}
+{"t":1693,"text":" make"}
+{"t":1715,"text":" food"}
+{"t":1735,"text":" for"}
+{"t":1752,"text":" the plant.\n+ The"}
+{"t":1773,"text":" sugar produ"}
+{"t":1793,"text":"ced during"}
+{"t":1814,"text":" photosynthesis is called"}
+{"t":1833,"text":" #box(width: 3."}
+{"t":1855,"text":"5cm, line(length:"}
+{"t":1873,"text":" 100%)).\n+"}
+{"t":1898,"text":" The g"}
+{"t":1922,"text":"as released into"}
+{"t":1938,"text":" the air as"}
+{"t":1962,"text":" a by"}
+{"t":1982,"text":"-product of photosynthes"}
+{"t":1996,"text":"is is #box(width: "}
+{"t":2017,"text":"3.5cm, line("}
+{"t":2038,"text":"length: 100%))."}
+{"t":2057,"text":"\n\n#"}
+{"t":2079,"text":"v(1"}
+{"t":2100,"text":"em)\n\n== Part B:"}
+{"t":2118,"text":" Multiple Choice"}
+{"t":2144,"text":"\n\nCircle the"}
+{"t":2163,"text":" letter of"}
+{"t":2183,"text":" the best"}
+{"t":2200,"text":" answer.\n\n+"}
+{"t":2224,"text":" Which g"}
+{"t":2242,"text":"as do"}
+{"t":2261,"text":" plants take"}
+{"t":2281,"text":" in"}
+{"t":2303,"text":" for"}
+{"t":2326,"text":" photosynthesis?"}
+{"t":2343,"text":"\n  ("}
+{"t":2396,"text":"a) O"}
+{"t":2396,"text":"xygen #"}
+{"t":2412,"text":"h"}
+{"t":2430,"text":"(2"}
+{"t":2452,"text":"em)"}
+{"t":2468,"text":" (b) N"}
+{"t":2490,"text":"itrogen #h(2"}
+{"t":2507,"text":"em) (c) Carb"}
+{"t":2531,"text":"on dioxide #h("}
+{"t":2547,"text":"2em) (d) H"}
+{"t":2568,"text":"ydrogen\n\n+"}
+{"t":2609,"text":" Where does"}
+{"t":2630,"text":" most"}
+{"t":2649,"text":" phot"}
+{"t":2670,"text":"osynthesis occur in"}
+{"t":2690,"text":" a plant?\n  (a"}
+{"t":2711,"text":") Ro"}
+{"t":2731,"text":"ots #h(2em) ("}
+{"t":2751,"text":"b) Stem #h("}
+{"t":2771,"text":"2em) (c) Fl"}
+{"t":2795,"text":"ow"}
+{"t":2813,"text":"ers #h(2em) ("}
+{"t":2834,"text":"d) Leaves\n\n+"}
+{"t":2854,"text":" What is"}
+{"t":2874,"text":" the role of ch"}
+{"t":2895,"text":"lorophyll?"}
+{"t":2914,"text":"\n  (a) It"}
+{"t":2935,"text":" absorbs light energy."}
+{"t":2956,"text":" #h(1"}
+{"t":2978,"text":"em) (b) It car"}
+{"t":2996,"text":"ries water to"}
+{"t":3016,"text":" the leaves"}
+{"t":3039,"text":".\n  (c) It st"}
+{"t":3057,"text":"ores"}
+{"t":3079,"text":" sugar."}
+{"t":3098,"text":" #h(2"}
+{"t":3121,"text":"em) (d) It op"}
+{"t":3139,"text":"ens and"}
+{"t":3161,"text":" closes st"}
+{"t":3181,"text":"omata.\n\n+ Which"}
+{"t":3201,"text":" of these"}
+{"t":3222,"text":" is the correct word equ"}
+{"t":3242,"text":"ation for photosynthesis"}
+{"t":3262,"text":"?\n  (a) O"}
+{"t":3286,"text":"xygen + gl"}
+{"t":3303,"text":"ucose → car"}
+{"t":3325,"text":"bon dioxide + water"}
+{"t":3366,"text":"\n  (b) Car"}
+{"t":3385,"text":"bon dioxide + water"}
+{"t":3404,"text":" → gl"}
+{"t":3430,"text":"ucose + oxygen"}
+{"t":3445,"text":"\n  (c) Gl"}
+{"t":3469,"text":"ucose + water"}
+{"t":3488,"text":" → carbon dioxide"}
+{"t":3507,"text":" + oxygen\n  ("}
+{"t":3527,"text":"d) Water"}
+{"t":3548,"text":" + o"}
+{"t":3571,"text":"xygen → gl"}
+{"t":3589,"text":"ucose + carbon dio"}
+{"t":3610,"text":"xide\n\n+ A plant"}
+{"t":3631,"text":" is placed in a d"}
+{"t":3652,"text":"ark c"}
+{"t":3672,"text":"upboard for three days"}
+{"t":3692,"text":". What will"}
+{"t":3710,"text":" happen to its"}
+{"t":3731,"text":" r"}
+{"t":3753,"text":"ate of photosynthesis"}
+{"t":3778,"text":"?\n  (a) It will"}
+{"t":3792,"text":" increase. #h(1"}
+{"t":3816,"text":"em) (b) It will st"}
+{"t":3834,"text":"ay the same."}
+{"t":3854,"text":"\n  (c) It will st"}
+{"t":3874,"text":"op or"}
+{"t":3897,"text":" n"}
+{"t":3917,"text":"early stop. #h("}
+{"t":3935,"text":"1"}
+{"t":3959,"text":"em) (d) It will double"}
+{"t":3978,"text":".\n\n+"}
+{"t":3998,"text":" Which part of the le"}
+{"t":4017,"text":"af l"}
+{"t":4041,"text":"ets water"}
+{"t":4061,"text":" v"}
+{"t":4081,"text":"apour and"}
+{"t":4100,"text":" g"}
+{"t":4121,"text":"ases move"}
+{"t":4145,"text":" in and out?\n  (a"}
+{"t":4169,"text":") C"}
+{"t":4184,"text":"uticle #h(2em"}
+{"t":4201,"text":") (b) St"}
+{"t":4221,"text":"omata #h(2em)"}
+{"t":4243,"text":" (c) Vein #h"}
+{"t":4261,"text":"(2em) (d)"}
+{"t":4283,"text":" Pal"}
+{"t":4304,"text":"isade lay"}
+{"t":4324,"text":"er\n\n#v(1em)"}
+{"t":4345,"text":"\n\n== Part C: Label"}
+{"t":4365,"text":" the"}
+{"t":4385,"text":" Diagram\n\nThe"}
+{"t":4404,"text":" diagram below shows a sim"}
+{"t":4425,"text":"plified cross-section of a"}
+{"t":4445,"text":" leaf. Write the corre"}
+{"t":4485,"text":"ct letter ("}
+{"t":4487,"text":"A to"}
+{"t":4507,"text":" F) next to each"}
+{"t":4527,"text":" structure name in the list."}
+{"t":4569,"text":" Then answ"}
+{"t":4588,"text":"er the"}
+{"t":4611,"text":" question that"}
+{"t":4629,"text":" follows.\n\n#v(0"}
+{"t":4650,"text":".5em)\n\n#gr"}
+{"t":4670,"text":"id("}
+{"t":4695,"text":"\n  columns: ("}
+{"t":4711,"text":"8"}
+{"t":4733,"text":"cm, 1"}
+{"t":4754,"text":"fr),\n  g"}
+{"t":4773,"text":"utter: 1em"}
+{"t":4794,"text":",\n  [\n    #r"}
+{"t":4812,"text":"ect(width"}
+{"t":4836,"text":": 7cm, stro"}
+{"t":4853,"text":"ke: 0.8"}
+{"t":4875,"text":"pt, inset: 0"}
+{"t":4894,"text":"pt)[\n      #r"}
+{"t":4917,"text":"ect(width: 100"}
+{"t":4935,"text":"%, height"}
+{"t":4959,"text":": 1"}
+{"t":4980,"text":".2c"}
+{"t":4996,"text":"m, fill: green.l"}
+{"t":5017,"text":"ighten(55"}
+{"t":5037,"text":"%), stroke: 0"}
+{"t":5057,"text":".5pt)[#"}
+{"t":5080,"text":"align(center +"}
+{"t":5098,"text":" horizon"}
+{"t":5119,"text":")["}
+{"t":5141,"text":"Upper sur"}
+{"t":5160,"text":"face ("}
+{"t":5181,"text":"A)]]\n      #r"}
+{"t":5201,"text":"ect(width: 100%,"}
+{"t":5221,"text":" height: 1.8"}
+{"t":5242,"text":"cm, fill: green."}
+{"t":5262,"text":"lighten(30"}
+{"t":5282,"text":"%), stroke: 0"}
+{"t":5303,"text":".5pt)[#align"}
+{"t":5326,"text":"(center + horizon)["}
+{"t":5346,"text":"Palisade layer (B"}
+{"t":5364,"text":")]]\n      #rect"}
+{"t":5386,"text":"(width: 100%, height"}
+{"t":5406,"text":": 1"}
+{"t":5426,"text":".8cm, fill:"}
+{"t":5446,"text":" green.lighten(45%"}
+{"t":5468,"text":"), stroke: 0."}
+{"t":5487,"text":"5pt)[#align("}
+{"t":5507,"text":"center + horizon)["}
+{"t":5531,"text":"Spongy lay"}
+{"t":5550,"text":"er (C)]]\n      "}
+{"t":5570,"text":"#rect(width: 100"}
+{"t":5591,"text":"%, height: 1.2"}
+{"t":5609,"text":"cm, fill: yell"}
+{"t":5632,"text":"ow.lighten(50%"}
+{"t":5660,"text":"), stroke: 0."}
+{"t":5677,"text":"5pt)[#align("}
+{"t":5691,"text":"center + horizon)["}
+{"t":5712,"text":"Lower surface (D)]"}
+{"t":5735,"text":"]\n    ]\n  "}
+{"t":5752,"text":"],\n  [\n    *"}
+{"t":5772,"text":"Struct"}
+{"t":5793,"text":"ures to label:*"}
+{"t":5815,"text":"\n\n    #"}
+{"t":5834,"text":"v(0.5em"}
+{"t":5854,"text":")\n\n    Stomata #"}
+{"t":5876,"text":"box(width: 2"}
+{"t":5899,"text":"cm, line(length: "}
+{"t":5915,"text":"100%))"}
+{"t":5936,"text":"\n\n    Pal"}
+{"t":5971,"text":"isade layer #box(width"}
+{"t":5980,"text":": 2cm, line("}
+{"t":5998,"text":"length: 100%))\n\n    "}
+{"t":6017,"text":"Spongy layer #box"}
+{"t":6039,"text":"(width: 2cm,"}
+{"t":6059,"text":" line(length: 100%))"}
+{"t":6079,"text":"\n\n    Vein ("}
+{"t":6099,"text":"xylem and"}
+{"t":6120,"text":" phloem) #box(width"}
+{"t":6140,"text":": 2cm, line("}
+{"t":6162,"text":"length: 100%))\n\n    "}
+{"t":6182,"text":"Lower epidermis #"}
+{"t":6201,"text":"box(width: 2cm"}
+{"t":6224,"text":", line(length: 100%"}
+{"t":6245,"text":"))\n\n    Upper epid"}
+{"t":6265,"text":"ermis #box(width: "}
+{"t":6283,"text":"2cm, line(length:"}
+{"t":6304,"text":" 100%))\n  ],"}
+{"t":6325,"text":"\n)\n\n#v(1em"}
+{"t":6345,"text":")\n\n+ Which layer"}
+{"t":6365,"text":" of"}
+{"t":6385,"text":" the leaf contains the most"}
+{"t":6406,"text":" ch"}
+{"t":6426,"text":"loroplasts? Expl"}
+{"t":6449,"text":"ain why"}
+{"t":6466,"text":" it"}
+{"t":6487,"text":" is well"}
+{"t":6512,"text":" suited to this job"}
+{"t":6528,"text":".\n  "}
+{"t":6550,"text":"#v(3"}
+{"t":6577,"text":"em)"}
+{"t":6593,"text":"\n\n+ Why"}
+{"t":6613,"text":" do the"}
+{"t":6630,"text":" sp"}
+{"t":6651,"text":"ongy layer c"}
+{"t":6675,"text":"ells have large"}
+{"t":6691,"text":" air spaces between"}
+{"t":6714,"text":" them?\n  #v(2"}
+{"t":6736,"text":"em)\n\n== Part D:"}
+{"t":6753,"text":" Short Answer"}
+{"t":6774,"text":"\n\n+ Explain,"}
+{"t":6797,"text":" in your"}
+{"t":6813,"text":" own words, why plants are"}
+{"t":6834,"text":" essential for"}
+{"t":6855,"text":" life on Earth.\n  "}
+{"t":6875,"text":"#v(4"}
+{"t":6895,"text":"em)\n\n+ A"}
+{"t":6916,"text":" student"}
+{"t":6937,"text":" says"}
+{"t":6960,"text":","}
+{"t":6982,"text":" \"Plants only"}
+{"t":6998,"text":" phot"}
+{"t":7019,"text":"osynthesise"}
+{"t":7040,"text":" during the day, so"}
+{"t":7061,"text":" they do"}
+{"t":7079,"text":" not need to breathe at"}
+{"t":7114,"text":" night.\" Is"}
+{"t":7136,"text":" this statement correct?"}
+{"t":7141,"text":" Use"}
+{"t":7187,"text":" what"}
+{"t":7196,"text":" you know about photosynthes"}
+{"t":7202,"text":"is and respiration to expl"}
+{"t":7222,"text":"ain your"}
+{"t":7243,"text":" answer.\n  #v("}
+{"t":7262,"text":"5"}
+{"t":7283,"text":"em)\n\n#"}
+{"t":7305,"text":"pagebreak()"}
+{"t":7326,"text":"\n\n== Teacher Answ"}
+{"t":7347,"text":"er Key\n\n*Part A"}
+{"t":7367,"text":":* "}
+{"t":7387,"text":"1. chlorophyll"}
+{"t":7405,"text":" 2. carbon dio"}
+{"t":7429,"text":"xide;"}
+{"t":7446,"text":" st"}
+{"t":7471,"text":"omata 3. ro"}
+{"t":7490,"text":"ots 4. sunlight"}
+{"t":7509,"text":" 5. glucose 6"}
+{"t":7528,"text":". oxygen\n\n*"}
+{"t":7553,"text":"Part B:* 1. c"}
+{"t":7570,"text":" 2. d 3. a"}
+{"t":7589,"text":" 4. b 5. c"}
+{"t":7611,"text":" 6. b\n\n*Part"}
+{"t":7631,"text":" C:* Upper surface"}
+{"t":7650,"text":" = A,"}
+{"t":7673,"text":" Palisade layer = B"}
+{"t":7693,"text":", Spongy layer ="}
+{"t":7712,"text":" C, Lower surface ="}
+{"t":7732,"text":" D. Stomata are"}
+{"t":7757,"text":" found"}
+{"t":7775,"text":" on the lower surface ("}
+{"t":7794,"text":"D)"}
+{"t":7819,"text":" m"}
+{"t":7834,"text":"ainly; ve"}
+{"t":7859,"text":"ins run"}
+{"t":7877,"text":" through the spongy layer."}
+{"t":7895,"text":" Accept re"}
+{"t":7916,"text":"asonable labels for"}
+{"t":7940,"text":" the list"}
+{"t":7961,"text":". Pal"}
+{"t":7980,"text":"isade layer has"}
+{"t":7998,"text":" the most chloroplasts"}
+{"t":8018,"text":" because"}
+{"t":8044,"text":" it rece"}
+{"t":8060,"text":"ives the"}
+{"t":8084,"text":" most light and is pack"}
+{"t":8102,"text":"ed with"}
+{"t":8120,"text":" c"}
+{"t":8142,"text":"ells,"}
+{"t":8164,"text":" so it is the"}
+{"t":8183,"text":" main"}
+{"t":8201,"text":" site of phot"}
+{"t":8223,"text":"osynthesis. Air"}
+{"t":8245,"text":" spaces in"}
+{"t":8263,"text":" the spongy layer allow"}
+{"t":8283,"text":" gases such"}
+{"t":8307,"text":" as carbon dioxide"}
+{"t":8324,"text":" and oxygen to diff"}
+{"t":8346,"text":"use around"}
+{"t":8365,"text":" the cells.\n\n*Part"}
+{"t":8391,"text":" D:* Pl"}
+{"t":8405,"text":"ants produ"}
+{"t":8427,"text":"ce o"}
+{"t":8447,"text":"xygen and form"}
+{"t":8469,"text":" the"}
+{"t":8488,"text":" base of most food chains, provid"}
+{"t":8507,"text":"ing food and o"}
+{"t":8529,"text":"xygen for anim"}
+{"t":8550,"text":"als and humans. Students"}
+{"t":8569,"text":" should note"}
+{"t":8589,"text":" the"}
+{"t":8610,"text":" stat"}
+{"t":8632,"text":"ement is incorrect: pl"}
+{"t":8655,"text":"ants resp"}
+{"t":8672,"text":"ire day"}
+{"t":8693,"text":" and night,"}
+{"t":8713,"text":" using"}
+{"t":8735,"text":" o"}
+{"t":8760,"text":"xygen and"}
+{"t":8773,"text":" releasing car"}
+{"t":8795,"text":"bon dioxide, and"}
+{"t":8814,"text":" photosynthesis only occ"}
+{"t":8838,"text":"urs in"}
+{"t":8859,"text":" light."}

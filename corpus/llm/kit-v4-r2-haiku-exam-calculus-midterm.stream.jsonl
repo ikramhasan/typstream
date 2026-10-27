@@ -1,0 +1,313 @@
+{"t":0,"text":"#"}
+{"t":20,"text":"show: exam."}
+{"t":40,"text":"with(\n  title: ["}
+{"t":60,"text":"Calculus Midterm:"}
+{"t":81,"text":" Limits and Derivat"}
+{"t":103,"text":"ives],\n  subject: ["}
+{"t":122,"text":"Mathematics],\n  "}
+{"t":144,"text":"grade: [Grade "}
+{"t":163,"text":"12],\n  duration: ["}
+{"t":184,"text":"60 minutes],\n  "}
+{"t":203,"text":"instructions: ["}
+{"t":225,"text":"Answer *all* questions."}
+{"t":245,"text":" Show all"}
+{"t":265,"text":" working. Calculators"}
+{"t":287,"text":" are"}
+{"t":306,"text":" not permitted."}
+{"t":326,"text":"],\n)\n\n= Section A"}
+{"t":347,"text":": Limits\n\n#question("}
+{"t":367,"text":"points: 6)[\n  "}
+{"t":387,"text":"Evaluate each"}
+{"t":408,"text":" limit.\n  + $"}
+{"t":432,"text":"lim_(x -> "}
+{"t":450,"text":"3) (x^2 -"}
+{"t":472,"text":" 9)/(x - "}
+{"t":490,"text":"3)$ #answer-"}
+{"t":510,"text":"space(height: 2"}
+{"t":531,"text":".5em, answer: ["}
+{"t":572,"text":"Factor:"}
+{"t":592,"text":" $("}
+{"t":613,"text":"x^2 - 9)"}
+{"t":633,"text":"/(x - 3) ="}
+{"t":653,"text":" x"}
+{"t":673,"text":" + 3$"}
+{"t":694,"text":" for $x !="}
+{"t":714,"text":" 3$, so the limit"}
+{"t":736,"text":" is $6$.])\n  "}
+{"t":756,"text":"+ $lim_(x -"}
+{"t":776,"text":"> 0) (sin("}
+{"t":796,"text":"3 x))"}
+{"t":818,"text":"/x$ #answer-"}
+{"t":839,"text":"space(height: 2.5"}
+{"t":857,"text":"em, answer: [Use"}
+{"t":878,"text":" $lim_(u"}
+{"t":900,"text":" -> 0) ("}
+{"t":919,"text":"sin u)/u = "}
+{"t":941,"text":"1$ with"}
+{"t":960,"text":" $u = 3x"}
+{"t":980,"text":"$: $lim ("}
+{"t":1001,"text":"sin(3x"}
+{"t":1021,"text":"))/x"}
+{"t":1043,"text":" = 3 d"}
+{"t":1063,"text":"ot "}
+{"t":1082,"text":"1 = 3$.])"}
+{"t":1103,"text":"\n  + $lim_("}
+{"t":1142,"text":"x -> oo) (2"}
+{"t":1144,"text":" x^2 + 1"}
+{"t":1164,"text":")/(5 x^2"}
+{"t":1184,"text":" - x)$ #answ"}
+{"t":1207,"text":"er-space(height: 2"}
+{"t":1226,"text":".5em, answer: ["}
+{"t":1246,"text":"Divide top"}
+{"t":1266,"text":" and bottom by $x^"}
+{"t":1287,"text":"2$: $(2 +"}
+{"t":1307,"text":" 1/x^2)/"}
+{"t":1328,"text":"(5 - 1/x"}
+{"t":1348,"text":")"}
+{"t":1369,"text":" -"}
+{"t":1389,"text":"> 2/5$.])"}
+{"t":1409,"text":"\n]\n\n#"}
+{"t":1430,"text":"question(points: 4)["}
+{"t":1450,"text":"\n  Let"}
+{"t":1470,"text":" $f(x) = c"}
+{"t":1491,"text":"ases"}
+{"t":1511,"text":"("}
+{"t":1532,"text":"x^2 -"}
+{"t":1552,"text":" 4 &"}
+{"t":1574,"text":" \"if"}
+{"t":1593,"text":"\""}
+{"t":1615,"text":" x != 2, k & \""}
+{"t":1634,"text":"if\" x = 2)$"}
+{"t":1655,"text":". Find the value of $k"}
+{"t":1674,"text":"$ that makes $f$"}
+{"t":1695,"text":" continuous at $x ="}
+{"t":1716,"text":" 2$.\n  #answ"}
+{"t":1739,"text":"er-space(height: 4"}
+{"t":1756,"text":"em, answer: [$l"}
+{"t":1777,"text":"im_(x -> 2"}
+{"t":1797,"text":") (x^2 - "}
+{"t":1818,"text":"4)/(x - 2"}
+{"t":1839,"text":") = l"}
+{"t":1859,"text":"im_(x -> 2"}
+{"t":1880,"text":") (x + 2) ="}
+{"t":1903,"text":" 4$."}
+{"t":1928,"text":" Continuity requires $f("}
+{"t":1940,"text":"2) = "}
+{"t":1961,"text":"4$, so $k = "}
+{"t":1985,"text":"4$.])\n]\n\n="}
+{"t":2005,"text":" Section B: Derivat"}
+{"t":2024,"text":"ives\n\n#question(points: "}
+{"t":2042,"text":"8)[\n  Different"}
+{"t":2063,"text":"iate each function"}
+{"t":2086,"text":" with respect to $x$."}
+{"t":2104,"text":"\n  + $f(x)"}
+{"t":2127,"text":" = 3 x^4 "}
+{"t":2145,"text":"- 2 x^2 "}
+{"t":2167,"text":"+ 7$ #answer"}
+{"t":2185,"text":"-space(height: 2."}
+{"t":2206,"text":"5em, answer: [$"}
+{"t":2226,"text":"f'(x) = 12"}
+{"t":2247,"text":" x^3 - 4"}
+{"t":2267,"text":" x$.])\n  +"}
+{"t":2288,"text":" $g(x) = x^"}
+{"t":2310,"text":"2 sin x$ #"}
+{"t":2330,"text":"answer-space(height: "}
+{"t":2349,"text":"2.5em, answer:"}
+{"t":2370,"text":" ["}
+{"t":2390,"text":"Product rule: $g'("}
+{"t":2410,"text":"x) = 2 x s"}
+{"t":2432,"text":"in x + x^2 c"}
+{"t":2452,"text":"os x$.])\n  +"}
+{"t":2471,"text":" $h(x) = (x"}
+{"t":2493,"text":" + 1)/(x^"}
+{"t":2513,"text":"2 + 1)$"}
+{"t":2533,"text":" #answer-space(height:"}
+{"t":2554,"text":" 4em, answer: ["}
+{"t":2574,"text":"Quotient rule: $"}
+{"t":2594,"text":"h'(x) = (("}
+{"t":2616,"text":"x^2 + 1)"}
+{"t":2635,"text":" - (x + 1)("}
+{"t":2656,"text":"2 x))/(x^"}
+{"t":2676,"text":"2 + 1)^2"}
+{"t":2697,"text":" = (-x^2 "}
+{"t":2717,"text":"- 2 x + 1"}
+{"t":2738,"text":")/(x^2 +"}
+{"t":2758,"text":" 1)^2$.])"}
+{"t":2779,"text":"\n]\n\n#question(points:"}
+{"t":2799,"text":" 4)[\n  Use"}
+{"t":2819,"text":" the chain rule to find $"}
+{"t":2839,"text":"("}
+{"t":2861,"text":"d y)/(d x)"}
+{"t":2880,"text":"$ for each function"}
+{"t":2901,"text":".\n  + $y = ("}
+{"t":2921,"text":"3 x - 5)^"}
+{"t":2942,"text":"7$ #answer-space"}
+{"t":2963,"text":"(height: 2.5em"}
+{"t":2983,"text":", answer: [$(d"}
+{"t":3003,"text":" y)/(d x) ="}
+{"t":3024,"text":" 7 (3 x -"}
+{"t":3044,"text":" 5)^6 d"}
+{"t":3065,"text":"ot 3 = 21 "}
+{"t":3085,"text":"(3 x - 5)"}
+{"t":3108,"text":"^6$.])\n  +"}
+{"t":3127,"text":" $y = sqrt("}
+{"t":3146,"text":"x^2 + 4)"}
+{"t":3166,"text":"$ #answer-space("}
+{"t":3187,"text":"height: 2.5em,"}
+{"t":3209,"text":" answer: [$(d y"}
+{"t":3228,"text":")/(d x) = ("}
+{"t":3249,"text":"2 x)"}
+{"t":3270,"text":"/(2 sqrt"}
+{"t":3291,"text":"(x^2 + 4"}
+{"t":3310,"text":")) = x/sqr"}
+{"t":3330,"text":"t(x^2 + "}
+{"t":3351,"text":"4)$.])\n]"}
+{"t":3372,"text":"\n\n#question(points: 5)"}
+{"t":3392,"text":"[\n  Find the equation"}
+{"t":3412,"text":" of the tangent line to $"}
+{"t":3433,"text":"y"}
+{"t":3452,"text":" = x"}
+{"t":3474,"text":"^3 - 2 x"}
+{"t":3493,"text":"$ at the"}
+{"t":3515,"text":" point where"}
+{"t":3534,"text":" $x = 1$."}
+{"t":3558,"text":"\n  #answer-space(height"}
+{"t":3575,"text":": 5"}
+{"t":3597,"text":"em, answer: [$"}
+{"t":3621,"text":"y"}
+{"t":3637,"text":"("}
+{"t":3657,"text":"1) = -"}
+{"t":3677,"text":"1$"}
+{"t":3698,"text":" and $y"}
+{"t":3719,"text":"'"}
+{"t":3739,"text":" = 3 x^2 "}
+{"t":3759,"text":"- 2$, so the"}
+{"t":3779,"text":" slope at $x = 1"}
+{"t":3799,"text":"$ is $1$. The"}
+{"t":3820,"text":" tangent is $y = -"}
+{"t":3841,"text":"1 + ("}
+{"t":3862,"text":"x - 1)$, i"}
+{"t":3882,"text":".e. $y = x -"}
+{"t":3901,"text":" 2$.])\n]"}
+{"t":3926,"text":"\n\n#question(points: 5)"}
+{"t":3944,"text":"[\n  A particle moves"}
+{"t":3963,"text":" along a"}
+{"t":3983,"text":" line so that its position at"}
+{"t":4004,"text":" time $t$ se"}
+{"t":4024,"text":"conds is $s(t)"}
+{"t":4046,"text":" = t^3 - 6"}
+{"t":4067,"text":" t^2 + 9"}
+{"t":4085,"text":" t$ metres."}
+{"t":4108,"text":"\n  + Find the vel"}
+{"t":4126,"text":"ocity $v(t)"}
+{"t":4147,"text":" = s'(t)$."}
+{"t":4167,"text":" #answer-space(height:"}
+{"t":4187,"text":" 2.5em, answer"}
+{"t":4208,"text":": [$v(t) ="}
+{"t":4228,"text":" 3 t^2 -"}
+{"t":4249,"text":" 12 t + 9$"}
+{"t":4269,"text":".])\n  + Find the"}
+{"t":4290,"text":" times when the particle is mom"}
+{"t":4310,"text":"entarily at rest. #"}
+{"t":4330,"text":"answer-space(height: "}
+{"t":4351,"text":"2.5em, answer:"}
+{"t":4372,"text":" [$3"}
+{"t":4392,"text":" t^2 - 12"}
+{"t":4413,"text":" t + 9 = "}
+{"t":4432,"text":"3("}
+{"t":4453,"text":"t - 1)(t -"}
+{"t":4474,"text":" 3) = 0$,"}
+{"t":4496,"text":" so $t = 1$"}
+{"t":4514,"text":" s"}
+{"t":4535,"text":" and $t = 3$"}
+{"t":4555,"text":" s.])\n  + Find"}
+{"t":4576,"text":" the acceleration at"}
+{"t":4596,"text":" $t = 4$"}
+{"t":4617,"text":" s. #answer-space("}
+{"t":4638,"text":"height: 2.5em,"}
+{"t":4657,"text":" answer: [$a(t"}
+{"t":4678,"text":") = v"}
+{"t":4698,"text":"'"}
+{"t":4718,"text":"(t) = 6 t"}
+{"t":4739,"text":" - 12$, so $a"}
+{"t":4760,"text":"(4) = 12$"}
+{"t":4780,"text":" m/s$^"}
+{"t":4800,"text":"2$.])\n]\n\n="}
+{"t":4821,"text":" Section C: Conc"}
+{"t":4841,"text":"epts\n\n#question(points:"}
+{"t":4861,"text":" 2)[\n  "}
+{"t":4882,"text":"Which is"}
+{"t":4902,"text":" the der"}
+{"t":4924,"text":"ivative of $ln x$"}
+{"t":4944,"text":"?\n  #mcq(["}
+{"t":4970,"text":"$e"}
+{"t":4984,"text":"^x$], [$1/"}
+{"t":5008,"text":"x$], [$x "}
+{"t":5029,"text":"ln x$], [$"}
+{"t":5045,"text":"ln x /"}
+{"t":5066,"text":" x$], answer: 2"}
+{"t":5086,"text":")\n  "}
+{"t":5106,"text":"#answer[The"}
+{"t":5128,"text":" derivative of $ln x"}
+{"t":5148,"text":"$ is $1/x$"}
+{"t":5168,"text":" for $x > 0$"}
+{"t":5190,"text":".]\n]\n\n#question("}
+{"t":5213,"text":"points: 2)[\n  "}
+{"t":5232,"text":"What is $"}
+{"t":5249,"text":"lim_(x -> "}
+{"t":5271,"text":"0) (1 - cos"}
+{"t":5291,"text":" x)/x$?\n  "}
+{"t":5311,"text":"#mcq([$0$"}
+{"t":5332,"text":"], [$1$], [$"}
+{"t":5358,"text":"1/2$], [does"}
+{"t":5372,"text":" not exist],"}
+{"t":5394,"text":" answer: 1"}
+{"t":5414,"text":")\n  #answer["}
+{"t":5435,"text":"Since $1 - cos x"}
+{"t":5454,"text":"$ appro"}
+{"t":5474,"text":"aches $0$ and"}
+{"t":5495,"text":" is"}
+{"t":5515,"text":" divided by $x$"}
+{"t":5535,"text":" with"}
+{"t":5555,"text":" the"}
+{"t":5576,"text":" "}
+{"t":5597,"text":"ratio t"}
+{"t":5618,"text":"ending to $0$ ("}
+{"t":5638,"text":"it"}
+{"t":5657,"text":" beh"}
+{"t":5678,"text":"aves like $x^2/"}
+{"t":5698,"text":"2$), the limit is $"}
+{"t":5719,"text":"0$.]\n]\n\n#"}
+{"t":5740,"text":"question(points: 3)["}
+{"t":5760,"text":"\n  Explain why a function"}
+{"t":5780,"text":" that"}
+{"t":5800,"text":" is differentiable at a point"}
+{"t":5825,"text":" must be continuous at"}
+{"t":5841,"text":" that point.\n  #answer"}
+{"t":5862,"text":"-lines(count: 3"}
+{"t":5882,"text":", answer: [Different"}
+{"t":5904,"text":"iability means"}
+{"t":5923,"text":" $"}
+{"t":5944,"text":"l"}
+{"t":5964,"text":"im_(h"}
+{"t":5984,"text":" -> 0) (f("}
+{"t":6006,"text":"a"}
+{"t":6025,"text":" + h) - f(a))"}
+{"t":6045,"text":"/h$"}
+{"t":6067,"text":" exists. Mult"}
+{"t":6086,"text":"iplying by"}
+{"t":6107,"text":" $h$,"}
+{"t":6128,"text":" $f(a+h) -"}
+{"t":6147,"text":" f(a) = h d"}
+{"t":6168,"text":"ot (f(a+h)"}
+{"t":6189,"text":"-f(a))"}
+{"t":6209,"text":"/h -"}
+{"t":6232,"text":"> 0 "}
+{"t":6259,"text":"d"}
+{"t":6270,"text":"ot f"}
+{"t":6290,"text":"'(a)"}
+{"t":6311,"text":" = 0$, so $l"}
+{"t":6331,"text":"im_(h -> 0"}
+{"t":6351,"text":") f(a + h) ="}
+{"t":6372,"text":" f(a)$, which"}
+{"t":6392,"text":" is continuity.])\n]"}

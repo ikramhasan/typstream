@@ -31,11 +31,14 @@ export interface Clock {
 // @public
 export interface CompileFailure {
     message: string;
-    reason: "diagnostics" | "timeout" | "crash" | "too-complex" | "engine";
+    reason: "diagnostics" | "timeout" | "crash" | "too-complex" | "too-large" | "engine";
 }
 
 // @public
 export const createEngine: (options: EngineOptions) => Engine;
+
+// @public
+export const DEFAULT_LIMITS: Readonly<LimitOptions>;
 
 // @public
 export const DEFAULT_RECYCLE_BYTES: number;
@@ -153,6 +156,7 @@ export interface EngineOptions {
     clock?: Clock;
     // @beta
     initialize?: InitializeOptions;
+    limits?: Partial<LimitOptions>;
     recycleBytes?: number;
     schedule?: Partial<ScheduleOptions>;
     spare?: boolean;
@@ -169,7 +173,7 @@ export class ExportError extends Error {
     constructor(reason: ExportError["reason"], message: string, diagnostics?: Diagnostic[]);
     readonly diagnostics: Diagnostic[];
     readonly name = "ExportError";
-    readonly reason: "diagnostics" | "unsupported" | "timeout" | "crash" | "engine";
+    readonly reason: "diagnostics" | "unsupported" | "timeout" | "crash" | "too-large" | "engine";
 }
 
 // @public
@@ -179,6 +183,12 @@ export interface ExportOptions {
 
 // @public
 export const fromWorker: (create: () => WorkerLike) => SpawnEngine;
+
+// @public
+export interface LimitOptions {
+    livePages: number;
+    maxLength: number;
+}
 
 // @public
 export interface ScheduleOptions {

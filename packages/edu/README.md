@@ -46,6 +46,19 @@ Every function works in the paged and the HTML target, and in English, Arabic an
 
 **Streaming.** Every parameter has a default, and arrays and lengths cut mid-stream are accepted (`(2` heals to the number `2`, `5em` arrives as `5`), so a half-written call renders instead of failing the compile. The compile oracle streams the prompt examples at every code point: 100% of prefixes compile with the engine's Layer 3 fixers.
 
+## Prompt kit
+
+`buildSystemPrompt(plugins)` (`@beta`) writes the system prompt for documents in the plugins' vocabulary: `typstPromptRules` (Typst habits models get wrong whatever the vocabulary), then each plugin's rules and catalogue, then their example documents. It's deterministic, so the prompt caches.
+
+```ts
+import { buildSystemPrompt, edu } from "@typstream/edu";
+import { universe } from "@typstream/universe";
+
+const system = buildSystemPrompt([edu, universe]); // ~5.5K tokens
+```
+
+The catalogue (`eduCatalogue`) is generated from the doc comments, so it can't drift from the functions; the hand-written rules (`eduPromptRules`, `typstPromptRules`) are checked against it: every edu function they call exists and takes the arguments they name. The rules come from measuring real models with and without them (`tools/llm-corpus`, [#24](https://github.com/ikramhasan/typstream/issues/24)). Each rule targets an error class those runs produced, so change them by re-measuring.
+
 **Templates as `TemplateSpec`s** (`eduTemplates`, `mountTypstream`'s `template` option) apply a template for apps that ask the model for a body only. A document that writes its own `#show: worksheet.with(…)` (the prompt's default) must not get one too: it would apply twice.
 
 ## Using it with plain Typst
@@ -66,6 +79,7 @@ The tests compile through `@typstream/engine-wasm` and native `typst` 0.15.1, so
 - `languages.test.ts`: labels, option letters and points in English, Arabic and Bengali; `dir="rtl"` in Arabic only.
 - `chemistry.test.ts`: `ce()`'s MathML.
 - `native.test.ts`: native `typst` compiles the examples and templates without warnings, to as many pages as engine-wasm.
+- `prompt.test.ts`: the system prompt holds every catalogue entry, rule and example, is deterministic, and the rules only call edu functions with parameters they have.
 - `package.test.ts`: the generated module is current and ASCII, the catalogue covers every public name, the CSS is scoped, the Typst sources stay within 30 KB gzipped (16 KB now).
 - `tools/compile-oracle`: the prompt examples' stream prefixes compile.
 

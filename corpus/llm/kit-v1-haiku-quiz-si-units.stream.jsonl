@@ -1,0 +1,117 @@
+{"t":0,"text":"#"}
+{"t":18,"text":"show: quiz."}
+{"t":41,"text":"with(\n  title: [S"}
+{"t":59,"text":"I Units and Con"}
+{"t":80,"text":"versions],\n  subject:"}
+{"t":103,"text":" [Physics],\n  gr"}
+{"t":122,"text":"ade: [Grade 10"}
+{"t":141,"text":"],\n  instructions: ["}
+{"t":162,"text":"Answer all questions."}
+{"t":182,"text":" Show your working for"}
+{"t":203,"text":" con"}
+{"t":223,"text":"versions.],\n)\n\n#"}
+{"t":244,"text":"question(points: 1)["}
+{"t":268,"text":"\n  Which of"}
+{"t":288,"text":" these"}
+{"t":305,"text":" is an"}
+{"t":326,"text":" SI base unit?"}
+{"t":346,"text":"\n  #mcq(["}
+{"t":366,"text":"Newton], [Jo"}
+{"t":388,"text":"ule], [Second"}
+{"t":407,"text":"], [Wat"}
+{"t":428,"text":"t], answer: 3"}
+{"t":448,"text":")\n]\n\n#question(points"}
+{"t":470,"text":": 1"}
+{"t":489,"text":")[\n  #"}
+{"t":511,"text":"true-false(answer: false"}
+{"t":530,"text":")[The newton is an S"}
+{"t":550,"text":"I base unit.]\n]"}
+{"t":573,"text":"\n\n#question(points: 2"}
+{"t":592,"text":")[\n  Convert $"}
+{"t":614,"text":"3.5$ km to met"}
+{"t":633,"text":"res.\n  #answ"}
+{"t":654,"text":"er-space(height: 3"}
+{"t":674,"text":"em, answer: [$3"}
+{"t":695,"text":".5 \""}
+{"t":715,"text":"km\" times"}
+{"t":735,"text":" 1000 \"m/"}
+{"t":756,"text":"km\" = 3500$"}
+{"t":776,"text":" m])\n]\n\n#question"}
+{"t":797,"text":"(points: 2)["}
+{"t":818,"text":"\n  Convert $45$"}
+{"t":838,"text":" km/h to m"}
+{"t":859,"text":"/s.\n  #answer"}
+{"t":879,"text":"-space(height: 4"}
+{"t":901,"text":"em, answer: [$45"}
+{"t":920,"text":" \"km/h\" times ("}
+{"t":941,"text":"1000 \"m\")"}
+{"t":961,"text":"/("}
+{"t":981,"text":"3600 \"s\") = "}
+{"t":1002,"text":"12.5$ m/s"}
+{"t":1022,"text":"])\n]\n\n#question(points"}
+{"t":1044,"text":": 3)[\n  "}
+{"t":1063,"text":"Conv"}
+{"t":1084,"text":"ert each qu"}
+{"t":1103,"text":"antity to the un"}
+{"t":1124,"text":"it sh"}
+{"t":1145,"text":"own.\n  + $"}
+{"t":1167,"text":"250$"}
+{"t":1185,"text":" g to"}
+{"t":1206,"text":" kg:"}
+{"t":1226,"text":" #bl"}
+{"t":1247,"text":"ank(width"}
+{"t":1267,"text":": 4"}
+{"t":1287,"text":"em, answer: [$"}
+{"t":1308,"text":"0.25$ kg])"}
+{"t":1328,"text":"\n  + $4"}
+{"t":1349,"text":".2$ MHz to"}
+{"t":1369,"text":" Hz: #blank("}
+{"t":1389,"text":"width: 5"}
+{"t":1410,"text":"em, answer: [$4"}
+{"t":1430,"text":".2 times"}
+{"t":1451,"text":" 10^6$ H"}
+{"t":1471,"text":"z])\n  + $1$"}
+{"t":1491,"text":" h"}
+{"t":1512,"text":"our to seconds: #bl"}
+{"t":1532,"text":"ank(width: 4"}
+{"t":1554,"text":"em, answer: [$3"}
+{"t":1573,"text":"600$ s])\n]"}
+{"t":1610,"text":"\n\n#question(points: 1"}
+{"t":1623,"text":")[\n  The"}
+{"t":1640,"text":" density"}
+{"t":1665,"text":" of a met"}
+{"t":1687,"text":"al is $2"}
+{"t":1702,"text":"700"}
+{"t":1722,"text":"$ kg/m$"}
+{"t":1743,"text":"^3$. What is this"}
+{"t":1758,"text":" in g"}
+{"t":1778,"text":"/cm$^3$?"}
+{"t":1798,"text":"\n  #mcq([$"}
+{"t":1819,"text":"0"}
+{"t":1839,"text":".27$ g/cm"}
+{"t":1861,"text":"$^3$], [$2"}
+{"t":1879,"text":".7$ g/cm"}
+{"t":1900,"text":"$^3$], [$27"}
+{"t":1921,"text":"$ g/cm$^"}
+{"t":1942,"text":"3$], [$2"}
+{"t":1962,"text":"700$ g/cm$"}
+{"t":1982,"text":"^3$], answer: "}
+{"t":2002,"text":"2)\n]\n\n#question("}
+{"t":2023,"text":"points: 3)[\n  "}
+{"t":2046,"text":"Explain why sc"}
+{"t":2064,"text":"ientists use a single"}
+{"t":2084,"text":" system"}
+{"t":2104,"text":" of units such as SI when"}
+{"t":2125,"text":" s"}
+{"t":2145,"text":"haring results.\n  #answ"}
+{"t":2177,"text":"er-lines(count: "}
+{"t":2193,"text":"3, answer: [Ever"}
+{"t":2209,"text":"yone meas"}
+{"t":2233,"text":"ures in"}
+{"t":2249,"text":" the same units, so results"}
+{"t":2268,"text":" can be compared,"}
+{"t":2289,"text":" rep"}
+{"t":2309,"text":"eated and comb"}
+{"t":2332,"text":"ined without error"}
+{"t":2350,"text":" from"}
+{"t":2370,"text":" conversion.])\n]"}

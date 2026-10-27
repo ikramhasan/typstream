@@ -15,6 +15,7 @@ describe("fixes", () => {
     ["bare-hash", "Item # 5", "Item \\# 5"],
     ["stray-closer", "a ] b", "a \\] b"],
     ["unclosed-delim", "*never closed\n\nnext", "\\*never closed\n\nnext"],
+    ["math-lone-script", "Area $100$ m$^2$ of Cl$_2$", 'Area $100$ m$""^2$ of Cl$""_2$'],
   ])("%s", (rule, input, output) => {
     const r = final(input);
     expect(r.source).toBe(output);

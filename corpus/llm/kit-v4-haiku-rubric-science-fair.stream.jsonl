@@ -1,0 +1,139 @@
+{"t":0,"text":"#"}
+{"t":20,"text":"show"}
+{"t":156,"text":": worksheet."}
+{"t":156,"text":"with(title: [Science"}
+{"t":156,"text":" Fair Project Rubric"}
+{"t":156,"text":"], subject: [Science],"}
+{"t":156,"text":" grade: [Grade "}
+{"t":162,"text":"7], info: none)\n\n="}
+{"t":180,"text":" Science Fair Project"}
+{"t":200,"text":" Rubric\n\nEach"}
+{"t":220,"text":" cri"}
+{"t":240,"text":"terion is sc"}
+{"t":261,"text":"ored by"}
+{"t":281,"text":" level"}
+{"t":317,"text":"."}
+{"t":321,"text":" The points for"}
+{"t":343,"text":" each level are shown in"}
+{"t":362,"text":" the table"}
+{"t":382,"text":";"}
+{"t":403,"text":" a project"}
+{"t":423,"text":"'s"}
+{"t":443,"text":" total is the sum across"}
+{"t":464,"text":" all"}
+{"t":486,"text":" criteria.\n\n#rub"}
+{"t":506,"text":"ric(\n  ([Question"}
+{"t":531,"text":" and hypothesis], ["}
+{"t":546,"text":"Clear, testable question"}
+{"t":566,"text":" with a spec"}
+{"t":591,"text":"ific, reasoned hyp"}
+{"t":609,"text":"othesis.], [Cl"}
+{"t":628,"text":"ear question; h"}
+{"t":649,"text":"ypothesis is test"}
+{"t":669,"text":"able."}
+{"t":696,"text":"], [Question"}
+{"t":709,"text":" is vague or"}
+{"t":733,"text":" the hypothesis is unt"}
+{"t":751,"text":"estable.], [No"}
+{"t":770,"text":" question or hypothesis."}
+{"t":791,"text":"]),\n  ([Method"}
+{"t":812,"text":" and variables], [Ident"}
+{"t":836,"text":"ifies independ"}
+{"t":852,"text":"ent,"}
+{"t":873,"text":" dependent and controlled vari"}
+{"t":893,"text":"ables; method"}
+{"t":916,"text":" is rep"}
+{"t":934,"text":"eatable and safe.],"}
+{"t":962,"text":" [Vari"}
+{"t":976,"text":"ables identified; method is m"}
+{"t":995,"text":"ostly rep"}
+{"t":1015,"text":"eatable.], [Some"}
+{"t":1036,"text":" variables miss"}
+{"t":1056,"text":"ing;"}
+{"t":1078,"text":" method is h"}
+{"t":1097,"text":"ard to rep"}
+{"t":1117,"text":"eat.], [No"}
+{"t":1138,"text":" method described"}
+{"t":1159,"text":".]),\n  (["}
+{"t":1180,"text":"Data collection],"}
+{"t":1199,"text":" [Acc"}
+{"t":1219,"text":"urate, organ"}
+{"t":1240,"text":"ised"}
+{"t":1260,"text":" data with rep"}
+{"t":1282,"text":"eated tr"}
+{"t":1307,"text":"ials and units thro"}
+{"t":1322,"text":"ughout.], [Organ"}
+{"t":1342,"text":"ised data with"}
+{"t":1362,"text":" units;"}
+{"t":1383,"text":" few"}
+{"t":1404,"text":" trials.], [Data is"}
+{"t":1424,"text":" incomplete or dis"}
+{"t":1444,"text":"organised.], [No data"}
+{"t":1465,"text":" rec"}
+{"t":1485,"text":"orded.]),\n  "}
+{"t":1505,"text":"([Analysis and gra"}
+{"t":1526,"text":"phs], [Gra"}
+{"t":1546,"text":"phs are"}
+{"t":1566,"text":" labelled and correct; tr"}
+{"t":1587,"text":"ends are explained with"}
+{"t":1608,"text":" re"}
+{"t":1629,"text":"ference to the"}
+{"t":1648,"text":" data.], [Graphs"}
+{"t":1669,"text":" are m"}
+{"t":1689,"text":"ostly correct; trends are"}
+{"t":1710,"text":" described"}
+{"t":1729,"text":".], [Graphs have"}
+{"t":1752,"text":" errors or tr"}
+{"t":1771,"text":"ends are not"}
+{"t":1793,"text":" described"}
+{"t":1812,"text":".], [No graphs or"}
+{"t":1832,"text":" analysis.]),\n  "}
+{"t":1852,"text":"([Conclusion and"}
+{"t":1872,"text":" ev"}
+{"t":1893,"text":"aluation], [Concl"}
+{"t":1914,"text":"usion mat"}
+{"t":1935,"text":"ches the data"}
+{"t":1954,"text":"; sources of"}
+{"t":1974,"text":" error and impro"}
+{"t":1996,"text":"vements are disc"}
+{"t":2015,"text":"ussed.], [Concl"}
+{"t":2036,"text":"usion mat"}
+{"t":2057,"text":"ches the data; errors bri"}
+{"t":2077,"text":"efly no"}
+{"t":2097,"text":"ted.], [Conclus"}
+{"t":2117,"text":"ion is we"}
+{"t":2140,"text":"ak"}
+{"t":2159,"text":"ly supported by"}
+{"t":2181,"text":" the data.], [No"}
+{"t":2201,"text":" conclusion.]),"}
+{"t":2224,"text":"\n  ([Presentation],"}
+{"t":2250,"text":" [Display"}
+{"t":2261,"text":" is clear, well organ"}
+{"t":2281,"text":"ised and answ"}
+{"t":2302,"text":"ers questions conf"}
+{"t":2322,"text":"idently.], [Display"}
+{"t":2342,"text":" is clear;"}
+{"t":2362,"text":" some questions answered well"}
+{"t":2385,"text":".], [Display is h"}
+{"t":2403,"text":"ard to follow."}
+{"t":2424,"text":"], [No"}
+{"t":2444,"text":" display."}
+{"t":2464,"text":"]),\n  "}
+{"t":2485,"text":"lev"}
+{"t":2505,"text":"els: "}
+{"t":2526,"text":"([Exc"}
+{"t":2547,"text":"ellent], [Good], ["}
+{"t":2568,"text":"Developing], [Be"}
+{"t":2587,"text":"ginning]),\n  points:"}
+{"t":2608,"text":" (5"}
+{"t":2628,"text":", 4, 2"}
+{"t":2651,"text":", 0"}
+{"t":2668,"text":"),\n)\n\n#call"}
+{"t":2690,"text":"out(kind: \"t"}
+{"t":2709,"text":"ip\")["}
+{"t":2730,"text":"Total the"}
+{"t":2750,"text":" points"}
+{"t":2770,"text":" for all"}
+{"t":2791,"text":" six criteria. The"}
+{"t":2811,"text":" maximum score"}
+{"t":2829,"text":" is 30.]"}

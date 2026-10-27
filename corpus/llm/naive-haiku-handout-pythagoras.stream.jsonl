@@ -1,0 +1,231 @@
+{"t":0,"text":"="}
+{"t":21,"text":" The Pythagorean"}
+{"t":40,"text":" Theorem\n\n*"}
+{"t":63,"text":"Name:* #"}
+{"t":81,"text":"line"}
+{"t":99,"text":"(length: 60"}
+{"t":119,"text":"%) *"}
+{"t":140,"text":"Date:* #line(length"}
+{"t":160,"text":": 25"}
+{"t":184,"text":"%)\n\n=="}
+{"t":201,"text":" What is"}
+{"t":222,"text":" a right triangle?"}
+{"t":245,"text":"\n\nA *"}
+{"t":262,"text":"right triangle* has one ang"}
+{"t":285,"text":"le of exactly "}
+{"t":304,"text":"90°"}
+{"t":324,"text":","}
+{"t":344,"text":" mar"}
+{"t":365,"text":"ked with a small"}
+{"t":385,"text":" square. The two"}
+{"t":408,"text":" sides that"}
+{"t":426,"text":" meet at the right angle are"}
+{"t":446,"text":" called the *legs*. The"}
+{"t":466,"text":" side opposite the right angle"}
+{"t":487,"text":" is the"}
+{"t":512,"text":" long"}
+{"t":532,"text":"est side, called the *hyp"}
+{"t":568,"text":"otenuse*.\n\n=="}
+{"t":573,"text":" The di"}
+{"t":591,"text":"agram\n\n#block(width:"}
+{"t":610,"text":" 8"}
+{"t":632,"text":"cm, height: 5."}
+{"t":652,"text":"4"}
+{"t":670,"text":"cm)[\n  #place"}
+{"t":691,"text":"(top + left, dx:"}
+{"t":714,"text":" 0.8cm, d"}
+{"t":733,"text":"y: 0.3cm"}
+{"t":774,"text":",\n    pol"}
+{"t":786,"text":"ygon(fill: rg"}
+{"t":793,"text":"b(\""}
+{"t":813,"text":"#eef6ff\"),"}
+{"t":837,"text":" stroke: 1pt"}
+{"t":855,"text":",\n      (0cm,"}
+{"t":877,"text":" 0cm), (0c"}
+{"t":897,"text":"m, 4cm), ("}
+{"t":918,"text":"6cm, 4cm"}
+{"t":936,"text":")))\n  #place(top"}
+{"t":958,"text":" + left, dx: 0"}
+{"t":980,"text":".8cm, dy:"}
+{"t":998,"text":" 3.9cm,"}
+{"t":1018,"text":"\n    rect(width: 0"}
+{"t":1038,"text":".4cm, height: "}
+{"t":1059,"text":"0.4cm, stro"}
+{"t":1083,"text":"ke: 0.8pt"}
+{"t":1101,"text":", fill: none))\n  "}
+{"t":1124,"text":"#place(top + left, d"}
+{"t":1142,"text":"x: 3.3cm"}
+{"t":1163,"text":", dy: 4.85"}
+{"t":1181,"text":"cm)[*"}
+{"t":1201,"text":"$"}
+{"t":1225,"text":"a$*"}
+{"t":1242,"text":" (leg)]\n  #"}
+{"t":1263,"text":"place(top + left, dx"}
+{"t":1283,"text":": 0.1"}
+{"t":1307,"text":"cm, dy: 2"}
+{"t":1325,"text":".2cm)[*$"}
+{"t":1358,"text":"b$* (leg)]"}
+{"t":1380,"text":"\n  #place(top + left"}
+{"t":1392,"text":", dx: 4.4"}
+{"t":1409,"text":"cm, dy: 1"}
+{"t":1426,"text":".4cm)[*$"}
+{"t":1450,"text":"c$* (hypoten"}
+{"t":1467,"text":"use)]\n  #place"}
+{"t":1489,"text":"(top + left, dx:"}
+{"t":1510,"text":" 0.2cm, d"}
+{"t":1530,"text":"y: 4.85"}
+{"t":1549,"text":"cm)[right"}
+{"t":1569,"text":" angle]\n]\n\n== The"}
+{"t":1589,"text":" theorem\n\nFor"}
+{"t":1610,"text":" any"}
+{"t":1630,"text":" right triangle,"}
+{"t":1653,"text":" the square of the h"}
+{"t":1673,"text":"ypotenuse equ"}
+{"t":1695,"text":"als the sum of the squares"}
+{"t":1712,"text":" of the two"}
+{"t":1736,"text":" legs:\n\n$"}
+{"t":1753,"text":" a^2 + b^2"}
+{"t":1776,"text":" = c^2 $"}
+{"t":1793,"text":"\n\nHere"}
+{"t":1814,"text":" $a$ and $b$"}
+{"t":1844,"text":" are the legs and"}
+{"t":1856,"text":" $c$ is the hyp"}
+{"t":1875,"text":"otenuse. To use"}
+{"t":1896,"text":" it"}
+{"t":1916,"text":", rearrange the form"}
+{"t":1936,"text":"ula as needed:\n\n- To"}
+{"t":1958,"text":" find the"}
+{"t":1981,"text":" hypotenuse: $"}
+{"t":2000,"text":"c = sqrt(a"}
+{"t":2041,"text":"^2 + b^2)"}
+{"t":2041,"text":"$\n- To find a leg"}
+{"t":2060,"text":": $a = sqrt"}
+{"t":2079,"text":"(c^2 - b^"}
+{"t":2102,"text":"2)$"}
+{"t":2120,"text":" or $b = sqrt"}
+{"t":2141,"text":"(c^2 - a^"}
+{"t":2163,"text":"2)$\n\n== Worked"}
+{"t":2182,"text":" example "}
+{"t":2204,"text":"1: fin"}
+{"t":2222,"text":"ding the hypotenuse"}
+{"t":2243,"text":"\n\n*Problem."}
+{"t":2272,"text":"* A right triangle has leg"}
+{"t":2283,"text":"s of "}
+{"t":2305,"text":"6 cm and 8 "}
+{"t":2325,"text":"cm. Find the h"}
+{"t":2347,"text":"ypotenuse.\n\n+"}
+{"t":2366,"text":" Write"}
+{"t":2391,"text":" the the"}
+{"t":2406,"text":"orem: $a^2 "}
+{"t":2427,"text":"+ b^2 = c^"}
+{"t":2448,"text":"2$.\n+ Subst"}
+{"t":2477,"text":"itute the leg"}
+{"t":2495,"text":"s: $6^2 +"}
+{"t":2516,"text":" 8^2 = c^"}
+{"t":2539,"text":"2$.\n+ Square"}
+{"t":2549,"text":" the"}
+{"t":2572,"text":" leg"}
+{"t":2589,"text":"s: $36 + 64"}
+{"t":2610,"text":" = c^2$."}
+{"t":2631,"text":"\n+ Add:"}
+{"t":2652,"text":" $100 = c^2$"}
+{"t":2671,"text":".\n+ Take the posit"}
+{"t":2692,"text":"ive square root: $c = s"}
+{"t":2712,"text":"qrt(100) = "}
+{"t":2736,"text":"10$."}
+{"t":2753,"text":"\n\n*Answer:"}
+{"t":2788,"text":"* The hypotenuse"}
+{"t":2794,"text":" is 10 cm."}
+{"t":2814,"text":"\n\n== Worked example 2:"}
+{"t":2835,"text":" finding a leg\n\n*"}
+{"t":2855,"text":"Problem.* A right triang"}
+{"t":2876,"text":"le has a hypotenu"}
+{"t":2898,"text":"se of 13 cm and"}
+{"t":2919,"text":" one"}
+{"t":2939,"text":" leg of 5 cm"}
+{"t":2957,"text":". Find the other leg."}
+{"t":2981,"text":"\n\n+ Write the theor"}
+{"t":2999,"text":"em: $a^2 +"}
+{"t":3020,"text":" b^2 = c^2"}
+{"t":3039,"text":"$.\n+ Substit"}
+{"t":3061,"text":"ute the known values"}
+{"t":3080,"text":": $5^2 + b"}
+{"t":3100,"text":"^2 = 13^2"}
+{"t":3124,"text":"$.\n+ Square"}
+{"t":3141,"text":":"}
+{"t":3173,"text":" $25 + b^2 "}
+{"t":3184,"text":"= 169$.\n+"}
+{"t":3202,"text":" Subtract "}
+{"t":3223,"text":"25 from both sides: $"}
+{"t":3243,"text":"b^2 = 144$"}
+{"t":3263,"text":".\n+ Take the posit"}
+{"t":3284,"text":"ive square root: $b = s"}
+{"t":3304,"text":"qrt(144) = "}
+{"t":3325,"text":"12$.\n\n*Answer"}
+{"t":3346,"text":":* The other leg is "}
+{"t":3366,"text":"12 cm.\n\n=="}
+{"t":3387,"text":" T"}
+{"t":3407,"text":"ips"}
+{"t":3447,"text":"\n\n- The"}
+{"t":3472,"text":" hypotenuse is always"}
+{"t":3488,"text":" the *larg"}
+{"t":3509,"text":"est* side."}
+{"t":3530,"text":" If"}
+{"t":3550,"text":" you"}
+{"t":3571,"text":" are"}
+{"t":3592,"text":" fin"}
+{"t":3610,"text":"ding a"}
+{"t":3633,"text":" leg, sub"}
+{"t":3651,"text":"tract;"}
+{"t":3674,"text":" if you are finding the hyp"}
+{"t":3692,"text":"otenuse, add."}
+{"t":3714,"text":"\n- Check that"}
+{"t":3737,"text":" your answer is reasonable"}
+{"t":3754,"text":": the hypotenuse"}
+{"t":3777,"text":" must be longer than either leg"}
+{"t":3794,"text":".\n- Common wh"}
+{"t":3816,"text":"ole-number s"}
+{"t":3837,"text":"ets,"}
+{"t":3855,"text":" called Pythagorean tri"}
+{"t":3876,"text":"ples, include 3, 4"}
+{"t":3896,"text":", 5;"}
+{"t":3917,"text":" 5, 12"}
+{"t":3937,"text":", 13; and 8"}
+{"t":3957,"text":", 15, 17."}
+{"t":3979,"text":"\n\n== Practice"}
+{"t":3999,"text":"\n\n+"}
+{"t":4019,"text":" A"}
+{"t":4042,"text":" right triangle has legs of"}
+{"t":4059,"text":" 9"}
+{"t":4081,"text":" cm and 12 c"}
+{"t":4104,"text":"m. Find the hypot"}
+{"t":4122,"text":"enuse.\n  "}
+{"t":4141,"text":"#v"}
+{"t":4163,"text":"(2em)\n+ A"}
+{"t":4182,"text":" right triangle has leg"}
+{"t":4202,"text":"s of 7"}
+{"t":4223,"text":" cm and 24"}
+{"t":4244,"text":" cm. Find the h"}
+{"t":4264,"text":"ypotenuse.\n  "}
+{"t":4284,"text":"#v(2em)\n+"}
+{"t":4304,"text":" A right triangle has a"}
+{"t":4325,"text":" hypotenuse of "}
+{"t":4345,"text":"17 cm and one leg"}
+{"t":4366,"text":" of 8 cm."}
+{"t":4388,"text":" Find the other leg.\n  "}
+{"t":4407,"text":"#v(2em)\n+"}
+{"t":4427,"text":" A "}
+{"t":4447,"text":"ladder "}
+{"t":4468,"text":"10"}
+{"t":4491,"text":" m long le"}
+{"t":4508,"text":"ans against a wall."}
+{"t":4550,"text":" Its fo"}
+{"t":4571,"text":"ot is"}
+{"t":4591,"text":" 6 m from the base"}
+{"t":4613,"text":" of the wall. How"}
+{"t":4631,"text":" high up"}
+{"t":4651,"text":" the wall does the"}
+{"t":4672,"text":" "}
+{"t":4692,"text":"ladder reach?\n  #"}
+{"t":4712,"text":"v(3"}
+{"t":4729,"text":"em)"}

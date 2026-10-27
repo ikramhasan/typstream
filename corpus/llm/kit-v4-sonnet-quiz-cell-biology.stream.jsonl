@@ -1,0 +1,123 @@
+{"t":0,"text":"#"}
+{"t":108,"text":"show: quiz."}
+{"t":108,"text":"with("}
+{"t":108,"text":"\n  title: [Cell"}
+{"t":133,"text":" Biology: True or False],"}
+{"t":167,"text":"\n  subject: [Bi"}
+{"t":201,"text":"ology],\n  grade: ["}
+{"t":236,"text":"Grade 9],\n  "}
+{"t":269,"text":"instructions: ["}
+{"t":301,"text":"Read"}
+{"t":335,"text":" each statement and mark it *"}
+{"t":369,"text":"True* or *False*."}
+{"t":403,"text":"],\n)\n\n#question(points"}
+{"t":466,"text":": 1)[\n  #"}
+{"t":471,"text":"true-false(answer: true"}
+{"t":505,"text":")[The nucleus cont"}
+{"t":538,"text":"ains the cell's genetic"}
+{"t":572,"text":" material (DNA).]"}
+{"t":606,"text":"\n]\n\n#question(points: "}
+{"t":640,"text":"1)[\n  #true-"}
+{"t":673,"text":"false(answer: false)["}
+{"t":707,"text":"Both plant c"}
+{"t":742,"text":"ells and animal cells have a"}
+{"t":776,"text":" cell wall.]\n  "}
+{"t":808,"text":"#answer[False"}
+{"t":842,"text":". Only plant cells ("}
+{"t":875,"text":"and fungi and"}
+{"t":909,"text":" bacteria) have a c"}
+{"t":943,"text":"ell wall.]\n]"}
+{"t":976,"text":"\n\n#question(points: 1)"}
+{"t":1010,"text":"[\n  #true-false("}
+{"t":1043,"text":"answer: true)[M"}
+{"t":1077,"text":"itochondria are"}
+{"t":1110,"text":" the site of most "}
+{"t":1143,"text":"ATP production in a"}
+{"t":1177,"text":"erobic respiration.]"}
+{"t":1212,"text":"\n]\n\n#question(points:"}
+{"t":1244,"text":" 1)[\n  #true"}
+{"t":1278,"text":"-false(answer: true)"}
+{"t":1312,"text":"[Ribosomes are"}
+{"t":1345,"text":" where proteins are made.]"}
+{"t":1379,"text":"\n]\n\n#question(points:"}
+{"t":1412,"text":" 1)[\n  #true"}
+{"t":1446,"text":"-false(answer: false)"}
+{"t":1480,"text":"[Chloroplasts"}
+{"t":1514,"text":" are found in animal cells."}
+{"t":1550,"text":"]\n  #answer[False"}
+{"t":1580,"text":". Chloroplasts"}
+{"t":1614,"text":" are found in plant cells and"}
+{"t":1647,"text":" algae,"}
+{"t":1683,"text":" where"}
+{"t":1714,"text":" photosynthesis takes"}
+{"t":1747,"text":" place.]\n]\n\n#question"}
+{"t":1781,"text":"(points: 1)["}
+{"t":1814,"text":"\n  #true-false(answer"}
+{"t":1848,"text":": true)[The cell memb"}
+{"t":1881,"text":"rane controls which"}
+{"t":1915,"text":" substances enter and leave the"}
+{"t":1948,"text":" cell.]\n]\n\n#"}
+{"t":1982,"text":"question(points: 1)["}
+{"t":2016,"text":"\n  #true-false(answ"}
+{"t":2049,"text":"er: false)[Osm"}
+{"t":2082,"text":"osis is the movement of sol"}
+{"t":2116,"text":"ute particles from a low to a"}
+{"t":2149,"text":" high concentration."}
+{"t":2183,"text":"]\n  #answer[False"}
+{"t":2216,"text":". Osmosis is the"}
+{"t":2249,"text":" movement of _"}
+{"t":2283,"text":"water_ across a partially perm"}
+{"t":2316,"text":"eable membrane,"}
+{"t":2350,"text":" from a dilute sol"}
+{"t":2383,"text":"ution to a more concentrated"}
+{"t":2416,"text":" one"}
+{"t":2451,"text":".]\n]\n\n#question("}
+{"t":2483,"text":"points: 1)[\n  "}
+{"t":2517,"text":"#true-false(answer:"}
+{"t":2560,"text":" true)[Prokary"}
+{"t":2590,"text":"otic cells,"}
+{"t":2624,"text":" such as bacteria, do"}
+{"t":2650,"text":" not have a nucleus."}
+{"t":2684,"text":"]\n]\n\n#question(points"}
+{"t":2718,"text":": 1)[\n  #"}
+{"t":2751,"text":"true-false(answer: false"}
+{"t":2785,"text":")[Diffusion need"}
+{"t":2818,"text":"s energ"}
+{"t":2851,"text":"y from "}
+{"t":2884,"text":"ATP.]\n  #answ"}
+{"t":2918,"text":"er[False. Diffus"}
+{"t":2951,"text":"ion is pass"}
+{"t":2985,"text":"ive:"}
+{"t":3018,"text":" particles move down a conc"}
+{"t":3051,"text":"entration gradient without"}
+{"t":3085,"text":" using energy.]\n]"}
+{"t":3118,"text":"\n\n#question(points: 1)"}
+{"t":3151,"text":"[\n  #true-false("}
+{"t":3185,"text":"answer: true)[A m"}
+{"t":3218,"text":"ature plant cell us"}
+{"t":3254,"text":"ually has a large central"}
+{"t":3285,"text":" vacuole that st"}
+{"t":3318,"text":"ores water"}
+{"t":3351,"text":" and helps support the cell."}
+{"t":3385,"text":"]\n]\n\n#question(points"}
+{"t":3419,"text":": 1)[\n  #"}
+{"t":3452,"text":"true-false(answer: true"}
+{"t":3485,"text":")[New cells are"}
+{"t":3518,"text":" produ"}
+{"t":3551,"text":"ced from"}
+{"t":3585,"text":" existing cells by c"}
+{"t":3618,"text":"ell division.]\n]\n\n#"}
+{"t":3652,"text":"question(points: 1)["}
+{"t":3685,"text":"\n  #true-false(answ"}
+{"t":3718,"text":"er: false)[Mit"}
+{"t":3752,"text":"osis produces four c"}
+{"t":3786,"text":"ells that"}
+{"t":3818,"text":" are genetically different from the"}
+{"t":3852,"text":" parent cell.]\n  "}
+{"t":3886,"text":"#answer[False"}
+{"t":3919,"text":". Mitosis produces"}
+{"t":3952,"text":" two c"}
+{"t":3986,"text":"ells that are genetically identical"}
+{"t":4019,"text":" to the parent cell.]"}
+{"t":4053,"text":"\n]\n\n#answer-key"}
+{"t":4077,"text":"()"}

@@ -1,0 +1,266 @@
+{"t":0,"text":"="}
+{"t":34,"text":" Bal"}
+{"t":63,"text":"ancing Chemical Equ"}
+{"t":99,"text":"ations"}
+{"t":134,"text":"\n*Grade 9 "}
+{"t":165,"text":"Chemistry"}
+{"t":198,"text":" Worksheet*"}
+{"t":232,"text":"\n\nName: #box"}
+{"t":264,"text":"(width: 8"}
+{"t":299,"text":"c"}
+{"t":330,"text":"m, line"}
+{"t":365,"text":"(length: 100%)"}
+{"t":398,"text":") #"}
+{"t":431,"text":"h(1"}
+{"t":465,"text":"em) Date: #box("}
+{"t":497,"text":"width: 3"}
+{"t":536,"text":"cm, line(length: "}
+{"t":564,"text":"100%))\n\n== Rem"}
+{"t":598,"text":"ember\n\n-"}
+{"t":631,"text":" The"}
+{"t":698,"text":" Law of Conservation of"}
+{"t":730,"text":" Mass says"}
+{"t":764,"text":" at"}
+{"t":799,"text":"oms are not"}
+{"t":831,"text":" created or destroyed in"}
+{"t":864,"text":" a re"}
+{"t":897,"text":"action, so each"}
+{"t":930,"text":" element"}
+{"t":964,"text":" must have"}
+{"t":1002,"text":" the *"}
+{"t":1034,"text":"same number of"}
+{"t":1063,"text":" atoms*"}
+{"t":1100,"text":" on both sides.\n-"}
+{"t":1131,"text":" Change"}
+{"t":1165,"text":" only the *"}
+{"t":1197,"text":"coefficients*"}
+{"t":1233,"text":" (the big"}
+{"t":1264,"text":" numbers in front)."}
+{"t":1297,"text":" Never change the subscripts"}
+{"t":1331,"text":".\n- T"}
+{"t":1364,"text":"ip: balance el"}
+{"t":1399,"text":"ements that app"}
+{"t":1431,"text":"ear in only one comp"}
+{"t":1464,"text":"ound first, and"}
+{"t":1499,"text":" le"}
+{"t":1531,"text":"ave hydrogen and o"}
+{"t":1566,"text":"xygen for last.\n-"}
+{"t":1604,"text":" If you"}
+{"t":1631,"text":" write no"}
+{"t":1667,"text":" number"}
+{"t":1700,"text":" in a"}
+{"t":1731,"text":" blank, it means "}
+{"t":1769,"text":"1,"}
+{"t":1799,"text":" but please"}
+{"t":1831,"text":" write the "}
+{"t":1863,"text":"1 an"}
+{"t":1899,"text":"yway.\n\n== Directions"}
+{"t":1930,"text":"\n\nWrite"}
+{"t":1964,"text":" a"}
+{"t":1997,"text":" coefficient in each blank"}
+{"t":2031,"text":" to balance the equation. The"}
+{"t":2065,"text":" equ"}
+{"t":2097,"text":"ations get"}
+{"t":2133,"text":" harder as you go."}
+{"t":2166,"text":"\n\n#let b = box(width"}
+{"t":2197,"text":": 1.5"}
+{"t":2231,"text":"em, height"}
+{"t":2265,"text":": 1em, stroke"}
+{"t":2299,"text":": (bottom: 0"}
+{"t":2332,"text":".6"}
+{"t":2366,"text":"pt))\n\n="}
+{"t":2397,"text":"== Part A"}
+{"t":2430,"text":": War"}
+{"t":2464,"text":"m-up ("}
+{"t":2497,"text":"1 to 4"}
+{"t":2532,"text":")\n\n+ $ #"}
+{"t":2566,"text":"b \"H\"_2 +"}
+{"t":2597,"text":" #b \"O\"_2 "}
+{"t":2631,"text":"-> #b \"H\"_"}
+{"t":2664,"text":"2\"O\" $\n+"}
+{"t":2700,"text":" $ #b \"N\"_"}
+{"t":2730,"text":"2 + #b \"H\""}
+{"t":2764,"text":"_2 -> #b \""}
+{"t":2797,"text":"NH\"_3 $"}
+{"t":2832,"text":"\n+ $ #b \""}
+{"t":2864,"text":"Mg\" + #b \"O"}
+{"t":2897,"text":"\"_2 -> #b"}
+{"t":2931,"text":" \"MgO\" $\n+"}
+{"t":2967,"text":" $ #b \"Na"}
+{"t":2998,"text":"\" + #b \"Cl"}
+{"t":3031,"text":"\"_2 -> #b"}
+{"t":3065,"text":" \"NaCl\" $"}
+{"t":3099,"text":"\n\n=== Part B: Get"}
+{"t":3131,"text":"ting T"}
+{"t":3164,"text":"ougher (5 to 8"}
+{"t":3200,"text":")\n\n+ $ #b"}
+{"t":3231,"text":" \"CH\"_4 +"}
+{"t":3264,"text":" #b \"O\"_2 "}
+{"t":3303,"text":"-> #b \"CO\""}
+{"t":3332,"text":"_2 + #b \"H"}
+{"t":3365,"text":"\"_2\""}
+{"t":3399,"text":"O\" $\n+ $"}
+{"t":3433,"text":" #b \"Fe\" +"}
+{"t":3469,"text":" #b \"O\"_2 "}
+{"t":3498,"text":"-> #b \"Fe"}
+{"t":3533,"text":"\"_2\"O\"_3"}
+{"t":3567,"text":" $\n+ $ #"}
+{"t":3598,"text":"b \"Al\" + #b"}
+{"t":3631,"text":" \"HCl\" -> #"}
+{"t":3667,"text":"b \"AlCl\"_"}
+{"t":3701,"text":"3 + #b \"H\""}
+{"t":3732,"text":"_2 $\n+ $"}
+{"t":3765,"text":" #b \"C\"_3"}
+{"t":3799,"text":"\"H\"_8 + #"}
+{"t":3835,"text":"b \"O\"_2 -"}
+{"t":3866,"text":"> #b \"CO\"_"}
+{"t":3904,"text":"2 + #b \"H\""}
+{"t":3935,"text":"_2\"O\""}
+{"t":3972,"text":" $\n\n=== Part C:"}
+{"t":4001,"text":" Challenge (9 to"}
+{"t":4041,"text":" 10)\n\n+ $"}
+{"t":4066,"text":" #b \"Al\"_2"}
+{"t":4098,"text":" (\"SO\"_4"}
+{"t":4132,"text":")"}
+{"t":4165,"text":"_3 + #b \"N"}
+{"t":4201,"text":"aOH\" -> #b"}
+{"t":4232,"text":" \"Al\""}
+{"t":4265,"text":" (\"OH\")_3 "}
+{"t":4299,"text":"+ #b \"Na\"_"}
+{"t":4332,"text":"2 "}
+{"t":4365,"text":"\"SO\"_4 $"}
+{"t":4402,"text":"\n+ $ #b \""}
+{"t":4433,"text":"Ca\" (\"OH"}
+{"t":4466,"text":"\")_2 + #b \""}
+{"t":4499,"text":"H\"_3 \"PO"}
+{"t":4532,"text":"\"_4 -> #b"}
+{"t":4567,"text":" \"Ca\""}
+{"t":4600,"text":"_3 (\"PO\""}
+{"t":4632,"text":"_4)_2 + #"}
+{"t":4667,"text":"b \"H\"_2\"O"}
+{"t":4702,"text":"\" $\n\n#pagebre"}
+{"t":4734,"text":"ak()\n\n="}
+{"t":4769,"text":" Answer Key\n\n#"}
+{"t":4799,"text":"table(\n  columns: ("}
+{"t":4832,"text":"au"}
+{"t":4866,"text":"to, "}
+{"t":4900,"text":"1fr, au"}
+{"t":4934,"text":"to),\n  align: ("}
+{"t":4966,"text":"center"}
+{"t":4999,"text":" +"}
+{"t":5032,"text":" horizon"}
+{"t":5067,"text":", left + horizon, left"}
+{"t":5100,"text":" + horizon),\n  ["}
+{"t":5133,"text":"*"}
+{"t":5208,"text":"\\"}
+{"t":5208,"text":"#*], [*Balan"}
+{"t":5233,"text":"ced equation*], [*"}
+{"t":5269,"text":"Coefficients*],\n  "}
+{"t":5299,"text":"[1], [$ "}
+{"t":5335,"text":"2 \"H\"_2 "}
+{"t":5365,"text":"+ \"O\"_2 -"}
+{"t":5401,"text":"> 2 \"H\"_"}
+{"t":5443,"text":"2\"O"}
+{"t":5465,"text":"\" $], [2, 1"}
+{"t":5503,"text":", 2],\n  [2"}
+{"t":5532,"text":"], [$ \"N\"_"}
+{"t":5565,"text":"2 + 3 \"H"}
+{"t":5599,"text":"\"_2 -> 2"}
+{"t":5635,"text":" \"NH\"_3 "}
+{"t":5666,"text":"$], [1, 3,"}
+{"t":5700,"text":" 2],\n  [3],"}
+{"t":5732,"text":" [$ 2 \""}
+{"t":5767,"text":"Mg\" + \"O\"_"}
+{"t":5799,"text":"2 -> 2 \""}
+{"t":5836,"text":"MgO\" $], [2"}
+{"t":5874,"text":", 1, 2],"}
+{"t":5909,"text":"\n  [4], [$ "}
+{"t":5937,"text":"2 \"Na\" + \""}
+{"t":5966,"text":"Cl\"_2 -"}
+{"t":5999,"text":"> 2 \"NaC"}
+{"t":6052,"text":"l\" $], [2, "}
+{"t":6069,"text":"1, 2],\n  ["}
+{"t":6099,"text":"5], [$ \"CH"}
+{"t":6132,"text":"\"_4 + 2 "}
+{"t":6167,"text":"\"O\"_2 ->"}
+{"t":6202,"text":" \"CO\"_2 +"}
+{"t":6235,"text":" 2 \"H\"_2"}
+{"t":6269,"text":"\"O\""}
+{"t":6299,"text":" $], [1, 2,"}
+{"t":6333,"text":" 1, 2],\n  "}
+{"t":6366,"text":"[6], [$ 4"}
+{"t":6401,"text":" \"Fe\" + "}
+{"t":6435,"text":"3 \"O\"_2 "}
+{"t":6466,"text":"-> 2 \"F"}
+{"t":6499,"text":"e\"_2\"O\"_"}
+{"t":6535,"text":"3 $], [4, "}
+{"t":6576,"text":"3, 2],\n  ["}
+{"t":6601,"text":"7], [$ 2 "}
+{"t":6634,"text":"\"Al\" + 6 "}
+{"t":6671,"text":"\"HCl\" -> "}
+{"t":6699,"text":"2 \"AlCl\""}
+{"t":6734,"text":"_3 + 3 \""}
+{"t":6769,"text":"H\"_2 $], ["}
+{"t":6800,"text":"2, 6, 2,"}
+{"t":6833,"text":" 3],\n  [8],"}
+{"t":6869,"text":" [$ \"C\"_3"}
+{"t":6899,"text":"\"H\"_8 + "}
+{"t":6933,"text":"5 \"O\"_2 "}
+{"t":6966,"text":"-> 3 \"CO"}
+{"t":7000,"text":"\"_2 + 4 "}
+{"t":7034,"text":"\"H\"_2\"O\""}
+{"t":7068,"text":" $], [1, 5,"}
+{"t":7100,"text":" 3, 4],\n  "}
+{"t":7135,"text":"[9], [$ \""}
+{"t":7167,"text":"Al\"_2 (\"S"}
+{"t":7200,"text":"O\"_4)_3 "}
+{"t":7235,"text":"+ 6 \"NaO"}
+{"t":7268,"text":"H\" -> 2 \""}
+{"t":7301,"text":"Al\" (\"OH\")"}
+{"t":7334,"text":"_3 + 3 \""}
+{"t":7366,"text":"Na\"_2 \"S"}
+{"t":7401,"text":"O\"_4 $], ["}
+{"t":7435,"text":"1, 6, 2,"}
+{"t":7467,"text":" 3],\n  [10],"}
+{"t":7503,"text":" [$ 3 \""}
+{"t":7536,"text":"Ca\" (\"OH\")"}
+{"t":7567,"text":"_2 + 2 \""}
+{"t":7602,"text":"H\"_3 \"PO"}
+{"t":7635,"text":"\"_4 -> \""}
+{"t":7670,"text":"Ca\"_3 "}
+{"t":7705,"text":"(\"PO\"_4)_"}
+{"t":7747,"text":"2 + 6 \"H"}
+{"t":7767,"text":"\"_2\"O\" $],"}
+{"t":7803,"text":" [3, 2, 1"}
+{"t":7839,"text":", 6],\n)\n\n=="}
+{"t":7875,"text":" Teacher Notes"}
+{"t":7905,"text":"\n\n- In"}
+{"t":7940,"text":" "}
+{"t":7973,"text":"9 and 10, treat"}
+{"t":8023,"text":" pol"}
+{"t":8033,"text":"yatomic "}
+{"t":8067,"text":"ions such"}
+{"t":8100,"text":" as $\""}
+{"t":8133,"text":"SO\"_4$,"}
+{"t":8167,"text":" $\"OH\"$ and"}
+{"t":8200,"text":" $\"PO\"_4$"}
+{"t":8233,"text":" as single"}
+{"t":8267,"text":" units when they"}
+{"t":8299,"text":" appear un"}
+{"t":8333,"text":"changed on both sides."}
+{"t":8366,"text":"\n- In 8"}
+{"t":8400,"text":","}
+{"t":8435,"text":" balance car"}
+{"t":8468,"text":"bon first, then h"}
+{"t":8500,"text":"ydrogen, and"}
+{"t":8533,"text":" o"}
+{"t":8568,"text":"xygen last.\n-"}
+{"t":8600,"text":" Check every"}
+{"t":8634,"text":" answer by counting atoms"}
+{"t":8666,"text":" of each element on both sides."}
+{"t":8700,"text":" For example, in question"}
+{"t":8733,"text":" 6"}
+{"t":8770,"text":" "}
+{"t":8802,"text":"there are 4 Fe"}
+{"t":8838,"text":" and 6 O on"}
+{"t":8860,"text":" each side."}

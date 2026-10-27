@@ -1,0 +1,244 @@
+{"t":0,"text":"="}
+{"t":15,"text":" Gr"}
+{"t":38,"text":"ade 9 Stat"}
+{"t":55,"text":"istics: Mean,"}
+{"t":75,"text":" Median, Mode and Range"}
+{"t":96,"text":"\n\n*Name:"}
+{"t":120,"text":"* #"}
+{"t":137,"text":"line(length: 60"}
+{"t":160,"text":"%)"}
+{"t":179,"text":" *Date:* #line("}
+{"t":199,"text":"length: 30"}
+{"t":218,"text":"%)\n\n=="}
+{"t":239,"text":" Part"}
+{"t":260,"text":" A"}
+{"t":280,"text":": Re"}
+{"t":302,"text":"ading the Data"}
+{"t":323,"text":"\n\nThe table"}
+{"t":340,"text":" sh"}
+{"t":362,"text":"ows the scores of 12 "}
+{"t":383,"text":"students on a Un"}
+{"t":403,"text":"it 3"}
+{"t":424,"text":" quiz ("}
+{"t":445,"text":"out of 20).\n\n#"}
+{"t":463,"text":"table(\n  columns: "}
+{"t":484,"text":"4,\n  [*"}
+{"t":508,"text":"Student*], [*Score"}
+{"t":525,"text":"*], [*Student*],"}
+{"t":545,"text":" [*Score*],\n  "}
+{"t":569,"text":"[Ava], [14],"}
+{"t":587,"text":" [H"}
+{"t":607,"text":"ugo], [16"}
+{"t":627,"text":"],\n  [Ben],"}
+{"t":649,"text":" [17], [Isla],"}
+{"t":669,"text":" [18],\n  [Ch"}
+{"t":694,"text":"loe], [12], ["}
+{"t":709,"text":"Jack], [17],\n  "}
+{"t":729,"text":"[Dev], [19"}
+{"t":754,"text":"], [Kai], [13"}
+{"t":771,"text":"],\n  [Ella],"}
+{"t":792,"text":" [15], [Lena],"}
+{"t":811,"text":" [15],\n  [Fin"}
+{"t":832,"text":"n], [17], [Gr"}
+{"t":855,"text":"ace], [10],\n)"}
+{"t":875,"text":"\n\n+ Write"}
+{"t":894,"text":" all"}
+{"t":913,"text":" 12 scores in order"}
+{"t":934,"text":" from sm"}
+{"t":958,"text":"allest to largest."}
+{"t":978,"text":"\n\n#"}
+{"t":995,"text":"v(4"}
+{"t":1015,"text":"em)\n\n+ How many students"}
+{"t":1036,"text":" sc"}
+{"t":1057,"text":"ored "}
+{"t":1076,"text":"17?"}
+{"t":1099,"text":" #"}
+{"t":1120,"text":"line(length: 40"}
+{"t":1138,"text":"%)\n\n== Part B:"}
+{"t":1160,"text":" M"}
+{"t":1180,"text":"ean\n\nThe"}
+{"t":1200,"text":" mean is the"}
+{"t":1220,"text":" sum of all the"}
+{"t":1240,"text":" values divided by the number of values"}
+{"t":1263,"text":".\n\n$ \""}
+{"t":1283,"text":"Mean\" = \""}
+{"t":1303,"text":"sum of scores\" / \""}
+{"t":1323,"text":"number of scores\" $\n\n+"}
+{"t":1342,"text":" Find"}
+{"t":1364,"text":" the sum of all"}
+{"t":1383,"text":" 12 scores."}
+{"t":1405,"text":" #line(length: 40%"}
+{"t":1426,"text":")\n\n+ Calculate"}
+{"t":1445,"text":" the mean score"}
+{"t":1469,"text":". Show"}
+{"t":1485,"text":" your working"}
+{"t":1506,"text":".\n\n#v(5"}
+{"t":1526,"text":"em)\n\n+ Round your"}
+{"t":1547,"text":" m"}
+{"t":1569,"text":"ean to one"}
+{"t":1589,"text":" decimal place."}
+{"t":1608,"text":" #line(length: 40%"}
+{"t":1628,"text":")\n\n== Part C:"}
+{"t":1650,"text":" Median\n\nThe median is the midd"}
+{"t":1669,"text":"le value when"}
+{"t":1691,"text":" the sc"}
+{"t":1712,"text":"ores are ar"}
+{"t":1730,"text":"ranged in order"}
+{"t":1751,"text":". When"}
+{"t":1772,"text":" there is"}
+{"t":1794,"text":" an even number of values, the median"}
+{"t":1813,"text":" is the average of the two middle"}
+{"t":1832,"text":" values.\n\n+ Which"}
+{"t":1852,"text":" two sc"}
+{"t":1873,"text":"ores are the middle sc"}
+{"t":1894,"text":"ores of"}
+{"t":1913,"text":" the "}
+{"t":1935,"text":"ordered list?"}
+{"t":1956,"text":" #line(length: 40"}
+{"t":1976,"text":"%)\n\n+ Find the"}
+{"t":1998,"text":" median. #line(length: "}
+{"t":2018,"text":"40%)\n\n== Part D"}
+{"t":2038,"text":": Mode and"}
+{"t":2062,"text":" Range\n\nThe mode is the"}
+{"t":2077,"text":" value that appears most often. The"}
+{"t":2100,"text":" range is the difference between the high"}
+{"t":2119,"text":"est and lowest values"}
+{"t":2139,"text":".\n\n+ What"}
+{"t":2159,"text":" is the mode of"}
+{"t":2181,"text":" the scores? #line(length"}
+{"t":2201,"text":": 40%)\n\n+"}
+{"t":2223,"text":" What is the range"}
+{"t":2241,"text":" of the scores?"}
+{"t":2262,"text":" Show your working."}
+{"t":2282,"text":" #line(length: 40%"}
+{"t":2304,"text":")\n\n== Part E:"}
+{"t":2324,"text":" Th"}
+{"t":2343,"text":"inking"}
+{"t":2363,"text":" Further"}
+{"t":2384,"text":"\n\n+ A"}
+{"t":2404,"text":" student named"}
+{"t":2426,"text":" M"}
+{"t":2444,"text":"ia miss"}
+{"t":2465,"text":"ed the"}
+{"t":2488,"text":" quiz and then"}
+{"t":2507,"text":" sc"}
+{"t":2527,"text":"ored 5"}
+{"t":2546,"text":" on a"}
+{"t":2569,"text":" make-up test. Add"}
+{"t":2591,"text":" her score"}
+{"t":2608,"text":" to the list."}
+{"t":2631,"text":" Does"}
+{"t":2649,"text":" the mean incre"}
+{"t":2669,"text":"ase or decrease? Expl"}
+{"t":2690,"text":"ain without"}
+{"t":2712,"text":" f"}
+{"t":2730,"text":"ully rec"}
+{"t":2750,"text":"alculating."}
+{"t":2772,"text":"\n\n#v(4"}
+{"t":2792,"text":"em)\n\n+ Which"}
+{"t":2811,"text":" measure of"}
+{"t":2834,"text":" cent"}
+{"t":2853,"text":"re (mean, median or"}
+{"t":2873,"text":" mode) best describes this"}
+{"t":2894,"text":" class"}
+{"t":2917,"text":"'s"}
+{"t":2935,"text":" typ"}
+{"t":2955,"text":"ical score? Justify your cho"}
+{"t":2975,"text":"ice.\n\n#v(5"}
+{"t":2996,"text":"em)\n\n+ Create"}
+{"t":3016,"text":" your"}
+{"t":3039,"text":" own set"}
+{"t":3056,"text":" of five"}
+{"t":3078,"text":" test"}
+{"t":3098,"text":" scores where"}
+{"t":3118,"text":" the mean,"}
+{"t":3139,"text":" median and mode are all different"}
+{"t":3159,"text":"."}
+{"t":3179,"text":" Show"}
+{"t":3201,"text":" that"}
+{"t":3220,"text":" your set"}
+{"t":3240,"text":" works"}
+{"t":3263,"text":".\n\n#v"}
+{"t":3284,"text":"(6em)\n\n#pag"}
+{"t":3304,"text":"ebreak()"}
+{"t":3323,"text":"\n\n== Teacher Answ"}
+{"t":3342,"text":"er Key\n\n+"}
+{"t":3362,"text":" "}
+{"t":3385,"text":"Ordered scores: 10,"}
+{"t":3408,"text":" 12, 13, 14"}
+{"t":3426,"text":", 15, 15, "}
+{"t":3447,"text":"16, 17, 17,"}
+{"t":3465,"text":" 17, 18, 19"}
+{"t":3485,"text":"\n+ Four"}
+{"t":3508,"text":" students scored 17 "}
+{"t":3526,"text":"(Ben"}
+{"t":3546,"text":", Finn, Jack"}
+{"t":3567,"text":", pl"}
+{"t":3587,"text":"us one more if"}
+{"t":3608,"text":" coun"}
+{"t":3631,"text":"ting car"}
+{"t":3649,"text":"efully:"}
+{"t":3669,"text":" three students"}
+{"t":3689,"text":" scored 17 in the table"}
+{"t":3711,"text":")."}
+{"t":3730,"text":"\n+ Sum ="}
+{"t":3753,"text":" 183;"}
+{"t":3771,"text":" Mean = 183"}
+{"t":3792,"text":" "}
+{"t":3811,"text":"÷ 12 ="}
+{"t":3835,"text":" 15.25,"}
+{"t":3854,"text":" which"}
+{"t":3874,"text":" r"}
+{"t":3896,"text":"ounds to 15.3"}
+{"t":3919,"text":".\n+"}
+{"t":3938,"text":" Middle sc"}
+{"t":3954,"text":"ores are"}
+{"t":3976,"text":" the 6th and 7th"}
+{"t":3995,"text":" values: 15 and 16"}
+{"t":4020,"text":".\n+ Median = ("}
+{"t":4036,"text":"15 + 16) "}
+{"t":4057,"text":"÷ 2 = "}
+{"t":4077,"text":"15.5.\n+"}
+{"t":4097,"text":" Mode = 17.\n+"}
+{"t":4118,"text":" Range = 19 −"}
+{"t":4140,"text":" 10 = 9."}
+{"t":4161,"text":"\n+ Adding 5 "}
+{"t":4179,"text":"to "}
+{"t":4202,"text":"12 sc"}
+{"t":4222,"text":"ores l"}
+{"t":4240,"text":"owers the mean,"}
+{"t":4265,"text":" since "}
+{"t":4281,"text":"5 is far below the current"}
+{"t":4302,"text":" m"}
+{"t":4322,"text":"ean of"}
+{"t":4343,"text":" about"}
+{"t":4366,"text":" 15.25."}
+{"t":4383,"text":"\n+"}
+{"t":4406,"text":" Answers will"}
+{"t":4424,"text":" vary."}
+{"t":4446,"text":" The"}
+{"t":4465,"text":" median is often"}
+{"t":4486,"text":" best"}
+{"t":4509,"text":" when a"}
+{"t":4527,"text":" very"}
+{"t":4551,"text":" low score ("}
+{"t":4573,"text":"such as "}
+{"t":4588,"text":"5) pulls the mean"}
+{"t":4610,"text":" down."}
+{"t":4629,"text":"\n+ Answ"}
+{"t":4649,"text":"ers will vary. Example:"}
+{"t":4673,"text":" 3"}
+{"t":4694,"text":", 5"}
+{"t":4711,"text":", 5, 8"}
+{"t":4734,"text":", 9"}
+{"t":4753,"text":" "}
+{"t":4771,"text":"gives mean 6"}
+{"t":4791,"text":", median 5, mode "}
+{"t":4813,"text":"5, so"}
+{"t":4832,"text":" mean and median are not equ"}
+{"t":4858,"text":"al. Check that"}
+{"t":4873,"text":" the mode and"}
+{"t":4900,"text":" median"}
+{"t":4914,"text":" are both different"}
+{"t":4934,"text":" from the"}
+{"t":4961,"text":" mean."}

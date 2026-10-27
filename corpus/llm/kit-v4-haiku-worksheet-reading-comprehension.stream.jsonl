@@ -1,0 +1,172 @@
+{"t":0,"text":"#"}
+{"t":20,"text":"show: worksheet."}
+{"t":41,"text":"with(title: [The"}
+{"t":61,"text":" Seed Jar], sub"}
+{"t":81,"text":"ject: [English"}
+{"t":102,"text":"], grade: [Grade"}
+{"t":122,"text":" 5], info: (\"name"}
+{"t":142,"text":"\", \"date"}
+{"t":163,"text":"\", \"class\"))\n\n="}
+{"t":184,"text":" Read the story"}
+{"t":204,"text":"\n\nPriya had always wanted a"}
+{"t":225,"text":" garden, but the flat she"}
+{"t":247,"text":" shared with her grandmother"}
+{"t":266,"text":" had only one small window ledge"}
+{"t":286,"text":". Every morning she carried"}
+{"t":306,"text":" a chipped blue jar"}
+{"t":328,"text":" to school in her backpack,"}
+{"t":348,"text":" and every afternoon she chec"}
+{"t":369,"text":"ked it again.\n\nInside"}
+{"t":395,"text":" the jar was a single sun"}
+{"t":409,"text":"flower seed. Her gr"}
+{"t":430,"text":"andmother had given it to her"}
+{"t":450,"text":" on the day they moved in."}
+{"t":470,"text":" \"Seeds are patient"}
+{"t":491,"text":",\" Grandma said. \""}
+{"t":511,"text":"They wait until they are ready"}
+{"t":532,"text":" to grow.\"\n\nPriya"}
+{"t":554,"text":" did not feel patient. She"}
+{"t":574,"text":" watered the jar every day,"}
+{"t":593,"text":" even"}
+{"t":614,"text":" though the soil looked dry"}
+{"t":637,"text":". She read books about plants and"}
+{"t":661,"text":" drew pictures of a t"}
+{"t":678,"text":"all yellow flower."}
+{"t":696,"text":" Her classmate Tomas"}
+{"t":719,"text":" laughed at her. \""}
+{"t":738,"text":"Nothing is happening,\" he"}
+{"t":757,"text":" said.\n\nOne Saturday"}
+{"t":779,"text":", a thunderstorm"}
+{"t":798,"text":" rattled the windows. When"}
+{"t":819,"text":" Priya woke up, she"}
+{"t":841,"text":" noticed a small green sho"}
+{"t":860,"text":"ot poking through the soil."}
+{"t":881,"text":" It was no taller than her little"}
+{"t":901,"text":" finger. She ran to the"}
+{"t":921,"text":" kitchen, where Gr"}
+{"t":942,"text":"andma was making tea."}
+{"t":963,"text":"\n\n\"It's growing!\""}
+{"t":984,"text":" Priya shouted."}
+{"t":1005,"text":"\n\nGrandma smiled and set"}
+{"t":1026,"text":" down her cup. \"Now"}
+{"t":1046,"text":" you must give it light and water,"}
+{"t":1065,"text":" and then wait a little longer"}
+{"t":1085,"text":".\"\n\nOver the next wee"}
+{"t":1108,"text":"ks, the shoot grew"}
+{"t":1126,"text":" into a sturdy stem"}
+{"t":1147,"text":" with two broad leaves."}
+{"t":1168,"text":" Priya moved the jar"}
+{"t":1188,"text":" to the window every morning so the"}
+{"t":1209,"text":" plant could catch the sun"}
+{"t":1229,"text":". Tomas came to see"}
+{"t":1249,"text":" it one afternoon and was"}
+{"t":1270,"text":" surprised at how tall it"}
+{"t":1290,"text":" had become.\n\n\"Mayb"}
+{"t":1312,"text":"e I should start a garden too"}
+{"t":1331,"text":",\" he said quietly."}
+{"t":1353,"text":"\n\nPriya grinned. \""}
+{"t":1373,"text":"Seeds are patient,\""}
+{"t":1393,"text":" she reminded him.\n\n="}
+{"t":1413,"text":" Quest"}
+{"t":1434,"text":"ions\n\n#question(points: "}
+{"t":1454,"text":"1)[\n  Where did"}
+{"t":1475,"text":" Priya keep the seed"}
+{"t":1495,"text":" jar before"}
+{"t":1518,"text":" school?\n  #answer-"}
+{"t":1536,"text":"lines(count: 1,"}
+{"t":1557,"text":" answer: [She"}
+{"t":1577,"text":" car"}
+{"t":1597,"text":"ried it to"}
+{"t":1618,"text":" school in her backpack.])"}
+{"t":1640,"text":"\n]\n\n#question(points:"}
+{"t":1660,"text":" 1)[\n  What did"}
+{"t":1679,"text":" Grandma say about see"}
+{"t":1703,"text":"ds?\n  #answer-"}
+{"t":1720,"text":"lines(count: 1,"}
+{"t":1742,"text":" answer: [Seeds"}
+{"t":1767,"text":" are patient;"}
+{"t":1781,"text":" they wait until they are ready"}
+{"t":1824,"text":" to grow.])\n]"}
+{"t":1824,"text":"\n\n#question(points: 1)"}
+{"t":1843,"text":"[\n  Which word best describ"}
+{"t":1866,"text":"es Priya at the start"}
+{"t":1884,"text":" of the story?\n  #m"}
+{"t":1904,"text":"cq([curious], [l"}
+{"t":1925,"text":"azy], [impatient],"}
+{"t":1945,"text":" [for"}
+{"t":1965,"text":"getful], answer: "}
+{"t":1988,"text":"3)\n]\n\n#question("}
+{"t":2006,"text":"points: 2)[\n  "}
+{"t":2027,"text":"Why did Pri"}
+{"t":2048,"text":"ya know"}
+{"t":2068,"text":" the"}
+{"t":2088,"text":" seed had started"}
+{"t":2109,"text":" to grow after"}
+{"t":2128,"text":" the th"}
+{"t":2149,"text":"understorm?\n  "}
+{"t":2170,"text":"#answer-lines(count"}
+{"t":2191,"text":": 2, answer: ["}
+{"t":2210,"text":"She"}
+{"t":2230,"text":" sa"}
+{"t":2251,"text":"w a small green shoot po"}
+{"t":2271,"text":"king through the soil.])"}
+{"t":2292,"text":"\n]\n\n#question(points: "}
+{"t":2313,"text":"2)[\n  "}
+{"t":2334,"text":"Put these events in the order they happ"}
+{"t":2353,"text":"ened"}
+{"t":2374,"text":","}
+{"t":2394,"text":" num"}
+{"t":2415,"text":"bering them"}
+{"t":2435,"text":" 1 to 4:"}
+{"t":2456,"text":"\n  #"}
+{"t":2475,"text":"gr"}
+{"t":2496,"text":"id("}
+{"t":2516,"text":"\n    columns: 2"}
+{"t":2537,"text":",\n    g"}
+{"t":2559,"text":"utter:"}
+{"t":2578,"text":" 1em,\n    [#"}
+{"t":2598,"text":"bl"}
+{"t":2619,"text":"ank("}
+{"t":2639,"text":"width: 2"}
+{"t":2659,"text":"em,"}
+{"t":2679,"text":" answer: [3"}
+{"t":2700,"text":"])"}
+{"t":2721,"text":" Priya moves the jar to"}
+{"t":2742,"text":" the window."}
+{"t":2761,"text":"],\n    [#blank("}
+{"t":2782,"text":"width: 2em, answer"}
+{"t":2802,"text":": [1"}
+{"t":2822,"text":"]) Pri"}
+{"t":2843,"text":"ya rece"}
+{"t":2863,"text":"ives the seed from"}
+{"t":2884,"text":" Grandma.],\n    "}
+{"t":2905,"text":"[#blank(width: "}
+{"t":2925,"text":"2em, answer: [4"}
+{"t":2947,"text":"]) Tomas says"}
+{"t":2965,"text":" he might start a garden.],"}
+{"t":2995,"text":"\n    [#blank(width"}
+{"t":3007,"text":": 2em, answer:"}
+{"t":3027,"text":" [2]) Priya s"}
+{"t":3048,"text":"ees a"}
+{"t":3069,"text":" green shoot.],\n  "}
+{"t":3089,"text":")\n]\n\n#question(points"}
+{"t":3109,"text":": 2"}
+{"t":3131,"text":")[\n  Why do you"}
+{"t":3150,"text":" think Tomas dec"}
+{"t":3170,"text":"ided he"}
+{"t":3190,"text":" might start a garden? Use"}
+{"t":3211,"text":" a"}
+{"t":3231,"text":" det"}
+{"t":3252,"text":"ail from the story.\n  #"}
+{"t":3275,"text":"answer-lines(count:"}
+{"t":3293,"text":" 3"}
+{"t":3322,"text":", answer: [He"}
+{"t":3343,"text":" saw how"}
+{"t":3360,"text":" much the plant had grown,"}
+{"t":3380,"text":" and he was surprised by it"}
+{"t":3400,"text":". Ac"}
+{"t":3419,"text":"ceptable answers"}
+{"t":3435,"text":" m"}
+{"t":3455,"text":"ention the t"}
+{"t":3476,"text":"all plant or his change"}
+{"t":3496,"text":" of mind.])\n]"}

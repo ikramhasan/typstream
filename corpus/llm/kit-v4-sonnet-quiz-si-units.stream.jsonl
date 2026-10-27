@@ -1,0 +1,126 @@
+{"t":0,"text":"#"}
+{"t":33,"text":"show: qu"}
+{"t":66,"text":"iz.with("}
+{"t":99,"text":"\n  title: [S"}
+{"t":133,"text":"I Units and Unit"}
+{"t":167,"text":" Conversions],\n  subject"}
+{"t":202,"text":": [Physics],\n  "}
+{"t":233,"text":"grade: [Grade "}
+{"t":268,"text":"10],\n  instructions:"}
+{"t":300,"text":" [Answer *all* quest"}
+{"t":336,"text":"ions. Show your working where"}
+{"t":368,"text":" space"}
+{"t":402,"text":" is given"}
+{"t":434,"text":".],\n)\n\n#question("}
+{"t":467,"text":"points: 1)[\n  "}
+{"t":501,"text":"What"}
+{"t":535,"text":" is the SI base unit of"}
+{"t":568,"text":" mass?\n  #mc"}
+{"t":603,"text":"q([gram], [kil"}
+{"t":635,"text":"ogram], [t"}
+{"t":668,"text":"onne], [newton], answ"}
+{"t":702,"text":"er: 2)\n]"}
+{"t":735,"text":"\n\n#question(points: 1)"}
+{"t":769,"text":"[\n  The newton (N"}
+{"t":802,"text":"),"}
+{"t":836,"text":" the S"}
+{"t":869,"text":"I unit of force, is equ"}
+{"t":902,"text":"iv"}
+{"t":935,"text":"alent to which comb"}
+{"t":970,"text":"ination of"}
+{"t":1002,"text":" base units?\n  #mc"}
+{"t":1036,"text":"q([$\"kg\" d"}
+{"t":1072,"text":"ot \"m/s\"$"}
+{"t":1102,"text":"], [$\"kg\" d"}
+{"t":1136,"text":"ot \"m\""}
+{"t":1169,"text":"^2 "}
+{"t":1202,"text":"\""}
+{"t":1235,"text":"/s\"^2$], ["}
+{"t":1269,"text":"$\"kg\" dot \""}
+{"t":1303,"text":"m/s\"^2$],"}
+{"t":1336,"text":" [$\"g\" dot \""}
+{"t":1371,"text":"m/s\"^2$],"}
+{"t":1403,"text":" answer: 3)\n]"}
+{"t":1437,"text":"\n\n#question(points: 3"}
+{"t":1470,"text":")[\n  Match each"}
+{"t":1504,"text":" quantity to its SI un"}
+{"t":1540,"text":"it.\n  #"}
+{"t":1570,"text":"matching(\n    (["}
+{"t":1603,"text":"Length], [metre]),"}
+{"t":1637,"text":"\n    ([Time], [second"}
+{"t":1670,"text":"]),\n    ([Elect"}
+{"t":1704,"text":"ric current], ["}
+{"t":1737,"text":"ampere]),\n    (["}
+{"t":1770,"text":"Temperature], [kel"}
+{"t":1805,"text":"vin]),\n  )"}
+{"t":1837,"text":"\n]\n\n#question(points: "}
+{"t":1872,"text":"2)[\n  "}
+{"t":1904,"text":"Complete the con"}
+{"t":1938,"text":"versions.\n  + $2"}
+{"t":1971,"text":".5 \"km\" = #"}
+{"t":2004,"text":"blank(answer: [2"}
+{"t":2037,"text":"500]) \"m\"$"}
+{"t":2071,"text":"\n  + $350"}
+{"t":2105,"text":" \"g"}
+{"t":2139,"text":"\" = #blank(answer"}
+{"t":2172,"text":": [0.35]) \""}
+{"t":2204,"text":"kg\"$\n]\n\n#"}
+{"t":2238,"text":"question(points: 2)["}
+{"t":2271,"text":"\n  #true-false(answ"}
+{"t":2305,"text":"er: true)[$1 "}
+{"t":2343,"text":"\"L\" = 1000 "}
+{"t":2372,"text":"\"cm\"^3$]"}
+{"t":2405,"text":"\n  #true-false(answ"}
+{"t":2439,"text":"er: false)[$1 "}
+{"t":2472,"text":"\"m\""}
+{"t":2507,"text":"^2 = 100 \""}
+{"t":2539,"text":"cm\"^2$]"}
+{"t":2574,"text":"\n]\n\n#question(points: "}
+{"t":2605,"text":"3)[\n  Convert"}
+{"t":2638,"text":" $36 \"km/h\""}
+{"t":2674,"text":"$ to $\"m/s"}
+{"t":2705,"text":"\"$. Show your working."}
+{"t":2739,"text":"\n  #answer-space("}
+{"t":2772,"text":"height: 5"}
+{"t":2805,"text":"em, answer: [$36"}
+{"t":2839,"text":" times"}
+{"t":2872,"text":" 1000 \""}
+{"t":2905,"text":"m\" div"}
+{"t":2939,"text":" 3600 \"s\""}
+{"t":2973,"text":" = 10 \"m/s"}
+{"t":3005,"text":"\"$])"}
+{"t":3039,"text":"\n]\n\n#question(points:"}
+{"t":3072,"text":" 3"}
+{"t":3105,"text":")[\n  Convert $"}
+{"t":3139,"text":"450 \"cm\""}
+{"t":3172,"text":"^2$ to $\"m"}
+{"t":3218,"text":"\"^2$. Show your"}
+{"t":3247,"text":" working.\n  #answer-"}
+{"t":3284,"text":"space(height: 5em,"}
+{"t":3307,"text":" answer: [$1"}
+{"t":3339,"text":" \"cm\" = 0"}
+{"t":3373,"text":".01 \"m\"$,"}
+{"t":3406,"text":" so $1 \"cm\""}
+{"t":3439,"text":"^2 = 0.0"}
+{"t":3473,"text":"001 \"m\"^2$"}
+{"t":3506,"text":". Then"}
+{"t":3539,"text":" $450 times"}
+{"t":3573,"text":" 0.0001 ="}
+{"t":3606,"text":" 0.045 \"m\""}
+{"t":3640,"text":"^2$.])\n]"}
+{"t":3673,"text":"\n\n#question(points: 2"}
+{"t":3706,"text":")[\n  Give"}
+{"t":3740,"text":" one reason why scientists around"}
+{"t":3773,"text":" the world use the"}
+{"t":3806,"text":" SI system.\n  #answ"}
+{"t":3839,"text":"er-lines(count: "}
+{"t":3873,"text":"2, answer: [It"}
+{"t":3906,"text":" g"}
+{"t":3941,"text":"ives a common standard, so meas"}
+{"t":3973,"text":"urements are"}
+{"t":4006,"text":" cons"}
+{"t":4040,"text":"istent and can"}
+{"t":4074,"text":" be compared and"}
+{"t":4106,"text":" shared without confusion.])"}
+{"t":4140,"text":"\n]\n\n#answer-key"}
+{"t":4160,"text":"()"}

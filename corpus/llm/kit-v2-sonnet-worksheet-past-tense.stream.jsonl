@@ -1,0 +1,177 @@
+{"t":0,"text":"#show"}
+{"t":150,"text":": worksheet.with("}
+{"t":154,"text":"\n  title: [Past"}
+{"t":154,"text":" Tense Verbs],"}
+{"t":154,"text":"\n  subject: [English],"}
+{"t":190,"text":"\n  grade: [Grade"}
+{"t":220,"text":" 4],\n  instructions"}
+{"t":253,"text":": [Read"}
+{"t":287,"text":" each"}
+{"t":320,"text":" question car"}
+{"t":355,"text":"efully. Write your"}
+{"t":395,"text":" answers ne"}
+{"t":417,"text":"atly."}
+{"t":514,"text":"],\n)\n\n#callout("}
+{"t":514,"text":"kind: \"rem"}
+{"t":519,"text":"ember\")[\n  A"}
+{"t":551,"text":" *past tense ver"}
+{"t":584,"text":"b* tells us"}
+{"t":617,"text":" about"}
+{"t":651,"text":" something"}
+{"t":685,"text":" that already"}
+{"t":716,"text":" happened. Most ver"}
+{"t":749,"text":"bs add _"}
+{"t":784,"text":"-ed_:"}
+{"t":816,"text":" walk →"}
+{"t":856,"text":" walk"}
+{"t":885,"text":"*ed*. Some ver"}
+{"t":917,"text":"bs change"}
+{"t":949,"text":" complet"}
+{"t":985,"text":"ely: go → went"}
+{"t":1020,"text":".\n]\n\n= Part A"}
+{"t":1049,"text":": Fill in the blan"}
+{"t":1082,"text":"ks"}
+{"t":1116,"text":"\n\nWrite the past tense of the"}
+{"t":1149,"text":" verb in br"}
+{"t":1183,"text":"ackets.\n\n#question(points"}
+{"t":1216,"text":": 1"}
+{"t":1250,"text":")[\n  Yester"}
+{"t":1284,"text":"day, we #blank(answ"}
+{"t":1316,"text":"er: [played"}
+{"t":1349,"text":"]) football"}
+{"t":1383,"text":" in the park."}
+{"t":1416,"text":" (play)\n]\n\n#question"}
+{"t":1450,"text":"(points: 1)["}
+{"t":1483,"text":"\n  She"}
+{"t":1517,"text":" #blank(answer: ["}
+{"t":1553,"text":"walked]) to"}
+{"t":1584,"text":" school last"}
+{"t":1616,"text":" Monday. (walk)"}
+{"t":1650,"text":"\n]\n\n#question(points: "}
+{"t":1684,"text":"1)[\n  The"}
+{"t":1718,"text":" children"}
+{"t":1750,"text":" #blank(answer: ["}
+{"t":1783,"text":"ate]) l"}
+{"t":1817,"text":"unch at no"}
+{"t":1850,"text":"on. (eat)\n]"}
+{"t":1885,"text":"\n\n#question(points: 1"}
+{"t":1917,"text":")[\n  My dad #"}
+{"t":1962,"text":"blank(answer: [went"}
+{"t":1984,"text":"]) to the market"}
+{"t":2029,"text":" this morning. (go)"}
+{"t":2052,"text":"\n]\n\n#question(points: "}
+{"t":2084,"text":"1)[\n  I #bl"}
+{"t":2141,"text":"ank(answer: [saw"}
+{"t":2152,"text":"]) a r"}
+{"t":2186,"text":"ainbow after"}
+{"t":2217,"text":" the rain. (see)"}
+{"t":2251,"text":"\n]\n\n#question(points: "}
+{"t":2284,"text":"1)[\n  T"}
+{"t":2318,"text":"om #blank(answer:"}
+{"t":2351,"text":" [j"}
+{"t":2384,"text":"umped]) over"}
+{"t":2421,"text":" the pu"}
+{"t":2457,"text":"ddle. (jump)"}
+{"t":2484,"text":"\n]\n\n= Part B:"}
+{"t":2518,"text":" Matching\n\n#"}
+{"t":2552,"text":"question(points: 5)["}
+{"t":2585,"text":"\n  Match each"}
+{"t":2617,"text":" present tense verb to its past"}
+{"t":2651,"text":" tense."}
+{"t":2685,"text":"\n  #matching("}
+{"t":2718,"text":"\n    ([run], ["}
+{"t":2751,"text":"ran]),\n    ([sw"}
+{"t":2784,"text":"im], [swam]),"}
+{"t":2819,"text":"\n    ([write], [wr"}
+{"t":2851,"text":"ote]),\n    ([b"}
+{"t":2888,"text":"ring], [brought]),"}
+{"t":2918,"text":"\n    ([drink"}
+{"t":2951,"text":"], [drank]),\n  "}
+{"t":2985,"text":")\n]\n\n= Part C"}
+{"t":3018,"text":": Cho"}
+{"t":3051,"text":"ose the corre"}
+{"t":3086,"text":"ct word"}
+{"t":3118,"text":"\n\n#question(points: 1"}
+{"t":3151,"text":")[\n  Which sent"}
+{"t":3185,"text":"ence is correct?\n  #"}
+{"t":3218,"text":"mcq([He"}
+{"t":3255,"text":" go"}
+{"t":3285,"text":"ed"}
+{"t":3322,"text":" to"}
+{"t":3351,"text":" the z"}
+{"t":3386,"text":"oo.], [He went to"}
+{"t":3419,"text":" the zoo.], [He"}
+{"t":3452,"text":" g"}
+{"t":3484,"text":"one to the zoo.],"}
+{"t":3521,"text":" answer: 2)\n]"}
+{"t":3551,"text":"\n\n#question(points: 2"}
+{"t":3590,"text":")[\n  #true-false"}
+{"t":3618,"text":"(answer: true"}
+{"t":3651,"text":")[The past"}
+{"t":3685,"text":" tense of _"}
+{"t":3720,"text":"look"}
+{"t":3752,"text":"_ is _looked_."}
+{"t":3786,"text":"]\n  #true-false("}
+{"t":3818,"text":"answer: false)[The past"}
+{"t":3851,"text":" tense of _s"}
+{"t":3886,"text":"ing"}
+{"t":3917,"text":"_ is _sing"}
+{"t":3951,"text":"ed_.]\n]\n\n="}
+{"t":3985,"text":" Part D: Writing task"}
+{"t":4019,"text":"\n\n#question(points: 5"}
+{"t":4051,"text":")[\n  Write 4"}
+{"t":4085,"text":" or"}
+{"t":4137,"text":" 5 sentences about what"}
+{"t":4152,"text":" you did last"}
+{"t":4190,"text":" weekend. Use at least"}
+{"t":4218,"text":" *"}
+{"t":4251,"text":"three* past tense verbs"}
+{"t":4284,"text":"."}
+{"t":4318,"text":" Underline each"}
+{"t":4356,"text":" past tense verb you use"}
+{"t":4385,"text":".\n  #answer-l"}
+{"t":4418,"text":"ines(count: 5, sp"}
+{"t":4452,"text":"acing: 2."}
+{"t":4489,"text":"2em, answer: ["}
+{"t":4533,"text":"S"}
+{"t":4554,"text":"ample answer:"}
+{"t":4587,"text":" On Saturday I vis"}
+{"t":4634,"text":"ited my grandm"}
+{"t":4657,"text":"other. We c"}
+{"t":4684,"text":"ooked r"}
+{"t":4718,"text":"ice together and then"}
+{"t":4751,"text":" played"}
+{"t":4788,"text":" a board"}
+{"t":4817,"text":" game. On"}
+{"t":4851,"text":" Sunday I hel"}
+{"t":4884,"text":"ped my m"}
+{"t":4917,"text":"um and"}
+{"t":4951,"text":" watched a film"}
+{"t":4985,"text":".])\n]\n\n#rub"}
+{"t":5019,"text":"ric(\n  ([Past"}
+{"t":5052,"text":" tense verbs], ["}
+{"t":5084,"text":"Three or more used corre"}
+{"t":5118,"text":"ctly], ["}
+{"t":5152,"text":"Two used correctly], [One"}
+{"t":5184,"text":" used correctly], [None corre"}
+{"t":5218,"text":"ct]),\n  (["}
+{"t":5253,"text":"Sentences], [4"}
+{"t":5285,"text":"–"}
+{"t":5317,"text":"5 complete s"}
+{"t":5352,"text":"entences], [3"}
+{"t":5384,"text":" compl"}
+{"t":5418,"text":"ete sentences], [1"}
+{"t":5453,"text":"–2 complete sentences"}
+{"t":5484,"text":"], [No compl"}
+{"t":5517,"text":"ete sentences]),\n  "}
+{"t":5551,"text":"([Spelling and pun"}
+{"t":5585,"text":"ctuation], [Alm"}
+{"t":5638,"text":"ost all correct], [A"}
+{"t":5653,"text":" few m"}
+{"t":5684,"text":"istakes], [Many"}
+{"t":5718,"text":" mistakes], ["}
+{"t":5751,"text":"Hard to read]),\n  "}
+{"t":5784,"text":"points: (3"}
+{"t":5819,"text":", 2, 1, "}
+{"t":5851,"text":"0),\n)\n\n#answer"}
+{"t":5886,"text":"-key()"}

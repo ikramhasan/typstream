@@ -1,0 +1,93 @@
+{"t":0,"text":"#"}
+{"t":144,"text":"show: worksheet."}
+{"t":144,"text":"with(title: [Past"}
+{"t":144,"text":" Tense Verbs], sub"}
+{"t":144,"text":"ject: [English"}
+{"t":144,"text":"], grade: [Grade"}
+{"t":144,"text":" 4])\n\n#inst"}
+{"t":151,"text":"ructions["}
+{"t":171,"text":"\n  - Read"}
+{"t":190,"text":" each"}
+{"t":220,"text":" sentence car"}
+{"t":231,"text":"efully.\n  - Write"}
+{"t":256,"text":" the past"}
+{"t":277,"text":" tense of the verb in br"}
+{"t":293,"text":"ackets.\n  - Dra"}
+{"t":319,"text":"w a"}
+{"t":337,"text":" line to"}
+{"t":360,"text":" match each ver"}
+{"t":379,"text":"b to its past t"}
+{"t":401,"text":"ense.\n]\n\n= Part"}
+{"t":414,"text":" A: Fill in the bl"}
+{"t":439,"text":"anks\n\n#question(points:"}
+{"t":457,"text":" 1)[\n  Y"}
+{"t":476,"text":"esterday I #"}
+{"t":497,"text":"blank(answer: [wal"}
+{"t":518,"text":"ked]) to school"}
+{"t":537,"text":" with"}
+{"t":562,"text":" my friend. (wal"}
+{"t":578,"text":"k)\n]\n\n#question("}
+{"t":600,"text":"points: 1)[\n  "}
+{"t":620,"text":"She"}
+{"t":649,"text":" #blank(answer: ["}
+{"t":680,"text":"ate]) an"}
+{"t":701,"text":" apple at"}
+{"t":721,"text":" lunch. (eat)"}
+{"t":752,"text":"\n]\n\n#question(points:"}
+{"t":762,"text":" 1)[\n  They #"}
+{"t":787,"text":"blank(answer: [played"}
+{"t":802,"text":"]) football"}
+{"t":825,"text":" after"}
+{"t":843,"text":" school. (play)\n]"}
+{"t":863,"text":"\n\n#question(points: 1)"}
+{"t":884,"text":"[\n  We"}
+{"t":904,"text":" #blank(answer: ["}
+{"t":924,"text":"sa"}
+{"t":945,"text":"w]) a b"}
+{"t":973,"text":"ird in"}
+{"t":991,"text":" the gar"}
+{"t":1007,"text":"den. (see)\n]"}
+{"t":1027,"text":"\n\n#question(points: 2)"}
+{"t":1050,"text":"[\n  "}
+{"t":1068,"text":"Last"}
+{"t":1090,"text":" night,"}
+{"t":1108,"text":" Tom #blank(answer"}
+{"t":1128,"text":": [went]) to bed"}
+{"t":1149,"text":" early"}
+{"t":1170,"text":". (go)\n]\n\n="}
+{"t":1190,"text":" Part B: Matching"}
+{"t":1211,"text":"\n\n#question(points: 2)"}
+{"t":1232,"text":"[\n  Match each"}
+{"t":1251,"text":" present"}
+{"t":1275,"text":" t"}
+{"t":1294,"text":"ense verb to its past tense"}
+{"t":1314,"text":".\n  #matching("}
+{"t":1344,"text":"\n    ([run], ["}
+{"t":1362,"text":"ran]),\n    ([take"}
+{"t":1379,"text":"], [took]),\n    "}
+{"t":1410,"text":"([make], [made]),"}
+{"t":1415,"text":"\n    ([bring], [br"}
+{"t":1437,"text":"ought]),\n  )\n]"}
+{"t":1457,"text":"\n\n= Part C: Writ"}
+{"t":1476,"text":"ing\n\n#question(points: "}
+{"t":1496,"text":"4)[\n  Write four"}
+{"t":1517,"text":" sentences about what you did last"}
+{"t":1538,"text":" weekend. Use at"}
+{"t":1557,"text":" least three"}
+{"t":1578,"text":" different past tense ver"}
+{"t":1601,"text":"bs.\n  #answer"}
+{"t":1626,"text":"-lines(count: 4"}
+{"t":1642,"text":", answer: [Example:"}
+{"t":1660,"text":" On Saturday I vis"}
+{"t":1680,"text":"ited my gr"}
+{"t":1701,"text":"andmother. We"}
+{"t":1720,"text":" ba"}
+{"t":1743,"text":"ked a"}
+{"t":1763,"text":" cake together"}
+{"t":1782,"text":"."}
+{"t":1804,"text":" Then I played"}
+{"t":1830,"text":" in"}
+{"t":1843,"text":" the park"}
+{"t":1864,"text":". In"}
+{"t":1887,"text":" the evening I watched a film"}
+{"t":1917,"text":".])\n]"}

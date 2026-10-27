@@ -1,0 +1,59 @@
+{"t":0,"text":"#"}
+{"t":27,"text":"show"}
+{"t":50,"text":": quiz."}
+{"t":72,"text":"with(title: [V"}
+{"t":96,"text":"ocabulario"}
+{"t":111,"text":":"}
+{"t":134,"text":" La comida], subject: ["}
+{"t":156,"text":"Español"}
+{"t":175,"text":"], grade: [Be"}
+{"t":197,"text":"ginner])"}
+{"t":215,"text":"\n\n= Par"}
+{"t":235,"text":"te A: Em"}
+{"t":258,"text":"parejar"}
+{"t":276,"text":"\n\n#question"}
+{"t":297,"text":"(points: 3"}
+{"t":321,"text":")[\n  Match"}
+{"t":337,"text":" each"}
+{"t":358,"text":" Spanish word with its English"}
+{"t":379,"text":" meaning.\n  #mat"}
+{"t":402,"text":"ching(\n    ([pan"}
+{"t":420,"text":"], [bread]),\n    "}
+{"t":446,"text":"([le"}
+{"t":478,"text":"che], [mil"}
+{"t":490,"text":"k]),\n    ([man"}
+{"t":508,"text":"zana], [apple]),"}
+{"t":523,"text":"\n    ([queso], ["}
+{"t":543,"text":"cheese]),\n  )"}
+{"t":563,"text":"\n]\n\n= Parte B"}
+{"t":586,"text":": Complet"}
+{"t":605,"text":"ar"}
+{"t":626,"text":"\n\n#question(points: 2)"}
+{"t":645,"text":"[\n  Complete the s"}
+{"t":665,"text":"entences with the correct word"}
+{"t":688,"text":".\n  +"}
+{"t":707,"text":" Me gusta be"}
+{"t":727,"text":"ber #blank(width"}
+{"t":752,"text":": 5"}
+{"t":769,"text":"em, answer: [leche"}
+{"t":790,"text":"]) con"}
+{"t":808,"text":" el"}
+{"t":831,"text":" des"}
+{"t":850,"text":"ayuno.\n  +"}
+{"t":870,"text":" Como"}
+{"t":891,"text":" una"}
+{"t":910,"text":" #blank(width: 6"}
+{"t":930,"text":"em, answer: [manz"}
+{"t":951,"text":"ana]) roja tod"}
+{"t":971,"text":"os los días"}
+{"t":992,"text":".\n]\n\n#question"}
+{"t":1012,"text":"(points: 1)["}
+{"t":1034,"text":"\n  Which"}
+{"t":1067,"text":" word means"}
+{"t":1076,"text":" \"c"}
+{"t":1095,"text":"heese\"?\n  #m"}
+{"t":1114,"text":"cq([p"}
+{"t":1135,"text":"an], [queso], [le"}
+{"t":1160,"text":"che], [manzana], answ"}
+{"t":1178,"text":"er: 2)\n]"}
+{"t":1204,"text":"\n\n#answer-key()"}

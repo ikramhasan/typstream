@@ -9,6 +9,9 @@ import { PromptExample } from '@typstream/core';
 import { TemplateSpec } from '@typstream/core';
 import { TypstreamPlugin } from '@typstream/core';
 
+// @beta
+export const buildSystemPrompt: (plugins: readonly TypstreamPlugin[], options?: SystemPromptOptions) => string;
+
 // @public
 export const edu: TypstreamPlugin;
 
@@ -41,6 +44,15 @@ export const eduTemplates: TemplateSpec[];
 
 // @public
 export const SHOW_ANSWERS_INPUT = "showAnswers";
+
+// @beta
+export interface SystemPromptOptions {
+    examples?: boolean;
+    typstRules?: readonly string[];
+}
+
+// @beta
+export const typstPromptRules: string[];
 
 // (No @packageDocumentation comment for this package)
 

@@ -1,0 +1,178 @@
+{"t":0,"text":"#"}
+{"t":19,"text":"show: worksheet."}
+{"t":43,"text":"with(title: [Area"}
+{"t":59,"text":" and Perimeter],"}
+{"t":80,"text":" subject: [Mathemat"}
+{"t":104,"text":"ics], grade: [Gr"}
+{"t":121,"text":"ade 6],"}
+{"t":142,"text":" info: (\"name\", \"date"}
+{"t":162,"text":"\", \"class\"))\n\n#import"}
+{"t":182,"text":" \"@preview/cetz"}
+{"t":202,"text":":0.5.3\""}
+{"t":223,"text":"\n\n#"}
+{"t":243,"text":"instructions["}
+{"t":263,"text":"\n  - Use"}
+{"t":284,"text":" the side"}
+{"t":304,"text":" lengths given on"}
+{"t":325,"text":" each shape.\n  -"}
+{"t":345,"text":" Write"}
+{"t":370,"text":" units"}
+{"t":387,"text":" with"}
+{"t":406,"text":" every"}
+{"t":427,"text":" answer.\n  - Show"}
+{"t":449,"text":" your working in"}
+{"t":469,"text":" the"}
+{"t":488,"text":" space prov"}
+{"t":510,"text":"ided.\n]\n\n#callout"}
+{"t":530,"text":"(kind: \"remember\")"}
+{"t":553,"text":"[\n  -"}
+{"t":570,"text":" Perimeter is"}
+{"t":592,"text":" the total"}
+{"t":613,"text":" distance around a"}
+{"t":631,"text":" shape."}
+{"t":655,"text":"\n  - Area of a r"}
+{"t":672,"text":"ectangle:"}
+{"t":692,"text":" $\""}
+{"t":714,"text":"length"}
+{"t":735,"text":"\" times"}
+{"t":753,"text":" \"width\"$."}
+{"t":774,"text":"\n  - Area of a tri"}
+{"t":794,"text":"angle: $1"}
+{"t":815,"text":"/2 times \"base\" times"}
+{"t":835,"text":" \"height\"$.\n]"}
+{"t":856,"text":"\n\n= Part A: R"}
+{"t":883,"text":"ectangle"}
+{"t":901,"text":"\n\n#question(points: 4"}
+{"t":926,"text":")[\n  The rectang"}
+{"t":939,"text":"le below has a length of 8"}
+{"t":958,"text":" cm and a width of "}
+{"t":983,"text":"3 cm.\n\n  #"}
+{"t":1001,"text":"cetz.canvas({"}
+{"t":1025,"text":"\n    import cetz.dra"}
+{"t":1042,"text":"w: *\n    rect(("}
+{"t":1060,"text":"0, 0), (8,"}
+{"t":1081,"text":" 3))\n    content((4"}
+{"t":1101,"text":", -0.6"}
+{"t":1121,"text":"), [8 cm])"}
+{"t":1142,"text":"\n    content((-0.7,"}
+{"t":1162,"text":" 1.5), [3 "}
+{"t":1183,"text":"cm])\n  })\n\n  "}
+{"t":1204,"text":"+"}
+{"t":1223,"text":" Find the perimeter of the"}
+{"t":1245,"text":" rectangle.\n    #"}
+{"t":1266,"text":"answer-space(height: "}
+{"t":1287,"text":"3em, answer: [$"}
+{"t":1314,"text":"8 + 3"}
+{"t":1326,"text":" + 8 + 3"}
+{"t":1346,"text":" = 22$ cm"}
+{"t":1367,"text":"])"}
+{"t":1393,"text":"\n  + Find the area of"}
+{"t":1410,"text":" the rectangle.\n    "}
+{"t":1442,"text":"#answer-space(height:"}
+{"t":1450,"text":" 3em, answer: ["}
+{"t":1471,"text":"$8 times 3 ="}
+{"t":1494,"text":" 24$ $"}
+{"t":1509,"text":"\"cm\""}
+{"t":1541,"text":"^2$])\n]\n\n="}
+{"t":1551,"text":" Part B: Triangle"}
+{"t":1572,"text":"\n\n#question(points: 5"}
+{"t":1609,"text":")[\n  The isosce"}
+{"t":1612,"text":"les triangle below has a base"}
+{"t":1639,"text":" of 6 cm, two"}
+{"t":1653,"text":" equ"}
+{"t":1673,"text":"al sides of 5 c"}
+{"t":1695,"text":"m, and a per"}
+{"t":1716,"text":"pendicular height of 4"}
+{"t":1735,"text":" cm ("}
+{"t":1757,"text":"sh"}
+{"t":1779,"text":"own dashed).\n\n  #"}
+{"t":1795,"text":"cetz.canvas({"}
+{"t":1816,"text":"\n    import cetz.dra"}
+{"t":1836,"text":"w: *\n    polygon"}
+{"t":1857,"text":"((0, 0), (6"}
+{"t":1877,"text":", 0), (3, "}
+{"t":1898,"text":"4))"}
+{"t":1918,"text":"\n    line((3, 0"}
+{"t":1938,"text":"), (3, 4), st"}
+{"t":1959,"text":"roke: (dash: \""}
+{"t":1980,"text":"dashed\"))\n    content"}
+{"t":2005,"text":"((3, -0.6),"}
+{"t":2022,"text":" [6 cm])\n    "}
+{"t":2042,"text":"content((0.8, 2"}
+{"t":2061,"text":".4), [5 cm"}
+{"t":2083,"text":"])\n    content((5"}
+{"t":2102,"text":".2, 2.4),"}
+{"t":2122,"text":" [5 cm])\n    "}
+{"t":2143,"text":"content((2.3"}
+{"t":2164,"text":", 2),"}
+{"t":2184,"text":" [4 cm])\n  "}
+{"t":2206,"text":"})\n\n  + Find the per"}
+{"t":2231,"text":"imeter of the triangle"}
+{"t":2245,"text":".\n    #answer-space"}
+{"t":2266,"text":"(height: 3em, answ"}
+{"t":2286,"text":"er: [$6 + "}
+{"t":2306,"text":"5 + 5 = "}
+{"t":2329,"text":"16$ cm])\n  "}
+{"t":2348,"text":"+ Find the area of the tri"}
+{"t":2370,"text":"angle.\n    #answer"}
+{"t":2389,"text":"-space(height: 3em"}
+{"t":2414,"text":", answer: [$1/"}
+{"t":2429,"text":"2 times 6 times "}
+{"t":2449,"text":"4 = 12$ $"}
+{"t":2470,"text":"\"cm\"^2$])"}
+{"t":2492,"text":"\n  + Explain why the"}
+{"t":2512,"text":" area"}
+{"t":2533,"text":" of the triangle is half"}
+{"t":2552,"text":" the"}
+{"t":2574,"text":" area of a rectangle with"}
+{"t":2593,"text":" the same base and height.\n    "}
+{"t":2615,"text":"#answer-lines(count"}
+{"t":2639,"text":": 2, answer: ["}
+{"t":2656,"text":"A rectangle with the same"}
+{"t":2676,"text":" base and height can"}
+{"t":2696,"text":" be split by"}
+{"t":2715,"text":" a diagonal into two ident"}
+{"t":2735,"text":"ical triangles.])\n]"}
+{"t":2758,"text":"\n\n= Part C: Probl"}
+{"t":2777,"text":"em solving\n\n#question(points"}
+{"t":2798,"text":": 3)[\n  A"}
+{"t":2818,"text":" rectangular garden is"}
+{"t":2843,"text":" 9"}
+{"t":2858,"text":" m long and 5 m"}
+{"t":2879,"text":" wide. A"}
+{"t":2899,"text":" g"}
+{"t":2919,"text":"ardener w"}
+{"t":2941,"text":"ants to put a fence around it"}
+{"t":2960,"text":". How many metres of"}
+{"t":2984,"text":" fence are"}
+{"t":3004,"text":" needed?"}
+{"t":3024,"text":" Show your working.\n  "}
+{"t":3042,"text":"#answer-space(height:"}
+{"t":3065,"text":" 4"}
+{"t":3084,"text":"em, answer: [$9"}
+{"t":3103,"text":" + 5 + 9"}
+{"t":3124,"text":" + 5 = 28"}
+{"t":3145,"text":"$ m, so 28 "}
+{"t":3169,"text":"m of fence."}
+{"t":3185,"text":"])\n]\n\n#question(points"}
+{"t":3205,"text":": 3)[\n  "}
+{"t":3228,"text":"Two sh"}
+{"t":3246,"text":"apes both"}
+{"t":3268,"text":" have an"}
+{"t":3287,"text":" area of 24 cm$"}
+{"t":3309,"text":"\"\""}
+{"t":3328,"text":"^2$. One"}
+{"t":3351,"text":" is a rectangle "}
+{"t":3368,"text":"8 cm by 3 "}
+{"t":3389,"text":"cm. The other is a tri"}
+{"t":3410,"text":"angle with a base of 8"}
+{"t":3429,"text":" cm. What"}
+{"t":3452,"text":" is the height of the triangle"}
+{"t":3470,"text":"?\n  #answer-space"}
+{"t":3516,"text":"(height: 4"}
+{"t":3516,"text":"em, answer: [$1"}
+{"t":3540,"text":"/2 times 8 times"}
+{"t":3553,"text":" h = 24$,"}
+{"t":3572,"text":" so $h = 6$"}
+{"t":3597,"text":" cm.])\n]\n\n#"}
+{"t":3611,"text":"answer-key()"}

@@ -1,0 +1,847 @@
+{"t":0,"text":"#"}
+{"t":31,"text":"set page(paper: \"us"}
+{"t":67,"text":"-letter\", margin: "}
+{"t":90,"text":"0"}
+{"t":125,"text":".9in, numbering:"}
+{"t":159,"text":" \"1\")"}
+{"t":196,"text":"\n#set text(size: "}
+{"t":224,"text":"11pt)\n#set par"}
+{"t":260,"text":"(just"}
+{"t":300,"text":"ify: false"}
+{"t":327,"text":")\n\n= Calculus"}
+{"t":359,"text":" Midterm"}
+{"t":390,"text":" Exam"}
+{"t":423,"text":"\n*"}
+{"t":457,"text":"Limits and Derivat"}
+{"t":491,"text":"ives*"}
+{"t":526,"text":" #h"}
+{"t":564,"text":"(1"}
+{"t":592,"text":"fr) *Time: "}
+{"t":626,"text":"60 minutes* #h"}
+{"t":660,"text":"(1em"}
+{"t":694,"text":") *Total: 100 "}
+{"t":732,"text":"points*\n\nName: #"}
+{"t":768,"text":"box"}
+{"t":800,"text":"(width: 3"}
+{"t":827,"text":"in"}
+{"t":859,"text":", line"}
+{"t":892,"text":"(length"}
+{"t":935,"text":": 100%)) #h"}
+{"t":962,"text":"(1fr) Date:"}
+{"t":1002,"text":" #box(width: 1"}
+{"t":1024,"text":".3in, line(length:"}
+{"t":1059,"text":" 100%))\n\n#v("}
+{"t":1097,"text":"0.5em)\n\n*"}
+{"t":1127,"text":"Instructions*"}
+{"t":1157,"text":"\n- Show all work. A"}
+{"t":1191,"text":" correct answer with no sup"}
+{"t":1227,"text":"porting work ear"}
+{"t":1261,"text":"ns little"}
+{"t":1294,"text":" or no credit.\n-"}
+{"t":1327,"text":" Calculators are not perm"}
+{"t":1360,"text":"itted. Le"}
+{"t":1395,"text":"ave answ"}
+{"t":1426,"text":"ers in"}
+{"t":1458,"text":" exact form, such"}
+{"t":1495,"text":" as $s"}
+{"t":1530,"text":"qrt(2"}
+{"t":1558,"text":")$ or $3"}
+{"t":1595,"text":"/5$."}
+{"t":1626,"text":"\n- Su"}
+{"t":1661,"text":"ggested pacing:"}
+{"t":1694,"text":" Part A about 20 minut"}
+{"t":1727,"text":"es, Part B about 20"}
+{"t":1759,"text":" minutes, Part C"}
+{"t":1796,"text":" about 20 minutes."}
+{"t":1826,"text":"\n\n#table("}
+{"t":1861,"text":"\n  columns: ("}
+{"t":1894,"text":"1"}
+{"t":1929,"text":"fr, 1fr,"}
+{"t":1961,"text":" 1fr, 1f"}
+{"t":2006,"text":"r),\n  align: center"}
+{"t":2025,"text":",\n  [*Part A"}
+{"t":2061,"text":"*"}
+{"t":2095,"text":" (34)], [*Part"}
+{"t":2127,"text":" B* (34)], [*"}
+{"t":2175,"text":"Part C* (32)],"}
+{"t":2200,"text":" [*Total*"}
+{"t":2233,"text":" (100)],\n  [#"}
+{"t":2263,"text":"v(1"}
+{"t":2294,"text":".5em)], [],"}
+{"t":2335,"text":" [], [],"}
+{"t":2364,"text":"\n)\n\n#v(1em"}
+{"t":2396,"text":")\n\n== Part A:"}
+{"t":2432,"text":" Limits (34 points)"}
+{"t":2475,"text":"\n\n*1"}
+{"t":2516,"text":".* _"}
+{"t":2527,"text":"(4 p"}
+{"t":2558,"text":"ts)_ Evalu"}
+{"t":2592,"text":"ate $lim_(x -"}
+{"t":2637,"text":"> 3) (x^2"}
+{"t":2662,"text":" - 9)/(x"}
+{"t":2693,"text":" - 3)$."}
+{"t":2732,"text":"\n\n#v(6em)\n\n*"}
+{"t":2759,"text":"2.* _(5 p"}
+{"t":2802,"text":"ts)_ Evalu"}
+{"t":2827,"text":"ate $lim_(x -"}
+{"t":2864,"text":"> 0) (sqr"}
+{"t":2893,"text":"t(x + 4) -"}
+{"t":2932,"text":" 2)/x$."}
+{"t":2962,"text":"\n\n#v(8em)\n\n*"}
+{"t":2996,"text":"3.* _(4 p"}
+{"t":3041,"text":"ts)_ Evalu"}
+{"t":3063,"text":"ate $lim_(x -"}
+{"t":3096,"text":"> oo) (3x^"}
+{"t":3132,"text":"2 - x)/(5"}
+{"t":3167,"text":"x^2 + 2)"}
+{"t":3194,"text":"$.\n\n#v(6em"}
+{"t":3228,"text":")\n\n*4.* _("}
+{"t":3264,"text":"4 pts)_"}
+{"t":3295,"text":" Evaluate $lim_"}
+{"t":3330,"text":"(x -> 0) ("}
+{"t":3361,"text":"sin(5x))"}
+{"t":3404,"text":"/(2x)$."}
+{"t":3433,"text":"\n\n#v(6em)\n\n*"}
+{"t":3463,"text":"5.* _(6 p"}
+{"t":3496,"text":"ts)_ Find the value"}
+{"t":3546,"text":" of the"}
+{"t":3560,"text":" constant $k$ that"}
+{"t":3594,"text":" makes $f$"}
+{"t":3630,"text":" continuous at $x ="}
+{"t":3661,"text":" 2$. Justify using"}
+{"t":3694,"text":" the"}
+{"t":3733,"text":" definition of continuity."}
+{"t":3761,"text":"\n$"}
+{"t":3798,"text":" f(x) = cases("}
+{"t":3829,"text":"3x + k & \"if \""}
+{"t":3867,"text":" x < 2, x^2"}
+{"t":3897,"text":" - 1 & \"if"}
+{"t":3931,"text":" \" x >= 2) $"}
+{"t":3967,"text":"\n\n#v(8em)"}
+{"t":3998,"text":"\n\n*6.* _(5 "}
+{"t":4038,"text":"pts)_ Determine"}
+{"t":4063,"text":" $"}
+{"t":4096,"text":"lim_(x -> "}
+{"t":4129,"text":"2^("}
+{"t":4161,"text":"-"}
+{"t":4198,"text":")) abs(x - "}
+{"t":4231,"text":"2)/(x - 2"}
+{"t":4262,"text":")$"}
+{"t":4317,"text":" and $lim_(x -"}
+{"t":4329,"text":"> 2^(+))"}
+{"t":4365,"text":" abs(x - 2)"}
+{"t":4400,"text":"/(x - 2)$"}
+{"t":4433,"text":". Does $lim_("}
+{"t":4472,"text":"x -> 2) abs"}
+{"t":4497,"text":"(x - 2)/("}
+{"t":4530,"text":"x - 2)$ ex"}
+{"t":4567,"text":"ist? Explain.\n\n#"}
+{"t":4597,"text":"v(8"}
+{"t":4630,"text":"em)\n\n*7.* _"}
+{"t":4665,"text":"(6 pts)_"}
+{"t":4701,"text":" Use the Intermediate"}
+{"t":4729,"text":" Value Theorem to show"}
+{"t":4762,"text":" that $"}
+{"t":4799,"text":"f(x) = x^3"}
+{"t":4829,"text":" + x - 1$"}
+{"t":4864,"text":" has a root"}
+{"t":4897,"text":" in the interval $(0,"}
+{"t":4929,"text":" 1)$. State"}
+{"t":4962,"text":" cl"}
+{"t":5001,"text":"early why the theorem appl"}
+{"t":5030,"text":"ies.\n\n#v(8"}
+{"t":5075,"text":"em)\n\n#"}
+{"t":5097,"text":"pagebreak()"}
+{"t":5129,"text":"\n\n== Part B: Der"}
+{"t":5164,"text":"ivative"}
+{"t":5200,"text":" Tech"}
+{"t":5233,"text":"niques (34 points)"}
+{"t":5265,"text":"\n\n*8.* _(6 "}
+{"t":5296,"text":"pts)_ Use the"}
+{"t":5329,"text":" *limit definition* of the"}
+{"t":5376,"text":" derivative to find $f'"}
+{"t":5398,"text":"(x)$ for $f"}
+{"t":5431,"text":"(x) = x^2 "}
+{"t":5462,"text":"+ 3x$.\n\n#"}
+{"t":5496,"text":"v(10"}
+{"t":5533,"text":"em)\n\n*9.* _"}
+{"t":5563,"text":"(16"}
+{"t":5597,"text":" pts,"}
+{"t":5632,"text":" 4 each"}
+{"t":5662,"text":")_ Find the deriv"}
+{"t":5696,"text":"ative of each function"}
+{"t":5733,"text":". You"}
+{"t":5765,"text":" need"}
+{"t":5797,"text":" not simplify un"}
+{"t":5829,"text":"less it"}
+{"t":5866,"text":" is easy to"}
+{"t":5903,"text":" do so.\n\n("}
+{"t":5929,"text":"a) $f(x) ="}
+{"t":5963,"text":" 4x^3 - "}
+{"t":6009,"text":"2s"}
+{"t":6031,"text":"qrt(x) + "}
+{"t":6062,"text":"7$\n\n#v(5"}
+{"t":6102,"text":"em)\n\n(b) $g"}
+{"t":6132,"text":"(x) = x^2 "}
+{"t":6162,"text":"e^x$\n\n#v("}
+{"t":6197,"text":"5em)\n\n(c) $"}
+{"t":6229,"text":"h(x) = (sin"}
+{"t":6269,"text":" x)/(1 + c"}
+{"t":6302,"text":"os x)$\n\n#v("}
+{"t":6333,"text":"6em)\n\n(d) $"}
+{"t":6364,"text":"k(x) = ln("}
+{"t":6401,"text":"x^2 + 1)"}
+{"t":6430,"text":"$\n\n#v(5em)"}
+{"t":6463,"text":"\n\n*10.* _(6"}
+{"t":6498,"text":" pts)_ Find"}
+{"t":6536,"text":" the equation of the tangent"}
+{"t":6565,"text":" line to $"}
+{"t":6599,"text":"y = x^3 - "}
+{"t":6632,"text":"2x$ at the"}
+{"t":6664,"text":" point where"}
+{"t":6707,"text":" $x = 1$."}
+{"t":6736,"text":"\n\n#v(8em)\n\n*"}
+{"t":6768,"text":"11.* _(6 p"}
+{"t":6800,"text":"ts)_ The"}
+{"t":6844,"text":" point"}
+{"t":6864,"text":" $(3, 4)$"}
+{"t":6897,"text":" lies on the circle $"}
+{"t":6930,"text":"x^2 + y^2"}
+{"t":6967,"text":" = 25$. Use"}
+{"t":6997,"text":" implicit differentiation to"}
+{"t":7031,"text":" find $d"}
+{"t":7064,"text":"y/dx$ at this"}
+{"t":7102,"text":" point.\n\n#v(8"}
+{"t":7131,"text":"em)\n\n#pagebre"}
+{"t":7167,"text":"ak()\n\n== Part C:"}
+{"t":7200,"text":" Applications (32 points)"}
+{"t":7235,"text":"\n\n*12.* _(10"}
+{"t":7269,"text":" pts)_ A r"}
+{"t":7310,"text":"ectangle has"}
+{"t":7333,"text":" a perimeter of "}
+{"t":7364,"text":"40 me"}
+{"t":7397,"text":"ters. Find the dimens"}
+{"t":7432,"text":"ions that"}
+{"t":7467,"text":" maximize its area,"}
+{"t":7508,"text":" and state"}
+{"t":7540,"text":" the maximum area. Just"}
+{"t":7572,"text":"ify that"}
+{"t":7600,"text":" your"}
+{"t":7633,"text":" answer is a maximum."}
+{"t":7665,"text":"\n\n#v(14"}
+{"t":7700,"text":"em)\n\n*13.* _"}
+{"t":7740,"text":"(10 pts)_"}
+{"t":7766,"text":" A 10-foot lad"}
+{"t":7807,"text":"der le"}
+{"t":7834,"text":"ans against a"}
+{"t":7869,"text":" vertical wall. The b"}
+{"t":7902,"text":"ottom of the ladder sl"}
+{"t":7936,"text":"ides away from the wall at a"}
+{"t":7964,"text":" r"}
+{"t":7997,"text":"ate of "}
+{"t":8038,"text":"2 "}
+{"t":8064,"text":"ft/s. How"}
+{"t":8098,"text":" fast is the top of the "}
+{"t":8130,"text":"ladder sliding down the w"}
+{"t":8165,"text":"all at"}
+{"t":8200,"text":" the instant when"}
+{"t":8231,"text":" the bottom is 6 "}
+{"t":8267,"text":"feet from the wall?"}
+{"t":8300,"text":"\n\n#v(14em)\n\n*"}
+{"t":8335,"text":"14.* _(12 p"}
+{"t":8367,"text":"ts)_ Let $f"}
+{"t":8402,"text":"(x) = x^3 "}
+{"t":8443,"text":"- 6x^2 +"}
+{"t":8487,"text":" 9x + 1$."}
+{"t":8502,"text":"\n\n(a) Find all crit"}
+{"t":8536,"text":"ical points of $f$. _"}
+{"t":8566,"text":"(4"}
+{"t":8606,"text":" pts)_\n\n#"}
+{"t":8632,"text":"v(6em)\n\n(b"}
+{"t":8668,"text":") Determine the intervals"}
+{"t":8698,"text":" on which $f$ is incre"}
+{"t":8734,"text":"asing and decreasing."}
+{"t":8766,"text":" _(4 pts)_"}
+{"t":8801,"text":"\n\n#v(6em)"}
+{"t":8833,"text":"\n\n(c) Classify each crit"}
+{"t":8869,"text":"ical point as a local ma"}
+{"t":8904,"text":"ximum or"}
+{"t":8932,"text":" local minimum,"}
+{"t":8975,"text":" and give the cor"}
+{"t":8999,"text":"responding $y$-values"}
+{"t":9032,"text":". _(4 pts)"}
+{"t":9066,"text":"_\n\n#v(6"}
+{"t":9102,"text":"em)\n\n#pagebre"}
+{"t":9138,"text":"ak()\n\n="}
+{"t":9165,"text":" Teacher Key:"}
+{"t":9199,"text":" Worked Solutions"}
+{"t":9232,"text":"\n*Calculus Midter"}
+{"t":9268,"text":"m,"}
+{"t":9298,"text":" Limits and Derivat"}
+{"t":9335,"text":"ives*"}
+{"t":9367,"text":" (100 points)\n\n=="}
+{"t":9398,"text":" Part A: Limits"}
+{"t":9434,"text":"\n\n*1.* _"}
+{"t":9472,"text":"(4 pts)_"}
+{"t":9498,"text":" Factor the num"}
+{"t":9536,"text":"erator: $("}
+{"t":9573,"text":"x^2 - 9)"}
+{"t":9601,"text":"/(x - 3) ="}
+{"t":9632,"text":" "}
+{"t":9665,"text":"((x - 3)(x"}
+{"t":9701,"text":" + 3))/(x -"}
+{"t":9737,"text":" 3) = x + 3"}
+{"t":9777,"text":"$ for $x !="}
+{"t":9802,"text":" 3$. Ther"}
+{"t":9832,"text":"efore\n$ lim_"}
+{"t":9866,"text":"(x -> 3) ("}
+{"t":9901,"text":"x^2 - 9)"}
+{"t":9938,"text":"/(x - 3) ="}
+{"t":9966,"text":" lim_(x -> "}
+{"t":9998,"text":"3) (x + 3)"}
+{"t":10034,"text":" = 6. $"}
+{"t":10072,"text":"\n_"}
+{"t":10115,"text":"Grading:"}
+{"t":10132,"text":"_ 2 pts for"}
+{"t":10168,"text":" factoring or"}
+{"t":10212,"text":" cancel"}
+{"t":10238,"text":"ling, 2 pts for"}
+{"t":10269,"text":" the correct value"}
+{"t":10301,"text":".\n\n*2.* _"}
+{"t":10347,"text":"(5 pts)_"}
+{"t":10372,"text":" Multiply by the conj"}
+{"t":10402,"text":"ugate:\n$ (s"}
+{"t":10434,"text":"qrt(x + 4"}
+{"t":10474,"text":") - 2)/x d"}
+{"t":10502,"text":"ot (sqrt(x"}
+{"t":10534,"text":" + 4) + 2)"}
+{"t":10566,"text":"/(sqrt(x"}
+{"t":10599,"text":" + 4) + 2)"}
+{"t":10632,"text":" = "}
+{"t":10666,"text":"((x + 4) - "}
+{"t":10701,"text":"4)/(x ("}
+{"t":10738,"text":"sqrt(x + "}
+{"t":10768,"text":"4) + 2)) ="}
+{"t":10802,"text":" 1/(sqrt"}
+{"t":10834,"text":"(x + 4) + "}
+{"t":10865,"text":"2). $"}
+{"t":10901,"text":"\nThen"}
+{"t":10933,"text":"\n$ lim_(x"}
+{"t":10968,"text":" -> 0) 1/"}
+{"t":10999,"text":"(sqrt(x +"}
+{"t":11038,"text":" 4) + 2) ="}
+{"t":11069,"text":" 1/(2"}
+{"t":11101,"text":" + 2) = 1"}
+{"t":11137,"text":"/4. $\n_Gr"}
+{"t":11167,"text":"ading:_ 3 p"}
+{"t":11202,"text":"ts for the alg"}
+{"t":11237,"text":"ebra, 1"}
+{"t":11267,"text":" pt for c"}
+{"t":11304,"text":"ancelling $"}
+{"t":11336,"text":"x$, 1 pt"}
+{"t":11376,"text":" for the answ"}
+{"t":11399,"text":"er.\n\n*3.* _"}
+{"t":11433,"text":"(4 pts)_"}
+{"t":11466,"text":" Divide the"}
+{"t":11504,"text":" numerator and denominator by"}
+{"t":11549,"text":" $x^2$:\n$"}
+{"t":11573,"text":" lim_(x ->"}
+{"t":11607,"text":" oo) (3 - "}
+{"t":11639,"text":"1/x)/(5 "}
+{"t":11666,"text":"+ 2/x^2)"}
+{"t":11704,"text":" = 3/5. $"}
+{"t":11738,"text":"\n_Grading:_ "}
+{"t":11769,"text":"2 pts for the method ("}
+{"t":11805,"text":"or com"}
+{"t":11833,"text":"paring le"}
+{"t":11867,"text":"ading coefficients with"}
+{"t":11901,"text":" just"}
+{"t":11933,"text":"ification), 2 pts for"}
+{"t":11967,"text":" the answer.\n\n*4."}
+{"t":12018,"text":"* _(4 pts)"}
+{"t":12033,"text":"_ Rewrite using"}
+{"t":12067,"text":" the standard limit $"}
+{"t":12102,"text":"lim_(u"}
+{"t":12136,"text":" -> 0) ("}
+{"t":12167,"text":"sin u)/u = "}
+{"t":12202,"text":"1$:\n$ (s"}
+{"t":12237,"text":"in(5x))/(2"}
+{"t":12274,"text":"x) = "}
+{"t":12300,"text":"5/2 dot (s"}
+{"t":12335,"text":"in(5x))/(5"}
+{"t":12367,"text":"x)"}
+{"t":12400,"text":" -"}
+{"t":12433,"text":"> 5/2 dot"}
+{"t":12468,"text":" 1 = 5/2"}
+{"t":12508,"text":". $\n_Grading:"}
+{"t":12538,"text":"_ 2 pts for"}
+{"t":12569,"text":" rewriting with"}
+{"t":12600,"text":" $5"}
+{"t":12634,"text":"x$"}
+{"t":12668,"text":" in the denominator, 2"}
+{"t":12705,"text":" pts for the answer."}
+{"t":12735,"text":"\n\n*5.* _(6"}
+{"t":12767,"text":" pts)_ Contin"}
+{"t":12813,"text":"uity at"}
+{"t":12843,"text":" $x = 2$ requ"}
+{"t":12868,"text":"ires $lim_(x -"}
+{"t":12905,"text":"> 2^(-))"}
+{"t":12941,"text":" f(x) = l"}
+{"t":12970,"text":"im_(x -> 2"}
+{"t":13002,"text":"^(+)) f(x"}
+{"t":13033,"text":") = f(2)$."}
+{"t":13066,"text":"\n- Left:"}
+{"t":13101,"text":" $l"}
+{"t":13138,"text":"im_(x -> 2"}
+{"t":13172,"text":"^(-)) ("}
+{"t":13205,"text":"3x + k) = 6"}
+{"t":13234,"text":" + k$.\n-"}
+{"t":13271,"text":" Right and value"}
+{"t":13307,"text":": $f(2) = "}
+{"t":13341,"text":"2^2 - 1 "}
+{"t":13372,"text":"= 3$"}
+{"t":13401,"text":", and $lim_(x"}
+{"t":13445,"text":" -> 2^(+)"}
+{"t":13470,"text":") (x^2 - "}
+{"t":13500,"text":"1) = 3$."}
+{"t":13535,"text":"\n\nSetting $"}
+{"t":13567,"text":"6 + k = 3$"}
+{"t":13602,"text":" gives $k = -3"}
+{"t":13641,"text":"$.\n_Grading:"}
+{"t":13694,"text":"_ 2 pts for"}
+{"t":13710,"text":" the"}
+{"t":13735,"text":" one-sided limits, "}
+{"t":13767,"text":"2 pts for equ"}
+{"t":13803,"text":"ating them ("}
+{"t":13835,"text":"and"}
+{"t":13875,"text":" $f(2)$), "}
+{"t":13911,"text":"2 pts for $"}
+{"t":13950,"text":"k = -3$.\n\n*"}
+{"t":13969,"text":"6.* _(5 p"}
+{"t":14004,"text":"ts)_ For $x >"}
+{"t":14048,"text":" 2$, $abs("}
+{"t":14071,"text":"x - 2) = x -"}
+{"t":14102,"text":" 2$, so the quot"}
+{"t":14136,"text":"ient is $1$"}
+{"t":14168,"text":" and the right-"}
+{"t":14201,"text":"hand limit is $1$"}
+{"t":14240,"text":". For $x < 2$"}
+{"t":14267,"text":", $abs(x - "}
+{"t":14326,"text":"2) = -(x - "}
+{"t":14335,"text":"2)$, so the quot"}
+{"t":14368,"text":"ient is $-1$ and"}
+{"t":14401,"text":" the left-hand limit is"}
+{"t":14435,"text":" $-1$."}
+{"t":14467,"text":" Since $"}
+{"t":14503,"text":"-"}
+{"t":14536,"text":"1 != 1$, the"}
+{"t":14567,"text":" two-sided limit *"}
+{"t":14602,"text":"does not exist*.\n_"}
+{"t":14636,"text":"Grading:_ 2"}
+{"t":14667,"text":" pts for each one"}
+{"t":14701,"text":"-sided limit, 1"}
+{"t":14736,"text":" pt for the conclus"}
+{"t":14769,"text":"ion with re"}
+{"t":14803,"text":"ason.\n\n*7.* _"}
+{"t":14836,"text":"(6 pts)_"}
+{"t":14871,"text":" $f(x) = x^"}
+{"t":14912,"text":"3 + x - 1$"}
+{"t":14936,"text":" is a polynomial,"}
+{"t":14969,"text":" so it is continuous on $"}
+{"t":15008,"text":"[0, 1]$."}
+{"t":15036,"text":" We"}
+{"t":15074,"text":" have $f(0) = -"}
+{"t":15101,"text":"1 "}
+{"t":15140,"text":"< 0$"}
+{"t":15187,"text":" and $f(1) ="}
+{"t":15207,"text":" 1 > 0$."}
+{"t":15235,"text":" Since $0$ lies"}
+{"t":15268,"text":" between $f(0)$"}
+{"t":15301,"text":" and $f(1)$,"}
+{"t":15337,"text":" the Intermediate Value"}
+{"t":15368,"text":" Theorem gu"}
+{"t":15404,"text":"arantees a $c in"}
+{"t":15442,"text":" (0, 1)$"}
+{"t":15468,"text":" with $f(c) = "}
+{"t":15503,"text":"0$.\n_Grading"}
+{"t":15535,"text":":_ 2 pts"}
+{"t":15571,"text":" for continuity, 2 "}
+{"t":15605,"text":"pts for the end"}
+{"t":15636,"text":"point values, 2 "}
+{"t":15668,"text":"pts for the"}
+{"t":15701,"text":" conclusion.\n\n=="}
+{"t":15736,"text":" Part B: Derivative"}
+{"t":15769,"text":" Techniques\n\n*8."}
+{"t":15820,"text":"* _(6 pts)"}
+{"t":15845,"text":"_\n$ f'"}
+{"t":15873,"text":"(x) = lim_("}
+{"t":15909,"text":"h -> 0) ("}
+{"t":15935,"text":"f"}
+{"t":15971,"text":"(x + h) -"}
+{"t":16001,"text":" f(x))/h = l"}
+{"t":16038,"text":"im_(h -> 0"}
+{"t":16068,"text":") ((x + h)^"}
+{"t":16103,"text":"2 + 3(x +"}
+{"t":16135,"text":" h) - x^2 -"}
+{"t":16171,"text":" 3x)/h. $"}
+{"t":16236,"text":"\nExpan"}
+{"t":16272,"text":"ding the numerator g"}
+{"t":16322,"text":"ives $2x"}
+{"t":16343,"text":" h + h^2 + "}
+{"t":16374,"text":"3h$, so\n$"}
+{"t":16407,"text":" f'(x) = lim"}
+{"t":16441,"text":"_(h -> 0)"}
+{"t":16476,"text":" (2x h + h^"}
+{"t":16529,"text":"2 + 3h)/"}
+{"t":16547,"text":"h = lim_(h -"}
+{"t":16576,"text":"> 0) (2x +"}
+{"t":16602,"text":" h + 3) = 2"}
+{"t":16635,"text":"x + 3. $\n_"}
+{"t":16668,"text":"Grading:_ 2"}
+{"t":16702,"text":" pts for the corre"}
+{"t":16736,"text":"ct difference quotient, "}
+{"t":16772,"text":"2 pts for expanding"}
+{"t":16802,"text":" and cancelling $"}
+{"t":16843,"text":"h$, 2 pts"}
+{"t":16869,"text":" for the"}
+{"t":16902,"text":" lim"}
+{"t":16936,"text":"it."}
+{"t":16969,"text":" Award"}
+{"t":17002,"text":" at"}
+{"t":17035,"text":" most 2 pts if the"}
+{"t":17072,"text":" lim"}
+{"t":17109,"text":"it definition is not used."}
+{"t":17138,"text":"\n\n*9.* _(16"}
+{"t":17169,"text":" pts, 4 each"}
+{"t":17203,"text":")_\n\n(a) $f"}
+{"t":17235,"text":"'(x) = 12"}
+{"t":17271,"text":"x^2 - "}
+{"t":17303,"text":"2"}
+{"t":17336,"text":" dot 1/("}
+{"t":17369,"text":"2 sqrt(x"}
+{"t":17401,"text":")) = 12x^2"}
+{"t":17435,"text":" - 1/sqr"}
+{"t":17470,"text":"t(x)$.\n\n("}
+{"t":17503,"text":"b) Product rule: $"}
+{"t":17535,"text":"g'(x) = "}
+{"t":17568,"text":"2x e^x + x^"}
+{"t":17602,"text":"2 e^x = x"}
+{"t":17636,"text":"("}
+{"t":17669,"text":"x"}
+{"t":17704,"text":" + 2) e^x$"}
+{"t":17737,"text":".\n\n(c) Quot"}
+{"t":17774,"text":"ient rule:\n$ h"}
+{"t":17802,"text":"'(x) = ("}
+{"t":17836,"text":"cos x (1 + c"}
+{"t":17870,"text":"os x) - sin x"}
+{"t":17902,"text":" (-sin x))/("}
+{"t":17937,"text":"1 + cos x)^"}
+{"t":17969,"text":"2 = (cos x +"}
+{"t":18002,"text":" cos^2 x + s"}
+{"t":18037,"text":"in^2 x)/("}
+{"t":18070,"text":"1 + cos x)^"}
+{"t":18104,"text":"2 = (1 + c"}
+{"t":18136,"text":"os x)/(1 +"}
+{"t":18169,"text":" cos x)^2 ="}
+{"t":18203,"text":" 1/(1 + c"}
+{"t":18236,"text":"os x). $\n_Note"}
+{"t":18278,"text":":_"}
+{"t":18302,"text":" Full cred"}
+{"t":18344,"text":"it is"}
+{"t":18369,"text":" given for the un"}
+{"t":18403,"text":"simplified qu"}
+{"t":18438,"text":"otient-"}
+{"t":18471,"text":"rule exp"}
+{"t":18502,"text":"ression."}
+{"t":18538,"text":"\n\n(d) Chain r"}
+{"t":18569,"text":"ule: $k'(x)"}
+{"t":18604,"text":" = 1/(x^2"}
+{"t":18636,"text":" + 1) dot "}
+{"t":18669,"text":"2x = (2x)/"}
+{"t":18705,"text":"(x^2 + 1"}
+{"t":18736,"text":")$.\n\n_Grading"}
+{"t":18769,"text":":_ 4"}
+{"t":18803,"text":" pts each"}
+{"t":18836,"text":":"}
+{"t":18869,"text":" 3 for"}
+{"t":18904,"text":" the correct rule and"}
+{"t":18938,"text":" set"}
+{"t":18970,"text":"up, 1 for the final"}
+{"t":19002,"text":" exp"}
+{"t":19042,"text":"ression.\n\n*10.* _"}
+{"t":19069,"text":"(6 pts)_"}
+{"t":19104,"text":" At $x = 1$:"}
+{"t":19136,"text":" $y = 1 - "}
+{"t":19172,"text":"2 = -1$,"}
+{"t":19203,"text":" so the point is $(1,"}
+{"t":19237,"text":" -1)$. Since $"}
+{"t":19269,"text":"y' = 3x^2"}
+{"t":19305,"text":" - 2$, the sl"}
+{"t":19337,"text":"ope is $y"}
+{"t":19372,"text":"'(1) = 1"}
+{"t":19403,"text":"$. The tangent line is"}
+{"t":19438,"text":"\n$ y - (-1"}
+{"t":19472,"text":") = 1 "}
+{"t":19506,"text":"(x - 1)"}
+{"t":19538,"text":" quad "}
+{"t":19569,"text":"==> quad y = x -"}
+{"t":19602,"text":" 2. $\n_Gr"}
+{"t":19636,"text":"ading:_ 1"}
+{"t":19677,"text":" pt for the point, "}
+{"t":19705,"text":"2 pts for the deriv"}
+{"t":19735,"text":"ative, 1"}
+{"t":19770,"text":" pt for the slope,"}
+{"t":19809,"text":" 2 pts for the equ"}
+{"t":19836,"text":"ation.\n\n*11.* _"}
+{"t":19870,"text":"(6 pts)_"}
+{"t":19902,"text":" Differentiate both sides"}
+{"t":19939,"text":" with respect to $x$:"}
+{"t":19970,"text":"\n$ 2x + "}
+{"t":20009,"text":"2y d"}
+{"t":20036,"text":"y/dx = 0 "}
+{"t":20070,"text":"quad ==> quad d"}
+{"t":20104,"text":"y/dx = -x/"}
+{"t":20136,"text":"y. $\nAt $(3"}
+{"t":20169,"text":", 4)$: $d"}
+{"t":20205,"text":"y/dx = -3/"}
+{"t":20238,"text":"4$.\n_Grading"}
+{"t":20278,"text":":_ 3"}
+{"t":20306,"text":" pts for corre"}
+{"t":20336,"text":"ct impl"}
+{"t":20380,"text":"icit differentiation, "}
+{"t":20404,"text":"1"}
+{"t":20436,"text":" pt for solving for $"}
+{"t":20470,"text":"dy/dx$, "}
+{"t":20503,"text":"2 pts for ev"}
+{"t":20537,"text":"aluating.\n\n== Part"}
+{"t":20570,"text":" C: Applications\n\n*12"}
+{"t":20603,"text":".* _(10 pts"}
+{"t":20636,"text":")_ Let the s"}
+{"t":20670,"text":"ides be $x$ and $"}
+{"t":20703,"text":"y$, so $2x +"}
+{"t":20736,"text":" 2y = 40$"}
+{"t":20770,"text":" and $y = 20 -"}
+{"t":20805,"text":" x$. Then\n$"}
+{"t":20836,"text":" A(x) = x(20"}
+{"t":20869,"text":" - x) = "}
+{"t":20903,"text":"20x - x^2, qu"}
+{"t":20937,"text":"ad 0 < x < "}
+{"t":20970,"text":"20. $\n$A"}
+{"t":21003,"text":"'(x) = 20 "}
+{"t":21037,"text":"- 2x = 0$"}
+{"t":21077,"text":" gives $x = 10"}
+{"t":21114,"text":"$,"}
+{"t":21137,"text":" so $y = 10$."}
+{"t":21172,"text":" Since $A''(x)"}
+{"t":21204,"text":" = -2 < 0$"}
+{"t":21236,"text":", this"}
+{"t":21270,"text":" is a maximum."}
+{"t":21303,"text":" The rectangle is a $"}
+{"t":21340,"text":"10 times"}
+{"t":21372,"text":" 10$ m"}
+{"t":21405,"text":" square with ma"}
+{"t":21437,"text":"ximum area $100"}
+{"t":21470,"text":"$ m#"}
+{"t":21503,"text":"super"}
+{"t":21538,"text":"["}
+{"t":21573,"text":"2]."}
+{"t":21603,"text":"\n_Grading:_ "}
+{"t":21636,"text":"2 pts for the constra"}
+{"t":21670,"text":"int, 2 pts for"}
+{"t":21704,"text":" the area function, 2 p"}
+{"t":21736,"text":"ts for the critical point, "}
+{"t":21771,"text":"2 pts for just"}
+{"t":21803,"text":"if"}
+{"t":21837,"text":"ying the maximum (second"}
+{"t":21871,"text":"-"}
+{"t":21905,"text":"derivative test,"}
+{"t":21936,"text":" s"}
+{"t":21969,"text":"ign ch"}
+{"t":22006,"text":"art, or end"}
+{"t":22039,"text":"points), 2 p"}
+{"t":22070,"text":"ts for the dimensions and"}
+{"t":22104,"text":" area.\n\n*13.* _"}
+{"t":22138,"text":"(10 pts)_"}
+{"t":22170,"text":" Let $x$ be"}
+{"t":22209,"text":" the distance from"}
+{"t":22236,"text":" the wall to"}
+{"t":22270,"text":" the bottom of the lad"}
+{"t":22309,"text":"der and $y$ the height"}
+{"t":22338,"text":" of the top,"}
+{"t":22371,"text":" so $x^2 + y"}
+{"t":22410,"text":"^2 = 100"}
+{"t":22439,"text":"$. When $x = 6"}
+{"t":22469,"text":"$, $y = sqr"}
+{"t":22503,"text":"t(100 - 36)"}
+{"t":22536,"text":" = 8$. Different"}
+{"t":22578,"text":"iate with"}
+{"t":22604,"text":" respect to $"}
+{"t":22636,"text":"t$:\n$ "}
+{"t":22672,"text":"2x dx/dt +"}
+{"t":22704,"text":" 2y dy/dt"}
+{"t":22736,"text":" = 0 quad =="}
+{"t":22770,"text":"> quad dy/dt"}
+{"t":22803,"text":" = -x/y d"}
+{"t":22838,"text":"ot"}
+{"t":22875,"text":" dx/dt. $"}
+{"t":22910,"text":"\nWith $dx/dt ="}
+{"t":22937,"text":" 2$:"}
+{"t":22972,"text":"\n$ dy/dt"}
+{"t":23015,"text":" = -6"}
+{"t":23041,"text":"/8 dot 2 "}
+{"t":23079,"text":"= -3/2 \""}
+{"t":23132,"text":"ft/s\". $\nThe"}
+{"t":23138,"text":" top of the ladder sl"}
+{"t":23170,"text":"ides down the"}
+{"t":23213,"text":" wall at $"}
+{"t":23254,"text":"3/2$ ft/"}
+{"t":23272,"text":"s (the negative sign ind"}
+{"t":23321,"text":"icates down"}
+{"t":23340,"text":"ward mot"}
+{"t":23370,"text":"ion).\n_Grading:"}
+{"t":23403,"text":"_ 2 pts for"}
+{"t":23439,"text":" the equ"}
+{"t":23472,"text":"ation,"}
+{"t":23505,"text":" 2 pts for fin"}
+{"t":23538,"text":"ding $y ="}
+{"t":23573,"text":" 8$, 3"}
+{"t":23603,"text":" pts for differentiating"}
+{"t":23640,"text":" with resp"}
+{"t":23670,"text":"ect to $t$, 2"}
+{"t":23703,"text":" pts for subst"}
+{"t":23738,"text":"ituting, 1 pt"}
+{"t":23770,"text":" for the answ"}
+{"t":23804,"text":"er with units"}
+{"t":23836,"text":" and"}
+{"t":23872,"text":" inter"}
+{"t":23903,"text":"pretation."}
+{"t":23938,"text":" Deduct "}
+{"t":23970,"text":"2"}
+{"t":24005,"text":" pts if values"}
+{"t":24037,"text":" are substituted before differenti"}
+{"t":24070,"text":"ating.\n\n*14.* _"}
+{"t":24114,"text":"(12 pts)_"}
+{"t":24138,"text":" $f("}
+{"t":24170,"text":"x) = x^3 -"}
+{"t":24204,"text":" 6x^2 + "}
+{"t":24244,"text":"9x + 1$."}
+{"t":24271,"text":"\n\n(a) $f'(x"}
+{"t":24324,"text":") = 3x^2 "}
+{"t":24338,"text":"- 12x + 9 "}
+{"t":24370,"text":"= 3(x - 1"}
+{"t":24404,"text":")(x - 3)"}
+{"t":24438,"text":"$. The critical points are $"}
+{"t":24470,"text":"x = 1$ and $"}
+{"t":24504,"text":"x = 3$. _("}
+{"t":24536,"text":"4 pts)_\n\n("}
+{"t":24570,"text":"b) Sign anal"}
+{"t":24606,"text":"ysis of"}
+{"t":24640,"text":" $f'("}
+{"t":24670,"text":"x) = 3(x -"}
+{"t":24705,"text":" 1)(x - 3"}
+{"t":24737,"text":")$:\n\n#table"}
+{"t":24773,"text":"(\n  columns: "}
+{"t":24804,"text":"4,\n  align: center,"}
+{"t":24845,"text":"\n  [*"}
+{"t":24870,"text":"Interval*], [$("}
+{"t":24904,"text":"-o"}
+{"t":24937,"text":"o, 1)$], ["}
+{"t":24971,"text":"$(1, 3)$"}
+{"t":25003,"text":"], [$(3, oo"}
+{"t":25037,"text":")$],\n  [*"}
+{"t":25073,"text":"Sign of $f'$"}
+{"t":25103,"text":"*], [$"}
+{"t":25139,"text":"+$], [$-$],"}
+{"t":25171,"text":" [$+$],\n  ["}
+{"t":25203,"text":"*Behavior of $f"}
+{"t":25237,"text":"$*], [increasing],"}
+{"t":25270,"text":" [decreasing], [incre"}
+{"t":25304,"text":"asing],\n)\n\n_("}
+{"t":25338,"text":"4 pts)_\n\n("}
+{"t":25370,"text":"c) By"}
+{"t":25404,"text":" the first derivative test"}
+{"t":25437,"text":", $f'$ changes"}
+{"t":25471,"text":" from $+$ to $-"}
+{"t":25504,"text":"$ at $x = 1"}
+{"t":25539,"text":"$, so there"}
+{"t":25570,"text":" is a *"}
+{"t":25604,"text":"local maximum* with"}
+{"t":25638,"text":" $f(1) = 1"}
+{"t":25674,"text":" - 6 + 9"}
+{"t":25706,"text":" + 1 = 5"}
+{"t":25738,"text":"$,"}
+{"t":25770,"text":" at"}
+{"t":25804,"text":" the point $(1, 5"}
+{"t":25837,"text":")$. At"}
+{"t":25872,"text":" $x = 3$, $"}
+{"t":25904,"text":"f'$ changes from $"}
+{"t":25937,"text":"-$ to $+$,"}
+{"t":25970,"text":" so there is a *local minim"}
+{"t":26004,"text":"um* with $f(3)"}
+{"t":26041,"text":" = 27 - 54 "}
+{"t":26071,"text":"+ 27 + 1 "}
+{"t":26108,"text":"= 1$, at the point"}
+{"t":26137,"text":" $(3, 1)$"}
+{"t":26170,"text":". ("}
+{"t":26207,"text":"The"}
+{"t":26238,"text":" second derivative test works"}
+{"t":26271,"text":" as"}
+{"t":26304,"text":" well: $f''(x)"}
+{"t":26340,"text":" = 6x - 12$"}
+{"t":26372,"text":","}
+{"t":26403,"text":" with"}
+{"t":26440,"text":" $f''(1) = -"}
+{"t":26470,"text":"6 < 0$ and"}
+{"t":26505,"text":" $f''(3) = "}
+{"t":26537,"text":"6 > 0$.)"}
+{"t":26570,"text":" _(4 pts)_"}
+{"t":26606,"text":"\n\n_"}
+{"t":26637,"text":"Grading for"}
+{"t":26671,"text":" (c"}
+{"t":26703,"text":"):_ 1 pt"}
+{"t":26737,"text":" for each classification, 1"}
+{"t":26771,"text":" pt for each $y$"}
+{"t":26804,"text":"-value.\n\n== Sco"}
+{"t":26837,"text":"ring Summary\n\n#"}
+{"t":26871,"text":"table(\n  columns: ("}
+{"t":26904,"text":"1fr, 1"}
+{"t":26937,"text":"fr, 1fr),"}
+{"t":26971,"text":"\n  align: center,\n  "}
+{"t":27005,"text":"[*Part*"}
+{"t":27037,"text":"], [*Quest"}
+{"t":27071,"text":"ions*], [*Points*"}
+{"t":27104,"text":"],\n  [A:"}
+{"t":27138,"text":" Limits], [1–"}
+{"t":27171,"text":"7], [34],\n  ["}
+{"t":27204,"text":"B: Derivative"}
+{"t":27238,"text":" tech"}
+{"t":27270,"text":"niques], [8–11],"}
+{"t":27306,"text":" [34],\n  [C:"}
+{"t":27338,"text":" Applications], [12"}
+{"t":27371,"text":"–14], [32],\n  "}
+{"t":27404,"text":"[*Total*], [],"}
+{"t":27439,"text":" [*100*],"}
+{"t":27472,"text":"\n)\n\n_"}
+{"t":27505,"text":"Common"}
+{"t":27537,"text":" err"}
+{"t":27570,"text":"ors to watch for:_"}
+{"t":27605,"text":" cancelling ter"}
+{"t":27637,"text":"ms that"}
+{"t":27670,"text":" are not factors in"}
+{"t":27704,"text":" Q1"}
+{"t":27741,"text":"–"}
+{"t":27807,"text":"Q3; dropping the ch"}
+{"t":27837,"text":"ain-"}
+{"t":27871,"text":"rule factor in "}
+{"t":27906,"text":"9(d); substituting num"}
+{"t":27946,"text":"er"}
+{"t":27971,"text":"ical values before differentiating in"}
+{"t":28004,"text":" related"}
+{"t":28038,"text":" rates (Q13); and"}
+{"t":28071,"text":" reporting only"}
+{"t":28105,"text":" $"}
+{"t":28139,"text":"x$-"}
+{"t":28172,"text":"values for"}
+{"t":28203,"text":" local"}
+{"t":28239,"text":" extrema in Q14("}
+{"t":28259,"text":"c)."}

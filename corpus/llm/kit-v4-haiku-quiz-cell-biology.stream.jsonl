@@ -1,0 +1,81 @@
+{"t":0,"text":"#"}
+{"t":20,"text":"show: quiz."}
+{"t":41,"text":"with(title: [Cell"}
+{"t":61,"text":" Biology:"}
+{"t":81,"text":" True or"}
+{"t":101,"text":" False], subject: [Bi"}
+{"t":122,"text":"ology], grade: [Gr"}
+{"t":142,"text":"ade 9], inst"}
+{"t":163,"text":"ructions: [Mark each"}
+{"t":184,"text":" statement true"}
+{"t":204,"text":" or false. Write"}
+{"t":224,"text":" the answ"}
+{"t":245,"text":"er in the box for each"}
+{"t":265,"text":" one"}
+{"t":287,"text":"."}
+{"t":306,"text":"])\n\n#question(points: "}
+{"t":326,"text":"1)[#"}
+{"t":348,"text":"true-false(answer: true"}
+{"t":367,"text":")[The cell membrane"}
+{"t":388,"text":" controls which"}
+{"t":408,"text":" substances enter and leave the"}
+{"t":429,"text":" cell.]]"}
+{"t":449,"text":"\n\n#question(points: 1)"}
+{"t":470,"text":"[#true-false(answer"}
+{"t":490,"text":": true)[Plant c"}
+{"t":511,"text":"ells have a cell wall made"}
+{"t":531,"text":" of cellulose.]]"}
+{"t":552,"text":"\n\n#question(points: 1"}
+{"t":573,"text":")[#true-false(answ"}
+{"t":593,"text":"er: false)[Mit"}
+{"t":613,"text":"ochondria are the site of phot"}
+{"t":634,"text":"osynthesis.]]"}
+{"t":654,"text":"\n\n#question(points: 1"}
+{"t":675,"text":")[#true-false(answ"}
+{"t":699,"text":"er: true)[The nuc"}
+{"t":716,"text":"leus contains most of the c"}
+{"t":736,"text":"ell's DNA.]]"}
+{"t":757,"text":"\n\n#question(points: 1"}
+{"t":777,"text":")[#true-false(answ"}
+{"t":798,"text":"er: false)[Animal"}
+{"t":819,"text":" cells have a large central vac"}
+{"t":840,"text":"uole.]]\n\n#question"}
+{"t":859,"text":"(points: 1)[#"}
+{"t":880,"text":"true-false(answer: true"}
+{"t":901,"text":")[Ribosomes"}
+{"t":921,"text":" are the site of protein synth"}
+{"t":941,"text":"esis.]]\n\n#question"}
+{"t":962,"text":"(points: 1)[#"}
+{"t":982,"text":"true-false(answer: true"}
+{"t":1003,"text":")[Osmosis is"}
+{"t":1023,"text":" the movement of water across a part"}
+{"t":1044,"text":"ially permeable membrane."}
+{"t":1064,"text":"]]\n\n#question(points:"}
+{"t":1085,"text":" 1)[#true-false"}
+{"t":1105,"text":"(answer: false)["}
+{"t":1126,"text":"Prokaryotic cells"}
+{"t":1148,"text":" have a n"}
+{"t":1166,"text":"ucleus sur"}
+{"t":1187,"text":"rounded by a"}
+{"t":1207,"text":" membrane.]]\n\n#"}
+{"t":1228,"text":"question(points: 1)["}
+{"t":1249,"text":"#true-false(answer:"}
+{"t":1269,"text":" false)[Chloropl"}
+{"t":1289,"text":"asts are found in every plant"}
+{"t":1312,"text":" cell.]]\n\n#question"}
+{"t":1330,"text":"(points: 1)[#"}
+{"t":1351,"text":"true-false(answer: false"}
+{"t":1371,"text":")[Diffusion need"}
+{"t":1392,"text":"s energy from "}
+{"t":1412,"text":"ATP.]]\n\n#question"}
+{"t":1433,"text":"(points: 1)[#"}
+{"t":1453,"text":"true-false(answer: true"}
+{"t":1473,"text":")[Lysosomes"}
+{"t":1494,"text":" contain digestive enzym"}
+{"t":1514,"text":"es.]]\n\n#question("}
+{"t":1535,"text":"points: 1)[#true"}
+{"t":1556,"text":"-false(answer: false)"}
+{"t":1576,"text":"[Mitosis produces"}
+{"t":1596,"text":" four genetically different daughter"}
+{"t":1617,"text":" cells.]]\n\n#answ"}
+{"t":1637,"text":"er-key()"}

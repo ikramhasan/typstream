@@ -30,6 +30,7 @@ import {
   shown,
   startEngine,
   steady,
+  streamInto,
   svgOf,
   type Target,
   textLayerOf,
@@ -42,15 +43,19 @@ const browser = server.browser;
 let engine: Engine;
 let corpus: CorpusDocument[];
 beforeAll(async () => {
-  engine = startEngine();
+  // No live page limit (the security suite tests it): past 100 pages a stream stops compiling until it ends, so its
+  // worker keeps warm caches the one-shot side doesn't have, and a final compile near the budget (the 479-page
+  // document) times out on one side only.
+  engine = startEngine({ limits: { livePages: Number.POSITIVE_INFINITY } });
   await engine.ready;
   await warmFonts(engine);
   await loadMathFont();
-  corpus = (await loadCorpus()).filter((e) => browser === "chromium" || e.set === "edu");
+  // The hostile runaways are security.test.ts's, under shorter budgets.
+  corpus = (await loadCorpus()).filter(
+    (e) => (browser === "chromium" || e.set === "edu") && !(e.name.startsWith("hostile-") && e.expect === "limit"),
+  );
 }, 60_000);
 afterAll(() => engine.dispose());
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** What a reader sees of an artifact: everything but page hashes. */
 const visible = (a: Artifact | null) =>
@@ -75,26 +80,6 @@ const rendered = (el: HTMLElement): string => {
     ? pages.map((p) => `${svgOf(p)?.outerHTML ?? ""}\n${textLayerOf(p)?.outerHTML ?? ""}`).join("\n")
     : `${[...(root?.attributes ?? [])].map((a) => `${a.name}=${a.value}`).sort()}\n${root?.innerHTML}`;
   return markup.replace(/typstream-\d+-/g, "typstream-N-");
-};
-
-/**
- * Streams `entry` into a mount as an app feeds an LLM's answer: the growing text
- * with `isStreaming`, then the complete text. Paced so that the stream takes
- * about `seconds` whatever its length, and compiles happen along the way.
- */
-const streamInto = async (view: MountedTypstream, opts: ReturnType<typeof appOptions>, entry: CorpusDocument) => {
-  const seconds = 2;
-  const perSecond = Math.max(200, entry.chunks.length / seconds);
-  const start = performance.now();
-  let text = "";
-  let i = 0;
-  while (i < entry.chunks.length) {
-    await sleep(8);
-    const due = Math.min(entry.chunks.length, Math.ceil(((performance.now() - start) / 1000) * perSecond));
-    for (; i < due; i++) text += entry.chunks[i];
-    view.update({ ...opts, source: text, isStreaming: true });
-  }
-  view.update({ ...opts, source: text, isStreaming: false });
 };
 
 /** Long documents and runaways: the watchdog's final budget is 10 s per compile. */

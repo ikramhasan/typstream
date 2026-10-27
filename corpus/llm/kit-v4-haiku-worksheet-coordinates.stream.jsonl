@@ -1,0 +1,197 @@
+{"t":0,"text":"#"}
+{"t":30,"text":"show: worksheet."}
+{"t":39,"text":"with("}
+{"t":60,"text":"\n  title: [Pl"}
+{"t":80,"text":"otting Points on"}
+{"t":100,"text":" the Coordinate Pl"}
+{"t":127,"text":"ane],\n  subject: ["}
+{"t":141,"text":"Mathematics],\n  "}
+{"t":161,"text":"grade: [Grade "}
+{"t":185,"text":"7],\n  inst"}
+{"t":202,"text":"ructions: ["}
+{"t":223,"text":"Each"}
+{"t":243,"text":" point"}
+{"t":264,"text":" is written as"}
+{"t":284,"text":" an"}
+{"t":304,"text":" ordered pair $(x"}
+{"t":326,"text":", y)$. The first"}
+{"t":346,"text":" number is the hor"}
+{"t":365,"text":"izontal position"}
+{"t":386,"text":", meas"}
+{"t":407,"text":"ured from the orig"}
+{"t":427,"text":"in along"}
+{"t":447,"text":" the $x$-axis."}
+{"t":468,"text":" The second number is the vertical"}
+{"t":488,"text":" position, measured along"}
+{"t":513,"text":" the $y$-axis."}
+{"t":529,"text":" Rem"}
+{"t":551,"text":"ember that mo"}
+{"t":573,"text":"ving left"}
+{"t":590,"text":" or"}
+{"t":612,"text":" down"}
+{"t":632,"text":" g"}
+{"t":652,"text":"ives a"}
+{"t":671,"text":" negative number.],\n)"}
+{"t":692,"text":"\n\n= Section A: Reading"}
+{"t":713,"text":" coordinates\n\n#question("}
+{"t":736,"text":"points: 4"}
+{"t":753,"text":")[\n  Look"}
+{"t":773,"text":" at the coordinate"}
+{"t":795,"text":" plane below"}
+{"t":815,"text":". Write the coordinates"}
+{"t":835,"text":" of each lab"}
+{"t":855,"text":"elled point.\n  #co"}
+{"t":876,"text":"ordinate-plane("}
+{"t":897,"text":"\n    x: (-6"}
+{"t":917,"text":", 6),\n    y:"}
+{"t":938,"text":" (-6, 6),"}
+{"t":959,"text":"\n    points: ((3, "}
+{"t":978,"text":"2, [A]), (-"}
+{"t":1000,"text":"4, 1, [B]"}
+{"t":1020,"text":"), (-2, -3,"}
+{"t":1040,"text":" [C]), (0, -"}
+{"t":1060,"text":"5, [D]), (5"}
+{"t":1082,"text":", -1, [E])),"}
+{"t":1102,"text":"\n  )\n  + Point"}
+{"t":1123,"text":" A: #blank(width"}
+{"t":1142,"text":": 6"}
+{"t":1162,"text":"em, answer: [(3"}
+{"t":1184,"text":", 2)])\n  +"}
+{"t":1203,"text":" Point B: #blank("}
+{"t":1225,"text":"width: 6em, answer"}
+{"t":1245,"text":": [(-4, 1"}
+{"t":1265,"text":")])\n  + Point C"}
+{"t":1287,"text":": #blank(width: "}
+{"t":1307,"text":"6em, answer: [("}
+{"t":1331,"text":"-2, -3)])"}
+{"t":1349,"text":"\n  + Point D: #bl"}
+{"t":1368,"text":"ank(width: 6em,"}
+{"t":1389,"text":" answer: [(0, -"}
+{"t":1410,"text":"5)])\n]"}
+{"t":1429,"text":"\n\n#question(points: 1"}
+{"t":1450,"text":")[\n  Which point l"}
+{"t":1472,"text":"ies on the $x$-ax"}
+{"t":1490,"text":"is?\n  #mcq"}
+{"t":1511,"text":"([A"}
+{"t":1531,"text":"], [B], [D"}
+{"t":1552,"text":"], [E], answer: "}
+{"t":1572,"text":"3)\n]\n\n="}
+{"t":1593,"text":" Section B: Plotting"}
+{"t":1616,"text":" points\n\n#question(points: "}
+{"t":1634,"text":"6"}
+{"t":1654,"text":")[\n  On"}
+{"t":1675,"text":" the emp"}
+{"t":1696,"text":"ty coordinate plane below"}
+{"t":1716,"text":", plot and"}
+{"t":1736,"text":" label each"}
+{"t":1756,"text":" point"}
+{"t":1776,"text":".\n  + $"}
+{"t":1796,"text":"F(4, -3)$"}
+{"t":1819,"text":"\n  + $G(-5"}
+{"t":1838,"text":", 4)$\n  +"}
+{"t":1858,"text":" $H(0, 6)"}
+{"t":1900,"text":"$\n  +"}
+{"t":1910,"text":" $J(-2, -"}
+{"t":1932,"text":"2)$"}
+{"t":1945,"text":"\n\n  #co"}
+{"t":1960,"text":"ordinate-plane(x"}
+{"t":1981,"text":": (-6, 6),"}
+{"t":2001,"text":" y: (-6, 6"}
+{"t":2023,"text":"))\n  #answer[F"}
+{"t":2042,"text":" is"}
+{"t":2063,"text":" 4 right"}
+{"t":2083,"text":" and "}
+{"t":2104,"text":"3 down."}
+{"t":2125,"text":" G is 5 left and "}
+{"t":2145,"text":"4 up. H l"}
+{"t":2164,"text":"ies on the $"}
+{"t":2186,"text":"y$-axis,"}
+{"t":2206,"text":" 6 up"}
+{"t":2226,"text":". J is 2 left and"}
+{"t":2247,"text":" 2 down, in"}
+{"t":2267,"text":" qu"}
+{"t":2287,"text":"adrant III.]\n]"}
+{"t":2307,"text":"\n\n#"}
+{"t":2328,"text":"question(points: 1)["}
+{"t":2348,"text":"\n  In which quadrant"}
+{"t":2369,"text":" is the point $(-3,"}
+{"t":2390,"text":" 5)$?\n  #"}
+{"t":2411,"text":"mcq([Quadr"}
+{"t":2431,"text":"ant I],"}
+{"t":2452,"text":" [Quadrant II],"}
+{"t":2471,"text":" [Quadrant III],"}
+{"t":2493,"text":" [Quadrant IV"}
+{"t":2512,"text":"], answer: 2)"}
+{"t":2532,"text":"\n]\n\n#"}
+{"t":2554,"text":"question"}
+{"t":2577,"text":"(points: 1)["}
+{"t":2594,"text":"\n  #true-false("}
+{"t":2617,"text":"answer: false)[The point"}
+{"t":2651,"text":" $(-2, 3)"}
+{"t":2667,"text":"$ lies in quadr"}
+{"t":2683,"text":"ant IV.]\n]"}
+{"t":2703,"text":"\n\n= Section C: Problem"}
+{"t":2716,"text":" solving\n\n#question(points:"}
+{"t":2737,"text":" 2)[\n  A point"}
+{"t":2758,"text":" star"}
+{"t":2778,"text":"ts at $(1, -2"}
+{"t":2802,"text":")$. It mo"}
+{"t":2819,"text":"ves 3 units left and then"}
+{"t":2840,"text":" 2 units up. Write"}
+{"t":2860,"text":" the co"}
+{"t":2880,"text":"ordinates of its"}
+{"t":2900,"text":" new position.\n  #answer"}
+{"t":2921,"text":"-space(height: 3em"}
+{"t":2941,"text":", answer: ["}
+{"t":2962,"text":"Left"}
+{"t":2982,"text":" "}
+{"t":3002,"text":"3 "}
+{"t":3024,"text":"gives $(-2, -"}
+{"t":3046,"text":"2)$;"}
+{"t":3064,"text":" up 2 gives $("}
+{"t":3084,"text":"-2, 0)$."}
+{"t":3104,"text":" The new"}
+{"t":3125,"text":" position is $(-2, "}
+{"t":3145,"text":"0)$.])\n  "}
+{"t":3166,"text":"Final position"}
+{"t":3186,"text":": #blank(width"}
+{"t":3206,"text":": 6em, answer:"}
+{"t":3227,"text":" [(-2, 0)"}
+{"t":3247,"text":"])\n]\n\n#question"}
+{"t":3268,"text":"(points: 3"}
+{"t":3289,"text":")[\n  "}
+{"t":3310,"text":"Two points are $"}
+{"t":3329,"text":"P"}
+{"t":3357,"text":"(2"}
+{"t":3370,"text":", 4"}
+{"t":3391,"text":")$ and $Q("}
+{"t":3414,"text":"2, -1"}
+{"t":3431,"text":")$. Explain how"}
+{"t":3451,"text":" you"}
+{"t":3472,"text":" can tell that"}
+{"t":3493,"text":" the seg"}
+{"t":3512,"text":"ment joining them is"}
+{"t":3534,"text":" vertical, and"}
+{"t":3553,"text":" state"}
+{"t":3573,"text":" how many units long"}
+{"t":3609,"text":" it is.\n  #answer"}
+{"t":3622,"text":"-lines(count: 2"}
+{"t":3642,"text":", answer: ["}
+{"t":3655,"text":"Both points"}
+{"t":3676,"text":" have the same $x$-co"}
+{"t":3696,"text":"ordinate, "}
+{"t":3718,"text":"2, so the segment run"}
+{"t":3737,"text":"s up"}
+{"t":3758,"text":" and down. It is $"}
+{"t":3778,"text":"4 - ("}
+{"t":3799,"text":"-1) = 5$"}
+{"t":3824,"text":" units long.])\n]\n\n#"}
+{"t":3839,"text":"call"}
+{"t":3860,"text":"out(kind: \"remember"}
+{"t":3881,"text":"\")[\n  Points with the"}
+{"t":3901,"text":" same $x$-coordin"}
+{"t":3921,"text":"ate lie on a vertical"}
+{"t":3943,"text":" line. Points with the same $"}
+{"t":3965,"text":"y$-coordinate l"}
+{"t":3983,"text":"ie on a horizontal line"}
+{"t":4010,"text":".\n]"}

@@ -1,0 +1,114 @@
+{"t":0,"text":"#"}
+{"t":187,"text":"show: quiz."}
+{"t":192,"text":"with("}
+{"t":192,"text":"\n  title: [V"}
+{"t":192,"text":"ocabulario:"}
+{"t":192,"text":" La comida],\n  subject"}
+{"t":227,"text":": [Spanish],"}
+{"t":262,"text":"\n  grade: [Be"}
+{"t":294,"text":"ginner],"}
+{"t":326,"text":"\n  instructions: ["}
+{"t":360,"text":"Answer *all* questions."}
+{"t":393,"text":" In"}
+{"t":459,"text":" Part A"}
+{"t":550,"text":", match each"}
+{"t":550,"text":" Spanish word with its English me"}
+{"t":559,"text":"aning. In Part B,"}
+{"t":593,"text":" write the miss"}
+{"t":626,"text":"ing Spanish word.],"}
+{"t":661,"text":"\n)\n\n= Part A:"}
+{"t":693,"text":" Matching\n\n#question(points"}
+{"t":727,"text":": 8"}
+{"t":759,"text":")[\n  Match each"}
+{"t":793,"text":" Spanish word with its English"}
+{"t":827,"text":" meaning.\n  #mat"}
+{"t":860,"text":"ching(\n    ([la man"}
+{"t":908,"text":"zana], [apple]),"}
+{"t":927,"text":"\n    ([el pan],"}
+{"t":960,"text":" [bread]),\n    "}
+{"t":993,"text":"([el queso], [che"}
+{"t":1027,"text":"ese]),\n    ([la"}
+{"t":1060,"text":" leche], [mil"}
+{"t":1094,"text":"k]),\n    ([el"}
+{"t":1127,"text":" p"}
+{"t":1173,"text":"ollo], [ch"}
+{"t":1200,"text":"icken]),\n    (["}
+{"t":1234,"text":"el arroz], [rice"}
+{"t":1265,"text":"]),\n    ([el hu"}
+{"t":1294,"text":"evo], [eg"}
+{"t":1330,"text":"g]),\n    ([el"}
+{"t":1360,"text":" pescado], [fish]"}
+{"t":1394,"text":"),\n  )\n]\n\n="}
+{"t":1428,"text":" Part B: Fill in"}
+{"t":1463,"text":" the blank\n\n#call"}
+{"t":1494,"text":"out(k"}
+{"t":1527,"text":"ind: \"tip\","}
+{"t":1568,"text":" title: [Word b"}
+{"t":1599,"text":"ank])[\n  ag"}
+{"t":1629,"text":"ua ·"}
+{"t":1660,"text":" na"}
+{"t":1694,"text":"ranja · s"}
+{"t":1727,"text":"opa · "}
+{"t":1760,"text":"ensalada · desayuno"}
+{"t":1793,"text":" · alm"}
+{"t":1827,"text":"uerzo\n]\n\n#"}
+{"t":1860,"text":"question(points: 6)["}
+{"t":1894,"text":"\n  Compl"}
+{"t":1927,"text":"ete each sentence with a word"}
+{"t":1961,"text":" from the word bank.\n  "}
+{"t":1993,"text":"+ Para be"}
+{"t":2027,"text":"ber, qu"}
+{"t":2060,"text":"iero un v"}
+{"t":2098,"text":"aso de #blank(width"}
+{"t":2129,"text":": 5"}
+{"t":2160,"text":"em, answer: [agua"}
+{"t":2193,"text":"]).\n  + La"}
+{"t":2227,"text":" f"}
+{"t":2260,"text":"ruta an"}
+{"t":2297,"text":"aranjada se"}
+{"t":2327,"text":" llama #blank(width:"}
+{"t":2360,"text":" 5em, answer: ["}
+{"t":2393,"text":"naranja]).\n  +"}
+{"t":2465,"text":" Una"}
+{"t":2493,"text":" comida caliente que"}
+{"t":2527,"text":" se come"}
+{"t":2560,"text":" con c"}
+{"t":2593,"text":"u"}
+{"t":2627,"text":"chara es la"}
+{"t":2660,"text":" #blank(width: 5"}
+{"t":2694,"text":"em, answer: [sop"}
+{"t":2727,"text":"a]).\n  + La l"}
+{"t":2761,"text":"echuga y el t"}
+{"t":2794,"text":"omate for"}
+{"t":2827,"text":"man una #blank(width:"}
+{"t":2861,"text":" 5em, answer: ["}
+{"t":2893,"text":"ensalada]).\n  "}
+{"t":2927,"text":"+ La prim"}
+{"t":2960,"text":"era comida del"}
+{"t":2993,"text":" día es el #blank(width"}
+{"t":3027,"text":": 5em, answer:"}
+{"t":3060,"text":" [desayuno])."}
+{"t":3099,"text":"\n  + La comida del"}
+{"t":3128,"text":" mediodía es el #bl"}
+{"t":3167,"text":"ank(width: 5em,"}
+{"t":3199,"text":" answer: [almuerz"}
+{"t":3232,"text":"o]).\n]\n\n#question"}
+{"t":3260,"text":"(points: 4)["}
+{"t":3294,"text":"\n  Write"}
+{"t":3327,"text":" the"}
+{"t":3404,"text":" Spanish word for each food."}
+{"t":3433,"text":"\n  + b"}
+{"t":3466,"text":"read: #blank(width"}
+{"t":3501,"text":": 6"}
+{"t":3530,"text":"em, answer: [el p"}
+{"t":3568,"text":"an])\n  + cheese"}
+{"t":3597,"text":": #blank(width: "}
+{"t":3627,"text":"6em, answer: [el"}
+{"t":3660,"text":" queso])\n  + milk"}
+{"t":3693,"text":": #blank(width: "}
+{"t":3727,"text":"6em, answer: [la"}
+{"t":3760,"text":" leche])\n  + apple"}
+{"t":3795,"text":": #blank(width: "}
+{"t":3827,"text":"6em, answer: [la"}
+{"t":3860,"text":" manzana])\n]\n\n#"}
+{"t":3888,"text":"answer-key()"}

@@ -1,0 +1,315 @@
+{"t":0,"text":"#"}
+{"t":37,"text":"import"}
+{"t":77,"text":" \"@preview/cetz"}
+{"t":116,"text":":0.5.3\""}
+{"t":154,"text":"\n\n#show: worksheet."}
+{"t":190,"text":"with("}
+{"t":226,"text":"\n  title: [Photosyn"}
+{"t":259,"text":"thesis: How Plants"}
+{"t":294,"text":" Make Food],\n  sub"}
+{"t":329,"text":"ject: [Science],\n  "}
+{"t":361,"text":"grade: [Grade "}
+{"t":394,"text":"7],\n  instructions:"}
+{"t":425,"text":" [Answ"}
+{"t":459,"text":"er all"}
+{"t":827,"text":" questions. Use"}
+{"t":827,"text":" the word b"}
+{"t":827,"text":"ank in Part A."}
+{"t":885,"text":" Write"}
+{"t":885,"text":" ne"}
+{"t":885,"text":"atly."}
+{"t":885,"text":"],\n)\n\n#"}
+{"t":885,"text":"callout(kind: \"rem"}
+{"t":885,"text":"ember\")[\n  Photos"}
+{"t":885,"text":"ynthesis happ"}
+{"t":1146,"text":"ens m"}
+{"t":1146,"text":"ainly in the leaves."}
+{"t":1146,"text":" Plants use light energy to"}
+{"t":1146,"text":" tur"}
+{"t":1146,"text":"n carbon dioxide"}
+{"t":1146,"text":" and water into glucose and"}
+{"t":1146,"text":" oxygen.\n]"}
+{"t":1395,"text":"\n\n= Part A: Fill"}
+{"t":1427,"text":" in the blan"}
+{"t":1427,"text":"ks\n\n*"}
+{"t":1427,"text":"Word bank:"}
+{"t":1427,"text":"* ch"}
+{"t":1433,"text":"lorophyll, s"}
+{"t":1433,"text":"unlight, o"}
+{"t":1433,"text":"xygen, glucose,"}
+{"t":1433,"text":" car"}
+{"t":1433,"text":"bon dioxide, st"}
+{"t":1433,"text":"omata\n\n#question(points:"}
+{"t":1433,"text":" 1)[\n  The"}
+{"t":1464,"text":" green"}
+{"t":1496,"text":" pigment that"}
+{"t":1529,"text":" captures light energ"}
+{"t":1560,"text":"y is"}
+{"t":1592,"text":" called #blank(answer:"}
+{"t":1716,"text":" [chlorophyll]"}
+{"t":1716,"text":").\n]\n\n#question(points"}
+{"t":1716,"text":": 1)[\n  "}
+{"t":2117,"text":"Plants take in #blank("}
+{"t":2117,"text":"answer: [carbon d"}
+{"t":2148,"text":"ioxide]) from the air"}
+{"t":2148,"text":" through t"}
+{"t":2148,"text":"iny holes called #blank"}
+{"t":2148,"text":"(answer: [stomata"}
+{"t":2148,"text":"]).\n]\n\n#question("}
+{"t":2148,"text":"points: 1)[\n  "}
+{"t":2148,"text":"The energy for"}
+{"t":2148,"text":" photosynthesis com"}
+{"t":2148,"text":"es from #blank(answer"}
+{"t":2148,"text":": [sunlight])."}
+{"t":2177,"text":"\n]\n\n#question(points:"}
+{"t":2177,"text":" 2)[\n  The s"}
+{"t":2195,"text":"ugar made"}
+{"t":2230,"text":" by photosynthesis is"}
+{"t":2263,"text":" #"}
+{"t":2298,"text":"blank(answer: [gl"}
+{"t":2330,"text":"ucose]), and the gas"}
+{"t":2364,"text":" released into"}
+{"t":2399,"text":" the air is #blank(answ"}
+{"t":2431,"text":"er: [oxygen]"}
+{"t":2463,"text":").\n]\n\n#question(points"}
+{"t":2496,"text":": 2)[\n  "}
+{"t":2530,"text":"Complete the word equation:"}
+{"t":2564,"text":"\n  carbon dioxide"}
+{"t":2937,"text":" + #"}
+{"t":2982,"text":"blank(width"}
+{"t":2982,"text":": 4em, answer:"}
+{"t":2982,"text":" [water]) #"}
+{"t":2982,"text":"s"}
+{"t":2982,"text":"ym"}
+{"t":2982,"text":"."}
+{"t":2982,"text":"arrow."}
+{"t":2982,"text":"r"}
+{"t":2982,"text":" #blank(width"}
+{"t":2982,"text":": 4em, answer:"}
+{"t":2985,"text":" [glucose]) +"}
+{"t":3017,"text":" oxygen\n]\n\n="}
+{"t":3051,"text":" Part B: Multiple"}
+{"t":3107,"text":" choice\n\n#question(points:"}
+{"t":3119,"text":" 1)[\n  Which"}
+{"t":3142,"text":" of these"}
+{"t":3167,"text":" is need"}
+{"t":3200,"text":"ed for photosynthesis"}
+{"t":3240,"text":"?\n  #mcq(["}
+{"t":3647,"text":"O"}
+{"t":3647,"text":"xygen], [Carb"}
+{"t":3647,"text":"on dioxide], ["}
+{"t":3647,"text":"Glucose], [N"}
+{"t":3647,"text":"itrogen], answer:"}
+{"t":4535,"text":" 2)\n]\n\n#question"}
+{"t":4535,"text":"(points: 1)["}
+{"t":4535,"text":"\n  Which part of the"}
+{"t":4535,"text":" pl"}
+{"t":4535,"text":"ant absorbs water from"}
+{"t":4535,"text":" the soil?\n  #m"}
+{"t":4535,"text":"cq([Leaves"}
+{"t":4535,"text":"], [Fl"}
+{"t":4536,"text":"owers], [Roots],"}
+{"t":4536,"text":" [Stom"}
+{"t":4536,"text":"ata], answer: 3)"}
+{"t":4536,"text":"\n]\n\n#question(points:"}
+{"t":4536,"text":" 1)[\n  What"}
+{"t":4536,"text":" is the chemical formula of"}
+{"t":4536,"text":" the"}
+{"t":4536,"text":" gas that plants release during"}
+{"t":4536,"text":" photosynthesis?"}
+{"t":4536,"text":"\n  #mcq("}
+{"t":4536,"text":"ce(\"C"}
+{"t":4548,"text":"O2\"), ce(\"O"}
+{"t":4548,"text":"2\"), ce(\"H2"}
+{"t":4548,"text":"O\"), ce(\"N2"}
+{"t":4548,"text":"\"), answer: 2)"}
+{"t":4548,"text":"\n]\n\n#question(points:"}
+{"t":4548,"text":" 1)[\n  What"}
+{"t":4548,"text":" would happen to a plant k"}
+{"t":4548,"text":"ept in a dark c"}
+{"t":4548,"text":"upboard for two"}
+{"t":4548,"text":" weeks?\n  #m"}
+{"t":4566,"text":"cq("}
+{"t":4566,"text":"\n    [It would"}
+{"t":4566,"text":" make more glucose."}
+{"t":4566,"text":"],\n    [It would make more"}
+{"t":4566,"text":" oxygen.],\n    "}
+{"t":4566,"text":"[It would st"}
+{"t":4601,"text":"op making glucose and become"}
+{"t":4635,"text":" weak"}
+{"t":5024,"text":".],\n    ["}
+{"t":5024,"text":"Nothing would change.],"}
+{"t":5024,"text":"\n    answer: 3,"}
+{"t":5024,"text":"\n  )\n]\n\n= Part"}
+{"t":5024,"text":" C: Label the"}
+{"t":5024,"text":" diagram\n\n#question(points"}
+{"t":5024,"text":": 4"}
+{"t":5024,"text":")[\n  The diagram"}
+{"t":5024,"text":" shows a cross-section of"}
+{"t":5024,"text":" a leaf. Write the"}
+{"t":5024,"text":" name of each lab"}
+{"t":5026,"text":"elled part on the l"}
+{"t":5173,"text":"ines below"}
+{"t":5173,"text":". Choose from"}
+{"t":5173,"text":": upper epidermis,"}
+{"t":5173,"text":" palisade mesophyll"}
+{"t":5195,"text":", spongy mesophy"}
+{"t":5234,"text":"ll, st"}
+{"t":5256,"text":"oma.\n\n  #align("}
+{"t":5312,"text":"center)"}
+{"t":5312,"text":"[\n    #cetz."}
+{"t":5338,"text":"canvas({\n      import c"}
+{"t":5368,"text":"etz.draw: *"}
+{"t":5456,"text":"\n      // upper epidermis"}
+{"t":5456,"text":"\n      rect((0, "}
+{"t":5476,"text":"3.2), (8, "}
+{"t":5514,"text":"3.6), fill: r"}
+{"t":5536,"text":"gb(\"#d9ead"}
+{"t":5584,"text":"3\"), stroke: "}
+{"t":5584,"text":"0.8"}
+{"t":5612,"text":"pt)\n      // palis"}
+{"t":5640,"text":"ade lay"}
+{"t":5709,"text":"er\n      for i in range("}
+{"t":5710,"text":"0, 8) {\n        "}
+{"t":5732,"text":"rect((i + 0."}
+{"t":5767,"text":"1, 2.2), ("}
+{"t":5838,"text":"i + 0.9, "}
+{"t":5838,"text":"3.2), fill: green"}
+{"t":5865,"text":".lighten(50%),"}
+{"t":5898,"text":" stroke: 0.6"}
+{"t":5932,"text":"pt)\n      }\n      "}
+{"t":5965,"text":"// spongy layer\n      "}
+{"t":6002,"text":"for i in range(0, "}
+{"t":6032,"text":"7) {\n        circle(("}
+{"t":6091,"text":"i + 0.7, "}
+{"t":6118,"text":"1.6"}
+{"t":6152,"text":"), radius: (0.4"}
+{"t":6185,"text":", 0.3), fill"}
+{"t":6204,"text":": green.lighten(75"}
+{"t":6232,"text":"%), stroke: 0"}
+{"t":6266,"text":".6pt)\n      "}
+{"t":6299,"text":"}\n      for i in range("}
+{"t":6344,"text":"0, 7"}
+{"t":6372,"text":") {\n        circle((i"}
+{"t":6405,"text":" + 1.1"}
+{"t":6432,"text":", 0"}
+{"t":6468,"text":".95"}
+{"t":6499,"text":"), radius: (0.4"}
+{"t":6532,"text":", 0.3), fill"}
+{"t":6566,"text":": green.lighten(75"}
+{"t":6599,"text":"%), stroke: 0"}
+{"t":6632,"text":".6pt)\n      }"}
+{"t":6685,"text":"\n      // lower epiderm"}
+{"t":6721,"text":"is with a g"}
+{"t":6752,"text":"ap ("}
+{"t":6785,"text":"stoma)\n      rect"}
+{"t":6819,"text":"((0, 0.2),"}
+{"t":6852,"text":" (3.5, 0."}
+{"t":6885,"text":"6), fill: rgb"}
+{"t":6906,"text":"(\"#d9ead3\""}
+{"t":6933,"text":"), stroke: 0."}
+{"t":6966,"text":"8pt)\n      rect"}
+{"t":6999,"text":"((4.5, 0."}
+{"t":7033,"text":"2), (8, 0."}
+{"t":7072,"text":"6), fill: rgb"}
+{"t":7105,"text":"(\"#d9ead3\""}
+{"t":7138,"text":"), stroke: 0."}
+{"t":7166,"text":"8pt)\n      circle"}
+{"t":7199,"text":"((3.75, 0."}
+{"t":7252,"text":"4), radius: (0."}
+{"t":7266,"text":"25, 0.22"}
+{"t":7299,"text":"), fill: green.dar"}
+{"t":7332,"text":"ken(10"}
+{"t":7366,"text":"%), stroke: 0"}
+{"t":7399,"text":".6pt)\n      circ"}
+{"t":7432,"text":"le((4.25, 0"}
+{"t":7466,"text":".4), radius: (0"}
+{"t":7499,"text":".25, 0.22),"}
+{"t":7533,"text":" fill: green.darken("}
+{"t":7566,"text":"10%), stroke: "}
+{"t":7599,"text":"0.6pt)\n\n      "}
+{"t":7633,"text":"// leader lines and"}
+{"t":7666,"text":" let"}
+{"t":7699,"text":"ters\n      circle((7"}
+{"t":7734,"text":".5, 3.4"}
+{"t":7766,"text":"), radius: 0.05"}
+{"t":7799,"text":", fill: black)"}
+{"t":7842,"text":"\n      line((7.5,"}
+{"t":7872,"text":" 3.4), (9,"}
+{"t":7899,"text":" 3.4))\n      content"}
+{"t":7933,"text":"((9.4"}
+{"t":7966,"text":", 3.4), [*"}
+{"t":8019,"text":"A*])"}
+{"t":8032,"text":"\n\n      circle((7.5,"}
+{"t":8067,"text":" 2.7), radius:"}
+{"t":8100,"text":" 0.05, fill:"}
+{"t":8133,"text":" black)\n      line((7."}
+{"t":8166,"text":"5, 2.7), ("}
+{"t":8206,"text":"9, 2.7))"}
+{"t":8232,"text":"\n      content((9.4, "}
+{"t":8267,"text":"2.7), [*B*"}
+{"t":8299,"text":"])\n\n      circle((6"}
+{"t":8333,"text":".7"}
+{"t":8366,"text":", 1.6), radius"}
+{"t":8402,"text":": 0.05, fill"}
+{"t":8433,"text":": black)\n      line((6"}
+{"t":8466,"text":".7, 1.6),"}
+{"t":8500,"text":" (9, 1.6))"}
+{"t":8533,"text":"\n      content((9.4,"}
+{"t":8567,"text":" 1.6), [*C"}
+{"t":8599,"text":"*])\n\n      line"}
+{"t":8633,"text":"((4, 0.2"}
+{"t":8667,"text":"), (4, -0.5"}
+{"t":8700,"text":"))\n      content((4, -"}
+{"t":8733,"text":"0.85"}
+{"t":8768,"text":"), [*D*])\n    "}
+{"t":8800,"text":"})\n  "}
+{"t":8833,"text":"]\n\n  #grid("}
+{"t":8866,"text":"\n    columns: ("}
+{"t":8904,"text":"au"}
+{"t":8934,"text":"to, "}
+{"t":8966,"text":"1fr, auto, "}
+{"t":9000,"text":"1fr),\n    column"}
+{"t":9033,"text":"-gutter: 0"}
+{"t":9077,"text":".6em,\n    row-"}
+{"t":9110,"text":"gutter: 1.2"}
+{"t":9134,"text":"em,\n    [*A*"}
+{"t":9166,"text":"],"}
+{"t":9201,"text":" [#blank(width: "}
+{"t":9233,"text":"100"}
+{"t":9266,"text":"%"}
+{"t":9299,"text":", answer: [upper ep"}
+{"t":9333,"text":"idermis])],\n    ["}
+{"t":9366,"text":"*B*], [#blank"}
+{"t":9400,"text":"(width: 100%, answ"}
+{"t":9433,"text":"er: [palisade mes"}
+{"t":9467,"text":"ophyll])],\n    ["}
+{"t":9500,"text":"*C*], [#blank"}
+{"t":9541,"text":"(width: 100%, answ"}
+{"t":9566,"text":"er: [spongy mes"}
+{"t":9600,"text":"ophyll])],\n    ["}
+{"t":9633,"text":"*D*], [#blank"}
+{"t":9666,"text":"(width: 100%, answ"}
+{"t":9700,"text":"er: [stoma])],"}
+{"t":9733,"text":"\n  )\n]\n\n="}
+{"t":9766,"text":" Part D: Think"}
+{"t":9800,"text":" about"}
+{"t":9833,"text":" it\n\n#question(points: "}
+{"t":9868,"text":"2)[\n  Why do"}
+{"t":9899,"text":" most"}
+{"t":9933,"text":" phot"}
+{"t":9967,"text":"osynthesis cells in"}
+{"t":10000,"text":" a leaf s"}
+{"t":10033,"text":"it near the top sur"}
+{"t":10066,"text":"face, in"}
+{"t":10100,"text":" the palisade layer?"}
+{"t":10133,"text":"\n  #answer-lines("}
+{"t":10167,"text":"count: 2, answer:"}
+{"t":10200,"text":" [This"}
+{"t":10233,"text":" layer is closest"}
+{"t":10266,"text":" to the s"}
+{"t":10301,"text":"unlight and contains many ch"}
+{"t":10333,"text":"loroplasts, so it"}
+{"t":10367,"text":" can capture the"}
+{"t":10400,"text":" most light energy.])"}
+{"t":10434,"text":"\n]\n\n#answer-key()"}

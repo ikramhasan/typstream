@@ -1,0 +1,666 @@
+{"t":0,"text":"#"}
+{"t":32,"text":"set page(marg"}
+{"t":66,"text":"in: 2"}
+{"t":99,"text":"c"}
+{"t":132,"text":"m, num"}
+{"t":165,"text":"bering: \"1"}
+{"t":199,"text":"\")\n#set text(size"}
+{"t":232,"text":": 11pt)\n#"}
+{"t":265,"text":"set he"}
+{"t":301,"text":"ading(numbering: none"}
+{"t":333,"text":")\n#set table(st"}
+{"t":366,"text":"roke: "}
+{"t":401,"text":"0.5pt +"}
+{"t":433,"text":" lu"}
+{"t":465,"text":"ma"}
+{"t":499,"text":"("}
+{"t":533,"text":"120"}
+{"t":565,"text":"),"}
+{"t":599,"text":" inset: 6"}
+{"t":635,"text":"pt)\n\n= L"}
+{"t":669,"text":"esson Plan: Pers"}
+{"t":700,"text":"uasive Writing"}
+{"t":732,"text":"\n\n*Grade:"}
+{"t":767,"text":"* 8 #"}
+{"t":801,"text":"h"}
+{"t":835,"text":"("}
+{"t":866,"text":"1em) *Sub"}
+{"t":899,"text":"ject:* English Language"}
+{"t":933,"text":" Arts #h(1em"}
+{"t":966,"text":") *Length"}
+{"t":1000,"text":":* 2 s"}
+{"t":1033,"text":"essions, 50 minut"}
+{"t":1067,"text":"es each\n\n#table(\n  "}
+{"t":1100,"text":"columns: ("}
+{"t":1140,"text":"au"}
+{"t":1167,"text":"to, 1fr),"}
+{"t":1210,"text":"\n  ["}
+{"t":1240,"text":"*"}
+{"t":1267,"text":"Unit foc"}
+{"t":1300,"text":"us*], [Writ"}
+{"t":1334,"text":"ing an argument"}
+{"t":1367,"text":" that supports a claim with"}
+{"t":1402,"text":" clear reasons and relev"}
+{"t":1434,"text":"ant evidence],\n  ["}
+{"t":1467,"text":"*Final"}
+{"t":1500,"text":" product*], [A five"}
+{"t":1534,"text":"-pa"}
+{"t":1568,"text":"ragraph persuasive ess"}
+{"t":1601,"text":"ay ("}
+{"t":1636,"text":"or a three"}
+{"t":1667,"text":"-paragraph version"}
+{"t":1705,"text":" for students who need"}
+{"t":1734,"text":" more support"}
+{"t":1767,"text":")"}
+{"t":1801,"text":" on a school-"}
+{"t":1833,"text":"related iss"}
+{"t":1867,"text":"ue],\n  [*Al"}
+{"t":1900,"text":"ignment*], [C"}
+{"t":1934,"text":"CSS."}
+{"t":2000,"text":"ELA-"}
+{"t":2034,"text":"LITERACY.W."}
+{"t":2067,"text":"8.1 (write"}
+{"t":2101,"text":" arguments to"}
+{"t":2134,"text":" support claims with clear reas"}
+{"t":2168,"text":"ons and relevant evidence"}
+{"t":2201,"text":")"}
+{"t":2234,"text":"],\n)\n\n== Lear"}
+{"t":2269,"text":"ning Objectives\n\nBy"}
+{"t":2301,"text":" the end of the"}
+{"t":2337,"text":" two sessions, students will be"}
+{"t":2368,"text":" able to:\n\n+"}
+{"t":2401,"text":" Identify the par"}
+{"t":2435,"text":"ts of a persuasive arg"}
+{"t":2468,"text":"ument: cla"}
+{"t":2503,"text":"im, reasons, evid"}
+{"t":2535,"text":"ence, counterclaim,"}
+{"t":2572,"text":" and rebuttal."}
+{"t":2603,"text":"\n+ Recognize and expl"}
+{"t":2636,"text":"ain the"}
+{"t":2669,"text":" appeals of"}
+{"t":2703,"text":" _"}
+{"t":2738,"text":"ethos_, _path"}
+{"t":2770,"text":"os_, and _logos_"}
+{"t":2804,"text":" in a model"}
+{"t":2850,"text":" text.\n+ Pl"}
+{"t":2889,"text":"an an"}
+{"t":2902,"text":" argument using a"}
+{"t":2937,"text":" graphic organizer."}
+{"t":2970,"text":"\n+ Draft a persu"}
+{"t":3003,"text":"asive essay with a clear"}
+{"t":3040,"text":" claim, organ"}
+{"t":3072,"text":"ized reasons, and at"}
+{"t":3105,"text":" least one ac"}
+{"t":3137,"text":"knowledged countercla"}
+{"t":3172,"text":"im.\n+ Give and"}
+{"t":3205,"text":" use"}
+{"t":3237,"text":" pe"}
+{"t":3279,"text":"er feedback gu"}
+{"t":3306,"text":"ided by a checklist."}
+{"t":3337,"text":"\n\n== Key Vocabul"}
+{"t":3371,"text":"ary\n\n/ Claim:"}
+{"t":3404,"text":" The position"}
+{"t":3437,"text":" the"}
+{"t":3470,"text":" writer w"}
+{"t":3504,"text":"ants the re"}
+{"t":3537,"text":"ader to accept.\n/"}
+{"t":3571,"text":" Reason: A"}
+{"t":3605,"text":" statement that explains why the cla"}
+{"t":3637,"text":"im is true.\n/"}
+{"t":3671,"text":" Evidence: Fac"}
+{"t":3704,"text":"ts, statistics, exam"}
+{"t":3746,"text":"ples, or expert opinions"}
+{"t":3771,"text":" that"}
+{"t":3806,"text":" support a reason.\n/"}
+{"t":3838,"text":" Counterclaim: An"}
+{"t":3877,"text":" opposing vi"}
+{"t":3906,"text":"ewpoint."}
+{"t":3938,"text":"\n/ Rebutt"}
+{"t":3971,"text":"al: The"}
+{"t":4005,"text":" writer's response show"}
+{"t":4040,"text":"ing why the"}
+{"t":4071,"text":" counterclaim is wea"}
+{"t":4105,"text":"ker."}
+{"t":4139,"text":"\n/ Ethos,"}
+{"t":4171,"text":" p"}
+{"t":4207,"text":"athos, logos: App"}
+{"t":4238,"text":"eals to credibility,"}
+{"t":4278,"text":" em"}
+{"t":4305,"text":"otion, and logic."}
+{"t":4339,"text":"\n\n== Materials\n\n- Proj"}
+{"t":4372,"text":"ector or"}
+{"t":4408,"text":" board"}
+{"t":4445,"text":" for"}
+{"t":4488,"text":" the"}
+{"t":4505,"text":" warm-up pr"}
+{"t":4540,"text":"ompt and mini"}
+{"t":4571,"text":"-less"}
+{"t":4607,"text":"ons\n-"}
+{"t":4646,"text":" M"}
+{"t":4684,"text":"entor text:"}
+{"t":4709,"text":" a"}
+{"t":4739,"text":" one"}
+{"t":4771,"text":"-page student"}
+{"t":4804,"text":"-"}
+{"t":4837,"text":"level"}
+{"t":4871,"text":" opinion pi"}
+{"t":4905,"text":"ece (for"}
+{"t":4938,"text":" example, on"}
+{"t":4971,"text":" later"}
+{"t":5004,"text":" school start times),"}
+{"t":5036,"text":" print"}
+{"t":5074,"text":"ed for each student\n- Arg"}
+{"t":5106,"text":"ument planner handout (cla"}
+{"t":5137,"text":"im, three"}
+{"t":5172,"text":" reasons, ev"}
+{"t":5204,"text":"idence for"}
+{"t":5237,"text":" each, counterclaim and"}
+{"t":5271,"text":" rebuttal)\n-"}
+{"t":5304,"text":" High"}
+{"t":5337,"text":"lighters in"}
+{"t":5374,"text":" three colors\n- Peer"}
+{"t":5404,"text":" review checklist and"}
+{"t":5438,"text":" the"}
+{"t":5470,"text":" rubric ("}
+{"t":5504,"text":"below)\n- Index cards"}
+{"t":5538,"text":" for"}
+{"t":5571,"text":" exit tickets\n\n#"}
+{"t":5604,"text":"p"}
+{"t":5637,"text":"agebreak()\n\n="}
+{"t":5672,"text":" Session 1: Building"}
+{"t":5704,"text":" the"}
+{"t":5738,"text":" Argument\n\n#table("}
+{"t":5773,"text":"\n  columns: (auto,"}
+{"t":5804,"text":" au"}
+{"t":5837,"text":"to, "}
+{"t":5871,"text":"1fr),\n  align"}
+{"t":5905,"text":": (left"}
+{"t":5937,"text":", left"}
+{"t":5972,"text":", left),\n  [*"}
+{"t":6004,"text":"Time*], [*Seg"}
+{"t":6038,"text":"ment*], [*Activity"}
+{"t":6071,"text":"*"}
+{"t":6108,"text":"],\n  [0–5 "}
+{"t":6138,"text":"min], [Hook],"}
+{"t":6171,"text":"\n  [P"}
+{"t":6206,"text":"ose the question"}
+{"t":6238,"text":": \"Should sch"}
+{"t":6273,"text":"ools start an"}
+{"t":6305,"text":" hour later?\" Students"}
+{"t":6339,"text":" take a st"}
+{"t":6372,"text":"ance by"}
+{"t":6405,"text":" standing on a"}
+{"t":6438,"text":" \""}
+{"t":6473,"text":"ag"}
+{"t":6504,"text":"ree/"}
+{"t":6538,"text":"disagree\" line in the room"}
+{"t":6572,"text":"."}
+{"t":6604,"text":" Inv"}
+{"t":6638,"text":"ite two or"}
+{"t":6673,"text":" three students"}
+{"t":6704,"text":" to def"}
+{"t":6739,"text":"end their posit"}
+{"t":6782,"text":"ions in"}
+{"t":6807,"text":" one sentence. Point"}
+{"t":6840,"text":" out that they"}
+{"t":6870,"text":" have just"}
+{"t":6905,"text":" made cla"}
+{"t":6937,"text":"ims and given reasons.],"}
+{"t":6971,"text":"\n  [5–15 min"}
+{"t":7004,"text":"], [Mini-les"}
+{"t":7038,"text":"son],\n  [Intro"}
+{"t":7070,"text":"duce the anatomy of"}
+{"t":7111,"text":" an"}
+{"t":7139,"text":" argument: claim, reas"}
+{"t":7173,"text":"ons, evidence, counter"}
+{"t":7205,"text":"claim, and rebu"}
+{"t":7238,"text":"ttal. Use a sim"}
+{"t":7271,"text":"ple diagram on"}
+{"t":7305,"text":" the board. Bri"}
+{"t":7338,"text":"efly introduce ethos"}
+{"t":7371,"text":", pathos, and logos"}
+{"t":7405,"text":" with one ever"}
+{"t":7440,"text":"yday example each (such"}
+{"t":7473,"text":" as an"}
+{"t":7505,"text":" ad,"}
+{"t":7545,"text":" a spe"}
+{"t":7571,"text":"ech by"}
+{"t":7606,"text":" a"}
+{"t":7648,"text":" coach, or a news"}
+{"t":7672,"text":" story).],\n  [15–"}
+{"t":7705,"text":"25 min], [Ment"}
+{"t":7739,"text":"or text analysis],\n  "}
+{"t":7772,"text":"[Students"}
+{"t":7805,"text":" read the mentor text and ann"}
+{"t":7838,"text":"otate it"}
+{"t":7871,"text":" with three high"}
+{"t":7905,"text":"lighter"}
+{"t":7938,"text":" colors: cla"}
+{"t":7972,"text":"im (yellow), reas"}
+{"t":8006,"text":"ons (green), evidence ("}
+{"t":8040,"text":"blue). In"}
+{"t":8072,"text":" pairs, they label one"}
+{"t":8105,"text":" example"}
+{"t":8138,"text":" of "}
+{"t":8172,"text":"ethos, pathos, or"}
+{"t":8206,"text":" logos in the marg"}
+{"t":8238,"text":"in. Deb"}
+{"t":8271,"text":"rief as"}
+{"t":8306,"text":" a class.],\n  [25"}
+{"t":8339,"text":"–40 min], [Gu"}
+{"t":8372,"text":"ided practice],\n  ["}
+{"t":8405,"text":"Students choose a topic from a"}
+{"t":8440,"text":" list (for example: school"}
+{"t":8475,"text":" u"}
+{"t":8515,"text":"niforms, phones"}
+{"t":8539,"text":" in class"}
+{"t":8572,"text":", hom"}
+{"t":8607,"text":"ework lim"}
+{"t":8643,"text":"its, a four"}
+{"t":8672,"text":"-day school week) or prop"}
+{"t":8706,"text":"ose their own. They"}
+{"t":8741,"text":" complete the argument planner:"}
+{"t":8772,"text":" a"}
+{"t":8806,"text":" one"}
+{"t":8840,"text":"-sentence claim, three"}
+{"t":8872,"text":" reasons, and evidence"}
+{"t":8905,"text":" for each."}
+{"t":8939,"text":" Circulate and"}
+{"t":8972,"text":" check that"}
+{"t":9005,"text":" each"}
+{"t":9040,"text":" claim is ar"}
+{"t":9072,"text":"guable and spec"}
+{"t":9108,"text":"ific.],\n  [40–"}
+{"t":9138,"text":"47 min], [Pair"}
+{"t":9173,"text":" share],\n  [Partners"}
+{"t":9205,"text":" sw"}
+{"t":9239,"text":"ap plan"}
+{"t":9272,"text":"ners. The"}
+{"t":9305,"text":" reader answ"}
+{"t":9345,"text":"ers:"}
+{"t":9381,"text":" \"Is"}
+{"t":9405,"text":" the"}
+{"t":9438,"text":" claim clear? Which"}
+{"t":9477,"text":" reason is strongest?"}
+{"t":9505,"text":" What"}
+{"t":9549,"text":" evidence is missing?\""}
+{"t":9582,"text":" Partners"}
+{"t":9614,"text":" write one star"}
+{"t":9649,"text":" ("}
+{"t":9681,"text":"strength"}
+{"t":9707,"text":") and one step"}
+{"t":9739,"text":" (next"}
+{"t":9771,"text":" improvement)."}
+{"t":9807,"text":"],\n  [47–50 "}
+{"t":9842,"text":"min], [Exit tic"}
+{"t":9874,"text":"ket],\n  [On an index"}
+{"t":9907,"text":" card, students write their"}
+{"t":9938,"text":" claim and name"}
+{"t":9972,"text":" the re"}
+{"t":10005,"text":"ason they think"}
+{"t":10038,"text":" is most conv"}
+{"t":10072,"text":"incing,"}
+{"t":10111,"text":" with"}
+{"t":10138,"text":" a one-sentence explan"}
+{"t":10175,"text":"ation.],\n)\n\n=="}
+{"t":10210,"text":" Teacher Notes for"}
+{"t":10245,"text":" Session 1\n\n- Model"}
+{"t":10272,"text":" a we"}
+{"t":10306,"text":"ak claim "}
+{"t":10339,"text":"(\"School"}
+{"t":10372,"text":" is"}
+{"t":10407,"text":" bad\") and rev"}
+{"t":10438,"text":"ise it together"}
+{"t":10472,"text":" into a strong one"}
+{"t":10506,"text":" (\"Schools should start"}
+{"t":10538,"text":" at"}
+{"t":10571,"text":" "}
+{"t":10609,"text":"8"}
+{"t":10638,"text":":30 a.m. because"}
+{"t":10671,"text":" later"}
+{"t":10704,"text":" start"}
+{"t":10738,"text":" times improve student"}
+{"t":10772,"text":" health"}
+{"t":10804,"text":" and attendance\").\n-"}
+{"t":10838,"text":" Encourage students to"}
+{"t":10877,"text":" choose top"}
+{"t":10911,"text":"ics they care about;"}
+{"t":10938,"text":" eng"}
+{"t":10971,"text":"agement str"}
+{"t":11004,"text":"ong"}
+{"t":11038,"text":"ly affects the"}
+{"t":11072,"text":" quality of the final"}
+{"t":11106,"text":" draft.\n- Review"}
+{"t":11138,"text":" the exit t"}
+{"t":11171,"text":"ickets af"}
+{"t":11206,"text":"terward and"}
+{"t":11240,"text":" note"}
+{"t":11271,"text":" students"}
+{"t":11305,"text":" who need a"}
+{"t":11341,"text":" con"}
+{"t":11373,"text":"ference at"}
+{"t":11410,"text":" the start of Session 2."}
+{"t":11438,"text":"\n\n#pagebreak()"}
+{"t":11483,"text":"\n\n= Session 2:"}
+{"t":11514,"text":" Drafting and Rev"}
+{"t":11552,"text":"ising\n\n#table(\n  colum"}
+{"t":11572,"text":"ns: (auto, auto"}
+{"t":11604,"text":", 1fr),\n  "}
+{"t":11638,"text":"align: (left, left, left"}
+{"t":11677,"text":"),\n  [*Time*"}
+{"t":11710,"text":"], [*Segment*],"}
+{"t":11738,"text":" [*Activity*],"}
+{"t":11772,"text":"\n  [0–5 min],"}
+{"t":11807,"text":" [Warm-up],"}
+{"t":11839,"text":"\n  [Display"}
+{"t":11873,"text":" three"}
+{"t":11905,"text":" anonymous claims from the"}
+{"t":11938,"text":" exit tickets. As"}
+{"t":11973,"text":" a class, dec"}
+{"t":12005,"text":"ide which is strongest and why"}
+{"t":12042,"text":", and revise one we"}
+{"t":12075,"text":"ak claim together.],\n  "}
+{"t":12105,"text":"[5–12 min], ["}
+{"t":12139,"text":"Mini-lesson],"}
+{"t":12172,"text":"\n  [Te"}
+{"t":12207,"text":"ach how"}
+{"t":12241,"text":" to address a"}
+{"t":12274,"text":" counterclaim using"}
+{"t":12305,"text":" the fr"}
+{"t":12349,"text":"ame: \"Some people arg"}
+{"t":12373,"text":"ue that \\"}
+{"t":12408,"text":"_\\_\\_."}
+{"t":12442,"text":" However, \\"}
+{"t":12493,"text":"_\\_\\_.\""}
+{"t":12519,"text":" Show transition words for"}
+{"t":12549,"text":" ad"}
+{"t":12576,"text":"ding,"}
+{"t":12606,"text":" contrasting, and conc"}
+{"t":12640,"text":"luding (_"}
+{"t":12675,"text":"furthermore_, _on"}
+{"t":12706,"text":" the other hand_, _in"}
+{"t":12739,"text":" conclusion_). Model"}
+{"t":12773,"text":" a"}
+{"t":12811,"text":" h"}
+{"t":12839,"text":"ook and a clos"}
+{"t":12891,"text":"ing call"}
+{"t":12906,"text":" to action."}
+{"t":12941,"text":"],\n  [12–37 "}
+{"t":12973,"text":"min], [Independ"}
+{"t":13006,"text":"ent drafting],\n  ["}
+{"t":13040,"text":"Students draft their essays"}
+{"t":13075,"text":" using their planners"}
+{"t":13118,"text":". Structure: introduction"}
+{"t":13139,"text":" with h"}
+{"t":13174,"text":"ook and claim, two"}
+{"t":13205,"text":" or"}
+{"t":13240,"text":" three body paragraphs ("}
+{"t":13272,"text":"re"}
+{"t":13305,"text":"ason pl"}
+{"t":13341,"text":"us evidence), one"}
+{"t":13372,"text":" paragraph with countercl"}
+{"t":13406,"text":"aim and rebuttal"}
+{"t":13440,"text":", and a conclusion."}
+{"t":13474,"text":" While students"}
+{"t":13509,"text":" write, h"}
+{"t":13539,"text":"old br"}
+{"t":13572,"text":"ief conferences with students fl"}
+{"t":13607,"text":"agged from"}
+{"t":13639,"text":" the exit t"}
+{"t":13672,"text":"ickets.],\n  [37"}
+{"t":13706,"text":"–45 min], [Pe"}
+{"t":13739,"text":"er review],\n  [Part"}
+{"t":13776,"text":"ners exchange dr"}
+{"t":13806,"text":"afts and use the checklist"}
+{"t":13839,"text":" to mark:"}
+{"t":13873,"text":" Is the claim clear?"}
+{"t":13906,"text":" Does"}
+{"t":13941,"text":" each reason have"}
+{"t":13973,"text":" evidence? Is a"}
+{"t":14006,"text":" counterclaim addressed"}
+{"t":14039,"text":"? Are"}
+{"t":14072,"text":" transitions used"}
+{"t":14111,"text":"? Each re"}
+{"t":14140,"text":"viewer writes two"}
+{"t":14175,"text":" comp"}
+{"t":14207,"text":"liments and one suggestion"}
+{"t":14240,"text":".],\n  [45–50"}
+{"t":14276,"text":" min], [Reflection"}
+{"t":14309,"text":" and wrap-up],"}
+{"t":14340,"text":"\n  [Students rev"}
+{"t":14373,"text":"ise one"}
+{"t":14409,"text":" sentence based"}
+{"t":14440,"text":" on fe"}
+{"t":14473,"text":"edback,"}
+{"t":14506,"text":" then compl"}
+{"t":14540,"text":"ete the"}
+{"t":14574,"text":" re"}
+{"t":14606,"text":"flection: \"The"}
+{"t":14641,"text":" most"}
+{"t":14673,"text":" pers"}
+{"t":14706,"text":"uasive part of my ess"}
+{"t":14741,"text":"ay is \\"}
+{"t":14775,"text":"_\\_\\_."}
+{"t":14807,"text":" Next time I will improve \\"}
+{"t":14839,"text":"_\\_\\_.\" Coll"}
+{"t":14873,"text":"ect drafts or ass"}
+{"t":14906,"text":"ign complet"}
+{"t":14940,"text":"ion for"}
+{"t":14973,"text":" homework.],\n)\n\n=="}
+{"t":15006,"text":" Peer Review Checkl"}
+{"t":15040,"text":"ist\n\n- #"}
+{"t":15073,"text":"box"}
+{"t":15106,"text":"("}
+{"t":15139,"text":"width: 0"}
+{"t":15173,"text":".8em, height: 0"}
+{"t":15207,"text":".8em, stroke:"}
+{"t":15239,"text":" 0.5pt) The"}
+{"t":15273,"text":" claim is clear"}
+{"t":15306,"text":" and arguable.\n- #"}
+{"t":15339,"text":"box(width: 0.8"}
+{"t":15373,"text":"em, height: 0.8"}
+{"t":15407,"text":"em, stroke: 0"}
+{"t":15441,"text":".5pt) Each re"}
+{"t":15473,"text":"ason is"}
+{"t":15507,"text":" supported by specific evidence"}
+{"t":15542,"text":".\n- #box(width:"}
+{"t":15575,"text":" 0.8em, height:"}
+{"t":15607,"text":" 0.8em, stro"}
+{"t":15641,"text":"ke: 0.5pt"}
+{"t":15675,"text":") A counterclaim is"}
+{"t":15707,"text":" acknowledged and answered"}
+{"t":15741,"text":".\n- #box(width:"}
+{"t":15774,"text":" 0.8em, height:"}
+{"t":15807,"text":" 0.8em, stro"}
+{"t":15841,"text":"ke: 0.5pt"}
+{"t":15875,"text":") Transitions conn"}
+{"t":15909,"text":"ect "}
+{"t":15941,"text":"ideas between"}
+{"t":15974,"text":" paragraphs.\n-"}
+{"t":16009,"text":" #box(width: 0."}
+{"t":16044,"text":"8em, height: 0."}
+{"t":16074,"text":"8em, stroke: "}
+{"t":16110,"text":"0.5pt) The con"}
+{"t":16143,"text":"clusion rest"}
+{"t":16179,"text":"ates the claim and gives the"}
+{"t":16210,"text":" reader a call to action."}
+{"t":16241,"text":"\n\n#pagebreak()"}
+{"t":16274,"text":"\n\n= Assessment\n\n=="}
+{"t":16317,"text":" Formative"}
+{"t":16347,"text":"\n\n- Exit "}
+{"t":16376,"text":"ticket from Session 1 "}
+{"t":16408,"text":"(claim and str"}
+{"t":16441,"text":"ongest reason)\n-"}
+{"t":16474,"text":" Argument planner complet"}
+{"t":16508,"text":"ion\n- Teacher con"}
+{"t":16541,"text":"ferences and pe"}
+{"t":16575,"text":"er review not"}
+{"t":16610,"text":"es\n\n== Summative:"}
+{"t":16641,"text":" Pers"}
+{"t":16678,"text":"uasive Essay R"}
+{"t":16709,"text":"ubric\n\n#table(\n  "}
+{"t":16742,"text":"columns: (1"}
+{"t":16774,"text":"."}
+{"t":16810,"text":"1"}
+{"t":16843,"text":"fr, 1"}
+{"t":16875,"text":"fr, 1fr,"}
+{"t":16908,"text":" 1fr, 1f"}
+{"t":16941,"text":"r),\n  align: (left"}
+{"t":16975,"text":", left, left, left, left"}
+{"t":17008,"text":"),\n  [*Crite"}
+{"t":17043,"text":"ria*], [*4 –"}
+{"t":17075,"text":" Exceeds*"}
+{"t":17110,"text":"], [*3 – Me"}
+{"t":17142,"text":"ets*], [*2 –"}
+{"t":17176,"text":" Approaching*], [*"}
+{"t":17208,"text":"1 – Beginning*"}
+{"t":17242,"text":"],\n  [Claim],"}
+{"t":17276,"text":" [Prec"}
+{"t":17308,"text":"ise, insightful,"}
+{"t":17344,"text":" and arguable], [Cl"}
+{"t":17375,"text":"ear and arguable], ["}
+{"t":17410,"text":"Present but v"}
+{"t":17442,"text":"ague],"}
+{"t":17475,"text":" [Miss"}
+{"t":17510,"text":"ing or unclear],\n  "}
+{"t":17543,"text":"[Reasons and"}
+{"t":17575,"text":" ev"}
+{"t":17609,"text":"idence], [Well"}
+{"t":17642,"text":"-ch"}
+{"t":17675,"text":"osen,"}
+{"t":17709,"text":" spec"}
+{"t":17744,"text":"ific evidence that"}
+{"t":17775,"text":" fully supports each reason],"}
+{"t":17809,"text":" [Rel"}
+{"t":17842,"text":"evant evidence for each re"}
+{"t":17875,"text":"ason], [Some evidence"}
+{"t":17909,"text":";"}
+{"t":17943,"text":" u"}
+{"t":17975,"text":"neven or general"}
+{"t":18009,"text":"], [Little"}
+{"t":18042,"text":" or no evidence],\n  "}
+{"t":18077,"text":"[Counterclaim and"}
+{"t":18109,"text":" rebuttal], ["}
+{"t":18142,"text":"Fair coun"}
+{"t":18175,"text":"terclaim with a"}
+{"t":18210,"text":" convincing rebuttal"}
+{"t":18243,"text":"], [Counterclaim"}
+{"t":18289,"text":" addressed with a r"}
+{"t":18315,"text":"ebuttal], [Coun"}
+{"t":18350,"text":"terclaim mentioned"}
+{"t":18382,"text":" without a"}
+{"t":18415,"text":" rebuttal], ["}
+{"t":18448,"text":"Not addressed],\n  ["}
+{"t":18475,"text":"Organization and transitions],"}
+{"t":18510,"text":" [Log"}
+{"t":18542,"text":"ical fl"}
+{"t":18576,"text":"ow with pur"}
+{"t":18609,"text":"poseful transitions], ["}
+{"t":18642,"text":"Clear struct"}
+{"t":18677,"text":"ure with transitions], ["}
+{"t":18709,"text":"Some struct"}
+{"t":18742,"text":"ure;"}
+{"t":18778,"text":" few"}
+{"t":18811,"text":" transitions], [H"}
+{"t":18843,"text":"ard to follow],\n  ["}
+{"t":18876,"text":"Conventions and style"}
+{"t":18909,"text":"], [Few"}
+{"t":18942,"text":" or"}
+{"t":18976,"text":" no errors; persuasive"}
+{"t":19010,"text":" voice], [Min"}
+{"t":19043,"text":"or errors that do not interf"}
+{"t":19075,"text":"ere], [Errors s"}
+{"t":19109,"text":"ometimes inter"}
+{"t":19142,"text":"fere], [Errors se"}
+{"t":19176,"text":"riously inter"}
+{"t":19209,"text":"fere],\n)\n\n="}
+{"t":19243,"text":" Differ"}
+{"t":19282,"text":"entiation and Support\n\n-"}
+{"t":19310,"text":" *Ext"}
+{"t":19342,"text":"ra support:* Provide s"}
+{"t":19375,"text":"entence star"}
+{"t":19409,"text":"ters "}
+{"t":19444,"text":"(\"I believ"}
+{"t":19476,"text":"e that"}
+{"t":19509,"text":" \\"}
+{"t":19542,"text":"_\\_\\_"}
+{"t":19576,"text":" because \\_\\_\\_\""}
+{"t":19609,"text":"), a three-paragraph"}
+{"t":19642,"text":" option"}
+{"t":19676,"text":", and a partially completed plan"}
+{"t":19710,"text":"ner.\n- *English"}
+{"t":19743,"text":" language"}
+{"t":19777,"text":" learners:* P"}
+{"t":19810,"text":"air with"}
+{"t":19842,"text":" a sup"}
+{"t":19876,"text":"portive partner,"}
+{"t":19909,"text":" off"}
+{"t":19943,"text":"er a vocabulary b"}
+{"t":19975,"text":"ank with vis"}
+{"t":20009,"text":"uals, and allow o"}
+{"t":20049,"text":"ral r"}
+{"t":20075,"text":"ehearsal before writing."}
+{"t":20109,"text":"\n- *Ext"}
+{"t":20142,"text":"ension:* "}
+{"t":20176,"text":"Ask students to add"}
+{"t":20209,"text":" a stat"}
+{"t":20243,"text":"istic"}
+{"t":20275,"text":" or exp"}
+{"t":20312,"text":"ert quot"}
+{"t":20343,"text":"ation with a"}
+{"t":20378,"text":" source, or"}
+{"t":20411,"text":" to r"}
+{"t":20442,"text":"ewrite their"}
+{"t":20475,"text":" intro"}
+{"t":20509,"text":"duction using"}
+{"t":20542,"text":" a different appeal (for example"}
+{"t":20575,"text":", pathos inst"}
+{"t":20609,"text":"ead of logos).\n- *"}
+{"t":20642,"text":"Acc"}
+{"t":20676,"text":"omm"}
+{"t":20709,"text":"odations:* Off"}
+{"t":20742,"text":"er ext"}
+{"t":20777,"text":"ra"}
+{"t":20809,"text":" time, spe"}
+{"t":20842,"text":"ech-to-text,"}
+{"t":20875,"text":" or a typ"}
+{"t":20910,"text":"ed dra"}
+{"t":20942,"text":"ft as"}
+{"t":20975,"text":" needed.\n\n="}
+{"t":21008,"text":" Homework and Follow-"}
+{"t":21043,"text":"Up"}
+{"t":21075,"text":"\n\nStudents"}
+{"t":21108,"text":" fin"}
+{"t":21142,"text":"ish and"}
+{"t":21175,"text":" pol"}
+{"t":21208,"text":"ish their essays"}
+{"t":21241,"text":", using"}
+{"t":21275,"text":" the r"}
+{"t":21308,"text":"ubric to"}
+{"t":21341,"text":" self-assess before"}
+{"t":21374,"text":" subm"}
+{"t":21409,"text":"it"}
+{"t":21441,"text":"ting. In a"}
+{"t":21482,"text":" following l"}
+{"t":21508,"text":"esson, students may de"}
+{"t":21541,"text":"liver one"}
+{"t":21575,"text":"-minute \""}
+{"t":21608,"text":"el"}
+{"t":21641,"text":"evator pitch\" vers"}
+{"t":21674,"text":"ions of their ar"}
+{"t":21708,"text":"guments to"}
+{"t":21741,"text":" pract"}
+{"t":21774,"text":"ice sp"}
+{"t":21808,"text":"oken persuasion."}
+{"t":21841,"text":"\n\n="}
+{"t":21874,"text":" Teacher Reflection"}
+{"t":21908,"text":"\n\n#"}
+{"t":21941,"text":"line"}
+{"t":21974,"text":"(length"}
+{"t":22008,"text":": 100%)\n#v"}
+{"t":22041,"text":"(1"}
+{"t":22077,"text":".5em)\n#line("}
+{"t":22108,"text":"length: 100%)\n#"}
+{"t":22141,"text":"v(1.5em)"}
+{"t":22177,"text":"\n#line(length: 100%"}
+{"t":22208,"text":")"}

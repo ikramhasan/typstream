@@ -1,0 +1,440 @@
+{"t":0,"text":"#"}
+{"t":0,"text":"set page("}
+{"t":0,"text":"paper: \"us"}
+{"t":0,"text":"-let"}
+{"t":0,"text":"ter\", margin: 1."}
+{"t":0,"text":"8"}
+{"t":0,"text":"c"}
+{"t":0,"text":"m)\n#set text(size"}
+{"t":0,"text":": 11"}
+{"t":24,"text":"pt)\n#set par("}
+{"t":55,"text":"justify: false"}
+{"t":89,"text":")\n\n#let f"}
+{"t":125,"text":"ill"}
+{"t":155,"text":"c"}
+{"t":189,"text":" = rgb(\"#e6"}
+{"t":223,"text":"f0"}
+{"t":255,"text":"f"}
+{"t":288,"text":"a\")"}
+{"t":324,"text":"\n\n//"}
+{"t":355,"text":" Rectangle with"}
+{"t":390,"text":" label"}
+{"t":422,"text":"led sides\n#let rect"}
+{"t":456,"text":"fig(w, h, top"}
+{"t":489,"text":", side"}
+{"t":522,"text":") = gr"}
+{"t":557,"text":"id(\n  columns: ("}
+{"t":593,"text":"auto, auto),\n  "}
+{"t":622,"text":"column-gutter: 5"}
+{"t":656,"text":"pt,\n  row-g"}
+{"t":688,"text":"utter: 4"}
+{"t":726,"text":"pt,\n  [],"}
+{"t":757,"text":" align(center)[#"}
+{"t":791,"text":"top],\n  align(horiz"}
+{"t":822,"text":"on +"}
+{"t":856,"text":" right)[#side],"}
+{"t":888,"text":" rect(width: w, height"}
+{"t":922,"text":": h, fill: fill"}
+{"t":963,"text":"c, stroke: 1"}
+{"t":992,"text":"pt),\n)\n\n//"}
+{"t":1022,"text":" Triangle:"}
+{"t":1056,"text":" b"}
+{"t":1090,"text":"w ="}
+{"t":1123,"text":" base width, th = height, "}
+{"t":1155,"text":"ox = hor"}
+{"t":1191,"text":"izontal position"}
+{"t":1222,"text":" of apex\n#"}
+{"t":1257,"text":"let tri(bw, th"}
+{"t":1289,"text":", ox, base: none,"}
+{"t":1324,"text":" h: none, l: none,"}
+{"t":1356,"text":" r: none, hline: false"}
+{"t":1390,"text":") = box(\n  width:"}
+{"t":1423,"text":" bw + 80pt,"}
+{"t":1456,"text":"\n  height: th + 30"}
+{"t":1491,"text":"pt,\n)[\n  "}
+{"t":1527,"text":"#place(dx: 35"}
+{"t":1560,"text":"pt, dy: 5"}
+{"t":1589,"text":"pt, polygon(f"}
+{"t":1629,"text":"ill: fillc, stro"}
+{"t":1656,"text":"ke: 1pt, ("}
+{"t":1691,"text":"0pt, th), (b"}
+{"t":1723,"text":"w, th), (ox,"}
+{"t":1757,"text":" 0pt)))\n  "}
+{"t":1789,"text":"#if hline ["}
+{"t":1824,"text":"\n    #place(dx:"}
+{"t":1872,"text":" 35pt + ox,"}
+{"t":1889,"text":" dy: 5pt,"}
+{"t":1923,"text":" line(start: (0pt"}
+{"t":1956,"text":", 0pt), end:"}
+{"t":1990,"text":" (0pt, th), st"}
+{"t":2024,"text":"roke: (th"}
+{"t":2056,"text":"ickness: 0.8p"}
+{"t":2090,"text":"t, dash: \"dash"}
+{"t":2123,"text":"ed\")))\n    #place("}
+{"t":2156,"text":"dx: 35pt +"}
+{"t":2190,"text":" ox - 6pt,"}
+{"t":2223,"text":" dy: 5pt +"}
+{"t":2257,"text":" th - 6pt, r"}
+{"t":2291,"text":"ect(width: 6pt"}
+{"t":2325,"text":", height: 6pt,"}
+{"t":2357,"text":" stroke: 0.6"}
+{"t":2390,"text":"pt))\n  ]"}
+{"t":2423,"text":"\n  #if "}
+{"t":2457,"text":"ox == 0p"}
+{"t":2492,"text":"t [\n    #place(d"}
+{"t":2524,"text":"x: 35pt, d"}
+{"t":2557,"text":"y: 5pt + th"}
+{"t":2605,"text":" - 6pt, rect"}
+{"t":2626,"text":"(width: 6pt,"}
+{"t":2658,"text":" height: 6pt, st"}
+{"t":2692,"text":"roke: 0.6p"}
+{"t":2725,"text":"t))\n  ]\n  "}
+{"t":2757,"text":"#if base != none [\n    "}
+{"t":2790,"text":"#place(dx: 35"}
+{"t":2824,"text":"pt + bw / 2"}
+{"t":2857,"text":" - 12"}
+{"t":2890,"text":"pt, dy: th +"}
+{"t":2923,"text":" 9"}
+{"t":2957,"text":"pt, base"}
+{"t":2990,"text":")\n  ]\n  #"}
+{"t":3031,"text":"if h != none [\n    #"}
+{"t":3057,"text":"place(dx: 35p"}
+{"t":3091,"text":"t + ox + 5p"}
+{"t":3123,"text":"t, dy: 5p"}
+{"t":3158,"text":"t + th / 2 -"}
+{"t":3191,"text":" 6"}
+{"t":3224,"text":"pt, h)\n  "}
+{"t":3258,"text":"]\n  #if l != none"}
+{"t":3296,"text":" [\n    #place(dx"}
+{"t":3328,"text":": 35pt +"}
+{"t":3357,"text":" ox / 2 - "}
+{"t":3409,"text":"32pt, dy: "}
+{"t":3431,"text":"5pt + th / 2"}
+{"t":3469,"text":" - 6pt, l"}
+{"t":3500,"text":")\n  ]\n  #"}
+{"t":3524,"text":"if r != none [\n    #"}
+{"t":3558,"text":"place(dx: 35p"}
+{"t":3591,"text":"t + (bw + ox"}
+{"t":3624,"text":") / 2 + 6"}
+{"t":3658,"text":"pt, dy: 5"}
+{"t":3691,"text":"pt + th / 2 "}
+{"t":3726,"text":"- 6pt, r)"}
+{"t":3758,"text":"\n  ]\n]\n\n#"}
+{"t":3791,"text":"let ans(label"}
+{"t":3824,"text":", un"}
+{"t":3857,"text":"it)"}
+{"t":3891,"text":" = ["}
+{"t":3928,"text":"#"}
+{"t":3958,"text":"label #"}
+{"t":3994,"text":"box(width: 5"}
+{"t":4027,"text":"em, height"}
+{"t":4057,"text":": 1em, stroke"}
+{"t":4100,"text":": (bottom: 0"}
+{"t":4124,"text":".6pt)) #un"}
+{"t":4159,"text":"it]\n\n#align"}
+{"t":4192,"text":"(center)["}
+{"t":4224,"text":"\n  #text(size: 18"}
+{"t":4258,"text":"pt, weight: \""}
+{"t":4291,"text":"bold\")["}
+{"t":4324,"text":"Area and Perimeter:"}
+{"t":4360,"text":" Rectangles and Tri"}
+{"t":4393,"text":"angles]\n]\n\n#"}
+{"t":4424,"text":"v(0"}
+{"t":4458,"text":".5em)\nName:"}
+{"t":4494,"text":" #box"}
+{"t":4524,"text":"(width: 8"}
+{"t":4559,"text":"c"}
+{"t":4591,"text":"m, stroke: (b"}
+{"t":4627,"text":"ottom: 0.6p"}
+{"t":4657,"text":"t),"}
+{"t":4693,"text":" height: 1em) #h"}
+{"t":4725,"text":"(1f"}
+{"t":4758,"text":"r) Date: #box("}
+{"t":4792,"text":"width: 3."}
+{"t":4829,"text":"5cm, stroke:"}
+{"t":4858,"text":" (bottom: 0."}
+{"t":4891,"text":"6pt), height: 1"}
+{"t":4926,"text":"em)\n\n#v(0"}
+{"t":4960,"text":".8em)"}
+{"t":4994,"text":"\n\n#rect(width"}
+{"t":5025,"text":": 100"}
+{"t":5059,"text":"%, in"}
+{"t":5102,"text":"set: 10"}
+{"t":5125,"text":"pt, rad"}
+{"t":5158,"text":"ius: 4pt, st"}
+{"t":5191,"text":"roke: "}
+{"t":5225,"text":"1pt, fill: r"}
+{"t":5258,"text":"gb(\"#f"}
+{"t":5292,"text":"ff"}
+{"t":5326,"text":"be6\""}
+{"t":5359,"text":"))[\n  *Rem"}
+{"t":5392,"text":"ember*"}
+{"t":5427,"text":"\n  - *Perime"}
+{"t":5458,"text":"ter* is the distance around a"}
+{"t":5494,"text":" shape: add"}
+{"t":5525,"text":" up"}
+{"t":5558,"text":" all the side lengths."}
+{"t":5591,"text":"\n  - R"}
+{"t":5625,"text":"ectangle: $P = "}
+{"t":5658,"text":"2 times"}
+{"t":5691,"text":" ("}
+{"t":5724,"text":"l"}
+{"t":5759,"text":" + w)$ #"}
+{"t":5791,"text":"h"}
+{"t":5824,"text":"("}
+{"t":5860,"text":"1"}
+{"t":5891,"text":"em) and #"}
+{"t":5925,"text":"h(1em) $A ="}
+{"t":5960,"text":" l times w$\n  -"}
+{"t":5992,"text":" Triangle: $P"}
+{"t":6024,"text":" = a"}
+{"t":6058,"text":" + b + c$ #h"}
+{"t":6092,"text":"(1em) and #h("}
+{"t":6126,"text":"1em) $A = "}
+{"t":6160,"text":"1/2 times b times h"}
+{"t":6191,"text":"$\n  - Per"}
+{"t":6225,"text":"imeter is"}
+{"t":6258,"text":" measured in c"}
+{"t":6292,"text":"m,"}
+{"t":6324,"text":" area"}
+{"t":6359,"text":" is measured in cm#"}
+{"t":6391,"text":"super"}
+{"t":6426,"text":"[2]"}
+{"t":6458,"text":". The shapes are not dr"}
+{"t":6491,"text":"awn to scale.\n]"}
+{"t":6525,"text":"\n\n== Part A: R"}
+{"t":6558,"text":"ectangles"}
+{"t":6592,"text":"\n\nFind the perimeter and the"}
+{"t":6625,"text":" area of each rectangle."}
+{"t":6660,"text":"\n\n+ #gr"}
+{"t":6692,"text":"id(\n    "}
+{"t":6725,"text":"columns: (auto, "}
+{"t":6758,"text":"1fr),\n    column-"}
+{"t":6795,"text":"gutter: 2"}
+{"t":6827,"text":"cm,\n    rectf"}
+{"t":6859,"text":"ig(100pt, 60"}
+{"t":6891,"text":"pt, ["}
+{"t":6927,"text":"8 cm], [5 "}
+{"t":6958,"text":"cm]),\n    ["}
+{"t":6991,"text":"\n      #v(0"}
+{"t":7026,"text":".5em)\n      #"}
+{"t":7058,"text":"ans(["}
+{"t":7091,"text":"Perimeter ="}
+{"t":7125,"text":"], [cm])"}
+{"t":7192,"text":"\n\n      #v(0.6"}
+{"t":7225,"text":"em)\n      #ans(["}
+{"t":7258,"text":"Area =], [cm#"}
+{"t":7295,"text":"super"}
+{"t":7327,"text":"[2]])\n    ],"}
+{"t":7358,"text":"\n  )\n\n#"}
+{"t":7392,"text":"v(0"}
+{"t":7425,"text":".6em)\n\n+ #"}
+{"t":7458,"text":"grid(\n    columns:"}
+{"t":7494,"text":" (auto, 1fr"}
+{"t":7526,"text":"),\n    column-gutter"}
+{"t":7559,"text":": 2cm,\n    "}
+{"t":7591,"text":"rectfig(144"}
+{"t":7627,"text":"pt, 36"}
+{"t":7659,"text":"pt, [12 cm"}
+{"t":7693,"text":"], [3 cm]),"}
+{"t":7725,"text":"\n    [\n      #v("}
+{"t":7758,"text":"0.2"}
+{"t":7793,"text":"em)\n      #ans(["}
+{"t":7825,"text":"Perimeter =], ["}
+{"t":7860,"text":"cm])\n\n      #v("}
+{"t":7892,"text":"0.6em)\n      #"}
+{"t":7926,"text":"ans([Area =], ["}
+{"t":7962,"text":"cm#super["}
+{"t":7993,"text":"2]])\n    ],"}
+{"t":8025,"text":"\n  )\n\n#v(0."}
+{"t":8058,"text":"6em)\n\n+ This"}
+{"t":8092,"text":" square"}
+{"t":8126,"text":" has all"}
+{"t":8159,"text":" sides equ"}
+{"t":8193,"text":"al."}
+{"t":8279,"text":"\n\n  #grid(\n    colum"}
+{"t":8292,"text":"ns: (auto, 1"}
+{"t":8329,"text":"fr),\n    column-g"}
+{"t":8360,"text":"utter: 2cm,"}
+{"t":8392,"text":"\n    rectfig(70"}
+{"t":8428,"text":"pt, 70pt,"}
+{"t":8460,"text":" [6 cm], [6"}
+{"t":8492,"text":" cm]),\n    ["}
+{"t":8525,"text":"\n      #v(0.8"}
+{"t":8558,"text":"em)\n      #ans(["}
+{"t":8593,"text":"Perimeter =], ["}
+{"t":8625,"text":"cm])\n\n      #v("}
+{"t":8660,"text":"0.6em)\n      #"}
+{"t":8693,"text":"ans([Area =], ["}
+{"t":8725,"text":"cm#super["}
+{"t":8759,"text":"2]])\n    ],"}
+{"t":8792,"text":"\n  )\n\n#v(0"}
+{"t":8827,"text":".6em)\n\n+"}
+{"t":8860,"text":" The area of this rectang"}
+{"t":8892,"text":"le is 36 cm#"}
+{"t":8925,"text":"super"}
+{"t":8959,"text":"[2]."}
+{"t":8992,"text":" Its"}
+{"t":9028,"text":" width is 4 cm."}
+{"t":9063,"text":" What is its"}
+{"t":9094,"text":" length?\n\n  #grid("}
+{"t":9127,"text":"\n    columns: (auto"}
+{"t":9161,"text":", 1fr),\n    "}
+{"t":9192,"text":"column-gutter: 2"}
+{"t":9228,"text":"cm,\n    rectf"}
+{"t":9259,"text":"ig(110"}
+{"t":9293,"text":"pt, 44"}
+{"t":9325,"text":"pt, [?], [4"}
+{"t":9358,"text":" cm]),\n    ["}
+{"t":9393,"text":"\n      #"}
+{"t":9425,"text":"v(0"}
+{"t":9459,"text":".8em)\n      #"}
+{"t":9492,"text":"ans([Length =], [c"}
+{"t":9525,"text":"m])\n    ],\n  "}
+{"t":9559,"text":")\n\n== Part B:"}
+{"t":9599,"text":" Area of Triangles\n\nThe"}
+{"t":9626,"text":" dashed line sh"}
+{"t":9663,"text":"ows the height"}
+{"t":9692,"text":"."}
+{"t":9729,"text":" Use"}
+{"t":9759,"text":" $A = 1/2 "}
+{"t":9793,"text":"times b times h$.\n\n+"}
+{"t":9828,"text":" #grid(\n    colum"}
+{"t":9860,"text":"ns: (auto, 1"}
+{"t":9892,"text":"fr),\n    column-g"}
+{"t":9925,"text":"utter: 1"}
+{"t":9959,"text":"c"}
+{"t":9992,"text":"m,\n    tri(120"}
+{"t":10025,"text":"pt, 70"}
+{"t":10059,"text":"pt, 45"}
+{"t":10093,"text":"pt, base: [10 "}
+{"t":10128,"text":"cm], h: [6 "}
+{"t":10159,"text":"cm], hline: true),"}
+{"t":10192,"text":"\n    [\n      #v("}
+{"t":10228,"text":"1.5em)\n      #"}
+{"t":10265,"text":"ans([Area =], ["}
+{"t":10295,"text":"cm#super["}
+{"t":10331,"text":"2]])\n    ],"}
+{"t":10359,"text":"\n  )\n\n+"}
+{"t":10394,"text":" #"}
+{"t":10427,"text":"grid(\n    columns:"}
+{"t":10462,"text":" (auto, 1fr"}
+{"t":10492,"text":"),\n    column-gutter"}
+{"t":10525,"text":": 1cm,\n    "}
+{"t":10559,"text":"tri(100"}
+{"t":10592,"text":"pt, 62"}
+{"t":10627,"text":"pt, 70"}
+{"t":10659,"text":"pt, base: [8 "}
+{"t":10692,"text":"cm], h: [5 "}
+{"t":10728,"text":"cm], hline: true),"}
+{"t":10760,"text":"\n    [\n      #v("}
+{"t":10797,"text":"1.5em)\n      #"}
+{"t":10889,"text":"ans([Area =], ["}
+{"t":10890,"text":"cm#super[2]])"}
+{"t":10897,"text":"\n    ],\n  )"}
+{"t":10926,"text":"\n\n+ This is"}
+{"t":10959,"text":" a right triangle."}
+{"t":10996,"text":" The two"}
+{"t":11026,"text":" short"}
+{"t":11059,"text":" sides are its"}
+{"t":11095,"text":" base and height.\n\n  #gr"}
+{"t":11126,"text":"id(\n    columns: ("}
+{"t":11160,"text":"auto, 1fr),"}
+{"t":11192,"text":"\n    column-gutter:"}
+{"t":11226,"text":" 1cm,\n    t"}
+{"t":11261,"text":"ri(110pt, 70"}
+{"t":11292,"text":"pt, 0pt,"}
+{"t":11327,"text":" base: [9 cm],"}
+{"t":11359,"text":" l: [6 cm],"}
+{"t":11392,"text":" r: [],"}
+{"t":11426,"text":" h"}
+{"t":11461,"text":"line: false),\n    ["}
+{"t":11496,"text":"\n      #v(1.5em"}
+{"t":11527,"text":")\n      #ans(["}
+{"t":11560,"text":"Area =], [cm#super"}
+{"t":11595,"text":"["}
+{"t":11626,"text":"2]])\n    ],"}
+{"t":11660,"text":"\n  )\n\n=="}
+{"t":11693,"text":" Part C: Perime"}
+{"t":11733,"text":"ter of Triangles\n\n+"}
+{"t":11760,"text":" #grid(\n    colum"}
+{"t":11794,"text":"ns: (auto, 1"}
+{"t":11826,"text":"fr),\n    column-g"}
+{"t":11859,"text":"utter: 1cm,"}
+{"t":11893,"text":"\n    tri(120pt"}
+{"t":11929,"text":", 66"}
+{"t":11959,"text":"pt, 40"}
+{"t":11994,"text":"pt, base: [10 "}
+{"t":12026,"text":"cm], l: [5 "}
+{"t":12062,"text":"cm], r: [7 "}
+{"t":12093,"text":"cm]),\n    ["}
+{"t":12126,"text":"\n      #v(1.5em"}
+{"t":12159,"text":")\n      #ans(["}
+{"t":12194,"text":"Perimeter =], [c"}
+{"t":12226,"text":"m])\n    ],\n  "}
+{"t":12261,"text":")\n\n+ #grid("}
+{"t":12293,"text":"\n    columns: (auto"}
+{"t":12326,"text":", 1fr),\n    "}
+{"t":12364,"text":"column-gutter: 1"}
+{"t":12394,"text":"cm,\n    tri("}
+{"t":12426,"text":"110pt, 70"}
+{"t":12459,"text":"pt, 0pt,"}
+{"t":12493,"text":" base: [8 cm],"}
+{"t":12526,"text":" l: [6 cm],"}
+{"t":12560,"text":" r: [10 cm]"}
+{"t":12607,"text":"),\n    [\n      #v"}
+{"t":12628,"text":"(1.5em)\n      "}
+{"t":12659,"text":"#ans([Perime"}
+{"t":12694,"text":"ter =], [cm])"}
+{"t":12727,"text":"\n    ],\n  )\n\n=="}
+{"t":12759,"text":" Part D: Word Probl"}
+{"t":12794,"text":"ems\n\n+ A"}
+{"t":12826,"text":" rectangular garden is"}
+{"t":12862,"text":" 9"}
+{"t":12893,"text":" m"}
+{"t":12926,"text":" long and 4 m wide"}
+{"t":12959,"text":". How much fencing is need"}
+{"t":12993,"text":"ed to go all"}
+{"t":13028,"text":" the way around it"}
+{"t":13060,"text":"?"}
+{"t":13094,"text":"\n\n  #v(3"}
+{"t":13129,"text":"em)\n  #line(length"}
+{"t":13160,"text":": 100%,"}
+{"t":13193,"text":" stroke: 0.5"}
+{"t":13226,"text":"pt)\n\n+ A tri"}
+{"t":13259,"text":"angular sail"}
+{"t":13293,"text":" has a base of 6"}
+{"t":13326,"text":" m and a height of 8"}
+{"t":13360,"text":" m. How much c"}
+{"t":13400,"text":"loth is"}
+{"t":13429,"text":" needed to make"}
+{"t":13463,"text":" the"}
+{"t":13494,"text":" sail?\n\n  #v("}
+{"t":13527,"text":"3em)\n  #line("}
+{"t":13561,"text":"length: 100%, stro"}
+{"t":13596,"text":"ke: 0.5pt"}
+{"t":13626,"text":")\n\n+ *Challen"}
+{"t":13659,"text":"ge:* A rectangle"}
+{"t":13693,"text":" and"}
+{"t":13726,"text":" a triangle each"}
+{"t":13760,"text":" have a base"}
+{"t":13793,"text":" of 10"}
+{"t":13826,"text":" cm and a height of "}
+{"t":13859,"text":"4"}
+{"t":13895,"text":" cm. How"}
+{"t":13926,"text":" many"}
+{"t":13961,"text":" times lar"}
+{"t":13998,"text":"ger is the area of the rect"}
+{"t":14034,"text":"angle than the area of the tri"}
+{"t":14065,"text":"angle? Explain how"}
+{"t":14097,"text":" you know.\n\n  #v("}
+{"t":14137,"text":"3em)\n  #line("}
+{"t":14168,"text":"length: 100%, stro"}
+{"t":14211,"text":"ke: 0.5pt"}
+{"t":14235,"text":")\n  #v"}
+{"t":14261,"text":"(1"}
+{"t":14294,"text":"."}
+{"t":14326,"text":"5em)\n  #line("}
+{"t":14360,"text":"length: 100%, stro"}
+{"t":14394,"text":"ke: 0.5pt"}
+{"t":14422,"text":")"}

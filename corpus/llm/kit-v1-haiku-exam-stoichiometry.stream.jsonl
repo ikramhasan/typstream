@@ -1,0 +1,265 @@
+{"t":0,"text":"#"}
+{"t":23,"text":"show: exam."}
+{"t":39,"text":"with(\n  title: ["}
+{"t":60,"text":"Stoichiometry and the"}
+{"t":80,"text":" Mole],\n  subject"}
+{"t":101,"text":": [Chemistry],"}
+{"t":130,"text":"\n  grade: [Gr"}
+{"t":142,"text":"ade 11],\n  duration"}
+{"t":162,"text":": [45 minutes],"}
+{"t":183,"text":"\n  instructions: ["}
+{"t":235,"text":"Answer *all* questions."}
+{"t":235,"text":" Show"}
+{"t":244,"text":" your working for"}
+{"t":265,"text":" every"}
+{"t":285,"text":" calculation. Rel"}
+{"t":308,"text":"ative at"}
+{"t":326,"text":"omic masses: H"}
+{"t":346,"text":" = 1."}
+{"t":367,"text":"0, C = 12.0"}
+{"t":387,"text":", N"}
+{"t":409,"text":" = 14.0, O ="}
+{"t":428,"text":" 16.0, Mg"}
+{"t":448,"text":" = 24.3."}
+{"t":469,"text":"],\n)\n\n= Section A"}
+{"t":490,"text":": Multiple choice"}
+{"t":510,"text":"\n\n#question(points: 1)"}
+{"t":531,"text":"[\n  What is the molar"}
+{"t":553,"text":" mass of #"}
+{"t":572,"text":"ce(\"CO2\")?"}
+{"t":592,"text":"\n  #mcq([28"}
+{"t":613,"text":" g mol$\"\""}
+{"t":632,"text":"^(-1)$], ["}
+{"t":653,"text":"44 g mol$\"\"^"}
+{"t":673,"text":"(-1)$], [32"}
+{"t":694,"text":" g mol$\"\"^("}
+{"t":715,"text":"-1)$], [40 "}
+{"t":735,"text":"g mol$\"\"^(-"}
+{"t":756,"text":"1)$], answer: "}
+{"t":777,"text":"2)\n]\n\n#question("}
+{"t":796,"text":"points: 1)[\n  "}
+{"t":818,"text":"How many moles are"}
+{"t":837,"text":" in 36 g of water,"}
+{"t":857,"text":" #ce(\"H2O\")"}
+{"t":878,"text":"? (M"}
+{"t":899,"text":" = 18 g mol$"}
+{"t":920,"text":"\"\"^(-1)$)"}
+{"t":939,"text":"\n  #mcq([0"}
+{"t":960,"text":".5 mol], [2"}
+{"t":999,"text":" mol], [18"}
+{"t":1007,"text":" mol], [648"}
+{"t":1022,"text":" mol], answer: "}
+{"t":1042,"text":"2)\n]\n\n#question("}
+{"t":1062,"text":"points: 1)[\n  "}
+{"t":1083,"text":"Which equation is balanced"}
+{"t":1104,"text":"?\n  #mcq("}
+{"t":1144,"text":"\n    ce(\"N2 +"}
+{"t":1165,"text":" H2 -> NH3"}
+{"t":1186,"text":"\"),\n    ce(\"N"}
+{"t":1206,"text":"2 + 3H2 "}
+{"t":1226,"text":"-> 2NH3\""}
+{"t":1246,"text":"),\n    ce(\"2N"}
+{"t":1267,"text":"2 + H2 ->"}
+{"t":1287,"text":" NH3\"),\n    "}
+{"t":1308,"text":"ce(\"N2 + 2"}
+{"t":1328,"text":"H2 -> NH4"}
+{"t":1349,"text":"\"),\n    answer: "}
+{"t":1369,"text":"2,\n  )\n]"}
+{"t":1389,"text":"\n\n#question(points: 1)"}
+{"t":1410,"text":"[\n  The number of partic"}
+{"t":1431,"text":"les in one"}
+{"t":1451,"text":" mole of any"}
+{"t":1472,"text":" substance is called"}
+{"t":1491,"text":":\n  #m"}
+{"t":1512,"text":"cq([Avogadro"}
+{"t":1532,"text":"'s constant], [the"}
+{"t":1553,"text":" molar volume], [the emp"}
+{"t":1574,"text":"irical formula], [Fa"}
+{"t":1594,"text":"raday's const"}
+{"t":1633,"text":"ant], answer: 1"}
+{"t":1634,"text":")\n]\n\n= Section B"}
+{"t":1655,"text":": Cal"}
+{"t":1675,"text":"culations\n\n#question(points:"}
+{"t":1698,"text":" 4)[\n  Bal"}
+{"t":1716,"text":"ance each"}
+{"t":1738,"text":" equation.\n  + #"}
+{"t":1757,"text":"ce(\"Fe + O2"}
+{"t":1779,"text":" -> Fe2O"}
+{"t":1800,"text":"3\")\n    #answer-"}
+{"t":1819,"text":"lines(count: 1,"}
+{"t":1839,"text":" answer: ce(\"4"}
+{"t":1861,"text":"Fe + 3O2 "}
+{"t":1880,"text":"-> 2Fe2"}
+{"t":1901,"text":"O3\"))\n  + #"}
+{"t":1922,"text":"ce(\"C3H8 "}
+{"t":1943,"text":"+ O2 -> CO"}
+{"t":1965,"text":"2 + H2O\")"}
+{"t":1982,"text":"\n    #answer-lines("}
+{"t":2003,"text":"count: 1, answer:"}
+{"t":2023,"text":" ce(\"C3H8 "}
+{"t":2043,"text":"+ 5O2 ->"}
+{"t":2064,"text":" 3CO2 + "}
+{"t":2085,"text":"4H2O\"))\n]"}
+{"t":2106,"text":"\n\n#question(points: 4"}
+{"t":2125,"text":")[\n  Magnes"}
+{"t":2146,"text":"ium bur"}
+{"t":2167,"text":"ns in o"}
+{"t":2187,"text":"xygen according to #ce"}
+{"t":2207,"text":"(\"2Mg + O2"}
+{"t":2230,"text":" -> 2MgO"}
+{"t":2249,"text":"\"). Calculate the m"}
+{"t":2268,"text":"ass of magnesium o"}
+{"t":2289,"text":"xide"}
+{"t":2310,"text":"\n  formed when 6.0"}
+{"t":2330,"text":" g of magnesium bur"}
+{"t":2352,"text":"ns complet"}
+{"t":2370,"text":"ely.\n  #answer-"}
+{"t":2395,"text":"space(height: 6"}
+{"t":2411,"text":"em, answer: [\n    "}
+{"t":2442,"text":"$n(\""}
+{"t":2453,"text":"Mg\") = "}
+{"t":2473,"text":"6.0 / 24."}
+{"t":2494,"text":"3 = 0.247$"}
+{"t":2513,"text":" mol."}
+{"t":2534,"text":" From"}
+{"t":2554,"text":" the equ"}
+{"t":2574,"text":"ation, $n(\"MgO"}
+{"t":2595,"text":"\") = n(\""}
+{"t":2615,"text":"Mg\")"}
+{"t":2636,"text":" = 0.247$ m"}
+{"t":2658,"text":"ol.\n    $M"}
+{"t":2678,"text":"(\"MgO\") = 24"}
+{"t":2697,"text":".3 + 16.0"}
+{"t":2717,"text":" = 40.3$"}
+{"t":2739,"text":" g mol$\"\""}
+{"t":2759,"text":"^(-1)$,"}
+{"t":2781,"text":" so m"}
+{"t":2800,"text":"ass $"}
+{"t":2819,"text":"= 0.247 times"}
+{"t":2842,"text":" 40.3 appro"}
+{"t":2862,"text":"x 9.95$ g"}
+{"t":2881,"text":".\n  ])\n]"}
+{"t":2903,"text":"\n\n#question(points: 5)"}
+{"t":2922,"text":"[\n  H"}
+{"t":2944,"text":"ydrogen and oxyg"}
+{"t":2966,"text":"en react according to #ce(\""}
+{"t":2986,"text":"2H2 + O2 "}
+{"t":3006,"text":"-> 2H2O\""}
+{"t":3028,"text":"). A re"}
+{"t":3049,"text":"action v"}
+{"t":3065,"text":"essel contains 4.0"}
+{"t":3090,"text":" g of\n  hydr"}
+{"t":3107,"text":"ogen and 16.0 "}
+{"t":3126,"text":"g of oxygen."}
+{"t":3148,"text":"\n  + Identify the limi"}
+{"t":3171,"text":"ting reagent."}
+{"t":3188,"text":" Show your working.\n    "}
+{"t":3208,"text":"#answer-space(height:"}
+{"t":3228,"text":" 5"}
+{"t":3248,"text":"em, answer: [\n      "}
+{"t":3270,"text":"$n(\"H2\") = "}
+{"t":3289,"text":"4.0 / 2."}
+{"t":3310,"text":"0 = 2.0$"}
+{"t":3330,"text":" mol; $n(\"O"}
+{"t":3351,"text":"2\") = 16.0 "}
+{"t":3375,"text":"/ 32.0 = "}
+{"t":3393,"text":"0.50"}
+{"t":3412,"text":"$ mol.\n      "}
+{"t":3434,"text":"Ratio need"}
+{"t":3453,"text":"ed is 2 "}
+{"t":3473,"text":"mol H$_2$"}
+{"t":3494,"text":" : 1 mol O$"}
+{"t":3514,"text":"_2$, so "}
+{"t":3534,"text":"0"}
+{"t":3555,"text":".50 mol O$_"}
+{"t":3575,"text":"2$ need"}
+{"t":3596,"text":"s 1"}
+{"t":3616,"text":".0"}
+{"t":3637,"text":" mol H$_2$"}
+{"t":3657,"text":". H"}
+{"t":3677,"text":"ydrogen is in"}
+{"t":3698,"text":" excess,\n      so"}
+{"t":3719,"text":" *"}
+{"t":3745,"text":"oxygen is"}
+{"t":3759,"text":" the limiting reagent*"}
+{"t":3779,"text":".\n    ])\n  +"}
+{"t":3800,"text":" Calculate the mass of"}
+{"t":3820,"text":" water produ"}
+{"t":3842,"text":"ced.\n    #answer-"}
+{"t":3861,"text":"l"}
+{"t":3882,"text":"ines(count: 2"}
+{"t":3902,"text":", answer: [0"}
+{"t":3922,"text":".50 mol O$_"}
+{"t":3943,"text":"2$ g"}
+{"t":3964,"text":"ives 1.0 mol"}
+{"t":3984,"text":" H"}
+{"t":4004,"text":"$_2$O, and"}
+{"t":4024,"text":" $1"}
+{"t":4045,"text":".0 times 18.0"}
+{"t":4071,"text":" = 18$"}
+{"t":4086,"text":" g.])\n]"}
+{"t":4106,"text":"\n\n#"}
+{"t":4126,"text":"question(points: 3)["}
+{"t":4147,"text":"\n  Calculate the m"}
+{"t":4167,"text":"ass of s"}
+{"t":4187,"text":"odium hydroxide,"}
+{"t":4208,"text":" N"}
+{"t":4230,"text":"aOH ("}
+{"t":4255,"text":"M = 40.0 g"}
+{"t":4270,"text":" mol$\"\""}
+{"t":4289,"text":"^(-1)$), need"}
+{"t":4310,"text":"ed to prepare 250 "}
+{"t":4330,"text":"cm$\"\""}
+{"t":4351,"text":"^3$ of\n  a"}
+{"t":4371,"text":" "}
+{"t":4391,"text":"0.50 mol dm"}
+{"t":4413,"text":"$\"\"^(-3"}
+{"t":4433,"text":")$ solution.\n  "}
+{"t":4453,"text":"#answer-space(height:"}
+{"t":4474,"text":" 4"}
+{"t":4494,"text":"em, answer: [\n    "}
+{"t":4515,"text":"$n = c"}
+{"t":4535,"text":" times"}
+{"t":4555,"text":" V = 0.50 times"}
+{"t":4575,"text":" 0.250 = 0"}
+{"t":4596,"text":".125$ mol;"}
+{"t":4616,"text":" m"}
+{"t":4637,"text":"ass $= 0.125 "}
+{"t":4657,"text":"times 40.0 = "}
+{"t":4678,"text":"5.0$ g."}
+{"t":4699,"text":"\n  ])\n]\n\n#question"}
+{"t":4719,"text":"(points: 3)["}
+{"t":4739,"text":"\n  The theoretical yield"}
+{"t":4760,"text":" of a"}
+{"t":4781,"text":" reaction is 10.0"}
+{"t":4801,"text":" g of"}
+{"t":4820,"text":" product"}
+{"t":4845,"text":". The actual yield is "}
+{"t":4862,"text":"8.2 g. Cal"}
+{"t":4882,"text":"culate the\n  percent"}
+{"t":4902,"text":"age yield.\n  #answ"}
+{"t":4923,"text":"er-space(height: 3"}
+{"t":4943,"text":"em, answer: [$"}
+{"t":4964,"text":"8"}
+{"t":4985,"text":".2 / 10.0"}
+{"t":5008,"text":" times 100 = 82"}
+{"t":5025,"text":"%$])"}
+{"t":5045,"text":"\n]\n\n#"}
+{"t":5066,"text":"question(points: 2)["}
+{"t":5086,"text":"\n  Decide whether each"}
+{"t":5106,"text":" statement is true or false."}
+{"t":5129,"text":"\n  #"}
+{"t":5147,"text":"true-false(answer: true"}
+{"t":5168,"text":")[The molar mass of"}
+{"t":5188,"text":" a compound is"}
+{"t":5209,"text":" meas"}
+{"t":5229,"text":"ured in g mol$\"\""}
+{"t":5250,"text":"^(-1)$.]"}
+{"t":5270,"text":"\n  #true-false(answ"}
+{"t":5292,"text":"er: false)[The emp"}
+{"t":5311,"text":"irical formula always"}
+{"t":5331,"text":" gives the act"}
+{"t":5351,"text":"ual number of at"}
+{"t":5371,"text":"oms in a"}
+{"t":5392,"text":" molecule.]\n]"}
+{"t":5415,"text":"\n\n#answer-key()"}

@@ -8,14 +8,21 @@
 // embedded fonts only (--ignore-system-fonts), so results don't depend on the
 // machine. `limit` entries run under `prlimit` (util-linux); without it they're
 // skipped. --write-pages records the page counts of `ok` entries in meta.json.
+//
+// Entries written for a plugin (meta.plugins, the llm set) compile the way the engine compiles
+// them: the plugin's preamble before the source, its files as a local package. Every entry gets a
+// package directory with @typstream/edu and @typstream/universe's vendored packages, and nothing
+// else: an empty package cache and a dead proxy keep native typst from downloading the rest, so
+// a package outside the allowlist fails as it does in the app.
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { availableParallelism, tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { gunzipSync } from "node:zlib";
 
 const TYPST_VERSION = "0.15.1";
-const SETS = ["edu", "adversarial"];
+const SETS = ["edu", "adversarial", "llm"];
 const TIMEOUT_MS = 60_000;
 // Runaway loops and memory bombs must fail inside these.
 const LIMIT_TIMEOUT_MS = 10_000;
@@ -82,18 +89,58 @@ for (const set of SETS) {
 
 // 2. Native compiles.
 const out = mkdtempSync(join(tmpdir(), "typstream-corpus-"));
+const packages = join(out, "packages");
+const eduDir = join(root, "../packages/edu/typst");
+const eduVersion = /^version = "(.+)"$/m.exec(readFileSync(join(eduDir, "typst.toml"), "utf8"))[1];
+cpSync(eduDir, join(packages, "typstream", "edu", eduVersion), { recursive: true });
+const vendor = join(root, "../packages/universe/vendor");
+for (const tarball of readdirSync(vendor).filter((f) => f.endsWith(".tar.gz"))) {
+  const [, name, version] = /^(.+)-(\d+\.\d+\.\d+)\.tar\.gz$/.exec(tarball);
+  // ustar: regular files only, as Universe tarballs hold.
+  const tar = gunzipSync(readFileSync(join(vendor, tarball)));
+  for (let at = 0; at + 512 <= tar.length && tar[at] !== 0; ) {
+    const field = (from, length) => tar.toString("utf8", at + from, at + from + length).replace(/\0.*$/s, "");
+    const size = Number.parseInt(field(124, 12).trim() || "0", 8);
+    const path = ((field(345, 155) ? `${field(345, 155)}/` : "") + field(0, 100)).replace(/^\.\//, "");
+    if (["0", ""].includes(field(156, 1))) {
+      const file = join(packages, "preview", name, version, path);
+      mkdirSync(dirname(file), { recursive: true });
+      writeFileSync(file, tar.subarray(at + 512, at + 512 + size));
+    }
+    at += 512 + Math.ceil(size / 512) * 512;
+  }
+}
+const PREAMBLES = { edu: `#import "@typstream/edu:${eduVersion}": *\n` };
+const noNetwork = { ...process.env, https_proxy: "http://127.0.0.1:9", HTTPS_PROXY: "http://127.0.0.1:9" };
+
 const run = (entry) =>
   new Promise((resolve) => {
     const limited = entry.expect === "limit";
     const pdf = join(out, `${entry.id.replace("/", "__")}.pdf`);
+    // A plugin's preamble goes before the source, so the document compiles from a copy next to
+    // the original (relative paths still resolve); spans in messages are off by the preamble line.
+    const plugins = entry.meta.plugins ?? [];
+    for (const p of plugins) if (!PREAMBLES[p]) fail(entry.id, `unknown plugin "${p}"`);
+    let input = entry.path;
+    if (plugins.length) {
+      input = join(dirname(entry.path), `${entry.name}.typ.validate`);
+      writeFileSync(input, plugins.map((p) => PREAMBLES[p] ?? "").join("") + readFileSync(entry.path, "utf8"));
+    }
     const compile = [
       "compile",
+      // `html.elem` exists only with the feature; paged output is the same either way.
+      "--features",
+      "html",
       "--ignore-system-fonts",
       "--diagnostic-format",
       "short",
       "--root",
       root,
-      entry.path,
+      "--package-path",
+      packages,
+      "--package-cache-path",
+      join(out, "cache"),
+      input,
       pdf,
     ];
     const [cmd, cmdArgs] = limited
@@ -101,6 +148,7 @@ const run = (entry) =>
       : [typst, compile];
     const started = Date.now();
     const child = spawn(cmd, cmdArgs, {
+      env: noNetwork,
       timeout: limited ? LIMIT_TIMEOUT_MS : TIMEOUT_MS,
       killSignal: "SIGKILL",
       stdio: ["ignore", "ignore", "pipe"],
@@ -110,6 +158,7 @@ const run = (entry) =>
       if (stderr.length < 100_000) stderr += d;
     });
     child.on("close", (code, signal) => {
+      if (input !== entry.path) rmSync(input, { force: true });
       const ms = Date.now() - started;
       const diagnostics = [...stderr.matchAll(/^.*?: (warning|error): (.*)$/gm)].map((m) => ({
         severity: m[1],

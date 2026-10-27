@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from "vitest";
 import { createHtmlRenderer } from "../../src/html/renderer";
-import { createSanitizer } from "../../src/html/sanitize";
+import { createSanitizer, hideStyles } from "../../src/html/sanitize";
 
 declare global {
   interface Window {
@@ -98,6 +98,26 @@ describe("sanitizer", () => {
     expect(out('<span style="display: grid; grid-template-columns: 1fr 2fr">a</span>')).toBe(
       '<span style="display: grid; grid-template-columns: 1fr 2fr">a</span>',
     );
+  });
+
+  it("applies inline styles through the CSSOM, which a strict CSP allows", () => {
+    // Only `style` attributes of start tags are renamed: not text, not other attributes' values.
+    expect(hideStyles('<p STYLE="color: red" title="x style=">a style="b"</p><br style="c"/>')).toBe(
+      '<p data-typstream-style="color: red" title="x style=">a style="b"</p><br data-typstream-style="c"/>',
+    );
+    const p = clean(hideStyles('<p style="color: red; background: u\\72l(https://x) blue; position: fixed">a</p>'))
+      .firstElementChild as HTMLElement;
+    expect(p.getAttribute("data-typstream-style")).toBeNull();
+    expect(p.style.color).toBe("red");
+    expect(p.style.backgroundColor).toBe("blue");
+    expect(p.getAttribute("style")).not.toMatch(/url|fixed/);
+    // The renamed attribute is no back door: a document writing it gets the same treatment.
+    const forged = clean('<p data-typstream-style="position: fixed; background-image: url(https://x)">a</p>');
+    expect(forged.innerHTML).toBe("<p>a</p>");
+    // Hostile raw text that looks like endless tags costs linear time.
+    const started = performance.now();
+    hideStyles(`<script>${'<a x="'.repeat(100_000)}</script>`);
+    expect(performance.now() - started).toBeLessThan(1000);
   });
 
   it("unwraps unknown elements, keeping their text", () => {

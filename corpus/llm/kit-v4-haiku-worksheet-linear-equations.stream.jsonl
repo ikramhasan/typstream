@@ -1,0 +1,178 @@
+{"t":0,"text":"#"}
+{"t":0,"text":"show: worksheet.with"}
+{"t":17,"text":"("}
+{"t":55,"text":"\n  title: [Solving"}
+{"t":86,"text":" Linear Equations],\n  "}
+{"t":86,"text":"subject: [Mathemat"}
+{"t":100,"text":"ics],\n  grade: ["}
+{"t":118,"text":"Grade 8],\n  "}
+{"t":139,"text":"instructions: [Solve"}
+{"t":165,"text":" each equation for"}
+{"t":182,"text":" $x$. Show every step"}
+{"t":200,"text":" in the"}
+{"t":220,"text":" working space. Quest"}
+{"t":244,"text":"ions get"}
+{"t":262,"text":" harder as you"}
+{"t":282,"text":" go.],\n)\n\n="}
+{"t":302,"text":" Part A: One-"}
+{"t":327,"text":" and two-step equations\n\n#"}
+{"t":345,"text":"question(points: 1)["}
+{"t":363,"text":"\n  Solve $x +"}
+{"t":384,"text":" 7 = 12$."}
+{"t":404,"text":" Give $"}
+{"t":426,"text":"x ="}
+{"t":445,"text":"$ #"}
+{"t":466,"text":"blank(answer: [5"}
+{"t":485,"text":"]"}
+{"t":507,"text":").\n]"}
+{"t":527,"text":"\n\n#question(points: 1)"}
+{"t":547,"text":"[\n  Solve $4"}
+{"t":568,"text":"x = 28$.\n  "}
+{"t":589,"text":"#answer-space(height:"}
+{"t":612,"text":" 2."}
+{"t":638,"text":"5em, answer: [$"}
+{"t":649,"text":"x = 7$])"}
+{"t":669,"text":"\n]\n\n#question(points:"}
+{"t":692,"text":" 1)[\n  Sol"}
+{"t":712,"text":"ve $x / 3 ="}
+{"t":731,"text":" 6$.\n  #answ"}
+{"t":752,"text":"er-space(height: 2"}
+{"t":772,"text":".5em, answer: ["}
+{"t":795,"text":"$x = 18$])"}
+{"t":814,"text":"\n]\n\n#question(points: "}
+{"t":835,"text":"2)[\n  Solve"}
+{"t":854,"text":" $2x + 5 ="}
+{"t":876,"text":" 17$."}
+{"t":895,"text":" Show your working.\n  #"}
+{"t":915,"text":"answer-space(height: "}
+{"t":938,"text":"4em, answer: [$"}
+{"t":965,"text":"2x ="}
+{"t":983,"text":" 12"}
+{"t":998,"text":"$, so $x = 6"}
+{"t":1018,"text":"$.])\n]\n\n#question"}
+{"t":1040,"text":"(points: 2)["}
+{"t":1058,"text":"\n  Solve $3x -"}
+{"t":1080,"text":" 8 = 13$,"}
+{"t":1100,"text":" then check your answer by"}
+{"t":1121,"text":" substitu"}
+{"t":1140,"text":"ting it"}
+{"t":1162,"text":" back into the equation.\n  "}
+{"t":1181,"text":"#answer-space(height:"}
+{"t":1202,"text":" 5em, answer: ["}
+{"t":1223,"text":"$3x = 21$,"}
+{"t":1242,"text":" so $x = 7$."}
+{"t":1264,"text":" Check: $3(7)"}
+{"t":1283,"text":" - 8 = 13$"}
+{"t":1304,"text":"."}
+{"t":1325,"text":" ✓])\n]\n\n="}
+{"t":1345,"text":" Part B: Unknow"}
+{"t":1366,"text":"ns on both sides and"}
+{"t":1385,"text":" brackets\n\n#question(points"}
+{"t":1408,"text":": 2)[\n  "}
+{"t":1427,"text":"Solve $5x - 3"}
+{"t":1447,"text":" = 2x + 9"}
+{"t":1468,"text":"$.\n  #answer-"}
+{"t":1488,"text":"space(height: 5em,"}
+{"t":1508,"text":" answer: [$3"}
+{"t":1530,"text":"x = 12$, so $"}
+{"t":1549,"text":"x = 4$.])"}
+{"t":1570,"text":"\n]\n\n#question(points: "}
+{"t":1595,"text":"2)[\n  Solve"}
+{"t":1611,"text":" $3(x + 4)"}
+{"t":1632,"text":" = 27$.\n  #"}
+{"t":1651,"text":"answer-space(height: "}
+{"t":1672,"text":"5em, answer: [$"}
+{"t":1693,"text":"x + 4 = 9"}
+{"t":1713,"text":"$, so $x = 5"}
+{"t":1733,"text":"$.])\n]\n\n#question"}
+{"t":1753,"text":"(points: 3"}
+{"t":1776,"text":")[\n  Solve $"}
+{"t":1794,"text":"2(3x - 1)"}
+{"t":1815,"text":" = 4x + 10$"}
+{"t":1838,"text":".\n  #answer-space"}
+{"t":1856,"text":"(height: 6em, answ"}
+{"t":1877,"text":"er: [$6x - "}
+{"t":1897,"text":"2 = 4x + "}
+{"t":1918,"text":"10$, so $2x ="}
+{"t":1939,"text":" 12$"}
+{"t":1958,"text":" and $x = 6$."}
+{"t":1978,"text":"])\n]\n\n#question(points"}
+{"t":1999,"text":": 3)[\n  "}
+{"t":2020,"text":"Solve each"}
+{"t":2043,"text":" equation."}
+{"t":2067,"text":"\n  + $"}
+{"t":2081,"text":"x / 2 + 3"}
+{"t":2102,"text":" = 7$"}
+{"t":2121,"text":"\n    #answer-l"}
+{"t":2143,"text":"ines(count: 1, answ"}
+{"t":2166,"text":"er: [$x = 8"}
+{"t":2184,"text":"$])\n  + $(2"}
+{"t":2205,"text":"x +"}
+{"t":2224,"text":" 1) / 5 ="}
+{"t":2244,"text":" 3$\n    #answer"}
+{"t":2264,"text":"-lines(count: 1"}
+{"t":2285,"text":", answer: [$2"}
+{"t":2306,"text":"x + 1 = 15"}
+{"t":2327,"text":"$, so $x = 7"}
+{"t":2349,"text":"$])"}
+{"t":2367,"text":"\n  + $4"}
+{"t":2388,"text":" - ("}
+{"t":2408,"text":"x"}
+{"t":2431,"text":" - 6"}
+{"t":2450,"text":") = 9"}
+{"t":2469,"text":"$\n    #answer-l"}
+{"t":2489,"text":"ines(count: 1, answ"}
+{"t":2513,"text":"er: [$4 - x"}
+{"t":2532,"text":" + 6 = 9$"}
+{"t":2551,"text":", so $10 - x ="}
+{"t":2573,"text":" 9$"}
+{"t":2591,"text":" and $x = 1$])"}
+{"t":2612,"text":"\n]\n\n= Part C:"}
+{"t":2633,"text":" Challenge\n\n#question("}
+{"t":2652,"text":"points: 3)[\n  "}
+{"t":2673,"text":"Solve $(x + "}
+{"t":2694,"text":"3) / 2 - ("}
+{"t":2714,"text":"x - 1) / 4"}
+{"t":2734,"text":" = 3$."}
+{"t":2755,"text":" Hint: multiply both"}
+{"t":2777,"text":" sides by 4 first."}
+{"t":2798,"text":"\n  #answer-space("}
+{"t":2816,"text":"height: 7"}
+{"t":2837,"text":"em, answer: [$2"}
+{"t":2857,"text":"(x + 3) - ("}
+{"t":2877,"text":"x - 1) = 12"}
+{"t":2899,"text":"$, so $x"}
+{"t":2918,"text":" + 7 = 12$"}
+{"t":2939,"text":" and $x = 5$"}
+{"t":2959,"text":".])\n]\n\n#question("}
+{"t":2986,"text":"points: 3)[\n  "}
+{"t":3003,"text":"A number is mult"}
+{"t":3020,"text":"iplied by "}
+{"t":3042,"text":"3, then 9 is added"}
+{"t":3063,"text":". The result is 33."}
+{"t":3081,"text":" Write"}
+{"t":3103,"text":" an equation and"}
+{"t":3122,"text":" find the number.\n  #answ"}
+{"t":3143,"text":"er-space"}
+{"t":3167,"text":"(height: 5"}
+{"t":3184,"text":"em, answer: [$3"}
+{"t":3204,"text":"n + 9 = 33"}
+{"t":3227,"text":"$, so $3"}
+{"t":3245,"text":"n = 24$ and $"}
+{"t":3266,"text":"n = 8$.])"}
+{"t":3286,"text":"\n]\n\n#question(points: "}
+{"t":3306,"text":"4)[\n  Explain"}
+{"t":3327,"text":" why $x + 2 ="}
+{"t":3347,"text":" x + 5$ has no"}
+{"t":3368,"text":" solution.\n  #answer"}
+{"t":3389,"text":"-lines(count: 3"}
+{"t":3411,"text":", answer: [Subt"}
+{"t":3429,"text":"racting $"}
+{"t":3454,"text":"x$ from both sides le"}
+{"t":3470,"text":"aves $2 = 5"}
+{"t":3491,"text":"$, which is false for"}
+{"t":3510,"text":" every"}
+{"t":3530,"text":" value of $x$,"}
+{"t":3551,"text":" so no value"}
+{"t":3572,"text":" of $x$ makes the"}
+{"t":3592,"text":" equation true.])\n]"}

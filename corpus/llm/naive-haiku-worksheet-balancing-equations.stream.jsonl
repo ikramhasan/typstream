@@ -1,0 +1,199 @@
+{"t":0,"text":"="}
+{"t":198,"text":" Bal"}
+{"t":198,"text":"ancing Ch"}
+{"t":198,"text":"emical Equations\n\n*"}
+{"t":198,"text":"Gr"}
+{"t":198,"text":"ade 9 Chemist"}
+{"t":198,"text":"ry"}
+{"t":201,"text":" Worksheet*"}
+{"t":201,"text":"\n\nName: #"}
+{"t":201,"text":"line(length: 6"}
+{"t":203,"text":"c"}
+{"t":227,"text":"m)"}
+{"t":245,"text":" Date: #line(length:"}
+{"t":265,"text":" 3cm)\n\n=="}
+{"t":285,"text":" Instructions"}
+{"t":305,"text":"\n\nBalance each"}
+{"t":325,"text":" ch"}
+{"t":346,"text":"emical equation by plac"}
+{"t":369,"text":"ing wh"}
+{"t":387,"text":"ole-number coefficients in"}
+{"t":410,"text":" front of the formulas."}
+{"t":430,"text":" Do not change any"}
+{"t":448,"text":" subscripts. Check that"}
+{"t":471,"text":" the"}
+{"t":490,"text":" number of atoms of"}
+{"t":511,"text":" every element is"}
+{"t":532,"text":" the same on both sides."}
+{"t":550,"text":" Probl"}
+{"t":572,"text":"ems get"}
+{"t":591,"text":" har"}
+{"t":618,"text":"der as you go"}
+{"t":637,"text":". Show"}
+{"t":652,"text":" your coun"}
+{"t":675,"text":"ting in"}
+{"t":694,"text":" the"}
+{"t":713,"text":" space"}
+{"t":734,"text":" prov"}
+{"t":755,"text":"ided.\n\n== Part"}
+{"t":774,"text":" A: Easy\n\n*"}
+{"t":796,"text":"1.* $"}
+{"t":816,"text":"\""}
+{"t":837,"text":"H\"_"}
+{"t":857,"text":"2 + \""}
+{"t":883,"text":"O\"_2 -> \""}
+{"t":897,"text":"H\"_2\""}
+{"t":917,"text":"O\""}
+{"t":937,"text":"$\n\n#"}
+{"t":961,"text":"v(2"}
+{"t":979,"text":"em)\n\n*2.* $"}
+{"t":1001,"text":"\"Na\""}
+{"t":1020,"text":" + \""}
+{"t":1039,"text":"Cl\"_2 -"}
+{"t":1060,"text":"> \"NaCl\"$"}
+{"t":1086,"text":"\n\n#v(2em)"}
+{"t":1102,"text":"\n\n*3.* $\"M"}
+{"t":1122,"text":"g\" + \"HCl\""}
+{"t":1141,"text":" -> \"MgCl\""}
+{"t":1163,"text":"_2 + \"H\"_"}
+{"t":1182,"text":"2$\n\n#v(2em"}
+{"t":1203,"text":")\n\n== Part B:"}
+{"t":1223,"text":" Medium\n\n*4.* $"}
+{"t":1244,"text":"\"CH\"_4 +"}
+{"t":1266,"text":" \"O\"_2 ->"}
+{"t":1284,"text":" \"CO\"_2 +"}
+{"t":1306,"text":" \"H\"_2\"O"}
+{"t":1327,"text":"\"$\n\n#v(2em"}
+{"t":1348,"text":")\n\n*5.* $\""}
+{"t":1368,"text":"Al\" + \"O\"_"}
+{"t":1388,"text":"2 -> \"Al\""}
+{"t":1408,"text":"_2\""}
+{"t":1431,"text":"O\"_3$\n\n#v"}
+{"t":1448,"text":"(2em)\n\n*6."}
+{"t":1469,"text":"* $\"Fe\""}
+{"t":1493,"text":" + \"H\"_2\""}
+{"t":1509,"text":"O\" -> \"Fe"}
+{"t":1532,"text":"\"_3\"O\"_4"}
+{"t":1550,"text":" + \"H\"_2$"}
+{"t":1571,"text":"\n\n#v(2em)"}
+{"t":1591,"text":"\n\n== Part C: Hard"}
+{"t":1614,"text":"\n\n*7.* $\"C"}
+{"t":1632,"text":"\"_3\""}
+{"t":1654,"text":"H\"_8 + \"O"}
+{"t":1674,"text":"\"_2 -> \"C"}
+{"t":1693,"text":"O\"_2 + \"H"}
+{"t":1713,"text":"\"_2\"O\""}
+{"t":1734,"text":"$\n\n#v(2em)"}
+{"t":1756,"text":"\n\n*8.* $\""}
+{"t":1779,"text":"Ca\"(\"OH\")_"}
+{"t":1795,"text":"2 + \"H\"_3"}
+{"t":1816,"text":"\"PO\"_4 -"}
+{"t":1836,"text":"> \"Ca\"_3"}
+{"t":1859,"text":"(\"PO\"_4)_"}
+{"t":1879,"text":"2 + \"H\"_2"}
+{"t":1899,"text":"\"O\"$\n\n#v("}
+{"t":1918,"text":"2em)\n\n*9.*"}
+{"t":1938,"text":" $\"KMnO\"_"}
+{"t":1967,"text":"4 + \"HCl\""}
+{"t":1990,"text":" -> \"KCl\" +"}
+{"t":2002,"text":" \"MnCl\"_2"}
+{"t":2020,"text":" + \"H\"_2\""}
+{"t":2041,"text":"O\" + \"Cl\""}
+{"t":2061,"text":"_2$"}
+{"t":2083,"text":"\n\nHint: Balance the met"}
+{"t":2102,"text":"als"}
+{"t":2123,"text":" first, then o"}
+{"t":2144,"text":"xygen, then hydr"}
+{"t":2166,"text":"ogen, and"}
+{"t":2184,"text":" bal"}
+{"t":2204,"text":"ance chlorine last"}
+{"t":2224,"text":".\n\n#v(2em)"}
+{"t":2244,"text":"\n\n*10.* $\""}
+{"t":2265,"text":"Cu\" + \"HNO"}
+{"t":2307,"text":"\""}
+{"t":2307,"text":"_3 -> \"C"}
+{"t":2326,"text":"u\"(\""}
+{"t":2347,"text":"NO\"_3)_2"}
+{"t":2369,"text":" + \"NO\" + \""}
+{"t":2388,"text":"H\"_2\""}
+{"t":2409,"text":"O\"$\n\nHint:"}
+{"t":2450,"text":" Nitrogen app"}
+{"t":2469,"text":"ears in three"}
+{"t":2491,"text":" places"}
+{"t":2512,"text":"."}
+{"t":2533,"text":" Balance the cop"}
+{"t":2553,"text":"per and the nitrate group"}
+{"t":2572,"text":" before hydrogen and"}
+{"t":2591,"text":" oxygen.\n\n#v"}
+{"t":2613,"text":"(2em)\n\n#"}
+{"t":2635,"text":"pagebreak()"}
+{"t":2653,"text":"\n\n="}
+{"t":2674,"text":" Answer Key\n\n=="}
+{"t":2694,"text":" Part A: Easy\n\n+"}
+{"t":2715,"text":" $2 \""}
+{"t":2737,"text":"H\"_2 + \""}
+{"t":2755,"text":"O\"_2 -> "}
+{"t":2775,"text":"2 \"H\"_2\""}
+{"t":2796,"text":"O\"$"}
+{"t":2839,"text":"\n+ $2"}
+{"t":2857,"text":" \"Na\" + \""}
+{"t":2878,"text":"Cl\"_2 ->"}
+{"t":2899,"text":" 2 \"NaCl"}
+{"t":2918,"text":"\"$\n+ $\""}
+{"t":2946,"text":"Mg\" + 2 \""}
+{"t":2960,"text":"HCl\" -> \"M"}
+{"t":2980,"text":"gCl\"_2 +"}
+{"t":3001,"text":" \"H\"_2$\n\n=="}
+{"t":3020,"text":" Part B: Medium"}
+{"t":3041,"text":"\n\n+ $\""}
+{"t":3061,"text":"CH\"_4 + "}
+{"t":3088,"text":"2 \"O\"_2 "}
+{"t":3104,"text":"-> \"CO\"_2"}
+{"t":3123,"text":" + 2 \"H\""}
+{"t":3150,"text":"_2\""}
+{"t":3167,"text":"O\"$\n+ $4"}
+{"t":3183,"text":" \"Al\" + 3"}
+{"t":3210,"text":" \"O\"_2 -"}
+{"t":3226,"text":"> 2 \"Al\""}
+{"t":3245,"text":"_2\"O\"_3$"}
+{"t":3268,"text":"\n+ $3 \""}
+{"t":3291,"text":"Fe\" + 4 \""}
+{"t":3312,"text":"H\"_2\"O\""}
+{"t":3333,"text":" -> \"Fe\"_"}
+{"t":3349,"text":"3\"O\"_4 +"}
+{"t":3371,"text":" 4 \"H\"_2"}
+{"t":3389,"text":"$\n\n== Part C:"}
+{"t":3408,"text":" Hard\n\n+ $\"C"}
+{"t":3430,"text":"\"_3\""}
+{"t":3449,"text":"H\"_8 + 5"}
+{"t":3477,"text":" \"O\"_2 -"}
+{"t":3490,"text":"> 3 \"CO\""}
+{"t":3511,"text":"_2 + 4 \""}
+{"t":3531,"text":"H\"_2\"O\""}
+{"t":3564,"text":"$\n+ $3 \""}
+{"t":3573,"text":"Ca\"(\"OH\")"}
+{"t":3592,"text":"_2 + 2 \""}
+{"t":3612,"text":"H\"_3\"PO\""}
+{"t":3637,"text":"_4 -> \""}
+{"t":3654,"text":"Ca\"_3(\"P"}
+{"t":3676,"text":"O\"_4)_2 "}
+{"t":3694,"text":"+ 6 \"H\"_"}
+{"t":3717,"text":"2\"O\""}
+{"t":3737,"text":"$\n+ $2 \""}
+{"t":3755,"text":"KMnO\"_4 "}
+{"t":3777,"text":"+ 16 \"HCl"}
+{"t":3801,"text":"\" -> 2 \"K"}
+{"t":3817,"text":"Cl\" + 2 \""}
+{"t":3837,"text":"MnCl\"_2 "}
+{"t":3857,"text":"+ 8 \"H\"_"}
+{"t":3881,"text":"2\"O\" + 5 "}
+{"t":3899,"text":"\"Cl\"_2$"}
+{"t":3919,"text":"\n+ $3 \""}
+{"t":3940,"text":"Cu\" + 8 \""}
+{"t":3962,"text":"HNO\"_3 -"}
+{"t":3982,"text":"> 3 \"Cu"}
+{"t":4001,"text":"\"(\"NO\"_3)"}
+{"t":4020,"text":"_2 + 2 \""}
+{"t":4044,"text":"NO\" + 4 \""}
+{"t":4061,"text":"H\"_2\"O\""}
+{"t":4083,"text":"$"}

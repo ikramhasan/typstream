@@ -1,0 +1,205 @@
+{"t":0,"text":"#"}
+{"t":21,"text":"show: exam.with("}
+{"t":40,"text":"\n  title: [Algebra"}
+{"t":61,"text":" II Final Examination],"}
+{"t":82,"text":"\n  subject: [Math"}
+{"t":102,"text":"ematics],\n  gr"}
+{"t":122,"text":"ade: [Grade 11"}
+{"t":144,"text":"],\n  duration: [90"}
+{"t":167,"text":" minutes],\n  inst"}
+{"t":185,"text":"ructions: ["}
+{"t":206,"text":"Answer *all* questions in"}
+{"t":226,"text":" all three"}
+{"t":246,"text":" sections. Show your working in"}
+{"t":266,"text":" Section B and"}
+{"t":286,"text":" Section C. Cal"}
+{"t":307,"text":"culators are perm"}
+{"t":328,"text":"itted.],\n)\n\n="}
+{"t":348,"text":" Section A: Multiple"}
+{"t":369,"text":" choice\n\n#question(points:"}
+{"t":389,"text":" 2)[\n  Sol"}
+{"t":412,"text":"ve $2x - 5 "}
+{"t":430,"text":"= 11$.\n  #"}
+{"t":450,"text":"mcq([$x = "}
+{"t":471,"text":"3$], [$x = "}
+{"t":492,"text":"8$], [$x = -"}
+{"t":512,"text":"3$], [$x = "}
+{"t":533,"text":"6$], answer: 2"}
+{"t":572,"text":")\n]\n\n#question(points"}
+{"t":583,"text":": 2)[\n  What"}
+{"t":601,"text":" is the vertex of the par"}
+{"t":626,"text":"abola $y = (x -"}
+{"t":642,"text":" 2)^2 + "}
+{"t":662,"text":"3$?\n  #mc"}
+{"t":684,"text":"q([$(2, 3"}
+{"t":697,"text":")$], [$(-2"}
+{"t":717,"text":", 3)$], [$"}
+{"t":738,"text":"(2, -3)$],"}
+{"t":759,"text":" [$(3, 2)"}
+{"t":782,"text":"$], answer: 1)"}
+{"t":802,"text":"\n]\n\n#question(points:"}
+{"t":820,"text":" 2)[\n  Sim"}
+{"t":840,"text":"plify $x^2 d"}
+{"t":862,"text":"ot x^3$.\n  "}
+{"t":881,"text":"#mcq([$x^"}
+{"t":902,"text":"5$], [$x"}
+{"t":922,"text":"^6$], [$2x"}
+{"t":944,"text":"^5$], [$x^"}
+{"t":967,"text":"1$], answer: 1"}
+{"t":984,"text":")\n]\n\n#question(points"}
+{"t":1005,"text":": 2)[\n  "}
+{"t":1026,"text":"Which lin"}
+{"t":1046,"text":"ear function has a"}
+{"t":1066,"text":" slope of $-2$?"}
+{"t":1086,"text":"\n  #mcq([$"}
+{"t":1109,"text":"y = 2x +"}
+{"t":1127,"text":" 1"}
+{"t":1147,"text":"$], [$y = x"}
+{"t":1168,"text":" - 2$], [$y"}
+{"t":1188,"text":" = -2x + 5$"}
+{"t":1209,"text":"], [$y = -"}
+{"t":1230,"text":"x/"}
+{"t":1250,"text":"2 "}
+{"t":1273,"text":"+ 3$], answer:"}
+{"t":1290,"text":" 3)\n]\n\n="}
+{"t":1311,"text":" Section B: Short answer"}
+{"t":1332,"text":"\n\n#question(points: 3)"}
+{"t":1353,"text":"[\n  Solve $3"}
+{"t":1372,"text":"(x - 4) = "}
+{"t":1393,"text":"2x + 1$."}
+{"t":1413,"text":"\n  #answer-space(height"}
+{"t":1434,"text":": 4"}
+{"t":1456,"text":"em, answer: [$3"}
+{"t":1478,"text":"x - 12 = 2"}
+{"t":1495,"text":"x + 1$, so $"}
+{"t":1516,"text":"x = 13$.])"}
+{"t":1536,"text":"\n  "}
+{"t":1559,"text":"\n  #bl"}
+{"t":1577,"text":"ank(answer: [$x"}
+{"t":1599,"text":" = 13$])"}
+{"t":1618,"text":"\n]\n\n#question(points:"}
+{"t":1638,"text":" 3)[\n  Fact"}
+{"t":1659,"text":"or complet"}
+{"t":1680,"text":"ely:"}
+{"t":1699,"text":" $x^2 - 5"}
+{"t":1721,"text":"x + 6$.\n  "}
+{"t":1740,"text":"#answer-lines(count"}
+{"t":1761,"text":": 2, answer: ["}
+{"t":1781,"text":"$(x - 2)("}
+{"t":1802,"text":"x - 3)$."}
+{"t":1823,"text":" Check:"}
+{"t":1842,"text":" the"}
+{"t":1864,"text":" factors mult"}
+{"t":1883,"text":"iply to $6"}
+{"t":1904,"text":"$ and add"}
+{"t":1924,"text":" to $-5$.])"}
+{"t":1945,"text":"\n]\n\n#question(points: "}
+{"t":1965,"text":"4)[\n  Solve"}
+{"t":1988,"text":" the system of equations:\n  "}
+{"t":2006,"text":"$"}
+{"t":2026,"text":" x + y = 7 "}
+{"t":2048,"text":"$"}
+{"t":2068,"text":"\n  $ x - y = "}
+{"t":2088,"text":"1 $\n  +"}
+{"t":2108,"text":" Find the"}
+{"t":2128,"text":" value of $x$.\n    "}
+{"t":2149,"text":"#answer-space"}
+{"t":2170,"text":"(height: 2."}
+{"t":2189,"text":"5em, answer: ["}
+{"t":2210,"text":"Adding the equ"}
+{"t":2230,"text":"ations gives $2"}
+{"t":2250,"text":"x = 8"}
+{"t":2273,"text":"$, so $x = 4"}
+{"t":2292,"text":"$.])\n  + Find"}
+{"t":2313,"text":" the value of $y$."}
+{"t":2333,"text":"\n    #answer-space(height"}
+{"t":2354,"text":": 2.5em, answ"}
+{"t":2374,"text":"er: [Substituting $"}
+{"t":2395,"text":"x = 4$ gives"}
+{"t":2415,"text":" $y = 3$.])"}
+{"t":2437,"text":"\n]\n\n#"}
+{"t":2455,"text":"question(points: 2)["}
+{"t":2476,"text":"\n  Let $f(x"}
+{"t":2501,"text":") = x^2 - "}
+{"t":2517,"text":"1$. Find"}
+{"t":2552,"text":" $f(-2)$."}
+{"t":2562,"text":"\n  #bl"}
+{"t":2585,"text":"ank(width"}
+{"t":2604,"text":": 3em, answer:"}
+{"t":2619,"text":" [$3"}
+{"t":2640,"text":"$])\n]\n\n= Section"}
+{"t":2659,"text":" C: Extended response\n\n#"}
+{"t":2684,"text":"question(points: 6)["}
+{"t":2702,"text":"\n  "}
+{"t":2722,"text":"Solve $"}
+{"t":2743,"text":"x^2 - 4x"}
+{"t":2762,"text":" - 5 = 0$"}
+{"t":2782,"text":" by factoring."}
+{"t":2803,"text":" Show each"}
+{"t":2823,"text":" step and"}
+{"t":2844,"text":" state both"}
+{"t":2864,"text":" solutions.\n  #answ"}
+{"t":2886,"text":"er-space"}
+{"t":2905,"text":"(height: 9"}
+{"t":2931,"text":"em, answer: [$x"}
+{"t":2946,"text":"^2 - 4x -"}
+{"t":2974,"text":" 5 = (x - "}
+{"t":2987,"text":"5)(x + 1)"}
+{"t":3014,"text":" = 0$,"}
+{"t":3030,"text":" so $x = 5$"}
+{"t":3048,"text":" or $x = -1$."}
+{"t":3068,"text":"])\n]\n\n#question(points"}
+{"t":3089,"text":": 6)[\n  A"}
+{"t":3109,"text":" bacte"}
+{"t":3130,"text":"ria culture star"}
+{"t":3150,"text":"ts with $"}
+{"t":3170,"text":"500$ c"}
+{"t":3191,"text":"ells and doubles every $"}
+{"t":3211,"text":"3$ h"}
+{"t":3231,"text":"ours. The number"}
+{"t":3253,"text":" of cells after $t$"}
+{"t":3273,"text":" hours is $"}
+{"t":3305,"text":"P(t) = 500 "}
+{"t":3313,"text":"d"}
+{"t":3333,"text":"ot 2^(t/3"}
+{"t":3361,"text":")$.\n  + Find"}
+{"t":3377,"text":" $"}
+{"t":3396,"text":"P(0"}
+{"t":3415,"text":")$"}
+{"t":3436,"text":" and expl"}
+{"t":3459,"text":"ain what"}
+{"t":3479,"text":" it repres"}
+{"t":3498,"text":"ents.\n    #answer-"}
+{"t":3517,"text":"lines(count: 2,"}
+{"t":3543,"text":" answer: [$P(0"}
+{"t":3559,"text":") = 500$. It is"}
+{"t":3583,"text":" the star"}
+{"t":3599,"text":"ting number of cells.])"}
+{"t":3619,"text":"\n  + Find $P(9"}
+{"t":3642,"text":")$.\n    #answer"}
+{"t":3660,"text":"-space(height: 4em"}
+{"t":3681,"text":", answer: [$P("}
+{"t":3701,"text":"9) = 500 d"}
+{"t":3722,"text":"ot 2^3 = "}
+{"t":3743,"text":"4000$"}
+{"t":3762,"text":" cells.])\n  +"}
+{"t":3782,"text":" Explain why the function"}
+{"t":3807,"text":" is ex"}
+{"t":3824,"text":"ponential rather than linear."}
+{"t":3850,"text":"\n    #answer-lines"}
+{"t":3864,"text":"(count: 3, answer"}
+{"t":3886,"text":": [The population"}
+{"t":3906,"text":" is"}
+{"t":3926,"text":" multiplied by a constant"}
+{"t":3956,"text":" factor,"}
+{"t":3967,"text":" $2$, over"}
+{"t":3987,"text":" equ"}
+{"t":4007,"text":"al time intervals."}
+{"t":4031,"text":" A"}
+{"t":4048,"text":" linear function would"}
+{"t":4087,"text":" inst"}
+{"t":4089,"text":"ead add a"}
+{"t":4110,"text":" const"}
+{"t":4129,"text":"ant amount each inter"}
+{"t":4150,"text":"val.])\n]\n\n#answ"}
+{"t":4179,"text":"er-key()"}

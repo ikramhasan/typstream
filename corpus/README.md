@@ -26,9 +26,21 @@ Sets:
   habit, a truncated response, runaway loops and recursion, memory bombs, zalgo
   text, mixed-direction text and backtick runs. The big ones come from
   `scripts/generate-adversarial.mjs`, which is deterministic. Re-run it after
-  editing it.
+  editing it. The `hostile-*` documents attack the sandbox and the page (#29,
+  `docs/security.md`): reads, images, imports, plugins and XML outside the
+  virtual file system; `javascript:` and `data:` links; `html.elem` scripts,
+  handlers, frames, forms and CSS; markup in text; a runaway wasm plugin;
+  content nested too deep for the stack; huge dimensions. Their categories start
+  with `hostile-`; the engine's and the browser suites' security tests run them all.
 
-The LLM-generated set (recorded streams from real models) is #24.
+- **`llm/`**: real model output (#24), recorded by `tools/llm-corpus`: each
+  document exactly as Claude streamed it (`.stream.jsonl` with the API's own
+  chunk boundaries and arrival times), named `<prompt>-<model>-<request>`.
+  `naive-*` documents are plain Typst written with a minimal prompt; `kit-*`
+  ones use `@typstream/edu`'s prompt kit and its functions. Outputs that don't
+  compile stay as they are, as `expect: "error"` entries. `loadCorpus()` leaves
+  this set out unless asked (`{ sets: ALL_SETS }`), because its documents need
+  their plugins mounted: heal's corpus tests and the compile oracle load it.
 
 ### `meta.json`
 
@@ -42,6 +54,9 @@ The LLM-generated set (recorded streams from real models) is #24.
     "expectedErrors": ["..."],        // required when expect is error
     "tags": ["math", "columns"],
     "stream": { "source": "synthetic", "options": { "seed": 7 } }, // when a .stream.jsonl exists
+                                      // or { "source": "recorded", "model": "claude-sonnet-5-5" }
+    "plugins": ["edu"],               // compiled with these plugins' files and preamble (default none)
+    "prompt": { "kit": "kit-v3", "request": "..." }, // model output: the prompt and what was asked
     "notes": "..."
   }
 }
@@ -51,7 +66,7 @@ The LLM-generated set (recorded streams from real models) is #24.
 
 - `ok`: compiles; the page count matches; every warning matches `allowedWarnings`, and each allowed warning occurs.
 - `error`: fails, and each `expectedErrors` string appears in the diagnostics.
-- `limit`: must not finish within 10 s and 2 GiB (runaway code, memory bombs). The engine's watchdog has to stop these.
+- `limit`: must not finish within 10 s and 2 GiB (runaway code, memory bombs), or dies trying (a stack overflow). The engine's watchdog, or its handling of a worker that traps, has to stop these.
 
 ### `.stream.jsonl`
 
@@ -88,9 +103,17 @@ pnpm --filter @typstream/corpus build && \
   pnpm --filter @typstream/corpus stream edu/<name>.typ --seed 7  # write a synthetic .stream.jsonl
 ```
 
+Documents with `plugins` compile as the engine compiles them: the plugin's
+preamble (`edu`: its `#import`) before the source. Every entry gets a package
+directory holding `@typstream/edu` (from `packages/edu/typst`) and
+`@typstream/universe`'s vendored packages, with an empty package cache and a
+dead proxy, so native typst never downloads: a package outside the allowlist
+fails as it does in the app.
+
 `corpus:validate` needs **`typst` 0.15.1** on `PATH`, or `TYPST=/path/to/typst`.
 It compiles with `--ignore-system-fonts`, so results don't depend on installed
-fonts. Bengali, Devanagari and CJK text renders as missing glyphs without a
+fonts, and with `--features html`, so documents may use `html.elem` (paged
+output ignores it, with a warning). Bengali, Devanagari and CJK text renders as missing glyphs without a
 warning, which is fine for validation (fonts are #11). `limit` entries run under
 `prlimit` (util-linux) and are skipped where it's missing (macOS).
 `--write-pages` records the page counts of `ok` entries in `meta.json`. It and

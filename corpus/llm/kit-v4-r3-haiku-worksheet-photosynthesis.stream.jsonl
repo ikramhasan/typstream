@@ -1,0 +1,246 @@
+{"t":0,"text":"#show"}
+{"t":12,"text":": worksheet."}
+{"t":28,"text":"with(title: [Photos"}
+{"t":49,"text":"ynthesis], subject:"}
+{"t":69,"text":" [Science], grade: ["}
+{"t":90,"text":"Grade 7], info:"}
+{"t":109,"text":" (\"name\", \"class\", \""}
+{"t":130,"text":"date\"))\n#import \"@"}
+{"t":150,"text":"preview/cetz:0"}
+{"t":171,"text":".5.3\"\n\n#"}
+{"t":191,"text":"inst"}
+{"t":211,"text":"ructions["}
+{"t":232,"text":"\n  "}
+{"t":252,"text":"Answer all questions. For"}
+{"t":272,"text":" the"}
+{"t":294,"text":" diagram, write the name"}
+{"t":313,"text":" of each lab"}
+{"t":354,"text":"elled part."}
+{"t":354,"text":"\n]\n\n#question(points:"}
+{"t":374,"text":" 4"}
+{"t":395,"text":")[\n  Compl"}
+{"t":415,"text":"ete the s"}
+{"t":438,"text":"entences."}
+{"t":456,"text":" Use the"}
+{"t":477,"text":" words in"}
+{"t":498,"text":" the box"}
+{"t":519,"text":": _"}
+{"t":538,"text":"light_, _o"}
+{"t":558,"text":"xygen_, _ch"}
+{"t":579,"text":"lorophyll_, _"}
+{"t":600,"text":"car"}
+{"t":619,"text":"bon dioxide_,"}
+{"t":640,"text":" _glucose_.\n\n  "}
+{"t":660,"text":"+ Pl"}
+{"t":681,"text":"ants use #blank(width"}
+{"t":704,"text":": 6"}
+{"t":723,"text":"em, answer: [light]"}
+{"t":742,"text":") energ"}
+{"t":763,"text":"y to make food"}
+{"t":783,"text":".\n  + The"}
+{"t":803,"text":" green pigment that"}
+{"t":824,"text":" absorbs light is called #"}
+{"t":845,"text":"blank(width"}
+{"t":865,"text":": 7em, answer:"}
+{"t":887,"text":" [chlorophyll]"}
+{"t":906,"text":").\n  + Plants take"}
+{"t":928,"text":" in"}
+{"t":948,"text":" #blank(width"}
+{"t":967,"text":": 7em, answer:"}
+{"t":990,"text":" [carbon dioxide"}
+{"t":1014,"text":"]) from the air through"}
+{"t":1034,"text":" their leaves.\n  +"}
+{"t":1050,"text":" The s"}
+{"t":1070,"text":"ugar that"}
+{"t":1091,"text":" pl"}
+{"t":1110,"text":"ants make is called"}
+{"t":1131,"text":" #blank(width: 6"}
+{"t":1151,"text":"em, answer: [gluc"}
+{"t":1172,"text":"ose]),"}
+{"t":1192,"text":" and the"}
+{"t":1212,"text":" g"}
+{"t":1232,"text":"as they"}
+{"t":1253,"text":" release is #blank(width:"}
+{"t":1274,"text":" 5em, answer: ["}
+{"t":1295,"text":"oxygen]).\n]"}
+{"t":1316,"text":"\n\n#question(points: 2"}
+{"t":1335,"text":")[\n  The word equ"}
+{"t":1355,"text":"ation for"}
+{"t":1376,"text":" photosynthesis is:"}
+{"t":1397,"text":"\n\n  #"}
+{"t":1417,"text":"align"}
+{"t":1437,"text":"(center)[carbon d"}
+{"t":1458,"text":"ioxide + water #"}
+{"t":1478,"text":"s"}
+{"t":1501,"text":"ym"}
+{"t":1520,"text":"."}
+{"t":1541,"text":"arrow.r"}
+{"t":1560,"text":" glucose + oxygen"}
+{"t":1581,"text":"]\n\n  Write"}
+{"t":1600,"text":" the balanced ch"}
+{"t":1622,"text":"emical equation for photosyn"}
+{"t":1641,"text":"thesis."}
+{"t":1661,"text":"\n  #answer-lines"}
+{"t":1682,"text":"(count: 1, answer"}
+{"t":1703,"text":": "}
+{"t":1723,"text":"ce(\"6CO2 +"}
+{"t":1743,"text":" 6H2O -> C"}
+{"t":1764,"text":"6H12O6 + "}
+{"t":1785,"text":"6O2\"))\n]"}
+{"t":1806,"text":"\n\n#question(points: 1)"}
+{"t":1827,"text":"[\n  Which g"}
+{"t":1845,"text":"as do"}
+{"t":1866,"text":" plants take"}
+{"t":1887,"text":" in during photosynthesis"}
+{"t":1907,"text":"?\n  #mcq(["}
+{"t":1927,"text":"O"}
+{"t":1948,"text":"xygen], [N"}
+{"t":1968,"text":"itrogen], [Car"}
+{"t":1988,"text":"bon dioxide], ["}
+{"t":2009,"text":"Hydrogen], answ"}
+{"t":2029,"text":"er: 3)\n]"}
+{"t":2053,"text":"\n\n#question(points: 1)"}
+{"t":2073,"text":"[\n  Where"}
+{"t":2090,"text":" in"}
+{"t":2111,"text":" a pl"}
+{"t":2132,"text":"ant c"}
+{"t":2152,"text":"ell does photosynthesis"}
+{"t":2173,"text":" take place?\n  #m"}
+{"t":2194,"text":"cq([N"}
+{"t":2214,"text":"ucleus], [Chlo"}
+{"t":2233,"text":"roplast], [C"}
+{"t":2255,"text":"ell wall], [V"}
+{"t":2277,"text":"acuole], answer: "}
+{"t":2295,"text":"2)\n]\n\n#question("}
+{"t":2315,"text":"points: 1)[\n  "}
+{"t":2336,"text":"Which cond"}
+{"t":2356,"text":"ition is"}
+{"t":2376,"text":" _"}
+{"t":2397,"text":"not"}
+{"t":2417,"text":"_ needed for photosyn"}
+{"t":2438,"text":"thesis?\n  #m"}
+{"t":2458,"text":"cq([Light"}
+{"t":2479,"text":"], [Water"}
+{"t":2500,"text":"], [Carbon dio"}
+{"t":2520,"text":"xide], [Darkness"}
+{"t":2540,"text":"], answer: 4"}
+{"t":2562,"text":")\n]\n\n#question(points"}
+{"t":2581,"text":": 4)[\n  The"}
+{"t":2601,"text":" diagram sh"}
+{"t":2621,"text":"ows a cross-section through"}
+{"t":2642,"text":" a leaf. Label each"}
+{"t":2663,"text":" part."}
+{"t":2684,"text":"\n\n  #align"}
+{"t":2706,"text":"(center)[\n    #c"}
+{"t":2725,"text":"etz.canvas({"}
+{"t":2747,"text":"\n      import cetz.dra"}
+{"t":2765,"text":"w: *\n      rect(("}
+{"t":2786,"text":"-4, 1.6),"}
+{"t":2808,"text":" (4, 2.0),"}
+{"t":2828,"text":" fill: luma(90%"}
+{"t":2846,"text":"))\n      rect((-4"}
+{"t":2867,"text":", 0.6), (4"}
+{"t":2888,"text":", 1.6), fill"}
+{"t":2912,"text":": rgb(\"#8"}
+{"t":2942,"text":"f"}
+{"t":2953,"text":"d"}
+{"t":2976,"text":"16"}
+{"t":2997,"text":"b"}
+{"t":3018,"text":"\"))\n      rect((-"}
+{"t":3035,"text":"4, -0.6), ("}
+{"t":3055,"text":"4, 0.6), f"}
+{"t":3077,"text":"ill: rgb(\"#c"}
+{"t":3091,"text":"5"}
+{"t":3122,"text":"eb"}
+{"t":3132,"text":"A"}
+{"t":3154,"text":"0"}
+{"t":3176,"text":"\"))\n      rect((-"}
+{"t":3194,"text":"4, -1.0), ("}
+{"t":3216,"text":"4, -0.6), f"}
+{"t":3237,"text":"ill: luma(90%))"}
+{"t":3255,"text":"\n      circ"}
+{"t":3276,"text":"le((1.5, 0"}
+{"t":3297,"text":"), radius: 0.35"}
+{"t":3316,"text":", fill: rgb(\""}
+{"t":3338,"text":"#f4d35e\"))"}
+{"t":3357,"text":"\n      "}
+{"t":3378,"text":"ellipse((-1.5"}
+{"t":3398,"text":", -0.8), (-"}
+{"t":3420,"text":"1.2"}
+{"t":3439,"text":", -0.8"}
+{"t":3459,"text":"), f"}
+{"t":3480,"text":"ill: white"}
+{"t":3500,"text":")\n      line((-5"}
+{"t":3521,"text":", "}
+{"t":3542,"text":"1.8), (-4."}
+{"t":3561,"text":"1, 1.8))"}
+{"t":3582,"text":"\n      line((-5, "}
+{"t":3602,"text":"1.1), (-4."}
+{"t":3624,"text":"1, 1.1))"}
+{"t":3646,"text":"\n      line((-5, -0"}
+{"t":3664,"text":".8), (-1"}
+{"t":3684,"text":".8"}
+{"t":3704,"text":", -0.8))\n      "}
+{"t":3727,"text":"line((5, 0), ("}
+{"t":3745,"text":"1.9"}
+{"t":3766,"text":", 0))"}
+{"t":3790,"text":"\n      content((-5."}
+{"t":3806,"text":"4"}
+{"t":3827,"text":", 1.8), [A"}
+{"t":3850,"text":"],"}
+{"t":3867,"text":" anchor: \""}
+{"t":3888,"text":"east\")\n      content((-5"}
+{"t":3909,"text":".4, 1.1),"}
+{"t":3930,"text":" [B], anchor: \""}
+{"t":3950,"text":"east\")\n      content((-5"}
+{"t":3970,"text":".4, -0.8),"}
+{"t":3990,"text":" [C"}
+{"t":4011,"text":"], anchor: \"east\")"}
+{"t":4032,"text":"\n      content((5.4,"}
+{"t":4051,"text":" 0), [D], anch"}
+{"t":4073,"text":"or: \"west\")\n    })"}
+{"t":4092,"text":"\n  ]\n\n  + A"}
+{"t":4113,"text":":"}
+{"t":4134,"text":" #blank("}
+{"t":4154,"text":"width: 9"}
+{"t":4174,"text":"em, answer: [upper"}
+{"t":4194,"text":" epidermis])\n  +"}
+{"t":4216,"text":" B: #blank(width:"}
+{"t":4236,"text":" 9em, answer: ["}
+{"t":4257,"text":"palisade mesophyll"}
+{"t":4277,"text":"])\n  + C: #bl"}
+{"t":4297,"text":"ank(width: 9em,"}
+{"t":4318,"text":" answer: [stoma])"}
+{"t":4338,"text":"\n  + D: #blank"}
+{"t":4360,"text":"(width: 9em, answ"}
+{"t":4379,"text":"er: [vascular bund"}
+{"t":4399,"text":"le])\n]\n\n#question("}
+{"t":4419,"text":"points: 3)[\n  "}
+{"t":4440,"text":"Explain why most"}
+{"t":4460,"text":" phot"}
+{"t":4484,"text":"osynthesis happens in"}
+{"t":4501,"text":" the up"}
+{"t":4521,"text":"per part"}
+{"t":4542,"text":" of the leaf."}
+{"t":4562,"text":" Use the"}
+{"t":4583,"text":" words"}
+{"t":4605,"text":" _"}
+{"t":4623,"text":"pal"}
+{"t":4644,"text":"isade_ and _chl"}
+{"t":4666,"text":"orophyll_"}
+{"t":4685,"text":" in your answer.\n  #"}
+{"t":4707,"text":"answer-lines(count:"}
+{"t":4726,"text":" 3, answer: [The"}
+{"t":4746,"text":" palisade layer"}
+{"t":4767,"text":" is pack"}
+{"t":4788,"text":"ed with"}
+{"t":4809,"text":" ch"}
+{"t":4829,"text":"loroplasts contain"}
+{"t":4848,"text":"ing chlorophyll,"}
+{"t":4870,"text":" and"}
+{"t":4893,"text":" it s"}
+{"t":4909,"text":"its close to the up"}
+{"t":4930,"text":"per surface, so it"}
+{"t":4950,"text":" receives the"}
+{"t":4970,"text":" most light."}
+{"t":4991,"text":"])\n]"}

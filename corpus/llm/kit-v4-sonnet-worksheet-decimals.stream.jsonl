@@ -1,0 +1,123 @@
+{"t":0,"text":"#"}
+{"t":0,"text":"show: worksheet.with"}
+{"t":0,"text":"("}
+{"t":0,"text":"\n  title: [Multipl"}
+{"t":0,"text":"ying Decimals],\n  "}
+{"t":0,"text":"subject: [Mathemat"}
+{"t":577,"text":"ics],\n  grade: ["}
+{"t":577,"text":"Grade 5],\n  "}
+{"t":577,"text":"instructions: [Answ"}
+{"t":578,"text":"er all"}
+{"t":578,"text":" questions. Show your working in"}
+{"t":578,"text":" the word problems.],\n)"}
+{"t":578,"text":"\n\n#callout(kind:"}
+{"t":578,"text":" \"remember\")[\n  To"}
+{"t":578,"text":" multiply decimals,"}
+{"t":578,"text":" multiply as"}
+{"t":578,"text":" if they"}
+{"t":578,"text":" were whole numbers."}
+{"t":578,"text":" Then count the dec"}
+{"t":578,"text":"imal places in both fact"}
+{"t":578,"text":"ors and give"}
+{"t":578,"text":" the"}
+{"t":578,"text":" answer that many dec"}
+{"t":578,"text":"imal places.\n\n  Example"}
+{"t":578,"text":": $0.3"}
+{"t":578,"text":" times 0.2"}
+{"t":578,"text":"$"}
+{"t":578,"text":"."}
+{"t":579,"text":" Since"}
+{"t":579,"text":" $3 times 2"}
+{"t":579,"text":" = 6$"}
+{"t":579,"text":" and there are "}
+{"t":579,"text":"2 decimal places in total"}
+{"t":579,"text":", the answer is $0."}
+{"t":579,"text":"06$.\n]\n\n="}
+{"t":579,"text":" Part A: Practice\n\n#"}
+{"t":1070,"text":"question(points: 1)["}
+{"t":1070,"text":"\n  $0.4 times "}
+{"t":1070,"text":"0.3 = #blank"}
+{"t":1070,"text":"(answer: [$"}
+{"t":1070,"text":"0.12$])$\n]"}
+{"t":1070,"text":"\n\n#question(points: 1"}
+{"t":1073,"text":")[\n  $0.6"}
+{"t":1073,"text":" times 0.7 ="}
+{"t":1073,"text":" #blank(answer: ["}
+{"t":1073,"text":"$0.42$])$"}
+{"t":1073,"text":"\n]\n\n#question(points: "}
+{"t":1073,"text":"1)[\n  $0."}
+{"t":1073,"text":"5 times 0.8 "}
+{"t":1073,"text":"= #blank(answer:"}
+{"t":1073,"text":" [$0.4$])$"}
+{"t":1073,"text":"\n]\n\n#question(points:"}
+{"t":1073,"text":" 1)[\n  $1"}
+{"t":1073,"text":".2 times 0.3"}
+{"t":1079,"text":" = #blank(answer"}
+{"t":1110,"text":": [$0.36$])"}
+{"t":1145,"text":"$\n]\n\n#question(points"}
+{"t":1298,"text":": 1)[\n  $"}
+{"t":1298,"text":"2.5 times 0."}
+{"t":1298,"text":"4 = #blank(answ"}
+{"t":1298,"text":"er: [$1$])$"}
+{"t":1384,"text":"\n]\n\n#question(points:"}
+{"t":1384,"text":" 1)[\n  $3"}
+{"t":1384,"text":".4 times 2 ="}
+{"t":1779,"text":" #blank(answer: ["}
+{"t":1791,"text":"$6.8$])$"}
+{"t":1791,"text":"\n]\n\n#question(points: "}
+{"t":1792,"text":"1)[\n  What is $"}
+{"t":1792,"text":"0.9 times 0."}
+{"t":1792,"text":"9$?\n  #mc"}
+{"t":1929,"text":"q([$0.81$],"}
+{"t":2013,"text":" [$8.1$], ["}
+{"t":2013,"text":"$0.081$], [$"}
+{"t":2013,"text":"1.8$], answer:"}
+{"t":2085,"text":" 1)\n]\n\n#question"}
+{"t":2085,"text":"(points: 1)["}
+{"t":2085,"text":"\n  #true-false(answer"}
+{"t":2085,"text":": false)[$0.2"}
+{"t":2085,"text":" times 0.3 ="}
+{"t":2085,"text":" 0.6$]\n]"}
+{"t":2085,"text":"\n\n#question(points: 1"}
+{"t":2085,"text":")[\n  $4.2"}
+{"t":2085,"text":" times 0.5 ="}
+{"t":2092,"text":" #blank(answer: ["}
+{"t":2092,"text":"$2.1$])$"}
+{"t":2111,"text":"\n]\n\n#question(points: "}
+{"t":2638,"text":"1)[\n  $12."}
+{"t":2638,"text":"5 times 0.2 "}
+{"t":2638,"text":"= #blank(answer:"}
+{"t":2638,"text":" [$2.5$])$"}
+{"t":2639,"text":"\n]\n\n= Part B:"}
+{"t":2639,"text":" Word problems\n\n#question("}
+{"t":2639,"text":"points: 3)[\n  "}
+{"t":2639,"text":"A notebook costs \\$"}
+{"t":2639,"text":"2.35. S"}
+{"t":3265,"text":"am bu"}
+{"t":3265,"text":"ys 4 notebooks"}
+{"t":3265,"text":". How much does he pay in"}
+{"t":3265,"text":" total?"}
+{"t":3265,"text":"\n  #answer-space("}
+{"t":3265,"text":"height: 6"}
+{"t":3265,"text":"em, answer: [$2"}
+{"t":3265,"text":".35 times 4 ="}
+{"t":3266,"text":" 9.40$,"}
+{"t":3266,"text":" so Sam pays \\$"}
+{"t":3268,"text":"9.40.])\n]"}
+{"t":3268,"text":"\n\n#question(points: 3)"}
+{"t":3268,"text":"[\n  A rectangular"}
+{"t":3268,"text":" garden is $"}
+{"t":3268,"text":"4.5 \""}
+{"t":3268,"text":"m\""}
+{"t":3268,"text":"$ long and $3.2"}
+{"t":3268,"text":" \"m\"$ wide"}
+{"t":3268,"text":". What is its"}
+{"t":3667,"text":" area?\n  #answer-"}
+{"t":3667,"text":"space(height: 6em,"}
+{"t":3667,"text":" answer: [$4.5"}
+{"t":3667,"text":" times 3.2 ="}
+{"t":3667,"text":" 14.4$"}
+{"t":3667,"text":", so the area is $14."}
+{"t":3667,"text":"4 \"m\"^2$"}
+{"t":3667,"text":".])\n]\n\n#answer"}
+{"t":3667,"text":"-key()"}

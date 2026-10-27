@@ -1,0 +1,255 @@
+{"t":0,"text":"="}
+{"t":17,"text":" Grade 11 Phys"}
+{"t":39,"text":"ics Exam"}
+{"t":58,"text":"ination: Kinematics and"}
+{"t":81,"text":" Newton's Laws"}
+{"t":104,"text":"\n\n*Time all"}
+{"t":121,"text":"owed:"}
+{"t":140,"text":"* 60 minutes \\"}
+{"t":190,"text":"\n*Total marks:* "}
+{"t":211,"text":"40"}
+{"t":221,"text":"\n\n*"}
+{"t":245,"text":"Instructions:* Answ"}
+{"t":264,"text":"er all questions. Show all"}
+{"t":285,"text":" working and"}
+{"t":307,"text":" include"}
+{"t":328,"text":" units in"}
+{"t":346,"text":" every final"}
+{"t":367,"text":" answer. Use $g ="}
+{"t":399,"text":" 9.8$"}
+{"t":408,"text":" m/s² un"}
+{"t":429,"text":"less a"}
+{"t":446,"text":" question states"}
+{"t":483,"text":" otherwise. Non"}
+{"t":493,"text":"-program"}
+{"t":510,"text":"mable calculators are perm"}
+{"t":532,"text":"itted.\n\n== Section A"}
+{"t":549,"text":": Kinematics ("}
+{"t":569,"text":"16"}
+{"t":589,"text":" marks)\n\n+ A"}
+{"t":610,"text":" car accelerates uniform"}
+{"t":632,"text":"ly from rest to"}
+{"t":651,"text":" 20 m/s in "}
+{"t":674,"text":"8."}
+{"t":696,"text":"0 s"}
+{"t":713,"text":". (5"}
+{"t":737,"text":" marks)\n  "}
+{"t":758,"text":"+ ("}
+{"t":789,"text":"a) Calculate the car"}
+{"t":800,"text":"'s acceleration."}
+{"t":815,"text":" ("}
+{"t":836,"text":"2)"}
+{"t":856,"text":"\n  + (b) Cal"}
+{"t":877,"text":"culate the distance trav"}
+{"t":896,"text":"elled during this"}
+{"t":918,"text":" "}
+{"t":936,"text":"8.0 s. (3"}
+{"t":959,"text":")"}
+{"t":978,"text":"\n\n  "}
+{"t":998,"text":"#v(2em"}
+{"t":1019,"text":")\n\n+ A ball is"}
+{"t":1045,"text":" thrown horizontally from"}
+{"t":1068,"text":" the"}
+{"t":1090,"text":" top of a c"}
+{"t":1100,"text":"liff 20 m high"}
+{"t":1121,"text":" with a speed of 15 "}
+{"t":1142,"text":"m/s. Air"}
+{"t":1162,"text":" res"}
+{"t":1184,"text":"istance is neg"}
+{"t":1204,"text":"ligible. (6"}
+{"t":1229,"text":" marks)\n  + ("}
+{"t":1244,"text":"a) Calculate the time"}
+{"t":1263,"text":" ta"}
+{"t":1284,"text":"ken for the ball to re"}
+{"t":1305,"text":"ach the ground. (3"}
+{"t":1328,"text":")\n  + (b)"}
+{"t":1346,"text":" Calculate the horizontal"}
+{"t":1366,"text":" dist"}
+{"t":1388,"text":"ance from"}
+{"t":1409,"text":" the base"}
+{"t":1429,"text":" of the cliff to where"}
+{"t":1453,"text":" the ball l"}
+{"t":1470,"text":"ands. (3)\n\n  #"}
+{"t":1489,"text":"v(2em)\n\n+"}
+{"t":1509,"text":" The vel"}
+{"t":1529,"text":"ocity-time graph below describ"}
+{"t":1549,"text":"es the motion of a tr"}
+{"t":1572,"text":"olley over"}
+{"t":1598,"text":" 6"}
+{"t":1619,"text":"."}
+{"t":1633,"text":"0 s. Between"}
+{"t":1654,"text":" 0 "}
+{"t":1673,"text":"s and 2.0 s"}
+{"t":1696,"text":" the vel"}
+{"t":1713,"text":"ocity incre"}
+{"t":1739,"text":"ases u"}
+{"t":1754,"text":"niformly from 0 to"}
+{"t":1774,"text":" 4.0 m/s"}
+{"t":1795,"text":", between 2.0 s"}
+{"t":1815,"text":" and 4"}
+{"t":1837,"text":".0 s the velocity"}
+{"t":1856,"text":" is constant at 4.0"}
+{"t":1877,"text":" m/s, and between "}
+{"t":1901,"text":"4.0 s and 6"}
+{"t":1919,"text":".0 s the velocity"}
+{"t":1938,"text":" decreases u"}
+{"t":1962,"text":"niformly to 0 m"}
+{"t":1979,"text":"/s. (5 marks"}
+{"t":2004,"text":")\n  + (a)"}
+{"t":2022,"text":" Sketch an"}
+{"t":2041,"text":" acceleration-time graph"}
+{"t":2063,"text":" for the"}
+{"t":2084,"text":" trolley on"}
+{"t":2102,"text":" the ax"}
+{"t":2122,"text":"es prov"}
+{"t":2142,"text":"ided. (2)\n  +"}
+{"t":2162,"text":" (b) Cal"}
+{"t":2188,"text":"culate the total displacement of"}
+{"t":2208,"text":" the trolley over the"}
+{"t":2233,"text":" 6.0 s."}
+{"t":2244,"text":" (3)\n\n  #r"}
+{"t":2266,"text":"ect(width: 100%,"}
+{"t":2291,"text":" height: 5"}
+{"t":2308,"text":"cm, stroke: "}
+{"t":2330,"text":"0.5p"}
+{"t":2347,"text":"t)["}
+{"t":2370,"text":"#"}
+{"t":2388,"text":"align"}
+{"t":2409,"text":"(center +"}
+{"t":2431,"text":" horizon"}
+{"t":2449,"text":")[Space"}
+{"t":2473,"text":" for acceleration-time gra"}
+{"t":2492,"text":"ph ax"}
+{"t":2510,"text":"es]]\n\n=="}
+{"t":2534,"text":" Section B: Newton's"}
+{"t":2551,"text":" Laws and"}
+{"t":2574,"text":" Inclined Planes ("}
+{"t":2592,"text":"16"}
+{"t":2612,"text":" marks)\n\n+ A"}
+{"t":2634,"text":" block"}
+{"t":2654,"text":" of mass 5.0 "}
+{"t":2675,"text":"kg r"}
+{"t":2695,"text":"ests on a r"}
+{"t":2717,"text":"ough pl"}
+{"t":2737,"text":"ane inclined at 30°"}
+{"t":2755,"text":" to the horizontal. The"}
+{"t":2775,"text":" coefficient of k"}
+{"t":2797,"text":"inetic friction between"}
+{"t":2822,"text":" the block and the plane is "}
+{"t":2838,"text":"0.20. The block is released"}
+{"t":2859,"text":" from rest and"}
+{"t":2880,"text":" slides down the incline. ("}
+{"t":2902,"text":"10"}
+{"t":2922,"text":" marks)\n  + ("}
+{"t":2944,"text":"a) On"}
+{"t":2969,"text":" the di"}
+{"t":2982,"text":"agram below, draw a"}
+{"t":3003,"text":" free-body diagram for"}
+{"t":3023,"text":" the block. Label every"}
+{"t":3041,"text":" force ac"}
+{"t":3061,"text":"ting on it"}
+{"t":3086,"text":", and"}
+{"t":3104,"text":" indicate its dire"}
+{"t":3125,"text":"ction. (3"}
+{"t":3143,"text":")\n  + (b)"}
+{"t":3168,"text":" Show that the component"}
+{"t":3185,"text":" of the weight ac"}
+{"t":3208,"text":"ting parallel to the incline"}
+{"t":3226,"text":" is about"}
+{"t":3250,"text":" 24.5 N. ("}
+{"t":3267,"text":"2)\n  + (c)"}
+{"t":3295,"text":" Calculate the normal force"}
+{"t":3315,"text":" ex"}
+{"t":3348,"text":"erted by the pl"}
+{"t":3351,"text":"ane on the block, and h"}
+{"t":3371,"text":"ence the kinetic friction"}
+{"t":3393,"text":" force."}
+{"t":3409,"text":" (3"}
+{"t":3430,"text":")\n  + (d)"}
+{"t":3450,"text":" Calculate the ac"}
+{"t":3478,"text":"celeration of the block down"}
+{"t":3490,"text":" the incline. (2)"}
+{"t":3531,"text":"\n\n  #rect(width: "}
+{"t":3541,"text":"100%, height: 7"}
+{"t":3555,"text":"cm, stroke: "}
+{"t":3577,"text":"0.5pt)[#"}
+{"t":3594,"text":"align(center + horizon)"}
+{"t":3614,"text":"[Free-body diagram"}
+{"t":3636,"text":" space]]\n\n  #v("}
+{"t":3656,"text":"1em)\n\n  "}
+{"t":3677,"text":"+ (e) Calculate"}
+{"t":3695,"text":" the speed of the block after it"}
+{"t":3723,"text":" has sl"}
+{"t":3737,"text":"id for"}
+{"t":3757,"text":" 2.0 s. ("}
+{"t":3777,"text":"2"}
+{"t":3799,"text":")"}
+{"t":3819,"text":"\n\n  #v(2"}
+{"t":3838,"text":"em)\n\n+"}
+{"t":3860,"text":" Two blocks are connected by"}
+{"t":3879,"text":" a light"}
+{"t":3904,"text":","}
+{"t":3922,"text":" inextensible string pass"}
+{"t":3940,"text":"ing over a fr"}
+{"t":3961,"text":"ictionless,"}
+{"t":3981,"text":" mass"}
+{"t":4001,"text":"less pulley. Block A"}
+{"t":4026,"text":", of"}
+{"t":4042,"text":" mass 4.0 k"}
+{"t":4064,"text":"g, h"}
+{"t":4101,"text":"angs freely."}
+{"t":4107,"text":" Block B, of mass "}
+{"t":4125,"text":"6.0 kg, r"}
+{"t":4148,"text":"ests on a frictionless hor"}
+{"t":4170,"text":"izontal table. ("}
+{"t":4185,"text":"6 marks)\n  +"}
+{"t":4209,"text":" (a) Draw a free"}
+{"t":4226,"text":"-body diagram for each"}
+{"t":4253,"text":" block. (2"}
+{"t":4270,"text":")\n  + (b)"}
+{"t":4287,"text":" Calculate the acceleration"}
+{"t":4318,"text":" of the system. (2"}
+{"t":4329,"text":")\n  + (c)"}
+{"t":4353,"text":" Calculate the tension in the"}
+{"t":4375,"text":" string. (2)\n\n  #"}
+{"t":4390,"text":"v(2em)\n\n=="}
+{"t":4415,"text":" Section C: Ext"}
+{"t":4432,"text":"ended Response"}
+{"t":4458,"text":" (8 marks)\n\n+"}
+{"t":4474,"text":" A student"}
+{"t":4492,"text":" cla"}
+{"t":4512,"text":"ims:"}
+{"t":4533,"text":" \"If an"}
+{"t":4555,"text":" object is moving,"}
+{"t":4575,"text":" a"}
+{"t":4598,"text":" net force must be ac"}
+{"t":4616,"text":"ting on it in"}
+{"t":4635,"text":" the direction of its"}
+{"t":4658,"text":" motion.\" Ev"}
+{"t":4679,"text":"aluate this"}
+{"t":4696,"text":" claim using"}
+{"t":4720,"text":" Newton's la"}
+{"t":4737,"text":"ws and a"}
+{"t":4759,"text":" spec"}
+{"t":4779,"text":"ific example. Your"}
+{"t":4800,"text":" answ"}
+{"t":4821,"text":"er should be written"}
+{"t":4840,"text":" in compl"}
+{"t":4866,"text":"ete sentences. (8 "}
+{"t":4880,"text":"marks)\n\n  #line"}
+{"t":4912,"text":"(length: 100%)"}
+{"t":4931,"text":"\n  #v"}
+{"t":4940,"text":"(1"}
+{"t":4963,"text":"em)\n  #line(length"}
+{"t":4984,"text":": 100%)\n  #"}
+{"t":5003,"text":"v(1em)\n  #"}
+{"t":5023,"text":"line(length: 100%)"}
+{"t":5046,"text":"\n  #v(1em)"}
+{"t":5066,"text":"\n  #line(length: "}
+{"t":5085,"text":"100%)\n  #v("}
+{"t":5111,"text":"1em)\n  #line("}
+{"t":5129,"text":"length: 100%)"}
+{"t":5146,"text":"\n\n*"}
+{"t":5167,"text":"End"}
+{"t":5186,"text":" of exam"}
+{"t":5192,"text":"ination.*"}

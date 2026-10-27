@@ -1,0 +1,161 @@
+{"t":0,"text":"#"}
+{"t":20,"text":"import"}
+{"t":40,"text":" \"@"}
+{"t":61,"text":"preview/cetz:0"}
+{"t":81,"text":".5.3\""}
+{"t":102,"text":"\n#show: handout.with("}
+{"t":124,"text":"title: [The Pythag"}
+{"t":143,"text":"orean Theorem], sub"}
+{"t":164,"text":"title: [Key "}
+{"t":184,"text":"ideas and a"}
+{"t":205,"text":" worked example], subject: ["}
+{"t":226,"text":"Mathematics])\n\n="}
+{"t":246,"text":" What"}
+{"t":265,"text":" is it"}
+{"t":288,"text":"?\n\nThe"}
+{"t":307,"text":" Pythagorean theor"}
+{"t":327,"text":"em links"}
+{"t":347,"text":" the three"}
+{"t":369,"text":" sides of a *"}
+{"t":389,"text":"right triangle*. A"}
+{"t":409,"text":" right triangle has one"}
+{"t":430,"text":" angle of ex"}
+{"t":452,"text":"actly $90°"}
+{"t":470,"text":"$. The two s"}
+{"t":492,"text":"ides that form"}
+{"t":512,"text":" the right angle are called the *"}
+{"t":531,"text":"legs*."}
+{"t":552,"text":" The side opposite the right ang"}
+{"t":574,"text":"le is the"}
+{"t":593,"text":" long"}
+{"t":613,"text":"est side, called the *hyp"}
+{"t":634,"text":"otenuse*.\n\n#"}
+{"t":654,"text":"callout(kind: \"defin"}
+{"t":675,"text":"ition\")[\n  In"}
+{"t":695,"text":" a right triangle with"}
+{"t":718,"text":" legs $a$ and $"}
+{"t":736,"text":"b$ and hypoten"}
+{"t":756,"text":"use $c$:"}
+{"t":778,"text":"\n  $"}
+{"t":798,"text":" a^2 + b^2"}
+{"t":818,"text":" = c^2 $"}
+{"t":840,"text":"\n]\n\n#"}
+{"t":859,"text":"align"}
+{"t":879,"text":"(center)[\n  #c"}
+{"t":901,"text":"etz.canvas({"}
+{"t":920,"text":"\n    import cetz.draw"}
+{"t":941,"text":": *\n    line((0,"}
+{"t":962,"text":" 0), (4, 0"}
+{"t":983,"text":"), (0, 3), close"}
+{"t":1002,"text":": true,"}
+{"t":1022,"text":" stroke: "}
+{"t":1043,"text":"1.2"}
+{"t":1064,"text":"pt)\n    line"}
+{"t":1084,"text":"((0,"}
+{"t":1105,"text":" 0), (0.4,"}
+{"t":1126,"text":" 0), (0.4,"}
+{"t":1145,"text":" 0.4), ("}
+{"t":1166,"text":"0, 0.4), st"}
+{"t":1187,"text":"roke: "}
+{"t":1206,"text":"0.6"}
+{"t":1227,"text":"pt)\n    content((2"}
+{"t":1247,"text":", -"}
+{"t":1269,"text":"0.5), [$a$"}
+{"t":1289,"text":" = 4 \"cm"}
+{"t":1309,"text":"\"])\n    content((-"}
+{"t":1329,"text":"0"}
+{"t":1349,"text":".6, 1"}
+{"t":1370,"text":".5), [$b$"}
+{"t":1390,"text":" = 3 \"cm\""}
+{"t":1411,"text":"])\n    content((2.4"}
+{"t":1432,"text":", 1.8"}
+{"t":1452,"text":"), [$c$ ("}
+{"t":1473,"text":"hypotenuse)])"}
+{"t":1493,"text":"\n  })\n]"}
+{"t":1515,"text":"\n\n= How"}
+{"t":1533,"text":" to use it\n\n+"}
+{"t":1554,"text":" Label"}
+{"t":1574,"text":" the leg"}
+{"t":1595,"text":"s and the h"}
+{"t":1625,"text":"ypotenuse."}
+{"t":1643,"text":" The"}
+{"t":1662,"text":" hypotenuse is always"}
+{"t":1676,"text":" the side"}
+{"t":1697,"text":" opposite the right angle."}
+{"t":1717,"text":"\n+ Square"}
+{"t":1737,"text":" the two"}
+{"t":1758,"text":" legs and"}
+{"t":1778,"text":" add the results"}
+{"t":1799,"text":".\n+ If"}
+{"t":1819,"text":" you know the h"}
+{"t":1839,"text":"ypotenuse, square it"}
+{"t":1861,"text":" and subtract the square"}
+{"t":1880,"text":" of the"}
+{"t":1901,"text":" known leg.\n+"}
+{"t":1927,"text":" Take the square root at"}
+{"t":1942,"text":" the end,"}
+{"t":1962,"text":" and give the length with"}
+{"t":1982,"text":" its un"}
+{"t":2004,"text":"it.\n\n= Wor"}
+{"t":2024,"text":"ked example\n\n#callout(k"}
+{"t":2044,"text":"ind: \"example\")[\n  "}
+{"t":2065,"text":"A"}
+{"t":2085,"text":" right triangle has legs $"}
+{"t":2112,"text":"3$ cm and $4"}
+{"t":2126,"text":"$ cm. Find the"}
+{"t":2160,"text":" hypotenuse."}
+{"t":2172,"text":"\n\n  +"}
+{"t":2207,"text":" Write"}
+{"t":2227,"text":" the the"}
+{"t":2248,"text":"orem: $c"}
+{"t":2269,"text":"^2 = a^2 "}
+{"t":2289,"text":"+ b^2$.\n  "}
+{"t":2315,"text":"+ Substitute:"}
+{"t":2330,"text":" $c^2 = 3"}
+{"t":2350,"text":"^2 + 4^2"}
+{"t":2390,"text":" = 9 + 16"}
+{"t":2391,"text":" = 25$.\n  "}
+{"t":2411,"text":"+ Take the square root: $"}
+{"t":2432,"text":"c = sqrt(25"}
+{"t":2452,"text":") = 5$"}
+{"t":2473,"text":"."}
+{"t":2493,"text":"\n\n  The"}
+{"t":2514,"text":" hypotenuse is $"}
+{"t":2534,"text":"5$ cm.\n]"}
+{"t":2555,"text":"\n\n#callout(kind:"}
+{"t":2575,"text":" \"remember\")[\n  The"}
+{"t":2601,"text":" theorem only works for right tri"}
+{"t":2616,"text":"angles. Always check"}
+{"t":2647,"text":" that the side you"}
+{"t":2664,"text":" call"}
+{"t":2677,"text":" $c$ is op"}
+{"t":2698,"text":"posite the right angle."}
+{"t":2718,"text":"\n]"}
+{"t":2739,"text":"\n\n= Try it yourself"}
+{"t":2760,"text":"\n\n#question(points: 2)"}
+{"t":2779,"text":"[\n  A right"}
+{"t":2800,"text":" triangle has legs $6"}
+{"t":2833,"text":"$ cm and $8"}
+{"t":2847,"text":"$ cm. Find the"}
+{"t":2866,"text":" hypotenuse."}
+{"t":2881,"text":"\n  #answer-space(height"}
+{"t":2902,"text":": 4"}
+{"t":2922,"text":"em, answer: [$c"}
+{"t":2943,"text":"^2 = 36 "}
+{"t":2963,"text":"+ 64 = 100$"}
+{"t":2984,"text":", so $c = 10"}
+{"t":3004,"text":"$ cm.])\n]"}
+{"t":3045,"text":"\n\n#question(points: 2)"}
+{"t":3065,"text":"[\n  The"}
+{"t":3086,"text":" hypotenuse of a"}
+{"t":3107,"text":" right triangle is $13"}
+{"t":3127,"text":"$ cm and"}
+{"t":3147,"text":" one leg is $5$"}
+{"t":3167,"text":" cm. Find the other le"}
+{"t":3188,"text":"g.\n  #answer-"}
+{"t":3208,"text":"space(height: 4em,"}
+{"t":3229,"text":" answer: [$b"}
+{"t":3250,"text":"^2 = 169"}
+{"t":3270,"text":" - 25 = 144"}
+{"t":3290,"text":"$, so $b = 12"}
+{"t":3312,"text":"$ cm.])\n]"}

@@ -1,0 +1,260 @@
+{"t":0,"text":"="}
+{"t":33,"text":" The"}
+{"t":73,"text":" Pythagorean The"}
+{"t":106,"text":"orem\n\n=="}
+{"t":133,"text":" The"}
+{"t":166,"text":" big"}
+{"t":202,"text":" idea\n\nA *"}
+{"t":233,"text":"right triangle* has one"}
+{"t":267,"text":" ang"}
+{"t":299,"text":"le of ex"}
+{"t":333,"text":"actly $90°"}
+{"t":366,"text":"$. The"}
+{"t":400,"text":" side opposite the right angle"}
+{"t":433,"text":" is the"}
+{"t":465,"text":" long"}
+{"t":499,"text":"est side and"}
+{"t":535,"text":" is called the *hypoten"}
+{"t":569,"text":"use*. The other"}
+{"t":600,"text":" two sides are called the *leg"}
+{"t":634,"text":"s*.\n\nThe Pyth"}
+{"t":667,"text":"agorean theorem says that"}
+{"t":700,"text":" in"}
+{"t":733,"text":" any"}
+{"t":767,"text":" right triangle,\n\n$"}
+{"t":801,"text":" a^2 + b^2"}
+{"t":834,"text":" = c^2 $"}
+{"t":868,"text":"\n\nwhere $a$ and $b"}
+{"t":901,"text":"$ are the l"}
+{"t":935,"text":"engths of the legs and $"}
+{"t":968,"text":"c$ is the length of the"}
+{"t":1002,"text":" hypotenuse."}
+{"t":1036,"text":"\n\n== A labelled right triang"}
+{"t":1069,"text":"le\n\n#align(center)["}
+{"t":1103,"text":"\n  #box(width: "}
+{"t":1137,"text":"6"}
+{"t":1169,"text":".5cm, height: "}
+{"t":1203,"text":"5cm, {"}
+{"t":1236,"text":"\n    //"}
+{"t":1269,"text":" tri"}
+{"t":1303,"text":"angle\n    place(top +"}
+{"t":1336,"text":" left, polygon(\n      "}
+{"t":1370,"text":"fill: r"}
+{"t":1403,"text":"gb(\""}
+{"t":1436,"text":"#e8"}
+{"t":1470,"text":"f1"}
+{"t":1502,"text":"f"}
+{"t":1536,"text":"b\"),\n      stroke"}
+{"t":1569,"text":": "}
+{"t":1602,"text":"1.2"}
+{"t":1635,"text":"pt +"}
+{"t":1669,"text":" black"}
+{"t":1704,"text":",\n      (0.8"}
+{"t":1736,"text":"cm, 4c"}
+{"t":1770,"text":"m),"}
+{"t":1802,"text":" (5.8"}
+{"t":1837,"text":"cm, 4cm),"}
+{"t":1871,"text":" (0.8cm, "}
+{"t":1904,"text":"0.8cm),\n    "}
+{"t":1936,"text":"))\n    // right-ang"}
+{"t":1971,"text":"le marker\n    place(top"}
+{"t":2004,"text":" + left, dx"}
+{"t":2038,"text":": 0.8cm,"}
+{"t":2075,"text":" dy: 3.5"}
+{"t":2104,"text":"cm,"}
+{"t":2138,"text":"\n      rect(width: "}
+{"t":2172,"text":"0.5cm, height:"}
+{"t":2205,"text":" 0.5cm, st"}
+{"t":2239,"text":"roke: 0.8p"}
+{"t":2272,"text":"t +"}
+{"t":2305,"text":" black))\n    // side labels"}
+{"t":2340,"text":"\n    place(top + left,"}
+{"t":2372,"text":" dx: 3.2"}
+{"t":2409,"text":"cm, dy: 4"}
+{"t":2442,"text":".15"}
+{"t":2474,"text":"cm)"}
+{"t":2507,"text":"[*"}
+{"t":2539,"text":"$a$*]\n    place"}
+{"t":2573,"text":"(top + left, dx:"}
+{"t":2605,"text":" 0.35"}
+{"t":2641,"text":"cm, dy: 2"}
+{"t":2673,"text":".2cm)[*$"}
+{"t":2706,"text":"b$*]\n    place("}
+{"t":2739,"text":"top + left, dx: "}
+{"t":2773,"text":"3.5"}
+{"t":2806,"text":"cm, dy: 1"}
+{"t":2840,"text":".9"}
+{"t":2874,"text":"cm)[*$c$"}
+{"t":2907,"text":"*]\n    // vertex"}
+{"t":2940,"text":" labels\n    place(top +"}
+{"t":2973,"text":" left, dx: 0."}
+{"t":3007,"text":"3cm, dy: "}
+{"t":3043,"text":"4.15cm)[$"}
+{"t":3074,"text":"C$]\n    place(top"}
+{"t":3111,"text":" + left, dx: 5"}
+{"t":3146,"text":".95"}
+{"t":3174,"text":"cm, dy: 3"}
+{"t":3209,"text":".8cm)[$B"}
+{"t":3241,"text":"$]\n    place(top +"}
+{"t":3275,"text":" left, dx: 0."}
+{"t":3308,"text":"5cm, dy: "}
+{"t":3342,"text":"0.2"}
+{"t":3377,"text":"cm)[$A$]"}
+{"t":3408,"text":"\n  })\n]\n\n#"}
+{"t":3441,"text":"align(center)[\n  _"}
+{"t":3476,"text":"The"}
+{"t":3509,"text":" right angle is at $C$"}
+{"t":3542,"text":". S"}
+{"t":3575,"text":"ides $a$ and $b"}
+{"t":3611,"text":"$ are the legs;"}
+{"t":3642,"text":" side $c$ is the h"}
+{"t":3676,"text":"ypotenuse._\n]"}
+{"t":3710,"text":"\n\n== Key points\n\n- The"}
+{"t":3743,"text":" theorem works"}
+{"t":3776,"text":" *"}
+{"t":3809,"text":"only* for right triangles."}
+{"t":3843,"text":"\n- The hypotenu"}
+{"t":3876,"text":"se $c$ is always op"}
+{"t":3910,"text":"posite the right angle and is"}
+{"t":3944,"text":" always the longest side"}
+{"t":3976,"text":".\n- If"}
+{"t":4010,"text":" you know any"}
+{"t":4044,"text":" two sides, you can find the"}
+{"t":4077,"text":" third.\n\n== Worked example"}
+{"t":4110,"text":" 1: fin"}
+{"t":4143,"text":"ding the hypotenuse"}
+{"t":4176,"text":"\n\n*"}
+{"t":4249,"text":"Problem."}
+{"t":4278,"text":"* A right triangle has leg"}
+{"t":4310,"text":"s $a = 6$"}
+{"t":4343,"text":" cm and $b = 8"}
+{"t":4377,"text":"$ cm. Find the"}
+{"t":4413,"text":" hypotenuse $c"}
+{"t":4445,"text":"$.\n\n+ Write"}
+{"t":4477,"text":" the formula: $ a^"}
+{"t":4513,"text":"2 + b^2 ="}
+{"t":4544,"text":" c^2 $\n+"}
+{"t":4578,"text":" Substitute the known"}
+{"t":4611,"text":" values: $ 6^2"}
+{"t":4644,"text":" + 8^2 ="}
+{"t":4680,"text":" c^2 $\n+"}
+{"t":4711,"text":" Square each"}
+{"t":4751,"text":" le"}
+{"t":4787,"text":"g: $ 36 +"}
+{"t":4822,"text":" 64 = c^2 "}
+{"t":4851,"text":"$\n+ Add:"}
+{"t":4884,"text":" $ 100 = c^"}
+{"t":4913,"text":"2 $\n+ Take"}
+{"t":4944,"text":" the square root of"}
+{"t":4979,"text":" both sides: $ c ="}
+{"t":5011,"text":" s"}
+{"t":5045,"text":"qrt("}
+{"t":5078,"text":"100) = 10 $"}
+{"t":5112,"text":"\n\n*Answer:"}
+{"t":5145,"text":"* the"}
+{"t":5178,"text":" hypotenuse is $"}
+{"t":5211,"text":"10$ cm.\n\n=="}
+{"t":5244,"text":" Worked example 2: fin"}
+{"t":5278,"text":"ding a miss"}
+{"t":5312,"text":"ing leg\n\n*Problem"}
+{"t":5345,"text":".* A right triangle has"}
+{"t":5382,"text":" h"}
+{"t":5411,"text":"ypotenuse $c ="}
+{"t":5446,"text":" 13$ cm and one"}
+{"t":5478,"text":" leg $a = 5$"}
+{"t":5513,"text":" cm. Find the other"}
+{"t":5546,"text":" leg $b$.\n\n+"}
+{"t":5578,"text":" Write the formula: $"}
+{"t":5613,"text":" a^2 + b^"}
+{"t":5645,"text":"2 = c^2 $"}
+{"t":5680,"text":"\n+ Substitute:"}
+{"t":5712,"text":" $ 5^2 +"}
+{"t":5748,"text":" b^2 = 13^"}
+{"t":5780,"text":"2 $\n+"}
+{"t":5814,"text":" Square: $ 25 +"}
+{"t":5846,"text":" b^2 = 169 "}
+{"t":5881,"text":"$\n+ Subtract"}
+{"t":5916,"text":" $25$ from both sides"}
+{"t":5947,"text":": $ b^2 ="}
+{"t":5980,"text":" 144 $"}
+{"t":6014,"text":"\n+ Take the square root"}
+{"t":6046,"text":": $ b = sqr"}
+{"t":6079,"text":"t(144) = 12 "}
+{"t":6114,"text":"$\n\n*Answer:*"}
+{"t":6146,"text":" the miss"}
+{"t":6180,"text":"ing leg is $12$"}
+{"t":6213,"text":" cm.\n\n== Common"}
+{"t":6247,"text":" Pythagorean triples"}
+{"t":6280,"text":"\n\nS"}
+{"t":6315,"text":"ets of whole numbers that"}
+{"t":6348,"text":" satisfy $"}
+{"t":6388,"text":"a^2 + b^2"}
+{"t":6413,"text":" = c^2$ are"}
+{"t":6449,"text":" called _"}
+{"t":6480,"text":"Pythagorean triples"}
+{"t":6516,"text":"_.\n\n#table("}
+{"t":6547,"text":"\n  columns: 4"}
+{"t":6581,"text":",\n  align: center,"}
+{"t":6616,"text":"\n  [*"}
+{"t":6650,"text":"$a$*], [*"}
+{"t":6681,"text":"$b$*], [*$"}
+{"t":6714,"text":"c$*], [*Check"}
+{"t":6749,"text":"*],\n  [3], ["}
+{"t":6780,"text":"4], [5], [$9"}
+{"t":6816,"text":" + 16 = 25"}
+{"t":6848,"text":"$],\n  [5], ["}
+{"t":6883,"text":"12], [13], [$25"}
+{"t":6916,"text":" + 144"}
+{"t":6948,"text":" = 169$],\n  "}
+{"t":6984,"text":"[8], [15], [17"}
+{"t":7014,"text":"], [$64 + 225"}
+{"t":7050,"text":" = 289$],\n  "}
+{"t":7081,"text":"[7], [24"}
+{"t":7114,"text":"], [25], [$49 "}
+{"t":7148,"text":"+ 576 = 625$"}
+{"t":7181,"text":"],\n)\n\n== Practice"}
+{"t":7215,"text":"\n\n+ A"}
+{"t":7250,"text":" right triangle has legs $"}
+{"t":7282,"text":"a = 9"}
+{"t":7314,"text":"$ and"}
+{"t":7348,"text":" $b = 12$."}
+{"t":7381,"text":" Find $c$.\n  #"}
+{"t":7416,"text":"v(4"}
+{"t":7448,"text":"em)"}
+{"t":7481,"text":"\n\n+ A right triangle has"}
+{"t":7515,"text":" $"}
+{"t":7548,"text":"a = 15$ and $"}
+{"t":7585,"text":"c = 17$. Find"}
+{"t":7615,"text":" $b$.\n  #v"}
+{"t":7651,"text":"(4em)\n\n+ A"}
+{"t":7702,"text":" ladder $"}
+{"t":7715,"text":"10$ m"}
+{"t":7750,"text":" long leans against a wall."}
+{"t":7815,"text":" Its base"}
+{"t":7849,"text":" is $6"}
+{"t":7884,"text":"$ m from the wall."}
+{"t":7915,"text":" How high up"}
+{"t":7952,"text":" the wall does the ladder"}
+{"t":7983,"text":" reach?\n  #v("}
+{"t":8015,"text":"4em)\n\n+ A tri"}
+{"t":8051,"text":"angle has s"}
+{"t":8085,"text":"ides $7"}
+{"t":8115,"text":"$, $10"}
+{"t":8148,"text":"$"}
+{"t":8183,"text":" and $12$. Is it"}
+{"t":8217,"text":" a right triangle? Expl"}
+{"t":8250,"text":"ain using"}
+{"t":8281,"text":" the"}
+{"t":8321,"text":" theorem.\n  #v"}
+{"t":8348,"text":"(4em)\n\n== Answ"}
+{"t":8382,"text":"er line"}
+{"t":8448,"text":"\n\nName: #box"}
+{"t":8482,"text":"(width: 6"}
+{"t":8518,"text":"cm, line"}
+{"t":8548,"text":"(length: 100%"}
+{"t":8581,"text":")) #"}
+{"t":8615,"text":"h(1"}
+{"t":8648,"text":"em) Date: #box("}
+{"t":8681,"text":"width: 3"}
+{"t":8715,"text":"cm, line(length: "}
+{"t":8736,"text":"100%))"}

@@ -23,10 +23,11 @@ env:
   # The compile oracle (tools/compile-oracle) needs the built engine, and html-compat's and edu's tests compile with it
   # (a devDependency turbo would build), so they run in the engine job too. So do @typstream/node and its example
   # (its build copies Typst's fonts out of the Rust crate graph).
-  # examples/nextjs-ai-sdk's test drives a browser, so it runs in the browsers job.
+  # examples/nextjs-ai-sdk's and examples/strict-csp's tests drive browsers, so they run in the browsers job.
   NOT_ENGINE: >-
     --filter=!@typstream/engine-wasm --filter=!@typstream/compile-oracle --filter=!@typstream/html-compat --filter=!@typstream/edu
     --filter=!@typstream/node --filter=!@typstream/example-node-validate --filter=!@typstream/example-nextjs-ai-sdk
+    --filter=!@typstream/example-strict-csp
 
 jobs:
   lint:
@@ -170,7 +171,8 @@ jobs:
   # The engine worker in real browsers (packages/engine/__tests__/browser): protocol conformance, streaming through
   # client + worker + engine-wasm, and the watchdog, in Chromium, Firefox and WebKit. Then the renderers
   # (packages/dom/__tests__/browser) and <Typstream> (packages/react/__tests__/browser) against that worker. Last,
-  # examples/nextjs-ai-sdk: a production Next.js build streaming an answer into <Typstream> in Chromium.
+  # examples/nextjs-ai-sdk: a production Next.js build streaming an answer into <Typstream> in Chromium; and
+  # examples/strict-csp: both targets under a strict Content-Security-Policy in all three browsers, with no violation.
   browsers:
     name: Engine (browsers)
     runs-on: ubuntu-latest
@@ -185,6 +187,7 @@ jobs:
       - run: pnpm --filter @typstream/dom test:browser
       - run: pnpm --filter @typstream/react test:browser
       - run: pnpm exec turbo run test --filter=@typstream/example-nextjs-ai-sdk
+      - run: pnpm exec turbo run test --filter=@typstream/example-strict-csp
 
   # Corpus-wide browser suites (tools/browser-suites, #19): final-render equivalence, flicker and accessibility over
   # mountTypstream on the real worker. One job per browser (Chromium also runs the adversarial set's equivalence).

@@ -140,6 +140,25 @@ describe("pattern edges", () => {
     // Display math (spaces inside both dollars) is math, whatever it holds.
     expect(warns("$ 5 and $")).toBe(false);
     expect(warns("$5 and $ ")).toBe(true);
+    expect(warns("$5 for students and $")).toBe(true);
+    // Math that starts with a number and a word (operators), as models write it (#24).
+    expect(warns("$0.4 times 0.3 =$")).toBe(false);
+    expect(warns("$6.02 times 10^23$ particles")).toBe(false);
+    expect(warns("$0 leq t leq (3 + sqrt(10))/2$")).toBe(false);
+    expect(warns("$2 times 0.100 = 0.200$ mol")).toBe(false);
+    expect(warns("$30 degree$ to the horizontal")).toBe(false);
+    expect(warns("[$2 cos(x)$], [$x$]")).toBe(false);
+  });
+
+  it("math-lone-script: a script with no base at the start of an equation (#24)", () => {
+    const fixes = (text: string) => rules(text).includes("math-lone-script");
+    expect(final("$9.8$ m/s$^2$").source).toBe('$9.8$ m/s$""^2$');
+    expect(final("mol L$^(-1)$ and $ _2 $").source).toBe('mol L$""^(-1)$ and $ ""_2 $');
+    expect(fixes("$x^2$")).toBe(false);
+    expect(fixes("$a_1 + b^2$")).toBe(false);
+    expect(fixes('$""^2$')).toBe(false);
+    // In code, `^` and `_` aren't scripts.
+    expect(fixes('#let x = "$^2$"')).toBe(false);
   });
 
   it("markdown-bold needs markup at both delimiters", () => {
