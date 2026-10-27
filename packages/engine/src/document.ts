@@ -33,7 +33,9 @@ import {
 import { createHealer, type Healer, type HealOptions, type HealResult } from "@typstream/heal";
 import type { Clock } from "./clock";
 import { type Connection, WorkerGone } from "./connection";
+import { DocumentImages, type ImageResolver } from "./document-images";
 import { HangSearch } from "./hang";
+import { fileKey } from "./image-paths";
 import { applyPaged } from "./paged";
 import type { ResolvedDocumentOptions } from "./plugins";
 import { compileInterval, type ScheduleOptions, updateEma } from "./schedule";
@@ -124,6 +126,14 @@ export interface DocumentOptions {
    * `@typstream/edu:0.1.0/lib.typ` mount a local package.
    */
   files?: FileDelta;
+  /**
+   * Gives the bytes of images the document names but has no file for: URLs a
+   * model wrote, or names the app knows. Without it, nothing is fetched, and
+   * such images show as placeholders (as do the ones it can't resolve).
+   * `fetchImages({ hosts })` from `@typstream/engine/images` downloads URLs
+   * from the hosts you allow.
+   */
+  resolveImage?: ImageResolver;
   /**
    * Typst packages the document may import, in addition to the engine's
    * (`initialize.packages`); fixed for the document's lifetime. @beta
@@ -378,6 +388,10 @@ export class DocumentImpl implements EngineDocument {
   private inputs: Record<string, string> | undefined;
   private files: FileDelta;
   private pendingFiles: FileDelta | null = null;
+  /** Images asked of `resolveImage`, if there is one. */
+  private readonly images: DocumentImages | null;
+  /** Diagnostics as the worker sent them, in input coordinates, before `images` describes them. */
+  private received: Diagnostic[] = [];
 
   // What the worker has: the document is open there in `openedIn` (a worker
   // generation) with text `sentSource` at revision `sent.rev`.
@@ -446,6 +460,17 @@ export class DocumentImpl implements EngineDocument {
     this.packages = options.packages;
     this.fixerModules = options.fixerModules;
     this.files = { ...options.files };
+    this.images = options.resolveImage
+      ? new DocumentImages(options.resolveImage, {
+          has: (key) => Object.keys(this.files).some((path) => fileKey(path) === key),
+          loaded: (key, bytes) => this.setFiles({ [key]: bytes }),
+          changed: () => {
+            this.diagnostics = this.describe(this.received);
+            this.emit();
+          },
+        })
+      : null;
+    this.images?.scan(this.healer.input);
     this.state = this.snapshot();
     this.scheduleCompile();
   }
@@ -510,6 +535,7 @@ export class DocumentImpl implements EngineDocument {
   setTarget(target: CompileTarget): void {
     if (this.disposed || target === this.target) return;
     this.target = target;
+    this.received = [];
     this.diagnostics = [];
     this.needsCompile = true;
     this.update();
@@ -570,6 +596,7 @@ export class DocumentImpl implements EngineDocument {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
+    this.images?.dispose();
     this.clearTimer();
     this.listeners.clear();
     this.eventListeners.clear();
@@ -587,8 +614,14 @@ export class DocumentImpl implements EngineDocument {
     }
   }
 
+  /** Diagnostics of images that are loading or failed to, said so (`resolveImage`). */
+  private describe(diagnostics: Diagnostic[]): Diagnostic[] {
+    return this.images ? this.images.describe(diagnostics, this.healer.input) : diagnostics;
+  }
+
   private changed(healed: HealResult): void {
     this.healed = healed;
+    this.images?.scan(this.healer.input);
     this.update();
   }
 
@@ -789,7 +822,8 @@ export class DocumentImpl implements EngineDocument {
     if (n.method === "document/diagnostics") {
       if (n.params.target !== this.target) return;
       const toInput = (pos: number, assoc: 1 | -1) => heal.map.toInput(pos, assoc);
-      this.diagnostics = normalizeDiagnostics(n.params.diagnostics.map((d) => mapDiagnostic(d, toInput)));
+      this.received = normalizeDiagnostics(n.params.diagnostics.map((d) => mapDiagnostic(d, toInput)));
+      this.diagnostics = this.describe(this.received);
       // A compile's diagnostics are reported with its other events, in `settle`.
       if (this.compiling) this.reported = true;
       else this.report(this.diagnosticsEvent(rev, this.final ? "final" : "streaming"));

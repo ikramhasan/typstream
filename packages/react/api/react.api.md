@@ -50,7 +50,7 @@ export type TelemetryHooks = Pick<TypstreamOptions, "onRendered" | "onFallback" 
 export const Typstream: (input: TypstreamProps) => react.JSX.Element;
 
 // @public
-export interface TypstreamDefaults extends Pick<TypstreamOptions, "target" | "layout" | "pageHeight" | "preamble" | "template" | "inputs" | "files" | "heal" | "schedule" | "plugins" | "stylesheets" | "animated" | "caret" | "theme" | "linkTarget" | "textLayer" | "lazy">, TelemetryHooks {
+export interface TypstreamDefaults extends Pick<TypstreamOptions, "target" | "layout" | "pageHeight" | "preamble" | "template" | "inputs" | "files" | "resolveImage" | "heal" | "schedule" | "plugins" | "stylesheets" | "animated" | "caret" | "theme" | "linkTarget" | "textLayer" | "lazy">, TelemetryHooks {
     engine?: Engine;
     mathFont?: string | URL;
 }

@@ -10,8 +10,8 @@ import { mergeHooks, type TelemetryHooks } from "./telemetry";
 
 /**
  * Settings that make sense for every document of an app. Everything except
- * `engine` and plugins' functions is serializable, so it can be stored per
- * organization or per user.
+ * `engine`, `resolveImage` and plugins' functions is serializable, so it can
+ * be stored per organization or per user.
  * @public
  */
 export interface TypstreamDefaults
@@ -24,6 +24,7 @@ export interface TypstreamDefaults
       | "template"
       | "inputs"
       | "files"
+      | "resolveImage"
       | "heal"
       | "schedule"
       | "plugins"

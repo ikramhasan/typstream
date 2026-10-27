@@ -21,7 +21,15 @@ import { heal } from "@typstream/heal";
 import { UNIVERSE_PACKAGES } from "@typstream/universe";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { EngineAdapter } from "../src/server/adapter";
-import { DEFAULT_FIXERS, fixersOf, orderFixers, packageStub, pendingRef, tailCut } from "../src/server/fixers";
+import {
+  DEFAULT_FIXERS,
+  fixersOf,
+  missingImage,
+  orderFixers,
+  packageStub,
+  pendingRef,
+  tailCut,
+} from "../src/server/fixers";
 import { RUNTIME_PATH, typstString } from "../src/server/runtime";
 import { inProcess } from "../src/server/serve";
 import type { ServerOptions } from "../src/server/server";
@@ -119,6 +127,51 @@ describe("package-stub", () => {
   });
 });
 
+describe("missing-image", () => {
+  /** `text` with `fixer`'s edit for an error `message` at `span` (the first match of it in `text`) applied. */
+  const fixed = (text: string, message: string, span: string) => {
+    const from = text.indexOf(span);
+    const edits = run(missingImage, error(message, from, from + span.length), ctx(text));
+    return edits && edits.length === 1
+      ? text.slice(0, edits[0]?.from) + edits[0]?.insert + text.slice(edits[0]?.to)
+      : null;
+  };
+  const notFound = "file not found (searched at /cat.png)";
+
+  it("stands a placeholder in for an image's source, keeping its other arguments", () => {
+    expect(fixed('#image("cat.png", width: 50%)', notFound, '"cat.png"')).toBe(
+      '#image(typstream.missing-image("cat.png"), width: 50%)',
+    );
+    expect(fixed('#figure(image(\n  source: "cat.png"), caption: [A cat])', notFound, '"cat.png"')).toBe(
+      '#figure(image(\n  source: typstream.missing-image("cat.png")), caption: [A cat])',
+    );
+    // A name holding the path: the placeholder can't show it, but it stands in all the same.
+    expect(fixed("#let src = 1\n#image(src)", notFound, "src)")).toBe(
+      "#let src = 1\n#image(typstream.missing-image(src))",
+    );
+  });
+
+  it("leaves files that aren't an image's source alone", () => {
+    expect(fixed('#read("cat.png")', notFound, '"cat.png"')).toBeNull();
+    expect(fixed('#json("q.json")', notFound, '"q.json"')).toBeNull();
+  });
+
+  it("reads a file its extension misnames as bytes, then gives up on it", () => {
+    const decode = "failed to decode image (Format error decoding Png: Invalid PNG signature.)";
+    const text = '#image("a.png", width: 2cm)';
+    const once = fixed(text, decode, 'image("a.png", width: 2cm)');
+    expect(once).toBe('#image(read("a.png", encoding: none), width: 2cm)');
+    expect(fixed(once as string, "unknown image format", 'image(read("a.png", encoding: none), width: 2cm)')).toBe(
+      '#image(typstream.missing-image("a.png"), width: 2cm)',
+    );
+    expect(fixed('#image("a.bin")', "unknown image format", 'image("a.bin")')).toBe(
+      '#image(typstream.missing-image("a.bin"))',
+    );
+    // Bytes built some other way: nothing to stand in for.
+    expect(fixed('#image(bytes("x"))', "unknown image format", 'image(bytes("x"))')).toBeNull();
+  });
+});
+
 describe("tail-cut", () => {
   it("cuts at an error in the tail and heals what is left", () => {
     const text = "Intro.\n\n#text()";
@@ -208,7 +261,7 @@ describe("registry", () => {
 
   it("orders by priority, then as given; built-ins bracket plugin fixers", () => {
     const order = orderFixers([...DEFAULT_FIXERS, f("a"), f("b", 5), f("c")]).map((x) => x.name);
-    expect(order).toEqual(["b", "pending-ref", "package-stub", "a", "c", "tail-cut"]);
+    expect(order).toEqual(["b", "pending-ref", "missing-image", "package-stub", "a", "c", "tail-cut"]);
   });
 
   it("checks a fixer module's default export", () => {
@@ -499,6 +552,116 @@ describe("fix loop", { timeout: 30_000 }, () => {
     });
   });
 
+  describe("images", () => {
+    const svg = (fill: string) =>
+      new TextEncoder().encode(
+        `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="10"><rect width="20" height="10" fill="${fill}"/></svg>`,
+      );
+    /** The SVGs an HTML artifact shows, decoded from their data URLs. */
+    const images = (html: string) =>
+      [...html.matchAll(/src="data:image\/svg\+xml;base64,([^"]+)"/g)].map((m) =>
+        Buffer.from(m[1] as string, "base64").toString(),
+      );
+    const open = async (text: string, files: Record<string, Uint8Array> = {}, params: Partial<CompileParams> = {}) => {
+      const { client } = await serverWith();
+      const uri = `img${Math.random()}`;
+      await client.request("document/open", { uri, rev: 1, text, files });
+      const out = await client.compile({ uri, rev: 1, target: "html", anchors: false, ...params });
+      return { ...out, html: (out.artifact as HtmlArtifact | null)?.html ?? "" };
+    };
+
+    it("shows a placeholder with the caption, size and alt text of an image that isn't there", async () => {
+      const text = '#figure(image("https://example.org/a/cell.png?w=2", width: 50%, alt: "A cell"), caption: [A cell])';
+      const out = await open(text, {}, { settled: text.length });
+      expect(out.result.status).toBe("ok");
+      expect(out.html).toMatch(/<img src="data:image\/svg\+xml;base64,[^"]+" alt="A cell"[^>]*width: 50%/);
+      // Typst joins the supplement and the number with a no-break space.
+      expect(out.html).toMatch(/<figcaption>Figure.1: A cell<\/figcaption>/);
+      expect(images(out.html)[0]).toContain(">cell.png</text>");
+      expect(out.diagnostics.map((d) => [d.severity, d.source, at(text, d)])).toEqual([
+        ["info", "missing-image", '"https://example.org/a/cell.png?w=2"'],
+      ]);
+    });
+
+    it("shows the image once the file is there, under the URL as its path", async () => {
+      const out = await open('#image("https://example.org/a/cell.svg")', {
+        "https://example.org/a/cell.svg": svg("#123456"),
+      });
+      expect(out.result.status).toBe("ok");
+      expect(out.result.fixes).toBeUndefined();
+      expect(images(out.html)).toEqual([expect.stringContaining("#123456")]);
+    });
+
+    it("keeps a final document's missing image as an error next to the placeholder", async () => {
+      const text = 'A #image("cat.png") here.';
+      const out = await open(text, {}, { mode: "final" });
+      expect(out.result.status).toBe("ok");
+      expect(out.diagnostics.map((d) => [d.severity, d.message, at(text, d)])).toEqual([
+        ["error", "file not found (searched at /cat.png)", '"cat.png"'],
+      ]);
+    });
+
+    it("goes by the content of a file its extension misnames, and shows a placeholder for one that isn't an image", async () => {
+      const misnamed = await open('#image("https://example.org/a.png")', {
+        "https://example.org/a.png": svg("#abcdef"),
+      });
+      expect(misnamed.result.status).toBe("ok");
+      expect(images(misnamed.html)).toEqual([expect.stringContaining("#abcdef")]);
+      const broken = await open('#image("b.png")', { "b.png": new TextEncoder().encode("<html>404</html>") });
+      expect(broken.result.status).toBe("ok");
+      expect(broken.result.fixes?.map((f) => f.fixer)).toEqual(["missing-image", "missing-image"]);
+      expect(images(broken.html)[0]).toContain(">b.png</text>");
+    });
+
+    it("stands placeholders in for every missing image before the first compile", async () => {
+      const { compile } = await serverWith();
+      const text = [1, 2, 3, 4].map((i) => `#image("https://x.org/${i}.png")`).join("\n\n");
+      const out = await compile(text, { settled: text.length });
+      expect(out.result.status).toBe("ok");
+      // Typst stops at the first image it can't read: one fix round each would be too many.
+      expect(out.compiles).toBe(1);
+      expect(out.diagnostics.map((d) => [d.severity, d.source, d.message, at(text, d)])).toEqual(
+        [1, 2, 3, 4].map((i) => [
+          "info",
+          "missing-image",
+          `file not found (searched at /https:/x.org/${i}.png)`,
+          `"https://x.org/${i}.png"`,
+        ]),
+      );
+      expect(out.result.fixes).toHaveLength(4);
+      // In final mode they are the errors Typst would report.
+      const final = await compile(text, { mode: "final" });
+      expect(final.result.status).toBe("ok");
+      expect(final.diagnostics.map((d) => [d.severity, d.source])).toEqual(Array(4).fill(["error", "typst"]));
+    });
+
+    it("isolates a failing block next to a missing image, not the image's block", async () => {
+      const { compile } = await serverWith();
+      const text = '= One\n\n#image("cat.png", width: 2cm)\n\n= Two\n\n#nope\n\n= Three\n';
+      const out = await compile(text, { mode: "final", fallback: { isolate: true } });
+      expect(out.result.status).toBe("ok");
+      expect(out.result.fallback?.isolated?.map((r) => text.slice(r.from, r.to).trim())).toEqual(["#nope"]);
+      expect(images(out.html)[0]).toContain(">cat.png</text>");
+      expect(out.html).toContain("Three");
+    });
+
+    it("leaves image calls in raw text and comments alone", async () => {
+      const { compile } = await serverWith();
+      const text = 'Write ```typ #image("cat.png")``` to show one. // #image("dog.png")\n/* image("cow.png") */';
+      const out = await compile(text, { settled: text.length });
+      expect(out.result.status).toBe("ok");
+      expect(out.diagnostics).toEqual([]);
+      expect(out.html).toContain("cat.png");
+      expect(out.html).not.toContain("missing-image");
+    });
+
+    it("draws the placeholder in paged output too", async () => {
+      const out = await open('#image("cat.png")', {}, { target: "paged" });
+      expect(out.result.status).toBe("ok");
+      expect(out.artifact?.target === "paged" && out.artifact.pageCount).toBe(1);
+    });
+  });
+
   it("lets a document's own runtime file restyle placeholders", async () => {
     const { client } = await serverWith();
     await client.request("document/open", {
@@ -572,6 +735,10 @@ describe("diagnostic shapes", { timeout: 30_000 }, () => {
     "#range(3).map(((i, (w, ))))",
     "#let f(x) = x.enumerate()\n#f([Arg])",
     '#bibliography("assets/clim")',
+    // missing-image: a path that isn't there, one being typed, a name holding it
+    '#figure(image("cat.png", width: 50%), caption: [A cat])',
+    '#image("https://exa")',
+    '#let src = "x.png"\n#image(src)',
   ];
 
   it("matches the snapshot", async () => {

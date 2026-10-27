@@ -40,10 +40,20 @@ import {
   type SkippedRange,
   type VersionMismatchData,
 } from "@typstream/core";
+import { fileKey } from "../image-paths";
 import type { AdapterDocument, AdapterHtmlResult, AdapterPagedResult, EngineAdapter } from "./adapter";
 import { type Anchored, Anchors, fromAnchored } from "./anchors";
 import { type Attempt, type RecoverMemo, recover, showsLess, toDocument, type Variant } from "./fallback";
-import { DEFAULT_FIXERS, FIX_BUDGET_MS, fixersOf, orderFixers, runFixers } from "./fixers";
+import {
+  applyEdits,
+  DEFAULT_FIXERS,
+  FIX_BUDGET_MS,
+  fixersOf,
+  missingImage,
+  orderFixers,
+  placeholderImages,
+  runFixers,
+} from "./fixers";
 import { DocumentPackages, type PackageOptions, PackageStore } from "./packages";
 import { RUNTIME, RUNTIME_IMPORT, RUNTIME_PATH } from "./runtime";
 
@@ -157,6 +167,8 @@ interface Doc {
   shown: { target: CompileTarget; text: string } | null;
   /** Packages it may import, and those mounted in `compiler`. */
   packages: DocumentPackages;
+  /** The `fileKey`s of the files the client wrote: images without one show as placeholders. */
+  files: Set<string>;
   /** Layer 3 fixers in the order they're tried: the server's, plus the document's fixer modules'. */
   fixers: DiagnosticFixer[];
   /**
@@ -355,13 +367,20 @@ class Server implements EngineServer {
     return doc;
   }
 
-  private writeFiles(compiler: AdapterDocument, files: FileDelta): void {
+  /** Writes a document's files, and records which it has in `keys` (`fileKey`s; packages' files aren't). */
+  private writeFiles(compiler: AdapterDocument, files: FileDelta, keys: Set<string>): void {
     const delta: Record<string, FileContent | null> = {};
     for (const [path, content] of Object.entries(files)) delta[virtualPath(path)] = content;
     try {
       compiler.setFiles(delta);
     } catch (e) {
       throw invalid(e instanceof Error ? e.message : String(e));
+    }
+    for (const [path, content] of Object.entries(files)) {
+      const key = PACKAGE_FILE.test(path) ? null : fileKey(path);
+      if (key === null) continue;
+      if (content === null) keys.delete(key);
+      else keys.add(key);
     }
   }
 
@@ -588,10 +607,11 @@ class Server implements EngineServer {
       if (this.docs.has(uri)) throw new ProtocolError("document-already-open", `document ${uri} is already open`);
       const fixers = await this.documentFixers(fixerModules ?? []);
       const compiler = this.adapter.open();
+      const keys = new Set<string>();
       try {
         // Before the document's files, so one at the same path replaces it.
         compiler.setFiles({ [RUNTIME_PATH]: RUNTIME });
-        if (files) this.writeFiles(compiler, files);
+        if (files) this.writeFiles(compiler, files, keys);
       } catch (e) {
         compiler.close();
         throw e;
@@ -617,6 +637,7 @@ class Server implements EngineServer {
           doc.memo = null;
         }),
         fixers,
+        files: keys,
       };
       this.docs.set(uri, doc);
       return null;
@@ -641,7 +662,7 @@ class Server implements EngineServer {
 
     "document/setFiles": async ({ uri, rev, files }) => {
       const doc = this.next(uri, rev);
-      this.writeFiles(doc.compiler, files);
+      this.writeFiles(doc.compiler, files, doc.files);
       doc.rev = rev;
       doc.memo = null;
       return null;
@@ -689,12 +710,29 @@ class Server implements EngineServer {
       };
 
       /**
+       * Images the document has no file for, as placeholders from the start: Typst stops at the
+       * first, so they'd take a fix round each. `null` when there are none (or no `missing-image`).
+       */
+      const placeholders = (given: Variant) => {
+        const images = doc.fixers.includes(missingImage)
+          ? placeholderImages(given.text, (k) => doc.files.has(k))
+          : null;
+        if (!images) return null;
+        const { text, map } = applyEdits(given.text, images.edits, "fix");
+        const variant: Variant = { text, toOriginal: (p, a) => given.toOriginal(map.toOriginal(p, a), a) };
+        return { variant, map, errors: images.errors };
+      };
+
+      /**
        * Compiles the document's text, or a variant the fallback made of it,
        * and fixes it (Layer 3). Diagnostics in document coordinates.
        */
       const attempt = async (variant: Variant | null, settledIn: number): Promise<Attempt> => {
-        const base: Variant = variant ?? { text: doc.text, toOriginal: (p) => p };
-        if (variant) this.writeFixed(doc, variant.text, anchors, variant.toOriginal);
+        const given: Variant = variant ?? { text: doc.text, toOriginal: (p) => p };
+        const images = placeholders(given);
+        const base = images?.variant ?? given;
+        const settledBase = images ? images.map.toResult(settledIn) : settledIn;
+        if (variant || images) this.writeFixed(doc, base.text, anchors, base.toOriginal);
         else this.sync(doc, params.inputs, anchors);
         let { diagnostics } = await compile();
         let ok = !diagnostics.some(isError);
@@ -704,7 +742,7 @@ class Server implements EngineServer {
           const fixStart = performance.now();
           const outcome = await runFixers({
             text: base.text,
-            settled: settledIn,
+            settled: settledBase,
             mode,
             fixers: doc.fixers,
             diagnostics,
@@ -718,11 +756,22 @@ class Server implements EngineServer {
           compiled = { text: outcome.text, toOriginal: (p, a) => base.toOriginal(outcome.toOriginal(p, a), a) };
           if (outcome.rounds > 0) fixMs = (fixMs ?? 0) + performance.now() - fixStart;
         }
-        return { ok, diagnostics: variant ? toDocument(diagnostics, variant) : diagnostics, compiled };
+        if (images && ok) {
+          // Reported as fixed errors are: info while streaming, the error in final mode.
+          const reported = images.errors.map((d) =>
+            mode === "final" ? d : { ...d, severity: "info" as const, source: missingImage.name },
+          );
+          diagnostics = [...toDocument(diagnostics, base), ...toDocument(reported, given)];
+          fixes = [...images.errors.map((d) => ({ fixer: missingImage.name, message: d.message })), ...fixes];
+          return { ok, diagnostics, compiled };
+        }
+        return { ok, diagnostics: variant || images ? toDocument(diagnostics, base) : diagnostics, compiled };
       };
 
       /** Compiles a variant for its errors only (the fallback's checks of prefixes). */
-      const check = async (variant: Variant): Promise<Diagnostic[]> => {
+      const check = async (given: Variant): Promise<Diagnostic[]> => {
+        // A missing image fails no block: it shows as a placeholder.
+        const variant = placeholders(given)?.variant ?? given;
         this.writeFixed(doc, variant.text, false, variant.toOriginal);
         let c: { diagnostics: Diagnostic[]; compileMs?: number };
         if (doc.compiler.check) c = await doc.compiler.check({ target, mode });

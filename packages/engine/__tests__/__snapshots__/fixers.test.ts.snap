@@ -142,5 +142,39 @@ exports[`diagnostic shapes > matches the snapshot 1`] = `
     ],
     "text": "#bibliography("assets/clim")",
   },
+  {
+    "diagnostics": [
+      {
+        "at": ""cat.png"",
+        "message": "file not found (searched at /cat.png)",
+        "severity": "error",
+        "trace": [],
+      },
+    ],
+    "text": "#figure(image("cat.png", width: 50%), caption: [A cat])",
+  },
+  {
+    "diagnostics": [
+      {
+        "at": ""https://exa"",
+        "message": "file not found (searched at /https:/exa)",
+        "severity": "error",
+        "trace": [],
+      },
+    ],
+    "text": "#image("https://exa")",
+  },
+  {
+    "diagnostics": [
+      {
+        "at": "src",
+        "message": "file not found (searched at /x.png)",
+        "severity": "error",
+        "trace": [],
+      },
+    ],
+    "text": "#let src = "x.png"
+#image(src)",
+  },
 ]
 `;

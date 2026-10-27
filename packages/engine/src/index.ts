@@ -22,6 +22,7 @@ export type {
   WatchdogOptions,
 } from "./document";
 export { ExportError } from "./document";
+export type { ImageResolver } from "./document-images";
 export {
   createEngine,
   DEFAULT_LIMITS,

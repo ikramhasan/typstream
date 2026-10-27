@@ -27,6 +27,9 @@
       "@typstream/engine/websocket": [
         "./packages/engine/src/websocket.ts"
       ],
+      "@typstream/engine/images": [
+        "./packages/engine/src/images.ts"
+      ],
       "@typstream/*": [
         "./packages/*/src/index.ts"
       ]

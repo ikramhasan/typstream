@@ -92,6 +92,90 @@ describe(`mountTypstream in ${browser}`, () => {
     el.remove();
   });
 
+  it("shows a placeholder for an image it has no file for, then the one resolveImage gives", async () => {
+    const svg = (fill: string) =>
+      new TextEncoder().encode(
+        `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="20"><rect width="40" height="20" fill="${fill}"/></svg>`,
+      );
+    const decode = (url: string | null) => (url?.startsWith("data:image/svg+xml;base64,") ? atob(url.slice(26)) : "");
+    for (const target of ["html", "paged"] as const) {
+      const el = host();
+      let give: (bytes: Uint8Array) => void = () => {};
+      const asked: string[] = [];
+      const options = (): TypstreamOptions => ({
+        engine,
+        target,
+        source: '#figure(image("https://x.org/cell.svg", width: 3cm, alt: "A cell"), caption: [A cell])',
+        // A new function on every update, as an inline prop would be: the latest is called, the document stays.
+        resolveImage: (path) => {
+          asked.push(path);
+          return new Promise((resolve) => {
+            give = resolve;
+          });
+        },
+        lazy: false,
+      });
+      const view = mountTypstream(el, options());
+      const images = () =>
+        target === "html"
+          ? [...el.querySelectorAll("img")].map((i) => decode(i.getAttribute("src")))
+          : [...el.querySelectorAll("div")].flatMap((d) =>
+              [...(d.shadowRoot?.querySelectorAll("image") ?? [])].map((i) =>
+                decode(i.getAttribute("href") ?? i.getAttributeNS("http://www.w3.org/1999/xlink", "href")),
+              ),
+            );
+      await until(view, (s) => s.status === "done");
+      const doc = view.document;
+      view.update(options());
+      expect(view.document).toBe(doc);
+      // Through the renderer's sanitizer, a data: URL: the placeholder, with the file's name.
+      await expect.poll(images).toEqual([expect.stringContaining("cell.svg</text>")]);
+      expect(el.textContent).toContain("A cell");
+      give(svg("#123456"));
+      await expect.poll(images, { timeout: 15_000 }).toEqual([expect.stringContaining("#123456")]);
+      expect(asked).toEqual(["https://x.org/cell.svg"]);
+      view.destroy();
+      el.remove();
+    }
+  });
+
+  it("keeps an image's proportions when it is shrunk to fit or set to the full width", async () => {
+    const el = host();
+    el.style.width = "300px";
+    // 400 × 100 pt: wider than the element.
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="100"/>';
+    const options = (preamble?: string): TypstreamOptions => ({
+      engine,
+      source: '#image("wide.svg")\n\n#image("wide.svg", width: 50%)',
+      files: { "wide.svg": svg },
+      ...(preamble ? { preamble } : {}),
+      lazy: false,
+    });
+    const sizes = () => [...el.querySelectorAll("img")].map((i) => [i.offsetWidth, i.offsetHeight]);
+    const view = mountTypstream(el, options());
+    await until(view, (s) => s.status === "done");
+    await expect.poll(sizes).toEqual([
+      [300, 75],
+      [150, 38],
+    ]);
+    // Every image as wide as the page: a set rule in the preamble; a width the call gives still wins.
+    view.update(options("#set image(width: 100%)"));
+    await until(view, (s) => s.status === "done");
+    await expect.poll(sizes).toEqual([
+      [300, 75],
+      [150, 38],
+    ]);
+    view.update({
+      ...options("#set image(width: 100%)"),
+      source: '#image("wide.svg")',
+      files: { "wide.svg": svg.replace('width="400" height="100"', 'width="100" height="25"') },
+    });
+    // A small image grows to the width, in proportion.
+    await expect.poll(sizes).toEqual([[300, 75]]);
+    view.destroy();
+    el.remove();
+  });
+
   it("reopens the document when the preamble changes", async () => {
     const el = host();
     const view = mountTypstream(el, { engine, source: "#x", preamble: "#let x = [alpha]", lazy: false });

@@ -150,13 +150,13 @@ Two things change when the files live on another origin:
 
 ## Replacing the fixers
 
-When a compile fails, the worker tries its diagnostic fixers and recompiles. The built-in list is `DEFAULT_FIXERS`: `pendingRef`, `packageStub` and `tailCut`. A custom worker can replace it:
+When a compile fails, the worker tries its diagnostic fixers and recompiles. The built-in list is `DEFAULT_FIXERS`: `pendingRef`, `missingImage`, `packageStub` and `tailCut`. A custom worker can replace it:
 
 ```ts title="engine.worker.ts"
-import { engineWasm, packageStub, pendingRef, serve, tailCut } from "@typstream/engine/server";
+import { engineWasm, missingImage, packageStub, pendingRef, serve, tailCut } from "@typstream/engine/server";
 import { myFixer } from "./my-fixer";
 
-serve(engineWasm(), undefined, { fixers: [pendingRef, packageStub, myFixer, tailCut] });
+serve(engineWasm(), undefined, { fixers: [pendingRef, missingImage, packageStub, myFixer, tailCut] });
 ```
 
 The second argument is the worker scope (it defaults to the worker's global scope). Fixers are tried by `priority`, not by their place in the list. `fixers: []` turns them off. Plugins' fixer modules still join the list; to add a fixer without a custom worker, use a plugin ([Writing a plugin](/docs/guides/writing-a-plugin#writing-a-fixer-module)).

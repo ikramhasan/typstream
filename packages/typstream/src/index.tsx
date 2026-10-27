@@ -56,7 +56,8 @@ export const Typstream = ({
   />
 );
 
-export { createEngine, type EngineOptions, engineWorker } from "@typstream/engine";
+export { createEngine, type EngineOptions, engineWorker, type ImageResolver } from "@typstream/engine";
+export { type FetchImagesOptions, fetchImages } from "@typstream/engine/images";
 export { createHealer, type Healer, type HealOptions, type HealResult, heal } from "@typstream/heal";
 export { htmlCompat, htmlCompatCss } from "@typstream/html-compat";
 export {

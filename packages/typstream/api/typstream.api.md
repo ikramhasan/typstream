@@ -17,12 +17,15 @@ import { EngineOptions } from '@typstream/engine';
 import { engineWorker } from '@typstream/engine';
 import { FallbackEvent } from '@typstream/react';
 import { FallbackLevel } from '@typstream/react';
+import { fetchImages } from '@typstream/engine/images';
+import { FetchImagesOptions } from '@typstream/engine/images';
 import { heal } from '@typstream/heal';
 import { Healer } from '@typstream/heal';
 import { HealOptions } from '@typstream/heal';
 import { HealResult } from '@typstream/heal';
 import { htmlCompat } from '@typstream/html-compat';
 import { htmlCompatCss } from '@typstream/html-compat';
+import { ImageResolver } from '@typstream/engine';
 import * as react from 'react';
 import { RenderedEvent } from '@typstream/react';
 import { TelemetryHooks } from '@typstream/react';
@@ -64,6 +67,10 @@ export { FallbackEvent }
 
 export { FallbackLevel }
 
+export { fetchImages }
+
+export { FetchImagesOptions }
+
 export { heal }
 
 export { Healer }
@@ -75,6 +82,8 @@ export { HealResult }
 export { htmlCompat }
 
 export { htmlCompatCss }
+
+export { ImageResolver }
 
 export { RenderedEvent }
 

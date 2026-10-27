@@ -27,10 +27,10 @@ export const THEME_CSS = `:where(.typstream) {
   color: var(--typstream-foreground);
   overflow-wrap: break-word;
 }
-:where(.typstream[data-typstream-theme="light"]) {
+:where(.typstream[data-typstream-theme=light]) {
   color-scheme: light;
 }
-:where(.typstream[data-typstream-theme="dark"]) {
+:where(.typstream[data-typstream-theme=dark]) {
   color-scheme: dark;
 }
 :where(.typstream [style*=background]) {
@@ -61,6 +61,9 @@ export const THEME_CSS = `:where(.typstream) {
 :where(.typstream) img,
 :where(.typstream) svg {
   max-width: 100%;
+}
+:where(.typstream) img {
+  height: auto;
 }
 :where(.typstream) :is(p, li, dt, dd, h1, h2, h3, h4, h5, h6, th, td, figcaption, blockquote) {
   unicode-bidi: plaintext;
