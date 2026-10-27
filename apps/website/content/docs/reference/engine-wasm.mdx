@@ -120,7 +120,7 @@ keeps the previous pages as the baseline, so the next success diffs against what
 | `hash` | `string` | 32 hex digits identifying the page's content: equal hashes mean identical pages. |
 | `width`, `height` | `number` | Page size in Typst points. |
 | `svg` | `string` | The page as SVG. Glyphs are paths. Empty when the page comes as a `drawing`. |
-| `drawing` | `PageDrawing?` | With `drawings`: the page as drawing operations for a canvas, what `@typstream/dom`'s paged view paints. `ops` (little-endian 32-bit floats, the format in `src/draw.rs`), `strings` they name, `glyphs` (`[key, path]`: outlines in font units, one key one outline on every page), `links` (URL and box in points). |
+| `drawing` | `PageDrawing?` | With `drawings`: the page as drawing operations for a canvas, what `@typstream/dom`'s paged view paints. `ops` (little-endian 32-bit floats, the format in `src/draw.rs`), `strings` they name, `glyphs` (`[key, path]`: outlines in font units, one key one outline on every page), `links` (`PageLink`: URL and box in points). |
 | `text` | `TextRun[]` | The page's text runs as Typst laid them out, for a selectable text layer. |
 | `structure` | `TextNode[]` | Structure elements around the runs (headings, lists, tables), for accessibility. |
 | `lang` | `string` | The document's language as typst-html writes it (`ar`, `zh-CN`). |

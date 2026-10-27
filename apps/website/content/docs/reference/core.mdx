@@ -590,6 +590,22 @@ longer exist. A client whose displayed pages aren't from `base` must not apply i
 
 <auto-type-table path="packages/core/src/protocol.ts" name="PageUpdate" />
 
+#### `PageFormat`, `PageDrawing` (beta) and `PageLink` (beta)
+
+`PageFormat` is how a paged compile sends pages (`CompileParams.pageFormat`): `"svg"`, the default, or `"drawing"`,
+operations for a canvas that `@typstream/dom`'s paged view paints. A server that can't draw a page sends it as SVG
+either way. A `PageDrawing` holds the operations (32-bit floats, in the encoding engine-wasm's `src/draw.rs`
+describes), the strings they name, the glyph outlines they draw and the page's `PageLink`s: the box around each link
+to a URL, in points.
+
+<Callout type="warn" title="Beta">
+`PageDrawing` and `PageLink` are beta: the encoding may change before the first stable release.
+</Callout>
+
+<auto-type-table path="packages/core/src/protocol.ts" name="PageDrawing" />
+
+<auto-type-table path="packages/core/src/protocol.ts" name="PageLink" />
+
 #### `TextRun`
 
 A run of text drawn on a page, for a selectable text layer. In points from the page's top left: `(x, y)` is the start

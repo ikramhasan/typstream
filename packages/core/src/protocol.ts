@@ -474,7 +474,9 @@ export interface PageLink {
   x: number;
   /** Top edge. */
   y: number;
+  /** Across, so the link covers its text however the page is scaled. */
   width: number;
+  /** Down, from `y`. */
   height: number;
 }
 

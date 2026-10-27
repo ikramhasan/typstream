@@ -510,10 +510,8 @@ export type PageFormat = "svg" | "drawing";
 
 // @beta
 export interface PageLink {
-    // (undocumented)
     height: number;
     url: string;
-    // (undocumented)
     width: number;
     x: number;
     y: number;
