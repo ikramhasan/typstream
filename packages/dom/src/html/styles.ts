@@ -112,13 +112,7 @@ export const htmlRendererCss: string = `${THEME_CSS}
   min-width: max-content;
 }
 :where(.typstream typstream-island) {
-  display: block;
   position: relative;
-}
-:where(.typstream typstream-island > svg) {
-  max-width: 100% !important;
-  height: auto !important;
-  margin-inline: auto;
 }
 :where(.typstream typstream-island:has(> .typstream-island:not(:empty)) > svg) {
   visibility: hidden;
