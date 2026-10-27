@@ -32,6 +32,8 @@ const describeEvent = (event: EngineEvent): string => {
       return `${event.level}: ${event.message}`;
     case "failed":
       return `failed: ${event.error.message}`;
+    case "font":
+      return `font: loaded ${event.font.name} (${event.font.files.length} file${event.font.files.length === 1 ? "" : "s"})`;
     case "document": {
       const e = event.event;
       if (e.type === "fallback")

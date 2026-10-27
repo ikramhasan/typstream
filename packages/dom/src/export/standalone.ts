@@ -6,11 +6,12 @@
 // cleans nodes for a live page, and serializing them again for a file would
 // invite mutation XSS. Instead a Content-Security-Policy comes first in
 // <head>, so whatever the document contains can't run scripts, load anything
-// from the network or submit forms. It's a string transform (Typst's
+// from the network (but its fonts) or submit forms. It's a string transform (Typst's
 // serializer is regular, see ../html/split.ts), so it runs anywhere.
 
-import type { TypstreamPlugin } from "@typstream/core";
+import type { LoadedFontFamily, TypstreamPlugin } from "@typstream/core";
 import { directionOf } from "../html/dir";
+import { FONT_ATTRIBUTE, fontWeight, loadedFontCss, webFontFamily } from "../html/fonts";
 import { THEME_CSS } from "../html/theme";
 import { stylesheetsOf } from "../plugins";
 
@@ -35,6 +36,11 @@ export interface StandaloneHtmlOptions {
    * own math font, if any.
    */
   mathFont?: Uint8Array | string | URL;
+  /**
+   * Families loaded from font catalogues (`Engine.fonts`): those the document
+   * uses load from their URLs, which the file's policy allows. @beta
+   */
+  fonts?: readonly LoadedFontFamily[];
   /** The `<title>`, unless the document sets one (`#set document(title: …)`). */
   title?: string;
 }
@@ -64,6 +70,9 @@ const PAGE_CSS = `:where(body.typstream) {
 
 const escapeText = (s: string): string => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
+/** As Typst's serializer escapes an attribute value. */
+const escapeAttr = (s: string): string => escapeText(s).replace(/"/g, "&quot;");
+
 const base64 = (bytes: Uint8Array): string => {
   let binary = "";
   // In chunks: spreading a whole font into fromCharCode overflows the stack.
@@ -85,7 +94,7 @@ const withAttr = (attrs: string, name: string, value: string, append = false): s
  * `typstream` on `<body>`, an optional math font, and a Content-Security-Policy
  * that keeps the document from running scripts or loading anything except
  * inline styles and `data:` images and fonts (plus `mathFont`'s origin when it
- * is a URL). `<meta http-equiv="refresh">` is removed, and an RTL document's
+ * is a URL, and those of the `fonts` it uses). `<meta http-equiv="refresh">` is removed, and an RTL document's
  * `<html>` gets `dir="rtl"` from its `lang` (Typst writes no direction).
  *
  * @example
@@ -111,6 +120,20 @@ export const standaloneHtml = (html: string, options: StandaloneHtmlOptions = {}
     }
     fontFace = `@font-face {\n  font-family: "${MATH_FAMILY}";\n  src: url(${JSON.stringify(src)});\n}\n`;
   }
+  // The catalogues' families its text is marked with, as the renderer shows them.
+  const origins = new Set<string>();
+  for (const font of options.fonts ?? []) {
+    if (!html.includes(`${FONT_ATTRIBUTE}="${escapeAttr(font.family)}"`)) continue;
+    for (const file of font.files) {
+      const url = new URL(file.url);
+      origins.add(url.origin);
+      fontFace +=
+        `@font-face {\n  font-family: ${webFontFamily(font)};\n  src: url(${JSON.stringify(url.href)});\n` +
+        `  font-style: ${file.style};\n  font-weight: ${fontWeight(file)};\n  font-display: swap;\n}\n`;
+    }
+    fontFace += loadedFontCss(font);
+  }
+  for (const origin of origins) fontSrc += ` ${origin}`;
   const csp = [
     "default-src 'none'",
     "style-src 'unsafe-inline'",

@@ -1,15 +1,30 @@
-// Plugins' engine and heal facets (PLAN §8.0). Fonts, fixer modules and
-// packages shared by the worker come from `createEngine`'s plugins and go out
-// with `initialize`; a document's plugins add its files, packages, preamble,
-// heal handlers and lint settings, and fixer modules the worker loads for it
-// (`document/open`). Fonts stay the engine's: they are the worker's, not a
-// document's, so a document's plugin can't bring its own.
+// Plugins' engine and heal facets (PLAN §8.0). Fonts, fixer modules, font
+// catalogues and packages shared by the worker come from `createEngine`'s
+// plugins and go out with `initialize`; a document's plugins add its files,
+// packages, preamble, heal handlers and lint settings, and fixer modules and
+// font catalogues the worker loads for it (`document/open`). Fonts stay the
+// engine's: they are the worker's, not a document's, so a document's plugin
+// can't bring its own. A catalogue only names fonts, which the worker loads
+// for itself when a document asks for one.
 
-import { type FontSource, type InitializeOptions, resolvePlugins, type TypstreamPlugin } from "@typstream/core";
+import {
+  type FontCatalogue,
+  type FontSource,
+  type InitializeOptions,
+  resolvePlugins,
+  type TypstreamPlugin,
+} from "@typstream/core";
 import type { HealOptions } from "@typstream/heal";
 import type { DocumentOptions } from "./document";
 
-/** `initialize`'s options: the engine's own, then its plugins' fonts, packages and fixer modules. */
+/** Each catalogue once (by index URL), in the place it first comes. */
+const uniqueCatalogues = (catalogues: readonly FontCatalogue[]): FontCatalogue[] => {
+  const byIndex = new Map<string, FontCatalogue>();
+  for (const c of catalogues) if (!byIndex.has(c.index)) byIndex.set(c.index, c);
+  return [...byIndex.values()];
+};
+
+/** `initialize`'s options: the engine's own, then its plugins' fonts, packages, fixer modules and font catalogues. */
 export const initializeOptions = (
   initialize: InitializeOptions | undefined,
   plugins: readonly TypstreamPlugin[],
@@ -21,11 +36,16 @@ export const initializeOptions = (
   const fixerModules = [
     ...new Set([...(initialize?.fixerModules ?? []), ...facets.flatMap((e) => e.fixerModules ?? [])]),
   ];
+  const fontCatalogues = uniqueCatalogues([
+    ...(initialize?.fontCatalogues ?? []),
+    ...facets.flatMap((e) => e.fontCatalogues ?? []),
+  ]);
   return {
     ...initialize,
     ...(fonts.length ? { fonts } : {}),
     ...(packages.length ? { packages } : {}),
     ...(fixerModules.length ? { fixerModules } : {}),
+    ...(fontCatalogues.length ? { fontCatalogues } : {}),
   };
 };
 
@@ -51,6 +71,10 @@ export const documentOptions = (
   const files = Object.assign({}, ...engines.map((e) => e.files), options.files);
   const packages = [...engines.flatMap((e) => e.packages ?? []), ...(options.packages ?? [])];
   const fixerModules = [...new Set(engines.flatMap((e) => e.fixerModules ?? []))];
+  const fontCatalogues = uniqueCatalogues([
+    ...engines.flatMap((e) => e.fontCatalogues ?? []),
+    ...(options.fontCatalogues ?? []),
+  ]);
   const handlers = [...plugins.flatMap((p) => p.heal?.handlers ?? []), ...(options.heal?.handlers ?? [])];
   const lint = Object.assign({}, ...plugins.map((p) => p.heal?.lint), options.heal?.lint) as HealOptions["lint"];
   const heal: HealOptions = {
@@ -72,6 +96,7 @@ export const documentOptions = (
       ...(Object.keys(files).length ? { files } : {}),
       ...(packages.length ? { packages } : {}),
       ...(fixerModules.length ? { fixerModules } : {}),
+      ...(fontCatalogues.length ? { fontCatalogues } : {}),
       heal,
     },
     fonts,

@@ -12,6 +12,7 @@ import {
   type ExportResult,
   type InitializeOptions,
   type InitializeResult,
+  type LoadedFontFamily,
   PROTOCOL_VERSION,
   type RequestId,
   type Revision,
@@ -48,9 +49,10 @@ export interface EngineOptions {
   initialize?: InitializeOptions;
   /**
    * Plugins whose worker-wide facets the engine loads (PLAN §8.0): their
-   * `engine.fonts`, `engine.packages` and `engine.fixerModules` join
-   * `initialize`'s. Their document facets (files, preamble, heal) apply to the
-   * documents that list them in {@link DocumentOptions.plugins}.
+   * `engine.fonts`, `engine.packages`, `engine.fixerModules` and
+   * `engine.fontCatalogues` join `initialize`'s. Their document facets
+   * (files, preamble, heal) apply to the documents that list them in
+   * {@link DocumentOptions.plugins}.
    */
   plugins?: readonly TypstreamPlugin[];
   /** Sent with `initialize`, for the worker's logs. */
@@ -84,6 +86,8 @@ export interface EngineOptions {
  *   a new one opens.
  * - `recycle`: a worker was replaced because it used too much memory.
  * - `log`: a `$/log` message from the worker.
+ * - `font`: a worker loaded a family from a font catalogue, the first time
+ *   ({@link Engine.fonts}).
  * - `failed`: the engine can't run; every document is in `error`.
  * - `document`: an event of one of the engine's documents (see
  *   `EngineDocument.onEvent`), so one listener can collect them all.
@@ -96,6 +100,7 @@ export type EngineEvent =
   | { type: "disconnect"; error: unknown }
   | { type: "recycle"; memoryBytes: number }
   | { type: "log"; level: "debug" | "info" | "warn" | "error"; message: string }
+  | { type: "font"; font: LoadedFontFamily }
   | { type: "failed"; error: Error }
   | { type: "document"; event: DocumentEvent };
 
@@ -111,6 +116,12 @@ export interface Engine {
   readonly ready: Promise<InitializeResult>;
   /** Calls `listener` with every {@link EngineEvent}; returns the unsubscribe function. */
   onEvent(listener: (event: EngineEvent) => void): () => void;
+  /**
+   * The families the engine's workers loaded from font catalogues so far
+   * (PLAN §6.4), each once, in the order they arrived: what the HTML target
+   * shows as web fonts. A `font` event announces each new one. @beta
+   */
+  readonly fonts: readonly LoadedFontFamily[];
   /** Disposes every document and terminates the workers. */
   dispose(): void;
 }
@@ -195,6 +206,8 @@ class EngineImpl implements Engine, DocumentHost {
   private readonly initialize: InitializeOptions | undefined;
   /** Plugins already warned about for fonts the engine doesn't load. */
   private readonly fontWarnings = new Set<string>();
+  /** Families loaded from font catalogues, by name: they outlive the worker that loaded them. */
+  private readonly loadedFonts = new Map<string, LoadedFontFamily>();
 
   constructor(options: EngineOptions) {
     this.options = options;
@@ -239,6 +252,10 @@ class EngineImpl implements Engine, DocumentHost {
   onEvent(listener: (event: EngineEvent) => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
+  }
+
+  get fonts(): readonly LoadedFontFamily[] {
+    return [...this.loadedFonts.values()];
   }
 
   dispose(): void {
@@ -369,7 +386,12 @@ class EngineImpl implements Engine, DocumentHost {
   private receive(slot: Slot, n: ServerNotification): void {
     if (slot !== this.active) return;
     if (n.method === "$/log") this.emit({ type: "log", ...n.params });
-    else this.docs.get(n.params.uri)?.receive(n);
+    else if (n.method === "fonts/loaded") {
+      // A replacement worker loads a family again: the page has it already.
+      if (this.loadedFonts.has(n.params.family)) return;
+      this.loadedFonts.set(n.params.family, n.params);
+      this.emit({ type: "font", font: n.params });
+    } else this.docs.get(n.params.uri)?.receive(n);
   }
 
   /** The worker failed, or (`lost`) the connection to it dropped. */

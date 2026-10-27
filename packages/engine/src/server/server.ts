@@ -22,6 +22,7 @@ import {
   type FallbackParams,
   type FileContent,
   type FileDelta,
+  type FontCatalogue,
   type InitializeParams,
   type InitializeResult,
   isClientNotification,
@@ -41,7 +42,13 @@ import {
   type VersionMismatchData,
 } from "@typstream/core";
 import { fileKey } from "../image-paths";
-import type { AdapterDocument, AdapterHtmlResult, AdapterPagedResult, EngineAdapter } from "./adapter";
+import type {
+  AdapterCompileResult,
+  AdapterDocument,
+  AdapterHtmlResult,
+  AdapterPagedResult,
+  EngineAdapter,
+} from "./adapter";
 import { type Anchored, Anchors, fromAnchored } from "./anchors";
 import { type Attempt, type RecoverMemo, recover, showsLess, toDocument, type Variant } from "./fallback";
 import {
@@ -54,6 +61,7 @@ import {
   placeholderImages,
   runFixers,
 } from "./fixers";
+import { anyArrives, type FontCatalogueOptions, FontCatalogues } from "./fonts";
 import { DocumentPackages, type PackageOptions, PackageStore } from "./packages";
 import { RUNTIME, RUNTIME_IMPORT, RUNTIME_PATH } from "./runtime";
 
@@ -113,6 +121,11 @@ export interface ServerOptions {
    * client allows. @beta
    */
   packages?: PackageOptions;
+  /**
+   * Font catalogues (PLAN §6.4): the server's own, whether to use the
+   * client's. Default: only the client's. @beta
+   */
+  fontCatalogues?: FontCatalogueOptions;
 }
 
 /**
@@ -171,8 +184,10 @@ interface Doc {
   files: Set<string>;
   /** Layer 3 fixers in the order they're tried: the server's, plus the document's fixer modules'. */
   fixers: DiagnosticFixer[];
+  /** Font catalogues it loads families it names from: the server's, `initialize`'s and its own. */
+  catalogues: FontCatalogue[];
   /**
-   * What the last compile lacked and is on its way (a lazy font), with that
+   * What the last compile lacked and is on its way (a lazy font, a catalogue's family), with that
    * compile's params to repeat once it arrives. Any compile replaces it.
    */
   waiting: { pending: Promise<void>; params: CompileParams } | null;
@@ -292,6 +307,7 @@ class Server implements EngineServer {
   /** Documents' fixer modules by URL, each imported once. */
   private readonly documentModules = new Map<string, Promise<DiagnosticFixer[]>>();
   private readonly packages: PackageStore;
+  private readonly fonts: FontCatalogues;
 
   constructor(
     private readonly adapter: EngineAdapter,
@@ -300,6 +316,12 @@ class Server implements EngineServer {
   ) {
     this.fixers = orderFixers(options.fixers ?? DEFAULT_FIXERS);
     this.packages = new PackageStore(options.packages);
+    this.fonts = new FontCatalogues(
+      adapter,
+      (family) => this.post({ method: "fonts/loaded", params: family }),
+      (message) => this.post({ method: "$/log", params: { level: "warn", message } }),
+      options.fontCatalogues,
+    );
   }
 
   receive(message: ClientMessage): void {
@@ -466,11 +488,14 @@ class Server implements EngineServer {
    * alongside one.
    */
   private await(doc: Doc, params: CompileParams, pending: Promise<void>[]): void {
-    if (pending.length === 0) {
+    const all = anyArrives(pending);
+    if (!all) {
       doc.waiting = null;
       return;
     }
-    const waiting = { pending: Promise.all(pending).then(() => {}), params };
+    // Waits for all of it to settle, and recompiles if anything arrived: a family no catalogue has
+    // doesn't hold back the ones that loaded.
+    const waiting = { pending: all, params };
     doc.waiting = waiting;
     waiting.pending.then(
       () => {
@@ -510,10 +535,21 @@ class Server implements EngineServer {
     }
   }
 
+  /**
+   * What a compile lacked that is on its way: lazy fonts (the adapter's
+   * `pending`), and the families its warnings name that the document's font
+   * catalogues have.
+   */
+  private lacking(doc: Doc, r: AdapterCompileResult): Promise<void> | undefined {
+    const fonts = this.fonts.missing(r.diagnostics, doc.catalogues);
+    return fonts && r.pending ? anyArrives([r.pending, fonts]) : (fonts ?? r.pending);
+  }
+
   /** An export's compile, once more after what it lacked arrived (within {@link EXPORT_WAIT_MS}). */
-  private async exportOnce<R extends { pending?: Promise<void> }>(compile: () => R | Promise<R>): Promise<R> {
+  private async exportOnce<R extends AdapterCompileResult>(doc: Doc, compile: () => R | Promise<R>): Promise<R> {
     const r = await compile();
-    return r.pending && (await arrives(r.pending, EXPORT_WAIT_MS)) ? compile() : r;
+    const pending = this.lacking(doc, r);
+    return pending && (await arrives(pending, EXPORT_WAIT_MS)) ? compile() : r;
   }
 
   /**
@@ -569,6 +605,7 @@ class Server implements EngineServer {
       }
       this.phase = "initializing";
       this.packages.setClientPackages(params.options?.packages);
+      this.fonts.setClient(params.options?.fontCatalogues);
       const urls = this.clientModules(params.options?.fixerModules ?? []);
       try {
         const [, modules] = await Promise.all([
@@ -589,6 +626,7 @@ class Server implements EngineServer {
           targets: [...this.adapter.targets],
           exports: [...this.adapter.exports],
           pagedDiff: this.adapter.targets.includes("paged"),
+          ...(this.fonts.enabled ? { fontCatalogues: true } : {}),
         },
         serverInfo: { ...this.adapter.info },
       };
@@ -602,7 +640,7 @@ class Server implements EngineServer {
       return null;
     },
 
-    "document/open": async ({ uri, rev, text, preamble, files, packages, fixerModules }) => {
+    "document/open": async ({ uri, rev, text, preamble, files, packages, fixerModules, fontCatalogues }) => {
       this.ready();
       if (this.docs.has(uri)) throw new ProtocolError("document-already-open", `document ${uri} is already open`);
       const fixers = await this.documentFixers(fixerModules ?? []);
@@ -637,6 +675,7 @@ class Server implements EngineServer {
           doc.memo = null;
         }),
         fixers,
+        catalogues: this.fonts.forDocument(fontCatalogues),
         files: keys,
       };
       this.docs.set(uri, doc);
@@ -700,12 +739,14 @@ class Server implements EngineServer {
       const count = (ms: number | undefined) => {
         if (ms !== undefined) compileMs = (compileMs ?? 0) + ms;
       };
-      // What compiles lacked that is on its way (lazy fonts): the document is compiled again once it arrives.
+      // What compiles lacked that is on its way (lazy fonts, catalogues' families): the document is compiled
+      // again once it arrives.
       const pending: Promise<void>[] = [];
       const compile = async (): Promise<Compiled> => {
         r = await this.compileMain(doc, target, mode, full);
         count(r.compileMs);
-        if (r.pending) pending.push(r.pending);
+        const lacking = this.lacking(doc, r);
+        if (lacking) pending.push(lacking);
         return r;
       };
 
@@ -884,7 +925,7 @@ class Server implements EngineServer {
       if (!this.adapter.exports.includes("html")) this.unsupported("HTML export");
       await doc.packages.prepare(doc.prefix + doc.text, performance.now() + FIX_BUDGET_MS.final);
       this.sync(doc, inputs);
-      const r = await this.exportOnce(() => doc.compiler.compileHtml({ mode: "final" }));
+      const r = await this.exportOnce(doc, () => doc.compiler.compileHtml({ mode: "final" }));
       const diagnostics = this.diagnostics(doc, r.diagnostics);
       return r.html === null
         ? { uri, rev, diagnostics, status: "error" }
@@ -897,7 +938,7 @@ class Server implements EngineServer {
       await doc.packages.prepare(doc.prefix + doc.text, performance.now() + FIX_BUDGET_MS.final);
       this.sync(doc, inputs);
       const exportPdf = doc.compiler.exportPdf.bind(doc.compiler);
-      const r = await this.exportOnce(() => exportPdf({ mode: "final" }));
+      const r = await this.exportOnce(doc, () => exportPdf({ mode: "final" }));
       const diagnostics = this.diagnostics(doc, r.diagnostics);
       return r.pdf === null
         ? { uri, rev, diagnostics, status: "error" }

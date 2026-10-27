@@ -46,6 +46,12 @@ on the main thread, where the app decides which paths to fetch and from which ho
 so a `@typstream/node` server stays offline whatever its clients' documents name. An image URL is a way out for data
 the model read, so allow only hosts you trust; see [Images](/docs/guides/images#images-from-the-web).
 
+Font catalogues (`@typstream/google-fonts`) are the other, also opt-in: a family a document names is downloaded if a
+catalogue the app gave the engine lists it. The document chooses only among the catalogue's families; the URLs come
+from the catalogue's index, never from the document, and a server facing untrusted clients ignores the catalogues
+they send (`fontCatalogues: { trustClient: false }`, which `@typstream/node` sets). Which family a document asked for
+is visible to the catalogue's host.
+
 <Callout type="error" title="Keep the engine offline">
   Don't give typstream an engine whose file access goes to the network. typst.ts's `FetchAccessModel`, for example, turns every path a document names into a request to your origin.
 </Callout>
@@ -102,7 +108,7 @@ The engine's `doc.exportHtml()` (and `@typstream/node`'s `render(source, "html")
 
 ## Privacy
 
-Nothing is fetched from third parties by default. The engine, its fonts and packages come from the app's origin and are cached in Cache Storage. typstream sends no telemetry; the [events it reports](/docs/guides/telemetry) go only where your app sends them.
+Nothing is fetched from third parties by default. The engine, its fonts and packages come from the app's origin and are cached in Cache Storage. `@typstream/google-fonts` is the exception when you add it: readers' browsers download the families documents use from `cdn.jsdelivr.net`, unless you [mirror them](/docs/guides/fonts-and-languages#limits). typstream sends no telemetry; the [events it reports](/docs/guides/telemetry) go only where your app sends them.
 
 ## Content-Security-Policy
 
@@ -129,7 +135,7 @@ What each directive is for:
 |---|---|
 | `script-src 'wasm-unsafe-eval'` | The engine is WebAssembly. Compiling a module needs this keyword: it allows `WebAssembly.compile*`, not `eval`. The worker gets the policy from its own response, so send the header on the worker script too. |
 | `worker-src 'self'` | The engine runs in a module worker loaded from your origin (`engineWorker()`). Bundling setups that inline workers as `blob:` URLs need `blob:` here. |
-| `connect-src 'self'` | The worker fetches the wasm, the fonts (script fonts lazily, when a document uses them) and package tarballs. Add the origin if you serve these from a CDN ([Self-hosting](/docs/guides/self-hosting#loading-from-a-cdn)), and the WebSocket's origin for a [remote engine](/docs/guides/remote-engine). |
+| `connect-src 'self'` | The worker fetches the wasm, the fonts (script fonts lazily, when a document uses them) and package tarballs. Add the origin if you serve these from a CDN ([Self-hosting](/docs/guides/self-hosting#loading-from-a-cdn)), the WebSocket's origin for a [remote engine](/docs/guides/remote-engine), and `https://cdn.jsdelivr.net` for [Google Fonts](/docs/guides/fonts-and-languages#any-google-fonts-family) (the worker and the HTML renderer download the families documents name). |
 | `img-src data: blob:` | Typst writes a document's images as `data:` URLs, and apps may pass `blob:` ones. |
 | `font-src 'self'` | `registerMathFont` loads New Computer Modern Math for MathML through the FontFace API. |
 | `style-src 'self'` | Enough. The renderers inject their CSS as constructed stylesheets (`adoptedStyleSheets`), and apply the inline styles of Typst's HTML (layout from html-compat, fills, colours) through the CSSOM. A strict policy refuses `style` attributes parsed from markup, so they never reach the parser. Browsers without constructed stylesheets (Safari before 16.4) get a `<style>` element instead, which needs `'unsafe-inline'`. |

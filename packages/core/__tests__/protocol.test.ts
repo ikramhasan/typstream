@@ -63,7 +63,9 @@ describe("protocol types", () => {
       | "resolve/span"
       | "resolve/location"
     >();
-    expectTypeOf<ServerNotificationMethod>().toEqualTypeOf<"document/diagnostics" | "document/artifact" | "$/log">();
+    expectTypeOf<ServerNotificationMethod>().toEqualTypeOf<
+      "document/diagnostics" | "document/artifact" | "fonts/loaded" | "$/log"
+    >();
     expectTypeOf<ClientNotification["method"]>().toEqualTypeOf<"$/cancel">();
   });
 
@@ -86,6 +88,8 @@ describe("protocol types", () => {
           return `${n.params.rev}:${n.params.diagnostics.length}`;
         case "document/artifact":
           return n.params.artifact.target;
+        case "fonts/loaded":
+          return n.params.family;
         case "$/log":
           return n.params.message;
         default:

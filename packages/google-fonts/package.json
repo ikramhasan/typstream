@@ -1,0 +1,35 @@
+{
+  "name": "@typstream/google-fonts",
+  "version": "0.0.0",
+  "description": "Any family of the Google Fonts library in typstream documents, by name: a font catalogue the engine loads families from on demand, in both render targets.",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./catalogue.json": "./catalogue.json"
+  },
+  "files": [
+    "dist",
+    "catalogue.json"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "catalogue": "node scripts/catalogue.mjs",
+    "check-types": "tsc -p tsconfig.json",
+    "check:api": "api-extractor run",
+    "api:update": "api-extractor run --local",
+    "check:package": "publint --strict --pack npm && attw --pack . --profile esm-only --exclude-entrypoints ./catalogue.json"
+  },
+  "dependencies": {
+    "@typstream/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@typstream/engine-wasm": "workspace:*"
+  }
+}

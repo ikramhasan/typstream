@@ -71,7 +71,7 @@ export class TestClient {
   async compile(params: CompileParams): Promise<Compiled> {
     this.notes = [];
     const result = await this.request("compile", params);
-    const mine = this.notes.filter((n) => n.method !== "$/log" && n.params.uri === params.uri);
+    const mine = this.notes.filter((n) => "uri" in n.params && n.params.uri === params.uri);
     const diagnostics = mine.flatMap((n) => (n.method === "document/diagnostics" ? [n.params.diagnostics] : []));
     const artifacts = mine.flatMap((n) => (n.method === "document/artifact" ? [n.params.artifact] : []));
     return {

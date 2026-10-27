@@ -65,6 +65,39 @@ describe("standaloneHtml", () => {
     expect(() => standaloneHtml(TYPST, { mathFont: "fonts/NewCMMath.otf" })).toThrow();
   });
 
+  it("links the catalogue fonts the document uses, and allows their origin", () => {
+    const variable = (path: string, style: "normal" | "italic") => ({
+      path,
+      style,
+      weight: [400, 700] as [number, number],
+      url: `https://cdn.example.com/f/${path}`,
+    });
+    const lora = {
+      family: "lora",
+      name: "Lora",
+      files: [variable("Lora[wght].ttf", "normal"), variable("Lora-Italic[wght].ttf", "italic")],
+    };
+    const caveat = {
+      family: "caveat",
+      name: "Caveat",
+      files: [
+        { path: "Caveat.ttf", style: "normal" as const, weight: 400, url: "https://other.example.com/Caveat.ttf" },
+      ],
+    };
+    const html = TYPST.replace("<p>Hi</p>", '<p><span data-typstream-font="lora">Hi</span></p>');
+    const out = standaloneHtml(html, { fonts: [lora, caveat] });
+    expect(out).toContain(
+      '@font-face {\n  font-family: "typstream Lora";\n  src: url("https://cdn.example.com/f/Lora[wght].ttf");\n' +
+        "  font-style: normal;\n  font-weight: 400 700;\n  font-display: swap;\n}",
+    );
+    expect(out).toContain("font-style: italic;\n  font-weight: 400 700;");
+    expect(out).toContain('.typstream [data-typstream-font="lora"] { font-family: "typstream Lora"; }');
+    // Caveat isn't used: no rule, and its origin stays out of the policy.
+    expect(out).not.toContain("Caveat");
+    expect(csp(out)).toContain("font-src data: https://cdn.example.com;");
+    expect(csp(standaloneHtml(TYPST, { fonts: [lora] }))).toContain("font-src data:;");
+  });
+
   it("removes refresh redirects and keeps stylesheets from closing <style>", () => {
     const html = TYPST.replace(
       "<p>Hi</p>",

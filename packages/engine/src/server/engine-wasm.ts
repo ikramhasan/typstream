@@ -6,7 +6,8 @@
 // Fonts (PLAN §6.4, #11): the base fonts are loaded at `init`. Lazy fonts are
 // registered from their metadata only; a compile that selects one reports it
 // missing (it falls back or draws tofu), the adapter fetches it, and the
-// result's `pending` tells the server to recompile once it has arrived.
+// result's `pending` tells the server to recompile once it has arrived. Fonts
+// from font catalogues arrive while it runs, through `addFonts` (./fonts.ts).
 
 import type { ExportFormat, FontSource } from "@typstream/core";
 import initWasm, { Engine, type InitInput } from "@typstream/engine-wasm";
@@ -185,6 +186,14 @@ export const engineWasm = (options: EngineWasmOptions = {}): EngineAdapter => {
       for (const font of loaded) Engine.add_font(font);
       for (const font of lazy) lazyUrls.set(Engine.register_font(font.info), font.url);
       if (Engine.features().includes("pdf")) exports = ["html", "pdf"];
+    },
+
+    async addFonts(fonts) {
+      const loaded = await Promise.all(
+        fonts.map((font) => (font instanceof Uint8Array ? font : fetchFont(font, cache))),
+      );
+      // Like `init`'s: compiles snapshot the font book, so the next one has them.
+      for (const font of loaded) Engine.add_font(font);
     },
 
     open(): AdapterDocument {
