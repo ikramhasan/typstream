@@ -1,6 +1,7 @@
 // The policy this example is served with, and apps/website/content/docs/guides/security.mdx recommends:
 // everything from the page's own origin, no inline script or style, no eval.
 // WebAssembly needs 'wasm-unsafe-eval' (it compiles code, but can't run script).
+// Trusted Types: typstream's markup and worker URL go through its `typstream` policy.
 export const CSP = [
   "default-src 'none'",
   "script-src 'self' 'wasm-unsafe-eval'",
@@ -12,4 +13,6 @@ export const CSP = [
   "base-uri 'none'",
   "form-action 'none'",
   "frame-ancestors 'none'",
+  "require-trusted-types-for 'script'",
+  "trusted-types typstream",
 ].join("; ");

@@ -18,7 +18,7 @@
 //   screen readers must reach every page's headings. A layer is cheap next to
 //   its SVG, and `contain: strict` keeps its relayout to itself.
 
-import type { PagedArtifact, PageUpdate } from "@typstream/core";
+import { type PagedArtifact, type PageUpdate, trustedHTML } from "@typstream/core";
 import { sanitizeLinks } from "./links";
 import { type Cancel, idle } from "./schedule";
 import { fillTextLayer, TEXT_LAYER_CSS } from "./text-layer";
@@ -133,6 +133,8 @@ export const createPagedView = (container: HTMLElement, options: PagedViewOption
   const wantText = options.textLayer ?? true;
   const linkTarget = options.linkTarget === undefined ? "_blank" : options.linkTarget;
   const doc = container.ownerDocument;
+  // Pages are parsed here first (inert: nothing loads), so links and images are filtered before they reach the page.
+  const template = doc.createElement("template");
   ensureStyles(doc);
 
   const element = doc.createElement("div");
@@ -183,7 +185,10 @@ export const createPagedView = (container: HTMLElement, options: PagedViewOption
   const drawSvg = (slot: Slot) => {
     const page = slot.want;
     batch?.pages.push(page.index);
-    slot.svg.innerHTML = page.svg;
+    // Under Trusted Types (#70) through typstream's policy, for the inert template.
+    template.innerHTML = trustedHTML(page.svg);
+    sanitizeLinks(template.content, linkTarget);
+    slot.svg.replaceChildren(template.content);
     const svg = slot.svg.firstElementChild as SVGSVGElement | null;
     if (svg) {
       svg.style.display = "block";
@@ -192,7 +197,6 @@ export const createPagedView = (container: HTMLElement, options: PagedViewOption
       // The text layer is what assistive technology reads.
       svg.setAttribute("aria-hidden", "true");
     }
-    sanitizeLinks(slot.svg, linkTarget);
     slot.drawn = page.hash;
   };
 

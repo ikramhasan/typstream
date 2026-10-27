@@ -50,8 +50,16 @@ try {
       if (response?.headers()["content-security-policy"] !== CSP)
         throw new Error("the page wasn't served with the policy");
 
-      for (const target of ["html", "paged"]) {
-        await page.waitForSelector(`#${target}[data-status="done"]`, { timeout: 120_000 });
+      try {
+        for (const target of ["html", "paged"]) {
+          await page.waitForSelector(`#${target}[data-status="done"]`, { timeout: 120_000 });
+        }
+      } catch (e) {
+        // Say why it never finished: what the page reported is the cause.
+        const violations = await page.evaluate(() => window.__violations);
+        const why = [...violations.map((v) => `CSP: ${v}`), ...errors.map((e) => `console: ${e}`)];
+        failures.push(`${name}:\n  ${[e.message.split("\n")[0], ...why].join("\n  ")}`);
+        continue;
       }
       // Lazy fonts and packages arrive after the first compile, which then runs again: let it settle.
       await page.waitForTimeout(2000);
@@ -82,14 +90,27 @@ try {
       if (report.pages < 1 || !report.pagedText.includes("Coordinates")) problems.push("paged: no page with text");
       problems.push(...report.violations.map((v) => `CSP: ${v}`), ...errors.map((e) => `console: ${e}`));
 
-      // The policy holds: an inline style attribute set by markup is refused.
-      const refused = await page.evaluate(() => {
-        const box = document.createElement("div");
-        box.innerHTML = '<span style="color: rgb(255, 0, 0)">probe</span>';
+      // The policy holds: an inline style attribute is refused, and so is a
+      // string assigned to innerHTML where the browser has Trusted Types.
+      const probe = await page.evaluate(() => {
+        const box = document.createElement("span");
+        box.setAttribute("style", "color: rgb(255, 0, 0)");
         document.body.append(box);
-        return getComputedStyle(box.firstElementChild).color !== "rgb(255, 0, 0)";
+        let markup = true;
+        try {
+          box.innerHTML = "probe";
+        } catch {
+          markup = false;
+        }
+        return {
+          style: getComputedStyle(box).color === "rgb(255, 0, 0)",
+          trustedTypes: "trustedTypes" in window,
+          markup,
+        };
       });
-      if (!refused) problems.push("the policy isn't enforced: an inline style applied");
+      if (probe.style) problems.push("the policy isn't enforced: an inline style applied");
+      if (probe.trustedTypes && probe.markup) problems.push("Trusted Types aren't enforced: innerHTML took a string");
+      else if (!probe.trustedTypes) console.log(`${name} has no Trusted Types: the directive is ignored there`);
 
       if (problems.length) failures.push(`${name}:\n  ${problems.join("\n  ")}`);
       else console.log(`ok: ${name}, both targets finished under the policy with no violations`);

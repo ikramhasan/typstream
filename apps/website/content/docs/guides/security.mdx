@@ -74,7 +74,7 @@ Everything else goes: scripts, styles, frames, objects, forms, `on*` handlers, `
 
 ### Paged target
 
-Pages are typst-svg's output: glyphs as paths, images as `data:` URLs, and attribute values escaped by its XML writer. A page lives in its own shadow root, where the app's CSS can't reach it. The view keeps links to `http(s)` and `mailto` only, and images with `data:` URLs only. It trusts typst-svg's serializer for the rest. The hostile documents check that on every Typst upgrade.
+Pages are typst-svg's output: glyphs as paths, images as `data:` URLs, and attribute values escaped by its XML writer. A page lives in its own shadow root, where the app's CSS can't reach it. Each page is parsed into an inert `<template>` first, and the view keeps links to `http(s)` and `mailto` only, and images with `data:` URLs only, before the page is inserted. It trusts typst-svg's serializer for the rest. The hostile documents check that on every Typst upgrade.
 
 ### Standalone HTML exports
 
@@ -88,7 +88,7 @@ Nothing is fetched from third parties by default. The engine, its fonts and pack
 
 ## Content-Security-Policy
 
-typstream works under a strict policy: no inline script, no inline style and no `eval`, with everything served from your own origin. typstream's CI serves a page with exactly this policy and opens it in Chromium, Firefox and WebKit, failing on any violation:
+typstream works under a strict policy: no inline script, no inline style, no `eval` and Trusted Types enforced, with everything served from your own origin. typstream's CI serves a page with exactly this policy and opens it in Chromium, Firefox and WebKit, failing on any violation:
 
 ```text title="Content-Security-Policy"
 default-src 'none';
@@ -100,7 +100,9 @@ font-src 'self';
 style-src 'self';
 base-uri 'none';
 form-action 'none';
-frame-ancestors 'none'
+frame-ancestors 'none';
+require-trusted-types-for 'script';
+trusted-types typstream
 ```
 
 What each directive is for:
@@ -113,10 +115,21 @@ What each directive is for:
 | `img-src data: blob:` | Typst writes a document's images as `data:` URLs, and apps may pass `blob:` ones. |
 | `font-src 'self'` | `registerMathFont` loads New Computer Modern Math for MathML through the FontFace API. |
 | `style-src 'self'` | Enough. The renderers inject their CSS as constructed stylesheets (`adoptedStyleSheets`), and apply the inline styles of Typst's HTML (layout from html-compat, fills, colours) through the CSSOM. A strict policy refuses `style` attributes parsed from markup, so they never reach the parser. Browsers without constructed stylesheets (Safari before 16.4) get a `<style>` element instead, which needs `'unsafe-inline'`. |
+| `require-trusted-types-for 'script'`, `trusted-types typstream` | Optional: [Trusted Types](https://developer.mozilla.org/en-US/docs/Web/API/Trusted_Types_API) make script sinks such as `innerHTML` refuse plain strings. typstream passes its markup and the engine worker's URL through one policy named `typstream`, so list that name next to your app's own policies. |
 
 Not needed: `'unsafe-eval'`, `'unsafe-inline'`, cross-origin isolation (COOP/COEP), or any third-party origin.
 
-Not supported yet: **Trusted Types** (`require-trusted-types-for 'script'`). The renderers parse markup with `innerHTML`, which Trusted Types refuses without a policy ([#70](https://github.com/ikramhasan/typstream/issues/70)).
+### Trusted Types
+
+With `require-trusted-types-for 'script'`, the browser refuses strings at script sinks unless a Trusted Types policy made them. typstream has three, and sends all of them through one policy named `typstream`, created the first time one is used:
+
+- the HTML renderer's markup, parsed into an inert `<template>` (nothing runs or loads) and sanitized before it is moved into the page;
+- each page's SVG, parsed the same way, its links and images filtered before the page is inserted;
+- the engine worker's URL (`engineWorker()`).
+
+The policy passes values through unchanged: what makes them safe is that markup is only ever parsed inert and cleaned, and that the worker URL is the one your bundler emitted.
+
+Allow the name in `trusted-types`, next to your own policies: `trusted-types my-app typstream`. A page can create a policy name only once. If something else has already created `typstream` (or the directive doesn't list it), typstream passes plain strings instead: that works without enforcement, or with a `default` policy, and fails with the browser's `TrustedHTML` error otherwise. Two copies of `@typstream/core` in one bundle each try to create it, so deduplicate them, or add `'allow-duplicates'` to the directive.
 
 ### Sending the header
 
@@ -134,6 +147,8 @@ export const CSP = [
   "base-uri 'none'",
   "form-action 'none'",
   "frame-ancestors 'none'",
+  "require-trusted-types-for 'script'",
+  "trusted-types typstream",
 ].join("; ");
 ```
 
@@ -185,7 +200,6 @@ For any other static host, use its header configuration.
 ## Known gaps
 
 - A document can draw outside its element in the HTML target: absolutely positioned content sized to the viewport, or the host page's own utility classes (`fixed inset-0`), can cover the app around it ([#69](https://github.com/ikramhasan/typstream/issues/69)). Script, network and navigation stay blocked; this is about deception.
-- Trusted Types ([#70](https://github.com/ikramhasan/typstream/issues/70)).
 - The paged view trusts typst-svg's serializer (above): the hostile documents run again on every Typst upgrade, as they do for the plugin sandbox.
 
 ## How this is tested

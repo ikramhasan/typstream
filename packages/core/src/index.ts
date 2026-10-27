@@ -111,4 +111,5 @@ export * from "./diagnostic";
 export * from "./plugin";
 export * from "./protocol";
 export * from "./telemetry";
+export * from "./trusted";
 export * from "./wire";
