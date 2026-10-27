@@ -9,6 +9,7 @@
       "examples/**",
       "tools/repo/**",
       "tools/compile-oracle/**",
+      "tools/browser-suites/**",
       ".dependency-cruiser.mjs",
       "!**/dist",
       "!**/.next",

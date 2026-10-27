@@ -504,6 +504,39 @@ importers:
         specifier: workspace:*
         version: link:../core
 
+  tools/browser-suites:
+    devDependencies:
+      '@typstream/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@typstream/corpus':
+        specifier: workspace:*
+        version: link:../../corpus
+      '@typstream/dom':
+        specifier: workspace:*
+        version: link:../../packages/dom
+      '@typstream/engine':
+        specifier: workspace:*
+        version: link:../../packages/engine
+      '@typstream/engine-wasm':
+        specifier: workspace:*
+        version: link:../../packages/engine-wasm
+      '@typstream/html-compat':
+        specifier: workspace:*
+        version: link:../../packages/html-compat
+      '@vitest/browser-playwright':
+        specifier: 4.1.12
+        version: 4.1.12(playwright@1.64.1)(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1))(vitest@4.1.12)
+      axe-core:
+        specifier: ^4.14.0
+        version: 4.14.0
+      playwright:
+        specifier: ^1.64.1
+        version: 1.64.1
+      sharp:
+        specifier: ^0.35.5
+        version: 0.35.5(@types/node@26.6.5)
+
   tools/compile-oracle:
     devDependencies:
       '@typstream/core':
@@ -2281,6 +2314,10 @@ packages:
 
   ast-v8-to-istanbul@1.0.7:
     resolution: {integrity: sha512-kFL68AG6ajd8fg248zwM9GQrUWEp79gsmjum34OEXjs4yHuUMZfYKwOLW9GMmB4oNvVrj+EAGxsP7ye2UR9UlA==}
+
+  axe-core@4.14.0:
+    resolution: {integrity: sha512-9WTZxEjsZ7b13TH8JPmbV2z8CHbl80/2hm3XPEG4JgNdQLK81IBRXmSxHfMAOkSqQeRxT/0dwNDz2GOm3zzpcQ==}
+    engines: {node: '>=4'}
 
   balanced-match@4.0.4:
     resolution: {integrity: sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA==}
@@ -4230,8 +4267,7 @@ snapshots:
   '@esbuild/win32-x64@0.28.2':
     optional: true
 
-  '@img/colour@1.1.0':
-    optional: true
+  '@img/colour@1.1.0': {}
 
   '@img/sharp-darwin-arm64@0.35.5':
     optionalDependencies:
@@ -5101,6 +5137,8 @@ snapshots:
       '@jridgewell/trace-mapping': 0.3.31
       estree-walker: 3.0.3
       js-tokens: 10.0.0
+
+  axe-core@4.14.0: {}
 
   balanced-match@4.0.4: {}
 
@@ -5972,7 +6010,6 @@ snapshots:
       '@img/sharp-win32-ia32': 0.35.5
       '@img/sharp-win32-x64': 0.35.5
       '@types/node': 26.6.5
-    optional: true
 
   shebang-command@2.0.0:
     dependencies:

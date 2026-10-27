@@ -73,9 +73,25 @@ describe("splitHtml", () => {
   });
 
   it("keeps the anchor before a wrapper for its first block", () => {
-    expect(blocks(doc(`${anchor(5)}<main><p>a</p><p>b</p></main>`))).toEqual([
+    expect(blocks(doc(`${anchor(5)}<main><p>a</p><p>b</p>${anchor(9)}<p>c</p></main>`))).toEqual([
       ["<p>a</p>", 5],
       ["<p>b</p>", 5],
+      ["<p>c</p>", 9],
+    ]);
+    // Without anchors at all (a document compiled without them), a lone wrapper is a template.
+    expect(blocks(doc("<main><p>a</p><p>b</p></main>"))).toEqual([
+      ["<p>a</p>", null],
+      ["<p>b</p>", null],
+    ]);
+  });
+
+  it("doesn't descend into a lone block with its own anchor (a stream that so far is one div)", () => {
+    const title = '<div class="ts-align"><strong>Title</strong><br>Subtitle</div>';
+    expect(blocks(doc(`${anchor(0)}${title}`))).toEqual([[title, 0]]);
+    // Its next block keeps it a block: the first frame doesn't take it for a template.
+    expect(blocks(doc(`${anchor(0)}${title}${anchor(40)}<p>a</p>`))).toEqual([
+      [title, 0],
+      ["<p>a</p>", 40],
     ]);
   });
 

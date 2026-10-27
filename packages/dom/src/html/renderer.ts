@@ -104,6 +104,14 @@ interface Block {
 
 const SRC_ATTRIBUTE = "data-typstream-src";
 
+/**
+ * Typst writes the document's language on `<html>`, first in its output, and
+ * nothing about direction: it derives that from the language (`Lang::dir` in
+ * typst-library's lang.rs), as the renderer does for its root.
+ */
+const HTML_LANG = /^(?:<!DOCTYPE html>\s*)?<html[^>]*?\slang="([^"]+)"/i;
+const RTL = /^(ar|dv|fa|he|ks|pa|ps|sd|ug|ur|yi)\b/i;
+
 let renderers = 0;
 
 const firstElement = (nodes: readonly Node[]): Element | null =>
@@ -235,6 +243,20 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
     for (const node of block.nodes) node.parentNode?.removeChild(node);
   };
 
+  /** The document's language and direction, from Typst's `<html lang>`, on the root. */
+  let language: string | undefined;
+  const setLanguage = (lang: string | undefined): void => {
+    if (lang === language) return;
+    language = lang;
+    if (lang) {
+      root.lang = lang;
+      root.dir = RTL.test(lang) ? "rtl" : "ltr";
+    } else {
+      root.removeAttribute("lang");
+      root.removeAttribute("dir");
+    }
+  };
+
   /** Rebuilds the wrapper elements around the blocks. */
   const buildShell = (start: readonly string[], end: readonly string[]): void => {
     for (const block of blocks) removeNodes(block);
@@ -261,6 +283,7 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
       buildShell(split.shellStart, split.shellEnd);
       shell = split.shell;
     }
+    setLanguage(HTML_LANG.exec(html)?.[1]);
     const next = split.blocks;
     const old = blocks;
 
@@ -397,6 +420,7 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
     clear,
     dispose() {
       clear();
+      setLanguage(undefined);
       root.classList.remove("typstream");
       root.removeAttribute("data-typstream-theme");
       for (const property of ["--typstream-animation", "--typstream-duration", "--typstream-easing"]) {

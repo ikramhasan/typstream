@@ -185,6 +185,7 @@ export type Requirement = {
     text: string;
     open: number;
     frame: FrameKind;
+    display?: boolean;
 } | {
     type: "cut";
     at: number;

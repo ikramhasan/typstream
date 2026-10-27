@@ -25,7 +25,11 @@ const close: Row[] = [
   ["$ x + ", "$ x + $", "math"],
   ["$frac(a, b", "$frac(a, b)$", "math-args,math"],
   ["$frac(a, ", "$frac(a, )$", "math-args,math"],
-  ["$ f(x", "$ f(x$", "math"],
+  ["$ f(x", "$ f(x $", "math"],
+  // A display equation stays display: `$ a + b$` would be inline (#19's flicker suite).
+  ["x\n$ a + b", "x\n$ a + b $", "math"],
+  ["$ frac(a, b", "$ frac(a, b) $", "math-args,math"],
+  ["$\n  x &= 1", "$\n  x &= 1 $", "math"],
   ["$ x &= 1 \\\n", "$ x &= 1 \\\n$", "math"],
   ["```py\nprint(1)", "```py\nprint(1)```", "raw"],
   ["```py\nx\n``", "```py\nx\n```", "raw"],

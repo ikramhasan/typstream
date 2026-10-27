@@ -10,7 +10,7 @@
 //
 // Function names mirror parser.rs so the two can be compared side by side.
 
-import { isAlphabetic } from "./chars";
+import { isAlphabetic, isWhitespace } from "./chars";
 import { isKeyword, isTrivia, type Kind, Lexer, type Mode, type Token } from "./lexer";
 
 export type FrameKind =
@@ -29,7 +29,17 @@ export type FrameKind =
   | "text-bracket";
 
 export type Requirement =
-  | { type: "close"; text: string; open: number; frame: FrameKind }
+  | {
+      type: "close";
+      text: string;
+      open: number;
+      frame: FrameKind;
+      /**
+       * A display equation (whitespace after its `$`): its closer needs whitespace before it too, or
+       * Typst makes it inline (`Equation::block` in typst-syntax's ast.rs wants a Space at both ends).
+       */
+      display?: boolean;
+    }
   | {
       type: "cut";
       at: number;
@@ -541,10 +551,10 @@ class Parser {
     return false;
   }
 
-  expectClosingDelimiter(open: number, k: Kind, frame: FrameKind): boolean {
+  expectClosingDelimiter(open: number, k: Kind, frame: FrameKind, display = false): boolean {
     if (this.eatIf(k)) return true;
     if (this.atRealEnd()) {
-      this.require({ type: "close", text: CLOSER[k] as string, open, frame });
+      this.require({ type: "close", text: CLOSER[k] as string, open, frame, ...(display ? { display } : {}) });
     } else {
       this.error(open, open + 1, "unclosed delimiter");
       if (k === "Star" || k === "Underscore") {
@@ -753,10 +763,11 @@ class Parser {
 
   equation(): void {
     const m = this.token.start;
+    const display = isWhitespace(this.text[m + 1]);
     this.enterModes("math", CONTINUE, () => {
       this.eat();
       this.math(EQUATION_STOP);
-      this.expectClosingDelimiter(m, "Dollar", "math");
+      this.expectClosingDelimiter(m, "Dollar", "math", display);
     });
     this.events.push({ type: "equation", start: m, end: this.token.prevEnd });
   }

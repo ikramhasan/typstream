@@ -33,6 +33,8 @@ packages/typstream  typstream: the convenience package (<Typstream> with html-co
 tools/typst-syntax-oracle   Typst's real parser and lexer compiled to wasm for Node; the ground truth in heal's tests.
 tools/compile-oracle        Do healed prefixes compile? heal × engine-wasm over the corpus, then the engine's fixers and fallback;
                             error classes, the prefix compile rate, and final-mode renders of every corpus document.
+tools/browser-suites  Corpus-wide browser suites (#19): final-render equivalence, flicker, accessibility (axe), and visual
+                    regression against baselines rendered in Playwright's Docker image.
 tools/repo        Repo tooling: package layer table (layers.mjs), layering check, shared tsup and api-extractor configs.
 corpus/           @typstream/corpus (private): shared test documents (edu/, adversarial/), meta.json, stream replay.
 apps/playground   Dev playground (Vite + React): replay streams, inspect healing and the engine's raw output, record corpus cases.
@@ -98,7 +100,7 @@ In `packages/dom`:
 
 In `packages/react`:
 - `pnpm test`: Node tests (provider merging, the shared engine's lifetime). `pnpm test:browser`: `<Typstream>` with React Testing Library against the real engine worker in Chromium, Firefox and WebKit (StrictMode, lazy opening, worker cleanup). `BROWSERS=chromium` runs one. Needs engine-wasm's `dist/`.
-- `pnpm size`: ≤ 15 KB gzipped including `@typstream/dom` (React and the engine external).
+- `pnpm size`: ≤ 15.5 KB gzipped including `@typstream/dom` (React and the engine external).
 - Its bundle starts with `"use client"` (tsup banner), as does `typstream`'s, for Next.js's App Router.
 
 In `examples/nextjs-ai-sdk`: `pnpm test` builds the app (Turbopack) and streams one answer into `<Typstream>` in Chromium, failing on any error frame. Without `ANTHROPIC_API_KEY` the route replays a recorded worksheet; build the packages first (`pnpm turbo run build --filter=typstream...`). CI runs it in the browsers job.
@@ -115,6 +117,17 @@ Compile oracle (`tools/compile-oracle`, needs the built engine): `pnpm turbo run
 CI (`.github/workflows/ci.yml`) runs the same commands on every PR, building the oracle through `.github/actions/oracle` and engine-wasm through `.github/actions/engine-wasm` (both cached on the crate's inputs), plus the engine's browser tests. `nightly.yml` runs `test:long` and heal's `pnpm mutate` (score in the job summary, HTML report as an artifact).
 
 Adding a package: copy `packages/core` and rename. Its `tsconfig.json`, `tsup.config.ts` and `api-extractor.json` only extend the shared configs (`tsconfig.base.json`, `tools/repo/`), and `@typstream/*` resolves to `packages/*/src` through a wildcard path. Then add its row to `tools/repo/layers.mjs`, and add it to the `fixed` group in `.changeset/config.json` if the row says `fixed`. Delete the copied `api/core.api.md` but keep `api/` (api-extractor won't create it), then `pnpm api:update` writes the new package's report.
+
+In `tools/browser-suites` (PLAN.md §11.4, #19; details in its README):
+- `pnpm test:browser`: equivalence (every corpus document streamed vs one-shot, both targets, artifacts and DOM), flicker
+  (replays with MutationObservers: settled HTML blocks and pages stay) and accessibility (axe-core, both targets, light and
+  dark) through `mountTypstream` on the real worker, in Chromium, Firefox and WebKit. `BROWSERS=chromium` runs one. Needs
+  engine-wasm's `dist/`. The adversarial set's equivalence runs in Chromium only (engine and watchdog, ~10 min); the
+  other browsers take ~5–8 min. CI runs one job per browser.
+- `pnpm test:visual`: screenshots against `__tests__/__screenshots__/<browser>/`, run inside Playwright's Docker image
+  (`scripts/visual.mjs`; needs Docker) so baselines don't depend on the machine. `pnpm visual:update` accepts changes;
+  commit the PNGs it writes (stored as palette PNGs). Engine, renderer, html-compat or CSS changes that alter output need
+  it, as does a `playwright` upgrade (new image).
 
 In `apps/playground` (PLAN.md §10.5, #31):
 - `pnpm --filter playground dev`: Vite dev server on http://localhost:5173. `@typstream/*` resolves to `packages/*/src` (see `vite.config.ts`), so heal and engine edits hot-reload. The exception is engine-wasm: build its `dist/` once (`pnpm --filter @typstream/engine-wasm build`) before rendering works.
@@ -151,3 +164,7 @@ Spikes (reference only):
 - Typst's page frame hashes include source spans: the same text, parsed afresh or reparsed incrementally, can hash differently. Compare page SVGs, not hashes, when checking that two compiles look the same.
 - Streaming most corpus documents produces compile-error frames (a cut `#question(` heals to `#question()`); heal's invariants are about parsing, not compiling. Engine tests that assert "no error frames" use documents checked at every prefix (`packages/engine/__tests__/support/documents.ts`).
 - The shell prints a zoxide warning on every command; set `_ZO_DOCTOR=0` to silence it.
+- Visual baselines made outside Docker (plain `vitest` in `tools/browser-suites`) differ from CI's in fonts and
+  antialiasing: the `visual` project only exists when `scripts/visual.mjs` runs it in the container.
+- Vite rewrites only `new URL("literal", import.meta.url)` to files outside a package's root (workers, fonts): a URL
+  built from a variable base 404s in browser tests.

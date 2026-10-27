@@ -37,7 +37,7 @@ for await (const chunk of llmStream) doc.push(chunk);
 doc.finish();
 ```
 
-- **Only changed pages are redrawn.** Pages are matched by index and redrawn when their hash changes, so a streamed update usually touches the last page. Pages past the new page count are removed.
+- **Only changed pages are redrawn.** Pages are matched by index and redrawn when their hash changes and their SVG with it, so a streamed update usually touches the last page. (Typst's frame hashes include source spans, so an unchanged page can come back under a new hash; it isn't redrawn.) Pages past the new page count are removed.
 - **Visible pages first.** Changed pages on screen are drawn at the next frame. Offscreen ones, and every text layer, wait for idle time (`requestIdleCallback`, a timer in WebKit), or are drawn as soon as they scroll into view. `view.flush()` draws everything now, e.g. before printing.
 - **One shadow root per page.** typst-svg gives glyph definitions content-hash ids that repeat on every page. Inline in one document, Chromium re-resolves every `<use>` on the page whenever one page changes. Scoped ids avoid that, and keep the app's CSS off the SVG. Pages also have `content-visibility: auto`.
 - **Text layer.** The SVG draws glyphs as paths, so invisible HTML text is laid over each page from engine-wasm's text runs, stretched to each run's width. Selection, copy (with line breaks), find-in-page and screen readers use it, and the SVG is `aria-hidden`.

@@ -186,4 +186,49 @@ jobs:
       - run: pnpm --filter @typstream/react test:browser
       - run: pnpm exec turbo run test --filter=@typstream/example-nextjs-ai-sdk
 
-  # TODO(#19): Playwright suites (visual, flicker, a11y).
+  # Corpus-wide browser suites (tools/browser-suites, #19): final-render equivalence, flicker and accessibility over
+  # mountTypstream on the real worker. One job per browser (Chromium also runs the adversarial set's equivalence).
+  # Tests take 10-20 min; the timeout leaves room for `--with-deps`, whose apt mirror has taken 20 min on a bad day.
+  suites:
+    name: Browser suites (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/engine-wasm
+      - uses: pnpm/setup@v3
+        with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
+      - run: pnpm --filter @typstream/browser-suites exec playwright install --with-deps ${{ matrix.browser }}
+      - run: pnpm --filter @typstream/browser-suites test:browser
+        env:
+          BROWSERS: ${{ matrix.browser }}
+
+  # Visual regression (tools/browser-suites): screenshots against committed baselines, taken inside Playwright's
+  # Docker image as they are locally (scripts/visual.mjs), so the runner's fonts don't matter. On a mismatch the
+  # actual screenshots and diffs are uploaded; `pnpm --filter @typstream/browser-suites visual:update` accepts them.
+  visual:
+    name: Visual (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/engine-wasm
+      - uses: pnpm/setup@v3
+        with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
+      - run: pnpm --filter @typstream/browser-suites test:visual
+        env:
+          BROWSERS: ${{ matrix.browser }}
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-diffs-${{ matrix.browser }}
+          path: tools/browser-suites/.vitest-attachments/
+          if-no-files-found: ignore

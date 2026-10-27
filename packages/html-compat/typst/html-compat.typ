@@ -182,8 +182,10 @@
 /// `body` as an inline SVG, wrapped so it scales down to the container and keeps its text for screen readers.
 #let _frame(body, inline: false) = {
   let label = _plain(body).trim()
-  let attrs = (class: "ts-frame", role: "img")
-  if label != "" { attrs.insert("aria-label", label) }
+  // A drawing with no text has nothing to read out: hidden, rather than an image without a name.
+  let attrs = if label != "" { (class: "ts-frame", role: "img", aria-label: label) } else {
+    (class: "ts-frame", aria-hidden: "true")
+  }
   // Needs context, like _el: a block frame inside a box is a span too.
   let tag = if inline { "span" } else if text.costs.widow == _inline { attrs.class += " ts-b"; "span" } else { "div" }
   html.elem(tag, attrs: attrs, html.frame(body))

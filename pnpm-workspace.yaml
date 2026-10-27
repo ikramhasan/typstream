@@ -3,6 +3,7 @@ packages:
   - "apps/*"
   - "corpus"
   - "tools/compile-oracle"
+  - "tools/browser-suites"
   - "examples/*"
 
 allowBuilds:

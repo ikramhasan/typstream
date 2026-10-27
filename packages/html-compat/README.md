@@ -28,7 +28,7 @@ const { html } = engine.compile_html();
 | `pagebreak` | `div.ts-pagebreak`: a rule on screen, a page break in print. |
 | `move`, `rotate`, `scale`, `skew` | CSS transforms. `hide` is `visibility: hidden`. `repeat` repeats its body, clipped to the box. |
 | `line` | A border when horizontal; otherwise drawn. |
-| `curve`, `polygon`, angled lines; boxes and blocks that hold them; boxes and blocks made only of `place`d pieces (diagrams, CeTZ canvases); equations with `cancel` | Inline SVG (`html.frame`) in a `.ts-frame` with `role="img"` and the text as `aria-label`. |
+| `curve`, `polygon`, angled lines; boxes and blocks that hold them; boxes and blocks made only of `place`d pieces (diagrams, CeTZ canvases); equations with `cancel` | Inline SVG (`html.frame`) in a `.ts-frame` with `role="img"` and the text as `aria-label` (`aria-hidden` when it has no text). |
 | Numbered block equations | `div.ts-equation` with the number. `overline` in math becomes an accent (MathML has no overline). |
 | `enum` with a pattern (`"a)"`) | Explicit markers. |
 | `layout(f)` | Calls `f` with a fixed size: `compat-size`, the text width of an A4 page. |
@@ -41,7 +41,7 @@ Inside a box (an inline element), the prelude writes `span.ts-b` instead of `div
 - **Text styling.** `text(size:, weight:, fill:, font:)` is not carried over (Typst's HTML export ignores it; a `show text` rule would run on every word). `strong`, `emph`, `underline`, `highlight`, `sub`/`super` and `smallcaps` are native.
 - **Fractional spacing** (`h(1fr)`, `box(width: 1fr)`, `v(1fr)`) has no HTML equivalent and becomes a small fixed gap.
 - **Vertical alignment** inside `align`, `box` and `block` is dropped. Grid cells keep it.
-- **Drawn content** (`.ts-frame`) is SVG: its text is in `aria-label`, not selectable.
+- **Drawn content** (`.ts-frame`) is SVG: its text is in `aria-label`, not selectable. A drawing without text is hidden from assistive technology (`aria-hidden`): there is nothing to read out.
 - `enum(full: true)` with a pattern shows plain numbers; the `augment` line of a matrix is dropped by Typst's MathML export.
 - **Table** strokes other than the default or `none`, and `table.hline`/`table.vline`, are not drawn.
 - **fletcher 0.5.8** diagrams stay empty: its cetz 0.3.4 canvas calls `layout` inside `context`, within the package, where neither the prelude's `layout` nor its drawing detection reaches. CeTZ 0.5 canvases (cetz, cetz-plot, alchemist) become `.ts-frame` SVG and are in the matrix.

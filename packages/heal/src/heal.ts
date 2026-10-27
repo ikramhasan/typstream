@@ -11,6 +11,7 @@ import {
   SourceMap,
   type TextEdit,
 } from "@typstream/core";
+import { isWhitespace } from "./chars";
 import {
   fixChanges,
   type LintFinding,
@@ -261,6 +262,20 @@ interface TailRepair {
 const MAX_REPAIR_ROUNDS = 64;
 
 /**
+ * Closers for `text`, innermost first. A display equation keeps whitespace
+ * before its `$`: `$ x + y` closed as `$ x + y$` would render inline, so a
+ * streamed equation would jump between inline and display as tokens arrive.
+ */
+const joinClosers = (text: string, closes: readonly Extract<Requirement, { type: "close" }>[]): string => {
+  let closers = "";
+  for (const r of closes) {
+    if (r.display && !isWhitespace((text + closers).at(-1))) closers += " ";
+    closers += r.text;
+  }
+  return closers;
+};
+
+/**
  * Makes `text[0..end)` parse cleanly by cutting incomplete constructs and
  * appending closers. Only constructs opened at or after `regionStart` are
  * touched. Every candidate is re-recognized before it's accepted.
@@ -293,8 +308,8 @@ const repairTail = (text: string, end: number, regionStart: number, state: State
 
     const closes = reqs.filter((r): r is Extract<Requirement, { type: "close" }> => r.type === "close");
     if (closes.length === 0) return { cut: cur.length, closers: "", frames: [] };
-    const closers = closes.map((r) => r.text).join("");
     for (const sep of ["", " "]) {
+      const closers = joinClosers(cur + sep, closes);
       const candidate = cur + sep + closers;
       const check = recognize(candidate, cp, ropts);
       if (!effectiveRequirements(check.requirements).some(inRegion) && check.errors.length <= rec.errors.length) {
