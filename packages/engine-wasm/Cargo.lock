@@ -2562,6 +2562,7 @@ dependencies = [
  "typst-pdf",
  "typst-svg",
  "unicode-bidi",
+ "unicode-script",
  "wasm-bindgen",
 ]
 

@@ -5,14 +5,19 @@
 //! bytes to give, records that the compile wanted it, and Typst moves on to
 //! the next family or shapes tofu. JS fetches the file and `load`s it, and the
 //! next compile uses it.
+//!
+//! The book is Typst's view of the faces, and it differs from their own info
+//! in one way: a math face doesn't offer the letters of scripts other than
+//! Latin and Greek for fallback (`book_info`).
 
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::sync::Arc;
 
 use typst::foundations::Bytes;
-use typst::text::{Font, FontBook, FontInfo};
+use typst::text::{Coverage, Font, FontBook, FontFlags, FontInfo};
 use typst::utils::LazyHash;
+use unicode_script::{Script, UnicodeScript};
 
 enum Slot {
     Loaded(Font),
@@ -50,10 +55,43 @@ impl Store {
     fn push(&mut self, faces: impl IntoIterator<Item = (FontInfo, Slot)>) {
         let mut book = (**self.book).clone();
         for (info, slot) in faces {
-            book.push(info);
+            book.push(book_info(info));
             self.slots.push(slot);
         }
         self.book = Arc::new(LazyHash::new(book));
+    }
+}
+
+/// A face's info as the book holds it. Typst falls back to the face that
+/// covers a run's first character and is most like the current font, first by
+/// the monospace and serif flags, which come from the panose bytes. Libertinus
+/// Serif's panose is unset, so it isn't "serif", and neither is New Computer
+/// Modern Math, which covers the whole Devanagari block; Noto Serif Devanagari
+/// is. So unnamed Devanagari text got the math font, with Typst natively as
+/// here (#80). Math faces carry such letters for math, not for running text:
+/// in the book they cover only Latin, Greek and the characters every script
+/// shares, which keeps their symbols and math alphabets as a fallback. The
+/// face itself is unchanged, and equations select it by family, which doesn't
+/// look at coverage.
+fn book_info(info: FontInfo) -> FontInfo {
+    if !info.flags.contains(FontFlags::MATH) {
+        return info;
+    }
+    let codepoints = info
+        .coverage
+        .iter()
+        .filter(|&c| {
+            char::from_u32(c).is_none_or(|c| {
+                matches!(
+                    c.script(),
+                    Script::Common | Script::Inherited | Script::Latin | Script::Greek
+                )
+            })
+        })
+        .collect();
+    FontInfo {
+        coverage: Coverage::from_vec(codepoints),
+        ..info
     }
 }
 

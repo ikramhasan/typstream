@@ -56,13 +56,6 @@ first font that covers the text, so it chooses a script font exactly as if it we
 Exports wait for missing fonts too: an export whose compile lacked a font waits up to 3 seconds for it, then compiles
 again with it, or exports without it if it doesn't arrive in time.
 
-<Callout type="warn" title="Devanagari needs its font named">
-  New Computer Modern Math, one of the base fonts, also has Devanagari characters, and Typst's fallback reaches it
-  before Noto Serif Devanagari. The text then renders without proper shaping. Name the font for Devanagari text:
-  `#set text(font: ("Libertinus Serif", "Noto Serif Devanagari"))`. Arabic and Bengali fall back correctly.
-  Tracked in [#80](https://github.com/ikramhasan/typstream/issues/80).
-</Callout>
-
 ## Fonts in the HTML target
 
 In the HTML target the browser draws the text, with the reader's fonts and your CSS. The engine's fonts matter only
