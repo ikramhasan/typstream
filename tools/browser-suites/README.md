@@ -24,8 +24,8 @@ compiles along the way) and finished, then compared with a mount given the whole
 and failure, the same artifact (the HTML string; every page's size, SVG and text runs, but not page hashes, which
 include source spans), and the same DOM. The adversarial set runs in Chromium only: it tests the engine and its
 watchdog, the same wasm in every browser, and takes most of the time (a final compile that runs out of time starts
-#21's hang search, up to 16 more compiles under the 10 s budget). The edu set, where browsers differ in rendering,
-runs in all three. When the watchdog acted on one side only (a timeout, or blocks the hang search skipped), the
+#21's hang search, up to 16 more compiles under the 10 s budget). The two hostile runaways are left to the security
+suite, which runs them under short budgets. The edu set, where browsers differ in rendering, runs in all three. When the watchdog acted on one side only (a timeout, or blocks the hang search skipped), the
 machine was busy: the document is compared once more.
 
 **Flicker** (`flicker.test.ts`). Every edu document is replayed in up to 60 steps, each waiting until the document
@@ -53,6 +53,20 @@ caught up, while MutationObservers record what the renderers remove and add.
 
 Violations that come from Typst's own HTML or from axe's limits are listed in `KNOWN`, each with where it may occur
 and why; so is a known bug, with its issue.
+
+**Security** (`security.test.ts`, #29, `docs/security.md`). Every `hostile-*` document of the adversarial set,
+streamed and finished in both targets, in all three browsers:
+
+- nothing forbidden is left on the page, shadow roots included: no script, style, frame, object, form or SVG
+  animation element, no `on*`, `data-*` (but the renderers' own) or other acting attribute, no link to a scheme
+  other than `http(s)`, `mailto` or `#`, no image from anywhere but `data:` or `blob:`, no CSS that loads, nothing
+  `position: fixed`;
+- nothing ran (the documents' scripts and handlers would set `window.typstreamPwned`), nothing was fetched from the
+  hosts they name, and their safe text is still there;
+- the two runaways (a wasm plugin that loops, content nested too deep for the stack) are stopped by the watchdog
+  or end the worker, under short budgets, and the same mount then renders the next document;
+- the engine's limits hold: input past `maxLength` stops (`too-large`) and shorter input renders again; a streaming
+  compile past `livePages` stops live preview, and the finished document has all its pages.
 
 **Visual regression** (`visual.test.ts`), against the baselines in `__tests__/__screenshots__/<browser>/`.
 

@@ -1,0 +1,107 @@
+// Smoke test (#29, docs/security.md): builds the page, serves it with the strict
+// policy in csp.mjs, and opens it in Chromium, Firefox and WebKit (BROWSERS=…
+// runs some). The worksheet must finish in both targets, with its layout, math,
+// lazily loaded font and package diagram, and without a single CSP violation or
+// console error. A last check proves the policy is enforced at all: an inline
+// style the page adds itself is refused.
+
+import { spawn } from "node:child_process";
+import { chromium, firefox, webkit } from "playwright";
+import { CSP } from "./csp.mjs";
+
+const PORT = 4318;
+const BROWSERS = { chromium, firefox, webkit };
+const names = (process.env.BROWSERS ?? "chromium,firefox,webkit").split(",");
+
+const run = (args) =>
+  new Promise((resolve, reject) => {
+    const child = spawn("pnpm", ["exec", "vite", ...args], { stdio: "inherit" });
+    child.on("exit", (code) => (code === 0 ? resolve() : reject(new Error(`vite ${args[0]} exited with ${code}`))));
+  });
+
+await run(["build", "--logLevel", "warn"]);
+const server = spawn("pnpm", ["exec", "vite", "preview", "--port", String(PORT), "--strictPort"], {
+  stdio: ["ignore", "pipe", "inherit"],
+});
+await new Promise((resolve) => server.stdout.on("data", (d) => String(d).includes(String(PORT)) && resolve()));
+
+/** Records violations the page sees, before any of its scripts run. */
+const recordViolations = () => {
+  window.__violations = [];
+  document.addEventListener("securitypolicyviolation", (e) =>
+    window.__violations.push(
+      `${e.effectiveDirective} blocked ${e.blockedURI || "inline"} (${e.sourceFile}:${e.lineNumber})`,
+    ),
+  );
+};
+
+const failures = [];
+try {
+  for (const name of names) {
+    const browser = await BROWSERS[name].launch();
+    try {
+      const page = await browser.newPage();
+      const errors = [];
+      page.on("pageerror", (e) => errors.push(e.message));
+      page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
+      page.on("worker", (w) => w.on?.("console", (m) => m.type() === "error" && errors.push(`worker: ${m.text()}`)));
+      await page.addInitScript(recordViolations);
+      const response = await page.goto(`http://localhost:${PORT}/`);
+      if (response?.headers()["content-security-policy"] !== CSP)
+        throw new Error("the page wasn't served with the policy");
+
+      for (const target of ["html", "paged"]) {
+        await page.waitForSelector(`#${target}[data-status="done"]`, { timeout: 120_000 });
+      }
+      // Lazy fonts and packages arrive after the first compile, which then runs again: let it settle.
+      await page.waitForTimeout(2000);
+      const report = await page.evaluate(() => {
+        const html = document.getElementById("html");
+        const paged = document.getElementById("paged");
+        const grid = html.querySelector("[style*=grid-template-columns]");
+        const svgs = [...paged.querySelectorAll(".typstream-page")].map((p) => p.firstElementChild?.shadowRoot);
+        return {
+          errors: [html.dataset.error, paged.dataset.error].filter(Boolean),
+          htmlText: html.textContent,
+          math: html.querySelectorAll("math").length,
+          // html-compat's inline styles applied: the grid has two columns.
+          gridColumns: grid ? getComputedStyle(grid).gridTemplateColumns.split(" ").length : 0,
+          // The CeTZ canvas (a package from this origin) as a drawing.
+          diagram: html.querySelectorAll(".ts-frame svg, svg").length,
+          pages: svgs.filter((root) => root?.querySelector("svg")).length,
+          pagedText: paged.querySelector(".typstream-text-layer")?.textContent ?? "",
+          violations: window.__violations,
+        };
+      });
+      const problems = [];
+      if (report.errors.length) problems.push(`engine: ${report.errors.join(", ")}`);
+      if (!report.htmlText.includes("Coordinates and angles")) problems.push("HTML: the worksheet isn't there");
+      if (report.math < 2) problems.push(`HTML: ${report.math} equations`);
+      if (report.gridColumns !== 2) problems.push(`HTML: the grid has ${report.gridColumns} columns`);
+      if (report.diagram < 1) problems.push("HTML: no diagram");
+      if (report.pages < 1 || !report.pagedText.includes("Coordinates")) problems.push("paged: no page with text");
+      problems.push(...report.violations.map((v) => `CSP: ${v}`), ...errors.map((e) => `console: ${e}`));
+
+      // The policy holds: an inline style attribute set by markup is refused.
+      const refused = await page.evaluate(() => {
+        const box = document.createElement("div");
+        box.innerHTML = '<span style="color: rgb(255, 0, 0)">probe</span>';
+        document.body.append(box);
+        return getComputedStyle(box.firstElementChild).color !== "rgb(255, 0, 0)";
+      });
+      if (!refused) problems.push("the policy isn't enforced: an inline style applied");
+
+      if (problems.length) failures.push(`${name}:\n  ${problems.join("\n  ")}`);
+      else console.log(`ok: ${name}, both targets finished under the policy with no violations`);
+      if (process.argv.includes("--screenshot")) await page.screenshot({ path: `smoke-${name}.png`, fullPage: true });
+    } finally {
+      await browser.close();
+    }
+  }
+} finally {
+  server.kill();
+}
+if (failures.length) {
+  console.error(failures.join("\n"));
+  process.exit(1);
+}

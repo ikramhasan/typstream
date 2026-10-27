@@ -25,6 +25,7 @@ import {
   type EngineDocument,
   ExportError,
   type ExportJob,
+  type LimitOptions,
   type WatchdogOptions,
 } from "./document";
 import { DEFAULT_SCHEDULE, type ScheduleOptions } from "./schedule";
@@ -42,6 +43,8 @@ export interface EngineOptions {
   clientInfo?: { name: string; version?: string };
   /** Compile budgets and strikes; defaults in {@link DEFAULT_WATCHDOG}. */
   watchdog?: Partial<WatchdogOptions>;
+  /** Input length and live page limits; defaults in {@link DEFAULT_LIMITS}. */
+  limits?: Partial<LimitOptions>;
   /**
    * Replace the worker once it reports more memory than this after a compile.
    * A safety net: the default engine evicts Typst's caches after every compile
@@ -107,6 +110,12 @@ export const DEFAULT_WATCHDOG: Readonly<WatchdogOptions> = {
   probeMs: 5000,
 };
 
+/** Inputs up to 1 MiB (UTF-16 code units); live preview up to 100 pages. @public */
+export const DEFAULT_LIMITS: Readonly<LimitOptions> = {
+  maxLength: 1024 * 1024,
+  livePages: 100,
+};
+
 /** 256 MiB of engine memory, past which the worker is replaced. @public */
 export const DEFAULT_RECYCLE_BYTES = 256 * 1024 * 1024;
 
@@ -136,6 +145,7 @@ const asError = (e: unknown): Error => (e instanceof Error ? e : new Error(Strin
 class EngineImpl implements Engine, DocumentHost {
   readonly clock: Clock;
   readonly watchdog: WatchdogOptions;
+  readonly limits: LimitOptions;
   readonly ready: Promise<InitializeResult>;
   generation = 0;
   broken: Error | null = null;
@@ -160,6 +170,7 @@ class EngineImpl implements Engine, DocumentHost {
     this.options = options;
     this.clock = options.clock ?? systemClock;
     this.watchdog = { ...DEFAULT_WATCHDOG, ...options.watchdog };
+    this.limits = { ...DEFAULT_LIMITS, ...options.limits };
     this.schedule = { ...DEFAULT_SCHEDULE, ...options.schedule };
     this.recycleBytes = options.recycleBytes ?? DEFAULT_RECYCLE_BYTES;
     this.active = this.spawn();

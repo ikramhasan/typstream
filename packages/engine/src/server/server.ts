@@ -165,8 +165,18 @@ const invalid = (message: string) => new ProtocolError("invalid-params", message
 const RuntimeError = (globalThis as { WebAssembly?: { RuntimeError: abstract new () => Error } }).WebAssembly
   ?.RuntimeError;
 
-/** A wasm trap: Typst panicked (or ran out of memory) and the instance may be corrupt. */
-const isTrap = (e: unknown): boolean => RuntimeError !== undefined && e instanceof RuntimeError;
+/**
+ * A wasm trap: Typst panicked (or ran out of memory) and the instance may be
+ * corrupt. Running out of the host's call stack inside wasm (content nested
+ * 100,000 deep, #29) throws the engine's stack overflow error instead,
+ * `RangeError` (V8, JavaScriptCore) or `InternalError` (SpiderMonkey). It
+ * unwinds Rust frames without running their cleanup and leaves the shadow
+ * stack pointer where it was, so it is fatal too.
+ */
+const isTrap = (e: unknown): boolean =>
+  (RuntimeError !== undefined && e instanceof RuntimeError) ||
+  e instanceof RangeError ||
+  (e instanceof Error && e.name === "InternalError");
 
 const inputsKey = (inputs: Record<string, string> | undefined): string =>
   JSON.stringify(Object.entries(inputs ?? {}).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));

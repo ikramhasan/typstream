@@ -55,14 +55,17 @@ export type DocumentStatus = "idle" | "compiling" | "stale" | "error" | "done";
  * - `diagnostics`: the source has errors (they are in `diagnostics`).
  * - `timeout`: the watchdog stopped a compile that ran past its budget.
  * - `crash`: the worker died during the compile.
- * - `too-complex`: repeated timeouts or crashes stopped live compiling; the
- *   document compiles once more when it is finished.
+ * - `too-complex`: repeated timeouts or crashes, or more pages than
+ *   `limits.livePages`, stopped live compiling; the document compiles once
+ *   more when it is finished.
+ * - `too-large`: the input is longer than `limits.maxLength`. It isn't healed
+ *   or compiled, finished or not, until `set()` or `reset()` makes it shorter.
  * - `engine`: the worker refused the request or couldn't start.
  * @public
  */
 export interface CompileFailure {
   /** What went wrong, for choosing what to show. */
-  reason: "diagnostics" | "timeout" | "crash" | "too-complex" | "engine";
+  reason: "diagnostics" | "timeout" | "crash" | "too-complex" | "too-large" | "engine";
   /** A sentence for logs or a tooltip: the first error, or what the engine did. */
   message: string;
 }
@@ -224,6 +227,7 @@ export interface ExportOptions {
  *   `capabilities.exports` in `engine.ready`).
  * - `timeout`: the export ran past the final watchdog budget; the worker was replaced.
  * - `crash`: the worker died during the export.
+ * - `too-large`: the input is longer than `limits.maxLength`.
  * - `engine`: the engine can't run, was disposed, or refused the request; or
  *   the document was disposed.
  * @public
@@ -232,7 +236,7 @@ export class ExportError extends Error {
   /** Always `"ExportError"`. */
   override readonly name = "ExportError";
   /** What went wrong, for choosing what to show. */
-  readonly reason: "diagnostics" | "unsupported" | "timeout" | "crash" | "engine";
+  readonly reason: "diagnostics" | "unsupported" | "timeout" | "crash" | "too-large" | "engine";
   /** The export's diagnostics in input coordinates, sorted; with `diagnostics`, at least one error. */
   readonly diagnostics: Diagnostic[];
 
@@ -260,10 +264,32 @@ export interface WatchdogOptions {
   probeMs: number;
 }
 
+/**
+ * What a document may cost (PLAN §9). Hostile or runaway input stops here
+ * instead of loading the main thread (healing) or the page (pages).
+ * @public
+ */
+export interface LimitOptions {
+  /**
+   * The longest input, in UTF-16 code units, that is healed and compiled.
+   * Longer input fails with `too-large`: pushes and edits are dropped until
+   * `set()` or `reset()` brings it back under the limit. Default 1 MiB
+   * (1,048,576).
+   */
+  maxLength: number;
+  /**
+   * The most pages a streaming paged compile may have. One with more stops
+   * live compiling (`too-complex`), keeping its pages; the finished document
+   * compiles in full. Default 100.
+   */
+  livePages: number;
+}
+
 /** @internal What a document needs from the engine. */
 export interface DocumentHost {
   readonly clock: Clock;
   readonly watchdog: WatchdogOptions;
+  readonly limits: LimitOptions;
   /** Counts worker replacements; a document opened in an older generation must be opened again. */
   readonly generation: number;
   /** Set when the engine can't run at all. */
@@ -368,6 +394,8 @@ export class DocumentImpl implements EngineDocument {
   private final = false;
   private live = true;
   private strikes = 0;
+  /** The input is longer than `limits.maxLength`: its length, while it is. */
+  private tooLong: number | null = null;
   /** Since when streaming compiles have failed (clock time), or `null` while the artifact is current. */
   private staleSince: number | null = null;
   /** Final mode: the search for what hangs the source (PLAN §5.6), while it runs and after. */
@@ -389,7 +417,10 @@ export class DocumentImpl implements EngineDocument {
     this.host = host;
     this.schedule = schedule;
     this.healer = createHealer({ ...options.heal, final: false });
-    this.healed = options.text ? this.heal(() => this.healer.set(options.text as string)) : this.healer.result();
+    this.healed =
+      options.text && this.fits(options.text.length)
+        ? this.heal(() => this.healer.set(options.text as string))
+        : this.healer.result();
     this.target = options.target ?? "html";
     this.inputs = options.inputs;
     this.preamble = options.preamble;
@@ -404,15 +435,33 @@ export class DocumentImpl implements EngineDocument {
   // input
 
   push(chunk: string): void {
-    if (!this.disposed) this.changed(this.heal(() => this.healer.push(chunk)));
+    if (this.disposed || this.tooLong !== null) return;
+    if (this.fits(this.healer.input.length + chunk.length)) this.changed(this.heal(() => this.healer.push(chunk)));
+    else this.update();
   }
 
   set(input: string): void {
-    if (!this.disposed) this.changed(this.heal(() => this.healer.set(input)));
+    if (this.disposed) return;
+    if (this.fits(input.length)) this.changed(this.heal(() => this.healer.set(input)));
+    else this.update();
   }
 
   applyEdit(edit: TextEdit): void {
-    if (!this.disposed) this.changed(this.heal(() => this.healer.applyEdit(edit)));
+    if (this.disposed || this.tooLong !== null) return;
+    if (this.fits(this.healer.input.length - (edit.to - edit.from) + edit.insert.length)) {
+      this.changed(this.heal(() => this.healer.applyEdit(edit)));
+    } else this.update();
+  }
+
+  /**
+   * Whether input of this length is within `limits.maxLength`. Past it, the
+   * healer keeps the last input that fit and nothing compiles: the length
+   * stays recorded until `set()` or `reset()` brings it back, since the text
+   * dropped meanwhile makes later pushes and edits meaningless.
+   */
+  private fits(length: number): boolean {
+    this.tooLong = length > this.host.limits.maxLength ? length : null;
+    return this.tooLong === null;
   }
 
   finish(): void {
@@ -425,7 +474,8 @@ export class DocumentImpl implements EngineDocument {
 
   reset(input = ""): void {
     if (this.disposed) return;
-    this.heal(() => this.healer.reset(input));
+    const kept = this.fits(input.length) ? input : "";
+    this.heal(() => this.healer.reset(kept));
     this.final = false;
     this.fallbacks = 0;
     this.live = true;
@@ -479,6 +529,7 @@ export class DocumentImpl implements EngineDocument {
   private export(format: ExportFormat, options: ExportOptions = {}): Promise<Uint8Array | string> {
     return new Promise((resolve, reject) => {
       if (this.disposed) reject(new ExportError("engine", "The document was disposed."));
+      else if (this.tooLong !== null) reject(new ExportError("too-large", this.tooLargeMessage()));
       else this.host.export({ doc: this, format, inputs: options.inputs ?? this.inputs, resolve, reject });
     });
   }
@@ -535,6 +586,7 @@ export class DocumentImpl implements EngineDocument {
     return (
       !this.disposed &&
       !this.host.broken &&
+      this.tooLong === null &&
       (this.live || this.final) &&
       (this.needsCompile || this.healed.source !== this.sentSource)
     );
@@ -777,6 +829,14 @@ export class DocumentImpl implements EngineDocument {
             };
       if (r.status === "ok" && r.fallback?.plainFrom == null) this.staleSince = null;
       else if (r.status !== "ok" && !this.final) this.staleSince ??= this.host.clock.now();
+      const pages = this.artifact?.target === "paged" ? this.artifact.pages.length : 0;
+      if (!this.final && this.artifactRev === this.sent?.rev && pages > this.host.limits.livePages) {
+        // Laying out and drawing more pages costs more on every compile.
+        this.stopLive(
+          `This document has more than ${this.host.limits.livePages} pages, too many to preview live. ` +
+            "It will compile once it is finished.",
+        );
+      }
       if (job) this.reportCompile(r, job);
     } else {
       const e = outcome.error;
@@ -838,15 +898,27 @@ export class DocumentImpl implements EngineDocument {
     const message =
       reason === "timeout" ? `Compiling took longer than ${budget} ms.` : "The engine crashed while compiling.";
     if (!this.final && this.strikes >= this.host.watchdog.strikes) {
-      this.live = false;
-      this.clearTimer();
-      this.failure = {
-        reason: "too-complex",
-        message: "This document is too complex to preview live. It will compile once it is finished.",
-      };
+      this.stopLive("This document is too complex to preview live. It will compile once it is finished.");
     } else {
       this.failure = { reason, message };
     }
+  }
+
+  /** Stops live compiling until `finish()` (or `reset()`). */
+  private stopLive(message: string): void {
+    this.live = false;
+    this.clearTimer();
+    this.failure = { reason: "too-complex", message };
+  }
+
+  private tooLargeMessage(): string {
+    return `This document is too long to preview: ${this.tooLong} characters, more than ${this.host.limits.maxLength}.`;
+  }
+
+  /** The failure to show: an input too long to compile wins over the last compile's. */
+  private currentFailure(): CompileFailure | null {
+    if (this.tooLong === null) return this.failure;
+    return { reason: "too-large", message: this.tooLargeMessage() };
   }
 
   /** The worker's copy can't be trusted: close it and open it afresh at the next compile. */
@@ -924,24 +996,25 @@ export class DocumentImpl implements EngineDocument {
   // -------------------------------------------------------------------------
   // state
 
-  private status(): DocumentStatus {
+  private status(failure: CompileFailure | null): DocumentStatus {
     if (this.host.broken) return "error";
-    if (this.failure && !this.final) return "stale";
+    if (failure && !this.final) return "stale";
     if (this.compiling || this.queued || this.timer !== null || this.wantsCompile()) return "compiling";
-    if (this.failure) return "error";
+    if (failure) return "error";
     return this.final ? "done" : "idle";
   }
 
   private snapshot(): DocumentState {
+    const failure = this.currentFailure();
     return {
-      status: this.status(),
+      status: this.status(failure),
       artifact: this.artifact,
       artifactRev: this.artifactRev,
       diagnostics: this.diagnostics,
       heal: this.healed,
       final: this.final,
       live: this.live,
-      failure: this.failure,
+      failure,
       lastCompile: this.lastCompile,
     };
   }

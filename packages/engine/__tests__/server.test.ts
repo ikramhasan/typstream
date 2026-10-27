@@ -91,6 +91,8 @@ const scripted = (options: { init?: () => Promise<void>; modes?: unknown[] } = {
         options.modes?.push(o?.mode);
         // A wasm trap is how a Typst panic surfaces.
         if (main.includes("PANIC")) throw new WebAssembly.RuntimeError("unreachable");
+        // And running out of the host's stack inside wasm, how V8 reports it.
+        if (main.includes("DEEP")) throw new RangeError("Maximum call stack size exceeded");
         if (main.includes("THROW")) throw new Error("adapter bug");
         return { html: `<p>${main}</p>`, diagnostics: [] };
       },
@@ -149,6 +151,16 @@ describe("server", () => {
     await s.settle();
     expect(s.out.at(-1)).toEqual({ id: 4, result: null });
     expect(s.fatal).toHaveLength(1);
+  });
+
+  it("stops without answering when wasm overflows the host's stack", async () => {
+    const s = direct(scripted());
+    s.send({ id: 1, method: "initialize", params: { protocolVersion: 1, capabilities: {} } });
+    s.send({ id: 2, method: "document/open", params: { uri: "a", rev: 1, text: "DEEP" } });
+    s.send({ id: 3, method: "compile", params: { uri: "a", rev: 1, target: "html" } });
+    await s.settle();
+    expect(s.out.at(-1)).toEqual({ id: 2, result: null });
+    expect(s.fatal).toEqual([expect.any(RangeError)]);
   });
 
   it("tells the adapter each compile's mode: the request's, streaming by default, final for exports", async () => {

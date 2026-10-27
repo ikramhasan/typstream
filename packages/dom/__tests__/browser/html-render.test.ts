@@ -13,7 +13,7 @@ import { htmlCompat, htmlCompatCss } from "@typstream/html-compat";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { commands, server } from "vitest/browser";
 import { createHtmlRenderer, type HtmlRenderer } from "../../src/html/renderer";
-import { createSanitizer } from "../../src/html/sanitize";
+import { createSanitizer, hideStyles } from "../../src/html/sanitize";
 import { splitHtml } from "../../src/html/split";
 import { TYPST_MATH_CSS } from "../../src/html/styles";
 import { type CorpusDocument, compileHtml, openHtml, startEngine, stream, TWENTY_PAGES, tokens } from "../support/html";
@@ -42,7 +42,8 @@ const unmount = (renderer: HtmlRenderer) => {
 
 /** The whole body parsed at once, without anchors, sanitized as the renderer does. */
 const parseWhole = (html: string, idPrefix: string): string => {
-  const body = new DOMParser().parseFromString(html, "text/html").body;
+  // As the renderer parses: inline styles applied through the CSSOM (sanitize.ts).
+  const body = new DOMParser().parseFromString(hideStyles(html), "text/html").body;
   for (const anchor of Array.from(body.querySelectorAll("typstream-anchor"))) anchor.remove();
   createSanitizer({ idPrefix, plugins: [htmlCompat] })(body);
   return body.innerHTML;

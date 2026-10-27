@@ -18,7 +18,7 @@ import {
   visibleText,
 } from "./animate";
 import { directionOf } from "./dir";
-import { createSanitizer, type Sanitizer } from "./sanitize";
+import { createSanitizer, hideStyles, type Sanitizer } from "./sanitize";
 import { type Split, splitHtml } from "./split";
 import { htmlRendererCss } from "./styles";
 
@@ -221,7 +221,7 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
 
   /** Parses and sanitizes markup into nodes owned by the page's document. */
   const parse = (html: string): Node[] => {
-    template.innerHTML = html;
+    template.innerHTML = hideStyles(html);
     const content = template.content;
     sanitize(content);
     // Moving the cleaned nodes adopts them into the page's document.
