@@ -196,6 +196,11 @@
   position: relative;
   margin-block: 1.6em 1em;
   padding: 0 0.85em 0.65em;
+  /* html-compat places against it, inside this padding, as Typst places inside the inset. */
+  --ts-inset-top: 0pt;
+  --ts-inset-right: 0.85em;
+  --ts-inset-bottom: 0.65em;
+  --ts-inset-left: 0.85em;
 }
 :where(.typstream .edu-callout)::before {
   content: "";
@@ -211,6 +216,7 @@
 :where(.typstream .edu-callout:not(:has(> .edu-callout-title))) {
   margin-block-start: 1em;
   padding-block-start: 0.65em;
+  --ts-inset-top: 0.65em;
 }
 :where(.typstream .edu-callout:not(:has(> .edu-callout-title)))::before {
   inset: 0;

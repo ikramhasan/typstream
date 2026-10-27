@@ -135,13 +135,37 @@ export const MATRIX: MatrixEntry[] = [
   {
     name: "place",
     source: "#place(top + right)[Placed text] Body text",
-    html: /ts-place.*right: 0/,
+    html: /ts-place.*right: var\(--ts-inset-right\)/,
     nativeDrops: true,
   },
   {
     name: "place: dx, dy",
     source: "#block(height: 2cm)[#place(bottom + center, dy: -4pt)[Caption] Body]",
     html: /translate/,
+    nativeDrops: true,
+  },
+  {
+    // reading-comprehension-lighthouse's ¶ labels: Typst places inside the inset (#94).
+    name: "place: inside an inset block",
+    source: "#block(inset: (left: 2.2em))[#place(dx: -2.2em)[¶1] First paragraph of the passage.]",
+    html: /--ts-inset-left: 2\.2em.*class="ts-place[^"]*" style="left: var\(--ts-inset-left\); transform: translate\(-2\.2em, 0pt\)"/,
+    nativeDrops: true,
+  },
+  {
+    name: "place: every alignment, per-side insets",
+    source: `#block(width: 8cm, height: 4cm, inset: (left: 1cm, top: 0.5cm, right: 2cm, bottom: 1.5cm))[
+${["top + left", "top + center", "top + right", "horizon + left", "horizon + center", "horizon + right", "bottom + left", "bottom + center", "bottom + right"].map((a, i) => `#place(${a})[Label ${i}]`).join("\n")}
+Body]`,
+    // Only the sides with an inset are written; the stylesheet zeroes the rest.
+    html: /--ts-inset-top: 14\.173pt; --ts-inset-right: 56\.693pt; --ts-inset-bottom: 42\.52pt; --ts-inset-left: 28\.346pt.*left: calc\(50% \+ \(var\(--ts-inset-left\) - var\(--ts-inset-right\)\) \/ 2\); top: calc\(50% \+ \(var\(--ts-inset-top\) - var\(--ts-inset-bottom\)\) \/ 2\)/s,
+    nativeDrops: true,
+  },
+  {
+    name: "place: nested insets",
+    source:
+      "#block(inset: 1cm)[#rect(inset: (x: 4pt))[#place(top + right)[Inner] Rect body] #box(width: 3cm, height: 1cm)[In box #place(bottom + left)[Boxed]] #place(bottom + right, dx: -2pt)[Outer] Block body]",
+    // The rect writes its own sides; the box, without an inset, has the stylesheet's zeros.
+    html: /--ts-inset-left: 28\.346pt.*--ts-inset-right: 4pt; --ts-inset-left: 4pt"><div class="ts-place ts-place-text" style="right: var\(--ts-inset-right\); top: var\(--ts-inset-top\)">Inner.*class="ts-box" style="width: 85\.039pt; height: 28\.346pt">/s,
     nativeDrops: true,
   },
   {
@@ -229,7 +253,7 @@ export const MATRIX: MatrixEntry[] = [
     source:
       "#rect(width: 3.5cm, height: 2cm)[#place(bottom + center, dy: 1.2em)[7 cm] #place(right + horizon, dx: 3.4em)[4 cm]]",
     // Both point away from their edge: outside the rect, so the theme keeps the page's colors (#64).
-    html: /class="ts-place ts-place-out"[^>]*>7 cm.*class="ts-place ts-place-out"[^>]*>4 cm/s,
+    html: /class="ts-place ts-place-out ts-place-text"[^>]*>7 cm.*class="ts-place ts-place-out ts-place-text"[^>]*>4 cm/s,
     nativeDrops: true,
   },
   {
@@ -237,7 +261,7 @@ export const MATRIX: MatrixEntry[] = [
     source:
       "#rect(width: 4cm, height: 3cm, fill: white)[#place(bottom + right)[Corner] #place(top + left, dx: 4pt, dy: 4pt)[Inset] #place(left + horizon, dx: -1cm)[Margin]]",
     // Only the label pushed past the left edge is outside (#64).
-    html: /class="ts-place"[^>]*>Corner.*class="ts-place"[^>]*>Inset.*class="ts-place ts-place-out"[^>]*>Margin/s,
+    html: /class="ts-place ts-place-text"[^>]*>Corner.*class="ts-place ts-place-text"[^>]*>Inset.*class="ts-place ts-place-out ts-place-text"[^>]*>Margin/s,
     nativeDrops: true,
   },
 

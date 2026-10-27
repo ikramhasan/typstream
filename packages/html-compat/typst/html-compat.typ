@@ -130,6 +130,18 @@
 
 #let _style(props) = _css(..props)
 
+/// A container's inset per side as the custom properties `place` anchors to (`--ts-inset-left`, …;
+/// html-compat.css): Typst places inside the inset, CSS against the padding box. Zero sides are left
+/// to the stylesheet, which resets all four on every element a `.ts-place` positions against.
+#let _inset-vars(inset) = {
+  let vars = (:)
+  for (side, v) in _sides(inset) {
+    let css = _len(v)
+    if css not in (none, "0pt", "0%") { vars.insert("--ts-inset-" + side, css) }
+  }
+  vars
+}
+
 // Markers for rules that must know where they are. Typst has no "am I in math" or "am I
 // inline" query, so the rules that start such a region set a property that only paged
 // line breaking reads (and HTML has none) to an unlikely value, readable in `context`.
@@ -206,6 +218,19 @@
   let parts = if c.func() == [].func() and "children" in c.fields() { c.children } else { (c,) }
   let placed = parts.filter(p => p.func() == place and not p.fields().at("float", default: false))
   placed.len() > 0 and parts.all(p => p in placed or p.func() in ([ ].func(), parbreak, linebreak))
+}
+
+/// Whether content is only text: words, spaces and line breaks, styled, strong, emphasized….
+/// Placed, its box is then Typst's text box, cap height to baseline (`ts-place-text`).
+#let _only-text(c) = {
+  if type(c) != content { return false }
+  let func = c.func()
+  if func in (text, [ ].func(), smartquote, linebreak) { return true }
+  let f = c.fields()
+  if func == [].func() { f.at("children", default: ()).all(_only-text) }
+  else if "child" in f and "styles" in f { _only-text(f.child) }
+  else if func in (strong, emph, underline, overline, strike, highlight, smallcaps, sub, super) { _only-text(f.body) }
+  else { false }
 }
 
 // Elements that only make sense as a picture.
@@ -352,10 +377,12 @@
   if it.float { return _el("div", "ts-place ts-float", it.body) }
   let a = it.alignment
   let (x, y) = if a == auto { (start, none) } else if a.axis() == "horizontal" { (a, none) } else if a.axis() == "vertical" { (start, a) } else { (a.x, a.y) }
+  // Inside the container's inset, as Typst places: its sides are custom properties (`_inset-vars`).
+  let mid(from, to) = "calc(50% + (var(--ts-inset-" + from + ") - var(--ts-inset-" + to + ")) / 2)"
   let props = (:)
   let shift = ("0", "0")
-  if x in (right, end) { props.insert("right", "0") } else if x == center { props.insert("left", "50%"); shift.at(0) = "-50%" } else { props.insert("left", "0") }
-  if y == bottom { props.insert("bottom", "0") } else if y == horizon { props.insert("top", "50%"); shift.at(1) = "-50%" } else if y == top { props.insert("top", "0") }
+  if x in (right, end) { props.insert("right", "var(--ts-inset-right)") } else if x == center { props.insert("left", mid("left", "right")); shift.at(0) = "-50%" } else { props.insert("left", "var(--ts-inset-left)") }
+  if y == bottom { props.insert("bottom", "var(--ts-inset-bottom)") } else if y == horizon { props.insert("top", mid("top", "bottom")); shift.at(1) = "-50%" } else if y == top { props.insert("top", "var(--ts-inset-top)") }
   let dx = _len(it.dx)
   let dy = _len(it.dy)
   let transform = ()
@@ -367,7 +394,11 @@
   // colors for it rather than a fill's (a shape's dimension labels).
   let out = (x in (right, end) and _sign(it.dx) > 0 or x in (left, start) and _sign(it.dx) < 0
     or y == bottom and _sign(it.dy) > 0 or y == top and _sign(it.dy) < 0)
-  _el("div", "ts-place" + if out { " ts-place-out" }, style: _style(props), it.body)
+  // Text aligned to an edge or the middle lands where Typst puts it only with Typst's text box (a
+  // label `dy: 1.2em` below a shape). Not without a vertical alignment: on the flow's line, the
+  // untrimmed box shares the next paragraph's baseline, as in Typst.
+  let text-box = y != none and _only-text(it.body)
+  _el("div", "ts-place" + if out { " ts-place-out" } + if text-box { " ts-place-text" }, style: _style(props), it.body)
 }
 
 // ---------------------------------------------------------------------------
@@ -421,7 +452,7 @@
   show block: html-only(it => {
     if type(it.body) != content or it.body.func() == html.elem { return it }
     if _has-drawing(it.body) or _is-canvas(it.body) { return _frame(it) }
-    let props = _box-props(fill: it.fill, stroke: it.stroke, inset: it.inset, radius: it.radius)
+    let props = _box-props(fill: it.fill, stroke: it.stroke, inset: it.inset, radius: it.radius) + _inset-vars(it.inset)
     props.insert("width", _len(it.width))
     props.insert("height", _len(it.height))
     if it.clip { props.insert("overflow", "hidden") }
@@ -429,7 +460,7 @@
   })
   show box: html-only(it => {
     if type(it.body) == content and (_has-drawing(it.body) or _is-canvas(it.body)) { return _frame(it, inline: true) }
-    let props = _box-props(fill: it.fill, stroke: it.stroke, inset: it.inset, radius: it.radius)
+    let props = _box-props(fill: it.fill, stroke: it.stroke, inset: it.inset, radius: it.radius) + _inset-vars(it.inset)
     props.insert("width", _len(it.width))
     props.insert("height", _len(it.height))
     if it.clip { props.insert("overflow", "hidden") }
@@ -447,7 +478,7 @@
       stroke-default: if it.fill == none { 1pt + black },
       inset: if it.body != none { it.inset },
       radius: if it.func() in (rect, square) { it.radius },
-    )
+    ) + if it.body != none { _inset-vars(it.inset) }
     let size = if it.func() == circle and fields.at("radius", default: auto) != auto { 2 * it.radius } else { fields.at("size", default: auto) }
     props.insert("width", _len(if size != auto { size } else { fields.at("width", default: auto) }))
     props.insert("height", _len(if size != auto { size } else { fields.at("height", default: auto) }))
