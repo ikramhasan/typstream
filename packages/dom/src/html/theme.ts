@@ -12,8 +12,9 @@
  *
  * What the document filled (an inline `background`: a box, a table cell, a code
  * block) has the light theme's colors inside: the author chose the fill for dark
- * text, as on paper. Placed pieces (a shape's labels) often sit outside the fill,
- * on the page, so they keep the theme (`light dark` follows the OS under `auto`).
+ * text, as on paper. Placed pieces that html-compat marks as pointing outward
+ * (`ts-place-out`: a shape's dimension labels below or beside it) sit on the page,
+ * so they keep the theme (`light dark` follows the OS under `auto`).
  */
 export const THEME_CSS = `/* Theme. "auto" follows the page's color-scheme; set color-scheme: light dark on it to follow the OS. */
 :where(.typstream) {
@@ -34,13 +35,16 @@ export const THEME_CSS = `/* Theme. "auto" follows the page's color-scheme; set 
 :where(.typstream [style*=background]) {
   color-scheme: light;
 }
-:where(.typstream [style*=background] .ts-place) {
+:where(.typstream [style*=background] .ts-place-out) {
   color-scheme: light dark;
 }
-:where(.typstream[data-typstream-theme=dark] [style*=background] .ts-place) {
+:where(.typstream[data-typstream-theme=light] [style*=background] .ts-place-out) {
+  color-scheme: light;
+}
+:where(.typstream[data-typstream-theme=dark] [style*=background] .ts-place-out) {
   color-scheme: dark;
 }
-:where(.typstream [style*=background], .typstream [style*=background] .ts-place) {
+:where(.typstream [style*=background], .typstream [style*=background] .ts-place-out) {
   color: var(--typstream-foreground);
 }
 :where(.typstream) a {
