@@ -8,7 +8,7 @@
 // become `data-typstream-src` attributes, so a block resolves to its source
 // range without asking the engine (§10.2).
 
-import type { TypstreamPlugin } from "@typstream/core";
+import { type TypstreamPlugin, trustedHTML } from "@typstream/core";
 import {
   type AnimateOptions,
   AnimateTimeline,
@@ -227,7 +227,8 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
 
   /** Parses and sanitizes markup into nodes owned by the page's document. */
   const parse = (html: string): Node[] => {
-    template.innerHTML = hideStyles(html);
+    // Under Trusted Types (#70) through typstream's policy: the template is inert, and sanitized next.
+    template.innerHTML = trustedHTML(hideStyles(html));
     const content = template.content;
     sanitize(content);
     // Moving the cleaned nodes adopts them into the page's document.

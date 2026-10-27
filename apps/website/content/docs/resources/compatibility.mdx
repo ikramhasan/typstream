@@ -28,7 +28,7 @@ The browser tests run in **Chromium, Firefox and WebKit** (Playwright 1.64), for
 | `ResizeObserver` | The paged `fit-width` layout | |
 | Cache Storage | Keeping fonts and package tarballs across sessions | They come from the HTTP cache. |
 
-Cross-origin isolation (COOP/COEP) and SharedArrayBuffer are not needed. Trusted Types (`require-trusted-types-for 'script'`) is not supported yet ([#70](https://github.com/ikramhasan/typstream/issues/70)). The CSP that works is in [Security](/docs/guides/security).
+Cross-origin isolation (COOP/COEP) and SharedArrayBuffer are not needed. Trusted Types (`require-trusted-types-for 'script'`) work with `trusted-types typstream` in the policy. The CSP that works is in [Security](/docs/guides/security).
 
 ## Frameworks and runtimes
 

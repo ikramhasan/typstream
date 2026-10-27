@@ -831,6 +831,12 @@ export interface TraceItem {
     span: Range | null;
 }
 
+// @internal
+export const trustedHTML: (html: string) => string;
+
+// @internal
+export const trustedScriptURL: (url: string) => string;
+
 // @public
 export interface TypstreamPlugin {
     dependencies?: string[];
