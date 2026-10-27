@@ -30,8 +30,8 @@ jobs:
       - uses: ./.github/actions/oracle
       # heal's dependents include @typstream/engine, which builds on engine-wasm.
       - uses: ./.github/actions/engine-wasm
-      - uses: pnpm/setup@v3
-        with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
+      - uses: ./.github/actions/pnpm
+        with: { runtime: "${{ env.NODE }}" }
       - run: pnpm build --filter=@typstream/heal...
       - run: pnpm --filter @typstream/heal test:long
 
@@ -46,8 +46,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/oracle
-      - uses: pnpm/setup@v3
-        with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
+      - uses: ./.github/actions/pnpm
+        with: { runtime: "${{ env.NODE }}" }
       # No build: heal's tests run against the source of the packages they use.
       - run: pnpm --filter @typstream/heal mutate
       - name: Record the score
@@ -76,8 +76,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/engine-wasm
-      - uses: pnpm/setup@v3
-        with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
+      - uses: ./.github/actions/pnpm
+        with: { runtime: "${{ env.NODE }}" }
       # In Playwright's image, like CI's browser jobs: no apt.
       - run: node tools/repo/playwright-docker.mjs pnpm --filter @typstream/browser-suites test:browser
         env:
