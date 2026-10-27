@@ -1,0 +1,64 @@
+name: pnpm install
+description: >
+  pnpm/setup (pnpm from package.json's packageManager, the runtime) and `pnpm install --frozen-lockfile`,
+  with the store cached once per lockfile. pnpm/setup's own store cache saves a new ~250 MB copy from every
+  job of every run (pnpm writes to a restored store even when the lockfile matches, so its "unchanged"
+  check never holds), which filled the repository's 10 GB and evicted the caches that matter. Here the key
+  is the lockfile's hash, every job restores, and only the job given `save` saves: once per lockfile, after
+  deleting the copies for earlier lockfiles on the same branch.
+
+inputs:
+  runtime:
+    description: Runtime to install (pnpm/setup's `runtime`, e.g. node@24)
+    required: true
+  save:
+    description: >
+      'true' to save the store when no cache matched this lockfile exactly. Pass it from one job, on pushes
+      to main only (PRs read main's caches); the job needs `actions: write` to delete the older copies.
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/setup@v3
+      with: { runtime: "${{ inputs.runtime }}", install: false }
+
+    - id: store
+      shell: bash
+      run: |
+        echo "path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+        echo "prefix=pnpm-store-${RUNNER_OS}-$(node --version)-" >> "$GITHUB_OUTPUT"
+
+    - id: cache
+      uses: actions/cache/restore@v6
+      with:
+        path: ${{ steps.store.outputs.path }}
+        key: ${{ steps.store.outputs.prefix }}${{ hashFiles('pnpm-lock.yaml') }}
+        # A new lockfile starts from the last store and downloads only what changed.
+        restore-keys: ${{ steps.store.outputs.prefix }}
+
+    # --no-runtime: pnpm/setup has already installed devEngines.runtime.
+    - shell: bash
+      run: pnpm install --frozen-lockfile --no-runtime
+
+    # Packages the new lockfile no longer uses stay out of the saved store.
+    - if: inputs.save == 'true' && steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: pnpm store prune
+
+    - if: inputs.save == 'true' && steps.cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v6
+      with:
+        path: ${{ steps.store.outputs.path }}
+        key: ${{ steps.cache.outputs.cache-primary-key }}
+
+    - if: inputs.save == 'true' && steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        KEEP: ${{ steps.cache.outputs.cache-primary-key }}
+      # By id: deleting by key would also delete other branches' entries with that key.
+      run: |
+        gh cache list --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF" --key pnpm-store- --limit 100 --json id,key \
+          --jq ".[] | select(.key != env.KEEP) | .id" |
+          while read -r id; do gh cache delete --repo "$GITHUB_REPOSITORY" "$id"; done
