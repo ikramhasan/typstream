@@ -127,6 +127,10 @@ What the renderer does with the HTML:
 - **Opens external links in a new tab** (`linkTarget`, default `_blank`).
 - **Marks source anchors.** Each top-level block's first element gets `data-typstream-src`, its offset in the
   compiled source.
+- **Scrolls what is too wide.** Once laid out, and again when the root's size changes, a table, an equation or code
+  wider than `root` scrolls sideways inside it instead of being cut off: code scrolls itself, a table or an equation
+  in a `div` the renderer puts around it. Both get `data-typstream-wide` and `tabindex="0"`, so the keyboard can
+  scroll them. Blocks that fit aren't touched.
 - **Sets the language and direction** on `root` from the document's `lang`, so right-to-left documents order lists
   and tables correctly.
 
@@ -331,6 +335,7 @@ Use these to theme the output; [Theming](/docs/guides/theming) has the details.
 | `.typstream` | The HTML renderer's root. `data-typstream-theme="light"` or `"dark"` when the theme is forced. |
 | `.typstream-caret` | The caret after the last text while streaming (`aria-hidden`). |
 | `[data-typstream-src]` | A top-level block's first element; the value is its offset in the compiled source. |
+| `[data-typstream-wide]` | A box wider than the root, which scrolls sideways (`1` on a `div` the renderer put around a table or an equation). |
 | `[data-typstream-animate]` | A word fading in. |
 | `.typstream-paged` | The paged view, with `data-layout="fixed"` or `"fit-width"`. |
 | `.typstream-page` | One page, with `data-page` (1-based). |

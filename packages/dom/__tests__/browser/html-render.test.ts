@@ -7,11 +7,12 @@
 // - While a document streams, a block whose HTML didn't change keeps its DOM
 //   node, and the final DOM equals a fresh render of the final HTML.
 // - Main-thread time per update at 20 pages (PLAN §11.5).
+// - Tables and equations wider than the element scroll sideways inside it (#95).
 
 import type { DocumentState, Engine } from "@typstream/engine";
 import { htmlCompat, htmlCompatCss } from "@typstream/html-compat";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { commands, server } from "vitest/browser";
+import { commands, page, server, userEvent } from "vitest/browser";
 import { createHtmlRenderer, type HtmlRenderer } from "../../src/html/renderer";
 import { createSanitizer, hideStyles } from "../../src/html/sanitize";
 import { splitHtml } from "../../src/html/split";
@@ -74,7 +75,12 @@ describe(`HTML renderer on corpus documents in ${browser}`, () => {
     const html = await compileHtml(doc, "$ a/b + vec(1, 2) $");
     doc.dispose();
     const head = /<style>([\s\S]*?)<\/style>/.exec(html)?.[1] ?? "";
-    const normalize = (css: string) => css.replace(/\s+/g, " ").trim();
+    // Comments aside: the renderer's CSS ships without them.
+    const normalize = (css: string) =>
+      css
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .replace(/\s+/g, " ")
+        .trim();
     expect(normalize(TYPST_MATH_CSS.replaceAll(":where(.typstream) ", ""))).toBe(normalize(head));
   });
 
@@ -129,6 +135,105 @@ describe(`HTML renderer on corpus documents in ${browser}`, () => {
     expect(checked).toBeGreaterThan(200);
     expect(misses).toEqual([]);
   }, 300_000);
+});
+
+/** Two frames: the renderer marks wide blocks in the first after an update. */
+const laidOut = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+/** Where a box's content ends on screen: its last text. */
+const endOf = (el: Element): DOMRect => {
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  let last: Node | null = null;
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) if (n.textContent?.trim()) last = n;
+  const range = document.createRange();
+  range.selectNodeContents(last as Node);
+  return range.getBoundingClientRect();
+};
+
+/** A narrow and a wide table, and a narrow and a wide display equation. */
+const WIDE = `= Wide blocks
+
+#table(columns: 2, [a], [b], [c], [d])
+
+#table(columns: 8, ..range(16).map(_ => [Thermodynamics]))
+
+$ a + b = c $
+
+#let terms = range(1, 25).map(i => $x_#i$).join($+$)
+$ #terms = y $
+
+The end.`;
+
+describe(`HTML renderer with blocks wider than its element in ${browser}`, () => {
+  let html = "";
+  beforeAll(async () => {
+    const doc = openHtml(engine);
+    html = await compileHtml(doc, WIDE);
+    doc.dispose();
+  });
+
+  it.for([360, 600])("scrolls them to their full width inside the element at %i px", async (width) => {
+    // Room for the element: the page itself never scrolls sideways.
+    await page.viewport(1000, 800);
+    const renderer = mount();
+    const { root } = renderer;
+    root.style.width = `${width}px`;
+    renderer.update(html);
+    await laidOut();
+    const [narrowTable, wideTable] = Array.from(root.querySelectorAll("table"));
+    const [narrowMath, wideMath] = Array.from(root.querySelectorAll('math[display="block"]'));
+    // Each wide one in a scroll box of the renderer's; the narrow ones as they were.
+    const boxes = Array.from(root.querySelectorAll("[data-typstream-wide]"));
+    expect(boxes.map((box) => box.firstElementChild)).toEqual([wideTable, wideMath]);
+    expect(narrowTable?.parentElement).toBe(root);
+    expect(narrowMath?.parentElement).toBe(root);
+    const box = root.getBoundingClientRect();
+    for (const el of boxes) {
+      // Focusable, so the keyboard can scroll it; inside the element, with more to the right.
+      expect(el.getAttribute("tabindex")).toBe("0");
+      const r = el.getBoundingClientRect();
+      expect(r.left).toBeGreaterThanOrEqual(box.left - 0.5);
+      expect(r.right).toBeLessThanOrEqual(box.right + 0.5);
+      expect(endOf(el).right).toBeGreaterThan(r.right + 50);
+      // Scrolled to the end, its last text shows inside it.
+      el.scrollLeft = el.scrollWidth;
+      const end = endOf(el);
+      expect(end.right).toBeLessThanOrEqual(r.right + 0.5);
+      expect(end.left).toBeGreaterThanOrEqual(r.left - 0.5);
+      el.scrollLeft = 0;
+    }
+    // Source offsets stay on the document's elements.
+    expect(wideTable?.hasAttribute("data-typstream-src")).toBe(true);
+    expect(renderer.sourceRange(wideTable as Element)?.from).toBe(
+      Number(wideTable?.getAttribute("data-typstream-src")),
+    );
+    // The keyboard scrolls the focused box.
+    const scroller = boxes[0] as HTMLElement;
+    scroller.focus();
+    expect(document.activeElement).toBe(scroller);
+    await userEvent.keyboard("{ArrowRight}");
+    await expect.poll(() => scroller.scrollLeft).toBeGreaterThan(0);
+    expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(innerWidth);
+    unmount(renderer);
+  });
+
+  it("leaves a document that fits as it is, and unmarks what fits again", async () => {
+    await page.viewport(1600, 800);
+    const renderer = mount();
+    const { root } = renderer;
+    root.style.width = "1500px";
+    renderer.update(html);
+    const before = root.innerHTML;
+    await laidOut();
+    expect(root.innerHTML).toBe(before);
+    // Narrowed, the wide blocks scroll; widened again, they are as they were.
+    root.style.width = "360px";
+    await laidOut();
+    await expect.poll(() => root.querySelectorAll("[data-typstream-wide]").length).toBe(2);
+    root.style.width = "1500px";
+    await expect.poll(() => root.innerHTML).toBe(before);
+    unmount(renderer);
+  });
 });
 
 /** Checks every update of a stream: blocks with unchanged HTML keep their DOM node. */
@@ -189,6 +294,8 @@ describe(`HTML renderer while streaming in ${browser}`, () => {
 
       const fresh = mount({ idPrefix: "s-" });
       fresh.update(final.artifact?.target === "html" ? final.artifact.html : "");
+      // Both laid out: blocks wider than the root are marked once they are (#95).
+      await laidOut();
       expect(renderer.root.innerHTML, name).toBe(fresh.root.innerHTML);
       unmount(fresh);
       unmount(renderer);

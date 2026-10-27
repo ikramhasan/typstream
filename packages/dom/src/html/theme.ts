@@ -4,6 +4,8 @@
 
 /**
  * Theme variables and element colors, shared by the renderer and standalone exports.
+ * The theme `auto` follows the page's `color-scheme`; set `color-scheme: light dark`
+ * on the page to follow the OS.
  * The last rule is for right-to-left text, which Typst's HTML export doesn't mark,
  * even under `text(lang: "ar")` (#11): each paragraph takes its direction from its
  * first strong letter, as `dir="auto"` would, so Arabic aligns right. (The
@@ -16,8 +18,7 @@
  * (`ts-place-out`: a shape's dimension labels below or beside it) sit on the page,
  * so they keep the theme (`light dark` follows the OS under `auto`).
  */
-export const THEME_CSS = `/* Theme. "auto" follows the page's color-scheme; set color-scheme: light dark on it to follow the OS. */
-:where(.typstream) {
+export const THEME_CSS = `:where(.typstream) {
   --typstream-foreground: light-dark(#1c1c1e, #e8e8ea);
   --typstream-muted: light-dark(#5c5c63, #a4a4ab);
   --typstream-link: light-dark(#1d4ed8, #8ab4ff);

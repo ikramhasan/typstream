@@ -119,8 +119,15 @@
   white-space: nowrap;
   vertical-align: bottom;
 }
+/* repeat() fills its box in Typst: its copies stop at the box's edge (or the line's) instead of
+   spilling past it. Clipping moves an inline block's baseline to its bottom edge (WebKit's even
+   with `overflow: clip`), so it sits on the line's bottom, as a box(width: 1fr) does. */
 :where(.typstream .ts-repeat) {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
   white-space: nowrap;
+  vertical-align: bottom;
 }
 /* Empty shapes are drawings of a size; with content they size to it. */
 :where(.typstream .ts-shape:empty) {
@@ -189,4 +196,12 @@
 :where(.typstream) :is(div.ts-frame, span.ts-frame.ts-b) {
   width: fit-content;
   margin-block: 0.6em;
+}
+
+/* What the renderer scrolls in a box of its own (a wide equation or block, #95) leaves its margins
+   out: inside the box they would no longer collapse with its neighbours'. Last, and naming math,
+   to win over the margins above. */
+:where(.typstream) [data-typstream-wide="1"] > math,
+:where(.typstream) [data-typstream-wide="1"] > * {
+  margin-block: 0;
 }

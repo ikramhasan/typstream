@@ -176,6 +176,43 @@ const caretParent = (block: Element): Element => {
   }
 };
 
+// --- wide blocks ----------------------------------------------------------------------
+
+/**
+ * On a box wider than the root, which the stylesheet makes scroll sideways (#95):
+ * `1` on the scroll box the renderer put around it, empty on a box that scrolls itself.
+ */
+const WIDE = "data-typstream-wide";
+
+/** Boxes the walk doesn't go into: they scroll whole. */
+const WHOLE = new Set(["table", "math"]);
+
+/** `el` is wider than `parent`'s content (a table, an equation, a block with a width). */
+const wider = (el: Element, parent: Element): boolean => el.getBoundingClientRect().width > parent.clientWidth + 0.5;
+
+/**
+ * Collects in `found` the innermost boxes that make `el` overflow, if it does:
+ * `el` is a box of its own (not inline, whose `clientWidth` is 0) in the flow,
+ * not marked yet, and wider than `parent` or with content wider than itself (code). The
+ * walk goes down to a table or an equation, or the box whose own lines
+ * overflow. Scrolling only those leaves every other box as it was: a scroll
+ * container is a formatting context, so margins inside it would stop
+ * collapsing through it.
+ */
+const findWide = (el: Element, parent: Element, found: Element[]): void => {
+  if (
+    !el.clientWidth ||
+    el.hasAttribute(WIDE) ||
+    (el.scrollWidth <= el.clientWidth && !wider(el, parent)) ||
+    // Out of flow (a placed box): a box around it wouldn't hold it.
+    getComputedStyle(el).position === "absolute"
+  )
+    return;
+  const before = found.length;
+  if (!WHOLE.has(el.localName)) for (const child of el.children) findWide(child, el, found);
+  if (found.length === before) found.push(el);
+};
+
 // --- renderer -------------------------------------------------------------------------
 
 /**
@@ -225,6 +262,53 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
   let blocks: Block[] = [];
   let caret: Element | null = null;
 
+  /** Puts `to` in `from`'s place, in the DOM and among the blocks' nodes (a top-level table and its scroll box). */
+  const swap = (from: Element, to: Element): void => {
+    from.replaceWith(to);
+    for (const block of blocks) {
+      const i = block.nodes.indexOf(from);
+      if (i >= 0) block.nodes[i] = to;
+    }
+  };
+
+  /**
+   * Marks what is wider than the root, and unmarks what fits again, once laid
+   * out: after updates, and when the root's size changes (its width, or fonts
+   * that arrived). A marked box is focusable, so the keyboard can scroll it.
+   * It has no name of its own: what it holds (a table, an equation, code)
+   * is announced with it.
+   */
+  const fit = (): void => {
+    // By the measure that marked them: a scroll box's content is no longer wider than it, a box's lines fit.
+    const fits = [...root.querySelectorAll(`[${WIDE}]`)].filter((el) =>
+      el.getAttribute(WIDE) ? !wider(el.firstElementChild as Element, el) : el.scrollWidth <= el.clientWidth,
+    );
+    const wide: Element[] = [];
+    for (const child of container.children) findWide(child, container, wide);
+    for (const el of fits) {
+      if (el.getAttribute(WIDE)) swap(el, el.firstElementChild as Element);
+      el.removeAttribute(WIDE);
+      el.removeAttribute("tabindex");
+    }
+    for (const el of wide) {
+      let box = el;
+      // A box wider than its parent scrolls in a `div` as wide as the parent: browsers other than
+      // Chromium don't scroll a `math` element, a table would have to be made a block (another
+      // layout), and a box with a width of its own would only be cut narrower.
+      if (wider(el, el.parentElement as Element)) {
+        box = doc.createElement("div");
+        box.setAttribute(WIDE, "1");
+        swap(el, box);
+        box.append(el);
+      } else box.setAttribute(WIDE, "");
+      box.setAttribute("tabindex", "0");
+    }
+  };
+  // Before the next paint. An update and the resize it causes land in different frames: nothing to coalesce.
+  const refit = () => view.requestAnimationFrame(fit);
+  const resized = new view.ResizeObserver(refit);
+  resized.observe(root);
+
   /** Parses and sanitizes markup into nodes owned by the page's document. */
   const parse = (html: string): Node[] => {
     // Under Trusted Types (#70) through typstream's policy: the template is inert, and sanitized next.
@@ -240,14 +324,16 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
   const setSrc = (block: Block, src: number | null): void => {
     if (block.src === src) return;
     block.src = src;
-    const el = firstElement(block.nodes);
+    // On the block's own element, not the scroll box the renderer may have put around it.
+    let el = firstElement(block.nodes);
+    if (el?.getAttribute(WIDE)) el = el.firstElementChild;
     if (!el) return;
     if (src === null) el.removeAttribute(SRC_ATTRIBUTE);
     else el.setAttribute(SRC_ATTRIBUTE, String(src));
   };
 
   const removeNodes = (block: Block): void => {
-    for (const node of block.nodes) node.parentNode?.removeChild(node);
+    for (const node of block.nodes) (node as ChildNode).remove();
   };
 
   /** The document's language and direction, from Typst's `<html lang>`, on the root. */
@@ -375,6 +461,7 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
       caret.setAttribute("aria-hidden", "true");
       parent.append(caret);
     }
+    refit();
 
     return { blocks: result.length, created: created.length, removed: removed.length, ms: view.performance.now() - t0 };
   };
@@ -427,6 +514,7 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
     clear,
     dispose() {
       clear();
+      resized.disconnect();
       setLanguage(undefined);
       root.classList.remove("typstream");
       root.removeAttribute("data-typstream-theme");
