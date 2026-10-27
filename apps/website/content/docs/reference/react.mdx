@@ -75,7 +75,8 @@ SVG pages, keeping the last good output while a prefix doesn't compile.
 
 The document is either `source`, its whole text so far (as streamdown takes it), or `stream`, an
 `AsyncIterable<string>` of chunks. Create a stream once (for example in `useMemo`): a new stream starts the document
-over.
+over. A stream is read once, however many instances are given it, and each shows all of its text, so StrictMode's
+remount loses nothing.
 
 - `isStreaming` says more `source` is coming. When it turns false, the document is finished: compiled strictly (final
   mode), without the caret. Turning it true again starts over, as for a regenerated answer. With `stream` it is
