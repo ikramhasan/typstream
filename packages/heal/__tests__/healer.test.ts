@@ -53,6 +53,35 @@ describe("createHealer", () => {
     );
   });
 
+  it("setStreamingRange on a finished document streams into it, and the rest shows as final mode healed it", () => {
+    // Lint fixes on both sides: `m/s$^2$` (math-lone-script) and `**` (markdown-bold).
+    const doc = "= Units\n\nSpeed in m/s$^2$.\n\n#question[Old]\n\nA **bold** end, m/s$^2$.\n";
+    const final = heal(doc, { final: true }).source;
+    expect(final).toBe('= Units\n\nSpeed in m/s$""^2$.\n\n#question[Old]\n\nA *bold* end, m/s$""^2$.\n');
+    const from = doc.indexOf("#question");
+    const to = doc.indexOf("\n\nA **");
+    const h = createHealer();
+    h.set(doc);
+    h.finish();
+    h.setStreamingRange({ from, to });
+    let r = h.applyEdit({ from, to, insert: "#question(points: 2)[New *wor" });
+    const suffix = final.slice(final.indexOf("\n\nA *bold*"));
+    expect(r.source).toBe(`${final.slice(0, final.indexOf("#question"))}#question(points: 2)[New *wor*]${suffix}`);
+    expect(r.suffixOffset).toBe(r.source.length - suffix.length);
+    expect(syntaxErrors(r.source)).toEqual([]);
+    // The range moves with the edit; text typed at its end extends it.
+    expect(h.streamingRange).toEqual({ from, to: from + "#question(points: 2)[New *wor".length });
+    const end = h.streamingRange?.to as number;
+    r = h.applyEdit({ from: end, to: end, insert: "ds*]" });
+    expect(h.streamingRange).toEqual({ from, to: end + 4 });
+    expect(r.source.endsWith(suffix)).toBe(true);
+    // Done writing: final mode again, the whole document.
+    const done = h.finish();
+    expect(done.source).toBe(final.replace("#question[Old]", "#question(points: 2)[New *words*]"));
+    expect(done.suffixOffset).toBeNull();
+    expect(h.streamingRange).toBeNull();
+  });
+
   it("reset starts over", () => {
     const h = createHealer();
     h.push("#box[a");

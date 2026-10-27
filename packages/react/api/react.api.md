@@ -88,7 +88,7 @@ export interface TypstreamInfo {
 }
 
 // @public
-export interface TypstreamProps extends TypstreamDefaults, Pick<TypstreamOptions, "source" | "stream" | "isStreaming" | "onStatusChange"> {
+export interface TypstreamProps extends TypstreamDefaults, Pick<TypstreamOptions, "source" | "stream" | "isStreaming" | "streamingRange" | "onStatusChange"> {
     className?: string;
     id?: string;
     ref?: Ref<TypstreamHandle>;

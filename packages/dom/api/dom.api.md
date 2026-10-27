@@ -15,6 +15,7 @@ import { FallbackEvent } from '@typstream/core';
 import { FileDelta } from '@typstream/core';
 import { LoadedFontFamily } from '@typstream/core';
 import { PagedArtifact } from '@typstream/core';
+import { Range as Range_2 } from '@typstream/core';
 import { RenderedEvent } from '@typstream/core';
 import { TypstreamPlugin } from '@typstream/core';
 import { WatchdogEvent } from '@typstream/core';
@@ -195,6 +196,7 @@ export interface TypstreamOptions {
     schedule?: DocumentOptions["schedule"];
     source?: string;
     stream?: AsyncIterable<string> | null;
+    streamingRange?: Range_2 | null;
     stylesheets?: readonly string[];
     target?: CompileTarget;
     template?: string;

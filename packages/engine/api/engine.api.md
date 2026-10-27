@@ -19,6 +19,7 @@ import { InitializeOptions } from '@typstream/core';
 import { InitializeResult } from '@typstream/core';
 import { LoadedFontFamily } from '@typstream/core';
 import { PackageSpec } from '@typstream/core';
+import { Range } from '@typstream/core';
 import { Revision } from '@typstream/core';
 import { ServerMessage } from '@typstream/core';
 import { TextEdit } from '@typstream/core';
@@ -82,6 +83,7 @@ export interface DocumentState {
     lastCompile: CompileResult | null;
     live: boolean;
     status: DocumentStatus;
+    streamingRange: Range | null;
 }
 
 // @public
@@ -119,6 +121,7 @@ export interface EngineDocument {
     set(input: string): void;
     setFiles(files: FileDelta): void;
     setInputs(inputs: Record<string, string>): void;
+    setStreamingRange(range: Range | null): void;
     setTarget(target: CompileTarget): void;
     subscribe(listener: (state: DocumentState) => void): () => void;
     readonly uri: DocumentUri;

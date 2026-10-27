@@ -278,6 +278,13 @@ export interface CompileParams extends DocumentParams {
    */
   settled?: number;
   /**
+   * Streaming only: the text from this offset on is settled too, when what is
+   * being typed is a range in the middle of the document (an edit streaming in,
+   * heal's `suffixOffset`, PLAN §5.2). Fixers and the fallback keep to
+   * `[settled, settledFrom)`. Default: the text's length.
+   */
+  settledFrom?: number;
+  /**
    * HTML only: insert source anchors at top-level blocks (PLAN §10.2).
    * Default true; exports never contain anchors.
    */
@@ -315,6 +322,14 @@ export interface FallbackParams {
    * their last good render is too stale to keep showing.
    */
   stablePrefix?: boolean;
+  /**
+   * The text being typed started over since the last artifact: a streaming
+   * range was set (an edit replacing part of the document), or the document
+   * was reset. Show this compile's output even if it shows less of that text
+   * than the last artifact did, which the server otherwise keeps instead
+   * (level 1). Clients send it until a compile succeeds.
+   */
+  restart?: boolean;
   /**
    * Parts of the text the client found the compiler can't get through: a
    * compile ran past the watchdog budget or crashed the worker (PLAN §6.3).

@@ -72,6 +72,53 @@ describe(`mountTypstream in ${browser}`, () => {
     el.remove();
   });
 
+  it("streams into a range of a finished document: the rest stays on screen, and it finishes again", async () => {
+    const el = host();
+    const before = "= Quiz\n\nAnswer every question.\n\n";
+    const after = "\n\n== Last part\n\nThe end.";
+    const old = "First, *old* question.";
+    const replacement = "First, a *new* question with $x^2$.";
+    const options = (source: string, isStreaming: boolean, streamingRange?: { from: number; to: number }) => ({
+      engine,
+      source,
+      isStreaming,
+      ...(streamingRange ? { streamingRange } : {}),
+      lazy: false,
+    });
+    const view = mountTypstream(el, options(before + old + after, false));
+    await until(view, settled);
+    const opened = view.document;
+    const seen: string[] = [];
+    const stop = view.subscribe(() => seen.push(el.textContent ?? ""));
+
+    const from = before.length;
+    for (let n = 1; n <= replacement.length; n += 3) {
+      const written = replacement.slice(0, n);
+      view.update(options(before + written + after, true, { from, to: from + written.length }));
+      await sleep(15);
+    }
+    view.update(options(before + replacement + after, true, { from, to: from + replacement.length }));
+    expect(view.getState()?.streamingRange).toEqual({ from, to: from + replacement.length });
+    view.update(options(before + replacement + after, false));
+    const final = await until(view, settled);
+    stop();
+
+    // The same document, never started over, and the text around the range on screen throughout.
+    expect(view.document).toBe(opened);
+    expect(final.status).toBe("done");
+    expect(final.streamingRange).toBeNull();
+    expect(final.heal.source).toBe(before + replacement + after);
+    expect(seen.length).toBeGreaterThan(3);
+    for (const text of seen) {
+      expect(text).toContain("Answer every question.");
+      expect(text).toContain("The end.");
+    }
+    expect(el.textContent).toContain("First, a new question with");
+    expect(el.textContent).not.toContain("old");
+    view.destroy();
+    el.remove();
+  });
+
   it("changes files in place, without reopening the document", async () => {
     const el = host();
     const options = (data: string): TypstreamOptions => ({

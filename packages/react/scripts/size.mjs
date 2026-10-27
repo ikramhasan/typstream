@@ -12,8 +12,9 @@ const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
 // blocks (0.45 KB, most of it paid for by CSS strings without comments) left it 30 bytes over; 16.6 KB until
 // #18's exports on the handle and useTypstream(), with per-export inputs (95 bytes), left it 63 bytes over;
 // 16.7 KB until font catalogues' web fonts (registering them, the mount's listener, standalone exports'
-// @font-face rules, 0.55 KB) made it 17.2 KB.
-const BUDGET = 17.3 * 1024;
+// @font-face rules, 0.55 KB) made it 17.2 KB; 17.3 KB until streaming ranges in the mount (#34: a finished
+// document streaming into a range again, and the edit typed at the range's end, 0.16 KB) left it 64 bytes over.
+const BUDGET = 17.4 * 1024;
 
 const result = await build({
   entryPoints: ["src/index.ts"],

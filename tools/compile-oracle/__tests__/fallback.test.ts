@@ -13,9 +13,8 @@
 //   blocks, so the rest of the document keeps rendering.
 
 import { loadCorpus, streamOf } from "@typstream/corpus";
-import { heal } from "@typstream/heal";
+import { blockStarts, heal } from "@typstream/heal";
 import { describe, expect, it } from "vitest";
-import { blockStarts } from "../../../packages/engine/src/server/anchors";
 import { corpusFiles, type OracleDocument, setFiles } from "../support/documents";
 import { newEngine } from "../support/engine";
 import { compilePrefixes, type Target } from "../support/measure";

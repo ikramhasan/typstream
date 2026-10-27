@@ -47,7 +47,14 @@ export interface HealOptions {
   lint?: Partial<Record<LintRuleId, LintSeverity | boolean>>;
   /** Strip a Markdown code fence (typst or typ) around the whole output (default "auto"). */
   unwrapFences?: "auto" | "never";
-  /** Heal only text written into `[from, to)` of an existing document (AI edits). */
+  /**
+   * Heal only text written into `[from, to)` of an existing document (AI edits): the text after
+   * it is settled, and is linted as it would be on its own. Ignored with `final`. Keep it
+   * block-aligned, the case healing is tested on: from the start of a top-level block
+   * ({@link blockStarts}) to the end of a block's text, so that the text after it starts with
+   * the blank line between blocks (or the range ends the document). Otherwise, while the range
+   * is written, its last line runs into the next block's first (a heading would turn into text).
+   */
   streamingRange?: Range | null;
   /** Product-specific fixes (a plugin's `heal.handlers`): `settled` ones run with lint, `output` ones on `source`. */
   handlers?: HealHandler[];
@@ -67,6 +74,12 @@ export interface HealResult {
   source: string;
   /** Text before this source offset is settled: appending can't change how it parses. */
   stableOffset: number;
+  /**
+   * With a streaming range, where the untouched text after it starts in `source`: settled too,
+   * and healed as it is on its own (lint fixes included), so it shows as it did before the
+   * range was written. `null` without a streaming range, and in final mode.
+   */
+  suffixOffset: number | null;
   /** Maps positions between the input and `source`. */
   map: {
     toSource(inputPos: number): number;
@@ -251,12 +264,12 @@ export const updateState = (state: State, text: string, edit: TextEdit, opts: He
  * checkpoint's own token may still change kind (`https:` → a link); text before
  * it can't. This only ever moves forward as text is appended.
  */
-const settledCheckpoint = (text: string, cps: readonly Checkpoint[]): number => {
+const settledCheckpoint = (text: string, cps: readonly Checkpoint[], end = text.length): number => {
   for (let i = cps.length - 1; i >= 0; i--) {
     const at = (cps[i] as Checkpoint).offset;
     const code = text.charCodeAt(at);
     const width = code >= 0xd800 && code <= 0xdbff ? 2 : 1;
-    if (at + width < text.length) return at;
+    if (at + width < end) return at;
   }
   return 0;
 };
@@ -403,6 +416,8 @@ interface Core {
   source: string;
   patches: Patch[];
   stable: number;
+  /** Where the text after the streaming range starts (normalized text), or `null`. */
+  suffix: number | null;
   frames: OpenFrame[];
   findings: LintFinding[];
   errors: SyntaxIssue[];
@@ -412,7 +427,16 @@ interface Core {
 interface LintCache {
   upTo: number;
   findings: LintFinding[];
+  /** The text after a streaming range, and its findings at offsets from its start. */
+  suffix?: { text: string; findings: LintFinding[] };
 }
+
+const shiftFinding = (f: LintFinding, by: number): LintFinding => ({
+  ...f,
+  start: f.start + by,
+  end: f.end + by,
+  changes: f.changes.map((c) => ({ ...c, from: c.from + by, to: c.to + by })),
+});
 
 const runLint = (
   text: string,
@@ -435,20 +459,37 @@ const runLint = (
   return findings;
 };
 
+/**
+ * Lint findings on the text after a streaming range, from `at` on. It is linted as a text of
+ * its own: the range is block-aligned and healing closes what it opens, so the suffix starts in
+ * root markup, as it does on its own. The document's recognition can't be used, because the
+ * half-written range shifts how the rest lexes (an open `[` swallows it). Lint rules only read
+ * what is around a finding. Cached while the suffix stays the same.
+ */
+const lintSuffix = (text: string, at: number, opts: HealOptions, cache: LintCache): LintFinding[] => {
+  const suffix = text.slice(at);
+  if (cache.suffix?.text !== suffix) {
+    cache.suffix = { text: suffix, findings: runLint(suffix, fullState(suffix, opts), 0, suffix.length, opts, true) };
+  }
+  return cache.suffix.findings.map((f) => shiftFinding(f, at));
+};
+
 const healCore = (text: string, state: State, opts: HealOptions, cache: LintCache): Core => {
   const final = opts.final === true;
-  const region = opts.streamingRange ?? null;
+  // A complete document has nothing being written: final mode heals it whole.
+  const region = final ? null : (opts.streamingRange ?? null);
   const regionStart = region ? Math.min(region.from, text.length) : 0;
   const regionEnd = region ? Math.min(Math.max(region.to, regionStart), text.length) : text.length;
 
   let tail: TailRepair = { cut: regionEnd, closers: "", frames: [] };
   if (!final) tail = repairTail(text, regionEnd, regionStart, state, opts);
-  if (region && !final && regionEnd < text.length)
-    tail = separateRegion(text, regionStart, regionEnd, tail, state, opts);
+  if (region && regionEnd < text.length) tail = separateRegion(text, regionStart, regionEnd, tail, state, opts);
 
-  const lastCp = settledCheckpoint(text, state.checkpoints);
+  // In a range, settled text runs to its last checkpoint that more writing can't change, as
+  // at the end of a document; the text before the range is settled whatever the range holds.
+  const lastCp = settledCheckpoint(text, state.checkpoints, regionEnd);
   let stable = final ? text.length : Math.min(lastCp, tail.cut);
-  if (region) stable = Math.min(stable, regionStart);
+  if (region) stable = Math.max(stable, regionStart);
 
   // Lint the settled prefix; findings before `cache.upTo` are reused.
   if (cache.upTo > stable) {
@@ -459,12 +500,15 @@ const healCore = (text: string, state: State, opts: HealOptions, cache: LintCach
   cache.upTo = stable;
   const findings = cache.findings;
 
+  // The text after the range is settled and linted as it would be on its own.
+  const suffixFindings = region && regionEnd < text.length ? lintSuffix(text, regionEnd, opts, cache) : [];
   const changes = fixChanges(findings);
   if (tail.cut < regionEnd || tail.closers !== "") {
     changes.push({ from: tail.cut, to: regionEnd, insert: tail.closers });
   }
+  changes.push(...fixChanges(suffixFindings));
   const reasons = new Map<TextChange, string>();
-  for (const f of findings) for (const c of f.changes) reasons.set(c, `lint:${f.rule}`);
+  for (const f of [...findings, ...suffixFindings]) for (const c of f.changes) reasons.set(c, `lint:${f.rule}`);
   let { output, patches } = applyChanges(
     text,
     changes,
@@ -506,7 +550,15 @@ const healCore = (text: string, state: State, opts: HealOptions, cache: LintCach
     }
   }
 
-  return { source: output, patches, stable, frames: tail.frames, findings, errors };
+  return {
+    source: output,
+    patches,
+    stable,
+    suffix: region ? regionEnd : null,
+    frames: tail.frames,
+    findings: suffixFindings.length ? [...findings, ...suffixFindings] : findings,
+    errors,
+  };
 };
 
 const toResult = (input: string, norm: ReturnType<typeof normalize>, core: Core): HealResult => {
@@ -522,6 +574,7 @@ const toResult = (input: string, norm: ReturnType<typeof normalize>, core: Core)
   return {
     source: core.source,
     stableOffset: healMap.toResult(core.stable),
+    suffixOffset: core.suffix === null ? null : healMap.toResult(core.suffix),
     map: { toSource, toInput },
     patches: core.patches,
     openFrames: core.frames.map((f) => ({ ...f, open: normMap.toOriginal(f.open) })),
@@ -553,8 +606,16 @@ export interface Healer {
   set(input: string): HealResult;
   /** Applies an edit to the input (editors, collaboration, AI rewrites). */
   applyEdit(edit: TextEdit): HealResult;
-  /** Marks `[from, to)` of the input as being written by a model; `null` heals the whole tail again. */
+  /**
+   * Marks `[from, to)` of the input as being written by a model (an edit streaming into the
+   * document, PLAN §5.2): only it is repaired, as a tail, and the text after it is settled.
+   * Edits move it, and text inserted at its end extends it. On a finished healer, the document
+   * is being written again: it heals in streaming mode until `finish()`. `null` heals the whole
+   * tail again.
+   */
   setStreamingRange(range: Range | null): HealResult;
+  /** The range `setStreamingRange` marked, as edits since have moved it, or `null`. */
+  readonly streamingRange: Range | null;
   /** The stream ended: heal the complete document (no tail repair). */
   finish(): HealResult;
   /** The latest result. */
@@ -645,7 +706,7 @@ export const createHealer = (options: HealOptions = {}): Healer => {
       return update(applyEdit(input, edit), edit);
     },
     setStreamingRange: (range) => {
-      opts = { ...opts, streamingRange: range };
+      opts = { ...opts, streamingRange: range, final: range ? false : opts.final };
       cache = { upTo: 0, findings: [] };
       return update(input);
     },
@@ -666,6 +727,9 @@ export const createHealer = (options: HealOptions = {}): Healer => {
     },
     get input() {
       return input;
+    },
+    get streamingRange() {
+      return opts.streamingRange ?? null;
     },
   };
 };

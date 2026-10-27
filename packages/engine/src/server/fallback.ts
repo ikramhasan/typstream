@@ -43,8 +43,7 @@ import {
   type SourceMap,
   type TextEdit,
 } from "@typstream/core";
-import { recognize } from "@typstream/heal";
-import { blockStarts } from "./anchors";
+import { blockStarts, recognize } from "@typstream/heal";
 import { applyEdits } from "./fixers";
 import { typstString } from "./runtime";
 
@@ -125,13 +124,15 @@ const CLOSERS = /^[\s)\]}"$*_`:\u200b]*$/;
 
 /**
  * Level 1 (#65): whether a compile of `text` shows less of the unsettled tail
- * than the last artifact's compile of `shown` did. Past where the two texts
- * part, `shown` has more than closers, and they part at or after `settled`
- * (text positions map to the client's with `toOriginal`). A stream only
- * appends, so the text `shown` had there is still in the client's, cut by heal
- * or the fixers this time, or shown as plain text (the stable prefix); it
- * usually comes back within a few tokens. Before `settled` the client's text
- * changed (an edit), or a settled reference resolved: that shows.
+ * than the last artifact's compile of `shown` did. Between where the two texts
+ * part and the end they have in common, `shown` has more than closers, and
+ * they part at or after `settled` (text positions map to the client's with
+ * `toOriginal`). A stream only appends, so the text `shown` had there is still
+ * in the client's, cut by heal or the fixers this time, or shown as plain text
+ * (the stable prefix); it usually comes back within a few tokens. The common
+ * end is the settled text after a streaming range (PLAN §5.2): what the range
+ * has written is compared, not the rest of the document. Before `settled` the
+ * client's text changed (an edit), or a settled reference resolved: that shows.
  */
 export const showsLess = (
   shown: string,
@@ -142,7 +143,9 @@ export const showsLess = (
   const max = Math.min(shown.length, text.length);
   let at = 0;
   while (at < max && shown.charCodeAt(at) === text.charCodeAt(at)) at++;
-  return toOriginal(at) >= settled && !CLOSERS.test(shown.slice(at));
+  let end = 0;
+  while (end < max - at && shown.charCodeAt(shown.length - 1 - end) === text.charCodeAt(text.length - 1 - end)) end++;
+  return toOriginal(at) >= settled && !CLOSERS.test(shown.slice(at, shown.length - end));
 };
 
 /**
@@ -170,6 +173,12 @@ export interface RecoverRun {
   text: string;
   /** Streaming: text before this offset is settled. Final: the text's length. */
   settled: number;
+  /**
+   * Streaming into a range: text from this offset on is settled too, and attempts keep it as it
+   * is. Only blocks before the range are isolated (they are searched as prefixes of the text);
+   * the range and the text after it are the tail. The text's length otherwise.
+   */
+  settledFrom: number;
   mode: CompileMode;
   /** {@link FallbackParams}. */
   isolate: boolean;
@@ -181,8 +190,8 @@ export interface RecoverRun {
    * `null` when it wasn't compiled (with `skip`, the first compile is the fallback's).
    */
   errors: Diagnostic[] | null;
-  /** Compiles a variant whole, with the fixers (Layer 3), for an artifact. `settled` is in the variant. */
-  attempt(variant: Variant, settled: number): Promise<Attempt>;
+  /** Compiles a variant whole, with the fixers (Layer 3), for an artifact. `settled` and `settledFrom` are in the variant. */
+  attempt(variant: Variant, settled: number, settledFrom: number): Promise<Attempt>;
   /** Compiles a variant only to check it; its errors in the document's coordinates. */
   check(variant: Variant): Promise<Diagnostic[]>;
   /** No compile starts after this `performance.now()`. */
@@ -291,7 +300,12 @@ export const recover = async (run: RecoverRun): Promise<Recovered | null> => {
   };
   const attempt = async (upTo: number, tail: "keep" | "plain"): Promise<Attempt> => {
     const { variant: v, map } = variant(upTo, tail);
-    return run.attempt(v, streaming && tail === "keep" ? map.toResult(run.settled) : v.text.length);
+    const keep = streaming && tail === "keep";
+    return run.attempt(
+      v,
+      keep ? map.toResult(run.settled) : v.text.length,
+      keep ? map.toResult(run.settledFrom) : v.text.length,
+    );
   };
   const isolatedRanges = (): Range[] =>
     [

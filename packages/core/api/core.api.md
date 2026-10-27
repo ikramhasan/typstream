@@ -78,6 +78,7 @@ export interface CompileParams extends DocumentParams {
     inputs?: Record<string, string>;
     mode?: CompileMode;
     settled?: number;
+    settledFrom?: number;
     target: CompileTarget;
 }
 
@@ -285,6 +286,7 @@ export type FallbackLevel = 0 | 1 | 2 | 3 | 4;
 // @public
 export interface FallbackParams {
     isolate?: boolean;
+    restart?: boolean;
     skip?: SkippedRange[];
     stablePrefix?: boolean;
 }
@@ -301,6 +303,7 @@ export interface FixContext {
     mode: CompileMode;
     round: number;
     settled: number;
+    settledFrom: number;
     text: string;
 }
 

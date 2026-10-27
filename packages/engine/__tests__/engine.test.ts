@@ -109,6 +109,42 @@ describe("compiling", () => {
     expect(workers.compileRequests().at(-1)?.settled).toBeUndefined();
   });
 
+  it("streams into a range of a finished document, telling the worker the text after it is settled too", async () => {
+    const { workers, engine } = setup();
+    const text = "Intro.\n\n#question[Old]\n\nAfter.";
+    const doc = engine.open({ text });
+    doc.finish();
+    await tick(100);
+    expect(workers.compileRequests().at(-1)?.mode).toBe("final");
+
+    const from = text.indexOf("#question");
+    const to = text.indexOf("\n\nAfter");
+    doc.setStreamingRange({ from, to });
+    doc.applyEdit({ from, to, insert: "#question[New *wor" });
+    await tick(100);
+    const state = doc.getState();
+    expect(state.final).toBe(false);
+    expect(state.streamingRange).toEqual({ from, to: from + "#question[New *wor".length });
+    expect(state.heal.source).toBe("Intro.\n\n#question[New *wor*]\n\nAfter.");
+    const request = workers.compileRequests().at(-1);
+    expect(request).toMatchObject({ mode: "streaming", settled: from, settledFrom: state.heal.suffixOffset });
+    expect(state.heal.source.slice(request?.settledFrom)).toBe("\n\nAfter.");
+    // Its old text is replaced, not cut while typed: the worker shows the new text even if it is
+    // shorter, until a compile has.
+    expect(request?.fallback?.restart).toBe(true);
+    doc.applyEdit({ from: from + "#question[New *wor".length, to: from + "#question[New *wor".length, insert: "ds" });
+    await tick(300);
+    expect(workers.compileRequests().at(-1)?.fallback?.restart).toBeUndefined();
+
+    doc.finish();
+    await tick(100);
+    expect(doc.getState().streamingRange).toBeNull();
+    const last = workers.compileRequests().at(-1);
+    expect(last?.mode).toBe("final");
+    expect(last && "settled" in last).toBe(false);
+    expect(last && "settledFrom" in last).toBe(false);
+  });
+
   it("passes target and inputs, and recompiles when they change", async () => {
     const { workers, engine } = setup();
     const doc = engine.open({ text: "Hi", inputs: { answers: "false" } });

@@ -25,7 +25,7 @@ import { acquireEngine, releaseEngine } from "./engine";
  */
 export interface TypstreamProps
   extends TypstreamDefaults,
-    Pick<TypstreamOptions, "source" | "stream" | "isStreaming" | "onStatusChange"> {
+    Pick<TypstreamOptions, "source" | "stream" | "isStreaming" | "streamingRange" | "onStatusChange"> {
   /** Receives the instance's {@link TypstreamHandle}, e.g. `useTypstream().ref`. */
   ref?: Ref<TypstreamHandle>;
   /** Of the element the document renders into. */

@@ -65,6 +65,12 @@ export interface FixContext {
    * of the text in final compiles, and when the client didn't say.
    */
   settled: number;
+  /**
+   * Text from this offset on is settled too: what is being typed is
+   * `[settled, settledFrom)`, a range streaming into the middle of the document
+   * (an edit). The end of the text otherwise. Fixes belong before it.
+   */
+  settledFrom: number;
   /** The compile's mode: fixers can stay out of final compiles with {@link DiagnosticFixer.modes}. */
   mode: CompileMode;
   /** 0 for the client's text; 1 and 2 for recompiles after fixes. */

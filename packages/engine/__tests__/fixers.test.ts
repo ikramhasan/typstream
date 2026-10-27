@@ -40,6 +40,7 @@ import { nodeEngineWasm } from "./support/engine-wasm";
 const ctx = (text: string, settled = 0, errors: Diagnostic[] = []): FixContext => ({
   text,
   settled,
+  settledFrom: text.length,
   mode: "streaming",
   round: 0,
   errors,
@@ -480,6 +481,22 @@ describe("fix loop", { timeout: 30_000 }, () => {
     expect(out.result.status).toBe("ok");
     expect(out.compiles).toBe(2);
     expect(out.html).toContain("Colour:");
+  });
+
+  it("cuts only inside a streaming range, keeping the settled text after it", async () => {
+    const { compile } = await serverWith();
+    const text = 'Intro.\n\nColour: #rgb("#e")\n\nAfter the edit.';
+    const settledFrom = text.indexOf("\n\nAfter");
+    const out = await compile(text, { settled: "Intro.\n\n".length, settledFrom });
+    expect(out.result.status).toBe("ok");
+    expect(out.html).toContain("Colour:");
+    expect(out.html).toContain("After the edit.");
+    // Without it, the cut takes everything after the error with it.
+    expect((await compile(text, { settled: "Intro.\n\n".length })).html).not.toContain("After the edit.");
+    // An error after the range is settled text's: nothing to cut.
+    const after = 'Intro.\n\nWriting.\n\nColour: #rgb("#e")';
+    const kept = await compile(after, { settled: "Intro.\n\n".length, settledFrom: after.indexOf("\n\nColour") });
+    expect(kept.result.status).not.toBe("ok");
   });
 
   it("takes a second round when the first cut leaves a call without its body", async () => {

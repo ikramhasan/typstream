@@ -66,7 +66,8 @@ fixes. All offsets are UTF-16 indices into the input (JS string indices).
 | [`heal(input, options?)`](#heal) | One-shot healing. |
 | [`createHealer(options?)`](#createhealer) | Incremental healer: `push`, `set`, `applyEdit`, `setStreamingRange`, `finish`, `result`, `reset`. |
 | [`HealOptions`](#healoptions) | `final`, `dropIncompleteRules`, `lint`, `unwrapFences`, `streamingRange`, `handlers`. |
-| [`HealResult`](#healresult) | `source`, `stableOffset`, `map`, `patches`, `openFrames`, `findings`, `errors`. |
+| [`HealResult`](#healresult) | `source`, `stableOffset`, `suffixOffset`, `map`, `patches`, `openFrames`, `findings`, `errors`. |
+| [`blockStarts(text, checkpoints?)`](#blockstarts) | Where a text's top-level blocks start (`@beta`): the units a streaming range covers. |
 | [`DEFAULT_LINT`](#lint-rules) | The lint rules and their default severities. |
 | [`HealHandler`](#handlers) | Product-specific fixes: `{ name, phase, priority?, run(ctx) }`. |
 | [`recognize(text, from?, options?)`](#recognize) | The recognizer on its own: requirements, errors, checkpoints. |
@@ -130,17 +131,26 @@ const done = healer.finish();
 done.errors; // syntax errors healing could not fix, e.g. a delimiter the model never closed
 ```
 
-**Streaming into the middle of a document.** When a model rewrites part of an existing document, insert its text with
-`applyEdit` and mark the region with `setStreamingRange`. Only constructs opened inside the region are repaired, and the
-text after it keeps parsing as it did before. The range moves with later edits: text inserted at its end extends it.
+**Streaming into the middle of a document.** When a model rewrites part of an existing document, mark the part with
+`setStreamingRange` and write into it with `applyEdit`. Only the range is repaired, as a tail; the text before and after
+it is settled, and comes out as it did, lint fixes included (`suffixOffset` is where the text after it starts in
+`source`). The range moves with later edits: text inserted at its end extends it. On a finished healer, the document
+heals in streaming mode again until `finish()`. Keep the range block-aligned: from a block's start
+([`blockStarts`](#blockstarts)) to the end of a block's text, leaving the blank line after it outside, or the range's
+last line runs into the next block while it's written.
 
 ```ts
+const doc = "= Notes\n\nIntro.\n\nOld question.\n\nOutro, with m/s$^2$.";
 const healer = createHealer();
-healer.set("= Notes\n\nIntro.\n\nOutro.");
-const at = "= Notes\n\nIntro.\n\n".length;
-healer.applyEdit({ from: at, to: at, insert: "#table(columns: 2, [a" });
-const r = healer.setStreamingRange({ from: at, to: at + 21 });
-r.source; // "= Notes\n\nIntro.\n\n#table(columns: 2, [a])Outro."
+healer.set(doc);
+healer.finish(); // a finished document
+const from = doc.indexOf("Old");
+const to = from + "Old question.".length; // the block's text, not the blank line after it
+healer.setStreamingRange({ from, to });
+const r = healer.applyEdit({ from, to, insert: "#table(columns: 2, [a" }); // the range follows the edit
+r.source; // '= Notes\n\nIntro.\n\n#table(columns: 2, [a])\n\nOutro, with m/s$""^2$.'
+r.source.slice(r.suffixOffset); // the settled text after the range, with its lint fix
+healer.finish(); // done: final mode again
 ```
 
 <auto-type-table path="packages/heal/src/heal.ts" name="Healer" />
@@ -286,6 +296,17 @@ at `open`) or `{ type: "cut", at, reason, soft? }` (the construct from `at` can'
 <auto-type-table path="packages/heal/src/recognizer.ts" name="Checkpoint" />
 
 <auto-type-table path="packages/heal/src/recognizer.ts" name="SyntaxIssue" />
+
+### blockStarts
+
+```ts
+function blockStarts(text: string, checkpoints?: Checkpoint[]): number[]; // @beta
+```
+
+The offsets where the text's top-level blocks start: 0, then every line after a blank line, or with a heading, at the
+top level. Block `i` runs to the start of block `i + 1`. A `#question[…]` with blank lines inside is one block, and the
+items of a list separated by blank lines stay one block. It's the split the engine's source anchors and its block
+isolation (Layer 4) use, and what a streaming range should cover. Pass `recognize(text).checkpoints` if you have them.
 
 ### normalize
 

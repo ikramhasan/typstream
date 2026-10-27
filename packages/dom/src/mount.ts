@@ -17,6 +17,7 @@ import type {
   FallbackEvent,
   FileDelta,
   LoadedFontFamily,
+  Range,
   RenderedEvent,
   TemplateSpec,
   TypstreamPlugin,
@@ -64,6 +65,14 @@ export interface TypstreamOptions {
    * compiles strictly (final mode); going back to true starts the document over.
    */
   isStreaming?: boolean;
+  /**
+   * While `isStreaming`: the part of `source` being written, in `source`'s offsets, such as a
+   * model rewriting one question of a finished document (PLAN §5.2). Only it heals as text
+   * being typed; the rest is settled and shows as it did. A finished document given a range
+   * streams again without starting over, and finishes when `isStreaming` turns false. Keep it
+   * block-aligned, as `EngineDocument.setStreamingRange` says. Ignored with `stream`.
+   */
+  streamingRange?: Range | null;
   /** Default `html`. */
   target?: CompileTarget;
   /** Paged target: pages at their own size (`fixed`, default) or as wide as the element (`fit-width`). */
@@ -296,6 +305,7 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
   let unsubscribe = () => {};
   let fedText = "";
   let fedFinal = false;
+  let fedRange: Range | null = null;
   let fedFiles: FileDelta = {};
 
   // A `stream` being read (shared with any other mount given it): its text so far, and whether it has ended.
@@ -522,6 +532,7 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
     const files = opts.files ?? {};
     const text = reading ? reading.state.text : (opts.source ?? "");
     const final = !streaming();
+    const range = final || reading ? null : (opts.streamingRange ?? null);
 
     const want = openKey(opts);
     if (!doc || !key || !sameKey(key, want)) {
@@ -540,6 +551,8 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
       });
       fedText = text;
       fedFinal = false;
+      fedRange = range;
+      if (range) doc.setStreamingRange(range);
       fedFiles = files;
       lastDiagnostics = null;
       lastOk = null;
@@ -555,14 +568,31 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
       const delta = filesDelta(fedFiles, files);
       fedFiles = files;
       if (delta) doc.setFiles(delta);
-      if (text !== fedText || final !== fedFinal) {
+      if (range) {
+        // Writing into a range: an edit, not a regenerated answer, so a finished document goes on.
+        if (text !== fedText) {
+          // Typed at the range's end: the edit itself, which moves the range too. A diff could put
+          // it elsewhere (a chunk ending like the next block starts), and moving the range back
+          // costs a re-lint.
+          const at = fedRange?.from === range.from ? fedRange.to : -1;
+          const grown = at >= 0 && text.length - fedText.length === range.to - at;
+          if (grown && text.startsWith(fedText.slice(0, at)) && text.endsWith(fedText.slice(at))) {
+            doc.applyEdit({ from: at, to: at, insert: text.slice(at, range.to) });
+          } else doc.set(text);
+          fedText = text;
+        }
+        const now = doc.getState().streamingRange;
+        if (now?.from !== range.from || now.to !== range.to) doc.setStreamingRange(range);
+      } else if (text !== fedText || final !== fedFinal || fedRange) {
+        if (fedRange && !final) doc.setStreamingRange(null);
         // A finished document streaming again is a regenerated answer: start over.
-        if (fedFinal && !final) doc.reset(text);
-        else if (!fedFinal && text.startsWith(fedText)) {
+        if (fedFinal && !final && !fedRange) doc.reset(text);
+        else if (!fedFinal && !fedRange && text.startsWith(fedText)) {
           if (text.length > fedText.length) doc.push(text.slice(fedText.length));
-        } else doc.set(text);
+        } else if (text !== fedText) doc.set(text);
         fedText = text;
       }
+      fedRange = range;
     }
     if (final && !fedFinal) doc.finish();
     fedFinal = final;

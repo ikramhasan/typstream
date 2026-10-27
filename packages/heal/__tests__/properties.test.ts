@@ -5,7 +5,7 @@
 
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { createHealer, heal } from "../src";
+import { blockStarts, createHealer, heal } from "../src";
 import { effectiveRequirements, recognize } from "../src/recognizer";
 import {
   chunksArb,
@@ -253,6 +253,64 @@ describe("incremental healer", () => {
         }
       }),
       { numRuns: Math.ceil(RUNS / 3) },
+    );
+  });
+
+  it("9. streaming a block into a finished document leaves the rest as final mode healed it", () => {
+    // An AI edit: a finished document, one top-level block deleted and written back in random
+    // chunks. Lint on, with fixes on both sides of the block, so the settled text keeps its fixes.
+    const lintDoc = documentArb.map(
+      (d) => `= Head\n\nSome **bold**, me@x.com and m/s$^2$.\n\n${d}\n\nMore ] text **x** here.\n\n# Tail\n\nend`,
+    );
+    fc.assert(
+      fc.property(
+        lintDoc.chain((doc) => {
+          // Blocks of the generated part: the lint fixes stay on both sides.
+          const first = doc.indexOf("\n\n", doc.indexOf("m/s$")) + 2;
+          const last = doc.indexOf("More ] text");
+          const all = blockStarts(doc);
+          const starts = all.filter((at) => at >= first && at < last);
+          if (starts.length === 0) return fc.constant(null);
+          return fc.tuple(fc.nat(starts.length - 1), fc.nat(starts.length - 1)).chain(([a, b]) => {
+            const from = starts[Math.min(a, b)] as number;
+            // To the end of a block's text: the blank line after it stays outside the range.
+            const next = all.find((at) => at > (starts[Math.max(a, b)] as number)) ?? last;
+            const to = from + doc.slice(from, next).trimEnd().length;
+            return chunksArb(doc.slice(from, to)).map((chunks) => ({ doc, from, to, chunks }));
+          });
+        }),
+        (c) => {
+          if (c === null) return;
+          const { doc, from, to, chunks } = c;
+          const final = heal(doc, { final: true });
+          const prefix = final.source.slice(0, final.map.toSource(from));
+          const suffix = final.source.slice(final.map.toSource(to));
+          const h = createHealer();
+          h.set(doc);
+          h.finish();
+          h.setStreamingRange({ from, to });
+          let r = h.applyEdit({ from, to, insert: "" });
+          let at = from;
+          const check = (step: string) => {
+            const where = `${step}\n${explain(h.input, r.source)}`;
+            if (syntaxErrors(r.source).length > 0) throw new Error(`doesn't parse at ${where}`);
+            if (!r.source.startsWith(prefix)) throw new Error(`the text before changed at ${where}`);
+            if (!r.source.endsWith(suffix)) throw new Error(`the text after changed at ${where}`);
+            expect(r.suffixOffset).toBe(r.source.length - suffix.length);
+            const ref = heal(h.input, { streamingRange: h.streamingRange });
+            expect(r.source, "incremental ≠ stateless").toBe(ref.source);
+          };
+          check("start");
+          for (const chunk of chunks) {
+            r = h.applyEdit({ from: at, to: at, insert: chunk });
+            at += chunk.length;
+            check(JSON.stringify(chunk));
+          }
+          expect(h.streamingRange).toEqual({ from, to });
+          expect(h.finish().source).toBe(final.source);
+        },
+      ),
+      { numRuns: RUNS },
     );
   });
 

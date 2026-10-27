@@ -186,6 +186,7 @@ const isFallback = (v: unknown): boolean =>
   isObject(v) &&
   optional(v.isolate, isFlag) &&
   optional(v.stablePrefix, isFlag) &&
+  optional(v.restart, isFlag) &&
   optional(v.skip, (s) => Array.isArray(s) && s.every(isSkip));
 
 /** Why a request's params can't be handled, or `null` if they look right. */
@@ -212,7 +213,10 @@ const paramsProblem = (method: string, p: unknown): string | null => {
       if (typeof p.target !== "string") return "target must be a string";
       if (!optional(p.mode, (v) => v === "streaming" || v === "final")) return 'mode must be "streaming" or "final"';
       if (!optional(p.fullPages, (v) => typeof v === "boolean")) return "fullPages must be a boolean";
-      if (!optional(p.fallback, isFallback)) return "fallback must be { isolate?, stablePrefix?, skip? }";
+      if (!optional(p.settled, isInt) || !optional(p.settledFrom, isInt)) {
+        return "settled and settledFrom must be integers";
+      }
+      if (!optional(p.fallback, isFallback)) return "fallback must be { isolate?, stablePrefix?, restart?, skip? }";
       return optional(p.inputs, isStringRecord) ? null : "inputs must map names to strings";
     case "export/pdf":
     case "export/html":

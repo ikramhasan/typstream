@@ -10,6 +10,12 @@ import { Patch } from '@typstream/core';
 import { Range } from '@typstream/core';
 import { TextEdit } from '@typstream/core';
 
+// @internal
+export const anchorPoints: (text: string, checkpoints: readonly Checkpoint[]) => number[];
+
+// @beta
+export const blockStarts: (text: string, checkpoints?: Checkpoint[]) => number[];
+
 // @public
 export interface Checkpoint {
     nesting: number;
@@ -38,6 +44,7 @@ export interface Healer {
     result(): HealResult;
     set(input: string): HealResult;
     setStreamingRange(range: Range | null): HealResult;
+    readonly streamingRange: Range | null;
 }
 
 export { HealHandler }
@@ -66,6 +73,7 @@ export interface HealResult {
     patches: Patch[];
     source: string;
     stableOffset: number;
+    suffixOffset: number | null;
 }
 
 // @internal

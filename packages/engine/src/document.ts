@@ -25,6 +25,7 @@ import {
   normalizeDiagnostics,
   type PackageSpec,
   ProtocolError,
+  type Range,
   type RequestId,
   type Revision,
   type ServerNotification,
@@ -99,6 +100,11 @@ export interface DocumentState {
   heal: HealResult;
   /** `finish()` was called: the input is complete and compiles in final mode. */
   final: boolean;
+  /**
+   * The part of the input being written (`setStreamingRange`), as edits since have moved it,
+   * or `null`.
+   */
+  streamingRange: Range | null;
   /** False once the watchdog stopped live compiling (`failure.reason` is `too-complex`). */
   live: boolean;
   /** Set while the status is `stale` or `error`. */
@@ -189,6 +195,17 @@ export interface EngineDocument {
   set(input: string): void;
   /** Edits the input (editors, AI rewrites of a section). */
   applyEdit(edit: TextEdit): void;
+  /**
+   * Marks `[from, to)` of the input as being written: an edit streaming into the document,
+   * such as a model rewriting one question (PLAN §5.2). Only the range is healed as text
+   * being typed; the text before and after it is settled and shows as it did, its lint fixes
+   * included. Edits move the range, and text inserted at its end extends it. A finished
+   * document compiles in streaming mode again, until `finish()` (or `null`, then `finish()`).
+   * The worker's fixers cut only inside the range. Keep it block-aligned: from a top-level
+   * block's start (heal's `blockStarts`) to the end of a block's text, before the blank line
+   * that follows it.
+   */
+  setStreamingRange(range: Range | null): void;
   /**
    * The input is complete: heal it strictly (no tail repair) and compile it in
    * final mode, right away and even if live compiling stopped. Status becomes
@@ -438,6 +455,15 @@ export class DocumentImpl implements EngineDocument {
   private tooLong: number | null = null;
   /** Since when streaming compiles have failed (clock time), or `null` while the artifact is current. */
   private staleSince: number | null = null;
+  /**
+   * Counts the times the text being typed started over (a streaming range, `reset()`).
+   * Compiles say so (`fallback.restart`) until one that did succeeds, so the worker shows
+   * it rather than keeping the last artifact (level 1). `restartShown` is the count the
+   * last successful one carried; `restartSent` the count the compile in flight carries.
+   */
+  private restarts = 0;
+  private restartShown = 0;
+  private restartSent: number | null = null;
   /** Final mode: the search for what hangs the source (PLAN §5.6), while it runs and after. */
   private hang: HangSearch | null = null;
   /** The compile in flight only probes for a hang; its output isn't the document's. */
@@ -518,6 +544,19 @@ export class DocumentImpl implements EngineDocument {
     return this.tooLong === null;
   }
 
+  setStreamingRange(range: Range | null): void {
+    if (this.disposed || this.tooLong !== null) return;
+    // A finished document is being written again.
+    if (range && this.final) {
+      this.final = false;
+      this.hang = null;
+      this.staleSince = null;
+    }
+    // The range's old text is being replaced, not cut while it's typed: show what replaces it.
+    if (range) this.restarts++;
+    this.changed(this.heal(() => this.healer.setStreamingRange(range)));
+  }
+
   finish(): void {
     if (this.disposed) return;
     this.final = true;
@@ -535,6 +574,7 @@ export class DocumentImpl implements EngineDocument {
     this.live = true;
     this.strikes = 0;
     this.staleSince = null;
+    this.restarts++;
     this.hang = null;
     this.urgent = false;
     this.failure = null;
@@ -701,8 +741,12 @@ export class DocumentImpl implements EngineDocument {
     this.stableAtLastCompile = heal.stableOffset;
     const params: CompileParams = { uri: this.uri, rev, target: this.target, mode: this.final ? "final" : "streaming" };
     if (this.inputs) params.inputs = this.inputs;
-    // The worker's fixers may cut what is still being typed (PLAN §5.5), never the settled text.
-    if (!this.final) params.settled = heal.stableOffset;
+    // The worker's fixers may cut what is still being typed (PLAN §5.5), never the settled text:
+    // the text before it, and after a streaming range.
+    if (!this.final) {
+      params.settled = heal.stableOffset;
+      if (heal.suffixOffset !== null) params.settledFrom = heal.suffixOffset;
+    }
     if (this.fullPages) params.fullPages = true;
     this.fullPages = false;
     const { watchdog } = this.host;
@@ -723,6 +767,11 @@ export class DocumentImpl implements EngineDocument {
   /** Layer 4 of the next compile (PLAN §5.6). */
   private fallbackParams(heal: HealResult): FallbackParams {
     const fallback: FallbackParams = { isolate: true };
+    this.restartSent = null;
+    if (this.restarts > this.restartShown) {
+      fallback.restart = true;
+      this.restartSent = this.restarts;
+    }
     const since = this.staleSince;
     if (!this.final && since !== null && this.host.clock.now() - since >= this.schedule.staleMs) {
       fallback.stablePrefix = true;
@@ -892,6 +941,7 @@ export class DocumentImpl implements EngineDocument {
               reason: "diagnostics",
               message: this.diagnostics.find(isError)?.message ?? "The document has errors.",
             };
+      if (r.status === "ok" && this.restartSent !== null) this.restartShown = this.restartSent;
       if (r.status === "ok" && r.fallback?.plainFrom == null) this.staleSince = null;
       else if (r.status !== "ok" && !this.final) this.staleSince ??= this.host.clock.now();
       const pages = this.artifact?.target === "paged" ? this.artifact.pages.length : 0;
@@ -1078,6 +1128,7 @@ export class DocumentImpl implements EngineDocument {
       diagnostics: this.diagnostics,
       heal: this.healed,
       final: this.final,
+      streamingRange: this.healer.streamingRange,
       live: this.live,
       failure,
       lastCompile: this.lastCompile,

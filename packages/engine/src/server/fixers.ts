@@ -23,7 +23,7 @@ import {
   SourceMap,
   type TextEdit,
 } from "@typstream/core";
-import { DEFAULT_LINT, heal, type LintRuleId, type ModeSpan, recognize } from "@typstream/heal";
+import { DEFAULT_LINT, type HealResult, heal, type LintRuleId, type ModeSpan, recognize } from "@typstream/heal";
 import { imageSources } from "../image-paths";
 import { typstString } from "./runtime";
 
@@ -218,14 +218,30 @@ export const placeholderImages = (
 const NO_LINT = Object.fromEntries(Object.keys(DEFAULT_LINT).map((id) => [id, false])) as Record<LintRuleId, false>;
 
 /**
- * Where an error can be cut: at its own span if that is in the unsettled tail,
+ * Where an error can be cut: at its own span if that is in the text being
+ * typed (`[settled, settledFrom)`: the unsettled tail, or a streaming range),
  * else at the innermost call site there in its trace (a settled function
  * called with a half-typed argument fails in its own body).
  */
-const cutPoint = (d: Diagnostic, settled: number): number | undefined => {
-  if (d.span && d.span.from >= settled) return d.span.from;
-  return d.trace.find((t) => t.span && t.span.from >= settled)?.span?.from;
+const cutPoint = (d: Diagnostic, settled: number, settledFrom: number): number | undefined => {
+  const typed = (span: Diagnostic["span"]) => span !== null && span.from >= settled && span.from < settledFrom;
+  if (typed(d.span)) return d.span?.from;
+  return d.trace.find((t) => typed(t.span))?.span?.from;
 };
+
+/**
+ * `text` without what is being typed from `cut` on, healed: the tail, or the
+ * rest of a streaming range, whose settled suffix (from `settledFrom`) stays
+ * as heal's streaming ranges keep it.
+ */
+const healCut = (text: string, cut: number, settled: number, settledFrom: number): HealResult =>
+  settledFrom >= text.length
+    ? heal(text.slice(0, cut), { lint: NO_LINT, unwrapFences: "never" })
+    : heal(text.slice(0, cut) + text.slice(settledFrom), {
+        lint: NO_LINT,
+        unwrapFences: "never",
+        streamingRange: { from: Math.min(settled, cut), to: cut },
+      });
 
 const IDENT = /[\p{XID_Continue}-]/u;
 const SPACE = /\s/;
@@ -256,23 +272,23 @@ const calleeStart = (text: string, open: number): number => {
 /** Frames that are empty after a cut fail as values (`rgb()`, `()` as a point): cut them too. */
 const VALUE_FRAMES = new Set(["args", "parens", "params"]);
 
-/** What healing appends after the text being typed (closers), and whitespace. */
-const APPENDED = /[\s)\]}$"*_`]/;
+/** What healing appends after the text being typed (closers and a range's separator), and whitespace. */
+const APPENDED = /[\s)\]}$"*_`\u200b]/;
 
 /**
  * Where an error with no position in the document can be cut: a package or a
  * library evaluates the document's content in its own code (CeTZ resolving a
  * half-typed coordinate inside a canvas, #72), so neither the error nor its
  * trace is in the text. The text being typed is to blame: the innermost
- * construct open where it ends, as heal sees it once the closers healing
- * appended are off. A value or a content block loses its opener and what
+ * construct open where it ends (the text's end, or a streaming range's), as
+ * heal sees it once the closers healing appended are off. A value or a content block loses its opener and what
  * follows (`(6` of `line((0, 0), (6`, `"` of `unit("`); an argument list, the
  * whole call. A round that still fails cuts the next construct out, so two
  * rounds go from the value being typed to the call holding it. Nothing open
  * there (markup), nothing to cut: the last good render and Layer 4 take it.
  */
-const unlocatedCut = (text: string, settled: number): number | undefined => {
-  let end = text.length;
+const unlocatedCut = (text: string, settled: number, settledFrom: number): number | undefined => {
+  let end = settledFrom;
   while (end > 0 && APPENDED.test(text[end - 1] as string)) end--;
   const [inner] = heal(text.slice(0, end), { lint: NO_LINT, unwrapFences: "never" }).openFrames;
   if (!inner) return undefined;
@@ -304,7 +320,7 @@ export const hoistImport: DiagnosticFixer = {
   name: "hoist-import",
   priority: 25,
   match: UNKNOWN,
-  fix(d, { text, settled, mode }) {
+  fix(d, { text, settled, settledFrom, mode }) {
     const name = UNKNOWN.exec(d.message)?.[1];
     if (!d.span || name === undefined) return null;
     let modes: readonly ModeSpan[] | undefined;
@@ -314,7 +330,8 @@ export const hoistImport: DiagnosticFixer = {
       const tail = IMPORT_TAIL.exec(text.slice(from + m[0].length)) as RegExpExecArray;
       if (!importedNames(m[1] as string, tail[1], tail[2])?.includes(name)) continue;
       const end = from + m[0].length + tail[0].length;
-      if (mode === "streaming" && end > settled) return null;
+      // Settled: before what is being typed, or in the settled text after a streaming range.
+      if (mode === "streaming" && end > settled && from < settledFrom) return null;
       // Not in raw text or a comment, nor inside a block or a call: its scope would change.
       modes ??= recognize(text).modes;
       if (modeAt(modes, from) !== "markup") continue;
@@ -346,21 +363,22 @@ export const tailCut: DiagnosticFixer = {
   name: "tail-cut",
   priority: 100,
   modes: ["streaming"],
-  fix(d, { text, settled }) {
-    let cut = cutPoint(d, settled) ?? (unlocated(d) ? unlocatedCut(text, settled) : undefined);
+  fix(d, { text, settled, settledFrom }) {
+    let cut =
+      cutPoint(d, settled, settledFrom) ?? (unlocated(d) ? unlocatedCut(text, settled, settledFrom) : undefined);
     if (cut === undefined) return null;
-    let healed = heal(text.slice(0, cut), { lint: NO_LINT, unwrapFences: "never" });
+    let healed = healCut(text, cut, settled, settledFrom);
     for (;;) {
       const [inner] = healed.openFrames;
       if (!inner || !VALUE_FRAMES.has(inner.frame) || text.slice(inner.open + 1, cut).trim() !== "") break;
       const before = inner.frame === "args" ? calleeStart(text, inner.open) : inner.open;
       if (before < settled) break;
       cut = before;
-      healed = heal(text.slice(0, cut), { lint: NO_LINT, unwrapFences: "never" });
+      healed = healCut(text, cut, settled, settledFrom);
     }
     const edit = diffEdit(text, healed.source);
     // Healing a prefix leaves its own settled text alone, but that can start before the client's.
-    return edit && edit.from >= settled ? [edit] : null;
+    return edit && edit.from >= settled && edit.to <= settledFrom ? [edit] : null;
   },
 };
 
@@ -466,9 +484,11 @@ export const applyEdits = (
 
 /** What the fix loop needs from the server. */
 export interface FixRun {
-  /** The client's text, its settled offset and the compile's mode. */
+  /** The client's text, its settled offsets ({@link FixContext}) and the compile's mode. */
   text: string;
   settled: number;
+  /** Default: the text's length. */
+  settledFrom?: number;
   mode: CompileMode;
   /** In the order to try them ({@link orderFixers}). */
   fixers: readonly DiagnosticFixer[];
@@ -504,6 +524,7 @@ export const runFixers = async (run: FixRun): Promise<FixOutcome> => {
   const { mode, fixers } = run;
   const maxRounds = run.rounds ?? MAX_FIX_ROUNDS;
   let { text, settled, diagnostics } = run;
+  let settledFrom = run.settledFrom ?? text.length;
   // Each round's text back to the previous one's, newest last.
   const maps: SourceMap[] = [];
   const toOriginal = (pos: number, assoc: 1 | -1 = 1) => maps.reduceRight((p, map) => map.toOriginal(p, assoc), pos);
@@ -512,7 +533,7 @@ export const runFixers = async (run: FixRun): Promise<FixOutcome> => {
   let rounds = 0;
   while (rounds < maxRounds && diagnostics.some(isError) && performance.now() < run.deadline) {
     const errors = diagnostics.filter(isError);
-    const ctx: FixContext = { text, settled, mode, round: rounds, errors };
+    const ctx: FixContext = { text, settled, settledFrom, mode, round: rounds, errors };
     const fixes: Fix[] = [];
     for (const error of errors) {
       const fix = await fixError(fixers, error, ctx);
@@ -532,6 +553,7 @@ export const runFixers = async (run: FixRun): Promise<FixOutcome> => {
     );
     text = next.text;
     settled = next.map.toResult(settled);
+    settledFrom = next.map.toResult(settledFrom);
     maps.push(next.map);
     diagnostics = await run.compile(text, toOriginal);
     rounds++;

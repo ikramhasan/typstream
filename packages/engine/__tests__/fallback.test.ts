@@ -9,11 +9,11 @@ import {
   type PagedArtifact,
   PROTOCOL_VERSION,
 } from "@typstream/core";
+import { blockStarts } from "@typstream/heal";
 import { afterEach, describe, expect, it } from "vitest";
 import { applyPaged } from "../src/paged";
 import type { EngineAdapter } from "../src/server/adapter";
-import { blockStarts } from "../src/server/anchors";
-import { SKIP_MESSAGES } from "../src/server/fallback";
+import { SKIP_MESSAGES, showsLess } from "../src/server/fallback";
 import { inProcess } from "../src/server/serve";
 import type { ServerOptions } from "../src/server/server";
 import { codeOf, TestClient } from "./conformance";
@@ -288,6 +288,26 @@ describe("streaming", { timeout: 30_000 }, () => {
     const { compile } = await serverWith({ fixers: [] });
     const out = await compile("Done.\n\n#text()", { fallback: { stablePrefix: true } });
     expect(out.result.status).toBe("error");
+  });
+});
+
+describe("showsLess", () => {
+  const same = (p: number) => p;
+
+  it("is true when the tail lost more than closers, false when it only grew or closed differently", () => {
+    expect(showsLess("A\n\nB *bold*", "A\n\nB", same, 3)).toBe(true);
+    expect(showsLess("A\n\nB *bo*", "A\n\nB *bold*", same, 3)).toBe(false);
+    expect(showsLess("A\n\n#box[x]", "A\n\n#box[x y]", same, 3)).toBe(false);
+    // Before the settled offset the text changed: that shows.
+    expect(showsLess("A long\n\nB", "A\n\nB", same, 9)).toBe(false);
+  });
+
+  it("compares what a streaming range wrote, not the settled text after it", () => {
+    const after = "\n\n== Next section\n\nMore text.";
+    // The range grew: everything after it is the same, so nothing is less.
+    expect(showsLess(`A\n\nNew *wor*${after}`, `A\n\nNew *words*${after}`, same, 3)).toBe(false);
+    // A cut in the range dropped text it had shown.
+    expect(showsLess(`A\n\nNew words here${after}`, `A\n\nNew${after}`, same, 3)).toBe(true);
   });
 });
 

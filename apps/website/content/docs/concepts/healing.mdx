@@ -150,17 +150,23 @@ Every call returns a `HealResult`, and the result is always the same as `heal()`
 
 ### Streaming into the middle of a document
 
-When a model rewrites one section of an existing document ("add an answer key below question 3"), the text it writes is in the middle, not at the end. `setStreamingRange` heals that region as if it were the tail, closing only what opened inside it, and leaves the text after it untouched:
+When a model rewrites one section of an existing document ("make question 3 harder"), the text it writes is in the middle, not at the end. `setStreamingRange` heals that range as if it were the tail, closing only what opened inside it. The text before and after it is settled: it comes out as it did, its lint fixes included, and `suffixOffset` says where the text after the range starts in `source`:
 
 ```ts
+const doc = "= Notes\n\nIntro.\n\nOld question.\n\nOutro, with m/s$^2$.";
 const healer = createHealer();
-healer.set(document);
-healer.setStreamingRange({ from: at, to: at }); // the model writes at `at`
-healer.applyEdit({ from: at, to: at, insert: "#table(columns: 2, [a" }); // the range grows with it
-healer.setStreamingRange(null); // done
+healer.set(doc);
+healer.finish(); // a finished document
+const from = doc.indexOf("Old");
+const to = from + "Old question.".length; // the block's text, not the blank line after it
+healer.setStreamingRange({ from, to });
+const r = healer.applyEdit({ from, to, insert: "#table(columns: 2, [a" }); // the range follows the edit
+r.source; // '= Notes\n\nIntro.\n\n#table(columns: 2, [a])\n\nOutro, with m/s$""^2$.'
+r.source.slice(r.suffixOffset); // the settled text after the range, with its lint fix
+healer.finish(); // done: final mode again
 ```
 
-Text inserted at the end of the range extends it. The engine document and the bindings don't expose streaming ranges yet; streaming edits there are planned with [#34](https://github.com/ikramhasan/typstream/issues/34).
+Text inserted at the end of the range extends it. Keep the range block-aligned: from the start of a top-level block (`blockStarts`) to the end of a block's text, so the blank line after it stays outside. Otherwise, while the range is written, its last line runs into the next block's first, and a heading there would turn into text. The engine document and the bindings take a range too ([Streaming](/docs/concepts/streaming#streaming-into-part-of-a-document)).
 
 ### Final mode
 

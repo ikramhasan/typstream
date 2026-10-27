@@ -66,13 +66,28 @@ When `isStreaming` goes back to true on a finished document (the user asked to r
 
 A document is text plus edits, not only appends. The engine's `doc.applyEdit({ from, to, insert })` changes any part of it (offsets are UTF-16 indices into the input), and the bindings turn a `source` that isn't an extension of the previous one into an edit. The healer re-parses from the last checkpoint before the edit and stops once it is back in step, so an edit costs about as much as the text around it, not the whole document. Edits reach the worker as one diff of the healed source, right before the next compile.
 
-**Streaming into the middle.** When a model rewrites one section of an existing document, the text being written isn't at the end. The healer handles that with a streaming range: `setStreamingRange({ from, to })` heals the region as if it were the tail and leaves the text after it as it is ([Healing](/docs/concepts/healing#streaming-into-the-middle-of-a-document)). The engine document and the bindings don't expose streaming ranges yet; that is planned with [#34](https://github.com/ikramhasan/typstream/issues/34).
+## Streaming into part of a document
+
+When a model rewrites one question of a finished document, the text being written isn't at the end. Give the part being written as a **streaming range**: `streamingRange={{ from, to }}` with `isStreaming`, in offsets of `source`. Only the range heals as text being typed. The rest of the document is settled and keeps showing as it did, while the range grows chunk by chunk:
+
+```tsx
+// The old question has been replaced with what the model has written so far.
+const source = before + written + after;
+<Typstream source={source} isStreaming streamingRange={{ from: before.length, to: before.length + written.length }} />;
+```
+
+- A finished document given a range goes back to streaming **without starting over**, unlike a regenerated answer. When `isStreaming` turns false, it compiles in final mode again.
+- The worker's fixers cut only inside the range (`tail-cut` would otherwise take the rest of the document with the text being typed), and the [last-output rule](#the-tail-never-shows-less-than-it-did) compares only what the range wrote.
+- Keep the range block-aligned: from the start of a top-level block (heal's `blockStarts`) to the end of a block's text, leaving the blank line after it outside the range. Otherwise, while the range is written, its last line runs into the next block.
+- On the engine, that is `doc.setStreamingRange({ from, to })`, then edits into the range (`doc.applyEdit`), then `doc.finish()`. The healer does the same ([Healing](/docs/concepts/healing#streaming-into-the-middle-of-a-document)).
+
+Commands that write into a range for you ("rewrite question 3"), with undo, are planned in `@typstream/ai` ([#34](https://github.com/ikramhasan/typstream/issues/34)).
 
 ## The tail never shows less than it did
 
 Healing and the `tail-cut` fixer keep a streamed prefix compiling by cutting what is still being typed. Sometimes a cut takes text that had already rendered with it. A spread such as `..rows.map(r => (r.name, r.score` is an array of arrays until its closing `.flatten()` arrives, so the fix that makes it compile drops the whole spread, and a table would lose the rows it was showing.
 
-So while streaming, a compile that succeeds but shows less of the unsettled tail than the last output did is held back: the last output stays (status `stale`) until the tail shows as much again, or that text settles. Content doesn't flash away and back as tokens arrive. Edits before the settled point, or a reference that starts resolving, show at once.
+So while streaming, a compile that succeeds but shows less of the unsettled tail than the last output did is held back: the last output stays (status `stale`) until the tail shows as much again, or that text settles. Content doesn't flash away and back as tokens arrive. Edits before the settled point, or a reference that starts resolving, show at once. So does text that starts over: the first compile after a streaming range is set, or after the document is reset (a regenerated answer), shows what replaces the old text even if it is shorter.
 
 ## Word fade-in and the caret
 
