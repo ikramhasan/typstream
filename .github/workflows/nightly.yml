@@ -63,8 +63,7 @@ jobs:
 
   # Corpus-wide browser suites (tools/browser-suites, #19): final-render equivalence, flicker and accessibility over
   # mountTypstream on the real worker. One job per browser (Chromium also runs the adversarial set's equivalence).
-  # Too slow for PRs (Chromium ~17 min, Firefox ~10, WebKit ~45); the timeout also leaves room for `--with-deps`,
-  # whose apt mirror has taken 20 min on a bad day.
+  # Too slow for PRs (Chromium ~17 min, Firefox ~10, WebKit ~45); the timeout leaves room for a slow day.
   browser-suites:
     name: Browser suites (${{ matrix.browser }})
     if: ${{ contains(fromJSON('["", "all", "browser-suites"]'), inputs.only || '') }}
@@ -79,7 +78,8 @@ jobs:
       - uses: ./.github/actions/engine-wasm
       - uses: pnpm/setup@v3
         with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
-      - run: pnpm --filter @typstream/browser-suites exec playwright install --with-deps ${{ matrix.browser }}
+      - uses: ./.github/actions/playwright
+        with: { browsers: "${{ matrix.browser }}", package: "@typstream/browser-suites" }
       - run: pnpm --filter @typstream/browser-suites test:browser
         env:
           BROWSERS: ${{ matrix.browser }}

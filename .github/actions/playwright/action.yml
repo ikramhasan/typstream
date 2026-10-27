@@ -1,0 +1,38 @@
+name: Playwright browsers
+description: >
+  Installs Playwright's browsers and their system dependencies (`playwright install --with-deps`) without
+  depending on the Ubuntu mirror: apt keeps the .deb files it downloads in a cached directory, keyed on the
+  Playwright version and the runner image, so a warm run only installs them. The mirror has stalled for
+  minutes per package (10 min for Chromium's 26 MB, 20 min on a bad day). The browsers are cached too.
+  Needs pnpm installed (pnpm/setup) first.
+
+inputs:
+  browsers:
+    description: Browsers to install, space-separated (chromium firefox webkit)
+    required: true
+  package:
+    description: Workspace package whose playwright runs the install
+    default: "@typstream/engine"
+
+runs:
+  using: composite
+  steps:
+    - id: version
+      shell: bash
+      run: |
+        echo "playwright=$(pnpm --filter '${{ inputs.package }}' exec node -p 'require("playwright/package.json").version')" >> "$GITHUB_OUTPUT"
+        echo "image=$ImageOS-$ImageVersion" >> "$GITHUB_OUTPUT"
+
+    # Runner images are rebuilt weekly with newer packages; a new image starts a new cache.
+    - uses: actions/cache@v6
+      with:
+        path: |
+          ~/.cache/apt-archives/*.deb
+          ~/.cache/ms-playwright
+        key: playwright-${{ steps.version.outputs.image }}-${{ steps.version.outputs.playwright }}-${{ inputs.browsers }}
+
+    - shell: bash
+      run: |
+        mkdir -p ~/.cache/apt-archives/partial
+        echo "Dir::Cache::Archives \"$HOME/.cache/apt-archives\";" | sudo tee /etc/apt/apt.conf.d/99playwright-archives
+        pnpm --filter '${{ inputs.package }}' exec playwright install --with-deps ${{ inputs.browsers }}

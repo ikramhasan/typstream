@@ -190,7 +190,8 @@ jobs:
       - uses: ./.github/actions/engine-wasm
       - uses: pnpm/setup@v3
         with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
-      - run: pnpm --filter @typstream/engine exec playwright install --with-deps ${{ matrix.browser }}
+      - uses: ./.github/actions/playwright
+        with: { browsers: "${{ matrix.browser }}" }
       - run: pnpm --filter @typstream/engine test:browser
       - run: pnpm --filter @typstream/dom test:browser
       - run: pnpm --filter @typstream/react test:browser
