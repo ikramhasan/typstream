@@ -6,7 +6,7 @@
 import { edu } from "@typstream/edu";
 import { Pause, Play, RotateCcw } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { type RenderedEvent, Typstream, useTypstream } from "typstream";
+import { type DocumentState, type RenderedEvent, Typstream, useTypstream } from "typstream";
 import { cn } from "@/lib/cn";
 
 export interface Recording {
@@ -20,6 +20,25 @@ export interface Recording {
 
 const PLUGINS = [edu];
 
+/** Page headers and footers sit in the margins; the text being written never does. */
+const MARGIN = 0.08;
+
+/**
+ * Where the text being written is: the last run, in reading order, on the last page with text in its
+ * body. `y` is in the page's points, from its top.
+ */
+function streamPosition(state: DocumentState | null): { page: number; y: number; height: number } | null {
+  const artifact = state?.artifact;
+  if (artifact?.target !== "paged") return null;
+  for (let i = artifact.pages.length - 1; i >= 0; i--) {
+    const page = artifact.pages[i];
+    const body = page?.text?.filter((run) => run.y > page.height * MARGIN && run.y < page.height * (1 - MARGIN));
+    const run = body?.[body.length - 1];
+    if (page && run) return { page: page.index, y: run.y, height: page.height };
+  }
+  return null;
+}
+
 export function LiveDemo({ recordings }: { recordings: Recording[] }) {
   const [index, setIndex] = useState(0);
   const recording = recordings[index] as Recording;
@@ -30,7 +49,12 @@ export function LiveDemo({ recordings }: { recordings: Recording[] }) {
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const root = useRef<HTMLDivElement>(null);
   const raw = useRef<HTMLPreElement>(null);
+  const preview = useRef<HTMLDivElement>(null);
   const started = useRef(false);
+  // A new run remounts <Typstream>, so the preview starts blank instead of showing the last run's pages.
+  const [run, setRun] = useState(0);
+  // The preview follows the text being written until the reader scrolls it themselves.
+  const follow = useRef(true);
 
   const text = recording.chunks
     .slice(0, count)
@@ -72,20 +96,54 @@ export function LiveDemo({ recordings }: { recordings: Recording[] }) {
     if (el) el.scrollTop = el.scrollHeight;
   }, [text]);
 
-  const choose = (i: number) => {
+  // Keep the part being written in view: about two thirds of the way down, with what came before above it.
+  const state = t.state;
+  useEffect(() => {
+    const el = preview.current;
+    const position = streaming ? streamPosition(state) : null;
+    if (!el || !position || !follow.current) return;
+    const page = el.querySelector<HTMLElement>(`.typstream-page[data-page="${position.page + 1}"]`);
+    if (!page) return;
+    const rect = page.getBoundingClientRect();
+    const y = rect.top - el.getBoundingClientRect().top + el.scrollTop + (position.y / position.height) * rect.height;
+    const top = Math.max(0, y - el.clientHeight * 0.65);
+    if (Math.abs(top - el.scrollTop) < 12) return;
+    const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollTo({ top, behavior: smooth ? "smooth" : "auto" });
+  }, [state, streaming]);
+
+  // Only the reader's own scrolling stops the follow: scrollTo above fires `scroll` too, but not these.
+  useEffect(() => {
+    const el = preview.current;
+    if (!el) return;
+    const stop = () => {
+      follow.current = false;
+    };
+    const events = ["wheel", "touchmove", "keydown", "pointerdown"] as const;
+    for (const type of events) el.addEventListener(type, stop, { passive: true });
+    return () => {
+      for (const type of events) el.removeEventListener(type, stop);
+    };
+  }, []);
+
+  const restart = () => {
     clearTimeout(timer.current);
-    setIndex(i);
     setCount(0);
     setStats({ renders: 0 });
+    setRun((r) => r + 1);
+    follow.current = true;
+    preview.current?.scrollTo({ top: 0 });
     setPlaying(true);
   };
 
+  const choose = (i: number) => {
+    setIndex(i);
+    restart();
+  };
+
   const toggle = () => {
-    if (done) {
-      setCount(0);
-      setStats({ renders: 0 });
-      setPlaying(true);
-    } else setPlaying((p) => !p);
+    if (done) restart();
+    else setPlaying((p) => !p);
   };
 
   const onRendered = useCallback(
@@ -147,7 +205,7 @@ export function LiveDemo({ recordings }: { recordings: Recording[] }) {
           <pre
             ref={raw}
             dir="ltr"
-            className="m-0 h-72 overflow-auto whitespace-pre-wrap break-words px-4 py-3 font-mono text-[11.5px] leading-relaxed lg:h-[30rem]"
+            className="m-0 h-72 overflow-auto whitespace-pre-wrap break-words px-4 py-3 font-mono text-[11.5px] leading-relaxed [scrollbar-color:oklch(0.4_0.02_255)_transparent] lg:h-[30rem]"
           >
             {text}
             {streaming && (
@@ -157,9 +215,10 @@ export function LiveDemo({ recordings }: { recordings: Recording[] }) {
         </div>
 
         <div className="relative min-w-0 bg-fd-muted/60">
-          <div className="h-[26rem] overflow-auto p-4 sm:p-6 lg:h-[34.5rem]">
+          <div ref={preview} className="h-[26rem] overflow-auto p-4 sm:p-6 lg:h-[34.5rem]">
             <div className="demo-sheets mx-auto max-w-[44rem]">
               <Typstream
+                key={`${recording.id}-${run}`}
                 ref={t.ref}
                 source={text}
                 isStreaming={streaming}
