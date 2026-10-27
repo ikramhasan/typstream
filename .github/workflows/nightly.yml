@@ -78,8 +78,7 @@ jobs:
       - uses: ./.github/actions/engine-wasm
       - uses: pnpm/setup@v3
         with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
-      - uses: ./.github/actions/playwright
-        with: { browsers: "${{ matrix.browser }}", package: "@typstream/browser-suites" }
-      - run: pnpm --filter @typstream/browser-suites test:browser
+      # In Playwright's image, like CI's browser jobs: no apt.
+      - run: node tools/repo/playwright-docker.mjs pnpm --filter @typstream/browser-suites test:browser
         env:
           BROWSERS: ${{ matrix.browser }}

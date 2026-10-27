@@ -190,14 +190,15 @@ jobs:
       - uses: ./.github/actions/engine-wasm
       - uses: pnpm/setup@v3
         with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
-      - uses: ./.github/actions/playwright
-        with: { browsers: "${{ matrix.browser }}" }
-      - run: pnpm --filter @typstream/engine test:browser
-      - run: pnpm --filter @typstream/dom test:browser
-      - run: pnpm --filter @typstream/react test:browser
-      - run: pnpm exec turbo run test --filter=@typstream/example-strict-csp
+      # Inside Playwright's image (tools/repo/playwright-docker.mjs; the first step pulls it): its browsers and their
+      # libraries are installed there, so no `playwright install --with-deps`, whose apt mirror has stalled these jobs
+      # for 10+ minutes.
+      - run: node tools/repo/playwright-docker.mjs pnpm --filter @typstream/engine test:browser
+      - run: node tools/repo/playwright-docker.mjs pnpm --filter @typstream/dom test:browser
+      - run: node tools/repo/playwright-docker.mjs pnpm --filter @typstream/react test:browser
+      - run: node tools/repo/playwright-docker.mjs pnpm exec turbo run test --filter=@typstream/example-strict-csp
       - if: matrix.browser == 'chromium'
-        run: pnpm exec turbo run test --filter=@typstream/example-nextjs-ai-sdk
+        run: node tools/repo/playwright-docker.mjs pnpm exec turbo run test --filter=@typstream/example-nextjs-ai-sdk
 
   # Visual regression (tools/browser-suites): screenshots against committed baselines, taken inside Playwright's
   # Docker image as they are locally (scripts/visual.mjs), so the runner's fonts don't matter. On a mismatch the
