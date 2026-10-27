@@ -57,7 +57,9 @@ The [vanilla JS guide](/docs/getting-started/vanilla) walks through it step by s
   `isStreaming` turning false finishes the document (strict heal, final compile); turning true again starts it over,
   as for a regenerated answer. `stream` (an `AsyncIterable<string>`) is the alternative to `source`: a new stream
   starts the document over, and the document finishes when the stream ends. If the stream throws, what arrived is
-  finished and the error goes to `reportError`.
+  finished and the error goes to `reportError`. Mounts given the same stream share one reader: each shows all of its
+  text, including what arrived before it mounted, so a mount replaced while the stream continues loses nothing. The
+  stream is closed when a chunk arrives after the last mount reading it is destroyed.
 - **In place or a new document.** `target`, `inputs` and `files` change in place. A different `engine`, `plugins`,
   `preamble` or `template`, `heal` or `schedule` options, or switching to or from the fit-width layout opens a new
   document; the old output stays until its first compile.

@@ -62,7 +62,7 @@ Plain objects and arrays are compared by value, so building `heal: { lint: { "cu
 
 ## Or pass a stream
 
-Instead of `source`, give `stream`: an `AsyncIterable<string>` of chunks. The mount reads it, and the document is finished when the stream ends. A new stream starts the document over.
+Instead of `source`, give `stream`: an `AsyncIterable<string>` of chunks. The mount reads it, and the document is finished when the stream ends. A new stream starts the document over. Mounts given the same stream share one reader, so a mount created after the stream started still shows all of it.
 
 ```ts
 const view = mountTypstream(element, { engine, plugins: [htmlCompat, universe], stream: llmStream });

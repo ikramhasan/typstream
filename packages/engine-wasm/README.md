@@ -33,7 +33,20 @@ engine.compile_svg_changed(); // now with them
 
 Typst selects a registered face by family or for fallback (the first font covering the text) exactly as if it were loaded. Without its bytes, `World::font` records the miss and Typst moves on to the next family or draws tofu, so the compile still succeeds. The miss is reported on cached compiles too, because comemo replays font lookups when it validates them. `@typstream/engine`'s adapter does this for you in the worker and recompiles once the font arrives.
 
-For other fonts (CJK, say), `node scripts/fonts.mjs --info font.ttf` prints the `info` to register them with (`FontSource.info` in `@typstream/core`).
+For other fonts (CJK, say), compute the `info` to register them with (`FontSource.info` in `@typstream/core`) once, at build time, with the version of this package your app ships: `Engine.font_info(bytes)` after `initSync`.
+
+```js
+// font-info.mjs: node font-info.mjs font.ttf prints the font's info
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { Engine, initSync } from "@typstream/engine-wasm";
+
+const require = createRequire(import.meta.url);
+initSync({ module: readFileSync(require.resolve("@typstream/engine-wasm/engine_bg.wasm")) });
+console.log(Engine.font_info(readFileSync(process.argv[2])));
+```
+
+`scripts/fonts.mjs` does the same for the build's own registry (`scriptFonts`); it's in this repository, not in the published package.
 
 In Node or a worker that already has the bytes: `initSync({ module: bytes })`.
 

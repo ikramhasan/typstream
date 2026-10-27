@@ -182,6 +182,19 @@ describe("word fade-in", () => {
     expect(r.root.querySelector("pre [data-typstream-animate]")).toBeNull();
   });
 
+  it("plays your own keyframes, named typstream-<animation>", () => {
+    // `animation: "pop"` plays `typstream-pop`, as AnimateOptions.animation says; a bare `pop` isn't used.
+    const r = mount({
+      animation: { animation: "pop", duration: 10_000 },
+      stylesheets: ["@keyframes typstream-pop { from { opacity: 0 } }", "@keyframes pop { from { opacity: 0 } }"],
+    });
+    r.update(doc("<p>one two</p>"), { animate: true });
+    const word = r.root.querySelector("[data-typstream-animate]") as HTMLElement;
+    const names = word.getAnimations().map((a) => (a as CSSAnimation).animationName);
+    expect(names).toEqual(["typstream-pop"]);
+    expect(Number.parseFloat(getComputedStyle(word).opacity)).toBeLessThan(1);
+  });
+
   it("splits CJK text into characters", () => {
     const r = mount();
     r.update(doc("<p>汉字 ok</p>"), { animate: true });
