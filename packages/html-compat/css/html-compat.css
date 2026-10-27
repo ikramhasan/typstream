@@ -137,9 +137,25 @@
   visibility: hidden;
 }
 
-/* place(): absolute, against the nearest block, shape or box (or the document). */
+/* place(): absolute, against the nearest block, shape or box (or the document), inside its inset.
+   A container with an inset writes it as these properties (html-compat.typ's `_inset-vars`); every
+   element a .ts-place can be positioned against resets them, so they never come from further out.
+   A place resets them for what it holds, not for itself: its own offsets read them. */
+:where(.typstream),
+:where(.typstream) :is(.ts-block, .ts-shape, .ts-box, .ts-transform, .ts-place > *) {
+  --ts-inset-top: 0pt;
+  --ts-inset-right: 0pt;
+  --ts-inset-bottom: 0pt;
+  --ts-inset-left: 0pt;
+}
 :where(.typstream .ts-place) {
   position: absolute;
+}
+/* Placed text with a vertical alignment: its box runs from the cap height to the baseline, Typst's
+   default text edges, not over the whole line, so it lands where paged output puts it. Only text:
+   an image or tall math in a trimmed line would stick out above it. */
+:where(.typstream .ts-place-text) {
+  text-box: trim-both cap alphabetic;
 }
 :where(.typstream .ts-place.ts-float) {
   position: static;

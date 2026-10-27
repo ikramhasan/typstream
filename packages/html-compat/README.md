@@ -23,7 +23,7 @@ const { html } = engine.compile_html();
 | `block`, `box` | `div.ts-block` / `span.ts-box` with width, height, fill, stroke, inset, radius, baseline. |
 | `rect`, `square`, `circle`, `ellipse` | `div.ts-shape` with the same properties. |
 | `stack`, `columns`, `colbreak`, `pad` | flexbox, CSS columns, `break-after: column`, padding. |
-| `place` | Absolutely positioned against the nearest box, block or shape; `float: true` stays in flow. |
+| `place` | Absolutely positioned against the nearest box, block or shape, inside its `inset` as in Typst (the container writes its inset as `--ts-inset-top`/`-right`/`-bottom`/`-left`); text with a vertical alignment gets Typst's text box, cap height to baseline (`text-box`). `float: true` stays in flow. |
 | `v`, `h` | Fixed-size gaps. Fractional spacing (`h(1fr)`) becomes a small gap. Weak spacing and spacing in math are left to Typst. |
 | `pagebreak` | `div.ts-pagebreak`: a rule on screen, a page break in print. |
 | `move`, `rotate`, `scale`, `skew` | CSS transforms. `hide` is `visibility: hidden`. `repeat` repeats its body, clipped to the box. |
