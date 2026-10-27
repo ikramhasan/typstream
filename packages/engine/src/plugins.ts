@@ -45,7 +45,7 @@ export const documentOptions = (
   engineFonts: readonly FontSource[],
 ): { options: ResolvedDocumentOptions; fonts: { key: string; font: FontSource }[] } => {
   const plugins = resolvePlugins(options.plugins ?? []);
-  if (!plugins.length) return { options, fonts: [] };
+  if (!plugins.length) return { options: { ...options, plugins }, fonts: [] };
   const engines = plugins.flatMap((p) => (p.engine ? [p.engine] : []));
   const preamble = [...engines.map((e) => e.preamble), options.preamble].filter((p) => p).join("\n");
   const files = Object.assign({}, ...engines.map((e) => e.files), options.files);
@@ -67,6 +67,7 @@ export const documentOptions = (
   return {
     options: {
       ...options,
+      plugins,
       ...(preamble ? { preamble } : {}),
       ...(Object.keys(files).length ? { files } : {}),
       ...(packages.length ? { packages } : {}),

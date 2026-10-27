@@ -9,18 +9,17 @@
 // streaming (`lazy`): a chat history of fifty finished answers shares one worker,
 // and only the visible ones are opened and compiled.
 
-import {
-  type CompiledEvent,
-  type CompileTarget,
-  type Diagnostic,
-  type DocumentEvent,
-  type FallbackEvent,
-  type FileDelta,
-  type RenderedEvent,
-  resolvePlugins,
-  type TemplateSpec,
-  type TypstreamPlugin,
-  type WatchdogEvent,
+import type {
+  CompiledEvent,
+  CompileTarget,
+  Diagnostic,
+  DocumentEvent,
+  FallbackEvent,
+  FileDelta,
+  RenderedEvent,
+  TemplateSpec,
+  TypstreamPlugin,
+  WatchdogEvent,
 } from "@typstream/core";
 import type { DocumentOptions, DocumentState, DocumentStatus, Engine, EngineDocument } from "@typstream/engine";
 import { type StandaloneHtmlOptions, standaloneHtml } from "./export/standalone";
@@ -173,34 +172,33 @@ const RESIZE_DEBOUNCE = 150;
 /** How the document is opened: a change to any of these opens a new one. */
 interface OpenKey {
   engine: Engine;
-  /** The plugins, resolved: the engine applies their facets (preambles before `preamble`). */
-  plugins: TypstreamPlugin[];
+  /** The engine resolves them and applies their facets (preambles before `preamble`). */
+  plugins: readonly TypstreamPlugin[];
   preamble: string;
   heal: DocumentOptions["heal"];
   schedule: DocumentOptions["schedule"];
 }
 
 /** The template named `o.template`, the last plugin's if two have one by that name. */
-const templateOf = (o: TypstreamOptions, plugins = resolvePlugins(o.plugins ?? [])): TemplateSpec | undefined =>
+const templateOf = (o: TypstreamOptions): TemplateSpec | undefined =>
   o.template
-    ? plugins
+    ? (o.plugins ?? [])
         .flatMap((p) => p.templates ?? [])
         .filter((t) => t.name === o.template)
         .pop()
     : undefined;
 
 const openKey = (o: TypstreamOptions): OpenKey => {
-  const plugins = resolvePlugins(o.plugins ?? []);
   const preamble = [
     // Whatever the target, so switching targets doesn't reopen the document: without
     // fit-width's inputs the preamble does nothing.
     o.layout === "fit-width" ? FIT_WIDTH_PREAMBLE : undefined,
-    templateOf(o, plugins)?.preamble,
+    templateOf(o)?.preamble,
     o.preamble,
   ]
     .filter((p) => p)
     .join("\n");
-  return { engine: o.engine, plugins, preamble, heal: o.heal, schedule: o.schedule };
+  return { engine: o.engine, plugins: o.plugins ?? [], preamble, heal: o.heal, schedule: o.schedule };
 };
 
 const sameKey = (a: OpenKey, b: OpenKey) =>
@@ -300,9 +298,9 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
     paged = null;
   };
 
-  const htmlRenderer = (): HtmlRenderer => {
+  /** `doc`'s plugins as the engine resolved them: dependencies first, each key once. */
+  const htmlRenderer = (plugins: readonly TypstreamPlugin[]): HtmlRenderer => {
     const animation = typeof opts.animated === "object" ? opts.animated : undefined;
-    const plugins = resolvePlugins(opts.plugins ?? []);
     const want = [opts.theme, animation, plugins, opts.stylesheets, opts.linkTarget];
     if (html && equal(html.key, want)) return html.renderer;
     dropHtml();
@@ -347,7 +345,7 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
     if (!artifact) return;
     if (artifact.target === "html") {
       dropPaged();
-      const renderer = htmlRenderer();
+      const renderer = htmlRenderer(doc?.plugins ?? []);
       const caret = (opts.caret ?? false) && !state.final;
       if (shown?.artifact === artifact && shown.caret === caret) return;
       shown = { artifact, caret };
@@ -562,11 +560,12 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
     },
     exportPdf: async () => exportDoc().exportPdf({ inputs: exportInputs() }),
     async exportHtml(options = {}) {
-      const html = await exportDoc().exportHtml({ inputs: exportInputs() });
+      const exported = exportDoc();
+      const html = await exported.exportHtml({ inputs: exportInputs() });
       return standaloneHtml(html, {
         ...(opts.theme ? { theme: opts.theme } : {}),
         ...options,
-        plugins: resolvePlugins([...(opts.plugins ?? []), ...(options.plugins ?? [])]),
+        plugins: [...exported.plugins, ...(options.plugins ?? [])],
         stylesheets: [...(opts.stylesheets ?? []), ...(options.stylesheets ?? [])],
       });
     },

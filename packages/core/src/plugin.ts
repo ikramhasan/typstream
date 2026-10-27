@@ -286,29 +286,28 @@ export const definePlugin = <P extends TypstreamPlugin>(plugin: P): P => plugin;
 export const resolvePlugins = <P extends TypstreamPlugin>(plugins: readonly P[]): P[] => {
   const byKey = new Map<string, P>();
   for (const plugin of plugins) {
-    if (typeof plugin?.key !== "string" || plugin.key === "") throw new Error("typstream plugin without a key");
+    if (typeof plugin?.key !== "string" || !plugin.key) throw new Error("typstream plugin without a key");
     byKey.set(plugin.key, plugin);
   }
   const order: P[] = [];
-  /** Keys being placed (on the current dependency path) and placed. */
-  const visiting = new Set<string>();
-  const placed = new Set<string>();
-  const place = (plugin: P, path: string[]) => {
-    if (placed.has(plugin.key)) return;
-    if (visiting.has(plugin.key)) {
-      const cycle = [...path.slice(path.indexOf(plugin.key)), plugin.key];
-      throw new Error(`typstream plugins depend on each other in a cycle: ${cycle.join(" → ")}`);
-    }
-    visiting.add(plugin.key);
+  /** Keys of the plugins being placed, each a dependency of the one before: a cycle if one comes back. */
+  const path: string[] = [];
+  const place = (plugin: P): void => {
+    if (order.includes(plugin)) return;
+    const at = path.indexOf(plugin.key);
+    if (at >= 0)
+      throw new Error(
+        `typstream plugins depend on each other in a cycle: ${[...path.slice(at), plugin.key].join(" → ")}`,
+      );
+    path.push(plugin.key);
     for (const key of plugin.dependencies ?? []) {
       const dependency = byKey.get(key);
       if (!dependency) throw new Error(`typstream plugin "${plugin.key}" depends on "${key}", which isn't loaded`);
-      place(dependency, [...path, plugin.key]);
+      place(dependency);
     }
-    visiting.delete(plugin.key);
-    placed.add(plugin.key);
+    path.pop();
     order.push(plugin);
   };
-  for (const plugin of byKey.values()) place(plugin, []);
+  for (const plugin of byKey.values()) place(plugin);
   return order;
 };

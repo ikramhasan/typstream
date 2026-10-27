@@ -95,6 +95,7 @@ describe("plugins in the engine", { timeout: 30_000 }, () => {
       // Without Layer 4, only the fixer can make it compile.
       fallback: false,
     });
+    expect(doc.plugins.map((p) => p.key)).toEqual(["acme/future", "acme/base", "acme/everything"]);
     doc.finish();
     const state = await done(doc);
     expect(state.status).toBe("done");

@@ -37,7 +37,7 @@ export interface HtmlRendererOptions {
   /**
    * Plugins whose `sanitize` facet allows more tags and attributes, and whose
    * `stylesheets` are injected before `stylesheets` (html-compat's, for one),
-   * in the order given (mountTypstream passes them resolved, dependencies first).
+   * in the order given (mountTypstream passes the engine's resolved list, dependencies first).
    */
   plugins?: readonly TypstreamPlugin[];
   /** `target` of links to http(s) URLs; `null` keeps them in the same tab. Default `_blank`. */

@@ -160,6 +160,11 @@ export interface DocumentOptions {
 export interface EngineDocument {
   /** Names the document in the worker; unique among the engine's open documents. */
   readonly uri: DocumentUri;
+  /**
+   * Its plugins as they load (`resolvePlugins` from `@typstream/core`): each
+   * key once, dependencies first. Renderers apply their facets in this order.
+   */
+  readonly plugins: readonly TypstreamPlugin[];
   /** Appends streamed text. */
   push(chunk: string): void;
   /** Replaces the whole input (a growing `source` prop, a regenerated answer). */
@@ -360,6 +365,7 @@ const sameInputs = (a: Record<string, string> | undefined, b: Record<string, str
 /** @internal */
 export class DocumentImpl implements EngineDocument {
   readonly uri: DocumentUri;
+  readonly plugins: readonly TypstreamPlugin[];
   private readonly host: DocumentHost;
   private readonly schedule: ScheduleOptions;
   private readonly healer: Healer;
@@ -425,6 +431,7 @@ export class DocumentImpl implements EngineDocument {
 
   constructor(uri: DocumentUri, host: DocumentHost, schedule: ScheduleOptions, options: ResolvedDocumentOptions) {
     this.uri = uri;
+    this.plugins = options.plugins ?? [];
     this.host = host;
     this.schedule = schedule;
     this.healer = createHealer({ ...options.heal, final: false });
