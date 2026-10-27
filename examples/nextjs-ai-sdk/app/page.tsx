@@ -261,25 +261,23 @@ const fileName = (source: string) => {
   return `${name || "document"}.pdf`;
 };
 
-type ExportPdfProps = { document: TypstreamInfo["document"]; source: string; answers: boolean; disabled: boolean };
+type ExportPdfProps = { exportPdf: TypstreamInfo["exportPdf"]; source: string; disabled: boolean };
 
 /**
- * Downloads the answer as PDF. The engine document exports it in final mode at the document's own
- * page size: the export's inputs leave out fit-width's page width, which only sizes the preview.
- * With "Show answers" on, the PDF is the teacher's copy too.
+ * Downloads the answer as PDF, from `useTypstream().exportPdf()`: compiled in final mode at the
+ * document's own page size (fit-width only sizes the preview), with the component's `inputs`, so with
+ * "Show answers" on the PDF is the teacher's copy too.
  */
-const ExportPdf = ({ document: doc, source, answers, disabled }: ExportPdfProps) => {
+const ExportPdf = ({ exportPdf, source, disabled }: ExportPdfProps) => {
   const [state, setState] = useState<"idle" | "exporting" | "failed">("idle");
   const label = state === "exporting" ? "Exporting…" : state === "failed" ? "Export failed" : "Export PDF";
   return (
     <Action
       label={label}
-      disabled={disabled || !doc || state === "exporting"}
+      disabled={disabled || state === "exporting"}
       onClick={() => {
-        if (!doc) return;
         setState("exporting");
-        doc
-          .exportPdf({ inputs: answers ? ANSWERS : {} })
+        exportPdf()
           .then((bytes) => {
             const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: "application/pdf" }));
             const link = Object.assign(window.document.createElement("a"), { href: url, download: fileName(source) });
@@ -397,7 +395,7 @@ const Answer = ({ text, streaming, target, answers, busy, onRetry }: AnswerProps
         </article>
         <MessageFooter className="gap-1 px-0">
           <CopySource text={text} disabled={streaming} />
-          <ExportPdf document={t.document} source={text} answers={answers} disabled={streaming} />
+          <ExportPdf exportPdf={t.exportPdf} source={text} disabled={streaming} />
           <Action label="Retry" onClick={onRetry} disabled={busy}>
             <RotateCwIcon />
           </Action>

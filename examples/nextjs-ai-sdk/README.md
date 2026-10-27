@@ -48,7 +48,7 @@ Commons needs no API key. The route identifies itself with a `User-Agent`, as Wi
 - **Show answers.** edu writes answers (filled-in blanks, worked answers, answer keys) only when the document's `showAnswers` input is `"true"`: the switch recompiles every answer as the teacher's copy.
 - **Following the answer.** Message Scroller (AI Elements' Chat) keeps the reply in view while you stay at the bottom, and stops when you scroll away. As pages, a streaming answer is cut off just below the line being written: Typst adds a whole page as soon as it starts one, and following the bottom of a blank page would leave the text above the screen.
 - **Before the first token** a "Writing…" line shows, and a failed request shows its error with a retry, so nothing is ever silent.
-- From an answer's footer: copy its Typst source, **export it as PDF**, or retry it. The PDF comes from the engine document `useTypstream()` returns (`t.document.exportPdf({ inputs })`): compiled in final mode at the document's own page size (fit-width only sizes the preview), with the answers if they're shown. Stop a reply from the send button.
+- From an answer's footer: copy its Typst source, **export it as PDF**, or retry it. The PDF is `useTypstream().exportPdf()`: compiled in final mode at the document's own page size (fit-width only sizes the preview), with the component's `inputs`, so the answers are in it if they're shown. Stop a reply from the send button.
 - **Styles.** Tailwind's preflight resets headings, lists and inline SVG, which a Typst document needs as the browser draws them, so `app/globals.css` undoes it inside answers.
 
 `app/telemetry.tsx` wires typstream's events to the console and to `/api/telemetry`, which logs them (see the telemetry guide).
