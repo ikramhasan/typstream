@@ -3,8 +3,22 @@
 // snapshots of the diagnostic shapes they rely on, so a Typst upgrade that
 // changes a message or a span shows up here first.
 
-import type { CompileParams, Diagnostic, DiagnosticFixer, FixContext, HtmlArtifact, TextEdit } from "@typstream/core";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import type {
+  CompileParams,
+  Diagnostic,
+  DiagnosticFixer,
+  FixContext,
+  HtmlArtifact,
+  PackageSpec,
+  PagedArtifact,
+  TextEdit,
+} from "@typstream/core";
 import { PROTOCOL_VERSION } from "@typstream/core";
+import { loadCorpus } from "@typstream/corpus";
+import { heal } from "@typstream/heal";
+import { UNIVERSE_PACKAGES } from "@typstream/universe";
 import { afterEach, describe, expect, it } from "vitest";
 import type { EngineAdapter } from "../src/server/adapter";
 import { DEFAULT_FIXERS, fixersOf, orderFixers, packageStub, pendingRef, tailCut } from "../src/server/fixers";
@@ -158,6 +172,32 @@ describe("tail-cut", () => {
     expect(edit && text.slice(0, edit.from) + edit.insert + text.slice(edit.to)).toBe("Colour: #rgb()");
   });
 
+  it("cuts what is open at the end of the text for an error with no position in it", () => {
+    // A package evaluating the document's content (CeTZ, #72): no span, no trace in the text.
+    const unlocated = { ...error("panicked with: Failed to resolve coordinate system: 6", 0, 0), span: null };
+    const cases: [string, string | null][] = [
+      // text (healed), the result: the value being typed, then the call holding it
+      ["#canvas({\n  line((0, 0), (6))})", "#canvas({\n  line((0, 0), )})"],
+      ["#canvas({\n  line((0, 0), )})", "#canvas({\n  })"],
+      // A string left empty leaves the call empty: both go.
+      ['Density in #unit("")', "Density in "],
+      ["#canvas({\n  content((0, 1), [Unit circ])})", "#canvas({\n  content((0, 1), )})"],
+      // Closers can't tell healing's from the stream's: a complete call counts as still being typed
+      // (CeTZ's anchor `"b"` defined later in the stream).
+      ['#canvas({\n  line("a", "b")\n})', '#canvas({\n  line("a", )})'],
+      // Nothing open: nothing to cut.
+      ["Plain text.", null],
+    ];
+    for (const [text, result] of cases) {
+      const [edit] = run(tailCut, unlocated, ctx(text)) ?? [];
+      expect(edit ? text.slice(0, edit.from) + edit.insert + text.slice(edit.to) : null, text).toBe(result);
+    }
+    // Settled text stays, and an error placed in settled text isn't cut at the end.
+    expect(run(tailCut, unlocated, ctx("#canvas({\n  line((0, 0), (6))})", 26))).toBeNull();
+    const settledError = error("e", 2, 3);
+    expect(run(tailCut, settledError, ctx("#canvas({\n  line((0, 0), (6))})", 10))).toBeNull();
+  });
+
   it("only streams", () => {
     expect(tailCut.modes).toEqual(["streaming"]);
   });
@@ -214,14 +254,15 @@ afterEach(() => {
   for (const c of clients.splice(0)) c.close();
 });
 
-const serverWith = async (options: ServerOptions & { fixerModules?: string[] } = {}) => {
+/** `allow`: the Typst packages `initialize` allows. */
+const serverWith = async (options: ServerOptions & { fixerModules?: string[]; allow?: PackageSpec[] } = {}) => {
   const { counter, adapter } = counted();
   const c = new TestClient(inProcess(adapter, options));
   clients.push(c);
   await c.request("initialize", {
     protocolVersion: PROTOCOL_VERSION,
     capabilities: { pagedDiff: true },
-    options: { fixerModules: options.fixerModules },
+    options: { fixerModules: options.fixerModules, packages: options.allow },
   });
   let n = 0;
   const compile = async (text: string, params: Partial<CompileParams> = {}, preamble?: string) => {
@@ -385,6 +426,56 @@ describe("fix loop", { timeout: 30_000 }, () => {
     const out = await compile("See @a.", { settled: 0 });
     expect(out.result.status).toBe("error");
     expect(out.compiles).toBe(1);
+  });
+
+  describe("a package's error with no position in the document (#72)", () => {
+    // CeTZ evaluates a canvas's elements in its own code: a half-typed coordinate panics with
+    // no span and no trace in the document. The stream, as #24 recorded it.
+    const entry = loadCorpus({ sets: ["llm"] }).find((e) => e.name === "kit-v4-haiku-worksheet-area-perimeter");
+    const source = entry?.source ?? "";
+    const canvas = source.indexOf("#cetz.canvas", source.indexOf("The triangle below"));
+    /** The triangle's canvas up to `end`, healed as the client heals it. */
+    const prefix = (end: string) =>
+      heal(`#import "@preview/cetz:0.5.3"\n\n${source.slice(canvas, source.indexOf(end, canvas) + end.length)}`);
+    // The vendored tarballs, read from disk (Node's fetch can't read file: URLs).
+    const fetch = async (url: string) => new Response(readFileSync(fileURLToPath(url)));
+    const cetz = () => serverWith({ packages: { fetch, cache: false }, allow: [...UNIVERSE_PACKAGES] });
+
+    /** Paths the canvas draws: the page's, less those of the canvas with no elements yet. */
+    const drawn = async (compile: Awaited<ReturnType<typeof cetz>>["compile"], out: { artifact: unknown }) => {
+      const empty = prefix("import cetz.draw: *");
+      const paths = (a: unknown) => (a as PagedArtifact).pages[0]?.svg?.match(/<path /g)?.length ?? 0;
+      const base = await compile(empty.source, { settled: empty.stableOffset, target: "paged" });
+      return paths(out.artifact) - paths(base.artifact);
+    };
+
+    it("cuts the value being typed, then the call holding it", async () => {
+      const { compile } = await cetz();
+      const healed = prefix("line((0, 0), (6");
+      const tail = healed.source.slice(healed.stableOffset);
+      // The whole canvas is unsettled: Layer 4's stable prefix would drop it.
+      expect(tail.startsWith("#cetz.canvas(") && tail.endsWith("line((0, 0), (6))})")).toBe(true);
+      const out = await compile(healed.source, { settled: healed.stableOffset, target: "paged" });
+      expect([out.result.status, out.compiles]).toEqual(["ok", 3]);
+      // The panic has nothing in the document to point at; the line left with one point does.
+      expect(out.diagnostics.map((d) => [d.severity, d.source, d.message, at(healed.source, d)])).toEqual([
+        ["info", "tail-cut", "panicked with: Failed to resolve coordinate system: 6", null],
+        ["info", "tail-cut", "assertion failed: Line must have a minimum of two points", "line((0, 0), (6))"],
+      ]);
+      expect(await drawn(compile, out)).toBe(0);
+    });
+
+    it("keeps the arguments that arrived", async () => {
+      const { compile } = await cetz();
+      const healed = prefix("line((0, 0), (6, 0), (3, ");
+      const out = await compile(healed.source, { settled: healed.stableOffset, target: "paged" });
+      expect([out.result.status, out.compiles]).toEqual(["ok", 2]);
+      expect(out.result.fixes).toEqual([
+        { fixer: "tail-cut", message: "panicked with: Failed to resolve coordinate system: (3,)" },
+      ]);
+      // The base of the triangle is drawn.
+      expect(await drawn(compile, out)).toBe(1);
+    });
   });
 
   it("lets a document's own runtime file restyle placeholders", async () => {
