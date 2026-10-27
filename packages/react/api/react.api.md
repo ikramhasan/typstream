@@ -7,6 +7,7 @@
 import { AppliedFix } from '@typstream/core';
 import { CompiledEvent } from '@typstream/core';
 import { CompileReport } from '@typstream/core';
+import { ComponentType } from 'react';
 import { CSSProperties } from 'react';
 import { Diagnostic } from '@typstream/core';
 import { DocumentEvent } from '@typstream/core';
@@ -16,6 +17,7 @@ import { Engine } from '@typstream/engine';
 import { EngineDocument } from '@typstream/engine';
 import { FallbackEvent } from '@typstream/core';
 import { FallbackLevel } from '@typstream/core';
+import { IslandProps } from '@typstream/core';
 import * as react from 'react';
 import { ReactNode } from 'react';
 import { Ref } from 'react';
@@ -43,6 +45,14 @@ export { FallbackEvent }
 
 export { FallbackLevel }
 
+// @beta
+export type IslandComponent<Data = any> = ComponentType<IslandProps<Data>>;
+
+// @beta
+export type IslandComponents = Readonly<Record<string, IslandComponent>>;
+
+export { IslandProps }
+
 export { RenderedEvent }
 
 export { StandaloneHtmlOptions }
@@ -56,6 +66,8 @@ export const Typstream: (input: TypstreamProps) => react.JSX.Element;
 // @public
 export interface TypstreamDefaults extends Pick<TypstreamOptions, "target" | "layout" | "pageHeight" | "preamble" | "template" | "inputs" | "files" | "resolveImage" | "heal" | "schedule" | "plugins" | "stylesheets" | "animated" | "caret" | "theme" | "linkTarget" | "textLayer" | "lazy">, TelemetryHooks {
     engine?: Engine;
+    // @beta
+    islands?: IslandComponents;
     mathFont?: string | URL;
 }
 

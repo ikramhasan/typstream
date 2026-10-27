@@ -11,11 +11,12 @@ export const CORPUS_ROOT = fileURLToPath(new URL("..", import.meta.url));
 /** The sets `loadCorpus()` loads by default, in a stable order: plain Typst, no plugins. */
 export const SETS = ["edu", "adversarial"] as const;
 /**
- * Every set: the default ones, then `llm`, recorded model output (#24). Its documents are written
- * in a plugin's vocabulary (`meta.plugins`, e.g. edu's functions), so only callers that mount
- * those plugins load it.
+ * Every set: the default ones, then `llm`, recorded model output (#24), and `islands`, documents
+ * with render islands (#28: mind maps). Their documents are written in a plugin's vocabulary
+ * (`meta.plugins`, e.g. edu's or the mind map's functions), so only callers that mount those
+ * plugins load them.
  */
-export const ALL_SETS = [...SETS, "llm"] as const;
+export const ALL_SETS = [...SETS, "llm", "islands"] as const;
 export type CorpusSet = (typeof ALL_SETS)[number];
 
 /**

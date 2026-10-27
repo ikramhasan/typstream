@@ -17,5 +17,6 @@ export const applyPaged = (
   // A server that skipped a page it should have sent would leave a hole.
   if (pages.length !== next.pageCount) return null;
   for (let i = 0; i < pages.length; i++) if (!pages[i]) return null;
-  return { target: "paged", base: null, pageCount: next.pageCount, pages };
+  // Island markers are the whole list, whichever pages changed.
+  return { target: "paged", base: null, pageCount: next.pageCount, pages, islands: next.islands };
 };

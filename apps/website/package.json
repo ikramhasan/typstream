@@ -1,7 +1,7 @@
 {
   "name": "@typstream/website",
   "version": "0.0.0",
-  "description": "typstream's website: landing page and documentation (Next.js + Fumadocs, PLAN.md §10.5), with llms.txt and a markdown version of every page.",
+  "description": "typstream's website: landing page and documentation (Next.js + Fumadocs, PLAN.md \u00a710.5), with llms.txt and a markdown version of every page.",
   "license": "UNLICENSED",
   "private": true,
   "type": "module",
@@ -17,6 +17,7 @@
     "@typstream/core": "workspace:*",
     "@typstream/edu": "workspace:*",
     "@typstream/heal": "workspace:*",
+    "@typstream/mindmap": "workspace:*",
     "fumadocs-core": "16.17.8",
     "fumadocs-mdx": "15.4.10",
     "fumadocs-ui": "npm:@fumadocs/base-ui@16.17.8",

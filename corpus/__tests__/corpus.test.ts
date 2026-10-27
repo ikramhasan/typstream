@@ -49,6 +49,15 @@ describe("corpus layout", () => {
     }
   });
 
+  it("has documents with render islands, each naming the plugins it compiles with (#28)", () => {
+    const islands = corpus.filter((e) => e.set === "islands");
+    expect(islands.length).toBeGreaterThanOrEqual(3);
+    for (const e of islands) {
+      expect(e.meta.plugins, e.id).toContain("mindmap");
+      for (const p of e.meta.plugins ?? []) expect(["edu", "mindmap"], e.id).toContain(p);
+    }
+  });
+
   it("gives every compiling entry a page count", () => {
     for (const e of corpus) {
       if ((e.meta.expect ?? "ok") === "ok") expect(e.meta.expectedPages, e.id).toBeGreaterThan(0);

@@ -1,0 +1,10 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/api-extractor/v7/api-extractor.schema.json",
+  "extends": "../../tools/repo/api-extractor.base.json",
+  "apiReport": {
+    "enabled": true,
+    "reportFileName": "mindmap.api.md",
+    "reportFolder": "<projectFolder>/api/",
+    "reportTempFolder": "<projectFolder>/dist/api/"
+  }
+}

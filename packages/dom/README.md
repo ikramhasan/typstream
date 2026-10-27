@@ -24,6 +24,10 @@ view.update({ ...options, source: text, isStreaming: false }); // finish: strict
 - `getState()` / `subscribe()` read the document's state, `destroy()` disposes it and removes what was rendered (the engine is the caller's).
 - **Callbacks.** `onStatusChange`, `onDiagnostics`, and the telemetry hooks (PLAN §8.6): `onRendered` with each artifact drawn (its compile's report, see `@typstream/engine`'s README, plus `renderMs` and `blocks` or `pages`), `onFallback` and `onWatchdog` with the document's events.
 
+## Render islands (beta)
+
+`islands` on `mountTypstream` and `createHtmlRenderer` maps names to framework-free renderers, `(host, props) => { update, destroy }` (`src/islands.ts`, PLAN §8.4). Each `typstream-island` marker whose name a plugin declares (`islands` facet, with `parse` checking the data) gets a host positioned over its Typst fallback; the host moves into the re-created marker while its block streams, so an island mounts once and receives new props (`isIncomplete` while its block is past heal's stable offset). Markers whose data is too long or doesn't parse, whose renderer throws, or past 50 per document keep their fallback, which print always shows. The paged view's overlay follows the canvas pages (#14). Guide: `apps/website/content/docs/guides/islands.mdx`.
+
 ## Paged (SVG pages)
 
 ```ts

@@ -5,6 +5,7 @@
 
 export * from "./export";
 export * from "./html";
+export type { IslandInstance, IslandRenderer, IslandRenderers } from "./islands";
 export {
   type MountedTypstream,
   mountTypstream,

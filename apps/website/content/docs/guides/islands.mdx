@@ -1,0 +1,187 @@
+---
+title: Writing an island
+description: Mount an interactive component over a drawing a Typst function writes, a render island, with the Typst drawing as its fallback for print, PDF and renderers without it.
+---
+
+A **render island** is an interactive component that typstream mounts where a document's Typst marks one. The marker
+wraps the island's **fallback**, a drawing in plain Typst: what prints, what `exportPdf()` and standalone HTML contain,
+what shows while the component's code loads, and what every renderer without the component shows. Islands are for
+teachers and students alike: an interactive mind map in a lesson, a simulation in a handout.
+[`@typstream/mindmap`](/docs/reference/mindmap) is one; this guide builds another.
+
+An island has four parts:
+
+1. A **Typst function** that draws the fallback and writes the marker around it, with the data the component needs.
+2. The **plugin** that mounts that function and declares the island's name (`islands`), with a `parse` that checks
+   the data.
+3. A **component** for the name: a React component for `<Typstream islands>`, or a framework-free renderer for
+   `mountTypstream`.
+4. The **app** pairs them: `plugins={[plugin]}` and `islands={{ name: Component }}`. A marker becomes an island only when
+   a loaded plugin declares its name *and* a component is given for it; otherwise the fallback stays.
+
+## The marker
+
+The marker is the island contract. In the **HTML target** it is a `typstream-island` element around the fallback, with
+the island's name and its data as JSON. In the **paged target** it is a `metadata` labelled `<typstream-island>` at the
+top left of the island's block, whose value has the name, the data and the block's size; the engine finds it in the
+laid-out document and sends its page and position with every paged artifact. Copy this function:
+
+```typst
+/// Wraps `fallback` in an island marker named `name`, carrying `data` (JSON-encodable). `source` is content the
+/// document wrote (the island function's argument), which locates the island in it.
+#let _island(name, data, fallback, source: none) = context if target() == "html" {
+  html.elem("typstream-island", attrs: (name: name, props: json.encode(data, pretty: false)), html.frame(fallback))
+} else {
+  layout(size => {
+    let height = measure(fallback, width: size.width).height
+    block(breakable: false, width: 100%, {
+      let value = (name: name, data: data, width: size.width / 1pt, height: height / 1pt, source: source)
+      [#metadata(value)<typstream-island>]
+      fallback
+    })
+  })
+}
+```
+
+- The island covers its marker: the fallback's box in the HTML target, the full-width block in the paged one. Draw a
+  fallback the size you want the component to have.
+- `data` must survive `json.encode`: strings, numbers, booleans, arrays and dictionaries. Resolve everything the
+  component needs (colours, sizes) in Typst, so the two agree.
+- `source` is how the engine knows where the island is in the document, which decides `isIncomplete` in the paged
+  target: pass the content the document gave your function.
+- Follow edu's rule for streaming: every parameter has a default and accepts what a stream cut leaves (`(2` is the
+  number 2, `"#16` an unfinished colour). Draw what has arrived; write no marker for nothing.
+
+Here is a counter, `#counter(start: 3)[Push-ups]`: a box with a label and a number, and a component with a button.
+
+```typst
+// lib.typ of @acme/counter:0.1.0
+#import "island.typ": _island
+
+/// A number readers can count up from.
+#let counter(start: 0, ..label) = {
+  let start = if type(start) == int { start } else { 0 }
+  let label = label.pos().join()
+  _island("counter", (start: start), box(stroke: 1pt, inset: 8pt)[#label: #start], source: label)
+}
+```
+
+## The plugin
+
+```ts
+import { definePlugin, type IslandSpec } from "@typstream/core";
+
+interface CounterData {
+  start: number;
+}
+
+export const counterIsland: IslandSpec<CounterData> = {
+  description: "A number readers can count up from.",
+  // The data is untrusted: the document wrote it. Return undefined to keep the fallback.
+  parse: (data) => {
+    const start = (data as { start?: unknown } | null)?.start;
+    return typeof start === "number" && Number.isSafeInteger(start) ? { start } : undefined;
+  },
+};
+
+export const counter = definePlugin({
+  key: "acme/counter",
+  engine: { files: FILES, preamble: '#import "@acme/counter:0.1.0": counter\n' },
+  prompt: { catalogue: CATALOGUE, rules: ["Use `#counter(start: n)` when the reader should count."] },
+  islands: { counter: counterIsland as IslandSpec },
+});
+```
+
+`IslandSpec` and the island types are beta.
+
+## The component
+
+### React
+
+A component gets `IslandProps`: the parsed `data`, `isIncomplete`, the `target` it shows in, its `index` among the
+document's islands of its name, and `file(path)`, the bytes of a file the document has (its own, and the images its
+`resolveImage` resolved).
+
+```tsx
+import type { IslandProps } from "@typstream/core";
+import { useState } from "react";
+
+export function Counter({ data, isIncomplete }: IslandProps<CounterData>) {
+  const [count, setCount] = useState(data.start);
+  return (
+    <div className="acme-counter">
+      <button type="button" disabled={isIncomplete} onClick={() => setCount((c) => c + 1)}>
+        Count: {count}
+      </button>
+    </div>
+  );
+}
+```
+
+```tsx
+<Typstream source={text} plugins={[counter]} islands={{ counter: Counter }} />
+```
+
+The component renders through a portal into a host element over the marker, so it is part of your app's tree:
+context, StrictMode and Suspense reach it. While a document streams, a marker's block is re-created at every token; the
+host stays, so the component is mounted once and receives new props. An island that throws is unmounted by its error
+boundary, and its fallback shows again. Load heavy code lazily (`React.lazy`): the fallback stays visible until the
+component paints.
+
+### Without a framework
+
+`mountTypstream` and `createHtmlRenderer` take renderers, functions that mount into the host and return `update` and
+`destroy`:
+
+```ts
+import { mountTypstream, type IslandRenderer } from "@typstream/dom";
+
+const counterRenderer: IslandRenderer = (host, props) => {
+  const button = document.createElement("button");
+  let count = (props.data as CounterData).start;
+  button.textContent = `Count: ${count}`;
+  button.onclick = () => (button.textContent = `Count: ${++count}`);
+  host.append(button);
+  return {
+    update: (next) => (button.disabled = next.isIncomplete),
+    destroy: () => button.remove(),
+  };
+};
+
+mountTypstream(element, { engine, source, plugins: [counter], islands: { counter: counterRenderer } });
+```
+
+Keep the `islands` object the same between updates: a new one mounts every island again.
+
+## Styling
+
+- **Paint your own background.** The host is positioned over the fallback, which stays under it (nothing moves when the
+  island mounts). `background: var(--typstream-island-background, Canvas)` matches the page; the paged view sets
+  white, the paper.
+- **The document's element rules reach in.** The HTML renderer styles elements with zero specificity
+  (`:where(.typstream) svg { max-width: 100% }`), so any class rule of yours overrides them; reset what you need.
+- **Ship CSS as constructable stylesheets** (`new CSSStyleSheet()`, `adoptedStyleSheets` on the host's root node), or
+  through `stylesheets` on the mount: no `<style>` element, so a strict CSP needs nothing more.
+- **Print** hides islands and shows their fallbacks.
+
+## Security
+
+Treat `data` as untrusted: the document wrote it, and a model wrote the document.
+
+- Check it in `parse`. Render it as text (React escapes it); never as HTML or as a URL you load.
+- A marker's JSON is capped at 64 KB and a document mounts at most 50 islands; past either, fallbacks stay.
+- An island fetches nothing the document names. Images and files come from `file(path)`, the same bytes Typst drew,
+  which only your app's `resolveImage` downloads.
+- Only names a loaded plugin declares mount, so a document can't mount a component your app didn't pair with its plugin.
+
+## Accessibility
+
+When an island mounts, its fallback is `aria-hidden`: assistive technology reads the island. Give it a name (a
+`figure` with `aria-label`, say), keep its controls reachable by keyboard, and set `aria-busy` while `isIncomplete`.
+
+## The paged target
+
+The engine reports each marker's page, position and size (`PagedArtifact.islands`), and the paged view mounts islands
+over them in its per-page overlay, the layer of positioned elements over each page that the canvas pages
+([#14](https://github.com/ikramhasan/typstream/issues/14)) bring; until then, the paged target shows fallbacks. Islands
+are positioned in units of the page's width, so they follow its scale.

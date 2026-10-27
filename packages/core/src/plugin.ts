@@ -5,7 +5,7 @@
 
 import type { Diagnostic } from "./diagnostic";
 import type { TextEdit } from "./index";
-import type { CompileMode } from "./protocol";
+import type { CompileMode, CompileTarget, FileContent } from "./protocol";
 
 /**
  * Typst's lexical modes, plus the inside of raw blocks and comments, which
@@ -260,18 +260,66 @@ export interface PromptExample {
 }
 
 /**
- * Describes an interactive component the renderer swaps in for a Typst marker
- * (PLAN §8.4). Framework-neutral: bindings (`@typstream/react`) map island
- * names to components. Shape to be settled by the islands work (#28).
+ * The name of an island's marker in Typst output (PLAN §8.4). The HTML target
+ * writes an element of this name around the island's fallback, with its `name`
+ * and its data as JSON in `props`. The paged target labels a `metadata` with
+ * it, at the top left of the island's block; its value is a dictionary of
+ * `name`, `data`, `width` and `height` (the block's size in points) and
+ * `source`, content the document wrote, which locates the island in it.
  * @beta
  */
-export interface IslandSpec {
+export const ISLAND_MARKER = "typstream-island";
+
+/**
+ * An interactive component that renderers mount over a Typst marker (PLAN
+ * §8.4). The marker wraps its own fallback, the Typst drawing, which is what
+ * prints, exports and shows wherever nothing mounts. Framework-neutral: apps
+ * register a renderer for the name (`@typstream/dom`'s `islands` option,
+ * `@typstream/react`'s `islands` prop); a marker becomes an island only when a
+ * loaded plugin declares its name and the app registered a renderer for it.
+ * @beta
+ */
+export interface IslandSpec<Data = unknown> {
   /** What the island shows or lets the reader do, for people and tools reading the plugin. */
   description?: string;
-  /** The island flows with text (`inline`) or stands as a block. Default `block`. */
-  display?: "inline" | "block";
-  /** Further fields, until the islands work (#28) settles the shape. */
-  [key: string]: unknown;
+  /**
+   * Checks the marker's data, which the document wrote and is untrusted
+   * (parsed JSON in the HTML target, a Typst value in the paged one), and
+   * returns what the renderer gets as `data`. `undefined` keeps the fallback.
+   * Without it, the data is passed on as it is.
+   */
+  parse?(data: unknown): Data | undefined;
+}
+
+/**
+ * What an island's renderer gets: everything comes from the marker, except
+ * `isIncomplete` and `file`, which come from the document.
+ * @beta
+ */
+export interface IslandProps<Data = unknown> {
+  /** The island's name, a key of a plugin's `islands`. */
+  name: string;
+  /** The marker's data, through the spec's `parse`. */
+  data: Data;
+  /**
+   * The document is streaming and the island's source is still being written:
+   * it starts at or after the stable offset, so text that can change it is
+   * still arriving.
+   */
+  isIncomplete: boolean;
+  /** The target the island is shown in. */
+  target: CompileTarget;
+  /**
+   * The island's position among the document's islands of its name, from 0:
+   * its identity, which a renderer keeps across updates.
+   */
+  index: number;
+  /**
+   * A file the document has, by the path its Typst names it with: its own
+   * files and the images its `resolveImage` resolved (the bytes Typst drew).
+   * `null` for anything else; islands fetch nothing a document names.
+   */
+  file(path: string): FileContent | null;
 }
 
 /**
@@ -299,7 +347,7 @@ export interface EditorFacet {
  * A typstream plugin: a key plus any of the facets below. `@typstream/edu` is
  * one; so are a school's branded templates or a chemistry pack.
  *
- * Everything except `heal.handlers` is plain data. The engine facet is
+ * Everything except `heal.handlers` and islands' `parse` is plain data. The engine facet is
  * especially restricted because it is sent to the worker, which can't receive
  * functions: worker-side code is referenced by module URL (`fixerModules`).
  * @public

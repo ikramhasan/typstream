@@ -9,10 +9,10 @@
 // machine. `limit` entries run under `prlimit` (util-linux); without it they're
 // skipped. --write-pages records the page counts of `ok` entries in meta.json.
 //
-// Entries written for a plugin (meta.plugins, the llm set) compile the way the engine compiles
-// them: the plugin's preamble before the source, its files as a local package. Every entry gets a
-// package directory with @typstream/edu and @typstream/universe's vendored packages, and nothing
-// else: an empty package cache and a dead proxy keep native typst from downloading the rest, so
+// Entries written for a plugin (meta.plugins, the llm and islands sets) compile the way the engine
+// compiles them: the plugin's preamble before the source, its files as a local package. Every entry
+// gets a package directory with @typstream/edu, @typstream/mindmap and @typstream/universe's
+// vendored packages, and nothing else: an empty package cache and a dead proxy keep native typst from downloading the rest, so
 // a package outside the allowlist fails as it does in the app.
 import { spawn, spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -22,7 +22,7 @@ import { fileURLToPath } from "node:url";
 import { gunzipSync } from "node:zlib";
 
 const TYPST_VERSION = "0.15.1";
-const SETS = ["edu", "adversarial", "llm"];
+const SETS = ["edu", "adversarial", "llm", "islands"];
 const TIMEOUT_MS = 60_000;
 // Runaway loops and memory bombs must fail inside these.
 const LIMIT_TIMEOUT_MS = 10_000;
@@ -93,6 +93,9 @@ const packages = join(out, "packages");
 const eduDir = join(root, "../packages/edu/typst");
 const eduVersion = /^version = "(.+)"$/m.exec(readFileSync(join(eduDir, "typst.toml"), "utf8"))[1];
 cpSync(eduDir, join(packages, "typstream", "edu", eduVersion), { recursive: true });
+const mindmapDir = join(root, "../packages/mindmap/typst");
+const mindmapVersion = /^version = "(.+)"$/m.exec(readFileSync(join(mindmapDir, "typst.toml"), "utf8"))[1];
+cpSync(mindmapDir, join(packages, "typstream", "mindmap", mindmapVersion), { recursive: true });
 const vendor = join(root, "../packages/universe/vendor");
 for (const tarball of readdirSync(vendor).filter((f) => f.endsWith(".tar.gz"))) {
   const [, name, version] = /^(.+)-(\d+\.\d+\.\d+)\.tar\.gz$/.exec(tarball);
@@ -110,7 +113,10 @@ for (const tarball of readdirSync(vendor).filter((f) => f.endsWith(".tar.gz"))) 
     at += 512 + Math.ceil(size / 512) * 512;
   }
 }
-const PREAMBLES = { edu: `#import "@typstream/edu:${eduVersion}": *\n` };
+const PREAMBLES = {
+  edu: `#import "@typstream/edu:${eduVersion}": *\n`,
+  mindmap: `#import "@typstream/mindmap:${mindmapVersion}": mindmap, topic\n`,
+};
 const noNetwork = { ...process.env, https_proxy: "http://127.0.0.1:9", HTTPS_PROXY: "http://127.0.0.1:9" };
 
 const run = (entry) =>

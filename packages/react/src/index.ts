@@ -8,12 +8,14 @@ export type {
   DocumentEvent,
   FallbackEvent,
   FallbackLevel,
+  IslandProps,
   RenderedEvent,
   WatchdogEvent,
 } from "@typstream/core";
 export type { StandaloneHtmlOptions, TypstreamExportOptions } from "@typstream/dom";
 export type { DocumentState, DocumentStatus, Engine } from "@typstream/engine";
 export { type TypstreamDefaults, TypstreamProvider, type TypstreamProviderProps } from "./context";
+export type { IslandComponent, IslandComponents } from "./islands";
 export { Typstream, type TypstreamHandle, type TypstreamProps } from "./Typstream";
 export type { TelemetryHooks } from "./telemetry";
 export { type TypstreamInfo, useTypstream } from "./useTypstream";

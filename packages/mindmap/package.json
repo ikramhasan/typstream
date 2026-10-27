@@ -1,0 +1,58 @@
+{
+  "name": "@typstream/mindmap",
+  "version": "0.0.0",
+  "description": "Mind maps for typstream: written as a list, drawn in Typst for print and PDF, interactive (pan, zoom, open and close branches) in the viewer.",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "default": "./dist/react.js"
+    },
+    "./typst/*": "./typst/*"
+  },
+  "files": [
+    "dist",
+    "typst"
+  ],
+  "scripts": {
+    "build": "node scripts/embed.mjs && tsup",
+    "embed": "node scripts/embed.mjs",
+    "test": "vitest run --project node",
+    "test:browser": "vitest run --project browser",
+    "size": "node scripts/size.mjs",
+    "check-types": "tsc -p tsconfig.json",
+    "check:api": "api-extractor run && api-extractor run -c api-extractor.react.json",
+    "api:update": "api-extractor run --local && api-extractor run --local -c api-extractor.react.json",
+    "check:package": "publint --strict --pack npm && attw --pack . --profile esm-only"
+  },
+  "dependencies": {
+    "@typstream/core": "workspace:*",
+    "@xyflow/react": "12.12.0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@typstream/corpus": "workspace:*",
+    "@typstream/dom": "workspace:*",
+    "@typstream/engine": "workspace:*",
+    "@typstream/engine-wasm": "workspace:*",
+    "@typstream/heal": "workspace:*",
+    "@typstream/react": "workspace:*",
+    "@vitest/browser-playwright": "4.1.12",
+    "playwright": "^1.64.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  }
+}

@@ -231,7 +231,7 @@ The model can now write `#reaction(conditions: [heat])[$2 H_2 + O_2 -> 2 H_2 O$]
 | `sanitize` | dom | Extra tags, attributes and classes the HTML sanitizer lets through. Scripts, event handlers and URL-loading attributes stay blocked whatever a plugin says. |
 | `stylesheets` | dom | CSS for the HTML your Typst writes, injected next to the renderer's and included in standalone HTML exports. |
 | `prompt` | your app | The function catalogue, rules and few-shot examples to tell the model about your Typst API. A planned `@typstream/ai` package will read it too. |
-| `islands` | ([#28](https://github.com/ikramhasan/typstream/issues/28)) | Interactive components the renderer swaps in for Typst markers. Reserved; not rendered yet. Beta. |
+| `islands` | The HTML renderer, `@typstream/react` | Interactive components mounted over markers your Typst writes, by name, with `parse` to check their data. See [Writing an island](/docs/guides/islands). Beta. |
 | `editor` | (future editor) | Reserved; typed loosely so plugins can fill it in early. Beta. |
 
 The full type:
@@ -244,7 +244,7 @@ The full type:
 
 ### What runs where
 
-Everything except `heal.handlers` is plain data. The `engine` facet is posted to the worker, which can't receive functions, so it must stay structured-clonable: code that runs in the worker is referenced by URL (`engine.fixerModules`).
+Everything except `heal.handlers` and islands' `parse` is plain data. The `engine` facet is posted to the worker, which can't receive functions, so it must stay structured-clonable: code that runs in the worker is referenced by URL (`engine.fixerModules`).
 
 A document's plugins bring their files, packages, preamble, heal handlers and lint settings, and their fixer modules, which the worker loads for that document only. A fixer module that fails to load is logged (an engine `log` event) and the document compiles without it.
 

@@ -11,5 +11,6 @@ export default defineConfig({
   // The engine worker is a module worker; its chunks must be ES modules too.
   worker: { format: "es" },
   // Vite inlines small assets as data: URLs; keep fonts and package tarballs as files.
-  build: { assetsInlineLimit: 0 },
+  // Two pages: the worksheet in both targets, and a mind map island.
+  build: { assetsInlineLimit: 0, rollupOptions: { input: ["index.html", "island.html"] } },
 });

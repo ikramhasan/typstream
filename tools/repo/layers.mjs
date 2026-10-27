@@ -59,6 +59,14 @@ export const PACKAGES = {
     testDeps: ["html-compat"],
     fixed: true,
   },
+  // Bindings, though it is a content plugin like edu: its `./react` entry is a React component. Its
+  // tests mount it the way apps do, through the engine, dom and react.
+  mindmap: {
+    name: "@typstream/mindmap",
+    layer: 4,
+    deps: ["core"],
+    testDeps: ["heal", "engine-wasm", "engine", "dom", "react"],
+  },
   typstream: {
     name: "typstream",
     layer: 4,
