@@ -106,6 +106,7 @@ export interface EngineDocument {
     finish(): void;
     getState(): DocumentState;
     onEvent(listener: (event: DocumentEvent) => void): () => void;
+    readonly plugins: readonly TypstreamPlugin[];
     push(chunk: string): void;
     reset(input?: string): void;
     set(input: string): void;
