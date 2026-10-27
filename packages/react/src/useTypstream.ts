@@ -4,9 +4,10 @@
 // callback ref instead of reading one: `<Typstream ref={t.ref} />`.
 
 import type { Diagnostic } from "@typstream/core";
+import type { StandaloneHtmlOptions, TypstreamExportOptions } from "@typstream/dom";
 import type { DocumentState, DocumentStatus, EngineDocument } from "@typstream/engine";
 import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
-import type { TypstreamHandle } from "./Typstream";
+import { createHandle, type TypstreamHandle } from "./Typstream";
 
 /** What {@link useTypstream} returns. @public */
 export interface TypstreamInfo {
@@ -24,17 +25,37 @@ export interface TypstreamInfo {
   healedSource: string;
   /** Constructs still open at the end of the input, innermost first. */
   openFrames: DocumentState["heal"]["openFrames"];
-  /** The engine document: what exports (#18) go through. */
+  /**
+   * The engine document. For exports, prefer `exportPdf()` and friends: the
+   * document's own exports use its inputs, which include a fit-width preview's
+   * page size.
+   */
   document: EngineDocument | null;
-  // Exports (#18): `exportPdf()` and friends belong here, calling the document's
-  // export request (protocol `document/export`) at its current revision.
+  /**
+   * Exports the document as PDF, at its own page size (a fit-width preview's
+   * width left out), with the template's inputs, the `inputs` prop and
+   * `options.inputs`. Opens a lazy document that hasn't opened yet. Rejects
+   * with the engine's `ExportError`, or an `Error` when no `<Typstream>` is
+   * mounted. See {@link TypstreamHandle.exportPdf}.
+   */
+  exportPdf(options?: TypstreamExportOptions): Promise<Uint8Array>;
+  /**
+   * Exports the document as an HTML file that opens on its own, with the
+   * component's plugins, `stylesheets` and `theme`; `options` add to or
+   * override them. See {@link TypstreamHandle.exportHtml}.
+   */
+  exportHtml(options?: StandaloneHtmlOptions & TypstreamExportOptions): Promise<string>;
+  /** The healed source the exports compile. Throws when no `<Typstream>` is mounted. */
+  exportSource(): string;
 }
 
 const EMPTY: never[] = [];
 const noSubscription = () => () => {};
 
 /**
- * Reads a `<Typstream>`'s document: status, diagnostics, healed source.
+ * Reads a `<Typstream>`'s document: status, diagnostics, healed source; and
+ * exports it (`exportPdf()`, `exportHtml()`, `exportSource()`, as on
+ * {@link TypstreamHandle}).
  *
  * @example
  * ```tsx
@@ -43,6 +64,7 @@ const noSubscription = () => () => {};
  *   <>
  *     <Typstream ref={t.ref} source={text} isStreaming />
  *     {t.status === "stale" ? <p>Showing the last good render…</p> : null}
+ *     <button onClick={async () => save(await t.exportPdf())}>Download PDF</button>
  *   </>
  * );
  * ```
@@ -54,8 +76,10 @@ export const useTypstream = (): TypstreamInfo => {
   const read = () => handle?.getState() ?? null;
   const state = useSyncExternalStore(subscribe, read, () => null);
   const document = handle?.document ?? null;
-  return useMemo(
-    () => ({
+  return useMemo(() => {
+    // Until `ref` receives the instance, a detached handle's exports fail as an unmounted one's do.
+    const { exportPdf, exportHtml, exportSource } = handle ?? createHandle().handle;
+    return {
       ref: setHandle,
       handle,
       state,
@@ -64,7 +88,9 @@ export const useTypstream = (): TypstreamInfo => {
       healedSource: state?.heal.source ?? "",
       openFrames: state?.heal.openFrames ?? EMPTY,
       document,
-    }),
-    [handle, state, document],
-  );
+      exportPdf,
+      exportHtml,
+      exportSource,
+    };
+  }, [handle, state, document]);
 };

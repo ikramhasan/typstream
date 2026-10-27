@@ -20,6 +20,8 @@ import * as react from 'react';
 import { ReactNode } from 'react';
 import { Ref } from 'react';
 import { RenderedEvent } from '@typstream/core';
+import { StandaloneHtmlOptions } from '@typstream/dom';
+import { TypstreamExportOptions } from '@typstream/dom';
 import { TypstreamOptions } from '@typstream/dom';
 import { WatchdogEvent } from '@typstream/core';
 
@@ -43,6 +45,8 @@ export { FallbackLevel }
 
 export { RenderedEvent }
 
+export { StandaloneHtmlOptions }
+
 // @public
 export type TelemetryHooks = Pick<TypstreamOptions, "onRendered" | "onFallback" | "onWatchdog" | "onDiagnostics">;
 
@@ -55,10 +59,15 @@ export interface TypstreamDefaults extends Pick<TypstreamOptions, "target" | "la
     mathFont?: string | URL;
 }
 
+export { TypstreamExportOptions }
+
 // @public
 export interface TypstreamHandle {
     readonly document: EngineDocument | null;
     readonly element: HTMLElement | null;
+    exportHtml(options?: StandaloneHtmlOptions & TypstreamExportOptions): Promise<string>;
+    exportPdf(options?: TypstreamExportOptions): Promise<Uint8Array>;
+    exportSource(): string;
     getState(): DocumentState | null;
     subscribe(listener: () => void): () => void;
 }
@@ -67,6 +76,9 @@ export interface TypstreamHandle {
 export interface TypstreamInfo {
     diagnostics: readonly Diagnostic[];
     document: EngineDocument | null;
+    exportHtml(options?: StandaloneHtmlOptions & TypstreamExportOptions): Promise<string>;
+    exportPdf(options?: TypstreamExportOptions): Promise<Uint8Array>;
+    exportSource(): string;
     handle: TypstreamHandle | null;
     healedSource: string;
     openFrames: DocumentState["heal"]["openFrames"];

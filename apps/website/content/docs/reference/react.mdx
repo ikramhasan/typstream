@@ -110,21 +110,25 @@ the component. For those, create an engine with
 
 ### `TypstreamHandle`
 
-What a `<Typstream>`'s `ref` receives: the same object for the component's lifetime, for reading its document from
-outside. `useTypstream()` wraps it; use the handle directly when you need the raw `EngineDocument`, for example to
-export.
+What a `<Typstream>`'s `ref` receives: the same object for the component's lifetime, for reading and exporting its
+document from outside. `useTypstream()` wraps it and has the same exports; use the handle directly when you hold a
+`ref` yourself, or need the raw `EngineDocument`.
 
 <auto-type-table path="packages/react/src/Typstream.tsx" name="TypstreamHandle" />
 
 ```tsx
 const ref = useRef<TypstreamHandle>(null);
 // …
-const pdf = await ref.current?.document?.exportPdf();
+const pdf = await ref.current?.exportPdf();
+const teacher = await ref.current?.exportPdf({ inputs: { showAnswers: "true" } });
 ```
 
-The document is `null` until it opens (documents open lazily, near the viewport). Its exports use the document's
-current `sys.inputs`; in the fit-width layout those include the preview's page size, so pass `{ inputs }` without it to
-export at the document's own size. See [Exports](/docs/guides/exports).
+The exports compile in final mode with the template's inputs, the `inputs` prop and the export's own `inputs`, but
+not the fit-width layout's page size, so a PDF comes out at the document's own size. An export opens a document that
+hasn't opened yet (documents open lazily, near the viewport; `document` is `null` until then). Before the component
+mounts and after it unmounts, the exports reject (`exportSource()` throws) with "`<Typstream>` isn't mounted". Export
+errors reject with the engine's [`ExportError`](/docs/reference/engine#exporterror). See
+[Exports](/docs/guides/exports).
 
 ### `TypstreamProvider`
 
@@ -208,6 +212,8 @@ return (
 For convenience the package re-exports types from the packages it builds on:
 
 - From [`@typstream/engine`](/docs/reference/engine): `Engine`, `DocumentState`, `DocumentStatus`.
+- From [`@typstream/dom`](/docs/reference/dom): `StandaloneHtmlOptions` and `TypstreamExportOptions`, what the
+  exports take.
 - From [`@typstream/core`](/docs/reference/core#telemetry-events): `AppliedFix`, `CompiledEvent`, `CompileReport`,
   `DocumentEvent`, `FallbackEvent`, `FallbackLevel`, `RenderedEvent`, `WatchdogEvent`.
 
