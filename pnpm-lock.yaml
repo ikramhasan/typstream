@@ -353,6 +353,9 @@ importers:
       '@typstream/google-fonts':
         specifier: workspace:*
         version: link:../../packages/google-fonts
+      '@typstream/mindmap':
+        specifier: workspace:*
+        version: link:../../packages/mindmap
       '@typstream/universe':
         specifier: workspace:*
         version: link:../../packages/universe

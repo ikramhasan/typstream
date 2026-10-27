@@ -83,7 +83,9 @@ describe("corpus layout", () => {
 });
 
 describe("synthetic streams", () => {
-  it("are lossless, ordered and deterministic for every corpus entry", () => {
+  // Every entry twice, the 1 MB adversarial document included: 0.7 s here, but 2.5–5.7 s on a loaded CI runner,
+  // past vitest's default 5 s.
+  it("are lossless, ordered and deterministic for every corpus entry", { timeout: 30_000 }, () => {
     for (const e of corpus) {
       const chunks = synthesizeStream(e.source);
       expect(joinStream(chunks), e.id).toBe(e.source);

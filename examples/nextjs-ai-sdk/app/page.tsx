@@ -20,6 +20,8 @@ import { useChat } from "@ai-sdk/react";
 import { isStreaming, textOf } from "@typstream/ai";
 import { edu, SHOW_ANSWERS_INPUT } from "@typstream/edu";
 import { googleFonts } from "@typstream/google-fonts";
+import { mindmap } from "@typstream/mindmap";
+import { mindmapIslands } from "@typstream/mindmap/react";
 import type { UIDataTypes, UIMessage } from "ai";
 import {
   ArrowUpIcon,
@@ -63,11 +65,11 @@ const TARGETS = [
 ] satisfies { label: string; value: Target }[];
 
 /**
- * The vocabulary and fonts the route's prompt teaches: edu, and any Google Fonts family, which the
- * engine downloads from jsDelivr the first time an answer names it. A constant: a new array would
- * reopen every answer.
+ * The vocabulary and fonts the route's prompt teaches: edu, any Google Fonts family, which the
+ * engine downloads from jsDelivr the first time an answer names it, and mind maps. A constant: a new
+ * array would reopen every answer.
  */
-const PLUGINS = [edu, googleFonts];
+const PLUGINS = [edu, googleFonts, mindmap];
 
 /**
  * The images the model's searches found: resized ones on thumb.wikimedia.org, small originals on
@@ -423,6 +425,9 @@ const Answer = ({ text, streaming, target, answers, busy, onRetry }: AnswerProps
               isStreaming={streaming}
               target={target}
               plugins={PLUGINS}
+              // A mind map is interactive in the HTML target (pan, zoom, open and close branches): React Flow,
+              // loaded the first time an answer has one. Pages show its drawing.
+              islands={mindmapIslands}
               resolveImage={IMAGES}
               inputs={answers ? ANSWERS : undefined}
               layout="fit-width"
