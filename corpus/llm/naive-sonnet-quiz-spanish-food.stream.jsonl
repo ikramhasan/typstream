@@ -1,0 +1,221 @@
+{"t":0,"text":"#set"}
+{"t":32,"text":" page"}
+{"t":180,"text":"(marg"}
+{"t":180,"text":"in: 2"}
+{"t":180,"text":"c"}
+{"t":180,"text":"m)\n#set text(size"}
+{"t":198,"text":": 11"}
+{"t":231,"text":"pt)"}
+{"t":265,"text":"\n\n#let blank = box(width"}
+{"t":300,"text":": 6em, height"}
+{"t":332,"text":": 1em, stroke"}
+{"t":365,"text":": (bottom: 0"}
+{"t":398,"text":".6"}
+{"t":434,"text":"pt))\n\n= Voc"}
+{"t":465,"text":"abulario:"}
+{"t":498,"text":" La Comida"}
+{"t":532,"text":"\n_"}
+{"t":569,"text":"Beginner Spanish"}
+{"t":600,"text":" Quiz: Food_"}
+{"t":632,"text":"\n\nName: #"}
+{"t":666,"text":"box(width: 12"}
+{"t":699,"text":"em, stroke: ("}
+{"t":733,"text":"bottom: 0.6"}
+{"t":766,"text":"pt),"}
+{"t":799,"text":" height: 1em) #"}
+{"t":833,"text":"h"}
+{"t":867,"text":"(2"}
+{"t":899,"text":"em) Date: #box("}
+{"t":932,"text":"width: 7"}
+{"t":966,"text":"em, stroke: (b"}
+{"t":1002,"text":"ottom: 0.6p"}
+{"t":1033,"text":"t), height: 1em)"}
+{"t":1067,"text":" #h(2em) Score"}
+{"t":1100,"text":": #box(width: 3"}
+{"t":1134,"text":"em, stroke: (b"}
+{"t":1168,"text":"ottom: 0.6p"}
+{"t":1201,"text":"t), height: 1em)"}
+{"t":1235,"text":" / 18\n\n#"}
+{"t":1268,"text":"line(length: 100%)"}
+{"t":1302,"text":"\n\n== Part 1:"}
+{"t":1334,"text":" Matching (10 points)"}
+{"t":1368,"text":"\n\nMatch each Spanish word"}
+{"t":1404,"text":" with its English me"}
+{"t":1435,"text":"aning. Write the corre"}
+{"t":1469,"text":"ct letter on"}
+{"t":1505,"text":" the line.\n\n#table("}
+{"t":1536,"text":"\n  columns: ("}
+{"t":1571,"text":"auto, au"}
+{"t":1602,"text":"to, "}
+{"t":1637,"text":"1fr, auto),"}
+{"t":1668,"text":"\n  st"}
+{"t":1702,"text":"roke: none"}
+{"t":1737,"text":",\n  in"}
+{"t":1769,"text":"set: 7"}
+{"t":1803,"text":"pt,\n  ["}
+{"t":1835,"text":"*"}
+{"t":1871,"text":"\\"}
+{"t":1902,"text":"#*], [*Span"}
+{"t":1935,"text":"ish*], [],"}
+{"t":1968,"text":" [*English*],\n  ["}
+{"t":2004,"text":"1"}
+{"t":2035,"text":". #box"}
+{"t":2068,"text":"(width: 2"}
+{"t":2103,"text":"em"}
+{"t":2135,"text":", stroke: (bott"}
+{"t":2170,"text":"om: 0.6pt"}
+{"t":2202,"text":"), height: 1em)],"}
+{"t":2239,"text":" [la manzana], [],"}
+{"t":2269,"text":" [A. cheese],"}
+{"t":2307,"text":"\n  [2. #box(width"}
+{"t":2336,"text":": 2em, stroke"}
+{"t":2369,"text":": (bottom: 0"}
+{"t":2403,"text":".6pt), height: "}
+{"t":2437,"text":"1em)], [el pan"}
+{"t":2472,"text":"], [], [B. fish"}
+{"t":2505,"text":"],\n  [3. #box"}
+{"t":2536,"text":"(width: 2em, st"}
+{"t":2605,"text":"roke: (bottom:"}
+{"t":2606,"text":" 0.6pt), height"}
+{"t":2639,"text":": 1em)], [la"}
+{"t":2671,"text":" leche], [], [C."}
+{"t":2705,"text":" apple],\n  [4."}
+{"t":2739,"text":" #box(width: 2em"}
+{"t":2771,"text":", stroke: (bott"}
+{"t":2804,"text":"om: 0.6pt"}
+{"t":2841,"text":"), height: 1em)],"}
+{"t":2872,"text":" [el queso], [], ["}
+{"t":2906,"text":"D. egg],\n  ["}
+{"t":2938,"text":"5. #box(width: "}
+{"t":2971,"text":"2em, stroke: ("}
+{"t":3007,"text":"bottom: 0.6"}
+{"t":3046,"text":"pt), height: 1em"}
+{"t":3075,"text":")], [el pollo],"}
+{"t":3107,"text":" [], [E. water],"}
+{"t":3155,"text":"\n  [6. #box(width"}
+{"t":3173,"text":": 2em, stroke"}
+{"t":3207,"text":": (bottom: 0"}
+{"t":3241,"text":".6pt), height: "}
+{"t":3275,"text":"1em)], [el"}
+{"t":3308,"text":" arroz], [], [F"}
+{"t":3340,"text":". rice],\n  [7"}
+{"t":3373,"text":". #box(width: 2"}
+{"t":3406,"text":"em, stroke: (b"}
+{"t":3439,"text":"ottom: 0.6p"}
+{"t":3473,"text":"t), height: 1em)"}
+{"t":3506,"text":"], [el agua], [],"}
+{"t":3542,"text":" [G. bread],\n  "}
+{"t":3578,"text":"[8. #box(width:"}
+{"t":3607,"text":" 2em, stroke:"}
+{"t":3643,"text":" (bottom: 0."}
+{"t":3674,"text":"6pt), height: 1"}
+{"t":3707,"text":"em)], [la naranja"}
+{"t":3740,"text":"], [], [H. orange"}
+{"t":3776,"text":"],\n  [9. #box"}
+{"t":3808,"text":"(width: 2em, st"}
+{"t":3842,"text":"roke: (bottom:"}
+{"t":3874,"text":" 0.6pt), height"}
+{"t":3908,"text":": 1em)], [el"}
+{"t":3941,"text":" huevo], [], [I"}
+{"t":3975,"text":". milk],\n  [10"}
+{"t":4008,"text":". #box(width: 2"}
+{"t":4041,"text":"em, stroke: (b"}
+{"t":4075,"text":"ottom: 0.6p"}
+{"t":4108,"text":"t), height: 1em)"}
+{"t":4144,"text":"], [el pescado], ["}
+{"t":4178,"text":"], [J. chicken],"}
+{"t":4212,"text":"\n)\n\n#v(1"}
+{"t":4242,"text":"em)\n\n== Part 2"}
+{"t":4275,"text":": Fill in the Bl"}
+{"t":4311,"text":"ank (8 points)"}
+{"t":4349,"text":"\n\nChoose a"}
+{"t":4375,"text":" word from the word"}
+{"t":4415,"text":" bank to"}
+{"t":4442,"text":" complete each sentence."}
+{"t":4476,"text":" Each word is"}
+{"t":4509,"text":" used only"}
+{"t":4542,"text":" once.\n\n#align"}
+{"t":4575,"text":"(center)["}
+{"t":4609,"text":"\n  #"}
+{"t":4641,"text":"box"}
+{"t":4674,"text":"(st"}
+{"t":4711,"text":"roke: "}
+{"t":4744,"text":"0.8"}
+{"t":4774,"text":"pt, inset: 10"}
+{"t":4811,"text":"pt, radius: 4"}
+{"t":4841,"text":"pt)[\n    *"}
+{"t":4881,"text":"Word Bank:* #"}
+{"t":4911,"text":"h"}
+{"t":4942,"text":"(0"}
+{"t":4976,"text":".5em) leche #"}
+{"t":5009,"text":"s"}
+{"t":5047,"text":"ym"}
+{"t":5081,"text":"."}
+{"t":5108,"text":"d"}
+{"t":5140,"text":"ot."}
+{"t":5179,"text":"c"}
+{"t":5212,"text":" p"}
+{"t":5247,"text":"an #sym.dot."}
+{"t":5274,"text":"c "}
+{"t":5308,"text":"ensalada #sym.d"}
+{"t":5341,"text":"ot.c sopa #s"}
+{"t":5375,"text":"ym.dot.c man"}
+{"t":5413,"text":"zana #sym.dot"}
+{"t":5441,"text":".c pollo #sym"}
+{"t":5478,"text":".dot.c agua #"}
+{"t":5511,"text":"sym.dot.c que"}
+{"t":5545,"text":"so\n  ]\n]"}
+{"t":5575,"text":"\n\n#v(0"}
+{"t":5608,"text":".5em)\n\n+"}
+{"t":5645,"text":" Para el desayuno, como"}
+{"t":5679,"text":" #"}
+{"t":5708,"text":"blank con"}
+{"t":5743,"text":" mantequilla.\n+"}
+{"t":5775,"text":" La #blank es una"}
+{"t":5808,"text":" fruta ro"}
+{"t":5847,"text":"ja o verde.\n+"}
+{"t":5884,"text":" Tengo sed."}
+{"t":5920,"text":" Quiero un vaso de"}
+{"t":5945,"text":" #blank.\n+ La"}
+{"t":5976,"text":" #blank de verduras está"}
+{"t":6008,"text":" muy caliente.\n+"}
+{"t":6045,"text":" El sándwich ti"}
+{"t":6076,"text":"ene jamón y #blank"}
+{"t":6109,"text":".\n+ En"}
+{"t":6143,"text":" la cena, mi padre"}
+{"t":6179,"text":" prepara #blank frito"}
+{"t":6212,"text":".\n+ La #blank"}
+{"t":6243,"text":" tiene lechuga y"}
+{"t":6276,"text":" tomate.\n+"}
+{"t":6309,"text":" Los bebés beben #bl"}
+{"t":6343,"text":"ank.\n\n#pagebre"}
+{"t":6382,"text":"ak()\n\n="}
+{"t":6411,"text":" Answ"}
+{"t":6444,"text":"er Key"}
+{"t":6476,"text":"\n\n*Part"}
+{"t":6509,"text":" 1:"}
+{"t":6542,"text":" Matching*"}
+{"t":6578,"text":"\n\n#"}
+{"t":6609,"text":"table(\n  columns: "}
+{"t":6644,"text":"10,\n  align"}
+{"t":6681,"text":": center,\n  ["}
+{"t":6710,"text":"*"}
+{"t":6742,"text":"1*], [*2*],"}
+{"t":6775,"text":" [*3*], [*4"}
+{"t":6811,"text":"*], [*5*], ["}
+{"t":6842,"text":"*6*], [*7*"}
+{"t":6879,"text":"], [*8*], [*"}
+{"t":6910,"text":"9*], [*10*],"}
+{"t":6942,"text":"\n  [C], [G],"}
+{"t":6977,"text":" [I], [A], [J"}
+{"t":7009,"text":"], [F], [E], ["}
+{"t":7047,"text":"H], [D], [B],"}
+{"t":7076,"text":"\n)\n\n*Part 2"}
+{"t":7112,"text":": Fill in the Bl"}
+{"t":7143,"text":"ank*\n\n+ p"}
+{"t":7179,"text":"an\n+ man"}
+{"t":7209,"text":"zana\n+ agua"}
+{"t":7245,"text":"\n+ sopa\n+"}
+{"t":7277,"text":" queso\n+ pollo"}
+{"t":7312,"text":"\n+ ensalada"}
+{"t":7334,"text":"\n+ leche"}

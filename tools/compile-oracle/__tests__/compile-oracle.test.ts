@@ -1,5 +1,6 @@
 // Do healed prefixes compile? (#13, PLAN.md §5.5, §11.1.) Sampled stream
-// prefixes of the corpus and of generated documents go through the incremental
+// prefixes of the corpus (recorded model output too, with its real chunk
+// boundaries, #24) and of generated documents go through the incremental
 // healer and the real compiler (engine-wasm, HTML, the streaming target), and
 // failing ones through the engine server's Layer 3 fixers (#20), as in the
 // worker. Errors that the fixers leave must belong to an allowed class; each
@@ -21,6 +22,7 @@ import {
   corpusDocuments,
   eduDocuments,
   generatedDocuments,
+  llmDocuments,
   type OracleDocument,
 } from "../support/documents";
 import { newEngine } from "../support/engine";
@@ -39,6 +41,8 @@ const ALLOWED: Partial<Record<ErrorClass, string>> = {
   "missing-argument": DEEP,
   "type-mismatch": DEEP,
   "invalid-value": DEEP,
+  unlocated:
+    "#72: no position in the document to cut at (a CeTZ panic); last-good render, then the stable prefix (#21)",
   // `syntax` only for heal's KNOWN_HEAL_BUGS (checked below); heal's corpus test fails on any other.
   syntax: "KNOWN_HEAL_BUGS in packages/heal/__tests__/support/known-bugs.ts",
 };
@@ -57,6 +61,7 @@ const engine = newEngine();
 const corpus = corpusDocuments().filter((doc) => compilesComplete(engine, doc, TARGET));
 const generated = generatedDocuments(engine, GENERATED, TARGET);
 const edu = eduDocuments();
+const llm = llmDocuments();
 
 /** Every SAMPLE-th chunk, offset per document so different cuts get covered, and the last. */
 const run = (doc: OracleDocument, offset: number): Promise<ClassifiedPrefix[]> =>
@@ -99,6 +104,19 @@ describe("compile oracle: healed prefixes compile", () => {
     expect(unexpected(doc, prefixes).slice(0, 5).join("\n\n")).toBe("");
     const s = stats(prefixes);
     expect(s.fixedRate, doc.id).toBeGreaterThanOrEqual(RATE_FLOOR);
+  });
+
+  // Recorded model output (corpus/llm, #24): the chunks exactly as the API streamed them.
+  it("llm documents compile when complete", () => {
+    expect(llm.length).toBeGreaterThan(20);
+    for (const doc of llm) expect(compilesComplete(engine, doc, TARGET), doc.id).toBe(true);
+  });
+
+  it.each(llm.map((doc, i) => [doc.id, doc, i] as const))("%s", async (_, doc, i) => {
+    const prefixes = await run(doc, i);
+    all.push(...prefixes);
+    for (const p of prefixes) if (p.fixedIn == null) for (const e of p.errors) seen.add(e.cls);
+    expect(unexpected(doc, prefixes).slice(0, 5).join("\n\n")).toBe("");
   });
 
   it("generated documents", async () => {

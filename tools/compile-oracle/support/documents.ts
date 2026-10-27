@@ -2,10 +2,14 @@
 // natively (plus the cut-off response, a prefix of one), and generated documents.
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { gunzipSync } from "node:zlib";
 import { type CorpusEntry, loadCorpus, streamOf, synthesizeStream } from "@typstream/corpus";
 import { eduExamples, eduFiles, eduPreamble } from "@typstream/edu";
 import { heal } from "@typstream/heal";
+import { UNIVERSE_PACKAGES } from "@typstream/universe";
 import fc from "fast-check";
+import { untar } from "../../../packages/engine/src/server/tar";
 // Heal's property-test generator: documents assembled from complete constructs.
 import { documentArb } from "../../../packages/heal/__tests__/support/generators";
 import type { Engine } from "./engine";
@@ -81,6 +85,42 @@ export const eduDocuments = (): OracleDocument[] =>
       files: eduFiles,
     };
   });
+
+/** The vendored Universe packages' files under the `@ns/name:x.y.z/…` keys the engine roots them at. */
+const universeFiles = (): Record<string, string | Uint8Array> => {
+  const files: Record<string, string | Uint8Array> = {};
+  for (const p of UNIVERSE_PACKAGES) {
+    for (const [path, bytes] of untar(gunzipSync(readFileSync(fileURLToPath(p.url))))) {
+      const key = `@${p.namespace}/${p.name}:${p.version}/${path}`;
+      files[key] = path.endsWith(".typ") ? new TextDecoder().decode(bytes) : bytes;
+    }
+  }
+  return files;
+};
+
+/**
+ * Recorded model output in edu's vocabulary (corpus/llm, #24) that compiles when complete, with
+ * the chunks exactly as the API streamed them. Edu's import is the preamble, arriving whole with
+ * the first chunk; the vendored packages are mounted, as the app allows them.
+ */
+export const llmDocuments = (): OracleDocument[] => {
+  const packages = universeFiles();
+  return loadCorpus({ sets: ["llm"] })
+    .filter((e) => (e.meta.expect ?? "ok") === "ok")
+    .map((e) => {
+      const stream = streamOf(e);
+      const preamble = e.meta.plugins?.includes("edu") ? eduPreamble : "";
+      const chunks = stream.map((c) => c.text);
+      chunks[0] = preamble + (chunks[0] ?? "");
+      return {
+        id: e.id,
+        source: preamble + e.source,
+        chunks,
+        times: stream.map((c) => c.t),
+        files: { ...(preamble ? eduFiles : {}), ...packages },
+      };
+    });
+};
 
 /** A module for the generator's `#import "lib.typ": f`. */
 const GENERATED_FILES = { "/lib.typ": "#let f(x) = x\n" };

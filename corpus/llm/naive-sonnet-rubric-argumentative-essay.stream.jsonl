@@ -1,0 +1,265 @@
+{"t":0,"text":"="}
+{"t":32,"text":" Argumentative Essay"}
+{"t":66,"text":" Rubric\n\n#set page"}
+{"t":99,"text":"(paper: \"us-let"}
+{"t":133,"text":"ter\", flipped: true,"}
+{"t":167,"text":" margin: 1.5c"}
+{"t":200,"text":"m)\n#set text(size"}
+{"t":234,"text":": 9"}
+{"t":268,"text":"."}
+{"t":300,"text":"5pt)\n\n*"}
+{"t":334,"text":"Name:* #box(width"}
+{"t":366,"text":": 6"}
+{"t":400,"text":"cm, line(length: "}
+{"t":434,"text":"100%)) #h(1"}
+{"t":468,"text":"em) *Date"}
+{"t":500,"text":":* #box(width: "}
+{"t":533,"text":"3cm, line(length:"}
+{"t":568,"text":" 100%)) #h("}
+{"t":601,"text":"1em) *Essay top"}
+{"t":634,"text":"ic:* #box(width:"}
+{"t":667,"text":" 7"}
+{"t":701,"text":"cm, line(length: "}
+{"t":734,"text":"100%))\n\n#v(0"}
+{"t":771,"text":".5em)\n\n#table("}
+{"t":801,"text":"\n  columns: ("}
+{"t":844,"text":"2.6cm, 1"}
+{"t":875,"text":"fr, 1fr,"}
+{"t":901,"text":" 1fr, 1f"}
+{"t":934,"text":"r, 1.4"}
+{"t":968,"text":"cm),\n  inset:"}
+{"t":1005,"text":" 6pt,\n  align"}
+{"t":1036,"text":": (left"}
+{"t":1068,"text":" +"}
+{"t":1108,"text":" top, left + top, left +"}
+{"t":1142,"text":" top, left + top, left +"}
+{"t":1168,"text":" top, center + horizon"}
+{"t":1201,"text":"),\n  f"}
+{"t":1234,"text":"ill: (x"}
+{"t":1268,"text":", y) => if y == "}
+{"t":1301,"text":"0 { rgb(\""}
+{"t":1339,"text":"#d"}
+{"t":1368,"text":"de"}
+{"t":1401,"text":"6"}
+{"t":1434,"text":"f3"}
+{"t":1468,"text":"\") } else if x == 0"}
+{"t":1501,"text":" { rgb(\"#f"}
+{"t":1535,"text":"2f2"}
+{"t":1572,"text":"f2\") } else { none"}
+{"t":1602,"text":" },\n  table.header("}
+{"t":1635,"text":"\n    [*Criterion*"}
+{"t":1668,"text":"],\n    [*4 –"}
+{"t":1702,"text":" Exemplary*],"}
+{"t":1736,"text":"\n    [*3 – Pro"}
+{"t":1768,"text":"ficient*],\n    [*"}
+{"t":1802,"text":"2 – Developing*],"}
+{"t":1836,"text":"\n    [*1 –"}
+{"t":1868,"text":" Beginning*],\n    ["}
+{"t":1902,"text":"*Score*],\n  "}
+{"t":1936,"text":"),\n\n  [*Claim"}
+{"t":1968,"text":" and Thesis*],"}
+{"t":2004,"text":"\n  [The thesis is prec"}
+{"t":2036,"text":"ise, ar"}
+{"t":2069,"text":"guable, and ins"}
+{"t":2102,"text":"ightful. It establ"}
+{"t":2135,"text":"ishes a"}
+{"t":2169,"text":" clear position and previ"}
+{"t":2207,"text":"ews the line"}
+{"t":2236,"text":" of reasoning."}
+{"t":2274,"text":" The cla"}
+{"t":2306,"text":"im st"}
+{"t":2335,"text":"ays focused throughout the ess"}
+{"t":2369,"text":"ay.],\n  [The th"}
+{"t":2406,"text":"esis is clear and"}
+{"t":2435,"text":" arguable and"}
+{"t":2469,"text":" takes a defin"}
+{"t":2502,"text":"ite position. The claim is m"}
+{"t":2535,"text":"ostly maintained,"}
+{"t":2569,"text":" with"}
+{"t":2603,"text":" only"}
+{"t":2635,"text":" minor drif"}
+{"t":2680,"text":"ting"}
+{"t":2710,"text":".],\n  [The thes"}
+{"t":2744,"text":"is is present"}
+{"t":2769,"text":" but v"}
+{"t":2805,"text":"ague, over"}
+{"t":2835,"text":"ly bro"}
+{"t":2868,"text":"ad, or only"}
+{"t":2902,"text":" partly ar"}
+{"t":2936,"text":"guable. The position is s"}
+{"t":2969,"text":"ometimes unclear or in"}
+{"t":3002,"text":"consistent.],\n  "}
+{"t":3035,"text":"[The thesis is missing"}
+{"t":3069,"text":", mer"}
+{"t":3102,"text":"ely states"}
+{"t":3136,"text":" a fact or"}
+{"t":3169,"text":" topic, or is unclear"}
+{"t":3203,"text":". No"}
+{"t":3235,"text":" cons"}
+{"t":3269,"text":"istent position is ev"}
+{"t":3304,"text":"ident.],\n  [/"}
+{"t":3335,"text":"4"}
+{"t":3373,"text":"],\n\n  [*Evid"}
+{"t":3402,"text":"ence and Reasoning*"}
+{"t":3435,"text":"],\n  ["}
+{"t":3470,"text":"Claims are sup"}
+{"t":3502,"text":"ported by rel"}
+{"t":3537,"text":"evant, credible, and well"}
+{"t":3568,"text":"-ch"}
+{"t":3602,"text":"osen evidence."}
+{"t":3635,"text":" Reasoning expl"}
+{"t":3669,"text":"ains cl"}
+{"t":3702,"text":"early how the evidence sup"}
+{"t":3736,"text":"ports each"}
+{"t":3776,"text":" claim. Counterargu"}
+{"t":3802,"text":"ments are f"}
+{"t":3838,"text":"airly st"}
+{"t":3869,"text":"ated and effectively rebut"}
+{"t":3903,"text":"ted.],\n  [Cla"}
+{"t":3937,"text":"ims are supported by relevant"}
+{"t":3969,"text":" and credible evidence."}
+{"t":4003,"text":" Reasoning is generally s"}
+{"t":4036,"text":"ound. A counterargument is"}
+{"t":4070,"text":" acknowledged and address"}
+{"t":4102,"text":"ed.],\n  [Ev"}
+{"t":4136,"text":"idence is limited,"}
+{"t":4170,"text":" only"}
+{"t":4203,"text":" lo"}
+{"t":4239,"text":"osely related, or not always"}
+{"t":4269,"text":" credible. Reasoning"}
+{"t":4302,"text":" is th"}
+{"t":4336,"text":"in or has"}
+{"t":4369,"text":" log"}
+{"t":4403,"text":"ical gaps."}
+{"t":4436,"text":" Counterarguments are m"}
+{"t":4469,"text":"entioned but"}
+{"t":4503,"text":" not answ"}
+{"t":4536,"text":"ered.],\n  [Ev"}
+{"t":4569,"text":"idence is miss"}
+{"t":4603,"text":"ing, ir"}
+{"t":4636,"text":"relevant, or ina"}
+{"t":4672,"text":"ccurate. Reaso"}
+{"t":4707,"text":"ning is abs"}
+{"t":4735,"text":"ent or ill"}
+{"t":4769,"text":"ogical. Counterargu"}
+{"t":4805,"text":"ments are ignored.],"}
+{"t":4836,"text":"\n  [/4],\n\n  ["}
+{"t":4869,"text":"*Organization and Coher"}
+{"t":4902,"text":"ence*],\n  [The"}
+{"t":4937,"text":" introduction eng"}
+{"t":4970,"text":"ages the reader and"}
+{"t":5003,"text":" the conclusion off"}
+{"t":5036,"text":"ers a strong s"}
+{"t":5069,"text":"ense of closure. Parag"}
+{"t":5103,"text":"raphs are logically s"}
+{"t":5137,"text":"equenced,"}
+{"t":5169,"text":" and each"}
+{"t":5206,"text":" has a clear foc"}
+{"t":5237,"text":"us. Transitions create"}
+{"t":5271,"text":" a"}
+{"t":5302,"text":" smooth flow of"}
+{"t":5336,"text":" ideas.],\n  ["}
+{"t":5372,"text":"The introduction, body"}
+{"t":5405,"text":", and conclusion are cl"}
+{"t":5441,"text":"ear."}
+{"t":5470,"text":" Paragraphs are log"}
+{"t":5503,"text":"ically ordered and m"}
+{"t":5536,"text":"ostly focused. Transit"}
+{"t":5570,"text":"ions are gener"}
+{"t":5605,"text":"ally eff"}
+{"t":5637,"text":"ective.],\n  [The struct"}
+{"t":5671,"text":"ure is present but u"}
+{"t":5705,"text":"neven. Some"}
+{"t":5736,"text":" paragraphs lack foc"}
+{"t":5770,"text":"us or are out"}
+{"t":5803,"text":" of order. Transitions are"}
+{"t":5836,"text":" bas"}
+{"t":5884,"text":"ic or rep"}
+{"t":5923,"text":"et"}
+{"t":5943,"text":"itive.],\n  [The"}
+{"t":5979,"text":" struct"}
+{"t":6014,"text":"ure is difficult to follow"}
+{"t":6042,"text":". The"}
+{"t":6076,"text":" introduction or"}
+{"t":6104,"text":" conclusion is missing,"}
+{"t":6136,"text":" and paragraphs lack"}
+{"t":6170,"text":" focus."}
+{"t":6203,"text":" Transitions are r"}
+{"t":6236,"text":"are or "}
+{"t":6270,"text":"ineffective.],\n  ["}
+{"t":6304,"text":"/4],\n\n  [*"}
+{"t":6337,"text":"Language and Conventions*],"}
+{"t":6369,"text":"\n  [The"}
+{"t":6403,"text":" tone is form"}
+{"t":6436,"text":"al,"}
+{"t":6469,"text":" persuasive, and approp"}
+{"t":6503,"text":"riate for"}
+{"t":6536,"text":" the audience. Word choice"}
+{"t":6573,"text":" is"}
+{"t":6603,"text":" precise and s"}
+{"t":6636,"text":"entences"}
+{"t":6675,"text":" are"}
+{"t":6705,"text":" varied. Gr"}
+{"t":6736,"text":"ammar, spelling, and"}
+{"t":6770,"text":" punctuation are n"}
+{"t":6803,"text":"early error"}
+{"t":6842,"text":"-free. Sources are c"}
+{"t":6871,"text":"ited correctly.],\n  "}
+{"t":6904,"text":"[The tone is m"}
+{"t":6936,"text":"ostly formal and appropri"}
+{"t":6972,"text":"ate. Word choice is cl"}
+{"t":7003,"text":"ear and sentences are som"}
+{"t":7036,"text":"ewhat varied. There"}
+{"t":7069,"text":" are min"}
+{"t":7104,"text":"or errors that do not inter"}
+{"t":7136,"text":"fere with meaning."}
+{"t":7175,"text":" Citations are mostly correct"}
+{"t":7205,"text":".],\n  [The tone"}
+{"t":7238,"text":" is inconsistent."}
+{"t":7271,"text":" Word choice is general"}
+{"t":7303,"text":" or rep"}
+{"t":7336,"text":"etitive."}
+{"t":7370,"text":" Fr"}
+{"t":7403,"text":"equent errors s"}
+{"t":7437,"text":"ometimes distract the"}
+{"t":7472,"text":" reader. Citations are inc"}
+{"t":7507,"text":"omplete or in"}
+{"t":7548,"text":"consistent.],\n  "}
+{"t":7570,"text":"[The tone is inapprop"}
+{"t":7605,"text":"riate. Errors se"}
+{"t":7637,"text":"riously inter"}
+{"t":7670,"text":"fere with meaning."}
+{"t":7703,"text":" Sources are not"}
+{"t":7737,"text":" cited or are c"}
+{"t":7770,"text":"ited inc"}
+{"t":7808,"text":"orrectly.],\n  "}
+{"t":7837,"text":"[/4],\n\n  table."}
+{"t":7870,"text":"cell(colspan: "}
+{"t":7905,"text":"5, align: right)"}
+{"t":7937,"text":"[*Total*"}
+{"t":7970,"text":"],\n  [*"}
+{"t":8003,"text":"/16*],\n)\n\n#"}
+{"t":8036,"text":"v(0"}
+{"t":8070,"text":".8"}
+{"t":8103,"text":"em)\n\n*Score"}
+{"t":8137,"text":" gu"}
+{"t":8171,"text":"ide:* 15"}
+{"t":8206,"text":"–16 "}
+{"t":8236,"text":"Exc"}
+{"t":8273,"text":"ellent #"}
+{"t":8306,"text":"h"}
+{"t":8343,"text":"("}
+{"t":8382,"text":"1em) 12"}
+{"t":8412,"text":"–14 Pro"}
+{"t":8445,"text":"ficient #h(1em)"}
+{"t":8477,"text":" 8–11 Developing"}
+{"t":8504,"text":" #h(1em) 4"}
+{"t":8537,"text":"–7 Beginning"}
+{"t":8572,"text":"\n\n#v(0"}
+{"t":8603,"text":".8em)\n\n*Te"}
+{"t":8639,"text":"acher comments:*\n\n#"}
+{"t":8671,"text":"v(1.5em)"}
+{"t":8703,"text":"\n#line(length: 100%"}
+{"t":8739,"text":")\n#v(1.5"}
+{"t":8772,"text":"em)\n#line(length:"}
+{"t":8803,"text":" 100%)"}

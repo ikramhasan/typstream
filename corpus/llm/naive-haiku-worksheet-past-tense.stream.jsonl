@@ -1,0 +1,115 @@
+{"t":0,"text":"#"}
+{"t":15,"text":"set page(margin: 2"}
+{"t":35,"text":"cm)\n#set text("}
+{"t":58,"text":"size: 12pt)"}
+{"t":76,"text":"\n#let blank ="}
+{"t":97,"text":" box(width: 2.5"}
+{"t":117,"text":"cm, line(length: "}
+{"t":137,"text":"100%))\n\n= Past"}
+{"t":158,"text":" Tense Verbs Wor"}
+{"t":178,"text":"ksheet\n\nName: #"}
+{"t":199,"text":"box(width: 7"}
+{"t":219,"text":"cm, line(length: "}
+{"t":240,"text":"100%))"}
+{"t":261,"text":" Date: #box(width: "}
+{"t":282,"text":"3cm, line(length:"}
+{"t":302,"text":" 100%))\n\n== Part"}
+{"t":322,"text":" 1: Fill in the"}
+{"t":342,"text":" Blanks\n\nWrite the"}
+{"t":369,"text":" past tense of the verb in"}
+{"t":383,"text":" brackets.\n\n+"}
+{"t":404,"text":" Yesterday, Maya"}
+{"t":429,"text":" #blank (walk) to"}
+{"t":446,"text":" the park with"}
+{"t":470,"text":" her dog.\n+ We"}
+{"t":489,"text":" #"}
+{"t":506,"text":"blank (eat) p"}
+{"t":528,"text":"izza for"}
+{"t":546,"text":" dinner last night"}
+{"t":566,"text":".\n+ The"}
+{"t":587,"text":" children"}
+{"t":611,"text":" #blank (play"}
+{"t":632,"text":") so"}
+{"t":650,"text":"ccer after"}
+{"t":671,"text":" school.\n+ My"}
+{"t":692,"text":" grandm"}
+{"t":709,"text":"other #blank (b"}
+{"t":736,"text":"ake) a big"}
+{"t":756,"text":" ch"}
+{"t":771,"text":"ocolate cake.\n+"}
+{"t":812,"text":" T"}
+{"t":833,"text":"om #blank (fin"}
+{"t":853,"text":"ish) his homework before"}
+{"t":873,"text":" bed"}
+{"t":897,"text":"time.\n+ The b"}
+{"t":914,"text":"ird #blank (f"}
+{"t":936,"text":"ly) over"}
+{"t":956,"text":" the t"}
+{"t":977,"text":"all"}
+{"t":999,"text":" tr"}
+{"t":1015,"text":"ees.\n+ I #bl"}
+{"t":1038,"text":"ank (see) a r"}
+{"t":1061,"text":"ainbow after"}
+{"t":1078,"text":" the rain st"}
+{"t":1097,"text":"opped."}
+{"t":1124,"text":"\n+ Our"}
+{"t":1141,"text":" class"}
+{"t":1158,"text":" #blank (vis"}
+{"t":1182,"text":"it) the science"}
+{"t":1205,"text":" museum last week.\n\n=="}
+{"t":1220,"text":" Part 2: Mat"}
+{"t":1240,"text":"ching\n\nMatch each present tense"}
+{"t":1265,"text":" verb with its past tense form"}
+{"t":1285,"text":". Write the letter of the"}
+{"t":1302,"text":" correct past tense ver"}
+{"t":1322,"text":"b in the answ"}
+{"t":1374,"text":"er column.\n\n#table("}
+{"t":1380,"text":"\n  columns: 2,"}
+{"t":1391,"text":"\n  [*Present t"}
+{"t":1414,"text":"ense*], [*Answer"}
+{"t":1432,"text":"*],\n  [1. play"}
+{"t":1451,"text":"], [#blank],\n  "}
+{"t":1465,"text":"[2. jump], [#"}
+{"t":1487,"text":"blank],\n  [3."}
+{"t":1506,"text":" eat], [#blank],"}
+{"t":1526,"text":"\n  [4. see], ["}
+{"t":1547,"text":"#blank],\n  [5"}
+{"t":1568,"text":". drink], [#blank"}
+{"t":1588,"text":"],\n  [6. write],"}
+{"t":1608,"text":" [#blank],\n)"}
+{"t":1629,"text":"\n\n#"}
+{"t":1649,"text":"table(\n  columns: "}
+{"t":1674,"text":"6,\n  [A. played"}
+{"t":1692,"text":"], [B. jumped],"}
+{"t":1710,"text":" [C. ate], [D"}
+{"t":1732,"text":". saw], [E. dr"}
+{"t":1751,"text":"ank], [F. wrote"}
+{"t":1772,"text":"],\n)\n\n== Part "}
+{"t":1792,"text":"3: Writing\n\nWrite"}
+{"t":1812,"text":" "}
+{"t":1834,"text":"4 to 5 sent"}
+{"t":1856,"text":"ences about something"}
+{"t":1874,"text":" you did last weekend."}
+{"t":1897,"text":" Use at least three past tense ver"}
+{"t":1916,"text":"bs. Try"}
+{"t":1935,"text":" to include"}
+{"t":1955,"text":" one"}
+{"t":1976,"text":" verb that chang"}
+{"t":1996,"text":"es its sp"}
+{"t":2017,"text":"elling,"}
+{"t":2038,"text":" such as _"}
+{"t":2060,"text":"go"}
+{"t":2081,"text":"_ or"}
+{"t":2099,"text":" _make_.\n\n#v("}
+{"t":2122,"text":"1em)\n#line"}
+{"t":2145,"text":"(length: 100%)"}
+{"t":2160,"text":"\n#v(1."}
+{"t":2181,"text":"2em)\n#line(length"}
+{"t":2204,"text":": 100%)\n#v"}
+{"t":2222,"text":"(1.2em)\n#"}
+{"t":2246,"text":"line(length: 100%)"}
+{"t":2262,"text":"\n#v(1.2em"}
+{"t":2283,"text":")\n#line(length: "}
+{"t":2304,"text":"100%)\n#v(1"}
+{"t":2325,"text":".2em)\n#line("}
+{"t":2347,"text":"length: 100%)"}

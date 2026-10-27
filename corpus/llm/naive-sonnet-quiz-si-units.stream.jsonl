@@ -1,0 +1,200 @@
+{"t":0,"text":"#"}
+{"t":34,"text":"set page(marg"}
+{"t":66,"text":"in: 2"}
+{"t":99,"text":"c"}
+{"t":134,"text":"m)\n#set text(size"}
+{"t":166,"text":": 11pt)\n\n="}
+{"t":199,"text":" Phys"}
+{"t":233,"text":"ics Quiz: SI"}
+{"t":266,"text":" Units and Unit Con"}
+{"t":300,"text":"versions"}
+{"t":333,"text":"\n\nName"}
+{"t":369,"text":": #"}
+{"t":401,"text":"box"}
+{"t":433,"text":"(width: 8"}
+{"t":470,"text":"c"}
+{"t":501,"text":"m, line"}
+{"t":533,"text":"(length: 100%))"}
+{"t":568,"text":" #h"}
+{"t":601,"text":"(1"}
+{"t":634,"text":"f"}
+{"t":667,"text":"r) Date: #box("}
+{"t":700,"text":"width: 3cm, line"}
+{"t":733,"text":"(length: 100%))"}
+{"t":767,"text":"\n\n*Gr"}
+{"t":800,"text":"ade "}
+{"t":834,"text":"10 "}
+{"t":866,"text":"Physics* #"}
+{"t":905,"text":"h(1fr) *"}
+{"t":935,"text":"Time:"}
+{"t":967,"text":"* 15"}
+{"t":1000,"text":" minutes #"}
+{"t":1034,"text":"h(1fr) *"}
+{"t":1068,"text":"Total:* 20 points"}
+{"t":1101,"text":"\n\n#"}
+{"t":1134,"text":"line(length: 100%)"}
+{"t":1169,"text":"\n\n== Part A: Mult"}
+{"t":1200,"text":"iple Choice (1"}
+{"t":1235,"text":" point each)"}
+{"t":1267,"text":"\n\nCircle the best"}
+{"t":1300,"text":" answer.\n\n+"}
+{"t":1335,"text":" Which of the following is the SI"}
+{"t":1369,"text":" base unit of mass?"}
+{"t":1401,"text":"\n  - A) g"}
+{"t":1435,"text":"ram\n  - B) kil"}
+{"t":1468,"text":"ogram\n  - C) p"}
+{"t":1502,"text":"ound\n  - D) newton"}
+{"t":1537,"text":"\n\n+ Which of these"}
+{"t":1568,"text":" is *"}
+{"t":1601,"text":"not* an"}
+{"t":1636,"text":" SI base unit?\n  "}
+{"t":1671,"text":"- A) met"}
+{"t":1715,"text":"re\n  - B) second"}
+{"t":1738,"text":"\n  - C) k"}
+{"t":1789,"text":"elvin\n  - D)"}
+{"t":1804,"text":" newton\n\n+ The pref"}
+{"t":1839,"text":"ix _"}
+{"t":1873,"text":"milli-"}
+{"t":1902,"text":"_ means:\n  - A"}
+{"t":1935,"text":") $10^3"}
+{"t":1968,"text":"$\n  - B) $10"}
+{"t":2001,"text":"^("}
+{"t":2034,"text":"-2"}
+{"t":2069,"text":")$\n  - C) $"}
+{"t":2103,"text":"10^(-3)$"}
+{"t":2137,"text":"\n  - D) $10^("}
+{"t":2168,"text":"-6)$\n\n+ The"}
+{"t":2202,"text":" newton ("}
+{"t":2235,"text":"N),"}
+{"t":2271,"text":" the S"}
+{"t":2302,"text":"I unit of force, is equ"}
+{"t":2335,"text":"ivalent to:\n  -"}
+{"t":2369,"text":" A) $\"kg\" d"}
+{"t":2403,"text":"ot \"m\" dot \"s"}
+{"t":2436,"text":"\"^(-2)$"}
+{"t":2469,"text":"\n  - B) $\"kg"}
+{"t":2502,"text":"\" dot \"m\" dot"}
+{"t":2538,"text":" \"s\"^("}
+{"t":2568,"text":"-1)$\n  - C"}
+{"t":2605,"text":") $\"g"}
+{"t":2635,"text":"\" dot \"c"}
+{"t":2669,"text":"m\" dot \"s\"^"}
+{"t":2702,"text":"(-2)$\n  -"}
+{"t":2735,"text":" D) $\"kg\" d"}
+{"t":2769,"text":"ot \"m\"^2 "}
+{"t":2802,"text":"dot \"s\"^(-"}
+{"t":2840,"text":"2)$\n\n== Part B"}
+{"t":2869,"text":": Un"}
+{"t":2902,"text":"it Conversions (2 "}
+{"t":2937,"text":"points each)\n\nConv"}
+{"t":2970,"text":"ert each quantity."}
+{"t":3003,"text":" Show your working"}
+{"t":3035,"text":" and"}
+{"t":3069,"text":" include"}
+{"t":3102,"text":" units"}
+{"t":3137,"text":" in"}
+{"t":3175,"text":" your answer.\n\n+ $"}
+{"t":3204,"text":"3.5 \""}
+{"t":3235,"text":"km"}
+{"t":3273,"text":"\""}
+{"t":3302,"text":"$ to met"}
+{"t":3338,"text":"res ("}
+{"t":3369,"text":"m)\n  #v(2"}
+{"t":3403,"text":".5em)\n\n+ $"}
+{"t":3436,"text":"450 \"g\"$ to"}
+{"t":3470,"text":" kilograms (kg)"}
+{"t":3503,"text":"\n  #v(2.5"}
+{"t":3536,"text":"em)\n\n+ $2."}
+{"t":3569,"text":"5 \"h\"$ to"}
+{"t":3604,"text":" seconds (s)\n  "}
+{"t":3639,"text":"#v(2.5em)"}
+{"t":3672,"text":"\n\n+ $1500 \""}
+{"t":3704,"text":"mL\"$ to litres"}
+{"t":3736,"text":" (L)\n  #v("}
+{"t":3773,"text":"2.5em)\n\n+"}
+{"t":3805,"text":" $72 \"km/h\""}
+{"t":3836,"text":"$ to metres per"}
+{"t":3873,"text":" second (m/s)\n  "}
+{"t":3903,"text":"#v(2.5em)"}
+{"t":3937,"text":"\n\n+ $3 \"m"}
+{"t":3969,"text":"\""}
+{"t":4003,"text":"^2$ to square"}
+{"t":4037,"text":" centimetres "}
+{"t":4070,"text":"($\"cm\"^2$"}
+{"t":4104,"text":")\n  #v(2."}
+{"t":4139,"text":"5em)\n\n== Part C"}
+{"t":4170,"text":": Problem"}
+{"t":4205,"text":" Solving (4 points)"}
+{"t":4236,"text":"\n\n+"}
+{"t":4270,"text":" A car travels $90 \""}
+{"t":4305,"text":"km\""}
+{"t":4338,"text":"$ in $1.5 "}
+{"t":4370,"text":"\"h\"$. Cal"}
+{"t":4404,"text":"culate its"}
+{"t":4438,"text":" average speed in the"}
+{"t":4471,"text":" SI unit m"}
+{"t":4507,"text":"/s. Show all"}
+{"t":4537,"text":" steps."}
+{"t":4570,"text":"\n  #v(6"}
+{"t":4605,"text":"em)"}
+{"t":4636,"text":"\n\n#pagebreak()"}
+{"t":4670,"text":"\n\n="}
+{"t":4704,"text":" Answer Key\n\n*"}
+{"t":4738,"text":"Part A*"}
+{"t":4770,"text":"\n\n+ B"}
+{"t":4851,"text":"\n+ D"}
+{"t":4870,"text":"\n+ C\n+ A"}
+{"t":4903,"text":"\n\n*Part B*\n\n+"}
+{"t":4937,"text":" $3.5 \"km"}
+{"t":4973,"text":"\" times"}
+{"t":5004,"text":" 1000 \"m/"}
+{"t":5039,"text":"km\" = 3500 \""}
+{"t":5076,"text":"m\"$\n+ $450"}
+{"t":5110,"text":" \"g\" div"}
+{"t":5139,"text":" 1000 ="}
+{"t":5170,"text":" 0.45 \"kg"}
+{"t":5209,"text":"\"$\n+ $2."}
+{"t":5238,"text":"5 \"h\" times 3"}
+{"t":5270,"text":"600 \"s/h\" ="}
+{"t":5304,"text":" 9000 \"s\""}
+{"t":5337,"text":"$\n+ $1500 "}
+{"t":5370,"text":"\"mL\" div 1000"}
+{"t":5405,"text":" = 1."}
+{"t":5438,"text":"5 \"L\"$\n+"}
+{"t":5470,"text":" $72 \"km/h"}
+{"t":5504,"text":"\" = 72 times 1"}
+{"t":5539,"text":"000 \""}
+{"t":5574,"text":"m\" /"}
+{"t":5606,"text":" 3600 \"s\" ="}
+{"t":5638,"text":" 20 \"m/s\""}
+{"t":5670,"text":"$\n+ $3 \""}
+{"t":5704,"text":"m\"^2 times ("}
+{"t":5740,"text":"100"}
+{"t":5771,"text":" \"cm/"}
+{"t":5804,"text":"m\")^2 = 3"}
+{"t":5841,"text":" times"}
+{"t":5872,"text":" 10^4 \"cm"}
+{"t":5904,"text":"\"^2 = 30000"}
+{"t":5937,"text":" \"cm\""}
+{"t":5972,"text":"^2$\n\n*Part C"}
+{"t":6006,"text":"*"}
+{"t":6037,"text":"\n\nDist"}
+{"t":6071,"text":"ance: $90 \"km\""}
+{"t":6104,"text":" = 90000 \"m\""}
+{"t":6145,"text":"$. Time: $1."}
+{"t":6172,"text":"5 \"h\" = 5"}
+{"t":6205,"text":"400 \"s\"$."}
+{"t":6239,"text":"\n\n$ v = d"}
+{"t":6271,"text":" / t = ("}
+{"t":6306,"text":"90000 \"m\") / ("}
+{"t":6343,"text":"5400 \"s\") appro"}
+{"t":6371,"text":"x 16.7 \"m"}
+{"t":6404,"text":"/s\" $\n\n_"}
+{"t":6437,"text":"Marking:"}
+{"t":6483,"text":"_ 1 point for each"}
+{"t":6506,"text":" corre"}
+{"t":6538,"text":"ct conversion, 1 "}
+{"t":6570,"text":"point for the corre"}
+{"t":6606,"text":"ct formula, "}
+{"t":6638,"text":"1 point for the answ"}
+{"t":6666,"text":"er with units."}

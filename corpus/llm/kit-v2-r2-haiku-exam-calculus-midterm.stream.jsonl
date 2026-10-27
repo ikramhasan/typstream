@@ -1,0 +1,251 @@
+{"t":0,"text":"#"}
+{"t":23,"text":"show: exam.with("}
+{"t":42,"text":"\n  title: [Calculus"}
+{"t":64,"text":" Midterm: Limits"}
+{"t":87,"text":" and Derivatives],"}
+{"t":107,"text":"\n  subject: [Math"}
+{"t":229,"text":"ematics],\n  grade:"}
+{"t":229,"text":" [Year 12],\n  "}
+{"t":229,"text":"duration: [60 minut"}
+{"t":229,"text":"es],\n  instructions:"}
+{"t":231,"text":" ["}
+{"t":236,"text":"Answer *all* questions."}
+{"t":260,"text":" Show all working"}
+{"t":279,"text":". Sim"}
+{"t":301,"text":"plify your final answers where"}
+{"t":322,"text":" possible.],\n)\n\n="}
+{"t":345,"text":" Part A"}
+{"t":365,"text":": Limits\n\n#question("}
+{"t":390,"text":"points: 4)[\n  "}
+{"t":411,"text":"Evaluate $lim"}
+{"t":430,"text":"_(x -> 2)"}
+{"t":452,"text":" (x^2 - 4"}
+{"t":476,"text":")/(x - 2)"}
+{"t":503,"text":"$.\n  #answer-"}
+{"t":526,"text":"space(height: 4em,"}
+{"t":545,"text":" answer: ["}
+{"t":587,"text":"Factor the"}
+{"t":587,"text":" numerator: $(x^"}
+{"t":610,"text":"2 - 4)/("}
+{"t":624,"text":"x - 2) = (x"}
+{"t":651,"text":" -"}
+{"t":666,"text":" 2)(x + 2"}
+{"t":687,"text":")/(x - 2)"}
+{"t":709,"text":" = x + 2$ for"}
+{"t":730,"text":" $x != 2$. So"}
+{"t":752,"text":" the limit is $2"}
+{"t":773,"text":" + 2 = 4"}
+{"t":795,"text":"$.])\n]\n\n#question"}
+{"t":816,"text":"(points: 4)["}
+{"t":838,"text":"\n  Evaluate $l"}
+{"t":861,"text":"im_(x -> 0"}
+{"t":882,"text":") ("}
+{"t":904,"text":"sin x)/x"}
+{"t":924,"text":"$.\n  #answer-"}
+{"t":948,"text":"space(height: 4em,"}
+{"t":967,"text":" answer: [This is the stand"}
+{"t":991,"text":"ard limit $lim_("}
+{"t":1012,"text":"x -> 0) (s"}
+{"t":1033,"text":"in x)/x = 1"}
+{"t":1053,"text":"$.])\n]\n\n#question"}
+{"t":1074,"text":"(points: 4"}
+{"t":1096,"text":")[\n  Evalu"}
+{"t":1117,"text":"ate $lim_(x -"}
+{"t":1140,"text":"> infinity) (3x"}
+{"t":1160,"text":"^2 + 1)/"}
+{"t":1182,"text":"(x^2 - 5"}
+{"t":1203,"text":"x)$.\n  #answ"}
+{"t":1227,"text":"er-space(height: 5"}
+{"t":1246,"text":"em, answer: [Div"}
+{"t":1268,"text":"ide numerator and denominator"}
+{"t":1292,"text":" by $x^2$: $"}
+{"t":1313,"text":"(3 + 1/x"}
+{"t":1333,"text":"^2)/(1 -"}
+{"t":1354,"text":" 5/x)"}
+{"t":1376,"text":"$. As $x -> inf"}
+{"t":1397,"text":"inity$"}
+{"t":1427,"text":" the f"}
+{"t":1440,"text":"ractions go"}
+{"t":1463,"text":" to $0$, so"}
+{"t":1483,"text":" the limit is $3/"}
+{"t":1505,"text":"1 = 3$.])"}
+{"t":1526,"text":"\n]\n\n= Part B:"}
+{"t":1548,"text":" Derivatives\n\n#question"}
+{"t":1568,"text":"(points: 6)["}
+{"t":1590,"text":"\n  Let $f(x)"}
+{"t":1613,"text":" = 3x^4 -"}
+{"t":1634,"text":" 2x^2 + "}
+{"t":1654,"text":"5x - 7$."}
+{"t":1677,"text":"\n  + Find $f'("}
+{"t":1698,"text":"x)$.\n    #answ"}
+{"t":1719,"text":"er-space(height: 4"}
+{"t":1740,"text":"em, answer: [$f"}
+{"t":1762,"text":"'(x) = 12x"}
+{"t":1785,"text":"^3 - 4x +"}
+{"t":1805,"text":" 5$.])\n  +"}
+{"t":1826,"text":" H"}
+{"t":1848,"text":"ence find $f'(2)"}
+{"t":1869,"text":"$.\n    #answer-"}
+{"t":1891,"text":"space(height: 3em,"}
+{"t":1912,"text":" answer: [$f'("}
+{"t":1934,"text":"2) = 12"}
+{"t":1956,"text":" "}
+{"t":1977,"text":"dot 8 - 8"}
+{"t":1999,"text":" + 5 = 96"}
+{"t":2020,"text":" - 8 + 5"}
+{"t":2044,"text":" = 93$.])"}
+{"t":2062,"text":"\n]\n\n#question(points: "}
+{"t":2085,"text":"6)[\n  Differ"}
+{"t":2109,"text":"entiate $y = x^"}
+{"t":2141,"text":"2 e^(3x)"}
+{"t":2154,"text":"$ with respect to $x"}
+{"t":2176,"text":"$."}
+{"t":2200,"text":" Use"}
+{"t":2213,"text":" the product rule and"}
+{"t":2234,"text":" simplify.\n  #answ"}
+{"t":2256,"text":"er-space(height: 6"}
+{"t":2279,"text":"em, answer: ["}
+{"t":2300,"text":"Product"}
+{"t":2321,"text":" rule: $("}
+{"t":2342,"text":"d"}
+{"t":2363,"text":" y)/(d x) ="}
+{"t":2385,"text":" 2x e^(3x"}
+{"t":2407,"text":") + x^2 d"}
+{"t":2428,"text":"ot 3 "}
+{"t":2449,"text":"e^(3x) = e"}
+{"t":2470,"text":"^(3x)"}
+{"t":2492,"text":"(2x + 3x^"}
+{"t":2513,"text":"2) = x e^(3"}
+{"t":2536,"text":"x)(2 + 3"}
+{"t":2560,"text":"x)$.])\n]"}
+{"t":2578,"text":"\n\n#question(points: 6)"}
+{"t":2608,"text":"[\n  Find the equ"}
+{"t":2623,"text":"ation of the tangent line to"}
+{"t":2643,"text":" $y = x^3 -"}
+{"t":2666,"text":" x$ at the"}
+{"t":2686,"text":" point where"}
+{"t":2707,"text":" $x = 1$."}
+{"t":2728,"text":" Give your answer in the form"}
+{"t":2753,"text":" $y = m"}
+{"t":2771,"text":" x + c"}
+{"t":2793,"text":"$.\n  #"}
+{"t":2814,"text":"answer-space(height: "}
+{"t":2836,"text":"6em, answer: [At"}
+{"t":2862,"text":" $x = 1$: $"}
+{"t":2878,"text":"y = 1 - 1"}
+{"t":2902,"text":" = 0$. The"}
+{"t":2922,"text":" derivative is $("}
+{"t":2947,"text":"d"}
+{"t":2966,"text":" y)/(d x) ="}
+{"t":2986,"text":" 3x^2 - "}
+{"t":3009,"text":"1$, so $m = "}
+{"t":3029,"text":"3 - 1 = "}
+{"t":3052,"text":"2$. The tangent is"}
+{"t":3073,"text":" $y -"}
+{"t":3095,"text":" 0 = 2(x"}
+{"t":3116,"text":" - 1)$, so $"}
+{"t":3136,"text":"y = 2x - 2"}
+{"t":3157,"text":"$.])\n]\n\n#question"}
+{"t":3180,"text":"(points: 6"}
+{"t":3202,"text":")[\n  Differenti"}
+{"t":3222,"text":"ate $g"}
+{"t":3244,"text":"(x) = sqrt"}
+{"t":3267,"text":"(x^2 + 1"}
+{"t":3288,"text":")$ using the chain r"}
+{"t":3309,"text":"ule."}
+{"t":3329,"text":"\n  #answer-space("}
+{"t":3351,"text":"height: 6em, answer"}
+{"t":3372,"text":": [Write"}
+{"t":3394,"text":" $g(x) = (x"}
+{"t":3416,"text":"^2 + 1)^"}
+{"t":3438,"text":"(1/2)$."}
+{"t":3458,"text":" Then $g'(x) ="}
+{"t":3480,"text":" "}
+{"t":3502,"text":"1/2 (x^2"}
+{"t":3525,"text":" + 1)^(-"}
+{"t":3545,"text":"1/2) dot 2"}
+{"t":3566,"text":"x = x/sqrt"}
+{"t":3587,"text":"(x^2 + 1"}
+{"t":3610,"text":")$.])\n]\n\n="}
+{"t":3630,"text":" Part C: Continuity"}
+{"t":3651,"text":" and"}
+{"t":3689,"text":" Application\n\n#question(points: "}
+{"t":3696,"text":"8)[\n  Let $"}
+{"t":3718,"text":"f(x) = (x^"}
+{"t":3740,"text":"2 - 9)/("}
+{"t":3760,"text":"x - 3)$ for"}
+{"t":3780,"text":" $x != 3$,"}
+{"t":3802,"text":" and $"}
+{"t":3824,"text":"f(3) = k$."}
+{"t":3845,"text":"\n  + Sim"}
+{"t":3866,"text":"plify $f(x)$"}
+{"t":3892,"text":" for $x != 3$"}
+{"t":3931,"text":" and h"}
+{"t":3954,"text":"ence find $lim_(x"}
+{"t":3974,"text":" -> 3) f(x"}
+{"t":3997,"text":")$.\n    #answer"}
+{"t":4019,"text":"-space(height: 4"}
+{"t":4039,"text":"em, answer: [$f"}
+{"t":4069,"text":"(x) = (x -"}
+{"t":4089,"text":" 3)(x + 3"}
+{"t":4103,"text":")/(x - 3)"}
+{"t":4127,"text":" = x + 3$, so"}
+{"t":4145,"text":" $lim_(x ->"}
+{"t":4170,"text":" 3) f(x) ="}
+{"t":4207,"text":" 6"}
+{"t":4214,"text":"$.])\n  + Find"}
+{"t":4232,"text":" the value of $k$ that"}
+{"t":4255,"text":" mak"}
+{"t":4292,"text":"es $f$ continuous"}
+{"t":4302,"text":" at $x = 3$."}
+{"t":4325,"text":"\n    #answer-space("}
+{"t":4346,"text":"height: 3em, answer"}
+{"t":4371,"text":": [Continuity requires"}
+{"t":4387,"text":" $f"}
+{"t":4403,"text":"(3) = lim_("}
+{"t":4427,"text":"x -> 3) f("}
+{"t":4446,"text":"x)$, so $k ="}
+{"t":4468,"text":" 6$.])\n]"}
+{"t":4489,"text":"\n\n#question(points: 6)"}
+{"t":4511,"text":"[\n  A rectangle"}
+{"t":4535,"text":" has per"}
+{"t":4553,"text":"imeter $20"}
+{"t":4575,"text":"$ cm. Let"}
+{"t":4597,"text":" its width"}
+{"t":4618,"text":" be $x$ cm."}
+{"t":4639,"text":" Show that its area is $"}
+{"t":4660,"text":"A(x) = 10"}
+{"t":4682,"text":"x - x^2$,"}
+{"t":4707,"text":" and find the value"}
+{"t":4725,"text":" of $x$ that maxim"}
+{"t":4748,"text":"ises the area."}
+{"t":4768,"text":" Just"}
+{"t":4790,"text":"ify that"}
+{"t":4813,"text":" it is a maximum."}
+{"t":4834,"text":"\n  #answer-space(height"}
+{"t":4854,"text":": 8em, answer:"}
+{"t":4875,"text":" [Length"}
+{"t":4897,"text":" $"}
+{"t":4918,"text":"="}
+{"t":4939,"text":" 10 - x$, so"}
+{"t":4963,"text":" $A("}
+{"t":4983,"text":"x) = x(10 -"}
+{"t":5004,"text":" x) = 10x - x"}
+{"t":5026,"text":"^2$. Then $A"}
+{"t":5046,"text":"'(x) = 10 "}
+{"t":5069,"text":"- 2x = 0$"}
+{"t":5091,"text":" gives $x = 5"}
+{"t":5112,"text":"$. Since $A''("}
+{"t":5132,"text":"x) = -2 "}
+{"t":5155,"text":"< 0$, this is a"}
+{"t":5178,"text":" maximum."}
+{"t":5197,"text":" The maximum area is $25"}
+{"t":5219,"text":"$ cm$"}
+{"t":5241,"text":"^2$ at $x ="}
+{"t":5262,"text":" 5$, so"}
+{"t":5287,"text":" the r"}
+{"t":5306,"text":"ectangle is a"}
+{"t":5326,"text":" $"}
+{"t":5347,"text":"5$ cm by $5"}
+{"t":5370,"text":"$ cm square.])"}
+{"t":5408,"text":"\n]"}

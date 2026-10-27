@@ -1,0 +1,232 @@
+{"t":0,"text":"#"}
+{"t":20,"text":"show: exam."}
+{"t":40,"text":"with(\n  title: ["}
+{"t":62,"text":"Calculus I"}
+{"t":116,"text":" Midterm: Limits"}
+{"t":116,"text":" and Derivatives],"}
+{"t":122,"text":"\n  subject: [Math"}
+{"t":249,"text":"ematics],\n  gr"}
+{"t":249,"text":"ade: [Grade 12"}
+{"t":249,"text":"],"}
+{"t":249,"text":"\n  duration: [60 "}
+{"t":249,"text":"minutes],\n  info:"}
+{"t":249,"text":" (\"name\", \"class\", \""}
+{"t":265,"text":"roll\"),\n  instruct"}
+{"t":285,"text":"ions: ["}
+{"t":306,"text":"Answer *all* questions."}
+{"t":327,"text":" Show your working. Cal"}
+{"t":347,"text":"culators are not"}
+{"t":367,"text":" perm"}
+{"t":388,"text":"itted.],\n)\n\n#"}
+{"t":408,"text":"question(points: 4)["}
+{"t":430,"text":"\n  Evaluate each"}
+{"t":449,"text":" limit.\n  + $"}
+{"t":471,"text":"lim_(x -> "}
+{"t":490,"text":"3) (x^2 -"}
+{"t":511,"text":" 9)/(x - "}
+{"t":531,"text":"3)$\n    #answer"}
+{"t":551,"text":"-space(height: 3em"}
+{"t":572,"text":", answer: ["}
+{"t":592,"text":"Factor:"}
+{"t":613,"text":" $(x^2 - "}
+{"t":633,"text":"9)/(x - 3"}
+{"t":653,"text":") = x"}
+{"t":674,"text":" + 3$ for $x"}
+{"t":698,"text":" !="}
+{"t":715,"text":" 3$, so the limit"}
+{"t":743,"text":" is $6$.])\n  "}
+{"t":756,"text":"+ $lim_(x -"}
+{"t":781,"text":"> 0) s"}
+{"t":796,"text":"in(3x)/x$"}
+{"t":818,"text":"\n    #answer-space("}
+{"t":839,"text":"height: 3em, answer"}
+{"t":860,"text":": ["}
+{"t":878,"text":"Stand"}
+{"t":898,"text":"ard limit with"}
+{"t":920,"text":" $u"}
+{"t":939,"text":" = 3x$: $l"}
+{"t":960,"text":"im_(x -"}
+{"t":980,"text":"> 0) "}
+{"t":1000,"text":"3 d"}
+{"t":1021,"text":"ot s"}
+{"t":1042,"text":"in(3x)/("}
+{"t":1061,"text":"3x) = 3$."}
+{"t":1082,"text":"])\n  + $lim_"}
+{"t":1102,"text":"(x -> infinity)"}
+{"t":1123,"text":" (3x^2 + "}
+{"t":1143,"text":"1)/(x^2 "}
+{"t":1165,"text":"- 4)$\n    #"}
+{"t":1189,"text":"answer-space(height: "}
+{"t":1207,"text":"3em, answer: ["}
+{"t":1225,"text":"Divide top"}
+{"t":1246,"text":" and bottom by $x^"}
+{"t":1268,"text":"2$: $"}
+{"t":1287,"text":"(3 + 1/x"}
+{"t":1307,"text":"^2)/(1 -"}
+{"t":1328,"text":" 4/x^2) -"}
+{"t":1348,"text":"> 3$.])\n  "}
+{"t":1370,"text":"+ $lim_(x -"}
+{"t":1388,"text":"> 2^"}
+{"t":1411,"text":"+"}
+{"t":1430,"text":") (|"}
+{"t":1450,"text":"x - 2|)/("}
+{"t":1474,"text":"x - 2)$\n    "}
+{"t":1492,"text":"#answer-space(height:"}
+{"t":1512,"text":" 3em, answer: ["}
+{"t":1532,"text":"For $x > 2$,"}
+{"t":1552,"text":" $|x - 2| ="}
+{"t":1574,"text":" x - 2$, so the"}
+{"t":1596,"text":" expression equals $1$"}
+{"t":1613,"text":" and the limit is $1$"}
+{"t":1634,"text":".])\n]\n\n#question("}
+{"t":1656,"text":"points: 4)[\n  "}
+{"t":1676,"text":"Differentiate each function"}
+{"t":1696,"text":" with"}
+{"t":1716,"text":" respect to $x$."}
+{"t":1736,"text":" Simplify your answers"}
+{"t":1758,"text":".\n  + $f"}
+{"t":1777,"text":"(x) = 3x^"}
+{"t":1798,"text":"4 - 2x^2"}
+{"t":1818,"text":" + 5x - 7"}
+{"t":1838,"text":"$\n    #answer-space"}
+{"t":1858,"text":"(height: 3"}
+{"t":1880,"text":"em, answer: [$f"}
+{"t":1901,"text":"'(x) = 12x"}
+{"t":1920,"text":"^3 - 4x +"}
+{"t":1940,"text":" 5$.])\n  +"}
+{"t":1962,"text":" $h(x) = x^"}
+{"t":1981,"text":"2 e^x$\n    "}
+{"t":2002,"text":"#answer-space(height:"}
+{"t":2022,"text":" 4em, answer: ["}
+{"t":2063,"text":"Product rule: $h'("}
+{"t":2083,"text":"x) = 2x e^"}
+{"t":2104,"text":"x + x^2 e^"}
+{"t":2130,"text":"x = x(x + 2"}
+{"t":2153,"text":")"}
+{"t":2166,"text":" e^x$.])\n]"}
+{"t":2188,"text":"\n\n#question(points: 5"}
+{"t":2206,"text":")[\n  Find the equ"}
+{"t":2226,"text":"ation of the tangent line to"}
+{"t":2247,"text":" $"}
+{"t":2267,"text":"f(x) = (2x"}
+{"t":2287,"text":" - 1)^3$"}
+{"t":2308,"text":" at $x = 1$."}
+{"t":2329,"text":" Write"}
+{"t":2349,"text":" your"}
+{"t":2370,"text":" answer in the form $y ="}
+{"t":2390,"text":" m x + c"}
+{"t":2410,"text":"$."}
+{"t":2432,"text":"\n  #answer-space(height"}
+{"t":2451,"text":": 8"}
+{"t":2471,"text":"em, answer: [\n    "}
+{"t":2491,"text":"Chain rule: $f"}
+{"t":2512,"text":"'(x) = 3"}
+{"t":2551,"text":"(2x - 1)^"}
+{"t":2553,"text":"2 d"}
+{"t":2575,"text":"ot 2 = 6("}
+{"t":2594,"text":"2x - 1)^2"}
+{"t":2614,"text":"$.\n    At $x ="}
+{"t":2635,"text":" 1$: $f(1"}
+{"t":2655,"text":") = 1$ and $"}
+{"t":2677,"text":"f'(1) = 6"}
+{"t":2697,"text":"$."}
+{"t":2718,"text":"\n    Tangent:"}
+{"t":2738,"text":" $y -"}
+{"t":2757,"text":" 1 = 6("}
+{"t":2777,"text":"x - 1)$, so"}
+{"t":2798,"text":" $y = 6x - "}
+{"t":2819,"text":"5$.\n  ])"}
+{"t":2841,"text":"\n]\n\n#question(points: "}
+{"t":2859,"text":"4)[\n  Let"}
+{"t":2880,"text":" $f(x) = x^"}
+{"t":2901,"text":"3 - 3x$."}
+{"t":2921,"text":"\n  + Find all"}
+{"t":2941,"text":" crit"}
+{"t":2961,"text":"ical points of $f$"}
+{"t":2982,"text":".\n    #answer-space"}
+{"t":3002,"text":"(height: 3"}
+{"t":3024,"text":"em, answer: [$f"}
+{"t":3043,"text":"'(x) = 3x"}
+{"t":3065,"text":"^2 - 3 ="}
+{"t":3084,"text":" 0$ gives $x"}
+{"t":3105,"text":" = -"}
+{"t":3125,"text":"1$ and"}
+{"t":3146,"text":" $x = 1$.])"}
+{"t":3165,"text":"\n  + Use the second der"}
+{"t":3186,"text":"ivative test to classify each"}
+{"t":3209,"text":" critical point.\n    #answ"}
+{"t":3227,"text":"er-space(height: 4"}
+{"t":3248,"text":"em, answer: [$f"}
+{"t":3268,"text":"''(x) = 6x"}
+{"t":3288,"text":"$. $f''(1)"}
+{"t":3312,"text":" = 6 > 0$"}
+{"t":3329,"text":", so $(1"}
+{"t":3351,"text":", -"}
+{"t":3371,"text":"2)$ is a local min"}
+{"t":3393,"text":"imum. $f''(-"}
+{"t":3411,"text":"1) = -6 < "}
+{"t":3431,"text":"0$, so $(-1"}
+{"t":3452,"text":", 2)$ is a"}
+{"t":3472,"text":" local maximum.])\n]"}
+{"t":3492,"text":"\n\n#question(points: 3"}
+{"t":3513,"text":")[\n  "}
+{"t":3533,"text":"Use the defin"}
+{"t":3554,"text":"ition of the"}
+{"t":3574,"text":" derivative as"}
+{"t":3595,"text":" a limit to find $f'"}
+{"t":3615,"text":"(x)$ for $f"}
+{"t":3635,"text":"(x) = x^2 "}
+{"t":3656,"text":"+ x"}
+{"t":3677,"text":"$.\n  #answer-"}
+{"t":3701,"text":"space(height: 8em,"}
+{"t":3718,"text":" answer: [\n    $f"}
+{"t":3738,"text":"'(x) = lim_"}
+{"t":3761,"text":"(h -"}
+{"t":3779,"text":"> 0) "}
+{"t":3799,"text":"((x + h)^2 "}
+{"t":3819,"text":"+ (x + h) - x"}
+{"t":3840,"text":"^2 - x)/h"}
+{"t":3862,"text":" = lim_(h ->"}
+{"t":3880,"text":" 0) (2x h"}
+{"t":3901,"text":" + h"}
+{"t":3921,"text":"^2 + h"}
+{"t":3942,"text":")/h = l"}
+{"t":3963,"text":"im_(h -> 0"}
+{"t":3984,"text":") (2x + h"}
+{"t":4003,"text":" + 1) = 2x"}
+{"t":4023,"text":" + 1$.\n  "}
+{"t":4044,"text":"])\n]\n\n#question(points"}
+{"t":4064,"text":": 5)[\n  The"}
+{"t":4085,"text":" side $"}
+{"t":4105,"text":"s"}
+{"t":4125,"text":"$ of a square is"}
+{"t":4148,"text":" increasing at a"}
+{"t":4166,"text":" constant rate of $2 "}
+{"t":4187,"text":"\"cm/"}
+{"t":4207,"text":"s\"$. Find"}
+{"t":4230,"text":" the rate at which its"}
+{"t":4247,"text":" area $A$ is"}
+{"t":4269,"text":" increasing when $"}
+{"t":4291,"text":"s = 5 \"cm"}
+{"t":4311,"text":"\"$.\n  #"}
+{"t":4330,"text":"answer-space(height: "}
+{"t":4350,"text":"8em, answer: ["}
+{"t":4370,"text":"\n    $A = s^2$"}
+{"t":4391,"text":", so $("}
+{"t":4411,"text":"d A)/(d t)"}
+{"t":4431,"text":" = 2 s (d s"}
+{"t":4455,"text":")/(d t)$."}
+{"t":4474,"text":"\n    At $s = 5"}
+{"t":4494,"text":"$: $(d A)/"}
+{"t":4514,"text":"(d t) = 2 "}
+{"t":4534,"text":"d"}
+{"t":4554,"text":"ot 5 dot 2"}
+{"t":4574,"text":" = 20$"}
+{"t":4595,"text":","}
+{"t":4615,"text":" so"}
+{"t":4636,"text":" the area"}
+{"t":4656,"text":" incre"}
+{"t":4677,"text":"ases at $20 \"cm"}
+{"t":4697,"text":"\""}
+{"t":4718,"text":"^2 \"/s\"$"}
+{"t":4738,"text":".\n  ])\n]"}

@@ -1,0 +1,229 @@
+{"t":0,"text":"#"}
+{"t":18,"text":"show: worksheet."}
+{"t":39,"text":"with(title: [Photos"}
+{"t":59,"text":"ynthesis], subject:"}
+{"t":80,"text":" [Science], grade: ["}
+{"t":102,"text":"Grade 7], info:"}
+{"t":122,"text":" (\"name\", \"class\", \""}
+{"t":146,"text":"date\"))\n#import \"@"}
+{"t":166,"text":"preview/cetz:0"}
+{"t":184,"text":".5.3\"\n\n#"}
+{"t":204,"text":"inst"}
+{"t":228,"text":"ructions["}
+{"t":247,"text":"\n  - Answ"}
+{"t":266,"text":"er *all* questions."}
+{"t":289,"text":"\n  - Use the words in the"}
+{"t":307,"text":" word"}
+{"t":330,"text":" b"}
+{"t":347,"text":"ank where"}
+{"t":371,"text":" need"}
+{"t":388,"text":"ed.\n]\n\n#call"}
+{"t":419,"text":"out(kind: \"remember"}
+{"t":438,"text":"\")[\n  Photosyn"}
+{"t":453,"text":"thesis: #"}
+{"t":471,"text":"ce(\"6"}
+{"t":496,"text":"C"}
+{"t":512,"text":"O2 + 6"}
+{"t":532,"text":"H2O -> C"}
+{"t":553,"text":"6H12O6 + "}
+{"t":575,"text":"6O2\")\n]\n\n="}
+{"t":601,"text":" Part A: F"}
+{"t":615,"text":"ill in the blanks\n\n#"}
+{"t":635,"text":"question(points: 2"}
+{"t":655,"text":")[\n  Pl"}
+{"t":677,"text":"ants use #blank("}
+{"t":697,"text":"width: 6"}
+{"t":723,"text":"em, answer: [s"}
+{"t":743,"text":"unlight]) to make food"}
+{"t":758,"text":". The"}
+{"t":783,"text":" g"}
+{"t":798,"text":"as they"}
+{"t":819,"text":" take in from"}
+{"t":839,"text":" the air is\n  #blank"}
+{"t":861,"text":"(width: 6em, answ"}
+{"t":881,"text":"er: [carbon dio"}
+{"t":903,"text":"xide])."}
+{"t":924,"text":"\n]\n\n#question(points:"}
+{"t":942,"text":" 2)[\n  The"}
+{"t":964,"text":" green"}
+{"t":983,"text":" pigment that"}
+{"t":1012,"text":" tra"}
+{"t":1024,"text":"ps light is called #blank("}
+{"t":1044,"text":"width: 6"}
+{"t":1064,"text":"em, answer: [chl"}
+{"t":1086,"text":"orophyll]). It"}
+{"t":1109,"text":" is found m"}
+{"t":1128,"text":"ain"}
+{"t":1146,"text":"ly in the"}
+{"t":1176,"text":"\n  #blank(width:"}
+{"t":1187,"text":" 6em, answer: ["}
+{"t":1213,"text":"chloroplasts])."}
+{"t":1228,"text":"\n]\n\n#"}
+{"t":1251,"text":"question(points: 1)["}
+{"t":1273,"text":"\n  The g"}
+{"t":1297,"text":"as released as a"}
+{"t":1312,"text":" by-product of photosynth"}
+{"t":1331,"text":"esis is #blank(width"}
+{"t":1352,"text":": 6em, answer:"}
+{"t":1372,"text":" [oxygen])."}
+{"t":1393,"text":"\n]\n\n= Part B:"}
+{"t":1413,"text":" Multiple choice\n\n#question"}
+{"t":1434,"text":"(points: 1)["}
+{"t":1455,"text":"\n  Which organel"}
+{"t":1474,"text":"le is the"}
+{"t":1495,"text":" site of photosynthesis"}
+{"t":1516,"text":"?\n  #mc"}
+{"t":1536,"text":"q([N"}
+{"t":1556,"text":"ucleus], [M"}
+{"t":1577,"text":"itochondrion], ["}
+{"t":1598,"text":"Chloroplast], ["}
+{"t":1618,"text":"C"}
+{"t":1638,"text":"ell wall], answer: "}
+{"t":1659,"text":"3)\n]\n\n#question("}
+{"t":1681,"text":"points: 1)[\n  "}
+{"t":1702,"text":"Which cond"}
+{"t":1722,"text":"ition is *"}
+{"t":1740,"text":"not"}
+{"t":1761,"text":"* needed for photosynth"}
+{"t":1782,"text":"esis?\n  #mc"}
+{"t":1801,"text":"q([Light"}
+{"t":1827,"text":"], [Water], [Car"}
+{"t":1843,"text":"bon dioxide], ["}
+{"t":1863,"text":"O"}
+{"t":1886,"text":"xygen g"}
+{"t":1904,"text":"as], answer: 4"}
+{"t":1925,"text":")\n]\n\n#"}
+{"t":1947,"text":"question(points: 1)["}
+{"t":1969,"text":"\n  Which s"}
+{"t":1988,"text":"ugar is the"}
+{"t":2006,"text":" main"}
+{"t":2029,"text":" product of photosynthesis"}
+{"t":2050,"text":"?\n  #mcq(["}
+{"t":2067,"text":"Glucose], [Star"}
+{"t":2089,"text":"ch], [Cellulose"}
+{"t":2111,"text":"], [Protein], answer"}
+{"t":2134,"text":": 1)\n]\n\n="}
+{"t":2150,"text":" Part C: Label"}
+{"t":2173,"text":" the"}
+{"t":2191,"text":" diagram\n\n#question(points"}
+{"t":2212,"text":": 4"}
+{"t":2231,"text":")[\n  Label the par"}
+{"t":2252,"text":"ts of the"}
+{"t":2277,"text":" leaf below"}
+{"t":2294,"text":" (A to"}
+{"t":2312,"text":" D"}
+{"t":2338,"text":") using"}
+{"t":2353,"text":" the words"}
+{"t":2375,"text":": _"}
+{"t":2394,"text":"stomata,"}
+{"t":2415,"text":" ch"}
+{"t":2436,"text":"loroplas"}
+{"t":2455,"text":"ts, mid"}
+{"t":2476,"text":"rib, c"}
+{"t":2496,"text":"uticle_"}
+{"t":2517,"text":".\n\n  #align"}
+{"t":2537,"text":"(center)"}
+{"t":2558,"text":"[\n    #cetz."}
+{"t":2578,"text":"canvas({\n      import c"}
+{"t":2599,"text":"etz.draw: *"}
+{"t":2619,"text":"\n      circle((0, 0"}
+{"t":2639,"text":"), radius: (3, "}
+{"t":2662,"text":"1.6"}
+{"t":2680,"text":"),"}
+{"t":2701,"text":" stroke: "}
+{"t":2723,"text":"1"}
+{"t":2741,"text":"p"}
+{"t":2763,"text":"t)\n      line((-3"}
+{"t":2783,"text":", 0), (3, "}
+{"t":2804,"text":"0), stroke: 0"}
+{"t":2823,"text":".8pt)\n      line"}
+{"t":2843,"text":"((-"}
+{"t":2864,"text":"2.5, 0."}
+{"t":2885,"text":"8"}
+{"t":2905,"text":"), (2"}
+{"t":2925,"text":".5, 0.8),"}
+{"t":2945,"text":" stroke: ("}
+{"t":2968,"text":"d"}
+{"t":2986,"text":"ash: \""}
+{"t":3006,"text":"dash"}
+{"t":3032,"text":"ed\", pa"}
+{"t":3047,"text":"int"}
+{"t":3067,"text":": g"}
+{"t":3089,"text":"ray))\n      content((4"}
+{"t":3110,"text":".2"}
+{"t":3129,"text":", 1),"}
+{"t":3149,"text":" [A])\n      content((-"}
+{"t":3174,"text":"4.2, -1), ["}
+{"t":3197,"text":"B])\n      content((0"}
+{"t":3216,"text":", -"}
+{"t":3250,"text":"2.2), [C])"}
+{"t":3262,"text":"\n      content"}
+{"t":3273,"text":"((-2.2, 1"}
+{"t":3295,"text":".8), [D])\n      "}
+{"t":3348,"text":"line((4"}
+{"t":3348,"text":","}
+{"t":3355,"text":" 1"}
+{"t":3374,"text":"),"}
+{"t":3394,"text":" (2"}
+{"t":3414,"text":","}
+{"t":3435,"text":" 0.4"}
+{"t":3455,"text":"))"}
+{"t":3476,"text":"\n      line((-"}
+{"t":3507,"text":"4, -1),"}
+{"t":3519,"text":" (-2, -0.2"}
+{"t":3540,"text":"))\n      line((0, -"}
+{"t":3563,"text":"2),"}
+{"t":3581,"text":" (0, -1"}
+{"t":3601,"text":"))"}
+{"t":3618,"text":"\n      line((-2,"}
+{"t":3641,"text":" 1.6"}
+{"t":3659,"text":"), (-1.2"}
+{"t":3680,"text":", 0.9"}
+{"t":3704,"text":"))\n    })\n  "}
+{"t":3720,"text":"]\n\n  A #bl"}
+{"t":3741,"text":"ank(width: 7"}
+{"t":3761,"text":"em, answer: [c"}
+{"t":3783,"text":"uticle]) \\"}
+{"t":3802,"text":"\n  B #blank(width"}
+{"t":3824,"text":": 7em, answer:"}
+{"t":3843,"text":" [midrib]) \\"}
+{"t":3864,"text":"\n  C #blank(width:"}
+{"t":3884,"text":" 7em, answer: ["}
+{"t":3906,"text":"stomata]) \\\n  "}
+{"t":3927,"text":"D #blank(width: "}
+{"t":3947,"text":"7em, answer: [ch"}
+{"t":3968,"text":"loroplasts])\n]"}
+{"t":3994,"text":"\n\n= Part D: Expl"}
+{"t":4008,"text":"ain"}
+{"t":4028,"text":"\n\n#question(points: 3"}
+{"t":4049,"text":")[\n  A"}
+{"t":4068,"text":" student"}
+{"t":4089,"text":" places"}
+{"t":4109,"text":" a p"}
+{"t":4129,"text":"ond"}
+{"t":4151,"text":"weed plant in s"}
+{"t":4172,"text":"unlight and"}
+{"t":4191,"text":" coun"}
+{"t":4211,"text":"ts bubbles of g"}
+{"t":4231,"text":"as released"}
+{"t":4251,"text":" per"}
+{"t":4272,"text":" minute. When"}
+{"t":4292,"text":" she mo"}
+{"t":4314,"text":"ves the l"}
+{"t":4333,"text":"amp further"}
+{"t":4353,"text":" away, f"}
+{"t":4376,"text":"ewer bubbles app"}
+{"t":4394,"text":"ear. Explain why."}
+{"t":4415,"text":"\n  #answer-lines"}
+{"t":4435,"text":"(count: 3, answer"}
+{"t":4457,"text":": [Less"}
+{"t":4476,"text":" light re"}
+{"t":4496,"text":"aches the plant, so the"}
+{"t":4517,"text":" rate of photosynthes"}
+{"t":4537,"text":"is falls and"}
+{"t":4558,"text":" less oxygen is produced"}
+{"t":4579,"text":","}
+{"t":4599,"text":" so f"}
+{"t":4619,"text":"ewer bubbles are released"}
+{"t":4639,"text":".])\n]\n\n#answer"}
+{"t":4661,"text":"-key()"}

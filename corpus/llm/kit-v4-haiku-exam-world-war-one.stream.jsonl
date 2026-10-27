@@ -1,0 +1,365 @@
+{"t":0,"text":"#show"}
+{"t":20,"text":": exam."}
+{"t":41,"text":"with(\n  title: [World"}
+{"t":63,"text":" War I: Causes,"}
+{"t":82,"text":" Con"}
+{"t":103,"text":"flict and Cons"}
+{"t":123,"text":"equences],\n  subject:"}
+{"t":144,"text":" [History],\n  grade:"}
+{"t":167,"text":" [Grade 10],"}
+{"t":185,"text":"\n  duration: [1"}
+{"t":206,"text":" hour "}
+{"t":227,"text":"30 minutes],\n  "}
+{"t":248,"text":"instructions: [Answer"}
+{"t":270,"text":" *all* questions. Ref"}
+{"t":288,"text":"er to the s"}
+{"t":311,"text":"ources where"}
+{"t":329,"text":" as"}
+{"t":349,"text":"ked. Use your own kn"}
+{"t":371,"text":"owledge to support your answers"}
+{"t":393,"text":".],\n)\n\n= Section"}
+{"t":412,"text":" A: Multiple choice"}
+{"t":434,"text":"\n\n#question(points: 1"}
+{"t":453,"text":")[\n  "}
+{"t":474,"text":"Which event"}
+{"t":493,"text":" is"}
+{"t":513,"text":" gener"}
+{"t":534,"text":"ally considered the"}
+{"t":555,"text":" immediate trigger of the"}
+{"t":587,"text":" First"}
+{"t":595,"text":" World War?\n  #mc"}
+{"t":616,"text":"q([The"}
+{"t":636,"text":" s"}
+{"t":656,"text":"inking of the _"}
+{"t":677,"text":"Lusitania_],"}
+{"t":697,"text":" [The"}
+{"t":717,"text":" Batt"}
+{"t":737,"text":"le of Ver"}
+{"t":759,"text":"dun], [The assassination"}
+{"t":779,"text":" of Arch"}
+{"t":799,"text":"duke Franz Fer"}
+{"t":820,"text":"dinand],"}
+{"t":840,"text":" [The Treaty of"}
+{"t":861,"text":" Versailles], answer: "}
+{"t":882,"text":"3)\n]\n\n#question("}
+{"t":902,"text":"points: 1)[\n  "}
+{"t":923,"text":"Which alliance did"}
+{"t":943,"text":" Ital"}
+{"t":966,"text":"y join in "}
+{"t":984,"text":"1882"}
+{"t":1004,"text":" before swit"}
+{"t":1024,"text":"ching s"}
+{"t":1045,"text":"ides in 1915?\n  "}
+{"t":1066,"text":"#mcq([The"}
+{"t":1086,"text":" Triple Ent"}
+{"t":1107,"text":"ente], [The Triple"}
+{"t":1127,"text":" Alliance], [The Sch"}
+{"t":1147,"text":"l"}
+{"t":1168,"text":"ieffen Alliance],"}
+{"t":1195,"text":" [The Dual"}
+{"t":1208,"text":" Mon"}
+{"t":1242,"text":"archy], answer: "}
+{"t":1255,"text":"2)\n]\n\n#question("}
+{"t":1271,"text":"points: 1)[\n  "}
+{"t":1291,"text":"The German pl"}
+{"t":1314,"text":"an to defeat France"}
+{"t":1337,"text":" qu"}
+{"t":1353,"text":"ickly by pass"}
+{"t":1372,"text":"ing through"}
+{"t":1393,"text":" Belgium was called the"}
+{"t":1413,"text":":"}
+{"t":1434,"text":"\n  #mcq"}
+{"t":1453,"text":"(["}
+{"t":1480,"text":"Z"}
+{"t":1499,"text":"im"}
+{"t":1515,"text":"mermann Plan], ["}
+{"t":1535,"text":"Schlieffen Pl"}
+{"t":1557,"text":"an], [Marshall"}
+{"t":1576,"text":" Plan], [D"}
+{"t":1597,"text":"aw"}
+{"t":1617,"text":"es Plan], answer:"}
+{"t":1638,"text":" 2)\n]\n\n="}
+{"t":1659,"text":" Section B: Source-based quest"}
+{"t":1679,"text":"ions"}
+{"t":1699,"text":"\n\nRead"}
+{"t":1720,"text":" Source A"}
+{"t":1739,"text":" and"}
+{"t":1760,"text":" Source B before answering.\n\n#"}
+{"t":1782,"text":"call"}
+{"t":1801,"text":"out(k"}
+{"t":1821,"text":"ind: \"example"}
+{"t":1842,"text":"\","}
+{"t":1861,"text":" title: [Source A])"}
+{"t":1883,"text":"["}
+{"t":1903,"text":"\n  #quote(block:"}
+{"t":1923,"text":" true)["}
+{"t":1943,"text":"\n    The Ent"}
+{"t":1964,"text":"ente and"}
+{"t":1985,"text":" the"}
+{"t":2007,"text":" Central Powers each"}
+{"t":2025,"text":" believ"}
+{"t":2045,"text":"ed that a"}
+{"t":2066,"text":" short"}
+{"t":2086,"text":" war was"}
+{"t":2108,"text":" possible. Mobilis"}
+{"t":2126,"text":"ation"}
+{"t":2147,"text":"\n    tim"}
+{"t":2167,"text":"etables,"}
+{"t":2187,"text":" once"}
+{"t":2207,"text":" beg"}
+{"t":2228,"text":"un, could"}
+{"t":2248,"text":" not eas"}
+{"t":2269,"text":"ily be halted, and every"}
+{"t":2289,"text":" government"}
+{"t":2309,"text":" fe"}
+{"t":2329,"text":"ared that del"}
+{"t":2350,"text":"ay\n    would le"}
+{"t":2370,"text":"ave it at"}
+{"t":2392,"text":" a disadvantage."}
+{"t":2411,"text":"\n  ]\n  "}
+{"t":2432,"text":"Ad"}
+{"t":2453,"text":"apted from a mod"}
+{"t":2472,"text":"ern military history"}
+{"t":2492,"text":" textbook."}
+{"t":2516,"text":"\n]\n\n#callout(k"}
+{"t":2535,"text":"ind: \"example\", title: ["}
+{"t":2555,"text":"Source B])[\n  #"}
+{"t":2577,"text":"quote(block: true)["}
+{"t":2595,"text":"\n    We"}
+{"t":2615,"text":" were"}
+{"t":2636,"text":" told"}
+{"t":2656,"text":" that this"}
+{"t":2676,"text":" was a war to"}
+{"t":2698,"text":" end all"}
+{"t":2717,"text":" wars. Our"}
+{"t":2738,"text":" gener"}
+{"t":2759,"text":"als prom"}
+{"t":2778,"text":"ised vict"}
+{"t":2801,"text":"ory by"}
+{"t":2819,"text":" Christmas.\n    "}
+{"t":2839,"text":"Instead we"}
+{"t":2859,"text":" lived"}
+{"t":2880,"text":" in m"}
+{"t":2902,"text":"ud for four"}
+{"t":2921,"text":" years, and I"}
+{"t":2941,"text":" have"}
+{"t":2962,"text":" seen men"}
+{"t":2981,"text":" dr"}
+{"t":3006,"text":"own in sh"}
+{"t":3022,"text":"ell"}
+{"t":3042,"text":"-hol"}
+{"t":3063,"text":"es within"}
+{"t":3085,"text":" s"}
+{"t":3103,"text":"ight of\n    their"}
+{"t":3125,"text":" own tr"}
+{"t":3145,"text":"enches.\n  ]"}
+{"t":3165,"text":"\n  Ext"}
+{"t":3185,"text":"ract from the"}
+{"t":3205,"text":" memoir"}
+{"t":3228,"text":" of a British"}
+{"t":3246,"text":" infantry"}
+{"t":3267,"text":" offic"}
+{"t":3288,"text":"er, published"}
+{"t":3307,"text":" 1930"}
+{"t":3328,"text":".\n]\n\n#question(points"}
+{"t":3348,"text":": 2"}
+{"t":3372,"text":")[\n  +"}
+{"t":3390,"text":" Ident"}
+{"t":3410,"text":"ify one"}
+{"t":3431,"text":" re"}
+{"t":3450,"text":"ason given in"}
+{"t":3471,"text":" Source A for"}
+{"t":3491,"text":" why the pow"}
+{"t":3511,"text":"ers exp"}
+{"t":3532,"text":"ected a"}
+{"t":3552,"text":" short war.\n    "}
+{"t":3574,"text":"#answer-lines(count"}
+{"t":3593,"text":": 1, answer: ["}
+{"t":3613,"text":"Mobilisation timet"}
+{"t":3634,"text":"ables could"}
+{"t":3654,"text":" not eas"}
+{"t":3676,"text":"ily be halted, and governments"}
+{"t":3695,"text":" fe"}
+{"t":3718,"text":"ared delay would"}
+{"t":3737,"text":" disadvantage them.])"}
+{"t":3757,"text":"\n  + Expl"}
+{"t":3777,"text":"ain what"}
+{"t":3817,"text":" Source B su"}
+{"t":3838,"text":"ggests about the g"}
+{"t":3860,"text":"ap between w"}
+{"t":3878,"text":"artime prom"}
+{"t":3899,"text":"ises and exper"}
+{"t":3920,"text":"ience.\n    #answer-"}
+{"t":3941,"text":"lines(count: 2,"}
+{"t":3960,"text":" answer: [Source B su"}
+{"t":3981,"text":"ggests the"}
+{"t":4001,"text":" prom"}
+{"t":4022,"text":"ise"}
+{"t":4042,"text":" of a qu"}
+{"t":4065,"text":"ick victory was false:"}
+{"t":4085,"text":" the war l"}
+{"t":4105,"text":"asted four years of"}
+{"t":4123,"text":" trench f"}
+{"t":4145,"text":"ighting and m"}
+{"t":4167,"text":"ud, so"}
+{"t":4186,"text":" the officer fel"}
+{"t":4205,"text":"t the promises"}
+{"t":4226,"text":" had been bro"}
+{"t":4246,"text":"ken.])\n]\n\n#question"}
+{"t":4271,"text":"(points: 4"}
+{"t":4288,"text":")[\n  "}
+{"t":4307,"text":"Compare the views"}
+{"t":4327,"text":" of Source"}
+{"t":4348,"text":" A and Source B on why"}
+{"t":4368,"text":" the war l"}
+{"t":4389,"text":"asted so long."}
+{"t":4409,"text":" Use"}
+{"t":4430,"text":" details"}
+{"t":4450,"text":" from both sources.\n  #"}
+{"t":4471,"text":"answer-lines(count:"}
+{"t":4492,"text":" 6"}
+{"t":4512,"text":", answer: [Source A"}
+{"t":4532,"text":" foc"}
+{"t":4552,"text":"uses on the planning and"}
+{"t":4573,"text":" mobilisation syst"}
+{"t":4593,"text":"ems that made the war hard to"}
+{"t":4614,"text":" stop, while"}
+{"t":4634,"text":" Source B foc"}
+{"t":4654,"text":"uses on the l"}
+{"t":4675,"text":"ived experience of"}
+{"t":4695,"text":" trench"}
+{"t":4715,"text":" warfare and the failed"}
+{"t":4736,"text":" promises of"}
+{"t":4757,"text":" gener"}
+{"t":4777,"text":"als. Source"}
+{"t":4798,"text":" A expl"}
+{"t":4817,"text":"ains the"}
+{"t":4838,"text":" orig"}
+{"t":4858,"text":"ins of the war's"}
+{"t":4879,"text":" mom"}
+{"t":4899,"text":"entum;"}
+{"t":4919,"text":" Source B sh"}
+{"t":4939,"text":"ows its"}
+{"t":4961,"text":" human"}
+{"t":4980,"text":" c"}
+{"t":5001,"text":"ost,"}
+{"t":5024,"text":" so"}
+{"t":5041,"text":" they"}
+{"t":5061,"text":" address"}
+{"t":5084,"text":" different a"}
+{"t":5105,"text":"spects r"}
+{"t":5123,"text":"ather than the same question.])"}
+{"t":5144,"text":"\n]\n\n#"}
+{"t":5164,"text":"question(points: 4)["}
+{"t":5184,"text":"\n  Using"}
+{"t":5225,"text":" Source B"}
+{"t":5245,"text":" and your own knowledge,"}
+{"t":5266,"text":" ass"}
+{"t":5287,"text":"ess how use"}
+{"t":5306,"text":"ful this"}
+{"t":5328,"text":" source is to"}
+{"t":5347,"text":" a"}
+{"t":5372,"text":" historian studying the exper"}
+{"t":5390,"text":"ience of so"}
+{"t":5409,"text":"ldiers on the"}
+{"t":5430,"text":" Western Front.\n  #answ"}
+{"t":5451,"text":"er-l"}
+{"t":5471,"text":"ines(count: 6, answ"}
+{"t":5490,"text":"er: [Str"}
+{"t":5511,"text":"eng"}
+{"t":5532,"text":"ths: a"}
+{"t":5552,"text":" first-h"}
+{"t":5574,"text":"and account"}
+{"t":5592,"text":" by an officer with"}
+{"t":5613,"text":" dire"}
+{"t":5639,"text":"ct experience,"}
+{"t":5655,"text":" show"}
+{"t":5674,"text":"ing em"}
+{"t":5694,"text":"otional imp"}
+{"t":5715,"text":"act."}
+{"t":5736,"text":" Lim"}
+{"t":5755,"text":"itations: written"}
+{"t":5775,"text":" and"}
+{"t":5797,"text":" published in"}
+{"t":5816,"text":" 1930,"}
+{"t":5837,"text":" after the war, so mem"}
+{"t":5858,"text":"ory and pur"}
+{"t":5877,"text":"pose may sh"}
+{"t":5898,"text":"ape it"}
+{"t":5918,"text":"; one"}
+{"t":5939,"text":" officer's"}
+{"t":5959,"text":" perspective may"}
+{"t":5980,"text":" not represent all soldiers"}
+{"t":6000,"text":". Good answers"}
+{"t":6023,"text":" we"}
+{"t":6040,"text":"igh these points"}
+{"t":6061,"text":" and"}
+{"t":6081,"text":" reach a jud"}
+{"t":6102,"text":"gement.])\n]\n\n="}
+{"t":6123,"text":" Section C: Essay"}
+{"t":6143,"text":"\n\n#question(points: 15"}
+{"t":6163,"text":")[\n  \""}
+{"t":6183,"text":"The"}
+{"t":6205,"text":" First"}
+{"t":6226,"text":" World War was ca"}
+{"t":6245,"text":"used more"}
+{"t":6265,"text":" by the"}
+{"t":6288,"text":" al"}
+{"t":6308,"text":"liance"}
+{"t":6326,"text":" system than by any"}
+{"t":6347,"text":" single event.\""}
+{"t":6367,"text":"\n  To"}
+{"t":6387,"text":" what extent do you agree with"}
+{"t":6408,"text":" this view"}
+{"t":6432,"text":"? Support"}
+{"t":6449,"text":" your answer with evidence."}
+{"t":6469,"text":"\n  #answer-space"}
+{"t":6490,"text":"(height: 20"}
+{"t":6511,"text":"em)"}
+{"t":6530,"text":"\n]\n\n#r"}
+{"t":6551,"text":"ubric(\n  (["}
+{"t":6571,"text":"Argument], ["}
+{"t":6592,"text":"Clear, s"}
+{"t":6612,"text":"ustained jud"}
+{"t":6632,"text":"gement that answ"}
+{"t":6653,"text":"ers the question.], [Cl"}
+{"t":6673,"text":"ear jud"}
+{"t":6694,"text":"gement, part"}
+{"t":6715,"text":"ly"}
+{"t":6734,"text":" sustained.], [Desc"}
+{"t":6755,"text":"riptive,"}
+{"t":6776,"text":" little"}
+{"t":6796,"text":" judgement.], [No"}
+{"t":6816,"text":" argument."}
+{"t":6837,"text":"]),\n  ([Ev"}
+{"t":6857,"text":"idence], [Acc"}
+{"t":6879,"text":"urate, specific and"}
+{"t":6898,"text":" well"}
+{"t":6918,"text":" chosen.], [M"}
+{"t":6939,"text":"ostly accurate and"}
+{"t":6959,"text":" relevant.], [General"}
+{"t":6980,"text":" or"}
+{"t":7000,"text":" part"}
+{"t":7021,"text":"ly inaccurate.],"}
+{"t":7042,"text":" ["}
+{"t":7061,"text":"Absent or w"}
+{"t":7082,"text":"rong.]),\n  "}
+{"t":7102,"text":"([Anal"}
+{"t":7123,"text":"ysis], [Expl"}
+{"t":7143,"text":"ains causation"}
+{"t":7163,"text":" and we"}
+{"t":7185,"text":"ighs fact"}
+{"t":7204,"text":"ors.], [Some"}
+{"t":7226,"text":" explanation of"}
+{"t":7245,"text":" causes"}
+{"t":7265,"text":".], [L"}
+{"t":7286,"text":"ists fac"}
+{"t":7306,"text":"ts with"}
+{"t":7326,"text":" little"}
+{"t":7347,"text":" expl"}
+{"t":7371,"text":"anation.], [Miss"}
+{"t":7389,"text":"ing.]),\n  points"}
+{"t":7410,"text":": (5"}
+{"t":7428,"text":", 5"}
+{"t":7449,"text":", 5, 0"}
+{"t":7480,"text":"),\n)"}

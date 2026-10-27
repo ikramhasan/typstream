@@ -1,0 +1,557 @@
+{"t":0,"text":"#"}
+{"t":35,"text":"show: exam.with("}
+{"t":75,"text":"\n  title: [Algebra"}
+{"t":107,"text":" II Final Examination],"}
+{"t":143,"text":"\n  subject: [Math"}
+{"t":178,"text":"ematics],\n  grade:"}
+{"t":252,"text":" [Alg"}
+{"t":252,"text":"ebra II],\n  duration"}
+{"t":284,"text":": [90 minutes],"}
+{"t":321,"text":"\n  instructions: ["}
+{"t":358,"text":"\n    -"}
+{"t":392,"text":" Answer *all* questions"}
+{"t":430,"text":". The pa"}
+{"t":464,"text":"per is worth 100 points"}
+{"t":499,"text":" in"}
+{"t":535,"text":" total"}
+{"t":578,"text":":"}
+{"t":606,"text":" Section A (20"}
+{"t":665,"text":"), Section B (30),"}
+{"t":680,"text":" Section C (50).\n    "}
+{"t":718,"text":"- In S"}
+{"t":749,"text":"ections B and C, show"}
+{"t":785,"text":" your working. Answ"}
+{"t":824,"text":"ers without"}
+{"t":857,"text":" working"}
+{"t":892,"text":" may not"}
+{"t":928,"text":" earn full credit.\n    "}
+{"t":963,"text":"-"}
+{"t":999,"text":" Calculators are allowed."}
+{"t":1034,"text":" Give exact answ"}
+{"t":1072,"text":"ers unless a"}
+{"t":1106,"text":" question asks you to round."}
+{"t":1142,"text":"\n    "}
+{"t":1178,"text":"- Suggested tim"}
+{"t":1219,"text":"ing:"}
+{"t":1249,"text":" Section A "}
+{"t":1284,"text":"20 minutes, Section"}
+{"t":1320,"text":" B 30"}
+{"t":1356,"text":" minutes, Section C"}
+{"t":1393,"text":" 40 minutes."}
+{"t":1429,"text":"\n  ],\n)\n\n="}
+{"t":1465,"text":" Section A: Multiple cho"}
+{"t":1499,"text":"ice (2"}
+{"t":1536,"text":" points each)\n\nCircle"}
+{"t":1570,"text":" the one"}
+{"t":1607,"text":" best"}
+{"t":1642,"text":" answer."}
+{"t":1679,"text":"\n\n#question(points: 2"}
+{"t":1714,"text":")[\n  Solve $"}
+{"t":1749,"text":"|2 "}
+{"t":1785,"text":"x - 3| = 7"}
+{"t":1820,"text":"$.\n  #mcq"}
+{"t":1856,"text":"([$x = 5$"}
+{"t":1892,"text":" or $x = -2$],"}
+{"t":1928,"text":" [$x = 5$"}
+{"t":1965,"text":" or $x = 2$],"}
+{"t":2002,"text":" [$x = -5$"}
+{"t":2036,"text":" or $x = 2$],"}
+{"t":2071,"text":" [$x = 2$"}
+{"t":2106,"text":" only], answer: 1)"}
+{"t":2143,"text":"\n]\n\n#question(points:"}
+{"t":2179,"text":" 2)[\n  What"}
+{"t":2214,"text":" are the solutions of $x"}
+{"t":2250,"text":"^2 + 4 x"}
+{"t":2285,"text":" + 13 = 0$"}
+{"t":2322,"text":"?\n  #mcq(["}
+{"t":2358,"text":"$-2 plus.min"}
+{"t":2394,"text":"us 3 i$], ["}
+{"t":2431,"text":"$2 plus.minus"}
+{"t":2469,"text":" 3 i$], [$"}
+{"t":2500,"text":"-2 plus.minus"}
+{"t":2536,"text":" 6 i$], [$"}
+{"t":2572,"text":"-4 plus.minus"}
+{"t":2608,"text":" 3 i$], answer"}
+{"t":2643,"text":": 1)\n]\n\n#"}
+{"t":2679,"text":"question(points: 2)["}
+{"t":2716,"text":"\n  What is the domain of"}
+{"t":2751,"text":" $f(x) = sq"}
+{"t":2788,"text":"rt(x - 3)"}
+{"t":2823,"text":"/(x - 5)$"}
+{"t":2858,"text":"?\n  #mcq(["}
+{"t":2893,"text":"$x >= 3$],"}
+{"t":2930,"text":" [$x >= 3$"}
+{"t":2965,"text":" and $x != 5$"}
+{"t":3000,"text":"], [$x > 3$"}
+{"t":3036,"text":" and $x != 5$"}
+{"t":3072,"text":"], [$x != 5$"}
+{"t":3108,"text":"], answer: 2)"}
+{"t":3144,"text":"\n]\n\n#question(points: "}
+{"t":3180,"text":"2)[\n  Simpl"}
+{"t":3215,"text":"ify $(x^2 -"}
+{"t":3251,"text":" 9)/(x^2"}
+{"t":3287,"text":" - x - 6)$"}
+{"t":3358,"text":" for $x != "}
+{"t":3393,"text":"3$ and $x != -"}
+{"t":3430,"text":"2$.\n  #mc"}
+{"t":3465,"text":"q([$(x -"}
+{"t":3501,"text":" 3)/(x + "}
+{"t":3542,"text":"2)$], [$(x"}
+{"t":3572,"text":" + 3)/(x -"}
+{"t":3611,"text":" 2)$], [$("}
+{"t":3663,"text":"x + 3)/(x"}
+{"t":3681,"text":" + 2)$], [$"}
+{"t":3715,"text":"x + 3$], answer"}
+{"t":3752,"text":": 3)\n]\n\n#"}
+{"t":3789,"text":"question(points: 2)["}
+{"t":3823,"text":"\n  "}
+{"t":3859,"text":"Evaluate $log_3"}
+{"t":3894,"text":" 81 - log_3 "}
+{"t":3930,"text":"3$.\n  #mc"}
+{"t":3965,"text":"q([$1$],"}
+{"t":4001,"text":" [$2$], [$3"}
+{"t":4037,"text":"$], [$4$], answ"}
+{"t":4073,"text":"er: 3)\n]"}
+{"t":4110,"text":"\n\n#question(points: 2)"}
+{"t":4144,"text":"[\n  What is the "}
+{"t":4180,"text":"5th term of the geometric"}
+{"t":4216,"text":" sequence $3, 6"}
+{"t":4251,"text":", 12, d"}
+{"t":4287,"text":"ots$?\n  #mc"}
+{"t":4323,"text":"q([$24$], [$"}
+{"t":4363,"text":"48$], [$96$],"}
+{"t":4394,"text":" [$30$], answer:"}
+{"t":4432,"text":" 2)\n]\n\n#question"}
+{"t":4466,"text":"(points: 2)["}
+{"t":4502,"text":"\n  What is the vertex of"}
+{"t":4540,"text":" the parabola $y = x"}
+{"t":4575,"text":"^2 - 6 x"}
+{"t":4610,"text":" + 5$?\n  #"}
+{"t":4646,"text":"mcq([$(3,"}
+{"t":4681,"text":" 4"}
+{"t":4716,"text":")$], [$(-3"}
+{"t":4757,"text":", -4)$], [$"}
+{"t":4788,"text":"(3, -4)$],"}
+{"t":4824,"text":" [$(6, 5)"}
+{"t":4861,"text":"$], answer: 3)"}
+{"t":4895,"text":"\n]\n\n#question(points:"}
+{"t":4930,"text":" 2)[\n  "}
+{"t":4971,"text":"Describe the end behavior of"}
+{"t":5004,"text":" $f(x) = -2"}
+{"t":5038,"text":" x^3 + x$"}
+{"t":5073,"text":".\n  #mcq(["}
+{"t":5109,"text":"Rises left, rises right"}
+{"t":5145,"text":"], [Rises left, fal"}
+{"t":5181,"text":"ls right], [Falls left"}
+{"t":5217,"text":", rises right], [Fal"}
+{"t":5253,"text":"ls left, falls right], answ"}
+{"t":5289,"text":"er: 2)\n]"}
+{"t":5324,"text":"\n\n#question(points: 2)"}
+{"t":5360,"text":"[\n  Solve $2"}
+{"t":5395,"text":"^(x + 1) ="}
+{"t":5432,"text":" 32$.\n  #m"}
+{"t":5467,"text":"cq([$x = 3"}
+{"t":5502,"text":"$], [$x = 4"}
+{"t":5539,"text":"$], [$x = 5"}
+{"t":5574,"text":"$], [$x = 15"}
+{"t":5610,"text":"$], answer: 2)"}
+{"t":5645,"text":"\n]\n\n#question(points:"}
+{"t":5681,"text":" 2)[\n  What is"}
+{"t":5717,"text":" the inverse of $f("}
+{"t":5753,"text":"x) = 2 x +"}
+{"t":5791,"text":" 6$?\n  #m"}
+{"t":5825,"text":"cq([$f"}
+{"t":5860,"text":"^("}
+{"t":5895,"text":"-1)(x) = ("}
+{"t":5931,"text":"x - 6)/2$"}
+{"t":5967,"text":"], [$f^(-1"}
+{"t":6003,"text":")(x) = (x +"}
+{"t":6039,"text":" 6)/2$], ["}
+{"t":6075,"text":"$f^(-1)("}
+{"t":6111,"text":"x) = 2 x -"}
+{"t":6146,"text":" 6$], [$f^"}
+{"t":6182,"text":"(-1)(x) ="}
+{"t":6217,"text":" x/2 + 6$"}
+{"t":6254,"text":"], answer: 1)"}
+{"t":6289,"text":"\n]\n\n= Section B:"}
+{"t":6326,"text":" Short answer (5 points each"}
+{"t":6360,"text":")\n\n#question(points: "}
+{"t":6400,"text":"5)[\n  Solve"}
+{"t":6433,"text":" $x^2 - 5"}
+{"t":6467,"text":" x - 14 = "}
+{"t":6507,"text":"0$ by factoring."}
+{"t":6539,"text":"\n  #answer-space("}
+{"t":6575,"text":"height: 5em, answer"}
+{"t":6611,"text":": [$(x - 7"}
+{"t":6647,"text":")(x + 2) ="}
+{"t":6685,"text":" 0$, so $x ="}
+{"t":6719,"text":" 7$ or $x ="}
+{"t":6754,"text":" -2$.])\n]"}
+{"t":6790,"text":"\n\n#question(points: 5)"}
+{"t":6826,"text":"[\n  Solve the"}
+{"t":6861,"text":" inequality $3 x -"}
+{"t":6897,"text":" 2 < 7 x"}
+{"t":6932,"text":" + 10$"}
+{"t":6972,"text":" and write the"}
+{"t":7005,"text":" solution set"}
+{"t":7040,"text":".\n  #answer-space"}
+{"t":7077,"text":"(height: 5em, answ"}
+{"t":7111,"text":"er: [$-12 <"}
+{"t":7148,"text":" 4 x$, so $"}
+{"t":7183,"text":"x > -3$."}
+{"t":7218,"text":"])\n]\n\n#question(points"}
+{"t":7253,"text":": 5)[\n  "}
+{"t":7290,"text":"Divide $x^3 -"}
+{"t":7325,"text":" 2 x^2 -"}
+{"t":7363,"text":" 5 x + 6$"}
+{"t":7396,"text":" by $x - 3$"}
+{"t":7438,"text":"."}
+{"t":7468,"text":" State the quotient and the rem"}
+{"t":7504,"text":"ainder.\n  #answer"}
+{"t":7539,"text":"-space(height: 6"}
+{"t":7578,"text":"em, answer: [Syn"}
+{"t":7611,"text":"thetic division with "}
+{"t":7647,"text":"3 gives $1, "}
+{"t":7683,"text":"1, -2, 0$"}
+{"t":7719,"text":". Quotient $"}
+{"t":7754,"text":"x^2 + x - "}
+{"t":7791,"text":"2$, remainder $0"}
+{"t":7827,"text":"$.])\n]\n\n#question"}
+{"t":7861,"text":"(points: 5)["}
+{"t":7897,"text":"\n  Solve $sqr"}
+{"t":7934,"text":"t(x + 6) ="}
+{"t":7968,"text":" x$"}
+{"t":8004,"text":" and check for"}
+{"t":8040,"text":" extraneous solutions."}
+{"t":8076,"text":"\n  #answer-space("}
+{"t":8116,"text":"height: 6em, answer"}
+{"t":8147,"text":": [Squaring: $"}
+{"t":8189,"text":"x + 6 = x^"}
+{"t":8219,"text":"2$, so $x^2"}
+{"t":8258,"text":" - x - 6 ="}
+{"t":8290,"text":" 0$"}
+{"t":8327,"text":" and $x = 3$"}
+{"t":8364,"text":" or $x = -2$."}
+{"t":8400,"text":" Check: $x = -2"}
+{"t":8433,"text":"$ gives $sqr"}
+{"t":8468,"text":"t(4"}
+{"t":8504,"text":") = 2 !="}
+{"t":8540,"text":" -2$, so it is ext"}
+{"t":8579,"text":"raneous. The sol"}
+{"t":8611,"text":"ution is $x = 3$"}
+{"t":8647,"text":".])\n]\n\n#question("}
+{"t":8683,"text":"points: 5)[\n  "}
+{"t":8719,"text":"Solve $log_2 "}
+{"t":8754,"text":"(x + 1) + log"}
+{"t":8792,"text":"_2 (x - 1"}
+{"t":8827,"text":") = 3$.\n  "}
+{"t":8862,"text":"#answer-space(height:"}
+{"t":8898,"text":" 6em, answer: ["}
+{"t":8936,"text":"$log_2 (x^"}
+{"t":8970,"text":"2 - 1) = "}
+{"t":9005,"text":"3$, so $x^2"}
+{"t":9042,"text":" - 1 = 8"}
+{"t":9077,"text":"$"}
+{"t":9111,"text":" and $x = "}
+{"t":9148,"text":"3$ or $x = -"}
+{"t":9183,"text":"3$."}
+{"t":9219,"text":" Since"}
+{"t":9255,"text":" $x -"}
+{"t":9290,"text":" 1$ must"}
+{"t":9326,"text":" be positive, $x = -"}
+{"t":9361,"text":"3$ is rejected."}
+{"t":9398,"text":" The solution is $x = "}
+{"t":9433,"text":"3$.])\n]\n\n#"}
+{"t":9469,"text":"question(points: 5)["}
+{"t":9505,"text":"\n  Let $f(x"}
+{"t":9540,"text":") = x^2 + "}
+{"t":9576,"text":"1$ and $g(x"}
+{"t":9611,"text":") = 3 x - "}
+{"t":9647,"text":"4$. Find $(f"}
+{"t":9683,"text":" compose g)(2)$"}
+{"t":9755,"text":" and $(g"}
+{"t":9791,"text":" compose f)(x"}
+{"t":9826,"text":")$.\n  #answer"}
+{"t":9862,"text":"-space(height: 6em"}
+{"t":9897,"text":", answer: [$g("}
+{"t":9933,"text":"2) = 2$, so"}
+{"t":9970,"text":" $(f compose g)("}
+{"t":10005,"text":"2) = f(2) ="}
+{"t":10040,"text":" 5$."}
+{"t":10076,"text":" Also $(g compose f)"}
+{"t":10112,"text":"(x) = 3(x"}
+{"t":10148,"text":"^2 + 1) -"}
+{"t":10183,"text":" 4 = 3 x"}
+{"t":10220,"text":"^2 - 1$."}
+{"t":10254,"text":"])\n]\n\n= Section C"}
+{"t":10290,"text":": Extended response"}
+{"t":10326,"text":"\n\n#question(points: 15)"}
+{"t":10363,"text":"[\n  A ball is th"}
+{"t":10401,"text":"rown up"}
+{"t":10433,"text":"ward from"}
+{"t":10469,"text":" a platform."}
+{"t":10505,"text":" Its height in"}
+{"t":10540,"text":" feet after"}
+{"t":10576,"text":" $t$ seconds is"}
+{"t":10650,"text":"\n  $"}
+{"t":10683,"text":" h(t) = -16 "}
+{"t":10719,"text":"t^2 + 48 "}
+{"t":10756,"text":"t + 64. $\n  "}
+{"t":10793,"text":"+ What"}
+{"t":10827,"text":" is the height of the platform?"}
+{"t":10869,"text":" #"}
+{"t":10900,"text":"h"}
+{"t":10933,"text":"("}
+{"t":10970,"text":"1f"}
+{"t":11005,"text":"r) ("}
+{"t":11040,"text":"2 points)\n    "}
+{"t":11076,"text":"#answer-space(height:"}
+{"t":11112,"text":" 3em, answer: ["}
+{"t":11147,"text":"$h(0) = 64"}
+{"t":11188,"text":"$ fe"}
+{"t":11219,"text":"et.])\n  + Find"}
+{"t":11254,"text":" the time at"}
+{"t":11290,"text":" which the ball reaches its"}
+{"t":11328,"text":" maximum height, and find"}
+{"t":11362,"text":" that height"}
+{"t":11397,"text":". #h(1fr)"}
+{"t":11433,"text":" (5 points)\n    #"}
+{"t":11469,"text":"answer-space(height: "}
+{"t":11505,"text":"6em, answer: [$"}
+{"t":11540,"text":"t = -48/"}
+{"t":11576,"text":"(2("}
+{"t":11617,"text":"-16)) = 1."}
+{"t":11648,"text":"5$ seconds. $"}
+{"t":11685,"text":"h(1.5) = -"}
+{"t":11719,"text":"36 + 72 + "}
+{"t":11755,"text":"64 = 100$ fe"}
+{"t":11791,"text":"et.])\n  + How long"}
+{"t":11826,"text":" does it take for the ball to"}
+{"t":11862,"text":" hit the ground? #h"}
+{"t":11900,"text":"(1fr) (5 "}
+{"t":11933,"text":"points)\n    #answer-"}
+{"t":11988,"text":"space(height: 6em,"}
+{"t":12014,"text":" answer: [$-16 "}
+{"t":12053,"text":"t^2 + 48 "}
+{"t":12083,"text":"t + 64 = 0"}
+{"t":12117,"text":"$"}
+{"t":12148,"text":" gives $t^2 -"}
+{"t":12183,"text":" 3 t - 4 "}
+{"t":12219,"text":"= 0$, so $("}
+{"t":12255,"text":"t - 4)(t +"}
+{"t":12291,"text":" 1) = 0$."}
+{"t":12362,"text":" Only $t = 4$"}
+{"t":12398,"text":" seconds is val"}
+{"t":12434,"text":"id.])\n  + At"}
+{"t":12469,"text":" what times is the ball "}
+{"t":12507,"text":"84 feet above"}
+{"t":12541,"text":" the ground? #h(1"}
+{"t":12576,"text":"fr) (3 points)"}
+{"t":12627,"text":"\n    #answer-space("}
+{"t":12648,"text":"height: 6em, answer"}
+{"t":12684,"text":": [$-16 t^"}
+{"t":12721,"text":"2 + 48 t +"}
+{"t":12755,"text":" 64 = 84$"}
+{"t":12790,"text":" gives $4 t^2"}
+{"t":12826,"text":" - 12 t + "}
+{"t":12862,"text":"5 = 0$, so"}
+{"t":12900,"text":" $("}
+{"t":12934,"text":"2 t - 1"}
+{"t":12969,"text":")(2 t - 5"}
+{"t":13007,"text":") = 0$. The"}
+{"t":13040,"text":" ball is at "}
+{"t":13077,"text":"84 feet when"}
+{"t":13112,"text":" $t = 0.5$"}
+{"t":13148,"text":" s"}
+{"t":13184,"text":" and $t = 2.5"}
+{"t":13221,"text":"$ s.])\n]"}
+{"t":13256,"text":"\n\n#question(points: 15)"}
+{"t":13291,"text":"[\n  An"}
+{"t":13326,"text":" account"}
+{"t":13363,"text":" is op"}
+{"t":13398,"text":"ened with \\$2000 and"}
+{"t":13433,"text":" earns 5% inter"}
+{"t":13469,"text":"est compounded annually,"}
+{"t":13505,"text":" so the balance after"}
+{"t":13540,"text":" $t$ years is $A"}
+{"t":13577,"text":" = 2000("}
+{"t":13613,"text":"1.05)^t$."}
+{"t":13667,"text":"\n  +"}
+{"t":13693,"text":" Find the balance after 10 "}
+{"t":13720,"text":"years, to"}
+{"t":13756,"text":" the nearest c"}
+{"t":13793,"text":"ent. #h(1f"}
+{"t":13826,"text":"r) (4 points)"}
+{"t":13862,"text":"\n    #answer-space(height"}
+{"t":13900,"text":": 4em, answer:"}
+{"t":13934,"text":" [$A = 2000("}
+{"t":13969,"text":"1.05)^10 appro"}
+{"t":14005,"text":"x 2"}
+{"t":14046,"text":"000(1.628895) appro"}
+{"t":14077,"text":"x \\$"}
+{"t":14112,"text":"3257.79$.])"}
+{"t":14153,"text":"\n  + Write"}
+{"t":14184,"text":" and"}
+{"t":14220,"text":" solve an equation to find how"}
+{"t":14257,"text":" long it takes for the balance"}
+{"t":14292,"text":" to double."}
+{"t":14327,"text":" Give your answer to the n"}
+{"t":14364,"text":"earest t"}
+{"t":14398,"text":"enth of a year. #h"}
+{"t":14434,"text":"(1fr) (8 "}
+{"t":14470,"text":"points)\n    #answer-"}
+{"t":14506,"text":"space(height: 8em,"}
+{"t":14541,"text":" answer: [$2"}
+{"t":14576,"text":"000(1.05)^t"}
+{"t":14612,"text":" = 4000$, so $"}
+{"t":14648,"text":"(1.05)^t ="}
+{"t":14684,"text":" 2$. Then"}
+{"t":14719,"text":" $t "}
+{"t":14755,"text":"ln(1.05) = "}
+{"t":14791,"text":"ln 2$ and $t"}
+{"t":14827,"text":" = ln 2 / "}
+{"t":14862,"text":"ln "}
+{"t":14898,"text":"1.05 approx 14"}
+{"t":14942,"text":".2$ years.])"}
+{"t":14970,"text":"\n  + Explain why this"}
+{"t":15005,"text":" account"}
+{"t":15041,"text":"'s"}
+{"t":15077,"text":" growth is ex"}
+{"t":15113,"text":"ponential and not linear. #"}
+{"t":15148,"text":"h(1fr)"}
+{"t":15184,"text":" (3 points)\n    #"}
+{"t":15220,"text":"answer-lines(count:"}
+{"t":15260,"text":" 2, answer: ["}
+{"t":15291,"text":"Each year the balance is multi"}
+{"t":15327,"text":"plied by the same fact"}
+{"t":15367,"text":"or,"}
+{"t":15400,"text":" 1.05,"}
+{"t":15434,"text":" so the am"}
+{"t":15470,"text":"ount added each year grows."}
+{"t":15505,"text":" A linear account would add the"}
+{"t":15541,"text":" same am"}
+{"t":15578,"text":"ount every year.])\n]"}
+{"t":15613,"text":"\n\n#question(points: 10)"}
+{"t":15648,"text":"[\n  Consider the"}
+{"t":15685,"text":" rational function $f(x)"}
+{"t":15725,"text":" = (x - 2)/"}
+{"t":15755,"text":"(x^2 - x -"}
+{"t":15792,"text":" 6)$.\n  +"}
+{"t":15829,"text":" State the domain of $f$"}
+{"t":15863,"text":". #h(1f"}
+{"t":15898,"text":"r) (2 points)"}
+{"t":15934,"text":"\n    #answer-space(height"}
+{"t":15970,"text":": 3em, answer:"}
+{"t":16006,"text":" [$x^2 - x"}
+{"t":16045,"text":" - 6 = (x -"}
+{"t":16077,"text":" 3)(x + 2"}
+{"t":16113,"text":")$, so the"}
+{"t":16150,"text":" domain is all"}
+{"t":16184,"text":" real $"}
+{"t":16220,"text":"x$"}
+{"t":16256,"text":" with $x != 3$"}
+{"t":16293,"text":" and $x != -2$"}
+{"t":16327,"text":".])\n  +"}
+{"t":16363,"text":" Find the equations of the vert"}
+{"t":16398,"text":"ical asymptotes. #"}
+{"t":16436,"text":"h(1fr) (2"}
+{"t":16470,"text":" points)\n    #answer"}
+{"t":16507,"text":"-space(height: 3em"}
+{"t":16545,"text":", answer: [$x ="}
+{"t":16579,"text":" 3$ and $x ="}
+{"t":16614,"text":" -2$ (n"}
+{"t":16649,"text":"othing cancels).])"}
+{"t":16684,"text":"\n  + Find the equation of"}
+{"t":16720,"text":" the horizontal asympt"}
+{"t":16756,"text":"ote. #h(1fr"}
+{"t":16793,"text":") (2 points)\n    "}
+{"t":16827,"text":"#answer-space(height:"}
+{"t":16864,"text":" 3em, answer: ["}
+{"t":16899,"text":"The degree of"}
+{"t":16934,"text":" the den"}
+{"t":16975,"text":"ominator is gre"}
+{"t":17006,"text":"ater than that of the numerator"}
+{"t":17042,"text":", so $y = 0$"}
+{"t":17077,"text":".])\n  + Find the"}
+{"t":17113,"text":" $x$-intercept and"}
+{"t":17149,"text":" the $y$-intercept"}
+{"t":17184,"text":". #h(1fr)"}
+{"t":17220,"text":" (4 points)\n    #"}
+{"t":17256,"text":"answer-space(height: "}
+{"t":17291,"text":"5em, answer: [$"}
+{"t":17327,"text":"x$-intercept: $"}
+{"t":17363,"text":"x"}
+{"t":17398,"text":" - 2 = 0$"}
+{"t":17434,"text":", so $(2, 0"}
+{"t":17470,"text":")$. $y$-int"}
+{"t":17506,"text":"ercept: $f(0)"}
+{"t":17541,"text":" = (-2)/(-"}
+{"t":17577,"text":"6) = 1/3$"}
+{"t":17613,"text":", so $(0, 1"}
+{"t":17648,"text":"/3)$.])\n]"}
+{"t":17685,"text":"\n\n#question(points: 10"}
+{"t":17720,"text":")[\n  Solve the"}
+{"t":17756,"text":" system of equations."}
+{"t":17791,"text":" Show your working.\n  $"}
+{"t":17827,"text":" x + y + z &"}
+{"t":17863,"text":"= 6 \\"}
+{"t":17899,"text":" 2 x - y + z"}
+{"t":17935,"text":" &= 3 \\ x"}
+{"t":17970,"text":" + 2 y - z &"}
+{"t":18006,"text":"= 2 $\n  #"}
+{"t":18041,"text":"answer-space(height: "}
+{"t":18078,"text":"12em, answer: ["}
+{"t":18113,"text":"Adding equations 1 and"}
+{"t":18149,"text":" 3: $2 x +"}
+{"t":18184,"text":" 3 y = 8$"}
+{"t":18220,"text":". Adding equations 2"}
+{"t":18256,"text":" and 3: $3 "}
+{"t":18291,"text":"x + y = 5$,"}
+{"t":18328,"text":" so $y = 5 -"}
+{"t":18363,"text":" 3 x$. Then"}
+{"t":18398,"text":" $2 x + 15 "}
+{"t":18435,"text":"- 9 x = 8"}
+{"t":18471,"text":"$, so $x"}
+{"t":18507,"text":" = 1$ and $y"}
+{"t":18542,"text":" = 2$. From"}
+{"t":18577,"text":" equation 1, $z ="}
+{"t":18613,"text":" 3$. The solution is"}
+{"t":18649,"text":" $(1, 2, "}
+{"t":18685,"text":"3)$. Check in"}
+{"t":18721,"text":" equation 2: $2"}
+{"t":18756,"text":" - 2 + 3"}
+{"t":18792,"text":" = 3$.])"}
+{"t":18829,"text":"\n]\n\n#r"}
+{"t":18863,"text":"ubric(\n  (["}
+{"t":18899,"text":"Method"}
+{"t":18935,"text":" ("}
+{"t":18971,"text":"Section C)], [Compl"}
+{"t":19006,"text":"ete, correct method"}
+{"t":19042,"text":"], [Min"}
+{"t":19079,"text":"or g"}
+{"t":19114,"text":"a"}
+{"t":19149,"text":"ps in method], [Part"}
+{"t":19184,"text":"ial method], ["}
+{"t":19221,"text":"Little or no val"}
+{"t":19256,"text":"id method]"}
+{"t":19293,"text":"),\n  ([Acc"}
+{"t":19327,"text":"uracy (Section C)"}
+{"t":19363,"text":"], [No"}
+{"t":19400,"text":" errors], [One"}
+{"t":19435,"text":" small"}
+{"t":19470,"text":" error], [Several"}
+{"t":19506,"text":" errors], [M"}
+{"t":19541,"text":"ostly incorrect]),"}
+{"t":19578,"text":"\n  ([Communication ("}
+{"t":19613,"text":"Section C)], [Cl"}
+{"t":19649,"text":"ear, organized working"}
+{"t":19685,"text":" with"}
+{"t":19720,"text":" units], [M"}
+{"t":19756,"text":"ostly cl"}
+{"t":19792,"text":"ear], [H"}
+{"t":19827,"text":"ard to follow], [No"}
+{"t":19863,"text":" working sh"}
+{"t":19899,"text":"own]),\n  points: ("}
+{"t":19934,"text":"3, 2, 1,"}
+{"t":19971,"text":" 0),\n)\n\n#answ"}
+{"t":20006,"text":"er-key()"}

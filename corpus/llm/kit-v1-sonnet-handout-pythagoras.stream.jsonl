@@ -1,0 +1,281 @@
+{"t":0,"text":"#"}
+{"t":30,"text":"show: hand"}
+{"t":67,"text":"out.with("}
+{"t":111,"text":"\n  title: [The Pyth"}
+{"t":136,"text":"agorean Theorem],"}
+{"t":164,"text":"\n  subtitle: ["}
+{"t":231,"text":"Fin"}
+{"t":263,"text":"ding miss"}
+{"t":297,"text":"ing s"}
+{"t":330,"text":"ides of"}
+{"t":368,"text":" right triangles],\n  sub"}
+{"t":398,"text":"ject: [Mathematics"}
+{"t":433,"text":"],\n  grade: ["}
+{"t":466,"text":"Grade 8],\n)"}
+{"t":498,"text":"\n\n#import \"@preview/c"}
+{"t":533,"text":"etz:0.5.3"}
+{"t":567,"text":"\"\n\n#let right"}
+{"t":598,"text":"-triangle("}
+{"t":634,"text":"la, lb, lc)"}
+{"t":669,"text":" = cetz.canvas"}
+{"t":702,"text":"({\n  import"}
+{"t":733,"text":" cetz.draw: *"}
+{"t":769,"text":"\n  line((0, 0"}
+{"t":800,"text":"), (4, 0), ("}
+{"t":836,"text":"0, 3), close: true"}
+{"t":868,"text":", st"}
+{"t":901,"text":"roke: "}
+{"t":935,"text":"1p"}
+{"t":967,"text":"t +"}
+{"t":1003,"text":" black"}
+{"t":1033,"text":","}
+{"t":1068,"text":" fill: rgb(\""}
+{"t":1100,"text":"#e"}
+{"t":1133,"text":"ef3"}
+{"t":1166,"text":"f"}
+{"t":1202,"text":"b\"))\n  rect(("}
+{"t":1234,"text":"0, 0), (0."}
+{"t":1266,"text":"35"}
+{"t":1300,"text":", 0.35), stro"}
+{"t":1334,"text":"ke: 0.7"}
+{"t":1368,"text":"pt)\n  content((2"}
+{"t":1401,"text":", -0.4), la)"}
+{"t":1434,"text":"\n  content((-"}
+{"t":1469,"text":"0.4"}
+{"t":1507,"text":", 1"}
+{"t":1544,"text":".5), lb)\n  "}
+{"t":1568,"text":"content((2.4"}
+{"t":1605,"text":", 1.9"}
+{"t":1635,"text":"), lc)\n})\n\n=="}
+{"t":1671,"text":" The big"}
+{"t":1702,"text":" idea\n\nA"}
+{"t":1735,"text":" *right triangle* has"}
+{"t":1769,"text":" one angle of"}
+{"t":1801,"text":" exactly $"}
+{"t":1835,"text":"90°"}
+{"t":1868,"text":"$. The side"}
+{"t":1908,"text":" opposite the right angle is"}
+{"t":1936,"text":" the long"}
+{"t":1969,"text":"est side and"}
+{"t":2002,"text":" is called the *hypoten"}
+{"t":2036,"text":"use*. The other two s"}
+{"t":2071,"text":"ides are called the *legs*"}
+{"t":2102,"text":".\n\n#align"}
+{"t":2140,"text":"(center)[\n  #right"}
+{"t":2169,"text":"-triangle($"}
+{"t":2202,"text":"a$"}
+{"t":2236,"text":", $b$, $c$"}
+{"t":2270,"text":")\n  #v"}
+{"t":2303,"text":"(-"}
+{"t":2336,"text":"0"}
+{"t":2373,"text":".3em)\n  #"}
+{"t":2403,"text":"text(size"}
+{"t":2435,"text":": 0.9em)"}
+{"t":2471,"text":"[Legs $a$"}
+{"t":2506,"text":" and $b$"}
+{"t":2539,"text":" meet at the right angle ("}
+{"t":2571,"text":"the"}
+{"t":2605,"text":" small square). The"}
+{"t":2636,"text":" hypotenuse is"}
+{"t":2669,"text":" $c$.]\n]"}
+{"t":2702,"text":"\n\n#callout("}
+{"t":2739,"text":"kind: \"defin"}
+{"t":2769,"text":"ition\","}
+{"t":2803,"text":" title: [The Pythag"}
+{"t":2837,"text":"orean the"}
+{"t":2869,"text":"orem])[\n  In any"}
+{"t":2904,"text":" right triangle,"}
+{"t":2936,"text":" the square"}
+{"t":2973,"text":" of the h"}
+{"t":3003,"text":"ypotenuse equ"}
+{"t":3039,"text":"als the sum of the squares"}
+{"t":3070,"text":" of the legs:"}
+{"t":3107,"text":"\n  $"}
+{"t":3139,"text":" a^2 + b^2"}
+{"t":3174,"text":" = c^2 $"}
+{"t":3205,"text":"\n]\n\n== Why it works"}
+{"t":3300,"text":"\n\nDra"}
+{"t":3304,"text":"w a square on"}
+{"t":3340,"text":" each side of the triangle."}
+{"t":3371,"text":" The area of the square on the h"}
+{"t":3404,"text":"ypotenuse,"}
+{"t":3437,"text":" $c^2$, is ex"}
+{"t":3471,"text":"actly equal to the are"}
+{"t":3504,"text":"as of the two smaller squ"}
+{"t":3539,"text":"ares added together,"}
+{"t":3573,"text":" $a^2 + b^"}
+{"t":3604,"text":"2$. For the"}
+{"t":3637,"text":" tri"}
+{"t":3671,"text":"angle with"}
+{"t":3705,"text":" s"}
+{"t":3739,"text":"ides $3"}
+{"t":3773,"text":"$, $4$ and $"}
+{"t":3806,"text":"5$:\n$ 3"}
+{"t":3838,"text":"^2 + 4^2"}
+{"t":3876,"text":" = 9 + 16"}
+{"t":3906,"text":" = 25 = 5"}
+{"t":3938,"text":"^2 $\n\n== Wor"}
+{"t":3972,"text":"ked example 1: fin"}
+{"t":4005,"text":"ding the hypotenuse"}
+{"t":4040,"text":"\n\n#callout("}
+{"t":4524,"text":"kind: \"example\","}
+{"t":4534,"text":" title: [Example"}
+{"t":4534,"text":" "}
+{"t":4534,"text":"1])[\n  The"}
+{"t":4534,"text":" legs of"}
+{"t":4534,"text":" a right triangle are $6"}
+{"t":4534,"text":"$ cm and $8$"}
+{"t":4534,"text":" cm."}
+{"t":4534,"text":" Find the h"}
+{"t":4534,"text":"ypotenuse.\n\n  "}
+{"t":4534,"text":"#align(center)"}
+{"t":4534,"text":"[#"}
+{"t":4652,"text":"right-triangle($6$"}
+{"t":4652,"text":" cm,"}
+{"t":4652,"text":" $8$ cm, $"}
+{"t":4652,"text":"c ="}
+{"t":4652,"text":" ?$)]\n\n  *"}
+{"t":4652,"text":"Step 1."}
+{"t":4675,"text":"* Write the formula:"}
+{"t":4707,"text":" $a"}
+{"t":4740,"text":"^2 + b^2 "}
+{"t":4776,"text":"= c^2$.\n\n  "}
+{"t":4806,"text":"*Step 2.*"}
+{"t":4843,"text":" Substitute the leg"}
+{"t":4880,"text":"s: $6^2 +"}
+{"t":4915,"text":" 8^2 = c^"}
+{"t":4943,"text":"2$.\n\n  *Step"}
+{"t":4980,"text":" 3.* Square and"}
+{"t":5008,"text":" add: $36 + 64"}
+{"t":5040,"text":" = "}
+{"t":5076,"text":"100$, so $c^2"}
+{"t":5107,"text":" = 100$.\n\n  "}
+{"t":5144,"text":"*Step 4.*"}
+{"t":5175,"text":" Take the square root: $c ="}
+{"t":5209,"text":" sqrt("}
+{"t":5244,"text":"100) = 10$."}
+{"t":5276,"text":"\n\n  *Answer:*"}
+{"t":5312,"text":" The hypotenuse is"}
+{"t":5342,"text":" $10$ cm."}
+{"t":5377,"text":"\n]\n\n== Worked example "}
+{"t":5409,"text":"2: finding a le"}
+{"t":5447,"text":"g\n\n#callout("}
+{"t":5475,"text":"kind: \"example\", title:"}
+{"t":5521,"text":" [Example 2])["}
+{"t":5541,"text":"\n  The hypotenuse"}
+{"t":5576,"text":" is $13$ m"}
+{"t":5612,"text":" and one leg is $5$"}
+{"t":5642,"text":" m. Find the other le"}
+{"t":5675,"text":"g.\n\n  *"}
+{"t":5709,"text":"Step 1.*"}
+{"t":5742,"text":" Substitute into"}
+{"t":5776,"text":" $a^2 + b^"}
+{"t":5809,"text":"2 = c^2$:"}
+{"t":5846,"text":" $5^2 + b^"}
+{"t":5876,"text":"2 = 13^2$"}
+{"t":5909,"text":".\n\n  *Step 2"}
+{"t":5942,"text":".* Square"}
+{"t":5975,"text":" the"}
+{"t":6015,"text":" known"}
+{"t":6043,"text":" s"}
+{"t":6076,"text":"ides: $25 + b^"}
+{"t":6109,"text":"2 = 169$."}
+{"t":6145,"text":"\n\n  *Step 3.*"}
+{"t":6186,"text":" Subtract $"}
+{"t":6211,"text":"25$ from both sides:"}
+{"t":6243,"text":" $b^2 = 169"}
+{"t":6277,"text":" - 25 = 144"}
+{"t":6311,"text":"$.\n\n  *Step "}
+{"t":6343,"text":"4.* Take the square root"}
+{"t":6377,"text":": $b = sqrt"}
+{"t":6410,"text":"(144) = 12$."}
+{"t":6445,"text":"\n\n  *Answer:*"}
+{"t":6482,"text":" The other leg is $12$"}
+{"t":6511,"text":" m.\n]\n\n=="}
+{"t":6544,"text":" Common Pythagorean tri"}
+{"t":6577,"text":"ples"}
+{"t":6610,"text":"\n\nS"}
+{"t":6644,"text":"ets of whole numbers that"}
+{"t":6677,"text":" satisfy $a^2"}
+{"t":6712,"text":" + b^2 = c"}
+{"t":6744,"text":"^2$ are called *"}
+{"t":6778,"text":"Pythagorean triples"}
+{"t":6810,"text":"*.\n\n#align"}
+{"t":6843,"text":"(center)["}
+{"t":6883,"text":"\n  #table(\n    colum"}
+{"t":6911,"text":"ns: 4,\n    align"}
+{"t":6961,"text":": center"}
+{"t":6980,"text":",\n    ["}
+{"t":7015,"text":"*"}
+{"t":7046,"text":"$a$*], [*"}
+{"t":7077,"text":"$b$*], [*$"}
+{"t":7110,"text":"c$*], [*Check"}
+{"t":7146,"text":"*],\n    [3], ["}
+{"t":7178,"text":"4], [5], [$9"}
+{"t":7213,"text":" + 16 = 25"}
+{"t":7248,"text":"$],\n    [5], ["}
+{"t":7277,"text":"12], [13], [$25"}
+{"t":7312,"text":" + 144"}
+{"t":7344,"text":" = 169$],\n    "}
+{"t":7383,"text":"[8], [15], [17"}
+{"t":7415,"text":"], [$64 + 225"}
+{"t":7452,"text":" = 289$],\n    "}
+{"t":7481,"text":"[7], [24"}
+{"t":7514,"text":"], [25], [$49 "}
+{"t":7544,"text":"+ 576 = 625$"}
+{"t":7578,"text":"],\n  )\n]"}
+{"t":7614,"text":"\n\nMultiples of a"}
+{"t":7645,"text":" triple also work: do"}
+{"t":7680,"text":"ubling $3,"}
+{"t":7714,"text":" 4, 5$ g"}
+{"t":7746,"text":"ives $6, 8"}
+{"t":7779,"text":", 10$.\n\n=="}
+{"t":7813,"text":" Watch out"}
+{"t":7851,"text":"\n\n#callout("}
+{"t":7878,"text":"kind: \"warning\","}
+{"t":7912,"text":" title: [Common mistak"}
+{"t":7948,"text":"es])[\n  - The h"}
+{"t":7979,"text":"ypotenuse is"}
+{"t":8014,"text":" *always* op"}
+{"t":8046,"text":"posite the right angle, so"}
+{"t":8078,"text":" it is always"}
+{"t":8112,"text":" the longest side. Never put"}
+{"t":8149,"text":" a"}
+{"t":8180,"text":" leg in"}
+{"t":8214,"text":" place of $c$.\n  "}
+{"t":8245,"text":"- When finding a leg,"}
+{"t":8279,"text":" *"}
+{"t":8312,"text":"subtract*"}
+{"t":8345,"text":": $b"}
+{"t":8379,"text":"^2 = c^2 "}
+{"t":8412,"text":"- a^2$."}
+{"t":8446,"text":"\n  - Do"}
+{"t":8480,"text":" not forget the"}
+{"t":8514,"text":" last"}
+{"t":8546,"text":" step."}
+{"t":8580,"text":" $"}
+{"t":8613,"text":"c^2 "}
+{"t":8651,"text":"= 100"}
+{"t":8681,"text":"$ means"}
+{"t":8714,"text":" $c = 10$, not"}
+{"t":8747,"text":" $100"}
+{"t":8781,"text":"$.\n  - The theor"}
+{"t":8812,"text":"em only"}
+{"t":8849,"text":" works for *"}
+{"t":8880,"text":"right*"}
+{"t":8911,"text":" triangles.\n]\n\n#"}
+{"t":8945,"text":"callout("}
+{"t":8978,"text":"kind: \"remember\")["}
+{"t":9012,"text":"\n  Ident"}
+{"t":9044,"text":"ify the h"}
+{"t":9078,"text":"ypotenuse first"}
+{"t":9114,"text":"."}
+{"t":9145,"text":" Then"}
+{"t":9185,"text":" write $a^2 + b"}
+{"t":9212,"text":"^2 = c^2$"}
+{"t":9247,"text":", substitute, sol"}
+{"t":9281,"text":"ve for"}
+{"t":9313,"text":" the"}
+{"t":9350,"text":" un"}
+{"t":9378,"text":"known square, and finish by"}
+{"t":9413,"text":" taking the square root.\n]"}

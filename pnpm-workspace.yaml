@@ -4,6 +4,7 @@ packages:
   - "corpus"
   - "tools/compile-oracle"
   - "tools/browser-suites"
+  - "tools/llm-corpus"
   - "examples/*"
 
 allowBuilds:

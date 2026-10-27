@@ -1,0 +1,360 @@
+{"t":0,"text":"#"}
+{"t":36,"text":"show: exam."}
+{"t":36,"text":"with(\n  title: ["}
+{"t":47,"text":"Algebra II Final Exam"}
+{"t":66,"text":"ination],\n  subject: ["}
+{"t":89,"text":"Mathematics],\n  "}
+{"t":107,"text":"grade: [Grade "}
+{"t":128,"text":"11],\n  duration: ["}
+{"t":149,"text":"90 minutes],\n  "}
+{"t":171,"text":"instructions: ["}
+{"t":191,"text":"Answer *all* questions in"}
+{"t":210,"text":" the"}
+{"t":232,"text":" three sections. Show your working"}
+{"t":252,"text":" for every"}
+{"t":272,"text":" question in S"}
+{"t":303,"text":"ections B and C. Calcul"}
+{"t":312,"text":"ators are perm"}
+{"t":333,"text":"itted.],\n)\n\n="}
+{"t":355,"text":" Section A: Multiple"}
+{"t":374,"text":" choice (10"}
+{"t":395,"text":" points)\n\n#question(points"}
+{"t":419,"text":": 2)[\n  "}
+{"t":435,"text":"Which exp"}
+{"t":456,"text":"ression is equ"}
+{"t":475,"text":"ivalent to $("}
+{"t":502,"text":"2"}
+{"t":518,"text":" x^3 "}
+{"t":536,"text":"y)"}
+{"t":562,"text":"("}
+{"t":578,"text":"3 x y"}
+{"t":598,"text":"^2)$?\n  #"}
+{"t":619,"text":"mcq($"}
+{"t":638,"text":"6 x^4 y^"}
+{"t":660,"text":"3$, $5"}
+{"t":679,"text":" x^4"}
+{"t":700,"text":" y^"}
+{"t":720,"text":"3$, $6 x^"}
+{"t":746,"text":"3 y^2$, $"}
+{"t":761,"text":"6 x^3 y^"}
+{"t":785,"text":"3$, answer: 1"}
+{"t":805,"text":")\n]\n\n#question(points"}
+{"t":824,"text":": 2)[\n  The"}
+{"t":845,"text":" solut"}
+{"t":866,"text":"ions of"}
+{"t":885,"text":" $x^2 - 5"}
+{"t":906,"text":"x"}
+{"t":925,"text":" + 6 = 0$"}
+{"t":949,"text":" are:"}
+{"t":967,"text":"\n  #mcq($"}
+{"t":988,"text":"x ="}
+{"t":1009,"text":" 2"}
+{"t":1028,"text":"$"}
+{"t":1049,"text":" and $x = 3$"}
+{"t":1069,"text":", $x = -2$"}
+{"t":1089,"text":" and $x = -3$,"}
+{"t":1109,"text":" $x = 1"}
+{"t":1132,"text":"$ and $x = "}
+{"t":1151,"text":"6$, $x = -"}
+{"t":1171,"text":"1$ and $x = -"}
+{"t":1193,"text":"6$, answer: 1"}
+{"t":1212,"text":")\n]\n\n#question(points"}
+{"t":1232,"text":": 2)[\n  What"}
+{"t":1253,"text":" is the slope of the line through"}
+{"t":1275,"text":" $(1"}
+{"t":1294,"text":", 4"}
+{"t":1315,"text":")$ and $(5"}
+{"t":1335,"text":", 12"}
+{"t":1355,"text":")$?\n  #mc"}
+{"t":1375,"text":"q([$1"}
+{"t":1396,"text":"/2"}
+{"t":1422,"text":"$], [$2$], ["}
+{"t":1439,"text":"$4"}
+{"t":1457,"text":"$], [$8"}
+{"t":1487,"text":"$], answer: 2)"}
+{"t":1500,"text":"\n]\n\n#question(points:"}
+{"t":1520,"text":" 2)[\n  If $"}
+{"t":1541,"text":"f(x) = 2"}
+{"t":1563,"text":" x +"}
+{"t":1583,"text":" 3"}
+{"t":1601,"text":"$, what is $f(-"}
+{"t":1632,"text":"4)$?\n  #m"}
+{"t":1648,"text":"cq([$"}
+{"t":1663,"text":"-11"}
+{"t":1692,"text":"$], [$-5$],"}
+{"t":1702,"text":" [$5$], [$11"}
+{"t":1725,"text":"$], answer: 1"}
+{"t":1746,"text":")\n]\n\n#question(points"}
+{"t":1769,"text":": 2)[\n  "}
+{"t":1786,"text":"Which of the following is the"}
+{"t":1807,"text":" in"}
+{"t":1829,"text":"verse of $f"}
+{"t":1845,"text":"(x) = 3 x"}
+{"t":1866,"text":" -"}
+{"t":1892,"text":" 6"}
+{"t":1908,"text":"$?\n  #mcq"}
+{"t":1931,"text":"($"}
+{"t":1950,"text":"f^"}
+{"t":1967,"text":"("}
+{"t":1988,"text":"-1)(x) = ("}
+{"t":2010,"text":"x + 6"}
+{"t":2031,"text":")/3$, $f^"}
+{"t":2052,"text":"(-1)(x) ="}
+{"t":2071,"text":" (x - 6)/3"}
+{"t":2090,"text":"$, $f^(-1"}
+{"t":2115,"text":")(x) = 3 "}
+{"t":2132,"text":"x +"}
+{"t":2155,"text":" 6$, $f^("}
+{"t":2173,"text":"-1)(x) = x"}
+{"t":2192,"text":"/"}
+{"t":2215,"text":"3 - 6$, answ"}
+{"t":2242,"text":"er: 1"}
+{"t":2254,"text":")\n]\n\n= Section B"}
+{"t":2274,"text":": Short answer (16 "}
+{"t":2296,"text":"points)\n\n#question(points:"}
+{"t":2319,"text":" 4)[\n  Sol"}
+{"t":2337,"text":"ve each"}
+{"t":2359,"text":" equation."}
+{"t":2377,"text":" Show your working.\n  +"}
+{"t":2397,"text":" $"}
+{"t":2420,"text":"3("}
+{"t":2438,"text":"x - 2) + 4"}
+{"t":2458,"text":" = 2"}
+{"t":2479,"text":" x +"}
+{"t":2501,"text":" 7"}
+{"t":2520,"text":"$\n    #answer-space"}
+{"t":2547,"text":"(height: 3"}
+{"t":2563,"text":"em, answer: [$3"}
+{"t":2588,"text":"x - 6"}
+{"t":2604,"text":" + 4 = 2"}
+{"t":2621,"text":"x + 7$, so $"}
+{"t":2642,"text":"x = 9"}
+{"t":2662,"text":"$.])\n  + $("}
+{"t":2684,"text":"x +"}
+{"t":2703,"text":" 1)/2"}
+{"t":2724,"text":" -"}
+{"t":2746,"text":" (x - 3)"}
+{"t":2764,"text":"/3 = 2$"}
+{"t":2785,"text":"\n    #answer-space("}
+{"t":2808,"text":"height: 3em, answer"}
+{"t":2827,"text":": ["}
+{"t":2847,"text":"Multiply by 6: $"}
+{"t":2871,"text":"3(x + 1) -"}
+{"t":2889,"text":" 2(x - 3)"}
+{"t":2912,"text":" = 12"}
+{"t":2929,"text":"$, so $x"}
+{"t":2950,"text":" +"}
+{"t":2969,"text":" 9"}
+{"t":2991,"text":" = 12$"}
+{"t":3009,"text":" and $x = 3$."}
+{"t":3034,"text":"])\n]"}
+{"t":3050,"text":"\n\n#question(points: 4"}
+{"t":3071,"text":")[\n  Factor each"}
+{"t":3092,"text":" exp"}
+{"t":3114,"text":"ression completely."}
+{"t":3133,"text":"\n  + $x^2 "}
+{"t":3164,"text":"+"}
+{"t":3173,"text":" 7"}
+{"t":3194,"text":"x"}
+{"t":3213,"text":" + 12"}
+{"t":3233,"text":"$\n    #answer-space"}
+{"t":3256,"text":"(height: 2"}
+{"t":3275,"text":"."}
+{"t":3294,"text":"5em, answer: [$"}
+{"t":3318,"text":"(x + 3)(x"}
+{"t":3336,"text":" + 4)$])"}
+{"t":3358,"text":"\n  + $4"}
+{"t":3381,"text":" y"}
+{"t":3397,"text":"^2 - 9$"}
+{"t":3417,"text":"\n    #answer-space("}
+{"t":3439,"text":"height: 2.5em,"}
+{"t":3462,"text":" answer: [$(2 "}
+{"t":3484,"text":"y - 3)(2 "}
+{"t":3500,"text":"y + 3)$])"}
+{"t":3521,"text":"\n]\n\n#question(points: "}
+{"t":3541,"text":"4)[\n  Solve"}
+{"t":3561,"text":" $x^2 - 6"}
+{"t":3584,"text":"x + 2"}
+{"t":3604,"text":" = 0$ using the"}
+{"t":3622,"text":" quadratic formula."}
+{"t":3647,"text":" Give your"}
+{"t":3666,"text":" answers"}
+{"t":3685,"text":" in simplest rad"}
+{"t":3709,"text":"ical form.\n  #answer"}
+{"t":3725,"text":"-space(height: 6"}
+{"t":3747,"text":"em, answer: ["}
+{"t":3768,"text":"\n    $x = (6"}
+{"t":3786,"text":" pl"}
+{"t":3812,"text":"us.minus s"}
+{"t":3838,"text":"qrt(36 - "}
+{"t":3848,"text":"8))"}
+{"t":3890,"text":"/2"}
+{"t":3895,"text":" = (6 pl"}
+{"t":3909,"text":"us.minus sqrt"}
+{"t":3929,"text":"(28))/2 = "}
+{"t":3950,"text":"3 plus.minus s"}
+{"t":3969,"text":"qrt(7)$"}
+{"t":3990,"text":"\n  ])\n]\n\n#question"}
+{"t":4010,"text":"(points: 4)["}
+{"t":4031,"text":"\n  Sim"}
+{"t":4051,"text":"plify $("}
+{"t":4071,"text":"2 x^("}
+{"t":4093,"text":"-2"}
+{"t":4116,"text":") y^3"}
+{"t":4135,"text":")^"}
+{"t":4154,"text":"3"}
+{"t":4173,"text":" / (4"}
+{"t":4194,"text":" x y"}
+{"t":4215,"text":"^("}
+{"t":4240,"text":"-1))$,"}
+{"t":4254,"text":" writ"}
+{"t":4277,"text":"ing your"}
+{"t":4296,"text":" answer with posit"}
+{"t":4316,"text":"ive exponents.\n  #"}
+{"t":4338,"text":"answer-space(height: "}
+{"t":4363,"text":"4"}
+{"t":4377,"text":"em, answer: [$("}
+{"t":4398,"text":"8"}
+{"t":4424,"text":" x^("}
+{"t":4444,"text":"-6) y^9"}
+{"t":4466,"text":")/(4 x y^"}
+{"t":4484,"text":"(-1)) = 2"}
+{"t":4506,"text":" x^(-7"}
+{"t":4526,"text":") y^10"}
+{"t":4540,"text":" = ("}
+{"t":4560,"text":"2 y^10)/x"}
+{"t":4583,"text":"^7$])"}
+{"t":4602,"text":"\n]\n\n="}
+{"t":4623,"text":" Section C: Ext"}
+{"t":4644,"text":"ended response (24"}
+{"t":4668,"text":" points)\n\n#question(points"}
+{"t":4683,"text":": 12)[\n  A"}
+{"t":4704,"text":" r"}
+{"t":4724,"text":"ectangular gar"}
+{"t":4748,"text":"den has a length"}
+{"t":4765,"text":" that"}
+{"t":4802,"text":" is "}
+{"t":4815,"text":"4"}
+{"t":4836,"text":" met"}
+{"t":4849,"text":"res more than its width. Its"}
+{"t":4870,"text":" area is "}
+{"t":4889,"text":"96 square"}
+{"t":4907,"text":" metres.\n  + Write"}
+{"t":4928,"text":" an"}
+{"t":4948,"text":" equation for the area"}
+{"t":4969,"text":" in terms of the width $w"}
+{"t":4989,"text":"$.\n    #answer-"}
+{"t":5009,"text":"space(height: 3"}
+{"t":5030,"text":"em, answer: [$w"}
+{"t":5053,"text":"(w + 4) = "}
+{"t":5071,"text":"96$, so"}
+{"t":5091,"text":" $w^2 + 4"}
+{"t":5111,"text":"w"}
+{"t":5132,"text":" - 96 = 0$"}
+{"t":5153,"text":".])\n  + Solve"}
+{"t":5176,"text":" the equation and find the dim"}
+{"t":5193,"text":"ensions of the garden."}
+{"t":5216,"text":"\n    #answer-space"}
+{"t":5236,"text":"(height: 7"}
+{"t":5257,"text":"em, answer: [$("}
+{"t":5285,"text":"w + 12"}
+{"t":5296,"text":")(w - 8) ="}
+{"t":5321,"text":" 0$, so $w ="}
+{"t":5336,"text":" 8$ (the neg"}
+{"t":5361,"text":"ative root"}
+{"t":5377,"text":" is rejected). The"}
+{"t":5398,"text":" width is 8 m and the"}
+{"t":5418,"text":" length is 12 m.])"}
+{"t":5439,"text":"\n  + Find"}
+{"t":5459,"text":" the perimeter of the gar"}
+{"t":5481,"text":"den, in metres.\n    "}
+{"t":5500,"text":"#answer-space(height:"}
+{"t":5522,"text":" 3"}
+{"t":5542,"text":"em, answer: [$"}
+{"t":5565,"text":"P = 2(8)"}
+{"t":5585,"text":" + 2(12) = "}
+{"t":5605,"text":"40$ m.])\n]"}
+{"t":5626,"text":"\n\n#question(points: 12"}
+{"t":5650,"text":")[\n  The"}
+{"t":5668,"text":" function $f(x) = x"}
+{"t":5683,"text":"^2 - 4x -"}
+{"t":5705,"text":" 5"}
+{"t":5727,"text":"$ is graphed for"}
+{"t":5745,"text":" all"}
+{"t":5765,"text":" real $"}
+{"t":5785,"text":"x$.\n  + Find"}
+{"t":5808,"text":" the $"}
+{"t":5829,"text":"x$-intercepts and"}
+{"t":5848,"text":" the $"}
+{"t":5867,"text":"y$-intercept of"}
+{"t":5888,"text":" the"}
+{"t":5913,"text":" graph.\n    #answer"}
+{"t":5929,"text":"-space(height: 4"}
+{"t":5952,"text":"em, answer: [$x"}
+{"t":5969,"text":"$"}
+{"t":5989,"text":"-intercepts: $("}
+{"t":6011,"text":"5"}
+{"t":6033,"text":", 0)$ and $"}
+{"t":6051,"text":"(-1, 0)$"}
+{"t":6077,"text":". $y$-intercept"}
+{"t":6092,"text":": $(0, -5)"}
+{"t":6114,"text":"$.])\n  + Find"}
+{"t":6133,"text":" the vertex of the par"}
+{"t":6153,"text":"abola and state"}
+{"t":6173,"text":" whether it is a"}
+{"t":6196,"text":" minimum or a maximum"}
+{"t":6216,"text":".\n    #answer-space"}
+{"t":6236,"text":"(height: 5em, answ"}
+{"t":6257,"text":"er: [$"}
+{"t":6276,"text":"x = 2$, $"}
+{"t":6298,"text":"f(2) = -9"}
+{"t":6317,"text":"$."}
+{"t":6339,"text":" Vertex $"}
+{"t":6360,"text":"(2, -9)$;"}
+{"t":6377,"text":" it is a minimum since the"}
+{"t":6398,"text":" le"}
+{"t":6418,"text":"ading coefficient is positive"}
+{"t":6442,"text":".])\n  + Explain"}
+{"t":6461,"text":" how"}
+{"t":6480,"text":" the gra"}
+{"t":6501,"text":"ph of $g"}
+{"t":6520,"text":"(x) = f"}
+{"t":6541,"text":"(x -"}
+{"t":6561,"text":" 3)$ differ"}
+{"t":6581,"text":"s from the"}
+{"t":6604,"text":" graph of $f$"}
+{"t":6622,"text":".\n    #answer-l"}
+{"t":6661,"text":"ines(count: 3"}
+{"t":6663,"text":", answer: [The graph"}
+{"t":6683,"text":" of $g$"}
+{"t":6704,"text":" is the"}
+{"t":6728,"text":" graph of $f$ sh"}
+{"t":6746,"text":"ifted "}
+{"t":6767,"text":"3 units to the right.])"}
+{"t":6786,"text":"\n]\n\n#r"}
+{"t":6806,"text":"ubric(\n  (["}
+{"t":6827,"text":"Method"}
+{"t":6847,"text":"],"}
+{"t":6867,"text":" [Compl"}
+{"t":6890,"text":"ete, just"}
+{"t":6908,"text":"ified method.], [Corre"}
+{"t":6929,"text":"ct method,"}
+{"t":6949,"text":" minor g"}
+{"t":6970,"text":"a"}
+{"t":6990,"text":"ps.], [Part"}
+{"t":7011,"text":"ly"}
+{"t":7032,"text":" correct method.], [No"}
+{"t":7051,"text":" method sh"}
+{"t":7071,"text":"own.]),\n  (["}
+{"t":7092,"text":"Acc"}
+{"t":7112,"text":"uracy], [All"}
+{"t":7135,"text":" answers correct.], [One"}
+{"t":7154,"text":" ar"}
+{"t":7175,"text":"ithmetic error.], ["}
+{"t":7195,"text":"Several"}
+{"t":7216,"text":" errors.], ["}
+{"t":7234,"text":"Incorrect.]),"}
+{"t":7255,"text":"\n  points"}
+{"t":7275,"text":": (2, 1.5"}
+{"t":7298,"text":", 1, 0),"}
+{"t":7319,"text":"\n)\n\n#answer-key()"}

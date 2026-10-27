@@ -1,0 +1,94 @@
+{"t":0,"text":"#show: quiz."}
+{"t":332,"text":"with("}
+{"t":335,"text":"\n  title: [European"}
+{"t":335,"text":" Capitals],\n  sub"}
+{"t":336,"text":"ject: [Ge"}
+{"t":336,"text":"ography],\n  grade: ["}
+{"t":336,"text":"Grade 6],\n  "}
+{"t":336,"text":"instructions: ["}
+{"t":336,"text":"Choose the *"}
+{"t":336,"text":"one* correct answer for each"}
+{"t":336,"text":" question."}
+{"t":360,"text":"],\n)\n\n#question(points"}
+{"t":394,"text":": 1)[\n  What"}
+{"t":665,"text":" is the capital of France?"}
+{"t":665,"text":"\n  #mcq([L"}
+{"t":665,"text":"yon], [Mar"}
+{"t":665,"text":"seille], [Paris],"}
+{"t":665,"text":" [Nice], answer:"}
+{"t":665,"text":" 3)\n]\n\n#question"}
+{"t":665,"text":"(points: 1)["}
+{"t":665,"text":"\n  What is the capital of"}
+{"t":698,"text":" Germany?\n  #mc"}
+{"t":731,"text":"q([Ber"}
+{"t":766,"text":"lin], [Munich],"}
+{"t":797,"text":" [Hamburg], ["}
+{"t":998,"text":"Frankfurt], answ"}
+{"t":998,"text":"er: 1)\n]"}
+{"t":998,"text":"\n\n#question(points: 1)"}
+{"t":998,"text":"[\n  "}
+{"t":998,"text":"Which city is the capital of"}
+{"t":998,"text":" Italy?\n  #mc"}
+{"t":1031,"text":"q([Milan], ["}
+{"t":1064,"text":"R"}
+{"t":1097,"text":"ome], [Venice], ["}
+{"t":1131,"text":"Naples], answer: "}
+{"t":1164,"text":"2)\n]\n\n#question("}
+{"t":1198,"text":"points: 1)[\n  "}
+{"t":1353,"text":"What is the capital of Sp"}
+{"t":1353,"text":"ain?\n  #mcq"}
+{"t":1353,"text":"([Barcelona], ["}
+{"t":1353,"text":"Seville], [Valenc"}
+{"t":1367,"text":"ia], [Madrid],"}
+{"t":1399,"text":" answer: 4)\n]"}
+{"t":1432,"text":"\n\n#question(points: 1"}
+{"t":1465,"text":")[\n  "}
+{"t":1498,"text":"Which city"}
+{"t":1531,"text":" is the capital of Portug"}
+{"t":1565,"text":"al?\n  #mcq"}
+{"t":1598,"text":"([Porto], [L"}
+{"t":1695,"text":"isbon], [Co"}
+{"t":1695,"text":"imbra], [Faro"}
+{"t":1706,"text":"], answer: 2)"}
+{"t":1733,"text":"\n]\n\n#question(points: "}
+{"t":1766,"text":"1)[\n  What is the"}
+{"t":1799,"text":" capital of"}
+{"t":1833,"text":" Greece?\n  #mc"}
+{"t":1865,"text":"q([Athens], ["}
+{"t":1899,"text":"Thessaloniki], ["}
+{"t":1932,"text":"Sparta], [Pat"}
+{"t":1966,"text":"ras], answer: 1)"}
+{"t":1999,"text":"\n]\n\n#question(points:"}
+{"t":2032,"text":" 1)[\n  "}
+{"t":2067,"text":"Which city is the capital of"}
+{"t":2099,"text":" Poland?\n  #mc"}
+{"t":2133,"text":"q([Kraków], ["}
+{"t":2166,"text":"Gdańsk], ["}
+{"t":2201,"text":"Warsaw], ["}
+{"t":2233,"text":"Wrocław], answer:"}
+{"t":2266,"text":" 3)\n]\n\n#question"}
+{"t":2299,"text":"(points: 1)["}
+{"t":2332,"text":"\n  What is the capital of"}
+{"t":2367,"text":" Austria?\n  #mc"}
+{"t":2399,"text":"q([Vienna], ["}
+{"t":2433,"text":"Salzburg], ["}
+{"t":2466,"text":"Graz], [Innsb"}
+{"t":2499,"text":"ruck], answer: 1"}
+{"t":2533,"text":")\n]\n\n#question(points"}
+{"t":2566,"text":": 1)[\n  "}
+{"t":2599,"text":"Which city is the capital of"}
+{"t":2633,"text":" Sweden?\n  #m"}
+{"t":2666,"text":"cq([Gothenbur"}
+{"t":2700,"text":"g], [Mal"}
+{"t":2733,"text":"mö], [U"}
+{"t":2767,"text":"ppsala], [Stock"}
+{"t":2800,"text":"holm], answer: 4"}
+{"t":2833,"text":")\n]\n\n#question(points"}
+{"t":2866,"text":": 1)[\n  What"}
+{"t":2900,"text":" is the capital of Ire"}
+{"t":2933,"text":"land?\n  #mcq"}
+{"t":2967,"text":"([Cork], [D"}
+{"t":3000,"text":"ublin], [Galway],"}
+{"t":3035,"text":" [Limerick], answer"}
+{"t":3067,"text":": 2)\n]\n\n#"}
+{"t":3096,"text":"answer-key()"}

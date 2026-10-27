@@ -1,0 +1,514 @@
+{"t":0,"text":"="}
+{"t":31,"text":" L"}
+{"t":63,"text":"esson Plan: The"}
+{"t":96,"text":" Water Cycle\n\n#table"}
+{"t":130,"text":"(\n  columns: ("}
+{"t":163,"text":"au"}
+{"t":196,"text":"to, 1fr),"}
+{"t":230,"text":"\n  in"}
+{"t":263,"text":"set: 8"}
+{"t":297,"text":"pt,\n  ["}
+{"t":330,"text":"*"}
+{"t":363,"text":"Grade*], [4"}
+{"t":397,"text":"],\n  [*Subject"}
+{"t":430,"text":"*], [Science],\n  "}
+{"t":463,"text":"[*Duration*], ["}
+{"t":497,"text":"45 minutes],\n  "}
+{"t":532,"text":"[*Group"}
+{"t":564,"text":" size*], [Wh"}
+{"t":597,"text":"ole class, then"}
+{"t":630,"text":" pairs or"}
+{"t":665,"text":" groups of 4],"}
+{"t":700,"text":"\n  [*Big"}
+{"t":730,"text":" question"}
+{"t":765,"text":"*], ["}
+{"t":797,"text":"Where does water go,"}
+{"t":830,"text":" and how does it come back?],"}
+{"t":866,"text":"\n)\n\n== Lear"}
+{"t":900,"text":"ning Objectives\n\nBy"}
+{"t":931,"text":" the end of the"}
+{"t":966,"text":" lesson, students will be able"}
+{"t":999,"text":" to:"}
+{"t":1030,"text":"\n\n+ Name and"}
+{"t":1064,"text":" describe the four main stages of"}
+{"t":1097,"text":" the water cycle: eva"}
+{"t":1132,"text":"poration, cond"}
+{"t":1164,"text":"ensation, prec"}
+{"t":1199,"text":"ipitation, and collection."}
+{"t":1231,"text":"\n+ Expl"}
+{"t":1264,"text":"ain that the s"}
+{"t":1297,"text":"un's energy pow"}
+{"t":1333,"text":"ers the water cycle."}
+{"t":1366,"text":"\n+ Label"}
+{"t":1398,"text":" a water cycle diagram"}
+{"t":1431,"text":" and use it"}
+{"t":1464,"text":" to explain how"}
+{"t":1499,"text":" water mo"}
+{"t":1531,"text":"ves.\n\n== Key"}
+{"t":1564,"text":" Vocabulary\n\n#"}
+{"t":1601,"text":"table(\n  columns: ("}
+{"t":1633,"text":"auto, 1fr),"}
+{"t":1664,"text":"\n  inset: 6"}
+{"t":1698,"text":"pt,\n  [*"}
+{"t":1732,"text":"Word*], [*K"}
+{"t":1766,"text":"id-friendly me"}
+{"t":1798,"text":"aning*],\n  ["}
+{"t":1836,"text":"Evaporation], [He"}
+{"t":1865,"text":"at from the sun tur"}
+{"t":1902,"text":"ns liquid water into an"}
+{"t":1938,"text":" invisible gas called"}
+{"t":1965,"text":" water vapor.],\n  "}
+{"t":1998,"text":"[Condensation], ["}
+{"t":2032,"text":"Water vapor cools and tur"}
+{"t":2065,"text":"ns back"}
+{"t":2098,"text":" into t"}
+{"t":2134,"text":"iny drops of li"}
+{"t":2165,"text":"quid water"}
+{"t":2198,"text":", forming clouds.],"}
+{"t":2232,"text":"\n  [Precipitation"}
+{"t":2265,"text":"], [Water"}
+{"t":2306,"text":" fal"}
+{"t":2337,"text":"ling from clouds as rain"}
+{"t":2365,"text":", snow, s"}
+{"t":2399,"text":"leet, or hail.],"}
+{"t":2432,"text":"\n  [Collection], ["}
+{"t":2466,"text":"Water g"}
+{"t":2503,"text":"athering in o"}
+{"t":2532,"text":"ceans, lakes, r"}
+{"t":2566,"text":"ivers, and under"}
+{"t":2598,"text":"ground."}
+{"t":2632,"text":"],\n  [Water v"}
+{"t":2665,"text":"apor], [Water"}
+{"t":2699,"text":" in"}
+{"t":2733,"text":" the"}
+{"t":2765,"text":" form of a gas.],"}
+{"t":2799,"text":"\n)\n\n== Materials\n\n-"}
+{"t":2832,"text":" Wh"}
+{"t":2865,"text":"iteboard or"}
+{"t":2898,"text":" ch"}
+{"t":2932,"text":"art pa"}
+{"t":2965,"text":"per and markers\n- Large"}
+{"t":2998,"text":" water"}
+{"t":3033,"text":" cycle po"}
+{"t":3065,"text":"ster or proj"}
+{"t":3098,"text":"ected di"}
+{"t":3133,"text":"agram\n- Te"}
+{"t":3166,"text":"acher demo: a clear"}
+{"t":3198,"text":" j"}
+{"t":3234,"text":"ar, h"}
+{"t":3269,"text":"ot t"}
+{"t":3298,"text":"ap water, a small"}
+{"t":3332,"text":" plate or l"}
+{"t":3365,"text":"id, and ice c"}
+{"t":3399,"text":"ubes\n- Per"}
+{"t":3432,"text":" p"}
+{"t":3465,"text":"air: one"}
+{"t":3501,"text":" zip-top"}
+{"t":3532,"text":" pl"}
+{"t":3565,"text":"astic bag, water"}
+{"t":3598,"text":", bl"}
+{"t":3632,"text":"ue food coloring, perman"}
+{"t":3684,"text":"ent marker, tape"}
+{"t":3699,"text":"\n- Student handout"}
+{"t":3732,"text":": bl"}
+{"t":3765,"text":"ank water cycle diagram"}
+{"t":3799,"text":" with a word bank\n-"}
+{"t":3832,"text":" Exit "}
+{"t":3865,"text":"ticket sl"}
+{"t":3899,"text":"ips and"}
+{"t":3932,"text":" pencils\n\n== Pre"}
+{"t":3966,"text":"paration ("}
+{"t":3999,"text":"before"}
+{"t":4033,"text":" class)\n\n- Make one s"}
+{"t":4065,"text":"ample \"water"}
+{"t":4098,"text":" cycle in a bag\""}
+{"t":4132,"text":" ahead of time (about"}
+{"t":4166,"text":" 50"}
+{"t":4200,"text":" m"}
+{"t":4234,"text":"L of bl"}
+{"t":4265,"text":"ue water, s"}
+{"t":4300,"text":"un and"}
+{"t":4333,"text":" clouds drawn on the"}
+{"t":4365,"text":" outside, ta"}
+{"t":4399,"text":"ped to a s"}
+{"t":4432,"text":"unny window) so students can see"}
+{"t":4467,"text":" real"}
+{"t":4498,"text":" results.\n- Fill the"}
+{"t":4531,"text":" dem"}
+{"t":4566,"text":"o jar with hot water just"}
+{"t":4598,"text":" before the"}
+{"t":4632,"text":" demo."}
+{"t":4665,"text":"\n- Pr"}
+{"t":4699,"text":"epare b"}
+{"t":4732,"text":"ags and sup"}
+{"t":4765,"text":"plies in"}
+{"t":4798,"text":" a"}
+{"t":4832,"text":" t"}
+{"t":4867,"text":"ray for each pair.\n\n=="}
+{"t":4899,"text":" Lesson Timeline"}
+{"t":4933,"text":"\n\n#table"}
+{"t":4968,"text":"(\n  columns: (au"}
+{"t":4998,"text":"to, auto, 1f"}
+{"t":5033,"text":"r),\n  inset: "}
+{"t":5065,"text":"7pt,\n  [*"}
+{"t":5099,"text":"Time*], [*Seg"}
+{"t":5132,"text":"ment*], [*What"}
+{"t":5167,"text":" happ"}
+{"t":5199,"text":"ens*],\n  [0–"}
+{"t":5233,"text":"5 min], [Hook"}
+{"t":5269,"text":"], [Show"}
+{"t":5298,"text":" a"}
+{"t":5334,"text":" phot"}
+{"t":5365,"text":"o of a puddle in"}
+{"t":5400,"text":" the morning and the"}
+{"t":5432,"text":" same sp"}
+{"t":5465,"text":"ot later in"}
+{"t":5498,"text":" the day. Ask:"}
+{"t":5532,"text":" \"Where did the water"}
+{"t":5565,"text":" go?\" Coll"}
+{"t":5600,"text":"ect ideas on"}
+{"t":5632,"text":" the board"}
+{"t":5665,"text":".],\n  [5–15"}
+{"t":5699,"text":" min], [Mini-"}
+{"t":5732,"text":"lesson], [Teach"}
+{"t":5765,"text":" the four stages using"}
+{"t":5800,"text":" the poster."}
+{"t":5832,"text":" Students"}
+{"t":5866,"text":" use h"}
+{"t":5901,"text":"and motions:"}
+{"t":5932,"text":" r"}
+{"t":5965,"text":"ising h"}
+{"t":6000,"text":"ands (evaporation), f"}
+{"t":6032,"text":"ingers clos"}
+{"t":6065,"text":"ing into"}
+{"t":6098,"text":" a cloud (condensation"}
+{"t":6134,"text":"), wiggling fingers"}
+{"t":6165,"text":" fal"}
+{"t":6198,"text":"ling (precipitation), s"}
+{"t":6232,"text":"weeping arms ("}
+{"t":6266,"text":"collection).],\n  [15"}
+{"t":6300,"text":"–30 min], [H"}
+{"t":6333,"text":"ands-on activity], ["}
+{"t":6374,"text":"Teacher demo,"}
+{"t":6399,"text":" then pairs build a"}
+{"t":6432,"text":" water cycle in a bag"}
+{"t":6465,"text":".],\n  [30–38"}
+{"t":6499,"text":" min], [Diagram"}
+{"t":6532,"text":" practice], [P"}
+{"t":6566,"text":"airs label the di"}
+{"t":6599,"text":"agram and write"}
+{"t":6632,"text":" one"}
+{"t":6666,"text":" sentence for"}
+{"t":6699,"text":" each stage.],\n  ["}
+{"t":6733,"text":"38–43 min], ["}
+{"t":6765,"text":"Exit ticket], ["}
+{"t":6799,"text":"Students compl"}
+{"t":6832,"text":"ete the"}
+{"t":6865,"text":" exit ticket independ"}
+{"t":6899,"text":"ently.],\n  [43–"}
+{"t":6932,"text":"45 min], [Closing"}
+{"t":6966,"text":"], [Rev"}
+{"t":6999,"text":"isit the big question and the"}
+{"t":7033,"text":" hook pu"}
+{"t":7066,"text":"ddle.],\n)\n\n=="}
+{"t":7099,"text":" Detailed Procedure"}
+{"t":7134,"text":"\n\n="}
+{"t":7166,"text":"== 1. Hook ("}
+{"t":7199,"text":"5"}
+{"t":7233,"text":" minutes)\n\n-"}
+{"t":7267,"text":" Display the puddle photos"}
+{"t":7300,"text":". Ask students to"}
+{"t":7333,"text":" turn and"}
+{"t":7365,"text":" talk with"}
+{"t":7400,"text":" a part"}
+{"t":7432,"text":"ner for 30"}
+{"t":7465,"text":" seconds."}
+{"t":7499,"text":"\n- Record"}
+{"t":7541,"text":" student"}
+{"t":7566,"text":" "}
+{"t":7599,"text":"ideas. Do not corre"}
+{"t":7632,"text":"ct them yet; return"}
+{"t":7666,"text":" to them"}
+{"t":7699,"text":" at the end.\n\n=== "}
+{"t":7734,"text":"2. Mini-les"}
+{"t":7766,"text":"son (10 minutes)"}
+{"t":7799,"text":"\n\n- Tr"}
+{"t":7833,"text":"ace the path"}
+{"t":7869,"text":" of one"}
+{"t":7899,"text":" water"}
+{"t":7932,"text":" dro"}
+{"t":7968,"text":"plet on the poster: "}
+{"t":7999,"text":"ocean, then"}
+{"t":8032,"text":" ev"}
+{"t":8065,"text":"aporation, cond"}
+{"t":8099,"text":"ensation, prec"}
+{"t":8132,"text":"ipitation, and collection."}
+{"t":8167,"text":"\n- St"}
+{"t":8199,"text":"ress that the *"}
+{"t":8236,"text":"sun* prov"}
+{"t":8266,"text":"ides the energ"}
+{"t":8299,"text":"y and"}
+{"t":8332,"text":" that the water"}
+{"t":8366,"text":" is"}
+{"t":8399,"text":" *"}
+{"t":8432,"text":"rec"}
+{"t":8466,"text":"ycled*"}
+{"t":8499,"text":", so"}
+{"t":8532,"text":" the same water has"}
+{"t":8565,"text":" been mo"}
+{"t":8599,"text":"ving around"}
+{"t":8633,"text":" Earth for bill"}
+{"t":8665,"text":"ions of years.\n- Pract"}
+{"t":8699,"text":"ice the hand motions tw"}
+{"t":8733,"text":"ice while calling out stages in"}
+{"t":8767,"text":" a"}
+{"t":8800,"text":" mixed-"}
+{"t":8832,"text":"up order.\n\n=== 3"}
+{"t":8865,"text":". H"}
+{"t":8899,"text":"ands-on activ"}
+{"t":8932,"text":"ity (15 minutes)"}
+{"t":8967,"text":"\n\n*Te"}
+{"t":8999,"text":"acher demo (5 min"}
+{"t":9033,"text":"utes):*"}
+{"t":9066,"text":"\n\n+ P"}
+{"t":9099,"text":"our hot water into the"}
+{"t":9132,"text":" clear jar and place a pl"}
+{"t":9168,"text":"ate or l"}
+{"t":9199,"text":"id on"}
+{"t":9232,"text":" top.\n+ Set"}
+{"t":9265,"text":" ice c"}
+{"t":9300,"text":"ubes on the pl"}
+{"t":9332,"text":"ate.\n+"}
+{"t":9365,"text":" Ask students to watch the in"}
+{"t":9401,"text":"side of the jar."}
+{"t":9432,"text":" Dr"}
+{"t":9466,"text":"ops will"}
+{"t":9499,"text":" form under"}
+{"t":9532,"text":" the c"}
+{"t":9569,"text":"old plate and f"}
+{"t":9599,"text":"all back down"}
+{"t":9632,"text":".\n+ "}
+{"t":9666,"text":"Ask: \"Which stage do"}
+{"t":9699,"text":" you see? Which stage did"}
+{"t":9732,"text":" the"}
+{"t":9765,"text":" hot water show"}
+{"t":9799,"text":"?\"\n\n*Water c"}
+{"t":9832,"text":"ycle in a bag (10"}
+{"t":9866,"text":" minutes):*\n\n+"}
+{"t":9900,"text":" Pairs add"}
+{"t":9932,"text":" a"}
+{"t":9967,"text":" small amount of blue water to"}
+{"t":10000,"text":" the bag and"}
+{"t":10034,"text":" seal it.\n+ They"}
+{"t":10065,"text":" draw the"}
+{"t":10099,"text":" sun, clouds, and"}
+{"t":10138,"text":" waves on the outside with"}
+{"t":10166,"text":" a"}
+{"t":10199,"text":" mar"}
+{"t":10233,"text":"ker.\n+ The"}
+{"t":10265,"text":" te"}
+{"t":10299,"text":"acher tap"}
+{"t":10332,"text":"es b"}
+{"t":10365,"text":"ags to a sunny window to"}
+{"t":10400,"text":" observe over the next few days"}
+{"t":10432,"text":".\n+ Show the p"}
+{"t":10466,"text":"re-made bag as"}
+{"t":10499,"text":" an"}
+{"t":10534,"text":" example of what they"}
+{"t":10566,"text":" will see.\n\n=== 4"}
+{"t":10599,"text":". Diagram practice ("}
+{"t":10634,"text":"8 minutes)\n\n-"}
+{"t":10666,"text":" H"}
+{"t":10701,"text":"and out the blank diagram"}
+{"t":10734,"text":" with the word bank.\n-"}
+{"t":10765,"text":" P"}
+{"t":10802,"text":"airs label each"}
+{"t":10833,"text":" stage and write a"}
+{"t":10866,"text":" one"}
+{"t":10899,"text":"-sentence description"}
+{"t":10934,"text":" for each.\n- Circul"}
+{"t":10966,"text":"ate and"}
+{"t":10999,"text":" ask:"}
+{"t":11034,"text":" \"What g"}
+{"t":11066,"text":"ives the water"}
+{"t":11099,"text":" its energy to r"}
+{"t":11132,"text":"ise?\"\n\n=== 5"}
+{"t":11167,"text":". Exit ticket ("}
+{"t":11199,"text":"5 minutes)"}
+{"t":11232,"text":"\n\nStudents"}
+{"t":11267,"text":" answ"}
+{"t":11299,"text":"er individ"}
+{"t":11333,"text":"ually on a sl"}
+{"t":11366,"text":"ip (see below"}
+{"t":11399,"text":").\n\n=== 6."}
+{"t":11433,"text":" Closing (2 minutes"}
+{"t":11466,"text":")\n\n- Return to the pu"}
+{"t":11499,"text":"ddle:"}
+{"t":11536,"text":" students"}
+{"t":11569,"text":" expl"}
+{"t":11601,"text":"ain where the water went using"}
+{"t":11632,"text":" at"}
+{"t":11665,"text":" least two v"}
+{"t":11699,"text":"ocabulary words."}
+{"t":11732,"text":"\n\n== Ex"}
+{"t":11766,"text":"it Ticket\n\n*"}
+{"t":11799,"text":"Name:"}
+{"t":11832,"text":"* #box"}
+{"t":11865,"text":"(width: 8"}
+{"t":11902,"text":"c"}
+{"t":11932,"text":"m, line"}
+{"t":11965,"text":"(length"}
+{"t":11999,"text":": 100%))\n\n+"}
+{"t":12033,"text":" Name"}
+{"t":12066,"text":" the stage of"}
+{"t":12099,"text":" the water cycle when water"}
+{"t":12132,"text":" v"}
+{"t":12165,"text":"apor c"}
+{"t":12199,"text":"ools and for"}
+{"t":12233,"text":"ms clouds."}
+{"t":12265,"text":"\n\n  #line"}
+{"t":12301,"text":"(length: 100%)"}
+{"t":12332,"text":"\n\n+ What"}
+{"t":12365,"text":" g"}
+{"t":12399,"text":"ives the water"}
+{"t":12433,"text":" c"}
+{"t":12466,"text":"ycle its"}
+{"t":12499,"text":" energy?\n\n  #line("}
+{"t":12532,"text":"length: 100%)\n\n+"}
+{"t":12565,"text":" In"}
+{"t":12599,"text":" your own words, explain what"}
+{"t":12632,"text":" happens to a"}
+{"t":12665,"text":" puddle on"}
+{"t":12699,"text":" a sunny day.\n\n  "}
+{"t":12735,"text":"#v(1"}
+{"t":12765,"text":"em)\n  #line(length"}
+{"t":12799,"text":": 100%)\n  #"}
+{"t":12833,"text":"v(1em)\n  #"}
+{"t":12867,"text":"line(length: 100%)"}
+{"t":12899,"text":"\n\n== Answer Key"}
+{"t":12932,"text":"\n\n+"}
+{"t":12965,"text":" Condensation."}
+{"t":12999,"text":"\n+ The"}
+{"t":13035,"text":" sun ("}
+{"t":13066,"text":"heat energ"}
+{"t":13099,"text":"y).\n+ The"}
+{"t":13137,"text":" sun heats the pu"}
+{"t":13165,"text":"ddle, the"}
+{"t":13199,"text":" liquid water evaporates"}
+{"t":13232,"text":" into water vapor and"}
+{"t":13265,"text":" rises into the air,"}
+{"t":13299,"text":" where it can"}
+{"t":13337,"text":" later"}
+{"t":13381,"text":" cond"}
+{"t":13401,"text":"ense into"}
+{"t":13435,"text":" clouds and f"}
+{"t":13466,"text":"all as precipitation."}
+{"t":13499,"text":"\n\n== Assessment\n\n- *"}
+{"t":13534,"text":"Inform"}
+{"t":13566,"text":"al:* List"}
+{"t":13599,"text":"en during"}
+{"t":13633,"text":" the tur"}
+{"t":13685,"text":"n-and"}
+{"t":13699,"text":"-talk and hand-"}
+{"t":13732,"text":"motion pract"}
+{"t":13765,"text":"ice."}
+{"t":13799,"text":"\n- *Formative:*"}
+{"t":13833,"text":" Check the labeled diag"}
+{"t":13866,"text":"ram for correct"}
+{"t":13901,"text":" stage names"}
+{"t":13932,"text":" and order.\n- *Ex"}
+{"t":13965,"text":"it ticket:* Students"}
+{"t":14000,"text":" who"}
+{"t":14032,"text":" answer all three corre"}
+{"t":14068,"text":"ctly have"}
+{"t":14099,"text":" met the object"}
+{"t":14132,"text":"ives."}
+{"t":14165,"text":"\n\n== Differentiation"}
+{"t":14200,"text":"\n\n- *Support:* Prov"}
+{"t":14232,"text":"ide a part"}
+{"t":14266,"text":"ially filled di"}
+{"t":14299,"text":"agram and a pic"}
+{"t":14332,"text":"ture word"}
+{"t":14365,"text":" bank. P"}
+{"t":14399,"text":"air with a str"}
+{"t":14432,"text":"ong re"}
+{"t":14466,"text":"ader.\n- *On"}
+{"t":14499,"text":" level"}
+{"t":14533,"text":":* Compl"}
+{"t":14565,"text":"ete the diagram and s"}
+{"t":14599,"text":"entences as written.\n- *"}
+{"t":14632,"text":"Challenge:* Add"}
+{"t":14665,"text":" trans"}
+{"t":14699,"text":"piration and runoff to"}
+{"t":14733,"text":" the diagram,"}
+{"t":14765,"text":" or expl"}
+{"t":14799,"text":"ain why the"}
+{"t":14835,"text":" cycle never"}
+{"t":14866,"text":" \""}
+{"t":14901,"text":"runs out\""}
+{"t":14932,"text":" of water."}
+{"t":14969,"text":"\n- *English lear"}
+{"t":14999,"text":"ners:* P"}
+{"t":15032,"text":"air vocabulary words"}
+{"t":15065,"text":" with images and"}
+{"t":15099,"text":" the"}
+{"t":15132,"text":" hand motions;"}
+{"t":15167,"text":" allow lab"}
+{"t":15200,"text":"eled dr"}
+{"t":15232,"text":"awings in"}
+{"t":15265,"text":" place of full sentences."}
+{"t":15300,"text":"\n\n== Extensions and"}
+{"t":15333,"text":" Homework\n\n- Keep"}
+{"t":15365,"text":" a"}
+{"t":15399,"text":" three"}
+{"t":15433,"text":"-day observation log of"}
+{"t":15468,"text":" the water"}
+{"t":15499,"text":" cycle bag,"}
+{"t":15532,"text":" dr"}
+{"t":15566,"text":"awing what"}
+{"t":15600,"text":" changes."}
+{"t":15632,"text":"\n- At"}
+{"t":15665,"text":" home, watch for"}
+{"t":15699,"text":" evid"}
+{"t":15732,"text":"ence of the"}
+{"t":15765,"text":" water cycle (f"}
+{"t":15799,"text":"og on a m"}
+{"t":15832,"text":"irror, a"}
+{"t":15865,"text":" dr"}
+{"t":15899,"text":"ying puddle, dew)"}
+{"t":15932,"text":" and share"}
+{"t":15965,"text":" one example"}
+{"t":16000,"text":" the"}
+{"t":16032,"text":" next day.\n\n== Teac"}
+{"t":16068,"text":"her Notes\n\n- Common"}
+{"t":16100,"text":" misconception"}
+{"t":16133,"text":": clouds are made"}
+{"t":16166,"text":" of water"}
+{"t":16200,"text":" vapor."}
+{"t":16232,"text":" Cl"}
+{"t":16265,"text":"ar"}
+{"t":16301,"text":"ify that v"}
+{"t":16332,"text":"apor is invisible, and"}
+{"t":16366,"text":" clouds are made of ti"}
+{"t":16399,"text":"ny liquid dro"}
+{"t":16433,"text":"plets."}
+{"t":16466,"text":"\n- Common misconception:"}
+{"t":16501,"text":" rain comes from \""}
+{"t":16532,"text":"holes\""}
+{"t":16565,"text":" in clouds. Em"}
+{"t":16600,"text":"phasize that dro"}
+{"t":16632,"text":"plets join"}
+{"t":16665,"text":" together until"}
+{"t":16702,"text":" they are"}
+{"t":16733,"text":" he"}
+{"t":16765,"text":"avy enough to fall."}
+{"t":16799,"text":"\n- Saf"}
+{"t":16832,"text":"ety:"}
+{"t":16865,"text":" use only"}
+{"t":16899,"text":" warm to"}
+{"t":16933,"text":" hot t"}
+{"t":16966,"text":"ap water (not bo"}
+{"t":17000,"text":"iling)"}
+{"t":17032,"text":" for the demo, and hand"}
+{"t":17066,"text":"le the jar y"}
+{"t":17085,"text":"ourself."}

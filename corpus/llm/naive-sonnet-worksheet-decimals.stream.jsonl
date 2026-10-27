@@ -1,0 +1,201 @@
+{"t":0,"text":"#"}
+{"t":25,"text":"set page(marg"}
+{"t":58,"text":"in: 2"}
+{"t":92,"text":"c"}
+{"t":126,"text":"m)\n#set text(size"}
+{"t":164,"text":": 12pt)\n\n="}
+{"t":194,"text":" Multiplying Decim"}
+{"t":226,"text":"als\n*Grade 5"}
+{"t":265,"text":" Math"}
+{"t":293,"text":" Worksheet*\n\nName"}
+{"t":328,"text":": #"}
+{"t":359,"text":"box"}
+{"t":392,"text":"(width"}
+{"t":428,"text":": 8"}
+{"t":459,"text":"c"}
+{"t":497,"text":"m, line"}
+{"t":526,"text":"(length: 100%)"}
+{"t":564,"text":") #h"}
+{"t":595,"text":"(1"}
+{"t":626,"text":"em) Date: #box("}
+{"t":659,"text":"width: 3cm, line"}
+{"t":697,"text":"(length: 100%))"}
+{"t":728,"text":"\n\n#v(0"}
+{"t":763,"text":".5em)\n\n*Rem"}
+{"t":794,"text":"ember:*"}
+{"t":828,"text":"\n+"}
+{"t":860,"text":" "}
+{"t":893,"text":"Ignore the decimal points"}
+{"t":931,"text":" and multiply as"}
+{"t":964,"text":" if they"}
+{"t":993,"text":" were whole numbers."}
+{"t":1028,"text":"\n+ Count the"}
+{"t":1060,"text":" total number of dig"}
+{"t":1095,"text":"its after the decimal point in"}
+{"t":1127,"text":" both factors.\n+"}
+{"t":1162,"text":" Place the"}
+{"t":1194,"text":" decimal point in your answ"}
+{"t":1227,"text":"er so it"}
+{"t":1259,"text":" has that many dec"}
+{"t":1295,"text":"imal places.\n\n#"}
+{"t":1326,"text":"v(1em)\n\n=="}
+{"t":1360,"text":" Part A: Practice Quest"}
+{"t":1395,"text":"ions\n\nFind each"}
+{"t":1427,"text":" product. Show your work in"}
+{"t":1461,"text":" the space provided.\n\n#gr"}
+{"t":1494,"text":"id(\n  columns: ("}
+{"t":1529,"text":"1fr, 1fr"}
+{"t":1561,"text":"),\n  row"}
+{"t":1595,"text":"-gut"}
+{"t":1632,"text":"ter: 3"}
+{"t":1662,"text":"em,\n  ["}
+{"t":1698,"text":"*"}
+{"t":1727,"text":"1."}
+{"t":1763,"text":"* $0.4 times"}
+{"t":1795,"text":" 0.3 "}
+{"t":1827,"text":"="}
+{"t":1862,"text":"$],"}
+{"t":1899,"text":"\n  [*2.* $"}
+{"t":1927,"text":"0.6 times 0."}
+{"t":1961,"text":"8 =$],\n  ["}
+{"t":1994,"text":"*3.*"}
+{"t":2028,"text":" $2.5 times 0"}
+{"t":2061,"text":".4 =$],\n  "}
+{"t":2100,"text":"[*4.* $3."}
+{"t":2141,"text":"2 times 0.5 "}
+{"t":2167,"text":"=$],\n  [*5"}
+{"t":2204,"text":".* $1.2 times"}
+{"t":2234,"text":" 1.3 =$],"}
+{"t":2262,"text":"\n  [*6.* $"}
+{"t":2297,"text":"4.5 times 2."}
+{"t":2350,"text":"2 =$],\n  ["}
+{"t":2369,"text":"*7.* $0.07"}
+{"t":2396,"text":" times 0.9 ="}
+{"t":2430,"text":"$],\n  [*8."}
+{"t":2466,"text":"* $6.3 times "}
+{"t":2498,"text":"0.04 =$],"}
+{"t":2530,"text":"\n  [*9.* $12"}
+{"t":2566,"text":".5 times 0.6"}
+{"t":2597,"text":" =$],\n  [*"}
+{"t":2630,"text":"10.* $3.14 "}
+{"t":2664,"text":"times 2.5 =$"}
+{"t":2698,"text":"],\n)\n\n#v(2"}
+{"t":2734,"text":"em)\n\n== Part B:"}
+{"t":2768,"text":" Word Problems\n\nWrite"}
+{"t":2797,"text":" a number"}
+{"t":2832,"text":" s"}
+{"t":2868,"text":"entence,"}
+{"t":2902,"text":" solve it"}
+{"t":2931,"text":", and include the"}
+{"t":2964,"text":" correct unit in"}
+{"t":2997,"text":" your answer.\n\n*11."}
+{"t":3033,"text":"* Ap"}
+{"t":3073,"text":"ples cost \\$2.35"}
+{"t":3098,"text":" per kilogram."}
+{"t":3135,"text":" Maya buys 1.8"}
+{"t":3165,"text":" kilograms of apples"}
+{"t":3198,"text":". How much does she p"}
+{"t":3232,"text":"ay?\n\n#v(5"}
+{"t":3266,"text":"em)\n#line(length:"}
+{"t":3299,"text":" 100%)"}
+{"t":3333,"text":"\n\n#"}
+{"t":3364,"text":"v(1"}
+{"t":3399,"text":"em)\n\n*12.* A"}
+{"t":3432,"text":" r"}
+{"t":3467,"text":"ectangular garden is 4"}
+{"t":3497,"text":".6 meters long and "}
+{"t":3532,"text":"3.5 meters wide"}
+{"t":3564,"text":". What is the"}
+{"t":3598,"text":" area of the garden?\n\n#"}
+{"t":3636,"text":"v(5em)\n#line"}
+{"t":3667,"text":"(length: 100%)"}
+{"t":3701,"text":"\n\n#pagebreak()"}
+{"t":3733,"text":"\n\n= Answer Key\n\n=="}
+{"t":3767,"text":" Part A"}
+{"t":3798,"text":"\n\n#table(\n  columns:"}
+{"t":3834,"text":" (au"}
+{"t":3866,"text":"to, "}
+{"t":3898,"text":"1fr, au"}
+{"t":3938,"text":"to),\n  align: (center"}
+{"t":3969,"text":", left, center"}
+{"t":3998,"text":"),\n  [*"}
+{"t":4034,"text":"\\"}
+{"t":4065,"text":"#*], [*Problem"}
+{"t":4105,"text":"*], [*Answer*"}
+{"t":4132,"text":"],\n  [1], [$"}
+{"t":4166,"text":"0.4 times"}
+{"t":4201,"text":" 0.3$], [$"}
+{"t":4232,"text":"0.12$],\n  ["}
+{"t":4266,"text":"2], [$0.6 "}
+{"t":4299,"text":"times 0.8$], ["}
+{"t":4334,"text":"$0.48$],\n  "}
+{"t":4366,"text":"[3], [$2.5"}
+{"t":4399,"text":" times 0.4$],"}
+{"t":4438,"text":" [$1$ (or $"}
+{"t":4466,"text":"1.0"}
+{"t":4500,"text":"$)],\n  [4],"}
+{"t":4534,"text":" [$3.2 times "}
+{"t":4567,"text":"0.5$], [$1"}
+{"t":4600,"text":".6$],\n  [5"}
+{"t":4635,"text":"], [$1.2 times"}
+{"t":4668,"text":" 1.3$], [$"}
+{"t":4700,"text":"1.56$],\n  ["}
+{"t":4733,"text":"6], [$4.5 "}
+{"t":4770,"text":"times 2.2$], ["}
+{"t":4802,"text":"$9.9$],\n  "}
+{"t":4836,"text":"[7], [$0.07"}
+{"t":4868,"text":" times 0.9$],"}
+{"t":4900,"text":" [$0.063$],"}
+{"t":4934,"text":"\n  [8], [$6."}
+{"t":4967,"text":"3 times 0.04$"}
+{"t":5001,"text":"], [$0.252$],"}
+{"t":5034,"text":"\n  [9], [$12"}
+{"t":5068,"text":".5 times 0.6"}
+{"t":5102,"text":"$], [$7.5$"}
+{"t":5135,"text":"],\n  [10], [$"}
+{"t":5168,"text":"3.14 times 2."}
+{"t":5204,"text":"5$], [$7.85"}
+{"t":5234,"text":"$],\n)\n\n== Part"}
+{"t":5269,"text":" B\n\n*11.* $"}
+{"t":5301,"text":"2.35 times"}
+{"t":5334,"text":" 1.8 = 4"}
+{"t":5368,"text":".23$."}
+{"t":5403,"text":" Maya pays *"}
+{"t":5435,"text":"\\$4.23*."}
+{"t":5469,"text":"\n\n*12.* $4.6"}
+{"t":5503,"text":" times 3.5 ="}
+{"t":5535,"text":" 16.1$. The area"}
+{"t":5568,"text":" of"}
+{"t":5602,"text":" the garden is *$16."}
+{"t":5636,"text":"1$"}
+{"t":5668,"text":" square"}
+{"t":5702,"text":" meters*"}
+{"t":5735,"text":" ($16.1 \"m"}
+{"t":5770,"text":"\"^2$).\n\n=="}
+{"t":5806,"text":" Te"}
+{"t":5834,"text":"acher Not"}
+{"t":5870,"text":"es"}
+{"t":5903,"text":"\n- Question"}
+{"t":5935,"text":" 3: students"}
+{"t":5968,"text":" may get"}
+{"t":6001,"text":" $1.00"}
+{"t":6036,"text":"$;"}
+{"t":6068,"text":" accept $1$,"}
+{"t":6102,"text":" $1.0$, or $"}
+{"t":6134,"text":"1.00$.\n-"}
+{"t":6167,"text":" Question 7 "}
+{"t":6202,"text":"and 8: wat"}
+{"t":6239,"text":"ch for students"}
+{"t":6270,"text":" who forget to write plac"}
+{"t":6304,"text":"eholder zeros after"}
+{"t":6337,"text":" the decimal point (for"}
+{"t":6370,"text":" example, writ"}
+{"t":6401,"text":"ing $0.63"}
+{"t":6434,"text":"$ instead of $0."}
+{"t":6469,"text":"063$).\n- Word"}
+{"t":6501,"text":" problems"}
+{"t":6534,"text":": check that the answ"}
+{"t":6571,"text":"er includes units"}
+{"t":6609,"text":" (d"}
+{"t":6643,"text":"ollars, square"}
+{"t":6683,"text":" meters)."}

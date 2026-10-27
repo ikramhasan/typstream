@@ -1,0 +1,351 @@
+{"t":0,"text":"#"}
+{"t":32,"text":"show: handout.with("}
+{"t":66,"text":"\n  title: [Caus"}
+{"t":100,"text":"es of the French Revolution"}
+{"t":132,"text":"],\n  subtitle:"}
+{"t":166,"text":" [Cornell-style study"}
+{"t":199,"text":" notes],\n  subject:"}
+{"t":233,"text":" [History],\n  grade:"}
+{"t":266,"text":" [Grade 10],"}
+{"t":301,"text":"\n)\n\n#let cornell("}
+{"t":335,"text":"..rows) = table("}
+{"t":366,"text":"\n  columns: (1fr"}
+{"t":400,"text":", 2.6fr),"}
+{"t":433,"text":"\n  in"}
+{"t":466,"text":"set: 9"}
+{"t":500,"text":"pt,\n  stroke"}
+{"t":533,"text":": (x, y) => ("}
+{"t":567,"text":"\n    bottom: 0"}
+{"t":600,"text":".5pt + lu"}
+{"t":633,"text":"ma"}
+{"t":667,"text":"(180"}
+{"t":701,"text":"),\n    right: if x =="}
+{"t":734,"text":" 0 { 0.8"}
+{"t":767,"text":"pt +"}
+{"t":800,"text":" luma(100"}
+{"t":837,"text":") } else { none },\n  "}
+{"t":867,"text":"),\n  fill: ("}
+{"t":900,"text":"x"}
+{"t":934,"text":", y) => if y == "}
+{"t":967,"text":"0 { luma(235"}
+{"t":1000,"text":") } else {"}
+{"t":1033,"text":" none },\n  table.header(["}
+{"t":1067,"text":"*Cues and"}
+{"t":1100,"text":" questions*], [*Not"}
+{"t":1134,"text":"es*]),\n  .."}
+{"t":1168,"text":"rows.pos().flat"}
+{"t":1201,"text":"ten("}
+{"t":1234,"text":"),\n)\n\n#callout("}
+{"t":1267,"text":"kind: \"t"}
+{"t":1300,"text":"ip\","}
+{"t":1334,"text":" title: [How to use these"}
+{"t":1368,"text":" notes])[\n  C"}
+{"t":1400,"text":"over the right"}
+{"t":1434,"text":"-"}
+{"t":1467,"text":"hand column and try"}
+{"t":1500,"text":" to answer each"}
+{"t":1534,"text":" cue question"}
+{"t":1567,"text":" from"}
+{"t":1601,"text":" memory. Then check"}
+{"t":1634,"text":" your answ"}
+{"t":1667,"text":"er, and"}
+{"t":1700,"text":" write your own summary at the b"}
+{"t":1736,"text":"ottom of"}
+{"t":1767,"text":" the page.\n]\n\n#c"}
+{"t":1800,"text":"ornell(\n  ("}
+{"t":1834,"text":"\n    ["}
+{"t":1870,"text":"\n      *1"}
+{"t":1900,"text":"."}
+{"t":1934,"text":" Social inequality*"}
+{"t":1967,"text":" \\\n      What"}
+{"t":2000,"text":" were"}
+{"t":2034,"text":" the three"}
+{"t":2067,"text":" Estates?\n    ],"}
+{"t":2100,"text":"\n    [\n      France"}
+{"t":2134,"text":" was divided into three leg"}
+{"t":2167,"text":"al \""}
+{"t":2200,"text":"or"}
+{"t":2234,"text":"ders\" under"}
+{"t":2267,"text":" the _"}
+{"t":2300,"text":"Ancien Régime_"}
+{"t":2335,"text":":\n      - *"}
+{"t":2367,"text":"First Estate:"}
+{"t":2400,"text":"* the clergy, under"}
+{"t":2434,"text":" "}
+{"t":2467,"text":"1% of the people"}
+{"t":2500,"text":". It"}
+{"t":2536,"text":" owned about"}
+{"t":2567,"text":" 10% of the"}
+{"t":2600,"text":" land and pa"}
+{"t":2634,"text":"id alm"}
+{"t":2669,"text":"ost no tax.\n      -"}
+{"t":2700,"text":" *Second Estate:*"}
+{"t":2734,"text":" the nobility, about 2"}
+{"t":2767,"text":"% of the people"}
+{"t":2800,"text":". It held the"}
+{"t":2833,"text":" top posts in"}
+{"t":2867,"text":" the army and the"}
+{"t":2903,"text":" Church, and was larg"}
+{"t":2934,"text":"ely exempt from taxes"}
+{"t":2968,"text":".\n      - *Third"}
+{"t":3001,"text":" Estate:* everyone else"}
+{"t":3034,"text":", about 97"}
+{"t":3067,"text":"%"}
+{"t":3101,"text":","}
+{"t":3134,"text":" from"}
+{"t":3167,"text":" w"}
+{"t":3200,"text":"ealthy mer"}
+{"t":3234,"text":"chants to peasants."}
+{"t":3267,"text":" It"}
+{"t":3300,"text":" paid the *"}
+{"t":3334,"text":"ta"}
+{"t":3367,"text":"ille* (land"}
+{"t":3400,"text":" tax), the *gabel"}
+{"t":3434,"text":"le* (salt tax)"}
+{"t":3467,"text":" and the"}
+{"t":3501,"text":" tithe to the"}
+{"t":3534,"text":" Church.\n      The"}
+{"t":3567,"text":" Third Estate car"}
+{"t":3601,"text":"ried the"}
+{"t":3636,"text":" tax burden but"}
+{"t":3668,"text":" had little"}
+{"t":3700,"text":" political power.\n    ],"}
+{"t":3734,"text":"\n  ),\n  (\n    "}
+{"t":3767,"text":"[\n      *2. Financ"}
+{"t":3801,"text":"ial crisis* \\\n      "}
+{"t":3834,"text":"Why was the government n"}
+{"t":3867,"text":"early bankrupt?"}
+{"t":3901,"text":"\n    ],\n    ["}
+{"t":3934,"text":"\n      - Costly wars,"}
+{"t":3968,"text":" especially the Seven Years"}
+{"t":4001,"text":"' War and support"}
+{"t":4034,"text":" for the American Revolution,"}
+{"t":4067,"text":" left hu"}
+{"t":4101,"text":"ge debts.\n      -"}
+{"t":4134,"text":" Interest on the"}
+{"t":4167,"text":" debt took up a large share"}
+{"t":4201,"text":" of the y"}
+{"t":4234,"text":"early budget.\n      -"}
+{"t":4268,"text":" The court at Versailles was"}
+{"t":4301,"text":" exp"}
+{"t":4334,"text":"ensive,"}
+{"t":4368,"text":" and its"}
+{"t":4401,"text":" sp"}
+{"t":4435,"text":"ending was high"}
+{"t":4469,"text":"ly visible."}
+{"t":4501,"text":"\n      - The tax system was"}
+{"t":4535,"text":" unfair and in"}
+{"t":4568,"text":"efficient, so the"}
+{"t":4635,"text":" Crown could not raise en"}
+{"t":4668,"text":"ough money.\n      - "}
+{"t":4701,"text":"Ministers (Turgot,"}
+{"t":4735,"text":" Necker, Calonne"}
+{"t":4768,"text":") proposed reforms,"}
+{"t":4802,"text":" but nobles and the"}
+{"t":4834,"text":" _"}
+{"t":4868,"text":"parlements_ blocked"}
+{"t":4901,"text":" them.\n      The"}
+{"t":4936,"text":" king called the *Estates-"}
+{"t":4968,"text":"General* in 1789 to"}
+{"t":5001,"text":" appro"}
+{"t":5035,"text":"ve new"}
+{"t":5068,"text":" taxes. It"}
+{"t":5101,"text":" had not met"}
+{"t":5134,"text":" since 1614.\n    "}
+{"t":5168,"text":"],\n  ),\n  ("}
+{"t":5202,"text":"\n    [\n      *3."}
+{"t":5235,"text":" Enlightenment ide"}
+{"t":5268,"text":"as* \\\n      Which"}
+{"t":5321,"text":" thinkers challenged the"}
+{"t":5335,"text":" old order?\n    ],"}
+{"t":5368,"text":"\n    [\n      - *Loc"}
+{"t":5402,"text":"ke:* people"}
+{"t":5435,"text":" have natural rights to"}
+{"t":5468,"text":" life, liberty and property."}
+{"t":5501,"text":"\n      - *Montesqu"}
+{"t":5536,"text":"ieu:* power"}
+{"t":5568,"text":" should be div"}
+{"t":5602,"text":"ided between bran"}
+{"t":5637,"text":"ches of government.\n      - *"}
+{"t":5668,"text":"Rousseau:* government"}
+{"t":5702,"text":" dep"}
+{"t":5735,"text":"ends on the \""}
+{"t":5769,"text":"general will\" of the people."}
+{"t":5801,"text":"\n      - *Voltaire"}
+{"t":5835,"text":":* def"}
+{"t":5868,"text":"ended fre"}
+{"t":5903,"text":"edom of speech and religion"}
+{"t":5935,"text":" and criticised"}
+{"t":6002,"text":" Church privilege.\n      These"}
+{"t":6035,"text":" ideas spread through"}
+{"t":6068,"text":" salons, p"}
+{"t":6103,"text":"amphlets and c"}
+{"t":6136,"text":"afés. They undermined the"}
+{"t":6168,"text":" belief that"}
+{"t":6202,"text":" k"}
+{"t":6237,"text":"ings "}
+{"t":6268,"text":"ruled by divine right and that"}
+{"t":6303,"text":" bir"}
+{"t":6335,"text":"th should"}
+{"t":6368,"text":" dec"}
+{"t":6401,"text":"ide status"}
+{"t":6435,"text":".\n    ],\n  "}
+{"t":6469,"text":"),\n  (\n    ["}
+{"t":6502,"text":"\n      *4. Economic h"}
+{"t":6535,"text":"ardship* \\\n      How did"}
+{"t":6568,"text":" food"}
+{"t":6602,"text":" prices f"}
+{"t":6636,"text":"uel an"}
+{"t":6668,"text":"ger?\n    ],\n    "}
+{"t":6702,"text":"[\n      - Poor har"}
+{"t":6735,"text":"vests in 1788 s"}
+{"t":6768,"text":"ent grain and"}
+{"t":6802,"text":" bread prices s"}
+{"t":6835,"text":"har"}
+{"t":6868,"text":"ply up"}
+{"t":6903,"text":"ward.\n      - Urban"}
+{"t":6936,"text":" workers spent most of their w"}
+{"t":6968,"text":"ages on b"}
+{"t":7002,"text":"read, so"}
+{"t":7035,"text":" many"}
+{"t":7069,"text":" went"}
+{"t":7102,"text":" hungry.\n      -"}
+{"t":7135,"text":" Peasants faced fe"}
+{"t":7172,"text":"udal dues, t"}
+{"t":7202,"text":"ithes and taxes even"}
+{"t":7235,"text":" in b"}
+{"t":7269,"text":"ad years.\n      - Un"}
+{"t":7301,"text":"employment r"}
+{"t":7335,"text":"ose in tow"}
+{"t":7368,"text":"ns, and hunger tur"}
+{"t":7402,"text":"ned into public an"}
+{"t":7435,"text":"ger.\n    ],\n  "}
+{"t":7468,"text":"),\n  (\n    ["}
+{"t":7502,"text":"\n      *5. Weak"}
+{"t":7536,"text":" leadership* \\\n      How"}
+{"t":7569,"text":" did the mon"}
+{"t":7602,"text":"archy add"}
+{"t":7635,"text":" to the crisis?\n    "}
+{"t":7668,"text":"],\n    [\n      -"}
+{"t":7702,"text":" *Louis XVI*"}
+{"t":7736,"text":" was indecisive and g"}
+{"t":7769,"text":"ave way"}
+{"t":7802,"text":" to p"}
+{"t":7835,"text":"ressure from court fact"}
+{"t":7869,"text":"ions.\n      - *"}
+{"t":7902,"text":"Marie Antoinette"}
+{"t":7944,"text":"* was un"}
+{"t":7976,"text":"popular, se"}
+{"t":8002,"text":"en as ext"}
+{"t":8035,"text":"ravagant and fo"}
+{"t":8068,"text":"reign ("}
+{"t":8102,"text":"she was Austrian)."}
+{"t":8137,"text":"\n      - The"}
+{"t":8168,"text":" monarchy lost public tr"}
+{"t":8202,"text":"ust, so it could"}
+{"t":8235,"text":" not man"}
+{"t":8269,"text":"age re"}
+{"t":8302,"text":"form.\n    ],\n  "}
+{"t":8336,"text":"),\n  (\n    ["}
+{"t":8369,"text":"\n      *6. Immedi"}
+{"t":8402,"text":"ate triggers ("}
+{"t":8435,"text":"1789)* \\\n      What"}
+{"t":8469,"text":" tur"}
+{"t":8502,"text":"ned the cr"}
+{"t":8535,"text":"isis into rev"}
+{"t":8569,"text":"olution?\n    ],"}
+{"t":8603,"text":"\n    [\n      - *May:"}
+{"t":8635,"text":"* the Estates-General me"}
+{"t":8669,"text":"ets. A"}
+{"t":8702,"text":" dispute arises"}
+{"t":8735,"text":" over voting by order"}
+{"t":8769,"text":" ("}
+{"t":8802,"text":"which"}
+{"t":8836,"text":" favours the priv"}
+{"t":8869,"text":"ileged)"}
+{"t":8902,"text":" or by head (which favours the"}
+{"t":8936,"text":" Third Estate).\n      "}
+{"t":8969,"text":"- *June "}
+{"t":9003,"text":"17:* the Third Est"}
+{"t":9036,"text":"ate declares itself the"}
+{"t":9069,"text":" *National Assembly*."}
+{"t":9102,"text":"\n      - *June 20:"}
+{"t":9136,"text":"* the *"}
+{"t":9169,"text":"Tennis Court O"}
+{"t":9202,"text":"ath*"}
+{"t":9236,"text":": members"}
+{"t":9269,"text":" swear not"}
+{"t":9302,"text":" to dis"}
+{"t":9336,"text":"band"}
+{"t":9369,"text":" until France"}
+{"t":9402,"text":" has a constitution.\n      "}
+{"t":9435,"text":"- *July 14:* the"}
+{"t":9469,"text":" *Storming of the B"}
+{"t":9502,"text":"astille*, a sym"}
+{"t":9536,"text":"bol of roy"}
+{"t":9569,"text":"al power"}
+{"t":9602,"text":".\n    ],\n  "}
+{"t":9635,"text":"),\n)\n\n#v"}
+{"t":9668,"text":"(1"}
+{"t":9704,"text":"em)\n\n#callout("}
+{"t":9735,"text":"kind: \"remember\", title"}
+{"t":9769,"text":": [Key"}
+{"t":9802,"text":" ter"}
+{"t":9836,"text":"ms])"}
+{"t":9869,"text":"[\n  *"}
+{"t":9902,"text":"Ancien Régime:"}
+{"t":9935,"text":"* the old social"}
+{"t":9970,"text":" and political order before 1789."}
+{"t":10002,"text":" \\\n  *Estates-"}
+{"t":10035,"text":"General:* the ass"}
+{"t":10069,"text":"embly of the"}
+{"t":10102,"text":" three Estates. \\\n  "}
+{"t":10136,"text":"*Divine right:* the"}
+{"t":10168,"text":" belief that a king's auth"}
+{"t":10202,"text":"ority comes from God. \\"}
+{"t":10235,"text":"\n  *T"}
+{"t":10269,"text":"ennis Court Oath:"}
+{"t":10302,"text":"* the"}
+{"t":10335,"text":" pledge to write"}
+{"t":10369,"text":" a constitution.\n]"}
+{"t":10402,"text":"\n\n#v(0"}
+{"t":10436,"text":".5em)\n\n#block("}
+{"t":10469,"text":"\n  width: 100%,"}
+{"t":10504,"text":"\n  st"}
+{"t":10536,"text":"roke: 0.8"}
+{"t":10569,"text":"pt + luma(100"}
+{"t":10602,"text":"),\n  inset: 12"}
+{"t":10635,"text":"pt,\n  radius:"}
+{"t":10669,"text":" 3pt,\n)["}
+{"t":10703,"text":"\n  *Summary*"}
+{"t":10736,"text":" (write"}
+{"t":10770,"text":" in your own words, in 3"}
+{"t":10802,"text":" "}
+{"t":10836,"text":"to 4 sentences)"}
+{"t":10902,"text":"\n  #answer-l"}
+{"t":10936,"text":"ines("}
+{"t":10970,"text":"\n    count: 4,\n    "}
+{"t":11002,"text":"answer: ["}
+{"t":11036,"text":"Long"}
+{"t":11070,"text":"-term causes were"}
+{"t":11104,"text":" an unequ"}
+{"t":11145,"text":"al society, state"}
+{"t":11169,"text":" debt and"}
+{"t":11203,"text":" Enlightenment ideas"}
+{"t":11236,"text":" that"}
+{"t":11269,"text":" quest"}
+{"t":11303,"text":"ioned roy"}
+{"t":11337,"text":"al power. Bad"}
+{"t":11369,"text":" harvests and we"}
+{"t":11402,"text":"ak leadership made"}
+{"t":11438,"text":" things"}
+{"t":11473,"text":" worse. In"}
+{"t":11505,"text":" 1789 the d"}
+{"t":11544,"text":"ispute in"}
+{"t":11569,"text":" the Estates-General led"}
+{"t":11603,"text":" the"}
+{"t":11636,"text":" Third Estate to form"}
+{"t":11670,"text":" the National Assembly and beg"}
+{"t":11702,"text":"in the"}
+{"t":11736,"text":" Revolution.],\n  )"}
+{"t":11769,"text":"\n]"}

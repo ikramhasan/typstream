@@ -28,7 +28,7 @@ const done = healer.finish(); // complete document: lint everything, report what
    - settled syntax errors;
    - root checkpoints to resume from after an edit.
 3. **Repair the tail.** Cut, then close. Each candidate is re-recognized before it's accepted; a closer that would merge with the last token (`\` + `*`) gets a separator, or the token is dropped.
-4. **Lint settled text**, meaning text before the stable offset, or everything in final mode. Rules: `markdown-heading`, `markdown-bold`, `markdown-link`, `email-at`, `bare-hash`, `stray-closer` and `unclosed-delim` fix by default; `unclosed-block-comment` and `currency-dollar` warn by default.
+4. **Lint settled text**, meaning text before the stable offset, or everything in final mode. Rules: `markdown-heading`, `markdown-bold`, `markdown-link`, `email-at`, `bare-hash`, `stray-closer`, `unclosed-delim` and `math-lone-script` (`m/s$^2$` → `m/s$""^2$`) fix by default; `unclosed-block-comment` and `currency-dollar` warn by default.
 
 Text before `stableOffset` never changes meaning as more text arrives, and the healer never rewrites it except for lint fixes.
 

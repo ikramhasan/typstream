@@ -1,0 +1,293 @@
+{"t":0,"text":"#"}
+{"t":54,"text":"set page(flipped: true"}
+{"t":72,"text":", margin: 1.5"}
+{"t":118,"text":"cm)\n#set text("}
+{"t":145,"text":"size: 10pt)"}
+{"t":179,"text":"\n#set par(just"}
+{"t":214,"text":"ify: false"}
+{"t":250,"text":")\n\n= Science Fair"}
+{"t":286,"text":" Project Rubric\n\n*"}
+{"t":322,"text":"Student name"}
+{"t":358,"text":":* #"}
+{"t":396,"text":"box"}
+{"t":429,"text":"(width: 14"}
+{"t":467,"text":"em"}
+{"t":500,"text":", line("}
+{"t":536,"text":"length: 100%)) #"}
+{"t":571,"text":"h(1"}
+{"t":608,"text":"em) *Project title:*"}
+{"t":653,"text":" #box(width: 20em"}
+{"t":680,"text":", line(length: 100%"}
+{"t":715,"text":")) #h(1em)"}
+{"t":753,"text":" *Date:* #box("}
+{"t":789,"text":"width: 7"}
+{"t":823,"text":"em, line(length: 100"}
+{"t":860,"text":"%))\n\n#v(0"}
+{"t":895,"text":".5em)\n\nEach"}
+{"t":931,"text":" criterion is worth the"}
+{"t":967,"text":" number of points sh"}
+{"t":1004,"text":"own."}
+{"t":1037,"text":" Jud"}
+{"t":1074,"text":"ges circ"}
+{"t":1109,"text":"le the level that best mat"}
+{"t":1145,"text":"ches the project"}
+{"t":1182,"text":" and write the points"}
+{"t":1216,"text":" earned in the"}
+{"t":1252,"text":" Score column.\n\n#table("}
+{"t":1288,"text":"\n  columns: ("}
+{"t":1324,"text":"1.4f"}
+{"t":1359,"text":"r, 1"}
+{"t":1394,"text":".5"}
+{"t":1430,"text":"fr, 1.5"}
+{"t":1468,"text":"fr, 1.5f"}
+{"t":1502,"text":"r, 1.5fr"}
+{"t":1538,"text":", 0.7"}
+{"t":1575,"text":"fr),\n  in"}
+{"t":1610,"text":"set: 6"}
+{"t":1646,"text":"pt,\n  align: ("}
+{"t":1692,"text":"left, left"}
+{"t":1718,"text":", left, left, left,"}
+{"t":1753,"text":" center),\n  fill: ("}
+{"t":1789,"text":"x"}
+{"t":1824,"text":", y) =>"}
+{"t":1861,"text":" if y == 0 { r"}
+{"t":1896,"text":"gb(\""}
+{"t":1931,"text":"#d9"}
+{"t":1967,"text":"e8"}
+{"t":2002,"text":"f5"}
+{"t":2038,"text":"\") } else { none },\n  "}
+{"t":2074,"text":"[*Criterion*],"}
+{"t":2112,"text":" [*Excellent*],"}
+{"t":2146,"text":" [*Proficient*],"}
+{"t":2181,"text":" [*Developing*], ["}
+{"t":2220,"text":"*Beginning*], ["}
+{"t":2255,"text":"*Score*],\n\n  ["}
+{"t":2293,"text":"*Question and Hypoth"}
+{"t":2328,"text":"esis* \\"}
+{"t":2399,"text":" (10 pts)],"}
+{"t":2433,"text":"\n  [*9–10:"}
+{"t":2470,"text":"* Question"}
+{"t":2508,"text":" is clear, foc"}
+{"t":2540,"text":"used, and testable. H"}
+{"t":2577,"text":"ypothesis is specific and"}
+{"t":2614,"text":" explains the reasoning."}
+{"t":2647,"text":"],\n  [*7–8"}
+{"t":2688,"text":":* Question is test"}
+{"t":2721,"text":"able. Hypothesis"}
+{"t":2757,"text":" is clear but"}
+{"t":2791,"text":" re"}
+{"t":2845,"text":"asoning is lim"}
+{"t":2862,"text":"ited.],\n  [*5"}
+{"t":2902,"text":"–6:* Question is v"}
+{"t":2933,"text":"ague or too"}
+{"t":2969,"text":" broad. Hypothes"}
+{"t":3005,"text":"is is un"}
+{"t":3040,"text":"clear or not test"}
+{"t":3078,"text":"able.],\n  [*0"}
+{"t":3116,"text":"–4:* Question or"}
+{"t":3152,"text":" hypothesis is missing"}
+{"t":3183,"text":" or"}
+{"t":3220,"text":" un"}
+{"t":3255,"text":"related to the project.],"}
+{"t":3293,"text":"\n  [/"}
+{"t":3331,"text":" 10],\n\n  [*"}
+{"t":3362,"text":"Background Research* \\ ("}
+{"t":3399,"text":"10 pts)],\n  "}
+{"t":3437,"text":"[*9–10:*"}
+{"t":3470,"text":" Uses several"}
+{"t":3506,"text":" reliable sources."}
+{"t":3541,"text":" Explains key"}
+{"t":3577,"text":" concepts clearly and conn"}
+{"t":3613,"text":"ects them to the project"}
+{"t":3650,"text":".],\n  [*7–"}
+{"t":3684,"text":"8:* Uses a"}
+{"t":3720,"text":" few sources. Key"}
+{"t":3757,"text":" concepts are m"}
+{"t":3791,"text":"ostly explained.],\n  "}
+{"t":3827,"text":"[*5–6:*"}
+{"t":3863,"text":" Uses one"}
+{"t":3904,"text":" source or"}
+{"t":3935,"text":" s"}
+{"t":3972,"text":"ources of une"}
+{"t":4006,"text":"ven quality. Research is only"}
+{"t":4041,"text":" lo"}
+{"t":4079,"text":"osely connected.],\n  "}
+{"t":4113,"text":"[*0–4:*"}
+{"t":4150,"text":" Little or no research sh"}
+{"t":4192,"text":"own.],\n  [/"}
+{"t":4234,"text":" 10],\n\n  [*"}
+{"t":4256,"text":"Materials and Procedure*"}
+{"t":4292,"text":" \\ (15 pts)"}
+{"t":4328,"text":"],\n  [*14–15"}
+{"t":4363,"text":":* Materials are listed"}
+{"t":4399,"text":" f"}
+{"t":4435,"text":"ully. Steps are det"}
+{"t":4471,"text":"ailed en"}
+{"t":4506,"text":"ough for"}
+{"t":4542,"text":" some"}
+{"t":4582,"text":"one else to repeat the exper"}
+{"t":4614,"text":"iment.],\n  [*"}
+{"t":4649,"text":"11–13:* Materials"}
+{"t":4685,"text":" and steps are mostly compl"}
+{"t":4720,"text":"ete,"}
+{"t":4756,"text":" with minor gaps.],"}
+{"t":4792,"text":"\n  [*8–10:"}
+{"t":4828,"text":"* Several"}
+{"t":4864,"text":" steps or"}
+{"t":4899,"text":" materials are missing or"}
+{"t":4935,"text":" unclear.],\n  ["}
+{"t":4973,"text":"*0–7:* Proc"}
+{"t":5008,"text":"edure is miss"}
+{"t":5042,"text":"ing or cannot be follow"}
+{"t":5079,"text":"ed.],\n  [/"}
+{"t":5114,"text":" 15],\n\n  [*"}
+{"t":5162,"text":"Variables and Data"}
+{"t":5187,"text":" Collection* \\ (15"}
+{"t":5222,"text":" pts)],\n  ["}
+{"t":5258,"text":"*14–15:* Independ"}
+{"t":5294,"text":"ent, dependent, and contro"}
+{"t":5329,"text":"lled variables are identified."}
+{"t":5366,"text":" Multiple trials give"}
+{"t":5402,"text":" acc"}
+{"t":5436,"text":"urate, well"}
+{"t":5473,"text":"-organized data.],\n  "}
+{"t":5508,"text":"[*11–13:*"}
+{"t":5543,"text":" Variables are identified. Data"}
+{"t":5581,"text":" is organ"}
+{"t":5615,"text":"ized, with few"}
+{"t":5650,"text":" tr"}
+{"t":5687,"text":"ials.],\n  [*8"}
+{"t":5722,"text":"–10:* Some variables"}
+{"t":5759,"text":" are missing or"}
+{"t":5795,"text":" conf"}
+{"t":5829,"text":"used. Data is"}
+{"t":5865,"text":" incomplete or"}
+{"t":5901,"text":" disorganized.],\n  "}
+{"t":5938,"text":"[*0–7:* No"}
+{"t":5974,"text":" cl"}
+{"t":6009,"text":"ear variables."}
+{"t":6045,"text":" Little or no data."}
+{"t":6084,"text":"],\n  [/ 15"}
+{"t":6115,"text":"],\n\n  [*Analys"}
+{"t":6152,"text":"is and Graphs* \\"}
+{"t":6187,"text":" (15 pts)],"}
+{"t":6222,"text":"\n  [*14–15:"}
+{"t":6259,"text":"* Graphs and"}
+{"t":6294,"text":" tables are acc"}
+{"t":6331,"text":"urate, labeled, and"}
+{"t":6365,"text":" tit"}
+{"t":6400,"text":"led. Pat"}
+{"t":6437,"text":"terns in"}
+{"t":6472,"text":" the data are described corre"}
+{"t":6508,"text":"ctly.],\n  [*"}
+{"t":6544,"text":"11–13:* Graph"}
+{"t":6580,"text":"s are"}
+{"t":6615,"text":" m"}
+{"t":6650,"text":"ostly accurate. Anal"}
+{"t":6686,"text":"ysis describes the"}
+{"t":6722,"text":" main p"}
+{"t":6758,"text":"attern.],\n  [*"}
+{"t":6796,"text":"8–10:* Graph"}
+{"t":6830,"text":"s have"}
+{"t":6867,"text":" errors or miss"}
+{"t":6900,"text":"ing labels. Analysis"}
+{"t":6936,"text":" is superficial.],\n  "}
+{"t":6976,"text":"[*0–7:* No"}
+{"t":7008,"text":" graphs or anal"}
+{"t":7044,"text":"ysis,"}
+{"t":7079,"text":" or they"}
+{"t":7115,"text":" are"}
+{"t":7151,"text":" inaccurate.],"}
+{"t":7186,"text":"\n  [/ 15],"}
+{"t":7224,"text":"\n\n  [*Conclusion"}
+{"t":7259,"text":"* \\ (15 pts"}
+{"t":7294,"text":")],\n  [*14–"}
+{"t":7331,"text":"15:* States"}
+{"t":7365,"text":" whether the hypothesis"}
+{"t":7401,"text":" was supported,"}
+{"t":7437,"text":" uses data"}
+{"t":7472,"text":" as"}
+{"t":7508,"text":" evidence, discusses err"}
+{"t":7544,"text":"ors, and suggests next"}
+{"t":7580,"text":" steps.],\n  [*"}
+{"t":7615,"text":"11–13:* States"}
+{"t":7651,"text":" wh"}
+{"t":7687,"text":"ether the hypothesis was"}
+{"t":7725,"text":" supported and uses some evid"}
+{"t":7758,"text":"ence.],\n  [*8"}
+{"t":7796,"text":"–10:* Conclus"}
+{"t":7832,"text":"ion is weak"}
+{"t":7866,"text":"ly t"}
+{"t":7902,"text":"ied to the data.],\n  "}
+{"t":7937,"text":"[*0–7:*"}
+{"t":7975,"text":" Conclusion is missing or"}
+{"t":8009,"text":" un"}
+{"t":8046,"text":"supported.],\n  ["}
+{"t":8081,"text":"/ 15],\n\n  ["}
+{"t":8116,"text":"*Display Board* \\"}
+{"t":8151,"text":" (10 pts)],"}
+{"t":8187,"text":"\n  [*9–10:*"}
+{"t":8226,"text":" Neat, well"}
+{"t":8258,"text":" organized, and eas"}
+{"t":8296,"text":"y to read. All"}
+{"t":8330,"text":" required"}
+{"t":8367,"text":" sections are included"}
+{"t":8401,"text":".],\n  [*7–"}
+{"t":8438,"text":"8:* Organ"}
+{"t":8473,"text":"ized and readable,"}
+{"t":8508,"text":" with one"}
+{"t":8546,"text":" or two sections we"}
+{"t":8580,"text":"ak or missing.],\n  "}
+{"t":8617,"text":"[*5–6:*"}
+{"t":8652,"text":" Cluttered or hard to"}
+{"t":8687,"text":" foll"}
+{"t":8724,"text":"ow. Several sections missing"}
+{"t":8759,"text":".],\n  [*0–"}
+{"t":8794,"text":"4:* Dis"}
+{"t":8830,"text":"organized or incomplete"}
+{"t":8867,"text":".],\n  [/ "}
+{"t":8902,"text":"10],\n\n  [*O"}
+{"t":8938,"text":"ral Presentation* \\"}
+{"t":8974,"text":" (10 pts)],"}
+{"t":9009,"text":"\n  [*9–10:*"}
+{"t":9044,"text":" Spe"}
+{"t":9080,"text":"aks clearly and"}
+{"t":9116,"text":" confidently. Answ"}
+{"t":9158,"text":"ers quest"}
+{"t":9188,"text":"ions accurately and sh"}
+{"t":9225,"text":"ows de"}
+{"t":9259,"text":"ep understanding.],\n  "}
+{"t":9297,"text":"[*7–8:*"}
+{"t":9331,"text":" Speaks clearly."}
+{"t":9367,"text":" Answers most questions correct"}
+{"t":9404,"text":"ly.],\n  [*5"}
+{"t":9437,"text":"–6:* Relies on"}
+{"t":9474,"text":" notes or reads from"}
+{"t":9512,"text":" the board. Struggles with"}
+{"t":9548,"text":" questions.],\n  [*"}
+{"t":9581,"text":"0–4:* Unable"}
+{"t":9616,"text":" to explain the project."}
+{"t":9653,"text":"],"}
+{"t":9688,"text":"\n  [/ 10],"}
+{"t":9724,"text":"\n\n  table.cell(colsp"}
+{"t":9760,"text":"an: 5, align"}
+{"t":9796,"text":": right)[*T"}
+{"t":9831,"text":"OTAL SCORE"}
+{"t":9868,"text":"*],\n  [*/"}
+{"t":9902,"text":" 100*],\n)\n\n#"}
+{"t":9939,"text":"v(1em)\n\n*"}
+{"t":9976,"text":"Judge comments:*"}
+{"t":10010,"text":"\n\n#v(1"}
+{"t":10064,"text":".5em)\n#line("}
+{"t":10081,"text":"length: 100%)\n#"}
+{"t":10127,"text":"v(1.5em)"}
+{"t":10153,"text":"\n#line(length: 100%"}
+{"t":10189,"text":")"}
+{"t":10226,"text":"\n#v(1.5em)"}
+{"t":10261,"text":"\n#line(length: 100"}
+{"t":10296,"text":"%)\n\n#"}
+{"t":10333,"text":"v(1em)"}
+{"t":10367,"text":"\n*Judge signature:*"}
+{"t":10403,"text":" #box(width: 16"}
+{"t":10444,"text":"em, line(length: 100"}
+{"t":10476,"text":"%))"}

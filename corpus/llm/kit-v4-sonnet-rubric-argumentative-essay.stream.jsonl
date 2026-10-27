@@ -1,0 +1,171 @@
+{"t":0,"text":"#"}
+{"t":181,"text":"show: handout.with("}
+{"t":181,"text":"\n  title: [Argument"}
+{"t":181,"text":"ative Essay Rubric"}
+{"t":181,"text":"],\n  subtitle:"}
+{"t":181,"text":" [Scoring gu"}
+{"t":201,"text":"ide with"}
+{"t":234,"text":" four cri"}
+{"t":267,"text":"teria and four perform"}
+{"t":302,"text":"ance levels],\n  subject"}
+{"t":335,"text":": [English"}
+{"t":372,"text":" Language Arts],\n)"}
+{"t":402,"text":"\n\n#student-info(\"name\","}
+{"t":526,"text":" \"date\", \"score\")\n\n#"}
+{"t":526,"text":"v"}
+{"t":526,"text":"("}
+{"t":534,"text":"0"}
+{"t":568,"text":".5em)\n\nUse"}
+{"t":601,"text":" this rubric to score"}
+{"t":634,"text":" each cri"}
+{"t":667,"text":"terion from"}
+{"t":699,"text":" "}
+{"t":732,"text":"4 ("}
+{"t":766,"text":"Excellent) down"}
+{"t":800,"text":" to 1 (Begin"}
+{"t":892,"text":"ning). The"}
+{"t":892,"text":" total is"}
+{"t":899,"text":" out"}
+{"t":932,"text":" of 16."}
+{"t":966,"text":"\n\n#rubric(\n  "}
+{"t":998,"text":"lev"}
+{"t":1031,"text":"els: "}
+{"t":1065,"text":"([Excellent], ["}
+{"t":1099,"text":"Proficient], [Developing"}
+{"t":1133,"text":"], [Beginning]),"}
+{"t":1167,"text":"\n  points: (4, "}
+{"t":1200,"text":"3, 2, 1),"}
+{"t":1252,"text":"\n  (\n    [Th"}
+{"t":1267,"text":"esis and cla"}
+{"t":1301,"text":"im],\n    [The thes"}
+{"t":1349,"text":"is is clear, specific and"}
+{"t":1368,"text":" arguable. It tak"}
+{"t":1401,"text":"es a defin"}
+{"t":1435,"text":"ite position and gu"}
+{"t":1468,"text":"ides the wh"}
+{"t":1501,"text":"ole essay.],\n    ["}
+{"t":1536,"text":"The thesis is clear and"}
+{"t":1570,"text":" arguable,"}
+{"t":1602,"text":" but it is somewhat general"}
+{"t":1635,"text":" or only"}
+{"t":1682,"text":" partly guides the essay."}
+{"t":1703,"text":"],\n    [The thesis"}
+{"t":1735,"text":" is present"}
+{"t":1768,"text":" but v"}
+{"t":1801,"text":"ague,"}
+{"t":1834,"text":" or it states"}
+{"t":1868,"text":" a top"}
+{"t":1901,"text":"ic rather than a"}
+{"t":1935,"text":" position.],\n    [The th"}
+{"t":1968,"text":"esis is missing or un"}
+{"t":2001,"text":"clear,"}
+{"t":2035,"text":" or the essay does"}
+{"t":2068,"text":" not take a position.],\n  "}
+{"t":2102,"text":"),\n  (\n    ["}
+{"t":2135,"text":"Evidence and reaso"}
+{"t":2169,"text":"ning],\n    [Strong"}
+{"t":2203,"text":", relevant evidence from"}
+{"t":2235,"text":" cred"}
+{"t":2269,"text":"ible sources sup"}
+{"t":2302,"text":"ports every"}
+{"t":2335,"text":" claim. Re"}
+{"t":2368,"text":"asoning is"}
+{"t":2402,"text":" log"}
+{"t":2434,"text":"ical,"}
+{"t":2469,"text":" and coun"}
+{"t":2501,"text":"terarguments are addressed"}
+{"t":2535,"text":" and rebutted.],"}
+{"t":2568,"text":"\n    [Rel"}
+{"t":2601,"text":"evant evidence sup"}
+{"t":2654,"text":"ports most claims. Reas"}
+{"t":2669,"text":"oning is m"}
+{"t":2703,"text":"ostly logical,"}
+{"t":2743,"text":" and a counterarg"}
+{"t":2771,"text":"ument is acknowledged."}
+{"t":2802,"text":"],\n    [Ev"}
+{"t":2835,"text":"idence is lim"}
+{"t":2869,"text":"ited,"}
+{"t":2901,"text":" general"}
+{"t":2934,"text":" or only"}
+{"t":2967,"text":" lo"}
+{"t":3000,"text":"osely conn"}
+{"t":3035,"text":"ected to the claims. Re"}
+{"t":3068,"text":"asoning has"}
+{"t":3100,"text":" gaps,"}
+{"t":3134,"text":" and counterarguments are bar"}
+{"t":3168,"text":"ely mentioned.],"}
+{"t":3201,"text":"\n    [Evidence is miss"}
+{"t":3235,"text":"ing or ir"}
+{"t":3269,"text":"relevant. Cla"}
+{"t":3301,"text":"ims are un"}
+{"t":3335,"text":"supported, and there is no"}
+{"t":3368,"text":" coun"}
+{"t":3402,"text":"terargument.],\n  "}
+{"t":3435,"text":"),\n  (\n    ["}
+{"t":3468,"text":"Organization],\n    [The"}
+{"t":3503,"text":" introduction, body and concl"}
+{"t":3535,"text":"usion are well"}
+{"t":3569,"text":" develop"}
+{"t":3602,"text":"ed. Paragraphs"}
+{"t":3634,"text":" are"}
+{"t":3668,"text":" focused,"}
+{"t":3701,"text":" and transitions make"}
+{"t":3735,"text":" the arg"}
+{"t":3768,"text":"ument eas"}
+{"t":3801,"text":"y to follow.],\n    "}
+{"t":3834,"text":"[The struct"}
+{"t":3868,"text":"ure is clear. Most"}
+{"t":3902,"text":" paragraphs are focused"}
+{"t":3935,"text":", and transitions are gener"}
+{"t":3968,"text":"ally eff"}
+{"t":4002,"text":"ective.],\n    [The struct"}
+{"t":4035,"text":"ure is u"}
+{"t":4069,"text":"neven. Some paragra"}
+{"t":4101,"text":"phs l"}
+{"t":4134,"text":"ack focus,"}
+{"t":4168,"text":" and transitions are few"}
+{"t":4201,"text":" or abrupt.],"}
+{"t":4235,"text":"\n    [The structure is h"}
+{"t":4269,"text":"ard to follow,"}
+{"t":4302,"text":" with little pa"}
+{"t":4335,"text":"ragraph"}
+{"t":4368,"text":"ing or log"}
+{"t":4401,"text":"ical order"}
+{"t":4434,"text":".],\n  ),\n  "}
+{"t":4468,"text":"(\n    [Language and con"}
+{"t":4504,"text":"ventions],\n    [The"}
+{"t":4536,"text":" style is precise and"}
+{"t":4570,"text":" persuasive, and"}
+{"t":4602,"text":" the tone is su"}
+{"t":4635,"text":"itably"}
+{"t":4668,"text":" formal. There"}
+{"t":4702,"text":" are almost no errors in gr"}
+{"t":4736,"text":"ammar, spelling or pun"}
+{"t":4769,"text":"ctuation.],\n    ["}
+{"t":4803,"text":"The language"}
+{"t":4836,"text":" is clear and m"}
+{"t":4868,"text":"ostly form"}
+{"t":4912,"text":"al. A"}
+{"t":4935,"text":" few err"}
+{"t":4969,"text":"ors do not get"}
+{"t":5002,"text":" in the way of"}
+{"t":5035,"text":" me"}
+{"t":5072,"text":"aning.],\n    [The"}
+{"t":5102,"text":" language is sometimes un"}
+{"t":5135,"text":"clear or inform"}
+{"t":5168,"text":"al. Errors are"}
+{"t":5201,"text":" frequent and occ"}
+{"t":5235,"text":"asionally distract the"}
+{"t":5269,"text":" reader.],\n    ["}
+{"t":5302,"text":"Fr"}
+{"t":5336,"text":"equent errors make the"}
+{"t":5368,"text":" essay hard to underst"}
+{"t":5401,"text":"and."}
+{"t":5437,"text":"],\n  ),\n)"}
+{"t":5469,"text":"\n\n#v(1em)\n\n*"}
+{"t":5503,"text":"Te"}
+{"t":5537,"text":"acher comments:*"}
+{"t":5568,"text":"\n\n#answer-lines("}
+{"t":5605,"text":"count: 3, spacing"}
+{"t":5635,"text":": 2"}
+{"t":5662,"text":"em)"}

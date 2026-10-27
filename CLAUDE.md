@@ -33,10 +33,12 @@ packages/typstream  typstream: the convenience package (<Typstream> with html-co
 tools/typst-syntax-oracle   Typst's real parser and lexer compiled to wasm for Node; the ground truth in heal's tests.
 tools/compile-oracle        Do healed prefixes compile? heal × engine-wasm over the corpus, then the engine's fixers and fallback;
                             error classes, the prefix compile rate, and final-mode renders of every corpus document.
+tools/llm-corpus  Real model output (#24): records Claude streams with edu's prompt kit, measures final-mode compile errors,
+                  promotes recordings into corpus/llm.
 tools/browser-suites  Corpus-wide browser suites (#19): final-render equivalence, flicker, accessibility (axe), and visual
                     regression against baselines rendered in Playwright's Docker image.
 tools/repo        Repo tooling: package layer table (layers.mjs), layering check, shared tsup and api-extractor configs.
-corpus/           @typstream/corpus (private): shared test documents (edu/, adversarial/), meta.json, stream replay.
+corpus/           @typstream/corpus (private): shared test documents (edu/, adversarial/, llm/), meta.json, stream replay.
 apps/playground   Dev playground (Vite + React): replay streams, inspect healing and the engine's raw output, record corpus cases.
 examples/         node-validate (@typstream/node fix loop), nextjs-ai-sdk (useChat → <Typstream>, Next.js App Router).
 spikes/phase0     Throwaway Phase 0 experiments: browser harness (harness/) and custom Typst wasm engine (custom-engine/).
@@ -111,6 +113,13 @@ In `packages/heal`:
 - `node scripts/perf.mjs`: asserts the latency budgets; run `pnpm build` first. `PERF_TOLERANCE=3` (what CI uses) fails only above 3× budget.
 - `pnpm size`: bundle budget, 15 KB gzipped.
 - `pnpm mutate`: Stryker mutation testing of `src/` (~1.5–2 h on 6 cores). `STRYKER_INCREMENTAL=1` retests only what changed since the last run, but it reuses static mutants' (module-level constants) results whatever changed, so record scores from full runs. It fails below an 80% score; the first full run scored 80.59% (2026-10-26). It runs the suite without the corpus tests and with few, seeded property runs (`vitest.mutation.config.ts`, the `mutate` script's env). `node scripts/mutation-report.mjs --survivors` lists what survived. Equivalent mutants and known survivors are triaged on #6.
+
+LLM corpus (`tools/llm-corpus`, README there): `node src/record.mjs --variant kit --label <name>` streams the 29 requests
+from Haiku and Sonnet (needs an Anthropic key; ~$0.85 a run), `node src/measure.mjs <label>...` reports final-mode error
+rates and classes, `node src/promote.mjs <label>` copies recordings into `corpus/llm`, then `pnpm corpus:validate llm/
+--write-pages` (restore the other sets' `meta.json`, which it reformats, or `pnpm fix`). Change the prompt kit's rules
+(`packages/edu/src/prompt.ts`, `eduPromptRules`) only with a new measured run under a new label. `corpus/llm` is opt-in
+(`loadCorpus({ sets: ALL_SETS })`): its documents name the plugins they compile with (`meta.plugins`).
 
 Compile oracle (`tools/compile-oracle`, needs the built engine): `pnpm turbo run test --filter=@typstream/compile-oracle`; `pnpm --filter @typstream/compile-oracle report` for the full measurement (minutes).
 

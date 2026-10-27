@@ -8,9 +8,15 @@ import { parseStream, type StreamChunk, type SynthesizeOptions, synthesizeStream
 /** The corpus root (the directory holding the sets). */
 export const CORPUS_ROOT = fileURLToPath(new URL("..", import.meta.url));
 
-/** Sets in the corpus, in a stable order. */
+/** The sets `loadCorpus()` loads by default, in a stable order: plain Typst, no plugins. */
 export const SETS = ["edu", "adversarial"] as const;
-export type CorpusSet = (typeof SETS)[number];
+/**
+ * Every set: the default ones, then `llm`, recorded model output (#24). Its documents are written
+ * in a plugin's vocabulary (`meta.plugins`, e.g. edu's functions), so only callers that mount
+ * those plugins load it.
+ */
+export const ALL_SETS = [...SETS, "llm"] as const;
+export type CorpusSet = (typeof ALL_SETS)[number];
 
 /**
  * What native `typst compile` (0.15.1, embedded fonts only) must do with the entry:
@@ -35,6 +41,13 @@ export interface EntryMeta {
   tags?: string[];
   /** Where the `.stream.jsonl` came from, when there is one. */
   stream?: { source: "synthetic"; options?: SynthesizeOptions } | { source: "recorded"; model?: string };
+  /**
+   * Plugins the document is written for, by key: their files and preamble go on the document
+   * before it compiles (`edu`: `@typstream/edu`'s files and its import). Default none.
+   */
+  plugins?: string[];
+  /** For model output (the `llm` set): the prompt it was generated with and what was asked. */
+  prompt?: { kit: string; request: string };
   notes?: string;
 }
 

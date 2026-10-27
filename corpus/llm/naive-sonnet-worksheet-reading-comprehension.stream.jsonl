@@ -1,0 +1,188 @@
+{"t":0,"text":"="}
+{"t":31,"text":" Re"}
+{"t":64,"text":"ading Comprehension:"}
+{"t":96,"text":" The Sil"}
+{"t":129,"text":"ent Bell\n\n*"}
+{"t":165,"text":"Name:* #box"}
+{"t":196,"text":"(width: 8"}
+{"t":230,"text":"c"}
+{"t":270,"text":"m, line"}
+{"t":296,"text":"(length"}
+{"t":331,"text":": 100%)) #"}
+{"t":364,"text":"h"}
+{"t":398,"text":"(1"}
+{"t":433,"text":"em) *Date:* #"}
+{"t":465,"text":"box(width: 4cm"}
+{"t":498,"text":", line(length: 100%"}
+{"t":531,"text":"))\n\n*Directions:*"}
+{"t":563,"text":" Read the story carefully."}
+{"t":599,"text":" Then answ"}
+{"t":630,"text":"er the six questions that"}
+{"t":666,"text":" follow."}
+{"t":698,"text":" Use complete sentences un"}
+{"t":736,"text":"less the"}
+{"t":764,"text":" question says otherwise."}
+{"t":797,"text":"\n\n=="}
+{"t":830,"text":" The Silent Bell"}
+{"t":868,"text":"\n\nEvery morning, Mate"}
+{"t":897,"text":"o walked to the harbor"}
+{"t":935,"text":" with his grandfather to wat"}
+{"t":964,"text":"ch the fishing boats come"}
+{"t":999,"text":" home. At the end of the d"}
+{"t":1031,"text":"ock hung an old brass b"}
+{"t":1065,"text":"ell, and it always rang to"}
+{"t":1097,"text":" welcome the sailors back"}
+{"t":1131,"text":". But on Monday, the"}
+{"t":1165,"text":" bell was silent.\n\n\""}
+{"t":1198,"text":"Someone has stolen it"}
+{"t":1231,"text":"!\" Mateo gas"}
+{"t":1265,"text":"ped. His grandfather only"}
+{"t":1301,"text":" smiled. \"Mayb"}
+{"t":1332,"text":"e,\" he said. \"Or"}
+{"t":1365,"text":" maybe there is a good re"}
+{"t":1401,"text":"ason. Look closely before you"}
+{"t":1432,"text":" decide.\"\n\nMateo"}
+{"t":1466,"text":" crouched beside the empty"}
+{"t":1501,"text":" post. A few muddy foot"}
+{"t":1537,"text":"prints, small ones with z"}
+{"t":1566,"text":"igzag patterns, led"}
+{"t":1599,"text":" away across the dock. He follow"}
+{"t":1633,"text":"ed them past the fish market and"}
+{"t":1668,"text":" up to the old net shed."}
+{"t":1701,"text":" The door was open just a crack"}
+{"t":1733,"text":", and he could hear a qu"}
+{"t":1766,"text":"iet scraping sound in"}
+{"t":1801,"text":"side.\n\nMateo pe"}
+{"t":1835,"text":"eked in. His friend"}
+{"t":1869,"text":" Lina was kneeling on"}
+{"t":1900,"text":" the floor next to the bell"}
+{"t":1933,"text":", twisting a thick new"}
+{"t":1967,"text":" rope through its handle."}
+{"t":2000,"text":"\n\n\"The storm last night shook"}
+{"t":2034,"text":" everything,\" Lina explained"}
+{"t":2067,"text":" without looking up. \"I sa"}
+{"t":2100,"text":"w that the old rope was fr"}
+{"t":2136,"text":"ayed. I was afraid"}
+{"t":2168,"text":" the bell would fall on some"}
+{"t":2202,"text":"one's head, so I took it"}
+{"t":2236,"text":" down to fix it.\""}
+{"t":2268,"text":"\n\nMateo felt his che"}
+{"t":2303,"text":"eks turn warm. \""}
+{"t":2335,"text":"I thought you were a thief"}
+{"t":2368,"text":",\" he admitted. \"I"}
+{"t":2402,"text":"'m sorry.\""}
+{"t":2435,"text":"\n\nLina laughed. \""}
+{"t":2471,"text":"Help me carry it back, and"}
+{"t":2503,"text":" we'll call it even.\""}
+{"t":2538,"text":" Together they hung the bell on"}
+{"t":2569,"text":" its post, tugging the r"}
+{"t":2603,"text":"ope until the knot was tight"}
+{"t":2636,"text":". Then Mateo g"}
+{"t":2669,"text":"ave the bell a gentle"}
+{"t":2702,"text":" pull. Its deep,"}
+{"t":2735,"text":" clear ring rolled across"}
+{"t":2770,"text":" the water just as the first fish"}
+{"t":2803,"text":"ing boat appeared."}
+{"t":2837,"text":"\n\n#line"}
+{"t":2868,"text":"(length: 100%)"}
+{"t":2903,"text":"\n\n== Questions\n\n+ What"}
+{"t":2936,"text":" is"}
+{"t":2969,"text":" the bell used"}
+{"t":3002,"text":" for at the harbor?"}
+{"t":3069,"text":"\n\n  #v(1"}
+{"t":3104,"text":".5em)\n  #line"}
+{"t":3137,"text":"(length: 100%)"}
+{"t":3202,"text":"\n  #v(1em"}
+{"t":3235,"text":")"}
+{"t":3273,"text":"\n  #line(length: 100"}
+{"t":3302,"text":"%)\n\n+ *Circ"}
+{"t":3336,"text":"le the"}
+{"t":3373,"text":" letter of"}
+{"t":3404,"text":" the best"}
+{"t":3435,"text":" answer.* What does"}
+{"t":3469,"text":" the word _"}
+{"t":3502,"text":"frayed_ most"}
+{"t":3536,"text":" likely mean in the story?"}
+{"t":3606,"text":"\n\n  #h"}
+{"t":3637,"text":"(1"}
+{"t":3669,"text":"em"}
+{"t":3701,"text":")"}
+{"t":3735,"text":" A. br"}
+{"t":3768,"text":"and new #"}
+{"t":3802,"text":"h(1."}
+{"t":3835,"text":"5em) B. wor"}
+{"t":3868,"text":"n and star"}
+{"t":3902,"text":"ting to come"}
+{"t":3936,"text":" apart #h(1."}
+{"t":3968,"text":"5em) C. very"}
+{"t":4002,"text":" he"}
+{"t":4037,"text":"avy #h(1.5"}
+{"t":4068,"text":"em) D. br"}
+{"t":4131,"text":"ightly colored\n\n  "}
+{"t":4136,"text":"#v(1em"}
+{"t":4171,"text":")\n\n+ Put these"}
+{"t":4201,"text":" events in the"}
+{"t":4235,"text":" correct order by"}
+{"t":4268,"text":" writing the"}
+{"t":4302,"text":" numbers 1 "}
+{"t":4335,"text":"to 4 on"}
+{"t":4369,"text":" the l"}
+{"t":4402,"text":"ines.\n\n  #h(1"}
+{"t":4435,"text":"em) \\"}
+{"t":4471,"text":"_\\_\\_"}
+{"t":4502,"text":" Mateo follows the foot"}
+{"t":4539,"text":"prints to the net shed."}
+{"t":4569,"text":" \\"}
+{"t":4602,"text":"\n  #h(1em) \\"}
+{"t":4635,"text":"_\\_\\_ M"}
+{"t":4669,"text":"ateo notices the bell is"}
+{"t":4702,"text":" silent. \\\n  #h"}
+{"t":4736,"text":"(1em) \\_\\_"}
+{"t":4769,"text":"\\_ M"}
+{"t":4802,"text":"ateo and Lina h"}
+{"t":4835,"text":"ang the bell on"}
+{"t":4869,"text":" its post. \\\n  #h"}
+{"t":4906,"text":"(1em) \\_\\_"}
+{"t":4936,"text":"\\_ Lina explains"}
+{"t":4970,"text":" why she took"}
+{"t":5004,"text":" the bell down.\n\n  #"}
+{"t":5038,"text":"v(1em)\n\n+"}
+{"t":5070,"text":" Why did Lina take the"}
+{"t":5105,"text":" bell down?"}
+{"t":5136,"text":" Use"}
+{"t":5170,"text":" details"}
+{"t":5205,"text":" from the story in"}
+{"t":5236,"text":" your answer.\n\n  #v"}
+{"t":5270,"text":"(1.5em)\n  "}
+{"t":5303,"text":"#line(length: 100%"}
+{"t":5338,"text":")\n  #v(1em"}
+{"t":5374,"text":")\n  #line(length:"}
+{"t":5405,"text":" 100%)"}
+{"t":5437,"text":"\n\n+ How did Mateo"}
+{"t":5471,"text":" feel after he lear"}
+{"t":5503,"text":"ned the"}
+{"t":5536,"text":" truth?"}
+{"t":5569,"text":" What"}
+{"t":5603,"text":" in"}
+{"t":5637,"text":" the story sh"}
+{"t":5670,"text":"ows this?\n\n  #v("}
+{"t":5704,"text":"1.5em)\n  #"}
+{"t":5737,"text":"line(length: 100%)"}
+{"t":5770,"text":"\n  #v(1em)"}
+{"t":5805,"text":"\n  #line(length: "}
+{"t":5837,"text":"100%)\n\n+"}
+{"t":5870,"text":" Mateo's grandfather"}
+{"t":5906,"text":" says, \"Look closely before"}
+{"t":5937,"text":" you decide.\" What l"}
+{"t":5970,"text":"esson do you think the"}
+{"t":6003,"text":" story is te"}
+{"t":6038,"text":"aching?"}
+{"t":6070,"text":" Explain your th"}
+{"t":6115,"text":"inking.\n\n  #v("}
+{"t":6144,"text":"1.5em)\n  #"}
+{"t":6180,"text":"line(length: 100%)"}
+{"t":6208,"text":"\n  #v(1em)"}
+{"t":6251,"text":"\n  #line(length: "}
+{"t":6282,"text":"100%)\n  #v("}
+{"t":6312,"text":"1em)\n  #line("}
+{"t":6343,"text":"length: 100%)"}

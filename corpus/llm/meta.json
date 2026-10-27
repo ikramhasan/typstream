@@ -1,0 +1,1976 @@
+{
+  "kit-v1-haiku-exam-forces": {
+    "category": "exam",
+    "expect": "error",
+    "expectedErrors": ["unexpected hat"],
+    "tags": ["llm", "physics", "diagram"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v1",
+      "request": "A grade 11 physics exam on kinematics and Newton's laws, including a free-body diagram of a block on an inclined plane."
+    }
+  },
+  "kit-v1-haiku-exam-stoichiometry": {
+    "category": "exam",
+    "expect": "error",
+    "expectedErrors": ["unexpected underscore"],
+    "tags": ["llm", "chemistry", "math"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v1",
+      "request": "A 45-minute grade 11 chemistry test on stoichiometry and the mole, with balanced equations."
+    }
+  },
+  "kit-v1-haiku-quiz-si-units": {
+    "category": "quiz",
+    "expect": "error",
+    "expectedErrors": ["unexpected hat"],
+    "tags": ["llm", "physics", "units"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v1",
+      "request": "A short grade 10 physics quiz on SI units and unit conversions."
+    }
+  },
+  "kit-v1-haiku-worksheet-photosynthesis": {
+    "category": "worksheet",
+    "expect": "error",
+    "expectedErrors": ["unknown variable: cetz"],
+    "tags": ["llm", "science"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v1",
+      "request": "A grade 7 science worksheet on photosynthesis with fill-in-the-blank, multiple choice and one question where students label a diagram of a leaf."
+    }
+  },
+  "kit-v1-sonnet-exam-calculus-midterm": {
+    "category": "exam",
+    "expect": "error",
+    "expectedErrors": ["unknown variable: dv"],
+    "tags": ["llm", "math", "answer-key"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v1",
+      "request": "A 60-minute calculus midterm on limits and derivatives, with worked solutions for the teacher."
+    }
+  },
+  "kit-v1-sonnet-exam-forces": {
+    "category": "exam",
+    "expect": "error",
+    "expectedErrors": ["unknown variable: unit"],
+    "tags": ["llm", "physics", "diagram"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v1",
+      "request": "A grade 11 physics exam on kinematics and Newton's laws, including a free-body diagram of a block on an inclined plane."
+    }
+  },
+  "kit-v1-sonnet-handout-pythagoras": {
+    "category": "handout",
+    "expect": "error",
+    "expectedErrors": ["expected comma"],
+    "tags": ["llm", "math", "diagram"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v1",
+      "request": "A handout explaining the Pythagorean theorem, with a labelled right triangle and a worked example."
+    }
+  },
+  "kit-v2-haiku-lesson-plan-persuasive-writing": {
+    "category": "lesson-plan",
+    "expect": "error",
+    "expectedErrors": ["unclosed delimiter"],
+    "allowedWarnings": ["no text within underscores"],
+    "tags": ["llm", "language"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v2",
+      "request": "A lesson plan for teaching persuasive writing to grade 8 over two 50-minute sessions."
+    }
+  },
+  "kit-v2-haiku-worksheet-area-perimeter": {
+    "category": "worksheet",
+    "expect": "error",
+    "expectedErrors": ["assertion failed: Invalid number of sides:"],
+    "tags": ["llm", "math", "geometry", "diagram"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v2",
+      "request": "A grade 6 geometry worksheet on the area and perimeter of rectangles and triangles, with the shapes drawn and their side lengths labelled."
+    }
+  },
+  "kit-v2-r2-haiku-exam-calculus-midterm": {
+    "category": "exam",
+    "expect": "error",
+    "expectedErrors": ["unexpected hat"],
+    "tags": ["llm", "math", "answer-key"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v2-r2",
+      "request": "A 60-minute calculus midterm on limits and derivatives, with worked solutions for the teacher."
+    }
+  },
+  "kit-v2-r2-haiku-quiz-equivalent-fractions-exit-ticket": {
+    "category": "quiz",
+    "expect": "error",
+    "expectedErrors": ["unexpected slash"],
+    "tags": ["llm", "math"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v2-r2",
+      "request": "An exit ticket on equivalent fractions: 3 quick questions."
+    }
+  },
+  "kit-v2-r2-haiku-worksheet-photosynthesis": {
+    "category": "worksheet",
+    "expect": "error",
+    "expectedErrors": ["unexpected argument"],
+    "tags": ["llm", "science"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v2-r2",
+      "request": "A grade 7 science worksheet on photosynthesis with fill-in-the-blank, multiple choice and one question where students label a diagram of a leaf."
+    }
+  },
+  "kit-v2-r2-sonnet-worksheet-past-tense": {
+    "category": "worksheet",
+    "expect": "error",
+    "expectedErrors": ["unclosed delimiter"],
+    "tags": ["llm", "language"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v2-r2",
+      "request": "A grade 4 English worksheet on past tense verbs: fill in the blanks, a matching exercise, and a short writing task."
+    }
+  },
+  "kit-v2-sonnet-worksheet-past-tense": {
+    "category": "worksheet",
+    "expect": "error",
+    "expectedErrors": ["unclosed delimiter"],
+    "tags": ["llm", "language"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v2",
+      "request": "A grade 4 English worksheet on past tense verbs: fill in the blanks, a matching exercise, and a short writing task."
+    }
+  },
+  "kit-v3-haiku-exam-algebra-final": {
+    "category": "exam",
+    "expect": "error",
+    "expectedErrors": ["cannot apply 'and' to content and content"],
+    "tags": ["llm", "math", "answer-key"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v3",
+      "request": "A 90-minute Algebra II final exam in three sections (multiple choice, short answer, extended response) with points for each question and an answer key."
+    }
+  },
+  "kit-v3-haiku-exam-calculus-midterm": {
+    "category": "exam",
+    "expect": "error",
+    "expectedErrors": ["unexpected hat"],
+    "tags": ["llm", "math", "answer-key"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v3",
+      "request": "A 60-minute calculus midterm on limits and derivatives, with worked solutions for the teacher."
+    }
+  },
+  "kit-v3-haiku-exam-forces": {
+    "category": "exam",
+    "expect": "error",
+    "expectedErrors": ["expected comma"],
+    "tags": ["llm", "physics", "diagram"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v3",
+      "request": "A grade 11 physics exam on kinematics and Newton's laws, including a free-body diagram of a block on an inclined plane."
+    }
+  },
+  "kit-v3-sonnet-exam-algebra-final": {
+    "category": "exam",
+    "expect": "error",
+    "expectedErrors": ["unclosed delimiter"],
+    "tags": ["llm", "math", "answer-key"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v3",
+      "request": "A 90-minute Algebra II final exam in three sections (multiple choice, short answer, extended response) with points for each question and an answer key."
+    }
+  },
+  "kit-v4-haiku-arabic-quiz-solar-system": {
+    "category": "quiz",
+    "tags": ["llm", "multilingual", "rtl", "science", "mcq"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A short multiple-choice quiz in Arabic for grade 4 on the solar system."
+    },
+    "expectedPages": 1
+  },
+  "kit-v4-haiku-arabic-worksheet-decimals": {
+    "category": "worksheet",
+    "tags": ["llm", "multilingual", "rtl", "math"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "اكتب ورقة عمل للصف السادس عن الكسور العشرية، مع مفتاح الإجابة."
+    },
+    "expectedPages": 2
+  },
+  "kit-v4-haiku-bengali-quiz-multiplication": {
+    "category": "quiz",
+    "tags": ["llm", "multilingual", "math"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A grade 3 multiplication quiz in Bengali, 8 questions."
+    },
+    "expectedPages": 1
+  },
+  "kit-v4-haiku-bengali-worksheet-plants": {
+    "category": "worksheet",
+    "tags": ["llm", "multilingual", "science"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "চতুর্থ শ্রেণির জন্য উদ্ভিদের অংশ নিয়ে একটি বিজ্ঞান কার্যপত্র লেখো।"
+    },
+    "expectedPages": 1
+  },
+  "kit-v4-haiku-exam-algebra-final": {
+    "category": "exam",
+    "tags": ["llm", "math", "answer-key"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A 90-minute Algebra II final exam in three sections (multiple choice, short answer, extended response) with points for each question and an answer key."
+    },
+    "expectedPages": 2
+  },
+  "kit-v4-haiku-exam-calculus-midterm": {
+    "category": "exam",
+    "tags": ["llm", "math", "answer-key"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A 60-minute calculus midterm on limits and derivatives, with worked solutions for the teacher."
+    },
+    "expectedPages": 2
+  },
+  "kit-v4-haiku-exam-forces": {
+    "category": "exam",
+    "tags": ["llm", "physics", "diagram"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A grade 11 physics exam on kinematics and Newton's laws, including a free-body diagram of a block on an inclined plane."
+    },
+    "expectedPages": 2
+  },
+  "kit-v4-haiku-exam-stoichiometry": {
+    "category": "exam",
+    "expect": "error",
+    "expectedErrors": ["unclosed delimiter", "unclosed string"],
+    "tags": ["llm", "chemistry", "math"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A 45-minute grade 11 chemistry test on stoichiometry and the mole, with balanced equations."
+    }
+  },
+  "kit-v4-haiku-exam-world-war-one": {
+    "category": "exam",
+    "tags": ["llm", "history", "sources"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A grade 10 history exam on World War I with source-based questions and one essay question."
+    },
+    "expectedPages": 3
+  },
+  "kit-v4-haiku-handout-french-revolution": {
+    "category": "handout",
+    "tags": ["llm", "history"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "Cornell-style study notes on the causes of the French Revolution."
+    },
+    "expectedPages": 2
+  },
+  "kit-v4-haiku-handout-pythagoras": {
+    "category": "handout",
+    "tags": ["llm", "math", "diagram"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A handout explaining the Pythagorean theorem, with a labelled right triangle and a worked example."
+    },
+    "expectedPages": 2
+  },
+  "kit-v4-haiku-lesson-plan-persuasive-writing": {
+    "category": "lesson-plan",
+    "allowedWarnings": ["no text within underscores"],
+    "tags": ["llm", "language"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A lesson plan for teaching persuasive writing to grade 8 over two 50-minute sessions."
+    },
+    "expectedPages": 3
+  },
+  "kit-v4-haiku-lesson-plan-water-cycle": {
+    "category": "lesson-plan",
+    "tags": ["llm", "science"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A 45-minute lesson plan for grade 4 on the water cycle."
+    },
+    "expectedPages": 2
+  },
+  "kit-v4-haiku-quiz-cell-biology": {
+    "category": "quiz",
+    "tags": ["llm", "science", "true-false"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A true/false quiz on cell biology for grade 9: 12 statements, with the answers."
+    },
+    "expectedPages": 1
+  },
+  "kit-v4-haiku-quiz-equivalent-fractions-exit-ticket": {
+    "category": "quiz",
+    "tags": ["llm", "math"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "An exit ticket on equivalent fractions: 3 quick questions."
+    },
+    "expectedPages": 1
+  },
+  "kit-v4-haiku-quiz-european-capitals": {
+    "category": "quiz",
+    "tags": ["llm", "geography", "mcq"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A 10-question multiple-choice quiz on European capitals for grade 6."
+    },
+    "expectedPages": 1
+  },
+  "kit-v4-haiku-quiz-si-units": {
+    "category": "quiz",
+    "tags": ["llm", "physics", "units"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A short grade 10 physics quiz on SI units and unit conversions."
+    },
+    "expectedPages": 1
+  },
+  "kit-v4-haiku-quiz-spanish-food": {
+    "category": "quiz",
+    "tags": ["llm", "language", "matching"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A beginner Spanish vocabulary quiz on food: a matching section and a fill-in-the-blank section."
+    },
+    "expectedPages": 1
+  },
+  "kit-v4-haiku-rubric-argumentative-essay": {
+    "category": "rubric",
+    "tags": ["llm", "rubric"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A rubric for an argumentative essay with 4 criteria and 4 performance levels."
+    },
+    "expectedPages": 1
+  },
+  "kit-v4-haiku-rubric-science-fair": {
+    "category": "rubric",
+    "tags": ["llm", "rubric"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A science fair project rubric with points for each criterion."
+    },
+    "expectedPages": 1
+  },
+  "kit-v4-haiku-worksheet-area-perimeter": {
+    "category": "worksheet",
+    "tags": ["llm", "math", "geometry", "diagram"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A grade 6 geometry worksheet on the area and perimeter of rectangles and triangles, with the shapes drawn and their side lengths labelled."
+    },
+    "expectedPages": 2
+  },
+  "kit-v4-haiku-worksheet-balancing-equations": {
+    "category": "worksheet",
+    "tags": ["llm", "chemistry"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A grade 9 chemistry worksheet: balance 10 chemical equations, from easy to hard, with an answer key."
+    },
+    "expectedPages": 2
+  },
+  "kit-v4-haiku-worksheet-coordinates": {
+    "category": "worksheet",
+    "tags": ["llm", "math", "diagram"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A grade 7 worksheet on plotting points in the coordinate plane and reading coordinates off a grid."
+    },
+    "expectedPages": 2
+  },
+  "kit-v4-haiku-worksheet-decimals": {
+    "category": "worksheet",
+    "tags": ["llm", "math"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A grade 5 math worksheet on multiplying decimals: 10 practice questions and 2 word problems, with an answer key."
+    },
+    "expectedPages": 1
+  },
+  "kit-v4-haiku-worksheet-linear-equations": {
+    "category": "worksheet",
+    "tags": ["llm", "math"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A grade 8 worksheet on solving linear equations in one variable, getting harder as it goes, with room for working."
+    },
+    "expectedPages": 2
+  },
+  "kit-v4-haiku-worksheet-past-tense": {
+    "category": "worksheet",
+    "tags": ["llm", "language"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A grade 4 English worksheet on past tense verbs: fill in the blanks, a matching exercise, and a short writing task."
+    },
+    "expectedPages": 1
+  },
+  "kit-v4-haiku-worksheet-photosynthesis": {
+    "category": "worksheet",
+    "tags": ["llm", "science"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A grade 7 science worksheet on photosynthesis with fill-in-the-blank, multiple choice and one question where students label a diagram of a leaf."
+    },
+    "expectedPages": 2
+  },
+  "kit-v4-haiku-worksheet-reading-comprehension": {
+    "category": "worksheet",
+    "tags": ["llm", "language"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A grade 5 reading comprehension worksheet: a short original story (about 250 words) followed by 6 questions."
+    },
+    "expectedPages": 2
+  },
+  "kit-v4-haiku-worksheet-statistics": {
+    "category": "worksheet",
+    "tags": ["llm", "math", "table"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A grade 9 statistics worksheet on mean, median, mode and range, using a table of test scores."
+    },
+    "expectedPages": 2
+  },
+  "kit-v4-r2-haiku-exam-algebra-final": {
+    "category": "exam",
+    "expect": "error",
+    "expectedErrors": ["unexpected hat"],
+    "tags": ["llm", "math", "answer-key"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4-r2",
+      "request": "A 90-minute Algebra II final exam in three sections (multiple choice, short answer, extended response) with points for each question and an answer key."
+    }
+  },
+  "kit-v4-r2-haiku-exam-calculus-midterm": {
+    "category": "exam",
+    "expect": "error",
+    "expectedErrors": ["unexpected hat"],
+    "tags": ["llm", "math", "answer-key"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4-r2",
+      "request": "A 60-minute calculus midterm on limits and derivatives, with worked solutions for the teacher."
+    }
+  },
+  "kit-v4-r2-haiku-quiz-equivalent-fractions-exit-ticket": {
+    "category": "quiz",
+    "expect": "error",
+    "expectedErrors": ["unknown variable: exit-ticket-placeholder"],
+    "tags": ["llm", "math"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4-r2",
+      "request": "An exit ticket on equivalent fractions: 3 quick questions."
+    }
+  },
+  "kit-v4-r3-haiku-exam-calculus-midterm": {
+    "category": "exam",
+    "expect": "error",
+    "expectedErrors": ["unexpected hat"],
+    "tags": ["llm", "math", "answer-key"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4-r3",
+      "request": "A 60-minute calculus midterm on limits and derivatives, with worked solutions for the teacher."
+    }
+  },
+  "kit-v4-r3-haiku-exam-stoichiometry": {
+    "category": "exam",
+    "expect": "error",
+    "expectedErrors": ["unexpected hat", "unexpected underscore"],
+    "tags": ["llm", "chemistry", "math"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4-r3",
+      "request": "A 45-minute grade 11 chemistry test on stoichiometry and the mole, with balanced equations."
+    }
+  },
+  "kit-v4-r3-haiku-quiz-si-units": {
+    "category": "quiz",
+    "expect": "error",
+    "expectedErrors": ["unexpected hat"],
+    "tags": ["llm", "physics", "units"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4-r3",
+      "request": "A short grade 10 physics quiz on SI units and unit conversions."
+    }
+  },
+  "kit-v4-r3-haiku-worksheet-photosynthesis": {
+    "category": "worksheet",
+    "expect": "error",
+    "expectedErrors": ["unexpected argument"],
+    "tags": ["llm", "science"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4-r3",
+      "request": "A grade 7 science worksheet on photosynthesis with fill-in-the-blank, multiple choice and one question where students label a diagram of a leaf."
+    }
+  },
+  "kit-v4-sonnet-arabic-quiz-solar-system": {
+    "category": "quiz",
+    "tags": ["llm", "multilingual", "rtl", "science", "mcq"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A short multiple-choice quiz in Arabic for grade 4 on the solar system."
+    },
+    "expectedPages": 1
+  },
+  "kit-v4-sonnet-arabic-worksheet-decimals": {
+    "category": "worksheet",
+    "tags": ["llm", "multilingual", "rtl", "math"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "اكتب ورقة عمل للصف السادس عن الكسور العشرية، مع مفتاح الإجابة."
+    },
+    "expectedPages": 2
+  },
+  "kit-v4-sonnet-bengali-quiz-multiplication": {
+    "category": "quiz",
+    "tags": ["llm", "multilingual", "math"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A grade 3 multiplication quiz in Bengali, 8 questions."
+    },
+    "expectedPages": 1
+  },
+  "kit-v4-sonnet-bengali-worksheet-plants": {
+    "category": "worksheet",
+    "tags": ["llm", "multilingual", "science"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "চতুর্থ শ্রেণির জন্য উদ্ভিদের অংশ নিয়ে একটি বিজ্ঞান কার্যপত্র লেখো।"
+    },
+    "expectedPages": 2
+  },
+  "kit-v4-sonnet-exam-algebra-final": {
+    "category": "exam",
+    "tags": ["llm", "math", "answer-key"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A 90-minute Algebra II final exam in three sections (multiple choice, short answer, extended response) with points for each question and an answer key."
+    },
+    "expectedPages": 4
+  },
+  "kit-v4-sonnet-exam-calculus-midterm": {
+    "category": "exam",
+    "tags": ["llm", "math", "answer-key"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A 60-minute calculus midterm on limits and derivatives, with worked solutions for the teacher."
+    },
+    "expectedPages": 3
+  },
+  "kit-v4-sonnet-exam-forces": {
+    "category": "exam",
+    "tags": ["llm", "physics", "diagram"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A grade 11 physics exam on kinematics and Newton's laws, including a free-body diagram of a block on an inclined plane."
+    },
+    "expectedPages": 3
+  },
+  "kit-v4-sonnet-exam-stoichiometry": {
+    "category": "exam",
+    "tags": ["llm", "chemistry", "math"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A 45-minute grade 11 chemistry test on stoichiometry and the mole, with balanced equations."
+    },
+    "expectedPages": 3
+  },
+  "kit-v4-sonnet-exam-world-war-one": {
+    "category": "exam",
+    "tags": ["llm", "history", "sources"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A grade 10 history exam on World War I with source-based questions and one essay question."
+    },
+    "expectedPages": 4
+  },
+  "kit-v4-sonnet-handout-french-revolution": {
+    "category": "handout",
+    "tags": ["llm", "history"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "Cornell-style study notes on the causes of the French Revolution."
+    },
+    "expectedPages": 2
+  },
+  "kit-v4-sonnet-handout-pythagoras": {
+    "category": "handout",
+    "tags": ["llm", "math", "diagram"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A handout explaining the Pythagorean theorem, with a labelled right triangle and a worked example."
+    },
+    "expectedPages": 2
+  },
+  "kit-v4-sonnet-lesson-plan-persuasive-writing": {
+    "category": "lesson-plan",
+    "tags": ["llm", "language"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A lesson plan for teaching persuasive writing to grade 8 over two 50-minute sessions."
+    },
+    "expectedPages": 4
+  },
+  "kit-v4-sonnet-lesson-plan-water-cycle": {
+    "category": "lesson-plan",
+    "tags": ["llm", "science"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A 45-minute lesson plan for grade 4 on the water cycle."
+    },
+    "expectedPages": 3
+  },
+  "kit-v4-sonnet-quiz-cell-biology": {
+    "category": "quiz",
+    "tags": ["llm", "science", "true-false"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A true/false quiz on cell biology for grade 9: 12 statements, with the answers."
+    },
+    "expectedPages": 1
+  },
+  "kit-v4-sonnet-quiz-equivalent-fractions-exit-ticket": {
+    "category": "quiz",
+    "tags": ["llm", "math"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "An exit ticket on equivalent fractions: 3 quick questions."
+    },
+    "expectedPages": 1
+  },
+  "kit-v4-sonnet-quiz-european-capitals": {
+    "category": "quiz",
+    "tags": ["llm", "geography", "mcq"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A 10-question multiple-choice quiz on European capitals for grade 6."
+    },
+    "expectedPages": 1
+  },
+  "kit-v4-sonnet-quiz-si-units": {
+    "category": "quiz",
+    "tags": ["llm", "physics", "units"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A short grade 10 physics quiz on SI units and unit conversions."
+    },
+    "expectedPages": 1
+  },
+  "kit-v4-sonnet-quiz-spanish-food": {
+    "category": "quiz",
+    "tags": ["llm", "language", "matching"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A beginner Spanish vocabulary quiz on food: a matching section and a fill-in-the-blank section."
+    },
+    "expectedPages": 1
+  },
+  "kit-v4-sonnet-rubric-argumentative-essay": {
+    "category": "rubric",
+    "tags": ["llm", "rubric"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A rubric for an argumentative essay with 4 criteria and 4 performance levels."
+    },
+    "expectedPages": 1
+  },
+  "kit-v4-sonnet-rubric-science-fair": {
+    "category": "rubric",
+    "tags": ["llm", "rubric"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A science fair project rubric with points for each criterion."
+    },
+    "expectedPages": 2
+  },
+  "kit-v4-sonnet-worksheet-area-perimeter": {
+    "category": "worksheet",
+    "tags": ["llm", "math", "geometry", "diagram"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A grade 6 geometry worksheet on the area and perimeter of rectangles and triangles, with the shapes drawn and their side lengths labelled."
+    },
+    "expectedPages": 3
+  },
+  "kit-v4-sonnet-worksheet-balancing-equations": {
+    "category": "worksheet",
+    "tags": ["llm", "chemistry"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A grade 9 chemistry worksheet: balance 10 chemical equations, from easy to hard, with an answer key."
+    },
+    "expectedPages": 2
+  },
+  "kit-v4-sonnet-worksheet-coordinates": {
+    "category": "worksheet",
+    "tags": ["llm", "math", "diagram"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A grade 7 worksheet on plotting points in the coordinate plane and reading coordinates off a grid."
+    },
+    "expectedPages": 2
+  },
+  "kit-v4-sonnet-worksheet-decimals": {
+    "category": "worksheet",
+    "tags": ["llm", "math"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A grade 5 math worksheet on multiplying decimals: 10 practice questions and 2 word problems, with an answer key."
+    },
+    "expectedPages": 1
+  },
+  "kit-v4-sonnet-worksheet-linear-equations": {
+    "category": "worksheet",
+    "tags": ["llm", "math"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A grade 8 worksheet on solving linear equations in one variable, getting harder as it goes, with room for working."
+    },
+    "expectedPages": 3
+  },
+  "kit-v4-sonnet-worksheet-past-tense": {
+    "category": "worksheet",
+    "tags": ["llm", "language"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A grade 4 English worksheet on past tense verbs: fill in the blanks, a matching exercise, and a short writing task."
+    },
+    "expectedPages": 2
+  },
+  "kit-v4-sonnet-worksheet-photosynthesis": {
+    "category": "worksheet",
+    "tags": ["llm", "science"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A grade 7 science worksheet on photosynthesis with fill-in-the-blank, multiple choice and one question where students label a diagram of a leaf."
+    },
+    "expectedPages": 2
+  },
+  "kit-v4-sonnet-worksheet-reading-comprehension": {
+    "category": "worksheet",
+    "tags": ["llm", "language"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A grade 5 reading comprehension worksheet: a short original story (about 250 words) followed by 6 questions."
+    },
+    "expectedPages": 2
+  },
+  "kit-v4-sonnet-worksheet-statistics": {
+    "category": "worksheet",
+    "tags": ["llm", "math", "table"],
+    "plugins": ["edu"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "kit-v4",
+      "request": "A grade 9 statistics worksheet on mean, median, mode and range, using a table of test scores."
+    },
+    "expectedPages": 2
+  },
+  "naive-haiku-arabic-quiz-solar-system": {
+    "category": "quiz",
+    "allowedWarnings": ["unknown font family: noto sans arabic", "unknown font family: arial"],
+    "tags": ["llm", "multilingual", "rtl", "science", "mcq"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A short multiple-choice quiz in Arabic for grade 4 on the solar system."
+    },
+    "expectedPages": 2
+  },
+  "naive-haiku-arabic-worksheet-decimals": {
+    "category": "worksheet",
+    "tags": ["llm", "multilingual", "rtl", "math"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "اكتب ورقة عمل للصف السادس عن الكسور العشرية، مع مفتاح الإجابة."
+    },
+    "expectedPages": 4
+  },
+  "naive-haiku-bengali-quiz-multiplication": {
+    "category": "quiz",
+    "allowedWarnings": ["no text within underscores", "unknown font family: noto sans bengali"],
+    "tags": ["llm", "multilingual", "math"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A grade 3 multiplication quiz in Bengali, 8 questions."
+    },
+    "expectedPages": 2
+  },
+  "naive-haiku-bengali-worksheet-plants": {
+    "category": "worksheet",
+    "allowedWarnings": ["no text within underscores"],
+    "tags": ["llm", "multilingual", "science"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "চতুর্থ শ্রেণির জন্য উদ্ভিদের অংশ নিয়ে একটি বিজ্ঞান কার্যপত্র লেখো।"
+    },
+    "expectedPages": 2
+  },
+  "naive-haiku-exam-algebra-final": {
+    "category": "exam",
+    "expect": "error",
+    "expectedErrors": ["unknown variable: leq"],
+    "tags": ["llm", "math", "answer-key"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A 90-minute Algebra II final exam in three sections (multiple choice, short answer, extended response) with points for each question and an answer key."
+    }
+  },
+  "naive-haiku-exam-calculus-midterm": {
+    "category": "exam",
+    "expect": "error",
+    "expectedErrors": ["unexpected hat"],
+    "tags": ["llm", "math", "answer-key"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A 60-minute calculus midterm on limits and derivatives, with worked solutions for the teacher."
+    }
+  },
+  "naive-haiku-exam-forces": {
+    "category": "exam",
+    "tags": ["llm", "physics", "diagram"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A grade 11 physics exam on kinematics and Newton's laws, including a free-body diagram of a block on an inclined plane."
+    },
+    "expectedPages": 2
+  },
+  "naive-haiku-exam-stoichiometry": {
+    "category": "exam",
+    "tags": ["llm", "chemistry", "math"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A 45-minute grade 11 chemistry test on stoichiometry and the mole, with balanced equations."
+    },
+    "expectedPages": 4
+  },
+  "naive-haiku-exam-world-war-one": {
+    "category": "exam",
+    "allowedWarnings": ["no text within stars"],
+    "tags": ["llm", "history", "sources"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A grade 10 history exam on World War I with source-based questions and one essay question."
+    },
+    "expectedPages": 3
+  },
+  "naive-haiku-handout-french-revolution": {
+    "category": "handout",
+    "tags": ["llm", "history"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "Cornell-style study notes on the causes of the French Revolution."
+    },
+    "expectedPages": 2
+  },
+  "naive-haiku-handout-pythagoras": {
+    "category": "handout",
+    "tags": ["llm", "math", "diagram"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A handout explaining the Pythagorean theorem, with a labelled right triangle and a worked example."
+    },
+    "expectedPages": 2
+  },
+  "naive-haiku-lesson-plan-persuasive-writing": {
+    "category": "lesson-plan",
+    "allowedWarnings": ["no text within underscores"],
+    "tags": ["llm", "language"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A lesson plan for teaching persuasive writing to grade 8 over two 50-minute sessions."
+    },
+    "expectedPages": 3
+  },
+  "naive-haiku-lesson-plan-water-cycle": {
+    "category": "lesson-plan",
+    "tags": ["llm", "science"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A 45-minute lesson plan for grade 4 on the water cycle."
+    },
+    "expectedPages": 2
+  },
+  "naive-haiku-quiz-cell-biology": {
+    "category": "quiz",
+    "tags": ["llm", "science", "true-false"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A true/false quiz on cell biology for grade 9: 12 statements, with the answers."
+    },
+    "expectedPages": 2
+  },
+  "naive-haiku-quiz-equivalent-fractions-exit-ticket": {
+    "category": "quiz",
+    "tags": ["llm", "math"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "An exit ticket on equivalent fractions: 3 quick questions."
+    },
+    "expectedPages": 1
+  },
+  "naive-haiku-quiz-european-capitals": {
+    "category": "quiz",
+    "tags": ["llm", "geography", "mcq"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A 10-question multiple-choice quiz on European capitals for grade 6."
+    },
+    "expectedPages": 3
+  },
+  "naive-haiku-quiz-si-units": {
+    "category": "quiz",
+    "expect": "error",
+    "expectedErrors": ["unexpected hat"],
+    "tags": ["llm", "physics", "units"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A short grade 10 physics quiz on SI units and unit conversions."
+    }
+  },
+  "naive-haiku-quiz-spanish-food": {
+    "category": "quiz",
+    "tags": ["llm", "language", "matching"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A beginner Spanish vocabulary quiz on food: a matching section and a fill-in-the-blank section."
+    },
+    "expectedPages": 1
+  },
+  "naive-haiku-rubric-argumentative-essay": {
+    "category": "rubric",
+    "tags": ["llm", "rubric"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A rubric for an argumentative essay with 4 criteria and 4 performance levels."
+    },
+    "expectedPages": 1
+  },
+  "naive-haiku-rubric-science-fair": {
+    "category": "rubric",
+    "tags": ["llm", "rubric"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A science fair project rubric with points for each criterion."
+    },
+    "expectedPages": 2
+  },
+  "naive-haiku-worksheet-area-perimeter": {
+    "category": "worksheet",
+    "tags": ["llm", "math", "geometry", "diagram"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A grade 6 geometry worksheet on the area and perimeter of rectangles and triangles, with the shapes drawn and their side lengths labelled."
+    },
+    "expectedPages": 3
+  },
+  "naive-haiku-worksheet-balancing-equations": {
+    "category": "worksheet",
+    "tags": ["llm", "chemistry"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A grade 9 chemistry worksheet: balance 10 chemical equations, from easy to hard, with an answer key."
+    },
+    "expectedPages": 2
+  },
+  "naive-haiku-worksheet-coordinates": {
+    "category": "worksheet",
+    "tags": ["llm", "math", "diagram"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A grade 7 worksheet on plotting points in the coordinate plane and reading coordinates off a grid."
+    },
+    "expectedPages": 2
+  },
+  "naive-haiku-worksheet-decimals": {
+    "category": "worksheet",
+    "tags": ["llm", "math"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A grade 5 math worksheet on multiplying decimals: 10 practice questions and 2 word problems, with an answer key."
+    },
+    "expectedPages": 2
+  },
+  "naive-haiku-worksheet-linear-equations": {
+    "category": "worksheet",
+    "tags": ["llm", "math"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A grade 8 worksheet on solving linear equations in one variable, getting harder as it goes, with room for working."
+    },
+    "expectedPages": 4
+  },
+  "naive-haiku-worksheet-past-tense": {
+    "category": "worksheet",
+    "tags": ["llm", "language"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A grade 4 English worksheet on past tense verbs: fill in the blanks, a matching exercise, and a short writing task."
+    },
+    "expectedPages": 1
+  },
+  "naive-haiku-worksheet-photosynthesis": {
+    "category": "worksheet",
+    "tags": ["llm", "science"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A grade 7 science worksheet on photosynthesis with fill-in-the-blank, multiple choice and one question where students label a diagram of a leaf."
+    },
+    "expectedPages": 3
+  },
+  "naive-haiku-worksheet-reading-comprehension": {
+    "category": "worksheet",
+    "allowedWarnings": ["no text within underscores"],
+    "tags": ["llm", "language"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A grade 5 reading comprehension worksheet: a short original story (about 250 words) followed by 6 questions."
+    },
+    "expectedPages": 2
+  },
+  "naive-haiku-worksheet-statistics": {
+    "category": "worksheet",
+    "tags": ["llm", "math", "table"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-haiku-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A grade 9 statistics worksheet on mean, median, mode and range, using a table of test scores."
+    },
+    "expectedPages": 3
+  },
+  "naive-sonnet-arabic-quiz-solar-system": {
+    "category": "quiz",
+    "tags": ["llm", "multilingual", "rtl", "science", "mcq"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A short multiple-choice quiz in Arabic for grade 4 on the solar system."
+    },
+    "expectedPages": 2
+  },
+  "naive-sonnet-arabic-worksheet-decimals": {
+    "category": "worksheet",
+    "allowedWarnings": [
+      "unknown font family: noto naskh arabic",
+      "unknown font family: amiri",
+      "unknown font family: arial"
+    ],
+    "tags": ["llm", "multilingual", "rtl", "math"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "اكتب ورقة عمل للصف السادس عن الكسور العشرية، مع مفتاح الإجابة."
+    },
+    "expectedPages": 3
+  },
+  "naive-sonnet-bengali-quiz-multiplication": {
+    "category": "quiz",
+    "allowedWarnings": [
+      "unknown font family: noto sans bengali",
+      "unknown font family: noto serif bengali",
+      "unknown font family: kalpurush",
+      "unknown font family: nirmala ui"
+    ],
+    "tags": ["llm", "multilingual", "math"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A grade 3 multiplication quiz in Bengali, 8 questions."
+    },
+    "expectedPages": 2
+  },
+  "naive-sonnet-bengali-worksheet-plants": {
+    "category": "worksheet",
+    "allowedWarnings": [
+      "unknown font family: noto sans bengali",
+      "unknown font family: kalpurush",
+      "unknown font family: siyam rupali",
+      "unknown font family: nirmala ui",
+      "unknown font family: noto serif bengali"
+    ],
+    "tags": ["llm", "multilingual", "science"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "চতুর্থ শ্রেণির জন্য উদ্ভিদের অংশ নিয়ে একটি বিজ্ঞান কার্যপত্র লেখো।"
+    },
+    "expectedPages": 2
+  },
+  "naive-sonnet-exam-algebra-final": {
+    "category": "exam",
+    "tags": ["llm", "math", "answer-key"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A 90-minute Algebra II final exam in three sections (multiple choice, short answer, extended response) with points for each question and an answer key."
+    },
+    "expectedPages": 11
+  },
+  "naive-sonnet-exam-calculus-midterm": {
+    "category": "exam",
+    "expect": "error",
+    "expectedErrors": ["unknown variable: dy"],
+    "tags": ["llm", "math", "answer-key"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A 60-minute calculus midterm on limits and derivatives, with worked solutions for the teacher."
+    }
+  },
+  "naive-sonnet-exam-forces": {
+    "category": "exam",
+    "tags": ["llm", "physics", "diagram"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A grade 11 physics exam on kinematics and Newton's laws, including a free-body diagram of a block on an inclined plane."
+    },
+    "expectedPages": 7
+  },
+  "naive-sonnet-exam-stoichiometry": {
+    "category": "exam",
+    "tags": ["llm", "chemistry", "math"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A 45-minute grade 11 chemistry test on stoichiometry and the mole, with balanced equations."
+    },
+    "expectedPages": 6
+  },
+  "naive-sonnet-exam-world-war-one": {
+    "category": "exam",
+    "tags": ["llm", "history", "sources"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A grade 10 history exam on World War I with source-based questions and one essay question."
+    },
+    "expectedPages": 7
+  },
+  "naive-sonnet-handout-french-revolution": {
+    "category": "handout",
+    "tags": ["llm", "history"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "Cornell-style study notes on the causes of the French Revolution."
+    },
+    "expectedPages": 3
+  },
+  "naive-sonnet-handout-pythagoras": {
+    "category": "handout",
+    "tags": ["llm", "math", "diagram"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A handout explaining the Pythagorean theorem, with a labelled right triangle and a worked example."
+    },
+    "expectedPages": 2
+  },
+  "naive-sonnet-lesson-plan-persuasive-writing": {
+    "category": "lesson-plan",
+    "tags": ["llm", "language"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A lesson plan for teaching persuasive writing to grade 8 over two 50-minute sessions."
+    },
+    "expectedPages": 4
+  },
+  "naive-sonnet-lesson-plan-water-cycle": {
+    "category": "lesson-plan",
+    "tags": ["llm", "science"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A 45-minute lesson plan for grade 4 on the water cycle."
+    },
+    "expectedPages": 3
+  },
+  "naive-sonnet-quiz-cell-biology": {
+    "category": "quiz",
+    "tags": ["llm", "science", "true-false"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A true/false quiz on cell biology for grade 9: 12 statements, with the answers."
+    },
+    "expectedPages": 2
+  },
+  "naive-sonnet-quiz-equivalent-fractions-exit-ticket": {
+    "category": "quiz",
+    "tags": ["llm", "math"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "An exit ticket on equivalent fractions: 3 quick questions."
+    },
+    "expectedPages": 1
+  },
+  "naive-sonnet-quiz-european-capitals": {
+    "category": "quiz",
+    "tags": ["llm", "geography", "mcq"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A 10-question multiple-choice quiz on European capitals for grade 6."
+    },
+    "expectedPages": 2
+  },
+  "naive-sonnet-quiz-si-units": {
+    "category": "quiz",
+    "tags": ["llm", "physics", "units"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A short grade 10 physics quiz on SI units and unit conversions."
+    },
+    "expectedPages": 3
+  },
+  "naive-sonnet-quiz-spanish-food": {
+    "category": "quiz",
+    "tags": ["llm", "language", "matching"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A beginner Spanish vocabulary quiz on food: a matching section and a fill-in-the-blank section."
+    },
+    "expectedPages": 2
+  },
+  "naive-sonnet-rubric-argumentative-essay": {
+    "category": "rubric",
+    "expect": "error",
+    "expectedErrors": ["unexpected end of block comment", "unclosed delimiter"],
+    "tags": ["llm", "rubric"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A rubric for an argumentative essay with 4 criteria and 4 performance levels."
+    }
+  },
+  "naive-sonnet-rubric-science-fair": {
+    "category": "rubric",
+    "expect": "error",
+    "expectedErrors": ["expected colon", "unexpected end of block comment", "unclosed delimiter"],
+    "tags": ["llm", "rubric"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A science fair project rubric with points for each criterion."
+    }
+  },
+  "naive-sonnet-worksheet-area-perimeter": {
+    "category": "worksheet",
+    "tags": ["llm", "math", "geometry", "diagram"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A grade 6 geometry worksheet on the area and perimeter of rectangles and triangles, with the shapes drawn and their side lengths labelled."
+    },
+    "expectedPages": 3
+  },
+  "naive-sonnet-worksheet-balancing-equations": {
+    "category": "worksheet",
+    "tags": ["llm", "chemistry"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A grade 9 chemistry worksheet: balance 10 chemical equations, from easy to hard, with an answer key."
+    },
+    "expectedPages": 2
+  },
+  "naive-sonnet-worksheet-coordinates": {
+    "category": "worksheet",
+    "tags": ["llm", "math", "diagram"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A grade 7 worksheet on plotting points in the coordinate plane and reading coordinates off a grid."
+    },
+    "expectedPages": 2
+  },
+  "naive-sonnet-worksheet-decimals": {
+    "category": "worksheet",
+    "tags": ["llm", "math"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A grade 5 math worksheet on multiplying decimals: 10 practice questions and 2 word problems, with an answer key."
+    },
+    "expectedPages": 2
+  },
+  "naive-sonnet-worksheet-linear-equations": {
+    "category": "worksheet",
+    "tags": ["llm", "math"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A grade 8 worksheet on solving linear equations in one variable, getting harder as it goes, with room for working."
+    },
+    "expectedPages": 5
+  },
+  "naive-sonnet-worksheet-past-tense": {
+    "category": "worksheet",
+    "tags": ["llm", "language"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A grade 4 English worksheet on past tense verbs: fill in the blanks, a matching exercise, and a short writing task."
+    },
+    "expectedPages": 2
+  },
+  "naive-sonnet-worksheet-photosynthesis": {
+    "category": "worksheet",
+    "tags": ["llm", "science"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A grade 7 science worksheet on photosynthesis with fill-in-the-blank, multiple choice and one question where students label a diagram of a leaf."
+    },
+    "expectedPages": 2
+  },
+  "naive-sonnet-worksheet-reading-comprehension": {
+    "category": "worksheet",
+    "tags": ["llm", "language"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A grade 5 reading comprehension worksheet: a short original story (about 250 words) followed by 6 questions."
+    },
+    "expectedPages": 2
+  },
+  "naive-sonnet-worksheet-statistics": {
+    "category": "worksheet",
+    "tags": ["llm", "math", "table"],
+    "stream": {
+      "source": "recorded",
+      "model": "claude-sonnet-5-5"
+    },
+    "prompt": {
+      "kit": "naive",
+      "request": "A grade 9 statistics worksheet on mean, median, mode and range, using a table of test scores."
+    },
+    "expectedPages": 3
+  }
+}

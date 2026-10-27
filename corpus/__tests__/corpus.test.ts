@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  ALL_SETS,
   formatStream,
   joinStream,
   loadCorpus,
@@ -11,7 +12,7 @@ import {
   tokenize,
 } from "../src";
 
-const corpus = loadCorpus();
+const corpus = loadCorpus({ sets: ALL_SETS });
 
 /** No lone surrogates (String#isWellFormed is ES2024). */
 const wellFormed = (s: string): boolean => {
@@ -30,6 +31,22 @@ describe("corpus layout", () => {
   it("has the hand-written edu set and the adversarial set", () => {
     expect(corpus.filter((e) => e.set === "edu").length).toBeGreaterThanOrEqual(30);
     expect(corpus.filter((e) => e.set === "adversarial").length).toBeGreaterThanOrEqual(10);
+  });
+
+  it("loads only the plain Typst sets by default", () => {
+    expect(new Set(loadCorpus().map((e) => e.set))).toEqual(new Set(["edu", "adversarial"]));
+  });
+
+  it("keeps model output as recorded, with the prompt it came from (#24)", () => {
+    const llm = corpus.filter((e) => e.set === "llm");
+    expect(llm.length).toBeGreaterThanOrEqual(50);
+    for (const e of llm) {
+      expect(e.meta.stream, e.id).toMatchObject({ source: "recorded", model: expect.stringMatching(/^claude-/) });
+      expect(e.recordedStream?.length, e.id).toBeGreaterThan(1);
+      expect(e.meta.prompt?.request.length, e.id).toBeGreaterThan(10);
+      expect(e.name.startsWith(`${e.meta.prompt?.kit}-`), e.id).toBe(true);
+      for (const p of e.meta.plugins ?? []) expect(["edu"], e.id).toContain(p);
+    }
   });
 
   it("gives every compiling entry a page count", () => {

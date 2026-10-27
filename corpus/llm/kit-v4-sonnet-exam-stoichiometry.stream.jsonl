@@ -1,0 +1,374 @@
+{"t":0,"text":"#"}
+{"t":33,"text":"show: exam."}
+{"t":66,"text":"with(\n  title: ["}
+{"t":99,"text":"Stoichiometry and the"}
+{"t":133,"text":" Mole],\n  subject"}
+{"t":167,"text":": [Chemistry],"}
+{"t":200,"text":"\n  grade: [Gr"}
+{"t":233,"text":"ade 11],\n  duration"}
+{"t":266,"text":": [45 minutes],"}
+{"t":304,"text":"\n  instructions: ["}
+{"t":333,"text":"Answer *all* questions."}
+{"t":366,"text":" Show your working for"}
+{"t":404,"text":" calculations and"}
+{"t":433,"text":" give answ"}
+{"t":466,"text":"ers with"}
+{"t":499,"text":" units"}
+{"t":533,"text":". Use"}
+{"t":566,"text":" a"}
+{"t":599,"text":" calculator where"}
+{"t":633,"text":" need"}
+{"t":667,"text":"ed.],\n)\n\n#call"}
+{"t":700,"text":"out(kind: \"note"}
+{"t":735,"text":"\", title: [Data])"}
+{"t":766,"text":"[\n  Mol"}
+{"t":800,"text":"ar masses "}
+{"t":833,"text":"($\""}
+{"t":866,"text":"g/mol\"$): H"}
+{"t":900,"text":" = 1, C = 12"}
+{"t":933,"text":", O = 16,"}
+{"t":966,"text":" Na = 23, Mg"}
+{"t":1000,"text":" = 24, Cl ="}
+{"t":1033,"text":" 35.5, Ca"}
+{"t":1066,"text":" = 40. \\"}
+{"t":1100,"text":"\n  Avogadro const"}
+{"t":1133,"text":"ant: $6.02 times"}
+{"t":1167,"text":" 10^23 \"m"}
+{"t":1200,"text":"ol\"^("}
+{"t":1233,"text":"-1)$."}
+{"t":1266,"text":" Molar volume of"}
+{"t":1300,"text":" a gas at STP: $"}
+{"t":1333,"text":"22.4 \"L/m"}
+{"t":1367,"text":"ol\"$.\n]\n\n="}
+{"t":1400,"text":" Section A: Multiple"}
+{"t":1434,"text":" choice"}
+{"t":1467,"text":"\n\n#question(points: 1)"}
+{"t":1500,"text":"[\n  How many particles are"}
+{"t":1533,"text":" in one mole of a"}
+{"t":1567,"text":" substance?\n  #mc"}
+{"t":1602,"text":"q([$6.02 times"}
+{"t":1633,"text":" 10^23"}
+{"t":1667,"text":"$], [$6.02 "}
+{"t":1701,"text":"times 10^(-23)"}
+{"t":1735,"text":"$], [$22"}
+{"t":1767,"text":".4 times 10^23"}
+{"t":1800,"text":"$], [$1.66"}
+{"t":1834,"text":" times 10^24"}
+{"t":1867,"text":"$], answer: 1"}
+{"t":1900,"text":")\n]\n\n#question(points"}
+{"t":1934,"text":": 1)[\n  What"}
+{"t":1967,"text":" is the molar mass of #"}
+{"t":2000,"text":"ce(\"CaCO3"}
+{"t":2034,"text":"\")?\n  #mcq"}
+{"t":2067,"text":"([$68 \"g/m"}
+{"t":2101,"text":"ol\"$], [$84"}
+{"t":2134,"text":" \"g/mol\"$"}
+{"t":2167,"text":"], [$100 \"g/"}
+{"t":2201,"text":"mol\"$], [$116"}
+{"t":2238,"text":" \"g/mol\"$"}
+{"t":2269,"text":"], answer: 3)"}
+{"t":2301,"text":"\n]\n\n#question(points: "}
+{"t":2334,"text":"1)[\n  Which equ"}
+{"t":2368,"text":"ation is corre"}
+{"t":2401,"text":"ctly balanced?\n  "}
+{"t":2438,"text":"#mcq("}
+{"t":2472,"text":"ce(\"Al + O2"}
+{"t":2503,"text":" -> Al2O3"}
+{"t":2534,"text":"\"), ce(\"2Al"}
+{"t":2568,"text":" + 3O2 ->"}
+{"t":2602,"text":" 2Al2O3\""}
+{"t":2635,"text":"), ce(\"4Al +"}
+{"t":2668,"text":" 3O2 -> "}
+{"t":2701,"text":"2Al2O3\"),"}
+{"t":2735,"text":" ce(\"4Al + "}
+{"t":2768,"text":"2O2 -> 2"}
+{"t":2801,"text":"Al2O3\"), answ"}
+{"t":2835,"text":"er: 3)\n]"}
+{"t":2869,"text":"\n\n#question(points: 1)"}
+{"t":2901,"text":"[\n  How many moles are"}
+{"t":2935,"text":" in $"}
+{"t":2968,"text":"36 \"g"}
+{"t":3001,"text":"\"$ of water"}
+{"t":3034,"text":","}
+{"t":3068,"text":" #ce(\"H2O\")"}
+{"t":3101,"text":"?\n  #mcq(["}
+{"t":3139,"text":"$0.5 \"mol"}
+{"t":3169,"text":"\"$], [$1"}
+{"t":3201,"text":".0 \"mol\"$"}
+{"t":3237,"text":"], [$2.0 \""}
+{"t":3268,"text":"mol\"$], [$18"}
+{"t":3307,"text":" \"mol\"$], answ"}
+{"t":3336,"text":"er: 3"}
+{"t":3373,"text":")\n]\n\n#question(points"}
+{"t":3402,"text":": 1)[\n  What"}
+{"t":3436,"text":" volume do"}
+{"t":3470,"text":" $2."}
+{"t":3502,"text":"0 \"mol\"$"}
+{"t":3535,"text":" of any gas occ"}
+{"t":3568,"text":"upy at STP?\n  "}
+{"t":3601,"text":"#mcq([$11"}
+{"t":3635,"text":".2 \"L\"$],"}
+{"t":3668,"text":" [$22.4 \"L"}
+{"t":3702,"text":"\"$], [$44.8"}
+{"t":3735,"text":" \"L\"$], [$"}
+{"t":3768,"text":"67.2 \"L\"$"}
+{"t":3802,"text":"], answer: 3)"}
+{"t":3842,"text":"\n]\n\n= Section B:"}
+{"t":3869,"text":" Balancing equations\n\n#question"}
+{"t":3902,"text":"(points: 4)["}
+{"t":3935,"text":"\n  Balance each"}
+{"t":3968,"text":" equation by"}
+{"t":4002,"text":" writing the full"}
+{"t":4036,"text":" bal"}
+{"t":4068,"text":"anced equation on"}
+{"t":4102,"text":" the line.\n  + #"}
+{"t":4135,"text":"ce(\"Fe + O2"}
+{"t":4170,"text":" -> Fe2O"}
+{"t":4202,"text":"3\")\n    #answer-"}
+{"t":4238,"text":"lines(count: 1,"}
+{"t":4269,"text":" answer: ce(\"4"}
+{"t":4302,"text":"Fe + 3O2 "}
+{"t":4335,"text":"-> 2Fe2"}
+{"t":4372,"text":"O3\"))\n  + #"}
+{"t":4406,"text":"ce(\"C3H8 "}
+{"t":4435,"text":"+ O2 -> CO"}
+{"t":4469,"text":"2 + H2O\")"}
+{"t":4502,"text":"\n    #answer-lines("}
+{"t":4538,"text":"count: 1, answer:"}
+{"t":4569,"text":" ce(\"C3H8 "}
+{"t":4602,"text":"+ 5O2 ->"}
+{"t":4638,"text":" 3CO2 + "}
+{"t":4669,"text":"4H2O\"))\n  "}
+{"t":4702,"text":"+ #ce(\"Al +"}
+{"t":4736,"text":" HCl -> AlC"}
+{"t":4769,"text":"l3 + H2\")"}
+{"t":4802,"text":"\n    #answer-lines("}
+{"t":4836,"text":"count: 1, answer:"}
+{"t":4869,"text":" ce(\"2Al + "}
+{"t":4906,"text":"6HCl -> 2"}
+{"t":4936,"text":"AlCl3 + "}
+{"t":4971,"text":"3H2\"))\n  +"}
+{"t":5003,"text":" #ce(\"Na + H"}
+{"t":5036,"text":"2O -> NaOH"}
+{"t":5069,"text":" + H2\")\n    #answ"}
+{"t":5102,"text":"er-lines(count: "}
+{"t":5136,"text":"1, answer: ce(\""}
+{"t":5169,"text":"2Na + 2H2"}
+{"t":5203,"text":"O -> 2NaO"}
+{"t":5236,"text":"H + H2\"))\n]"}
+{"t":5269,"text":"\n\n= Section C: Cal"}
+{"t":5303,"text":"culations\n\n#question(points:"}
+{"t":5336,"text":" 3)[\n  Using"}
+{"t":5369,"text":" the data"}
+{"t":5403,"text":" above"}
+{"t":5436,"text":","}
+{"t":5470,"text":" calculate:\n  + the"}
+{"t":5503,"text":" mass of $0.25 "}
+{"t":5538,"text":"\"mol\"$ of #"}
+{"t":5570,"text":"ce(\"NaCl\");"}
+{"t":5603,"text":"\n    #answer-space("}
+{"t":5637,"text":"height: 3"}
+{"t":5669,"text":"."}
+{"t":5703,"text":"5em, answer: [$"}
+{"t":5736,"text":"M = 58.5 \""}
+{"t":5770,"text":"g/mol\"$; $"}
+{"t":5803,"text":"m = 0.25 times"}
+{"t":5836,"text":" 58.5 = 14"}
+{"t":5869,"text":".6 \"g\"$])"}
+{"t":5903,"text":"\n  + the number of molec"}
+{"t":5936,"text":"ules in $0.50 \""}
+{"t":5969,"text":"mol\"$ of #"}
+{"t":6003,"text":"ce(\"CO2\");\n    "}
+{"t":6036,"text":"#answer-space(height:"}
+{"t":6072,"text":" 3.5em, answer"}
+{"t":6116,"text":": [$0.50"}
+{"t":6139,"text":" times 6.02 times"}
+{"t":6169,"text":" 10^23 = 3"}
+{"t":6203,"text":".01 times 10^23"}
+{"t":6237,"text":"$"}
+{"t":6270,"text":" molecules])\n  +"}
+{"t":6303,"text":" the number"}
+{"t":6336,"text":" of moles in $11.0"}
+{"t":6370,"text":" \"g\"$ of #"}
+{"t":6404,"text":"ce(\"CO2\")."}
+{"t":6437,"text":"\n    #answer-space(height"}
+{"t":6470,"text":": 3.5em, answ"}
+{"t":6503,"text":"er: [$M = 44"}
+{"t":6538,"text":" \"g/mol\"$"}
+{"t":6570,"text":"; $n = 11.0"}
+{"t":6603,"text":" div"}
+{"t":6638,"text":" 44 = 0.25"}
+{"t":6670,"text":" \"mol\"$])"}
+{"t":6703,"text":"\n]\n\n#question(points: "}
+{"t":6737,"text":"3)[\n  Hyd"}
+{"t":6770,"text":"rogen bur"}
+{"t":6803,"text":"ns in"}
+{"t":6836,"text":" oxygen: #ce"}
+{"t":6870,"text":"(\"2H2 + O2"}
+{"t":6903,"text":" -> 2H2O"}
+{"t":6936,"text":"\""}
+{"t":6972,"text":"). What"}
+{"t":7003,"text":" mass of water for"}
+{"t":7036,"text":"ms when $8.0 \""}
+{"t":7070,"text":"g\"$ of hydr"}
+{"t":7103,"text":"ogen bur"}
+{"t":7137,"text":"ns completely?\n  #answ"}
+{"t":7170,"text":"er-space(height: 7"}
+{"t":7204,"text":"em, answer: [$n"}
+{"t":7239,"text":"(#"}
+{"t":7270,"text":"ce(\"H2\"))"}
+{"t":7304,"text":" = 8"}
+{"t":7347,"text":".0 div 2 ="}
+{"t":7370,"text":" 4.0 \"mol"}
+{"t":7403,"text":"\"$. The ratio #"}
+{"t":7437,"text":"ce(\"H2\") : #"}
+{"t":7470,"text":"ce(\"H2O\") is"}
+{"t":7504,"text":" $1"}
+{"t":7537,"text":" : 1$, so $"}
+{"t":7570,"text":"n(#ce(\"H2"}
+{"t":7603,"text":"O\")) = 4.0"}
+{"t":7636,"text":" \"mol\"$. $"}
+{"t":7670,"text":"m = 4.0 times"}
+{"t":7713,"text":" 18 = 72 \""}
+{"t":7737,"text":"g\"$.])\n]"}
+{"t":7774,"text":"\n\n#question(points: 3"}
+{"t":7808,"text":")[\n  Propane bur"}
+{"t":7837,"text":"ns complet"}
+{"t":7871,"text":"ely: #ce(\"C3"}
+{"t":7905,"text":"H8 + 5O2"}
+{"t":7937,"text":" -> 3CO2"}
+{"t":7970,"text":" + 4H2O\""}
+{"t":8003,"text":"). Calculate the mass"}
+{"t":8037,"text":" of carbon dioxide"}
+{"t":8070,"text":" produ"}
+{"t":8105,"text":"ced from $22 "}
+{"t":8137,"text":"\"g\"$ of propane"}
+{"t":8170,"text":".\n  #answer-space"}
+{"t":8203,"text":"(height: 7em, answ"}
+{"t":8237,"text":"er: [$M(#"}
+{"t":8270,"text":"ce(\"C3H8\"))"}
+{"t":8305,"text":" = 44 \"g/m"}
+{"t":8337,"text":"ol\"$,"}
+{"t":8371,"text":" so $n = 22 div"}
+{"t":8404,"text":" 44 = 0.50"}
+{"t":8437,"text":" \"mol\"$. The"}
+{"t":8470,"text":" ratio is $1 :"}
+{"t":8504,"text":" 3$, so $n("}
+{"t":8538,"text":"#ce(\"CO2\")"}
+{"t":8576,"text":") = 1.5 \""}
+{"t":8603,"text":"mol\"$. $m ="}
+{"t":8637,"text":" 1.5 times 44"}
+{"t":8672,"text":" = 66 \"g\""}
+{"t":8704,"text":"$.])\n]\n\n#question"}
+{"t":8741,"text":"(points: 4)["}
+{"t":8771,"text":"\n  Magnesium reac"}
+{"t":8804,"text":"ts with oxygen: #"}
+{"t":8837,"text":"ce(\"2Mg +"}
+{"t":8890,"text":" O2 -> 2M"}
+{"t":8904,"text":"gO\"). A"}
+{"t":8937,"text":" student"}
+{"t":8971,"text":" he"}
+{"t":9004,"text":"ats $4.8 \"g"}
+{"t":9037,"text":"\"$ of magnesium"}
+{"t":9070,"text":" with $4.0 \"g"}
+{"t":9105,"text":"\"$ of oxygen"}
+{"t":9137,"text":".\n  +"}
+{"t":9170,"text":" Determ"}
+{"t":9204,"text":"ine the"}
+{"t":9237,"text":" limiting reagent."}
+{"t":9270,"text":"\n    #answer-space(height"}
+{"t":9306,"text":": 6"}
+{"t":9337,"text":"em, answer: [$n"}
+{"t":9370,"text":"(#ce(\"Mg"}
+{"t":9404,"text":"\")) = 4.8 "}
+{"t":9437,"text":"div 24 = 0."}
+{"t":9470,"text":"20 \"mol\"$;"}
+{"t":9504,"text":" $n(#ce(\"O"}
+{"t":9537,"text":"2\")) = 4.0"}
+{"t":9571,"text":" div 32 = 0"}
+{"t":9604,"text":".125 \"mol\"$"}
+{"t":9637,"text":". $"}
+{"t":9670,"text":"0.20 \""}
+{"t":9705,"text":"mol\""}
+{"t":9739,"text":"$ Mg needs only"}
+{"t":9774,"text":" $0.10 \"mol"}
+{"t":9808,"text":"\"$ #"}
+{"t":9842,"text":"ce(\"O2\"), so"}
+{"t":9872,"text":" oxygen is in excess"}
+{"t":9904,"text":" and"}
+{"t":9937,"text":" *"}
+{"t":9975,"text":"magnesium is"}
+{"t":10004,"text":" lim"}
+{"t":10037,"text":"iting*.])\n  +"}
+{"t":10070,"text":" Calculate the m"}
+{"t":10105,"text":"ass of #"}
+{"t":10140,"text":"ce(\"MgO\") form"}
+{"t":10172,"text":"ed.\n    #answer-"}
+{"t":10204,"text":"space(height: 4"}
+{"t":10238,"text":"em, answer: [$n"}
+{"t":10270,"text":"(#ce(\"MgO"}
+{"t":10305,"text":"\")) = 0.20 "}
+{"t":10338,"text":"\"mol\"$; $m"}
+{"t":10372,"text":" = 0.20 times "}
+{"t":10404,"text":"40 = 8.0 "}
+{"t":10438,"text":"\"g\"$."}
+{"t":10471,"text":"])\n]\n\n#question(points"}
+{"t":10504,"text":": 3)[\n  "}
+{"t":10537,"text":"Calcium carbonate dec"}
+{"t":10570,"text":"omposes on"}
+{"t":10606,"text":" heating: #ce(\"C"}
+{"t":10637,"text":"aCO3(s) -"}
+{"t":10671,"text":"> CaO(s) +"}
+{"t":10706,"text":" CO2(g)\")."}
+{"t":10737,"text":" Heating $25.0 "}
+{"t":10772,"text":"\"g\"$ of #"}
+{"t":10804,"text":"ce(\"CaCO3"}
+{"t":10838,"text":"\") gives $12.6 "}
+{"t":10871,"text":"\"g\"$ of #"}
+{"t":10904,"text":"ce(\"CaO\")."}
+{"t":10937,"text":" Calculate the percentage y"}
+{"t":10973,"text":"ield.\n  #answer-"}
+{"t":11004,"text":"space(height: 7em,"}
+{"t":11037,"text":" answer: [$n(#"}
+{"t":11071,"text":"ce(\"CaCO3"}
+{"t":11104,"text":"\")) = 25.0 "}
+{"t":11137,"text":"div 100 = 0."}
+{"t":11170,"text":"250"}
+{"t":11206,"text":" \"mol\"$,"}
+{"t":11238,"text":" so the"}
+{"t":11272,"text":" theoretical $"}
+{"t":11304,"text":"m(#ce(\"Ca"}
+{"t":11346,"text":"O\")) = 0.250"}
+{"t":11371,"text":" times 56 = 14"}
+{"t":11406,"text":".0 \"g\"$."}
+{"t":11437,"text":" Percentage yield $"}
+{"t":11475,"text":"= 12.6 div "}
+{"t":11504,"text":"14.0 times 100 "}
+{"t":11547,"text":"= 90%"}
+{"t":11578,"text":"$.])\n]\n\n#"}
+{"t":11604,"text":"rubric(\n  (["}
+{"t":11638,"text":"Method ("}
+{"t":11704,"text":"Section C)], [Correct"}
+{"t":11738,"text":" mole "}
+{"t":11771,"text":"ratio and ste"}
+{"t":11805,"text":"ps sh"}
+{"t":11837,"text":"own], [Min"}
+{"t":11870,"text":"or sl"}
+{"t":11904,"text":"ip in steps], ["}
+{"t":11937,"text":"Ratio or"}
+{"t":11974,"text":" steps un"}
+{"t":12004,"text":"clear], [No working"}
+{"t":12037,"text":"]"}
+{"t":12071,"text":"),\n  ([Units"}
+{"t":12104,"text":" and acc"}
+{"t":12137,"text":"uracy], [Correct"}
+{"t":12170,"text":" units and signific"}
+{"t":12204,"text":"ant figures], [One"}
+{"t":12237,"text":" unit or"}
+{"t":12272,"text":" r"}
+{"t":12305,"text":"ounding error], [Several"}
+{"t":12344,"text":" errors], [No"}
+{"t":12371,"text":" units]"}
+{"t":12404,"text":"),\n  points: (3"}
+{"t":12439,"text":", 2, 1, "}
+{"t":12460,"text":"0),\n)"}

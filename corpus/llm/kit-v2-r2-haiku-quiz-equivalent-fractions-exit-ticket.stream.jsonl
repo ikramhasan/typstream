@@ -1,0 +1,50 @@
+{"t":0,"text":"#"}
+{"t":310,"text":"show: quiz."}
+{"t":310,"text":"with(title: [Exit"}
+{"t":310,"text":" Ticket: Equiv"}
+{"t":310,"text":"alent Fractions], sub"}
+{"t":310,"text":"ject: [Mathematics"}
+{"t":310,"text":"], grade: [Grade"}
+{"t":310,"text":" 5], info: (\"name"}
+{"t":310,"text":"\", \"date"}
+{"t":310,"text":"\""}
+{"t":310,"text":"))\n\n#question(points: "}
+{"t":310,"text":"1)[\n  Fill"}
+{"t":310,"text":" in the missing numerator so"}
+{"t":583,"text":" the"}
+{"t":583,"text":" fractions are equal."}
+{"t":583,"text":"\n\n  $"}
+{"t":583,"text":"2/3 = $ #"}
+{"t":583,"text":"blank(width: 2em"}
+{"t":583,"text":", answer: [4])"}
+{"t":583,"text":" $/"}
+{"t":583,"text":" 6$\n]\n\n#question"}
+{"t":583,"text":"(points: 1)["}
+{"t":583,"text":"\n  Which fraction is equ"}
+{"t":583,"text":"ivalent to $3/4"}
+{"t":583,"text":"$?\n  #mcq"}
+{"t":893,"text":"($"}
+{"t":893,"text":"3/8$, $6/"}
+{"t":893,"text":"8$, $4/3$"}
+{"t":893,"text":", $7/4$, answ"}
+{"t":893,"text":"er: 2)\n]"}
+{"t":893,"text":"\n\n#question(points: 1)"}
+{"t":893,"text":"[\n  Write a"}
+{"t":893,"text":" fraction equivalent to"}
+{"t":893,"text":" $2/5$ with a"}
+{"t":893,"text":" denominator of 15."}
+{"t":893,"text":" Show your working.\n  #"}
+{"t":893,"text":"answer-space(height: "}
+{"t":1105,"text":"3em, answer: [$"}
+{"t":1105,"text":"2/5 ="}
+{"t":1105,"text":" 6"}
+{"t":1105,"text":"/15$, since"}
+{"t":1105,"text":" $"}
+{"t":1105,"text":"5"}
+{"t":1105,"text":" times 3 = 15"}
+{"t":1105,"text":"$,"}
+{"t":1105,"text":" so mult"}
+{"t":1105,"text":"iply the numerator by "}
+{"t":1105,"text":"3 too."}
+{"t":1105,"text":" Answer: $6/15$"}
+{"t":1129,"text":".])\n]"}

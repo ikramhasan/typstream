@@ -1,0 +1,233 @@
+{"t":0,"text":"#"}
+{"t":30,"text":"set page(paper: \"a"}
+{"t":64,"text":"4\", margin: 2c"}
+{"t":99,"text":"m, numbering: \"1"}
+{"t":131,"text":"\")\n#set text(size:"}
+{"t":164,"text":" 11pt)\n#set"}
+{"t":197,"text":" par(just"}
+{"t":231,"text":"ify: false"}
+{"t":264,"text":")\n\n#let q(n,"}
+{"t":300,"text":" body, space: 4em)"}
+{"t":331,"text":" = block("}
+{"t":367,"text":"breakable: false"}
+{"t":424,"text":")[\n  *#n."}
+{"t":431,"text":"* #h"}
+{"t":464,"text":"(0"}
+{"t":499,"text":".4"}
+{"t":531,"text":"em) #body\n  #v"}
+{"t":564,"text":"(space)\n]\n\n="}
+{"t":598,"text":" Sol"}
+{"t":632,"text":"ving Linear Equations in"}
+{"t":667,"text":" One Variable\n*Gr"}
+{"t":699,"text":"ade 8 "}
+{"t":732,"text":"Mathematics*\n\nName"}
+{"t":767,"text":": #"}
+{"t":799,"text":"box"}
+{"t":831,"text":"(width: 8"}
+{"t":865,"text":"c"}
+{"t":898,"text":"m, line"}
+{"t":1109,"text":"(length"}
+{"t":1109,"text":": 100%)) #h"}
+{"t":1123,"text":"(1"}
+{"t":1132,"text":"em) Date: #box("}
+{"t":1138,"text":"width: 3"}
+{"t":1138,"text":"cm, line(length: "}
+{"t":1145,"text":"100%))\n\n#v(0"}
+{"t":1173,"text":".5em)\n\n*Inst"}
+{"t":1203,"text":"ructions:* Sol"}
+{"t":1234,"text":"ve each equation and"}
+{"t":1268,"text":" show every"}
+{"t":1322,"text":" step of your working"}
+{"t":1331,"text":" in"}
+{"t":1369,"text":" the space provided. Per"}
+{"t":1398,"text":"form the"}
+{"t":1435,"text":" same operation on both sides of"}
+{"t":1465,"text":" the equation. Check your answ"}
+{"t":1500,"text":"ers"}
+{"t":1533,"text":" by substituting them"}
+{"t":1566,"text":" back into the original equation. The"}
+{"t":1599,"text":" questions get harder as you go"}
+{"t":1635,"text":".\n\n== Section A: One"}
+{"t":1672,"text":"-Step Equations"}
+{"t":1701,"text":"\n\n#"}
+{"t":1738,"text":"q(1)"}
+{"t":1765,"text":"[$x + 7 "}
+{"t":1801,"text":"= 15$]\n#q"}
+{"t":1835,"text":"(2)[$y - "}
+{"t":1866,"text":"9 = 4$]"}
+{"t":1899,"text":"\n#q(3)[$6"}
+{"t":1932,"text":"m = 42$]\n#"}
+{"t":1971,"text":"q(4)[$n /"}
+{"t":2001,"text":" 5 = 8$]"}
+{"t":2035,"text":"\n\n== Section B: Two"}
+{"t":2066,"text":"-Step Equations\n\n#"}
+{"t":2102,"text":"q(5)[$3x"}
+{"t":2135,"text":" + 5 = 20$"}
+{"t":2167,"text":"]\n#q(6)["}
+{"t":2200,"text":"$4y - 7 ="}
+{"t":2236,"text":" 21$]\n#q("}
+{"t":2267,"text":"7)[$x / 3"}
+{"t":2302,"text":" + 2 = 9"}
+{"t":2334,"text":"$]\n#q(8)"}
+{"t":2369,"text":"[$5 - 2n"}
+{"t":2402,"text":" = -7$]\n\n=="}
+{"t":2434,"text":" Section C: Variables on"}
+{"t":2470,"text":" Both Sides\n\n#q("}
+{"t":2501,"text":"9, space"}
+{"t":2534,"text":": 5"}
+{"t":2568,"text":"em)[$7x - "}
+{"t":2602,"text":"4 = 3x + "}
+{"t":2635,"text":"12$]\n#q(10"}
+{"t":2669,"text":", space: 5em)["}
+{"t":2703,"text":"$5a + 8 ="}
+{"t":2735,"text":" 2a - 7$]"}
+{"t":2769,"text":"\n#q(11, space:"}
+{"t":2801,"text":" 5em)[$9 "}
+{"t":2838,"text":"- 4k = 2k"}
+{"t":2881,"text":" + 21$]\n#q"}
+{"t":2905,"text":"(12, space: 5em"}
+{"t":2935,"text":")[$3(x + "}
+{"t":2970,"text":"4) = 21$]"}
+{"t":3004,"text":"\n\n== Section D: Brack"}
+{"t":3037,"text":"ets and Fractions\n\n#"}
+{"t":3069,"text":"q(13, space: 6"}
+{"t":3105,"text":"em)[$2(3x"}
+{"t":3141,"text":" - 1) = 4x"}
+{"t":3169,"text":" + 10$]\n#q"}
+{"t":3214,"text":"(14, space: 6em"}
+{"t":3242,"text":")[$5(y - "}
+{"t":3272,"text":"2) - 3 = "}
+{"t":3304,"text":"2(y + 4)$"}
+{"t":3338,"text":"]\n#q(15, space"}
+{"t":3370,"text":": 6em)[$("}
+{"t":3403,"text":"2x + 1) / "}
+{"t":3437,"text":"3 = 5$]"}
+{"t":3471,"text":"\n#q(16, space: "}
+{"t":3503,"text":"6em)[$x / "}
+{"t":3537,"text":"2 + x / 3 "}
+{"t":3572,"text":"= 10$]\n#q"}
+{"t":3603,"text":"(17, space: 6em"}
+{"t":3640,"text":")[$(x + 1"}
+{"t":3673,"text":") / 2 = (2"}
+{"t":3704,"text":"x - 5) / 3"}
+{"t":3739,"text":"$]\n\n== Section E:"}
+{"t":3773,"text":" Word Problems\n\nFor each"}
+{"t":3804,"text":" probl"}
+{"t":3838,"text":"em, define"}
+{"t":3870,"text":" a"}
+{"t":3904,"text":" variable, write an equation,"}
+{"t":3937,"text":" sol"}
+{"t":3970,"text":"ve it, and answ"}
+{"t":4004,"text":"er in"}
+{"t":4039,"text":" a sentence.\n\n#q"}
+{"t":4071,"text":"(18, space: 7em"}
+{"t":4104,"text":")[A"}
+{"t":4137,"text":" number is multiplied by "}
+{"t":4170,"text":"4 and then 9 is"}
+{"t":4204,"text":" added. The result"}
+{"t":4237,"text":" is 37. What is the number"}
+{"t":4272,"text":"?]"}
+{"t":4304,"text":"\n\n#q(19, space: "}
+{"t":4340,"text":"7em)[Sam is"}
+{"t":4373,"text":" 3 years older than tw"}
+{"t":4406,"text":"ice Priya's age."}
+{"t":4438,"text":" Together their"}
+{"t":4475,"text":" ages add"}
+{"t":4504,"text":" up to 27. How"}
+{"t":4543,"text":" old is each"}
+{"t":4573,"text":" person"}
+{"t":4614,"text":"?]\n\n#q(20,"}
+{"t":4637,"text":" space: 7em)[The"}
+{"t":4678,"text":" length of a rectangle is"}
+{"t":4712,"text":" 5 c"}
+{"t":4738,"text":"m more than its width. The per"}
+{"t":4772,"text":"imeter is 46 c"}
+{"t":4804,"text":"m."}
+{"t":4841,"text":" Find the length"}
+{"t":4871,"text":" and the"}
+{"t":4905,"text":" width.]\n\n== Section F"}
+{"t":4939,"text":": Challenge\n\n#q"}
+{"t":4971,"text":"(21, space: 8em"}
+{"t":5004,"text":")["}
+{"t":5038,"text":"Solve:"}
+{"t":5072,"text":" $ ("}
+{"t":5104,"text":"3x"}
+{"t":5138,"text":" - 1) / 2 "}
+{"t":5172,"text":"- (x + 2) /"}
+{"t":5314,"text":" 3 = 7 $"}
+{"t":5323,"text":"]\n\n#q(22, space"}
+{"t":5328,"text":": 7"}
+{"t":5328,"text":"em)[A"}
+{"t":5338,"text":" student solved $"}
+{"t":5374,"text":"3x + 6 = "}
+{"t":5407,"text":"18$ like"}
+{"t":5439,"text":" this:"}
+{"t":5471,"text":"\n\n  "}
+{"t":5510,"text":"$"}
+{"t":5541,"text":" 3x + 6 &"}
+{"t":5573,"text":"= 18 \\"}
+{"t":5605,"text":"\n    3x &= 24 "}
+{"t":5638,"text":"\\\n    x &= 8"}
+{"t":5671,"text":" $\n\n  "}
+{"t":5707,"text":"Find the mistake, expl"}
+{"t":5738,"text":"ain what"}
+{"t":5775,"text":" went wrong, and give"}
+{"t":5807,"text":" the correct solution.]"}
+{"t":5838,"text":"\n\n#pagebreak()"}
+{"t":5871,"text":"\n\n="}
+{"t":5905,"text":" Answer Key\n\n#table"}
+{"t":5939,"text":"(\n  columns: ("}
+{"t":5978,"text":"au"}
+{"t":6006,"text":"to, "}
+{"t":6038,"text":"1fr, au"}
+{"t":6074,"text":"to, 1fr),"}
+{"t":6105,"text":"\n  in"}
+{"t":6139,"text":"set: 7"}
+{"t":6171,"text":"pt,\n  align: left"}
+{"t":6205,"text":",\n  [*Q*"}
+{"t":6240,"text":"], [*Answer*],"}
+{"t":6274,"text":" [*Q*], [*"}
+{"t":6310,"text":"Answer*],\n  ["}
+{"t":6339,"text":"1], [$x = 8"}
+{"t":6372,"text":"$], [12], [$x"}
+{"t":6405,"text":" = 3$],\n  ["}
+{"t":6440,"text":"2], [$y = 13"}
+{"t":6472,"text":"$], [13], [$x"}
+{"t":6507,"text":" = 6$],\n  ["}
+{"t":6539,"text":"3], [$m = 7"}
+{"t":6572,"text":"$], [14], [$y"}
+{"t":6606,"text":" = 7$],\n  ["}
+{"t":6639,"text":"4], [$n = 40"}
+{"t":6673,"text":"$], [15], [$x"}
+{"t":6706,"text":" = 7$],\n  ["}
+{"t":6741,"text":"5], [$x = 5"}
+{"t":6774,"text":"$], [16], [$x"}
+{"t":6812,"text":" = 12$],\n  ["}
+{"t":6840,"text":"6], [$y = 7"}
+{"t":6873,"text":"$], [17], [$x"}
+{"t":6906,"text":" = 13$],\n  ["}
+{"t":6941,"text":"7], [$x = 21"}
+{"t":6974,"text":"$], [18], [$4"}
+{"t":7006,"text":"n + 9 = 37"}
+{"t":7039,"text":"$, so"}
+{"t":7073,"text":" $n = 7$],"}
+{"t":7109,"text":"\n  [8], [$n ="}
+{"t":7140,"text":" 6$], [19], ["}
+{"t":7173,"text":"Priya is 8,"}
+{"t":7206,"text":" Sam is 19],"}
+{"t":7242,"text":"\n  [9], [$x ="}
+{"t":7273,"text":" 4$], [20], ["}
+{"t":7306,"text":"Width 9 "}
+{"t":7340,"text":"cm, length 14 c"}
+{"t":7374,"text":"m],\n  [10], ["}
+{"t":7407,"text":"$a = -5$], ["}
+{"t":7440,"text":"21], [$x = 7"}
+{"t":7475,"text":"$],\n  [11], ["}
+{"t":7507,"text":"$k = -2$], ["}
+{"t":7541,"text":"22], [Should"}
+{"t":7573,"text":" sub"}
+{"t":7607,"text":"tract 6 ("}
+{"t":7640,"text":"not add):"}
+{"t":7674,"text":" $3x = 12$,"}
+{"t":7707,"text":" so $x = 4$],"}
+{"t":7740,"text":"\n)"}

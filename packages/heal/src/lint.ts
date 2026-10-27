@@ -14,7 +14,8 @@ export type LintRuleId =
   | "stray-closer"
   | "unclosed-delim"
   | "unclosed-block-comment"
-  | "currency-dollar";
+  | "currency-dollar"
+  | "math-lone-script";
 
 /** `fix` applies the change, `warn` only reports it. */
 export type LintSeverity = "fix" | "warn" | "off";
@@ -29,6 +30,7 @@ export const DEFAULT_LINT: Readonly<Record<LintRuleId, LintSeverity>> = {
   "unclosed-delim": "fix",
   "unclosed-block-comment": "warn",
   "currency-dollar": "warn",
+  "math-lone-script": "fix",
 };
 
 export interface TextChange {
@@ -68,7 +70,11 @@ export const modeAt = (modes: readonly ModeSpan[], pos: number): ModeSpan["mode"
 const MD_HEADING = /^([ \t]*)(#{1,6})[ \t]+\S/gm;
 const MD_BOLD = /(\*\*|__)(?=\S)([^*_\n]+?)(?<=\S)\1/g;
 const MD_LINK = /\[([^[\]\n]+)\]\((https?:\/\/[^\s()"\\]+)\)/g;
-const CURRENCY = /^\d[\d.,]*\s+\p{L}{2,}/u;
+// A price is a number, then prose up to the next price: `$5 and $10` parses as the equation
+// `5 and `, which ends in a space because its closing `$` starts the next price. Math starting
+// with a number and a word goes on with numbers and operators (`$0.4 times 0.3 =$`, models write
+// it all the time, #24) or ends at the word (`$30 degree$`, `$2 cos(x)$`).
+const CURRENCY = /^\d[\d.,]*\s+\p{L}{2,}[\p{L}\s,.;:!?'"()-]*\s$/u;
 
 interface Ctx {
   text: string;
@@ -133,10 +139,20 @@ const eventRule = (ctx: Ctx, e: LintEvent, headings: ReadonlySet<number>): void 
       }
       return;
     case "equation": {
-      if (!inRange(ctx, e.start)) return;
+      if (!inRange(ctx, e.start) || ctx.text[e.end - 1] !== "$") return;
       const body = ctx.text.slice(e.start + 1, e.end - 1);
+      // Units and formulas written as prose with a math exponent: `m/s$^2$`, `H$_2$O`. A script
+      // needs a base in its own equation ("unexpected hat"); an empty string is one, and renders
+      // what was meant. The most common error in model output (#24), and prompting doesn't stop it.
+      const script = /^\s*[\^_]/.exec(body);
+      if (script) {
+        const at = e.start + script[0].length;
+        add(ctx, "math-lone-script", at, at + 1, "a `^` or `_` needs a base in its equation; gave it an empty one", [
+          { from: at, to: at, insert: '""' },
+        ]);
+      }
       const display = /^\s/.test(body) && /\s$/.test(body);
-      if (!display && ctx.text[e.end - 1] === "$" && CURRENCY.test(body)) {
+      if (!display && CURRENCY.test(body)) {
         add(ctx, "currency-dollar", e.start, e.end, "looks like prices, not math: `$` should be escaped (`\\$`)", [
           { from: e.start, to: e.start, insert: "\\" },
           { from: e.end - 1, to: e.end - 1, insert: "\\" },

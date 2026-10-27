@@ -13,6 +13,7 @@ export default defineConfig({
       "@typstream/heal": new URL("../../packages/heal/src/index.ts", import.meta.url).pathname,
       "@typstream/edu": new URL("../../packages/edu/src/index.ts", import.meta.url).pathname,
       "@typstream/corpus": new URL("../../corpus/src/index.ts", import.meta.url).pathname,
+      "@typstream/universe": new URL("../../packages/universe/src/index.ts", import.meta.url).pathname,
     },
   },
 });

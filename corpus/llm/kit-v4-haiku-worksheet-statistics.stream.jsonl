@@ -1,0 +1,187 @@
+{"t":0,"text":"#"}
+{"t":20,"text":"show: worksheet."}
+{"t":43,"text":"with(title: [Mean"}
+{"t":63,"text":", Median, Mode and"}
+{"t":82,"text":" Range], subject: ["}
+{"t":103,"text":"Mathematics], grade:"}
+{"t":125,"text":" [Grade 9], info"}
+{"t":143,"text":": (\"name\", \"class"}
+{"t":164,"text":"\", \"date"}
+{"t":186,"text":"\"))\n\n#instructions["}
+{"t":204,"text":"\n  - Use"}
+{"t":226,"text":" the test"}
+{"t":246,"text":" scores in the table to"}
+{"t":266,"text":" answer every question.\n  -"}
+{"t":301,"text":" Show your working for"}
+{"t":308,"text":" each"}
+{"t":328,"text":" cal"}
+{"t":350,"text":"culation.\n]"}
+{"t":368,"text":"\n\n#callout(kind:"}
+{"t":403,"text":" \"remember\")[\n  -"}
+{"t":410,"text":" *Mean*"}
+{"t":429,"text":" = sum of the values $"}
+{"t":450,"text":"div"}
+{"t":470,"text":"$ number of values.\n  "}
+{"t":491,"text":"- *Median* = the midd"}
+{"t":511,"text":"le value when"}
+{"t":533,"text":" the values are in"}
+{"t":552,"text":" order ("}
+{"t":572,"text":"for"}
+{"t":592,"text":" an"}
+{"t":614,"text":" even count, the m"}
+{"t":634,"text":"ean of the two middle values)."}
+{"t":656,"text":"\n  - *Mode*"}
+{"t":674,"text":" = the value"}
+{"t":696,"text":" that occ"}
+{"t":715,"text":"urs most often.\n  -"}
+{"t":736,"text":" *Range* = larg"}
+{"t":756,"text":"est value $"}
+{"t":777,"text":"-$ sm"}
+{"t":798,"text":"allest value.\n]\n\n="}
+{"t":817,"text":" Test"}
+{"t":839,"text":" scores\n\n#align"}
+{"t":859,"text":"(center)"}
+{"t":879,"text":"[\n  #table("}
+{"t":899,"text":"\n    columns: (auto,"}
+{"t":920,"text":" auto, auto, auto"}
+{"t":940,"text":", auto),"}
+{"t":961,"text":"\n    align: center,\n    "}
+{"t":983,"text":"[Student],"}
+{"t":1002,"text":" [A], [B], [C"}
+{"t":1022,"text":"], [D],\n    [1"}
+{"t":1045,"text":"], [12], [15], ["}
+{"t":1063,"text":"9], [15"}
+{"t":1084,"text":"],\n    [2], [18"}
+{"t":1104,"text":"], [11], [15"}
+{"t":1124,"text":"], [20"}
+{"t":1145,"text":"],\n    [3], [14"}
+{"t":1167,"text":"], [9], [15"}
+{"t":1186,"text":"], [12"}
+{"t":1207,"text":"],\n  )\n]"}
+{"t":1226,"text":"\n\nTen students took"}
+{"t":1247,"text":" the test. Their scores are"}
+{"t":1268,"text":":"}
+{"t":1288,"text":" 12, 15, 9"}
+{"t":1309,"text":", 15, 18, "}
+{"t":1329,"text":"11, 15, 20,"}
+{"t":1349,"text":" 9, 14.\n\n#"}
+{"t":1370,"text":"question(points: 2"}
+{"t":1392,"text":")[\n  Calculate"}
+{"t":1411,"text":" the mean score"}
+{"t":1431,"text":"."}
+{"t":1451,"text":" The"}
+{"t":1472,"text":" total of all"}
+{"t":1492,"text":" ten scores is "}
+{"t":1513,"text":"138.\n  #answer-"}
+{"t":1534,"text":"space(height: 3"}
+{"t":1553,"text":"em, answer: [$\""}
+{"t":1574,"text":"mean\" = 138 /"}
+{"t":1596,"text":" 10 = 13.8"}
+{"t":1615,"text":"$])\n  The mean score"}
+{"t":1638,"text":" is #blank(width"}
+{"t":1658,"text":": 4"}
+{"t":1676,"text":"em, answer: [13."}
+{"t":1699,"text":"8]).\n]\n\n#question"}
+{"t":1721,"text":"(points: 2)["}
+{"t":1738,"text":"\n  Write"}
+{"t":1759,"text":" the scores in order from"}
+{"t":1780,"text":" smallest to largest,"}
+{"t":1799,"text":" then"}
+{"t":1820,"text":" find the median.\n  #answ"}
+{"t":1845,"text":"er-space(height: 4"}
+{"t":1860,"text":"em, answer: [9,"}
+{"t":1882,"text":" 9, 11, 12"}
+{"t":1902,"text":", 14, 15, "}
+{"t":1923,"text":"15, 15, 18,"}
+{"t":1943,"text":" 20. The two"}
+{"t":1965,"text":" middle values are 14 and"}
+{"t":1983,"text":" 15, so the"}
+{"t":2005,"text":" median is $(14 "}
+{"t":2025,"text":"+ 15) / 2 "}
+{"t":2045,"text":"= 14.5$.])"}
+{"t":2065,"text":"\n]"}
+{"t":2086,"text":"\n\n#question(points: 1"}
+{"t":2106,"text":")[\n  Which score is"}
+{"t":2127,"text":" the mode?\n  #m"}
+{"t":2148,"text":"cq([$"}
+{"t":2167,"text":"9$], [$14$],"}
+{"t":2191,"text":" [$15$], [$20"}
+{"t":2210,"text":"$], answer: 3)"}
+{"t":2229,"text":"\n]\n\n#question(points:"}
+{"t":2250,"text":" 1)[\n  Find"}
+{"t":2271,"text":" the range of the scores."}
+{"t":2290,"text":"\n  #answer-space(height"}
+{"t":2311,"text":": 2em, answer:"}
+{"t":2331,"text":" [$20 - 9 "}
+{"t":2351,"text":"= 11$])\n]"}
+{"t":2372,"text":"\n\n#question(points: 3"}
+{"t":2393,"text":")[\n  A"}
+{"t":2415,"text":" student"}
+{"t":2433,"text":" who"}
+{"t":2454,"text":" miss"}
+{"t":2475,"text":"ed the test tak"}
+{"t":2494,"text":"es it"}
+{"t":2515,"text":" later and scores 25. The"}
+{"t":2535,"text":" class"}
+{"t":2557,"text":" now has e"}
+{"t":2577,"text":"leven scores.\n  +"}
+{"t":2618,"text":" Find the new mean,"}
+{"t":2639,"text":" to one decimal place."}
+{"t":2658,"text":"\n    #answer-space(height"}
+{"t":2680,"text":": 3em, answer:"}
+{"t":2698,"text":" [The"}
+{"t":2720,"text":" new"}
+{"t":2739,"text":" total"}
+{"t":2760,"text":" is $138"}
+{"t":2781,"text":" + 25 = 163"}
+{"t":2800,"text":"$,"}
+{"t":2822,"text":" so the"}
+{"t":2842,"text":" mean is $163 / "}
+{"t":2862,"text":"11 appro"}
+{"t":2882,"text":"x 14.8$"}
+{"t":2902,"text":".])\n  + Find the"}
+{"t":2923,"text":" new median.\n    #answer"}
+{"t":2943,"text":"-space(height: 3em"}
+{"t":2964,"text":", answer: [The median is"}
+{"t":2987,"text":" the 6th of"}
+{"t":3005,"text":" 11 "}
+{"t":3025,"text":"ordered values, which"}
+{"t":3045,"text":" is 15.])\n]"}
+{"t":3066,"text":"\n\n#question"}
+{"t":3087,"text":"(points: 3"}
+{"t":3107,"text":")[\n  The"}
+{"t":3128,"text":" te"}
+{"t":3148,"text":"acher says"}
+{"t":3168,"text":" the median"}
+{"t":3188,"text":" is a better"}
+{"t":3209,"text":" summ"}
+{"t":3229,"text":"ary of"}
+{"t":3250,"text":" these"}
+{"t":3272,"text":" scores than the mean."}
+{"t":3290,"text":" Do you agree?"}
+{"t":3310,"text":" Use"}
+{"t":3331,"text":" the"}
+{"t":3351,"text":" scores to just"}
+{"t":3372,"text":"ify your answer.\n  #"}
+{"t":3392,"text":"answer-lines(count:"}
+{"t":3412,"text":" 4"}
+{"t":3434,"text":", answer: [Answ"}
+{"t":3453,"text":"ers will"}
+{"t":3473,"text":" vary. A"}
+{"t":3494,"text":" good"}
+{"t":3514,"text":" answer not"}
+{"t":3535,"text":"es that the mean is p"}
+{"t":3556,"text":"ulled up by the score of"}
+{"t":3577,"text":" 20, and that the median "}
+{"t":3596,"text":"14.5 s"}
+{"t":3616,"text":"its near"}
+{"t":3639,"text":" the middle of the sc"}
+{"t":3657,"text":"ores. The test with"}
+{"t":3680,"text":" "}
+{"t":3698,"text":"25 sh"}
+{"t":3721,"text":"ows how one"}
+{"t":3739,"text":" ext"}
+{"t":3760,"text":"reme value mo"}
+{"t":3780,"text":"ves the mean much"}
+{"t":3800,"text":" more than the median.])\n]"}
+{"t":3820,"text":"\n\n#answer-key()"}
