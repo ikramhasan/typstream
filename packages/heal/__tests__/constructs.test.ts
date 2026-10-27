@@ -25,6 +25,14 @@ const close: Row[] = [
   ["$ x + ", "$ x + $", "math"],
   ["$frac(a, b", "$frac(a, b)$", "math-args,math"],
   ["$frac(a, ", "$frac(a, )$", "math-args,math"],
+  // A group in a call's arguments needs its own closer, or it takes the call's (#65).
+  ["$sqrt(1/n sum (x_i", "$sqrt(1/n sum (x_i))$", "math-delimited,math-args,math"],
+  ["$sqrt(((x", "$sqrt(((x)))$", "math-delimited,math-delimited,math-args,math"],
+  ["$sqrt({x", "$sqrt({x})$", "math-delimited,math-args,math"],
+  ["$sqrt(x_(i", "$sqrt(x_(i))$", "math-delimited,math-args,math"],
+  ["$(sqrt(x", "$(sqrt(x)$", "math-args,math"],
+  ["$sqrt(#box[$(x", "$sqrt(#box[$(x$])$", "math,content,math-args,math"],
+  ["#f([$sqrt(1/n sum (x_i", "#f([$sqrt(1/n sum (x_i))$])", "math-delimited,math-args,math,content,args"],
   ["$ f(x", "$ f(x $", "math"],
   // A display equation stays display: `$ a + b$` would be inline (#19's flicker suite).
   ["x\n$ a + b", "x\n$ a + b $", "math"],

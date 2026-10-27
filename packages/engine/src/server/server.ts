@@ -42,7 +42,7 @@ import {
 } from "@typstream/core";
 import type { AdapterDocument, AdapterHtmlResult, AdapterPagedResult, EngineAdapter } from "./adapter";
 import { type Anchored, Anchors, fromAnchored } from "./anchors";
-import { type Attempt, type RecoverMemo, recover, toDocument, type Variant } from "./fallback";
+import { type Attempt, type RecoverMemo, recover, showsLess, toDocument, type Variant } from "./fallback";
 import { DEFAULT_FIXERS, FIX_BUDGET_MS, fixersOf, orderFixers, runFixers } from "./fixers";
 import { DocumentPackages, type PackageOptions, PackageStore } from "./packages";
 import { RUNTIME, RUNTIME_IMPORT, RUNTIME_PATH } from "./runtime";
@@ -145,6 +145,8 @@ interface Doc {
   pagedBase: Revision | null;
   /** What the fallback learnt about the text; forgotten when files or inputs change. */
   memo: RecoverMemo | null;
+  /** The text the last artifact compiled, unless it showed the tail as plain text (fallback level 1, #65). */
+  shown: { target: CompileTarget; text: string } | null;
   /** Packages it may import, and those mounted in `compiler`. */
   packages: DocumentPackages;
   /**
@@ -544,6 +546,7 @@ class Server implements EngineServer {
         inputs: null,
         pagedBase: null,
         memo: null,
+        shown: null,
         waiting: null,
         // A package arriving changes the files, so what the fallback learnt no longer holds.
         packages: new DocumentPackages(this.packages, packages, (files) => {
@@ -632,6 +635,7 @@ class Server implements EngineServer {
         let { diagnostics } = await compile();
         let ok = !diagnostics.some(isError);
         fixes = [];
+        let compiled = base;
         if (!ok && this.fixers.length > 0) {
           const fixStart = performance.now();
           const outcome = await runFixers({
@@ -647,9 +651,10 @@ class Server implements EngineServer {
             },
           });
           ({ ok, diagnostics, fixes } = outcome);
+          compiled = { text: outcome.text, toOriginal: (p, a) => base.toOriginal(outcome.toOriginal(p, a), a) };
           if (outcome.rounds > 0) fixMs = (fixMs ?? 0) + performance.now() - fixStart;
         }
-        return { ok, diagnostics: variant ? toDocument(diagnostics, variant) : diagnostics };
+        return { ok, diagnostics: variant ? toDocument(diagnostics, variant) : diagnostics, compiled };
       };
 
       /** Compiles a variant for its errors only (the fallback's checks of prefixes). */
@@ -670,7 +675,10 @@ class Server implements EngineServer {
 
       const skip = fallback?.skip ?? [];
       // With skipped ranges, the text as it is hangs: only the fallback compiles it.
-      let outcome: Attempt = skip.length > 0 ? { ok: false, diagnostics: [] } : await attempt(null, settled);
+      let outcome: Attempt =
+        skip.length > 0
+          ? { ok: false, diagnostics: [], compiled: { text: doc.text, toOriginal: (p) => p } }
+          : await attempt(null, settled);
       let recovered: CompileFallback | undefined;
       let fallbackMs: number | undefined;
       if (!outcome.ok && fallback && (fallback.isolate || fallback.stablePrefix || skip.length > 0)) {
@@ -696,7 +704,9 @@ class Server implements EngineServer {
         });
         fallbackMs = performance.now() - start;
         if (rec) {
-          outcome = { ok: true, diagnostics: rec.diagnostics };
+          // Its last attempt is the one that compiled.
+          const { compiled } = (last as Attempt | null) ?? outcome;
+          outcome = { ok: true, diagnostics: rec.diagnostics, compiled };
           recovered = { level: rec.level, isolated: rec.isolated, plainFrom: rec.plainFrom };
           doc.memo = rec.memo;
         } else if (skip.length > 0 && last) {
@@ -705,8 +715,21 @@ class Server implements EngineServer {
       }
       const diagnostics = [...outcome.diagnostics, ...doc.packages.substitutions(doc.text)];
       this.post({ method: "document/diagnostics", params: { uri, rev, target, diagnostics } });
+      // Fallback level 1 (#65): a compile that shows less of the tail than the last artifact keeps that
+      // one, as a failed compile does, until the tail shows as much again or that text is settled. A cut
+      // drops everything after it, so it never shows more meanwhile; nor does the stable prefix (level 2)
+      // put a tail that rendered back to its source. The tail as plain text is for a block that never rendered.
+      const kept =
+        outcome.ok &&
+        mode === "streaming" &&
+        fallback !== null &&
+        doc.shown?.target === target &&
+        // The stable prefix replaces the tail from the start of its block, which may be settled text.
+        showsLess(doc.shown.text, outcome.compiled.text, outcome.compiled.toOriginal, recovered?.plainFrom ?? settled);
       // The last compile's output: the first one's, or a fixed or fallback text's.
-      const out = outcome.ok ? (r as Compiled | null) : null;
+      const out = outcome.ok && !kept ? (r as Compiled | null) : null;
+      // The adapter's changed pages now diff against output the client never got.
+      if (kept) doc.pagedBase = null;
       if (out && "html" in out && out.html !== null) {
         this.post({ method: "document/artifact", params: { uri, rev, artifact: { target: "html", html: out.html } } });
         doc.pagedBase = null;
@@ -724,6 +747,7 @@ class Server implements EngineServer {
       }
       this.await(doc, params, pending);
       const ok = out !== null && ("html" in out ? out.html !== null : out.output !== null);
+      if (ok) doc.shown = recovered?.plainFrom == null ? { target, text: outcome.compiled.text } : null;
       const result: CompileResult = {
         uri,
         rev,

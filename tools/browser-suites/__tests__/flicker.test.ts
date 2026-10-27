@@ -7,10 +7,14 @@
 // - pages are never removed while the document grows;
 // - a page is redrawn only when its SVG changed, and swapped in one step (an SVG
 //   is never taken out without the next one going in: no blank page);
-// - a page before the last two never goes back to an SVG it showed before (no
-//   A→B→A). The last page is where the stream is: the fixers may cut a call being
-//   typed back to its start (#20, #65), hiding it until it compiles again, and what is
-//   being typed at the top of a page can move back to the page before.
+// - a page never goes back to an SVG it showed before (no A→B→A), the last page
+//   included: when heal or the fixers cut what rendered from the text being typed,
+//   the engine keeps its last render (#65). The one exception is a page that isn't
+//   the last and lost what moved to a page added since (a heading moves to the next
+//   page with the paragraph after it).
+//
+// Both targets report, per document, the steps whose render shows less than the
+// step before (HTML: shorter text; paged: a page back to an earlier SVG).
 //
 // HTML target. Blocks carry the source offset of the anchor before them
 // (`data-typstream-src`); the blocks sharing one are a group, and a group is
@@ -87,8 +91,8 @@ const pagedFlicker = async (entry: CorpusDocument) => {
   const opts = appOptions(engine, entry, { target: "paged", source: "", isStreaming: true });
   const view = mountTypstream(el, opts);
   const problems: string[] = [];
-  /** Per page: the SVGs it showed, in order. */
-  const history: string[][] = [];
+  /** Per page: the SVGs it showed, in order, with the page count then. */
+  const history: { svg: string; pages: number }[][] = [];
   /** Per page: the SVG element on screen at the last step. */
   const nodes: (Element | null)[] = [];
   // Each page's shadow root is observed: a batch that takes an SVG out must put one in.
@@ -107,6 +111,8 @@ const pagedFlicker = async (entry: CorpusDocument) => {
   };
   let pages = 0;
   let redrawn = 0;
+  /** Steps where a page went back to an SVG it showed before. */
+  const back: number[] = [];
 
   await replay(entry, view, opts, async (s, step) => {
     const artifact = s.artifact;
@@ -121,13 +127,18 @@ const pagedFlicker = async (entry: CorpusDocument) => {
       history[i] ??= [];
       const seen = history[i];
       const node = svgOf(page) ?? null;
-      if (seen.at(-1) === svg) {
+      if (seen.at(-1)?.svg === svg) {
         if (nodes[i] && node !== nodes[i]) problems.push(`${at}: page ${i + 1} redrawn with the same SVG`);
       } else {
-        if (seen.includes(svg) && i < pages - 2)
-          problems.push(`${at}: page ${i + 1} went back to an SVG it showed before`);
+        const before = seen.filter((s) => s.svg === svg).at(-1);
+        if (before) {
+          if (back.at(-1) !== step) back.push(step);
+          // What it had then moved to a page added since.
+          const moved = i < pages - 1 && pages > before.pages;
+          if (!moved) problems.push(`${at}: page ${i + 1} of ${pages} went back to an SVG it showed before`);
+        }
         if (seen.length > 0) redrawn++;
-        seen.push(svg);
+        seen.push({ svg, pages });
       }
       nodes[i] = node;
     });
@@ -135,7 +146,7 @@ const pagedFlicker = async (entry: CorpusDocument) => {
   if (blank > 0) problems.push(`${entry.name}: ${blank} page swaps left a page blank`);
   view.destroy();
   el.remove();
-  return { problems, redrawn };
+  return { problems, redrawn, less: back };
 };
 
 // --- HTML -----------------------------------------------------------------------------
@@ -198,23 +209,33 @@ const htmlFlicker = async (entry: CorpusDocument) => {
   observer.observe(el, { childList: true, subtree: true });
   let previous: Group[] = [];
   let rewrites = 0;
+  /** Steps with less text (whitespace aside) than the step before. */
+  const less: number[] = [];
+  let length = 0;
 
   await replay(entry, view, opts, (s, step) => {
     const root = el.querySelector(".typstream");
     if (!root) return;
     collect(observer.takeRecords());
     const at = `${entry.name} step ${step}`;
-    // Nothing removed comes back with the same markup: unchanged blocks keep their node.
+    // Nothing removed comes back with the same markup: unchanged blocks keep their node. A node added
+    // and removed since the last step was an artifact in between (a stale document's compiles of
+    // earlier steps can still arrive), not a block re-created.
     const back = new Map<string, number>();
-    for (const n of added) back.set(keyOf(n), (back.get(keyOf(n)) ?? 0) + 1);
+    for (const n of added) if (!removed.includes(n)) back.set(keyOf(n), (back.get(keyOf(n)) ?? 0) + 1);
     for (const n of removed) {
       const left = back.get(keyOf(n)) ?? 0;
-      if (left === 0 || n.classList.contains("typstream-caret")) continue;
+      if (left === 0 || added.includes(n) || n.classList.contains("typstream-caret")) continue;
       back.set(keyOf(n), left - 1);
       problems.push(`${at}: re-created an unchanged block: ${keyOf(n).slice(0, 120)}`);
     }
     removed.length = 0;
     added.length = 0;
+
+    // Whitespace aside: a code block's last newline moves when the next item starts.
+    const text = (root.textContent ?? "").replace(/\s+/g, "");
+    if (text.length < length) less.push(step);
+    length = text.length;
 
     const now = groupsOf(root, s.heal.map.toSource(s.heal.stableOffset));
     for (const g of previous) {
@@ -238,31 +259,47 @@ const htmlFlicker = async (entry: CorpusDocument) => {
   observer.disconnect();
   view.destroy();
   el.remove();
-  return { problems, rewrites };
+  return { problems, rewrites, less };
 };
+
+/** `name: steps` for the documents with steps that showed less than the step before. */
+const lessReport = (less: Map<string, number[]>) =>
+  [...less].filter(([, steps]) => steps.length > 0).map(([name, steps]) => `${name}: ${steps.join(", ")}`);
 
 describe(`flicker in ${browser}`, () => {
   it("paged: pages are kept, redrawn only when they change, never blank and never back", async () => {
     const problems: string[] = [];
     let redrawn = 0;
+    const less = new Map<string, number[]>();
     for (const entry of corpus) {
       const r = await pagedFlicker(entry);
       problems.push(...r.problems);
       redrawn += r.redrawn;
+      less.set(entry.name, r.less);
     }
-    console.log(`${browser} paged: ${corpus.length} documents, ${redrawn} redraws of changed pages`);
+    const report = lessReport(less);
+    console.log(
+      `${browser} paged: ${corpus.length} documents, ${redrawn} redraws of changed pages; ` +
+        `pages back to an earlier SVG (moved to a new page) in ${report.length}:\n  ${report.join("\n  ")}`,
+    );
     expect(problems).toEqual([]);
   }, 1_800_000);
 
   it("html: unchanged blocks are kept, settled blocks stay", async () => {
     const problems: string[] = [];
     let rewrites = 0;
+    const less = new Map<string, number[]>();
     for (const entry of corpus) {
       const r = await htmlFlicker(entry);
       problems.push(...r.problems);
       rewrites += r.rewrites;
+      less.set(entry.name, r.less);
     }
-    console.log(`${browser} html: ${corpus.length} documents, ${rewrites} settled blocks updated by later text`);
+    const report = lessReport(less);
+    console.log(
+      `${browser} html: ${corpus.length} documents, ${rewrites} settled blocks updated by later text; ` +
+        `steps with less text than the step before in ${report.length}:\n  ${report.join("\n  ")}`,
+    );
     expect(problems).toEqual([]);
   }, 1_800_000);
 });

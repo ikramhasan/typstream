@@ -291,6 +291,101 @@ describe("streaming", { timeout: 30_000 }, () => {
   });
 });
 
+describe("last good render (level 1, #65)", { timeout: 30_000 }, () => {
+  const intro = '#let xs = ("Alpha", "Beta")\n\n';
+  // A spread being typed: its closure returns pairs, an array of arrays, until `.flatten()` arrives.
+  const rows = `${intro}#list(..xs.map(x => ([#x])))`;
+  const pairs = `${intro}#list(..xs.map(x => ([#x], [#x.len()])))`;
+  const flat = `${intro}#list(..xs.map(x => ([#x], [#x.len()])).flatten())`;
+
+  /** A document streamed through `texts`, with the tail after `intro` unsettled and the client's fallback. */
+  const streamed = async (params: Partial<CompileParams> = {}, options: ServerOptions = {}) => {
+    const { client } = await serverWith(options);
+    const uri = "s";
+    let rev = 0;
+    let text = "";
+    const step = async (next: string, more: Partial<CompileParams> = {}) => {
+      rev++;
+      if (rev === 1) await client.request("document/open", { uri, rev, text: next });
+      else await client.request("document/edit", { uri, rev, edits: [{ from: 0, to: text.length, insert: next }] });
+      text = next;
+      return client.compile({
+        uri,
+        rev,
+        target: "html",
+        anchors: false,
+        settled: intro.length,
+        fallback: { isolate: true },
+        ...params,
+        ...more,
+      });
+    };
+    return { client, step };
+  };
+  const htmlOf = (out: { artifact: unknown }) => (out.artifact as HtmlArtifact | null)?.html ?? "";
+
+  it("keeps the last artifact while a cut shows less of the tail than it did", async () => {
+    const { step } = await streamed();
+    expect(htmlOf(await step(rows))).toContain("Beta");
+    // Tail cut drops the whole spread: the list would lose the items it showed.
+    const cut = await step(pairs);
+    expect(cut.result.status).toBe("error");
+    expect(cut.artifact).toBeNull();
+    expect(cut.diagnostics.map((d) => [d.severity, d.source, d.message])).toEqual([
+      ["info", "tail-cut", "expected content, found array"],
+    ]);
+    const back = await step(flat);
+    expect(back.result.status).toBe("ok");
+    expect(htmlOf(back)).toContain("5");
+  });
+
+  it("keeps it while the client finds it stale, until that text is settled", async () => {
+    const { step } = await streamed();
+    await step(rows);
+    const stale = await step(pairs, { fallback: { isolate: true, stablePrefix: true } });
+    expect(stale.result.status).toBe("error");
+    // Settled, the text can't be cut any more: what shows is what it renders.
+    const settled = await step(`${pairs}\n\nNext.`, { settled: pairs.length + 2 });
+    expect(settled.result.status).toBe("ok");
+  });
+
+  it("doesn't show a tail that rendered as plain text (the stable prefix), only one that never did", async () => {
+    const { step } = await streamed({ fallback: { isolate: true, stablePrefix: true } }, { fixers: [] });
+    await step(rows);
+    expect((await step(pairs)).result.status).toBe("error");
+    // The list is settled; the block being written never rendered.
+    const next = `${flat}\n\nNow #text()`;
+    const plain = await step(next, { settled: next.indexOf("Now") });
+    expect(plain.result.fallback?.plainFrom).toBe(next.indexOf("Now"));
+    expect(htmlOf(plain)).toContain("Now #text()");
+  });
+
+  it("keeps nothing for text that only grows, edits before the settled offset, final mode, or without the fallback", async () => {
+    const grows = await streamed();
+    await grows.step(`${intro}Writing *bold`);
+    expect((await grows.step(`${intro}Writing *bold words*`)).result.status).toBe("ok");
+    const edited = await streamed();
+    await edited.step(rows);
+    // The settled text changed: the tail shows less because the text does.
+    const shorter = `#let xs = ("Alpha",)\n\n#list()`;
+    expect((await edited.step(shorter, { settled: shorter.indexOf("#list") })).result.status).toBe("ok");
+    const final = await streamed({ mode: "final" });
+    await final.step(rows);
+    expect((await final.step(`${intro}#list()`)).result.status).toBe("ok");
+    const plain = await streamed({ fallback: undefined });
+    await plain.step(rows);
+    expect((await plain.step(pairs)).result.status).toBe("ok");
+  });
+
+  it("sends every page with the next paged artifact, since the client never got the one it kept", async () => {
+    const { step } = await streamed({ target: "paged" });
+    expect((await step(rows)).result.status).toBe("ok");
+    expect((await step(pairs)).result.status).toBe("error");
+    const back = await step(flat);
+    expect((back.artifact as PagedArtifact).base).toBeNull();
+  });
+});
+
 describe("skipped ranges", { timeout: 30_000 }, () => {
   it("shows what the client found hangs as an error block, without compiling it", async () => {
     const { compile } = await serverWith();
