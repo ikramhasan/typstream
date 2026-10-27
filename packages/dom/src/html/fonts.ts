@@ -36,11 +36,15 @@ export const registerMathFont = async (url: string | URL, doc: Document = docume
 export const FONT_ATTRIBUTE = "data-typstream-font";
 
 /**
- * The web font a loaded family is registered as, as a CSS string: prefixed, so
- * the page's own fonts of that name are left alone. JSON's escapes keep a
- * name in its string.
+ * The web font a loaded family is registered as: prefixed, so the page's own
+ * fonts of that name are left alone, and an identifier (`typstream-lora`,
+ * `typstream-m-plus-1p`), which names the same face in CSS and in every
+ * browser's FontFace API. Chrome's takes the family as written, so a quoted
+ * name keeps its quotes and no CSS refers to it; Firefox's parses it as CSS,
+ * where a name like "M PLUS 1p" needs them.
  */
-export const webFontFamily = (font: LoadedFontFamily): string => JSON.stringify(`typstream ${font.name}`);
+export const webFontFamily = (font: LoadedFontFamily): string =>
+  `typstream-${font.family.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 
 /** A file's `font-weight` descriptor: its weight, or a variable font's range. */
 export const fontWeight = (file: LoadedFontFamily["files"][number]): string => String(file.weight).replace(",", " ");

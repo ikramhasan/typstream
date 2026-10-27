@@ -110,6 +110,8 @@ const INDEX: FontCatalogueIndex = {
     "noto naskh arabic": familyOf("Noto Naskh Arabic"),
     // Its files are Arabic's: it never loads.
     huge: { ...familyOf("Noto Naskh Arabic", 4e6), name: "Huge" },
+    // Bengali's files under another name: no font is ever called that, so any test can load it.
+    renamed: { ...familyOf("Noto Serif Bengali"), name: "Renamed" },
   },
 };
 
@@ -303,6 +305,31 @@ describe("server, when a document names a family a catalogue has", () => {
     own.send({ method: "compile", params: { uri: "a", rev: 1, target: "html" } });
     await settled(() => expect(own.notes("$/log")).toHaveLength(1));
     expect(own.notes("$/log")[0]).toMatchObject({ message: expect.stringContaining('"Huge" is 8.0 MB') });
+  });
+
+  it("takes an index at a relative URL, as bundlers emit one, with its base from where it came", async () => {
+    const text = '#set text(font: "Renamed")\nHi.';
+    const loads = async (fetchIndex: (url: string) => Promise<Response>) => {
+      const s = start({ fontCatalogues: { fetch: fetchIndex } });
+      s.send({
+        method: "document/open",
+        params: { uri: "a", rev: 1, text, fontCatalogues: [{ index: "/index.json" }] },
+      });
+      s.send({ method: "compile", params: { uri: "a", rev: 1, target: "html" } });
+      await settled(() => expect(s.notes("fonts/loaded")).toHaveLength(1));
+      expect(s.notes("$/log")).toEqual([]);
+      return s.notes("fonts/loaded")[0]?.files.map((f) => f.url);
+    };
+    const files = [`${origin}/fonts/NotoSerifBengali-Regular.ttf`, `${origin}/fonts/NotoSerifBengali-Bold.ttf`];
+    // A worker's `fetch` resolves it against the worker's location, and the response has the URL it fetched.
+    expect(await loads((url) => fetch(new URL(url, origin)))).toEqual(files);
+    // A response without a URL (a custom `fetch`'s): the index's URL against the worker's location.
+    vi.stubGlobal("location", new URL(`${origin}/assets/worker.js`));
+    try {
+      expect(await loads(async (url) => new Response(await (await fetch(new URL(url, origin))).text()))).toEqual(files);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("exports with the family once it has arrived", async () => {

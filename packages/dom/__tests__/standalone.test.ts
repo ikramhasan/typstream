@@ -87,11 +87,11 @@ describe("standaloneHtml", () => {
     const html = TYPST.replace("<p>Hi</p>", '<p><span data-typstream-font="lora">Hi</span></p>');
     const out = standaloneHtml(html, { fonts: [lora, caveat] });
     expect(out).toContain(
-      '@font-face {\n  font-family: "typstream Lora";\n  src: url("https://cdn.example.com/f/Lora[wght].ttf");\n' +
+      '@font-face {\n  font-family: typstream-lora;\n  src: url("https://cdn.example.com/f/Lora[wght].ttf");\n' +
         "  font-style: normal;\n  font-weight: 400 700;\n  font-display: swap;\n}",
     );
     expect(out).toContain("font-style: italic;\n  font-weight: 400 700;");
-    expect(out).toContain('.typstream [data-typstream-font="lora"] { font-family: "typstream Lora"; }');
+    expect(out).toContain('.typstream [data-typstream-font="lora"] { font-family: typstream-lora; }');
     // Caveat isn't used: no rule, and its origin stays out of the policy.
     expect(out).not.toContain("Caveat");
     expect(csp(out)).toContain("font-src data: https://cdn.example.com;");
