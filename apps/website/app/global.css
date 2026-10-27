@@ -25,6 +25,8 @@
   --color-paper: oklch(0.995 0.003 85);
   --color-ink: oklch(0.21 0.018 255);
   --color-teal: oklch(0.63 0.1 205);
+  /* The logo's caret: the other theme's primary, so it stands out from the square. */
+  --color-logo-caret: oklch(0.8 0.11 200);
 
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-newsreader), ui-serif, Georgia, serif;
@@ -49,6 +51,7 @@
   --color-fd-accent-foreground: oklch(0.94 0.008 85);
   --color-fd-ring: oklch(0.8 0.11 200);
   --color-paper: oklch(0.985 0.005 85);
+  --color-logo-caret: oklch(0.5 0.095 205);
 }
 
 html {
