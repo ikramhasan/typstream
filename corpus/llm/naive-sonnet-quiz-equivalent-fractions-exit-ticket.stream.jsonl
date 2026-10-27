@@ -1,0 +1,57 @@
+{"t":0,"text":"#"}
+{"t":364,"text":"set"}
+{"t":364,"text":" page"}
+{"t":364,"text":"(pa"}
+{"t":364,"text":"per: \"us"}
+{"t":364,"text":"-let"}
+{"t":365,"text":"ter\", marg"}
+{"t":365,"text":"in: 1in"}
+{"t":365,"text":")\n#set text(size"}
+{"t":365,"text":": 12pt)\n\n="}
+{"t":365,"text":" Exit Ticket:"}
+{"t":390,"text":" Equivalent Fract"}
+{"t":423,"text":"ions\n\nName: #"}
+{"t":750,"text":"box"}
+{"t":750,"text":"(width: 2"}
+{"t":750,"text":".5in, line"}
+{"t":750,"text":"(length: 100%)"}
+{"t":750,"text":") #h"}
+{"t":750,"text":"(1em) Date: #"}
+{"t":750,"text":"box(width: 1.5"}
+{"t":750,"text":"in, line(length: 100"}
+{"t":750,"text":"%))\n\n#"}
+{"t":758,"text":"v(1em)\n\n+"}
+{"t":824,"text":" Write"}
+{"t":858,"text":" two"}
+{"t":1131,"text":" fractions that are equival"}
+{"t":1131,"text":"ent to $1/2$."}
+{"t":1131,"text":"\n\n  #v(2."}
+{"t":1131,"text":"5em)"}
+{"t":1131,"text":"\n  #line(length: 100"}
+{"t":1131,"text":"%)\n\n+ Fill"}
+{"t":1131,"text":" in the miss"}
+{"t":1131,"text":"ing number to make the fract"}
+{"t":1157,"text":"ions equivalent.\n\n  "}
+{"t":1191,"text":"$ 3/4"}
+{"t":1224,"text":" = "}
+{"t":1258,"text":"?/12"}
+{"t":1480,"text":" $\n\n  #v(2"}
+{"t":1480,"text":"em)\n  #line(length"}
+{"t":1480,"text":": 60"}
+{"t":1480,"text":"%)\n\n+ Are $"}
+{"t":1480,"text":"2"}
+{"t":1480,"text":"/3$ and $4"}
+{"t":1494,"text":"/6$ equivalent"}
+{"t":1535,"text":"? Circ"}
+{"t":1558,"text":"le your answer,"}
+{"t":1591,"text":" then explain how"}
+{"t":1624,"text":" you know.\n\n  #h("}
+{"t":1658,"text":"2"}
+{"t":1756,"text":"em) *"}
+{"t":1756,"text":"Yes* #h(3"}
+{"t":1757,"text":"em) *No*\n\n  #"}
+{"t":1791,"text":"v(1"}
+{"t":1824,"text":"em)\n  #line(length"}
+{"t":1857,"text":": 100%)\n  #"}
+{"t":1891,"text":"v(1em)\n  #"}
+{"t":1925,"text":"line(length: 100%)"}

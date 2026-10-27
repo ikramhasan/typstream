@@ -1,0 +1,99 @@
+{"t":0,"text":"#"}
+{"t":20,"text":"show: quiz."}
+{"t":39,"text":"with("}
+{"t":61,"text":"\n  title: [SI Units"}
+{"t":80,"text":" and Con"}
+{"t":102,"text":"versions],\n  subject:"}
+{"t":125,"text":" [Physics],\n  gr"}
+{"t":142,"text":"ade: [Grade 10"}
+{"t":169,"text":"],\n  instructions: ["}
+{"t":185,"text":"Answ"}
+{"t":203,"text":"er *all* questions."}
+{"t":254,"text":" Show your working for"}
+{"t":254,"text":" calculations.],"}
+{"t":265,"text":"\n)\n\n#question(points:"}
+{"t":285,"text":" 1)[\n  Which"}
+{"t":306,"text":" of"}
+{"t":327,"text":" these"}
+{"t":347,"text":" is the SI base unit of"}
+{"t":368,"text":" mass?\n  #mc"}
+{"t":388,"text":"q([Gram], ["}
+{"t":408,"text":"Kilogram], [P"}
+{"t":428,"text":"ound], [Tonne],"}
+{"t":454,"text":" answer: 2)\n]"}
+{"t":471,"text":"\n\n#question(points: 1"}
+{"t":491,"text":")[\n  Convert $"}
+{"t":512,"text":"2.5 \"km\"$"}
+{"t":533,"text":" to metres: #blank"}
+{"t":552,"text":"(width"}
+{"t":571,"text":": 5em, answer:"}
+{"t":592,"text":" [2500]) m."}
+{"t":614,"text":"\n]\n\n#question(points: "}
+{"t":633,"text":"2"}
+{"t":653,"text":")[\n  Convert $"}
+{"t":679,"text":"45 \"minutes\"$"}
+{"t":694,"text":" to seconds:"}
+{"t":715,"text":" #blank(width: 5"}
+{"t":735,"text":"em, answer: [2700"}
+{"t":755,"text":"]) s"}
+{"t":776,"text":"."}
+{"t":799,"text":"\n]\n\n#question(points: "}
+{"t":817,"text":"1"}
+{"t":837,"text":")[\n  Which"}
+{"t":858,"text":" is"}
+{"t":881,"text":" the area"}
+{"t":898,"text":" of $"}
+{"t":920,"text":"1 \"m\""}
+{"t":939,"text":"^2$ in square"}
+{"t":959,"text":" centimetres?\n  #"}
+{"t":980,"text":"mcq([$100$"}
+{"t":1001,"text":" c"}
+{"t":1021,"text":"m$^2$], [$"}
+{"t":1042,"text":"1000$ cm$^"}
+{"t":1062,"text":"2$], [$10^4"}
+{"t":1083,"text":"$ cm$^2$"}
+{"t":1105,"text":"], [$10^6$"}
+{"t":1123,"text":" cm$^2$], answ"}
+{"t":1144,"text":"er: 3)\n]"}
+{"t":1164,"text":"\n\n#question(points: 3)"}
+{"t":1187,"text":"[\n  Convert $72"}
+{"t":1205,"text":" \"km/h\"$"}
+{"t":1225,"text":" into metres per second."}
+{"t":1246,"text":" Show your working.\n  #"}
+{"t":1267,"text":"answer-space(height: "}
+{"t":1291,"text":"5em, answer: [$"}
+{"t":1307,"text":"72 \"km/h\" ="}
+{"t":1327,"text":" ("}
+{"t":1349,"text":"72 dot 1000 "}
+{"t":1370,"text":"\"m\")/(3600 "}
+{"t":1389,"text":"\"s\") = 20 \""}
+{"t":1410,"text":"m/s\"$])\n]"}
+{"t":1430,"text":"\n\n#question(points: 1"}
+{"t":1450,"text":")[\n  #true-false"}
+{"t":1471,"text":"(answer: false)[$"}
+{"t":1492,"text":"1 \"cm\"^2"}
+{"t":1513,"text":" = 10 \"mm"}
+{"t":1532,"text":"\"^2$]"}
+{"t":1553,"text":"\n]\n\n#question(points:"}
+{"t":1573,"text":" 3"}
+{"t":1593,"text":")[\n  Explain the"}
+{"t":1614,"text":" difference between mass and weight"}
+{"t":1634,"text":". State"}
+{"t":1654,"text":" the S"}
+{"t":1675,"text":"I unit of each.\n  "}
+{"t":1697,"text":"#answer-lines(count"}
+{"t":1716,"text":": 3, answer: ["}
+{"t":1737,"text":"Mass is the am"}
+{"t":1777,"text":"ount of matter in an"}
+{"t":1778,"text":" object and"}
+{"t":1798,"text":" is measured in kilograms"}
+{"t":1819,"text":" (kg). Weight is"}
+{"t":1839,"text":" the force of"}
+{"t":1861,"text":" gravity on that"}
+{"t":1879,"text":" m"}
+{"t":1900,"text":"ass,"}
+{"t":1920,"text":" $"}
+{"t":1940,"text":"W = m"}
+{"t":1962,"text":" g$, and"}
+{"t":1981,"text":" is measured in newtons ("}
+{"t":2017,"text":"N).])\n]"}

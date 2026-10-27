@@ -1,0 +1,582 @@
+{"t":0,"text":"="}
+{"t":20,"text":" Cal"}
+{"t":38,"text":"culus Midterm:"}
+{"t":62,"text":" Limits and Derivat"}
+{"t":82,"text":"ives\n\n*Time"}
+{"t":101,"text":":"}
+{"t":121,"text":"* 60 minutes #"}
+{"t":142,"text":"h"}
+{"t":163,"text":"("}
+{"t":182,"text":"2"}
+{"t":202,"text":"em) *Total:"}
+{"t":221,"text":"* 100 points #"}
+{"t":247,"text":"h(2em) *Cal"}
+{"t":264,"text":"culators"}
+{"t":284,"text":":"}
+{"t":303,"text":"*"}
+{"t":325,"text":" Not perm"}
+{"t":347,"text":"itted\n\nName: #"}
+{"t":365,"text":"line(length: 60%)"}
+{"t":387,"text":"\n\n=="}
+{"t":405,"text":" Instructions"}
+{"t":429,"text":"\n\n- Answ"}
+{"t":447,"text":"er every"}
+{"t":466,"text":" question in the space prov"}
+{"t":487,"text":"ided. Show all work;"}
+{"t":511,"text":" a corre"}
+{"t":527,"text":"ct final"}
+{"t":552,"text":" answer without"}
+{"t":571,"text":" just"}
+{"t":590,"text":"ification may"}
+{"t":612,"text":" rece"}
+{"t":640,"text":"ive part"}
+{"t":654,"text":"ial or"}
+{"t":670,"text":" no credit.\n- Sim"}
+{"t":694,"text":"plify answ"}
+{"t":718,"text":"ers f"}
+{"t":731,"text":"ully un"}
+{"t":774,"text":"less a"}
+{"t":774,"text":" question says"}
+{"t":796,"text":" otherwise.\n-"}
+{"t":813,"text":" Budget about"}
+{"t":835,"text":" one"}
+{"t":854,"text":" minute per point"}
+{"t":877,"text":". If"}
+{"t":897,"text":" you are st"}
+{"t":920,"text":"uck, move on and"}
+{"t":937,"text":" return later"}
+{"t":956,"text":".\n\n== Part A:"}
+{"t":978,"text":" Limits (30"}
+{"t":1000,"text":" points)\n\n*"}
+{"t":1017,"text":"Question 1* (5 "}
+{"t":1038,"text":"points)."}
+{"t":1061,"text":" Evaluate the"}
+{"t":1081,"text":" limit.\n\n$"}
+{"t":1099,"text":" lim_(x -> "}
+{"t":1120,"text":"3) (x^2 -"}
+{"t":1140,"text":" 9)/(x - "}
+{"t":1162,"text":"3) $\n\n#v(2"}
+{"t":1180,"text":"em)\n\n*Question 2"}
+{"t":1202,"text":"* (5 points). Ev"}
+{"t":1224,"text":"aluate the limit."}
+{"t":1245,"text":"\n\n$ lim_(x -"}
+{"t":1262,"text":"> 0) sin(3"}
+{"t":1283,"text":"x)/x $\n\n#v"}
+{"t":1303,"text":"(2em)\n\n*Question"}
+{"t":1324,"text":" 3* (5 points)."}
+{"t":1346,"text":" Evaluate the limit"}
+{"t":1364,"text":".\n\n$ lim_("}
+{"t":1385,"text":"x -> oo) (3"}
+{"t":1406,"text":"x^2 + x)/"}
+{"t":1430,"text":"(5x^2 - "}
+{"t":1449,"text":"4) $\n\n#v(2"}
+{"t":1466,"text":"em)\n\n*Question 4"}
+{"t":1488,"text":"* (7 points). Let"}
+{"t":1508,"text":"\n\n$ f(x) ="}
+{"t":1528,"text":" cases(x^2 +"}
+{"t":1548,"text":" 1 \"if\" x <"}
+{"t":1568,"text":" 2, 3x - "}
+{"t":1589,"text":"1 \"if\" x >="}
+{"t":1609,"text":" 2) $\n\nFind $"}
+{"t":1630,"text":"lim_(x -> "}
+{"t":1652,"text":"2^"}
+{"t":1674,"text":"-) f(x)$,"}
+{"t":1691,"text":" $lim_(x ->"}
+{"t":1711,"text":" 2^+) f(x"}
+{"t":1732,"text":")$, and $f(2"}
+{"t":1752,"text":")$. Is $f$"}
+{"t":1772,"text":" continuous at $x ="}
+{"t":1795,"text":" 2$? Explain."}
+{"t":1814,"text":"\n\n#v(2em)"}
+{"t":1834,"text":"\n\n*Question 5* (8"}
+{"t":1854,"text":" points). Evaluate"}
+{"t":1876,"text":" the limit by"}
+{"t":1895,"text":" rationalizing the num"}
+{"t":1919,"text":"erator.\n\n$ lim"}
+{"t":1936,"text":"_(x -> 0)"}
+{"t":1957,"text":" (sqrt(x +"}
+{"t":1980,"text":" 4) - 2)/"}
+{"t":1997,"text":"x $\n\n#v(2em"}
+{"t":2019,"text":")\n\n== Part B:"}
+{"t":2041,"text":" Derivatives (40 points"}
+{"t":2063,"text":")\n\n*Question 6*"}
+{"t":2081,"text":" (8 points). Use the"}
+{"t":2103,"text":" limit definition of"}
+{"t":2124,"text":" the derivative to find $f"}
+{"t":2140,"text":"'(x)$ for $"}
+{"t":2160,"text":"f(x) = x^2"}
+{"t":2184,"text":" - 2x$."}
+{"t":2203,"text":"\n\n$ f'(x) ="}
+{"t":2223,"text":" lim_(h -> "}
+{"t":2243,"text":"0) ("}
+{"t":2264,"text":"f(x + h) - f"}
+{"t":2289,"text":"(x))/h $\n\n#"}
+{"t":2304,"text":"v(2em)\n\n*"}
+{"t":2327,"text":"Question 7* (12 "}
+{"t":2346,"text":"points). Differentiate each"}
+{"t":2367,"text":" function. Do"}
+{"t":2386,"text":" not simplify your"}
+{"t":2412,"text":" answer to"}
+{"t":2426,"text":" part"}
+{"t":2448,"text":" (c).\n\n+"}
+{"t":2468,"text":" $"}
+{"t":2489,"text":"f(x) = 4x"}
+{"t":2508,"text":"^5 - 3x^"}
+{"t":2530,"text":"2 + 7x - "}
+{"t":2550,"text":"1$\n+ $g("}
+{"t":2570,"text":"x) = x^3 s"}
+{"t":2592,"text":"in x$\n+ $h"}
+{"t":2611,"text":"(x) = ("}
+{"t":2632,"text":"2x + 1)/("}
+{"t":2660,"text":"x^2 - 3)"}
+{"t":2679,"text":"$\n\n#v(2em"}
+{"t":2696,"text":")\n\n*Question 8*"}
+{"t":2714,"text":" (10 points). Use"}
+{"t":2733,"text":" the chain rule to differ"}
+{"t":2755,"text":"entiate each function"}
+{"t":2775,"text":".\n\n+ $y = ("}
+{"t":2795,"text":"3x^2 - x)"}
+{"t":2815,"text":"^4$\n+ $y"}
+{"t":2838,"text":" = sqrt(x^"}
+{"t":2855,"text":"2 + 1)$"}
+{"t":2877,"text":"\n\n#v(2em"}
+{"t":2895,"text":")\n\n*Question 9*"}
+{"t":2919,"text":" (10 points). The"}
+{"t":2936,"text":" curve $x^2 +"}
+{"t":2958,"text":" x"}
+{"t":2980,"text":" y + y^2 = "}
+{"t":2998,"text":"7$ pass"}
+{"t":3019,"text":"es through the"}
+{"t":3038,"text":" point $(1, 2)"}
+{"t":3061,"text":"$. Use implicit differ"}
+{"t":3081,"text":"entiation to find $("}
+{"t":3100,"text":"d y)/(d x)"}
+{"t":3121,"text":"$ in"}
+{"t":3140,"text":" general, then ev"}
+{"t":3161,"text":"aluate it"}
+{"t":3184,"text":" at $"}
+{"t":3202,"text":"(1, 2)$."}
+{"t":3225,"text":"\n\n#v(2em)"}
+{"t":3244,"text":"\n\n== Part C: Applications"}
+{"t":3263,"text":" (30 points)\n\n*"}
+{"t":3283,"text":"Question 10* (8 points"}
+{"t":3304,"text":"). Find the equation of the"}
+{"t":3327,"text":" tangent line to $"}
+{"t":3345,"text":"y = x^3 - "}
+{"t":3367,"text":"2x$ at $x ="}
+{"t":3407,"text":" 1$.\n\n#v("}
+{"t":3423,"text":"2em)\n\n*Question "}
+{"t":3426,"text":"11* (10 points). A"}
+{"t":3454,"text":" particle moves along a"}
+{"t":3469,"text":" line with"}
+{"t":3491,"text":" position $s(t) = t"}
+{"t":3509,"text":"^3 - 6t^"}
+{"t":3530,"text":"2 + 9t$"}
+{"t":3549,"text":" meters, where $t$"}
+{"t":3573,"text":" is in"}
+{"t":3590,"text":" seconds and"}
+{"t":3610,"text":" $t >"}
+{"t":3631,"text":"= 0$.\n\n+"}
+{"t":3651,"text":" Find the velocity $"}
+{"t":3671,"text":"v(t)$ and the"}
+{"t":3694,"text":" times when the particle is at r"}
+{"t":3714,"text":"est.\n+ Find the"}
+{"t":3737,"text":" acceleration at"}
+{"t":3753,"text":" $t = 1$ second"}
+{"t":3774,"text":".\n\n#v(2em)"}
+{"t":3802,"text":"\n\n*Question 12* ("}
+{"t":3816,"text":"12 points). A sp"}
+{"t":3834,"text":"herical bal"}
+{"t":3857,"text":"loon is"}
+{"t":3878,"text":" inflated so"}
+{"t":3900,"text":" that its radius increases at a"}
+{"t":3923,"text":" constant rate of $2$"}
+{"t":3938,"text":" cm/s.\n\n+"}
+{"t":3962,"text":" Find the rate at"}
+{"t":3980,"text":" which the surface area $A ="}
+{"t":4001,"text":" 4 pi r^2"}
+{"t":4032,"text":"$ is changing when $r"}
+{"t":4039,"text":" = 5$ cm."}
+{"t":4059,"text":"\n+ Find the rate"}
+{"t":4080,"text":" at which the volume $V ="}
+{"t":4104,"text":" (4/3) pi r"}
+{"t":4123,"text":"^3$ is changing when"}
+{"t":4141,"text":" $r = 5$ c"}
+{"t":4166,"text":"m.\n\n#v(2em"}
+{"t":4186,"text":")\n\n#pagebreak"}
+{"t":4202,"text":"()\n\n="}
+{"t":4222,"text":" Answer Key and"}
+{"t":4243,"text":" Worked Solutions"}
+{"t":4264,"text":"\n\n_"}
+{"t":4284,"text":"For"}
+{"t":4304,"text":" the teacher."}
+{"t":4325,"text":" Point"}
+{"t":4347,"text":" values"}
+{"t":4365,"text":" are shown in br"}
+{"t":4396,"text":"ackets; award"}
+{"t":4406,"text":" partial credit for"}
+{"t":4427,"text":" corre"}
+{"t":4447,"text":"ct method"}
+{"t":4468,"text":" with"}
+{"t":4488,"text":" ar"}
+{"t":4508,"text":"ithmetic sl"}
+{"t":4531,"text":"ips._\n\n== Part A:"}
+{"t":4551,"text":" Limits\n\n*Question "}
+{"t":4570,"text":"1* ["}
+{"t":4590,"text":"5]. Factor the"}
+{"t":4611,"text":" numerator: $(x^"}
+{"t":4631,"text":"2 - 9)"}
+{"t":4652,"text":" = (x - 3)("}
+{"t":4672,"text":"x + 3)$."}
+{"t":4693,"text":" Cancel the n"}
+{"t":4713,"text":"onzero factor $(x"}
+{"t":4748,"text":" - 3)$ and"}
+{"t":4762,"text":" subst"}
+{"t":4776,"text":"itute:\n\n$ lim"}
+{"t":4794,"text":"_(x -> 3)"}
+{"t":4816,"text":" (x + 3)"}
+{"t":4835,"text":" = 6 $\n\n*"}
+{"t":4857,"text":"Answer:"}
+{"t":4878,"text":"* $"}
+{"t":4896,"text":"6$"}
+{"t":4921,"text":"\n\n*Question 2* [5"}
+{"t":4937,"text":"]. Rewrite using"}
+{"t":4959,"text":" $"}
+{"t":4978,"text":"sin(3x)"}
+{"t":4998,"text":"/x"}
+{"t":5020,"text":" = "}
+{"t":5041,"text":"3 d"}
+{"t":5060,"text":"ot s"}
+{"t":5084,"text":"in(3x)/(3"}
+{"t":5100,"text":"x)$."}
+{"t":5120,"text":" As"}
+{"t":5142,"text":" $x"}
+{"t":5161,"text":" -> 0$, $3"}
+{"t":5184,"text":"x -"}
+{"t":5202,"text":"> 0$, so $"}
+{"t":5225,"text":"sin(3x)/("}
+{"t":5243,"text":"3x) -> 1$"}
+{"t":5263,"text":".\n\n$"}
+{"t":5289,"text":" lim_(x ->"}
+{"t":5310,"text":" 0) s"}
+{"t":5326,"text":"in(3x)/x ="}
+{"t":5370,"text":" 3 d"}
+{"t":5371,"text":"ot 1 = 3 "}
+{"t":5389,"text":"$\n\n*Answer:*"}
+{"t":5413,"text":" $3$\n\n*Question "}
+{"t":5429,"text":"3* [5]. Div"}
+{"t":5447,"text":"ide num"}
+{"t":5469,"text":"erator and denominator by $"}
+{"t":5488,"text":"x^2$,"}
+{"t":5509,"text":" the highest power in"}
+{"t":5536,"text":" the denominator:\n\n$"}
+{"t":5549,"text":" ("}
+{"t":5572,"text":"3 "}
+{"t":5590,"text":"+ 1/x)"}
+{"t":5611,"text":"/(5 - 4/"}
+{"t":5634,"text":"x^2) -> 3"}
+{"t":5651,"text":"/5 $"}
+{"t":5673,"text":" as $x -> oo$"}
+{"t":5692,"text":", since $1/x ->"}
+{"t":5715,"text":" 0$ and $4"}
+{"t":5734,"text":"/x^2 -> "}
+{"t":5755,"text":"0$.\n\n*Answer"}
+{"t":5775,"text":":* $3/5$"}
+{"t":5797,"text":"\n\n*Question 4* [7"}
+{"t":5817,"text":"]. For"}
+{"t":5837,"text":" $"}
+{"t":5861,"text":"x < 2$ use"}
+{"t":5878,"text":" $x"}
+{"t":5896,"text":"^2 + 1$:"}
+{"t":5918,"text":" $lim_(x ->"}
+{"t":5937,"text":" 2^-) f"}
+{"t":5957,"text":"(x) = 4"}
+{"t":5979,"text":" + 1 = 5"}
+{"t":6002,"text":"$."}
+{"t":6018,"text":"\n\nFor $x >= 2"}
+{"t":6041,"text":"$ use $3x - "}
+{"t":6059,"text":"1$: $lim_("}
+{"t":6081,"text":"x -> 2^+)"}
+{"t":6101,"text":" f(x) = 6"}
+{"t":6120,"text":" - 1 = 5"}
+{"t":6143,"text":"$."}
+{"t":6169,"text":"\n\nSince $"}
+{"t":6186,"text":"f(2) = 3"}
+{"t":6202,"text":"("}
+{"t":6222,"text":"2) - 1 = "}
+{"t":6246,"text":"5$, all"}
+{"t":6264,"text":" three values"}
+{"t":6284,"text":" ag"}
+{"t":6305,"text":"ree.\n\n*Answ"}
+{"t":6326,"text":"er:*"}
+{"t":6348,"text":" Both one"}
+{"t":6365,"text":"-sided limits and"}
+{"t":6391,"text":" $f(2)$ equ"}
+{"t":6407,"text":"al $5$. The"}
+{"t":6427,"text":" limit exists and"}
+{"t":6457,"text":" equals $f(2)$"}
+{"t":6470,"text":", so $f$ is contin"}
+{"t":6488,"text":"uous at $x = 2"}
+{"t":6509,"text":"$."}
+{"t":6529,"text":"\n\n*Question 5* ["}
+{"t":6549,"text":"8]. Multiply by"}
+{"t":6569,"text":" the conjugate $"}
+{"t":6592,"text":"(s"}
+{"t":6614,"text":"qrt(x + 4"}
+{"t":6635,"text":") + 2)/(s"}
+{"t":6652,"text":"qrt(x + 4"}
+{"t":6672,"text":") + 2)$:"}
+{"t":6694,"text":"\n\n$ (s"}
+{"t":6715,"text":"qrt(x + 4"}
+{"t":6737,"text":") - 2)/x"}
+{"t":6755,"text":" d"}
+{"t":6776,"text":"ot (sqrt(x"}
+{"t":6794,"text":" + 4) + 2)"}
+{"t":6816,"text":"/(sqrt(x"}
+{"t":6839,"text":" + 4) + 2)"}
+{"t":6855,"text":" = (x + 4 "}
+{"t":6876,"text":"- 4)/(x ("}
+{"t":6899,"text":"sqrt(x + "}
+{"t":6916,"text":"4) + 2)) ="}
+{"t":6937,"text":" 1/(sqrt"}
+{"t":6959,"text":"(x + 4) + "}
+{"t":6978,"text":"2) $\n\nTa"}
+{"t":7005,"text":"king $"}
+{"t":7025,"text":"x -> 0$ g"}
+{"t":7041,"text":"ives $1/(2"}
+{"t":7059,"text":" + 2) = 1"}
+{"t":7080,"text":"/4$.\n\n*Answ"}
+{"t":7103,"text":"er:* $1/4$"}
+{"t":7122,"text":"\n\n== Part B: Der"}
+{"t":7141,"text":"ivatives\n\n*Question "}
+{"t":7162,"text":"6* [8]. Comp"}
+{"t":7184,"text":"ute $f(x +"}
+{"t":7202,"text":" h) -"}
+{"t":7224,"text":" f(x)"}
+{"t":7249,"text":"$:\n\n$ (x +"}
+{"t":7267,"text":" h)^2 - 2"}
+{"t":7286,"text":"(x + h) - (x"}
+{"t":7306,"text":"^2 - 2x)"}
+{"t":7327,"text":" = 2x h + h^"}
+{"t":7354,"text":"2 - 2h $"}
+{"t":7372,"text":"\n\nDivide by $h$"}
+{"t":7390,"text":" (for"}
+{"t":7410,"text":" $h !="}
+{"t":7429,"text":" 0$): $2x +"}
+{"t":7450,"text":" h - 2$."}
+{"t":7471,"text":" Let $h -> 0"}
+{"t":7488,"text":"$."}
+{"t":7512,"text":"\n\n*Answer:* $"}
+{"t":7531,"text":"f'(x) = 2"}
+{"t":7551,"text":"x - 2$\n\n*"}
+{"t":7570,"text":"Question 7* [12"}
+{"t":7592,"text":"]."}
+{"t":7613,"text":" Each part is wor"}
+{"t":7636,"text":"th 4 points.\n\n+"}
+{"t":7672,"text":" Power rule term"}
+{"t":7693,"text":" by term: $f'(x"}
+{"t":7714,"text":") = 20x^4 "}
+{"t":7735,"text":"- 6x + 7$"}
+{"t":7756,"text":".\n+ Product"}
+{"t":7774,"text":" rule: $g'(x"}
+{"t":7795,"text":") = 3x^2 "}
+{"t":7815,"text":"sin x + x^3 "}
+{"t":7835,"text":"cos x$.\n+"}
+{"t":7856,"text":" Quotient rule with"}
+{"t":7878,"text":" $"}
+{"t":7898,"text":"u = "}
+{"t":7918,"text":"2x + 1$, $"}
+{"t":7937,"text":"v = x^2 - "}
+{"t":7959,"text":"3$:\n\n$ h'"}
+{"t":7978,"text":"(x) = (2(x"}
+{"t":8000,"text":"^2 - 3) -"}
+{"t":8020,"text":" (2x + 1)("}
+{"t":8040,"text":"2x))"}
+{"t":8060,"text":"/(x^2 - "}
+{"t":8080,"text":"3)^2 ="}
+{"t":8102,"text":" (2x^2 - "}
+{"t":8125,"text":"6 - 4x^2"}
+{"t":8142,"text":" - 2x)/("}
+{"t":8162,"text":"x^2 - 3)"}
+{"t":8186,"text":"^2 ="}
+{"t":8202,"text":" (-2x^2 -"}
+{"t":8223,"text":" 2x - 6)/"}
+{"t":8244,"text":"(x^2 - 3"}
+{"t":8264,"text":")^2 $"}
+{"t":8284,"text":"\n\nAcc"}
+{"t":8304,"text":"ept equ"}
+{"t":8329,"text":"ivalent forms such"}
+{"t":8347,"text":" as $-("}
+{"t":8366,"text":"2x"}
+{"t":8386,"text":"^2 + 2x +"}
+{"t":8406,"text":" 6)/(x^2"}
+{"t":8431,"text":" - 3)^2$"}
+{"t":8449,"text":".\n\n*Question 8*"}
+{"t":8470,"text":" [10]. Each"}
+{"t":8491,"text":" part is worth 5 points"}
+{"t":8510,"text":".\n\n+"}
+{"t":8529,"text":" Outer power"}
+{"t":8552,"text":","}
+{"t":8573,"text":" inner $u"}
+{"t":8595,"text":" = 3x^2 -"}
+{"t":8629,"text":" x$: $y'"}
+{"t":8634,"text":" = 4(3x^2"}
+{"t":8656,"text":" - x)^3 ("}
+{"t":8674,"text":"6x - 1)$."}
+{"t":8694,"text":"\n+ Write"}
+{"t":8715,"text":" $y = ("}
+{"t":8733,"text":"x^2 + 1)"}
+{"t":8754,"text":"^(1/2)$."}
+{"t":8781,"text":" Then $y' = 1"}
+{"t":8796,"text":"/2 (x^2 "}
+{"t":8816,"text":"+ 1)^(-1"}
+{"t":8836,"text":"/2) dot 2x"}
+{"t":8857,"text":" = x/sqrt("}
+{"t":8877,"text":"x^2 + 1)"}
+{"t":8897,"text":"$.\n\n*Question 9"}
+{"t":8917,"text":"* [10]. Different"}
+{"t":8939,"text":"iate both"}
+{"t":8958,"text":" sides with respect to $x"}
+{"t":8980,"text":"$,"}
+{"t":8998,"text":" treating $y$ as a"}
+{"t":9020,"text":" function of $x$:\n\n$"}
+{"t":9039,"text":" 2x + y"}
+{"t":9061,"text":" + x ("}
+{"t":9082,"text":"d"}
+{"t":9100,"text":" y)"}
+{"t":9121,"text":"/(d x) + 2"}
+{"t":9143,"text":"y (d y)/(d"}
+{"t":9164,"text":" x) = 0 $"}
+{"t":9182,"text":"\n\nCollect the"}
+{"t":9203,"text":" $(d y)/(d"}
+{"t":9227,"text":" x)$ terms:"}
+{"t":9247,"text":" $(d y)/(d"}
+{"t":9264,"text":" x) (x + 2y"}
+{"t":9286,"text":") = -(2x + y"}
+{"t":9307,"text":")$,"}
+{"t":9325,"text":" so\n\n$ (d y)"}
+{"t":9346,"text":"/(d x) = -("}
+{"t":9367,"text":"2x + y)/(x"}
+{"t":9386,"text":" + 2y) $\n\nAt"}
+{"t":9409,"text":" $(1, 2)$"}
+{"t":9428,"text":": $-"}
+{"t":9450,"text":"(2 + 2)/"}
+{"t":9468,"text":"(1 + 4"}
+{"t":9490,"text":") = -4/5$."}
+{"t":9512,"text":"\n\n*Answer:* $"}
+{"t":9532,"text":"(d y)/(d x"}
+{"t":9550,"text":") = -("}
+{"t":9570,"text":"2x + y)/(x"}
+{"t":9595,"text":" + 2y)$;"}
+{"t":9612,"text":" sl"}
+{"t":9634,"text":"ope at $(1, 2"}
+{"t":9652,"text":")$ is $-4/"}
+{"t":9672,"text":"5$.\n\n== Part C"}
+{"t":9693,"text":": Applications\n\n*Question"}
+{"t":9716,"text":" 10* [8]. At"}
+{"t":9734,"text":" $x = 1$: $"}
+{"t":9753,"text":"y ="}
+{"t":9774,"text":" 1 - 2 ="}
+{"t":9797,"text":" -1$. The der"}
+{"t":9815,"text":"ivative is $y' = "}
+{"t":9835,"text":"3x^2 - 2"}
+{"t":9858,"text":"$, so the"}
+{"t":9877,"text":" slope is"}
+{"t":9900,"text":" $y"}
+{"t":9919,"text":"'"}
+{"t":9937,"text":"(1) = 1"}
+{"t":9958,"text":"$."}
+{"t":9982,"text":"\n\nPoint-"}
+{"t":10001,"text":"slope form: $y -"}
+{"t":10019,"text":" (-1) = 1("}
+{"t":10040,"text":"x - 1)$, so"}
+{"t":10064,"text":" $y = x -"}
+{"t":10082,"text":" 2$.\n\n*Answ"}
+{"t":10102,"text":"er:* $y = x -"}
+{"t":10123,"text":" 2$\n\n*Question "}
+{"t":10142,"text":"11* [10]."}
+{"t":10163,"text":"\n\n+ ["}
+{"t":10182,"text":"6"}
+{"t":10207,"text":"] $v(t) = s"}
+{"t":10223,"text":"'(t) = 3t"}
+{"t":10247,"text":"^2 - 12t +"}
+{"t":10264,"text":" 9 "}
+{"t":10287,"text":"= 3(t - 1"}
+{"t":10308,"text":")(t - 3)$"}
+{"t":10326,"text":". The particle is at rest"}
+{"t":10347,"text":" when $v("}
+{"t":10366,"text":"t) = 0$, i"}
+{"t":10390,"text":".e., at $t = "}
+{"t":10408,"text":"1$ s"}
+{"t":10427,"text":" and $t = 3$"}
+{"t":10450,"text":" s.\n+ [4]"}
+{"t":10469,"text":" $a(t) = v"}
+{"t":10490,"text":"'(t) = 6t"}
+{"t":10512,"text":" - 12$. At $t"}
+{"t":10529,"text":" = 1$: $a("}
+{"t":10555,"text":"1) = -6$"}
+{"t":10570,"text":" m/s$^2$"}
+{"t":10591,"text":".\n\n*Question"}
+{"t":10611,"text":" 12* [12"}
+{"t":10631,"text":"].\n\n+ ["}
+{"t":10655,"text":"6] $("}
+{"t":10673,"text":"d A)/(d t)"}
+{"t":10696,"text":" = 8 pi r ("}
+{"t":10716,"text":"d r)"}
+{"t":10733,"text":"/(d t)$. At"}
+{"t":10772,"text":" $r = 5$ and"}
+{"t":10781,"text":" $("}
+{"t":10794,"text":"d r)/(d t)"}
+{"t":10821,"text":" = 2$: $(d"}
+{"t":10837,"text":" A)/(d t) ="}
+{"t":10858,"text":" 8 pi ("}
+{"t":10882,"text":"5)(2) = 80"}
+{"t":10896,"text":" pi$ cm$"}
+{"t":10917,"text":"^2$/s.\n\n  "}
+{"t":10939,"text":"Note: the sur"}
+{"t":10962,"text":"face area formula is"}
+{"t":10983,"text":" $A"}
+{"t":11005,"text":" = 4 pi r^"}
+{"t":11020,"text":"2$, so $A"}
+{"t":11044,"text":"' = 8 pi r"}
+{"t":11062,"text":"$. Students"}
+{"t":11083,"text":" who"}
+{"t":11101,"text":" write"}
+{"t":11124,"text":" $A = p"}
+{"t":11142,"text":"i r^2$ ("}
+{"t":11163,"text":"the area"}
+{"t":11184,"text":" of a circle) should rece"}
+{"t":11205,"text":"ive no credit for"}
+{"t":11226,"text":" this part.\n\n+ ["}
+{"t":11247,"text":"6] $(d V)/"}
+{"t":11264,"text":"(d t) = 4 "}
+{"t":11287,"text":"pi r^2 (d"}
+{"t":11307,"text":" r)/(d t)$"}
+{"t":11327,"text":". At $r = 5$"}
+{"t":11345,"text":":"}
+{"t":11369,"text":" $(d V)/(d"}
+{"t":11387,"text":" t) = 4 pi"}
+{"t":11407,"text":" (25"}
+{"t":11428,"text":")(2) = 200 "}
+{"t":11452,"text":"pi$ cm$^"}
+{"t":11470,"text":"3$/s.\n\n=="}
+{"t":11490,"text":" Sc"}
+{"t":11511,"text":"oring Guide\n\n#"}
+{"t":11532,"text":"table("}
+{"t":11550,"text":"\n  columns: 3,"}
+{"t":11575,"text":"\n  [*"}
+{"t":11591,"text":"Part*"}
+{"t":11612,"text":"], [*Quest"}
+{"t":11634,"text":"ions*], [*Points*"}
+{"t":11655,"text":"],\n  [A:"}
+{"t":11676,"text":" Limits], [1"}
+{"t":11698,"text":"–5], [30],\n  "}
+{"t":11723,"text":"[B: Derivatives"}
+{"t":11735,"text":"], [6–9"}
+{"t":11757,"text":"], [40],\n  [C"}
+{"t":11776,"text":": Applications], [10–"}
+{"t":11797,"text":"12], [30],\n  ["}
+{"t":11816,"text":"*"}
+{"t":11839,"text":"Total*], [],"}
+{"t":11858,"text":" [*"}
+{"t":11875,"text":"100*],\n)"}

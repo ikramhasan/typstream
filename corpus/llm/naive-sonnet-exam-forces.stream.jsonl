@@ -1,0 +1,753 @@
+{"t":0,"text":"#"}
+{"t":0,"text":"set page(paper: \"us"}
+{"t":0,"text":"-letter\", margin: "}
+{"t":0,"text":"2cm, numbering:"}
+{"t":0,"text":" \"1 / 1\")"}
+{"t":0,"text":"\n#set text(size: "}
+{"t":0,"text":"11pt)\n#set en"}
+{"t":0,"text":"um(numbering: \"("}
+{"t":0,"text":"a)\")\n#set par("}
+{"t":0,"text":"spacing: 1em"}
+{"t":25,"text":")\n\n#let mk(n"}
+{"t":58,"text":") = [#h(1f"}
+{"t":93,"text":"r) *[#n marks"}
+{"t":125,"text":"]*]\n\n// Dra"}
+{"t":163,"text":"ws a force"}
+{"t":191,"text":" arrow on"}
+{"t":226,"text":" a canvas. All"}
+{"t":258,"text":" coordinates are in cm"}
+{"t":291,"text":","}
+{"t":325,"text":" measured from"}
+{"t":358,"text":"\n// the top-left cor"}
+{"t":392,"text":"ner of the can"}
+{"t":425,"text":"vas (y incre"}
+{"t":458,"text":"ases downward).\n#let ar"}
+{"t":491,"text":"row(x0, y0"}
+{"t":525,"text":", vx, vy, col"}
+{"t":558,"text":": black"}
+{"t":592,"text":") = {\n  let mag"}
+{"t":625,"text":" = calc.sqrt"}
+{"t":658,"text":"(vx * vx + v"}
+{"t":694,"text":"y * vy)\n  let"}
+{"t":726,"text":" ux = vx / mag"}
+{"t":758,"text":"\n  let uy = vy"}
+{"t":792,"text":" / mag\n  let x1"}
+{"t":825,"text":" = x0 + vx"}
+{"t":859,"text":"\n  let y1 = y"}
+{"t":893,"text":"0 + vy\n  let"}
+{"t":925,"text":" hl = 0.28"}
+{"t":959,"text":"\n  let hw = 0"}
+{"t":994,"text":".11"}
+{"t":1025,"text":"\n  let bx = x1"}
+{"t":1058,"text":" - hl * ux"}
+{"t":1092,"text":"\n  let by = y1 -"}
+{"t":1125,"text":" hl * uy\n  place"}
+{"t":1161,"text":"(top + left, line("}
+{"t":1192,"text":"\n    start: (x0 *"}
+{"t":1225,"text":" 1cm, y0 "}
+{"t":1263,"text":"* 1cm),\n    "}
+{"t":1292,"text":"end: (x1 * "}
+{"t":1325,"text":"1cm, y1 *"}
+{"t":1358,"text":" 1cm),\n    st"}
+{"t":1392,"text":"roke: 1.5p"}
+{"t":1425,"text":"t + col,\n  ))"}
+{"t":1458,"text":"\n  place(top + left,"}
+{"t":1492,"text":" polygon(\n    fill"}
+{"t":1525,"text":": col,\n    stroke"}
+{"t":1559,"text":": none,\n    (x1"}
+{"t":1592,"text":" * 1cm, y"}
+{"t":1625,"text":"1 * 1cm),"}
+{"t":1659,"text":"\n    ((bx - h"}
+{"t":1692,"text":"w * uy) * 1"}
+{"t":1725,"text":"cm, (by + hw"}
+{"t":1759,"text":" * ux) * 1c"}
+{"t":1793,"text":"m),\n    ((bx"}
+{"t":1826,"text":" + hw * uy) *"}
+{"t":1860,"text":" 1cm, (by -"}
+{"t":1892,"text":" hw * ux) * "}
+{"t":1926,"text":"1cm),\n  ))"}
+{"t":1959,"text":"\n}\n\n#align(center)"}
+{"t":1993,"text":"[\n  #text(size:"}
+{"t":2025,"text":" 17pt, weight:"}
+{"t":2058,"text":" \"bold\")["}
+{"t":2092,"text":"Gr"}
+{"t":2126,"text":"ade 11 Physics]"}
+{"t":2160,"text":" \\"}
+{"t":2226,"text":"\n  #text(size: 14"}
+{"t":2259,"text":"pt,"}
+{"t":2293,"text":" weight: \"bold\")["}
+{"t":2326,"text":"Un"}
+{"t":2359,"text":"it Ex"}
+{"t":2392,"text":"am: Kinematics and"}
+{"t":2426,"text":" Newton's Laws of"}
+{"t":2461,"text":" Motion]\n]\n\n#"}
+{"t":2497,"text":"v(0"}
+{"t":2528,"text":".5em)"}
+{"t":2562,"text":"\n\n#table(\n  columns:"}
+{"t":2592,"text":" (1fr, 1f"}
+{"t":2627,"text":"r,"}
+{"t":2663,"text":" 1fr),\n  st"}
+{"t":2693,"text":"roke: 0."}
+{"t":2725,"text":"6"}
+{"t":2758,"text":"pt,\n  in"}
+{"t":2792,"text":"set: 8"}
+{"t":2825,"text":"pt,\n  [*"}
+{"t":2859,"text":"Name:*"}
+{"t":2892,"text":" #v(1"}
+{"t":2926,"text":".2"}
+{"t":2959,"text":"em)], [*Date:"}
+{"t":2992,"text":"* #v(1.2em"}
+{"t":3026,"text":")], [*Class"}
+{"t":3060,"text":":* #v(1.2"}
+{"t":3092,"text":"em)],\n  [*"}
+{"t":3129,"text":"Time all"}
+{"t":3162,"text":"owed:* 75 min"}
+{"t":3201,"text":"utes], [*Total mar"}
+{"t":3229,"text":"ks:* 50],"}
+{"t":3260,"text":" [*Score"}
+{"t":3300,"text":":* #h"}
+{"t":3328,"text":"(1f"}
+{"t":3359,"text":"r) / 50],\n)"}
+{"t":3395,"text":"\n\n#v"}
+{"t":3429,"text":"(0"}
+{"t":3458,"text":".5em)\n\n== Inst"}
+{"t":3492,"text":"ructions\n\n- Answ"}
+{"t":3525,"text":"er all questions."}
+{"t":3562,"text":" Show all"}
+{"t":3592,"text":" work for"}
+{"t":3658,"text":" Sections B and C,"}
+{"t":3692,"text":" including form"}
+{"t":3725,"text":"ulas, subst"}
+{"t":3759,"text":"itutions, and units."}
+{"t":3793,"text":"\n- Use"}
+{"t":3825,"text":" $g = 9.8$"}
+{"t":3865,"text":" m"}
+{"t":3895,"text":"/s² ("}
+{"t":3941,"text":"downward)"}
+{"t":3959,"text":" un"}
+{"t":3995,"text":"less told"}
+{"t":4025,"text":" otherwise.\n-"}
+{"t":4059,"text":" Give"}
+{"t":4092,"text":" num"}
+{"t":4127,"text":"erical answers to three significant"}
+{"t":4160,"text":" figures un"}
+{"t":4192,"text":"less otherwise specified."}
+{"t":4228,"text":"\n- Ignore air res"}
+{"t":4265,"text":"istance in"}
+{"t":4292,"text":" all questions.\n- A sc"}
+{"t":4326,"text":"ientific calculator is permit"}
+{"t":4376,"text":"ted.\n\n== Formula"}
+{"t":4402,"text":" S"}
+{"t":4427,"text":"heet\n\n#"}
+{"t":4459,"text":"table"}
+{"t":4492,"text":"(\n  columns: ("}
+{"t":4525,"text":"1fr, 1fr"}
+{"t":4560,"text":"),\n  stroke: "}
+{"t":4593,"text":"0.5pt,\n  "}
+{"t":4629,"text":"inset: 8"}
+{"t":4659,"text":"pt,\n  align: center"}
+{"t":4693,"text":" +"}
+{"t":4726,"text":" horizon,\n  [$"}
+{"t":4759,"text":" v = v_0 +"}
+{"t":4792,"text":" a t $], [$"}
+{"t":4825,"text":" Delta x = v_0 "}
+{"t":4858,"text":"t + 1/2 a"}
+{"t":4895,"text":" t^2 $],\n  "}
+{"t":4930,"text":"[$ v^2 ="}
+{"t":4962,"text":" v_0^2 + "}
+{"t":4997,"text":"2 a Delta x $"}
+{"t":5026,"text":"], [$ Delta x"}
+{"t":5058,"text":" = (v_0 + v"}
+{"t":5097,"text":")"}
+{"t":5125,"text":"/2 d"}
+{"t":5160,"text":"ot t $],\n  [$"}
+{"t":5195,"text":" F_\""}
+{"t":5225,"text":"net\" = m a $], ["}
+{"t":5259,"text":"$ F_g = m g"}
+{"t":5292,"text":" $],\n  [$ f"}
+{"t":5325,"text":"_k = mu_k F"}
+{"t":5361,"text":"_N $], [$ f"}
+{"t":5393,"text":"_s <= mu_s"}
+{"t":5426,"text":" F_N $],\n)"}
+{"t":5459,"text":"\n\n#pagebreak()"}
+{"t":5493,"text":"\n\n="}
+{"t":5526,"text":" Section A: Multiple"}
+{"t":5559,"text":" Choice #"}
+{"t":5592,"text":"h"}
+{"t":5627,"text":"(1f"}
+{"t":5659,"text":"r) [8 marks]"}
+{"t":5693,"text":"\n\n_"}
+{"t":5730,"text":"Circle the let"}
+{"t":5759,"text":"ter of"}
+{"t":5792,"text":" the best answer. Each question"}
+{"t":5826,"text":" is worth 1 mark"}
+{"t":5859,"text":"._\n\n*"}
+{"t":5892,"text":"1.* Which of the following"}
+{"t":5925,"text":" is a vector quantity?"}
+{"t":5960,"text":"\n\n(A) dist"}
+{"t":5992,"text":"ance #h(1."}
+{"t":6026,"text":"5em) (B) speed"}
+{"t":6060,"text":" #h(1.5em)"}
+{"t":6095,"text":" (C) displacement #h"}
+{"t":6126,"text":"(1.5em) (D"}
+{"t":6158,"text":") time\n\n#"}
+{"t":6192,"text":"v("}
+{"t":6225,"text":"0.6em)\n\n*2"}
+{"t":6281,"text":".* On a vel"}
+{"t":6293,"text":"ocity-time graph, a"}
+{"t":6328,"text":" horizontal line at a n"}
+{"t":6359,"text":"onzero velocity repres"}
+{"t":6393,"text":"ents an"}
+{"t":6428,"text":" object that is"}
+{"t":6460,"text":":\n\n(A) at"}
+{"t":6493,"text":" rest #h(1.5"}
+{"t":6526,"text":"em) (B) moving with"}
+{"t":6559,"text":" constant vel"}
+{"t":6592,"text":"ocity #h(1.5"}
+{"t":6628,"text":"em) (C) spe"}
+{"t":6659,"text":"eding up u"}
+{"t":6692,"text":"niformly #h(1."}
+{"t":6726,"text":"5em) ("}
+{"t":6759,"text":"D) slowing down u"}
+{"t":6796,"text":"niformly\n\n#v(0"}
+{"t":6827,"text":".6em)\n\n*3."}
+{"t":6860,"text":"* A car starts from rest"}
+{"t":6892,"text":" and accelerates u"}
+{"t":6925,"text":"niformly at 3.0"}
+{"t":6960,"text":" m/s² for 4"}
+{"t":6994,"text":".0 s. How far does"}
+{"t":7026,"text":" it travel?\n\n(A)"}
+{"t":7059,"text":" 6.0 m #h"}
+{"t":7093,"text":"(1.5em) (B"}
+{"t":7125,"text":") 12 m #h("}
+{"t":7159,"text":"1.5em) (C)"}
+{"t":7194,"text":" 24 m #h(1"}
+{"t":7225,"text":".5em) (D) "}
+{"t":7259,"text":"48 m\n\n#v(0"}
+{"t":7292,"text":".6em)\n\n*4."}
+{"t":7326,"text":"* A ball is thrown"}
+{"t":7359,"text":" straight up. At the"}
+{"t":7394,"text":" very"}
+{"t":7429,"text":" top"}
+{"t":7459,"text":" of its path"}
+{"t":7495,"text":", the"}
+{"t":7526,"text":" ball's velocity and ac"}
+{"t":7559,"text":"celeration are:\n\n(A"}
+{"t":7593,"text":") $v = 0$,"}
+{"t":7626,"text":" $a = 0$ #"}
+{"t":7659,"text":"h(1.5em) ("}
+{"t":7692,"text":"B) $v = 0$"}
+{"t":7727,"text":", $a = 9.8"}
+{"t":7760,"text":"$ m/s² down"}
+{"t":7792,"text":"ward #h(1.5em"}
+{"t":7828,"text":") (C) $v = "}
+{"t":7859,"text":"9.8$ m/s"}
+{"t":7927,"text":" up"}
+{"t":7933,"text":"ward, $a = 0$"}
+{"t":7963,"text":" #h(1.5em"}
+{"t":7993,"text":") (D) $v = "}
+{"t":8026,"text":"9.8$ m/s"}
+{"t":8059,"text":" down"}
+{"t":8093,"text":"ward, $a = 9."}
+{"t":8127,"text":"8$ m/s² down"}
+{"t":8161,"text":"ward\n\n#v("}
+{"t":8198,"text":"0.6em)\n\n*5"}
+{"t":8229,"text":".* A h"}
+{"t":8259,"text":"ockey puck sl"}
+{"t":8294,"text":"ides across very"}
+{"t":8326,"text":" smooth ice and"}
+{"t":8359,"text":" sl"}
+{"t":8392,"text":"ows down"}
+{"t":8425,"text":" only"}
+{"t":8460,"text":" very slight"}
+{"t":8494,"text":"ly. Which law"}
+{"t":8525,"text":" best"}
+{"t":8574,"text":" explains why"}
+{"t":8593,"text":" it"}
+{"t":8626,"text":" does not st"}
+{"t":8659,"text":"op immediately?\n\n(A"}
+{"t":8693,"text":") Newton's first law #"}
+{"t":8727,"text":"h(1.5em) ("}
+{"t":8761,"text":"B) Newton's second law"}
+{"t":8794,"text":" #h(1.5em)"}
+{"t":8826,"text":" (C) Newton's third"}
+{"t":8860,"text":" law #h(1.5em"}
+{"t":8892,"text":") (D) the"}
+{"t":8926,"text":" law of g"}
+{"t":8959,"text":"ravitation\n\n#v(0"}
+{"t":8993,"text":".6em)\n\n*6."}
+{"t":9026,"text":"* A net force of 20 "}
+{"t":9060,"text":"N acts on a 5."}
+{"t":9093,"text":"0 kg object. The"}
+{"t":9127,"text":" ac"}
+{"t":9162,"text":"celeration of the object is:"}
+{"t":9192,"text":"\n\n(A) 0.25"}
+{"t":9226,"text":" m/s² #h("}
+{"t":9259,"text":"1.5em) (B)"}
+{"t":9292,"text":" 4.0 m/s"}
+{"t":9331,"text":"² #h(1"}
+{"t":9359,"text":".5em) (C) "}
+{"t":9393,"text":"15"}
+{"t":9426,"text":" m/s² #h("}
+{"t":9460,"text":"1.5em) (D)"}
+{"t":9492,"text":" 100 m/s²"}
+{"t":9526,"text":"\n\n#v(0.6em)"}
+{"t":9561,"text":"\n\n*7.* The Ear"}
+{"t":9592,"text":"th pulls on you with"}
+{"t":9626,"text":" a gravitational force of "}
+{"t":9662,"text":"700 N down"}
+{"t":9696,"text":"ward. According"}
+{"t":9726,"text":" to Newton's third law,"}
+{"t":9762,"text":" the force you exert on the"}
+{"t":9794,"text":" Earth is:\n\n(A)"}
+{"t":9826,"text":" 0 N #h(1"}
+{"t":9859,"text":".5em) (B) much"}
+{"t":9910,"text":" less"}
+{"t":9926,"text":" than 700 N #h("}
+{"t":9959,"text":"1.5em) ("}
+{"t":9992,"text":"C) 700 N upward"}
+{"t":10026,"text":" #h(1.5em)"}
+{"t":10059,"text":" (D) 700 N down"}
+{"t":10093,"text":"ward\n\n#v(0.6"}
+{"t":10126,"text":"em)\n\n*8.* A"}
+{"t":10159,"text":" 2.0 kg object"}
+{"t":10192,"text":" is taken to the Moon"}
+{"t":10226,"text":", where $g ="}
+{"t":10259,"text":" 1.6$ m/"}
+{"t":10292,"text":"s². On the Moon,"}
+{"t":10331,"text":" the object has:\n\n(A)"}
+{"t":10360,"text":" mass 2.0 k"}
+{"t":10393,"text":"g,"}
+{"t":10427,"text":" weight 3.2 N"}
+{"t":10460,"text":" #h(1.5em)"}
+{"t":10496,"text":" (B) mass 0"}
+{"t":10526,"text":".33"}
+{"t":10560,"text":" kg, weight 3"}
+{"t":10594,"text":".2 N #h(1"}
+{"t":10626,"text":".5em) (C) m"}
+{"t":10659,"text":"ass 2.0 kg"}
+{"t":10693,"text":", weight 19.6 "}
+{"t":10727,"text":"N #h(1.5em"}
+{"t":10761,"text":") (D) mass 3"}
+{"t":10793,"text":".2 kg, weight"}
+{"t":10830,"text":" 2.0 N"}
+{"t":10859,"text":"\n\n#pagebreak()"}
+{"t":10894,"text":"\n\n= Section B: K"}
+{"t":10926,"text":"inematics #h(1f"}
+{"t":10960,"text":"r) [15"}
+{"t":10992,"text":" marks]\n\n*Question"}
+{"t":11026,"text":" 9*"}
+{"t":11061,"text":" #m"}
+{"t":11097,"text":"k(5)\n\nA car acc"}
+{"t":11127,"text":"elerates uniformly from"}
+{"t":11163,"text":" rest to"}
+{"t":11193,"text":" "}
+{"t":11227,"text":"25 m/s in 8"}
+{"t":11261,"text":".0 s.\n\n+"}
+{"t":11293,"text":" Calculate the mag"}
+{"t":11326,"text":"nitude of the car's ac"}
+{"t":11359,"text":"celeration. #mk("}
+{"t":11393,"text":"2)\n  #v(4"}
+{"t":11426,"text":"em)\n+ Calcul"}
+{"t":11460,"text":"ate the distance the car travels"}
+{"t":11493,"text":" during"}
+{"t":11527,"text":" these"}
+{"t":11559,"text":" 8.0 s. #"}
+{"t":11594,"text":"mk(2)\n  #"}
+{"t":11626,"text":"v(4em)\n+"}
+{"t":11665,"text":" What is the car"}
+{"t":11693,"text":"'s average velocity during this time"}
+{"t":11726,"text":"? #mk(1)"}
+{"t":11759,"text":"\n  #v(2em)"}
+{"t":11793,"text":"\n\n*Question 10* #m"}
+{"t":11827,"text":"k(4)\n\nA st"}
+{"t":11859,"text":"one is dropped from a b"}
+{"t":11894,"text":"ridge that is 45 m"}
+{"t":11926,"text":" above"}
+{"t":11960,"text":" the sur"}
+{"t":11993,"text":"face of a river.\n\n+"}
+{"t":12026,"text":" How"}
+{"t":12060,"text":" long does it take the"}
+{"t":12095,"text":" stone to reach the water?"}
+{"t":12126,"text":" #mk(2)\n  "}
+{"t":12161,"text":"#v(4em)\n+"}
+{"t":12194,"text":" What is the spe"}
+{"t":12226,"text":"ed of the stone just"}
+{"t":12262,"text":" before it hits the water? #"}
+{"t":12294,"text":"mk(2)\n  #"}
+{"t":12327,"text":"v(4em)\n\n#p"}
+{"t":12359,"text":"agebreak()\n\n*"}
+{"t":12395,"text":"Question 11* #mk("}
+{"t":12426,"text":"6)\n\nA cyclist"}
+{"t":12460,"text":"'s"}
+{"t":12496,"text":" velocity is measured during"}
+{"t":12526,"text":" a "}
+{"t":12560,"text":"12 s trip along"}
+{"t":12594,"text":" a straight road"}
+{"t":12627,"text":". The velocity changes at"}
+{"t":12659,"text":" a ste"}
+{"t":12695,"text":"ady rate between the times"}
+{"t":12726,"text":" list"}
+{"t":12759,"text":"ed in"}
+{"t":12793,"text":" the table.\n\n#align"}
+{"t":12828,"text":"(center)[\n  #"}
+{"t":12861,"text":"table(\n    columns: "}
+{"t":12893,"text":"5,\n    in"}
+{"t":12927,"text":"set: 8"}
+{"t":12964,"text":"pt,\n    align: center"}
+{"t":12993,"text":",\n    [*"}
+{"t":13026,"text":"Time (s)*], ["}
+{"t":13060,"text":"0], [4], [10],"}
+{"t":13094,"text":" [12],\n    [*"}
+{"t":13130,"text":"Velocity (m/s)"}
+{"t":13162,"text":"*], [0], [8."}
+{"t":13193,"text":"0], [8.0], ["}
+{"t":13229,"text":"0],\n  )\n]"}
+{"t":13260,"text":"\n\n+ Find"}
+{"t":13294,"text":" the acceleration of the c"}
+{"t":13326,"text":"yclist during each of the three"}
+{"t":13359,"text":" intervals: 0–"}
+{"t":13396,"text":"4 s, 4–10"}
+{"t":13427,"text":" s, and 10–12"}
+{"t":13459,"text":" s. #mk(3"}
+{"t":13497,"text":")\n  #v(7"}
+{"t":13528,"text":"em)\n+ Find"}
+{"t":13560,"text":" the total displacement of the c"}
+{"t":13595,"text":"yclist during the "}
+{"t":13626,"text":"12 s. ("}
+{"t":13659,"text":"Hint: use are"}
+{"t":13693,"text":"as on a velocity-time"}
+{"t":13727,"text":" graph.) #mk("}
+{"t":13759,"text":"3)\n  #v(7"}
+{"t":13793,"text":"em)\n\n#pagebre"}
+{"t":13828,"text":"ak()\n\n= Section C:"}
+{"t":13863,"text":" Newton's Laws #"}
+{"t":13893,"text":"h(1fr) [27"}
+{"t":13926,"text":" marks]\n\n*Question"}
+{"t":13960,"text":" 12* #mk(7"}
+{"t":13993,"text":")\n\nA 20 kg"}
+{"t":14026,"text":" crate is pushed to"}
+{"t":14076,"text":" the right along a r"}
+{"t":14093,"text":"ough horizontal floor by"}
+{"t":14126,"text":" a const"}
+{"t":14162,"text":"ant horizontal force of "}
+{"t":14199,"text":"100 N. The coeffic"}
+{"t":14233,"text":"ient of kinetic friction"}
+{"t":14260,"text":" between the crate and the floor"}
+{"t":14293,"text":" is $m"}
+{"t":14328,"text":"u_k = 0.30"}
+{"t":14359,"text":"$.\n\n+ In"}
+{"t":14396,"text":" the box below, the"}
+{"t":14427,"text":" cr"}
+{"t":14459,"text":"ate is represented by a dot"}
+{"t":14493,"text":". Draw and"}
+{"t":14526,"text":" label a free-body diagram"}
+{"t":14560,"text":" showing all forces acting on"}
+{"t":14594,"text":" the crate. #mk("}
+{"t":14626,"text":"3)"}
+{"t":14661,"text":"\n\n  #align(center)["}
+{"t":14693,"text":"\n    #box(width"}
+{"t":14727,"text":": 7cm, height:"}
+{"t":14760,"text":" 5cm, stroke"}
+{"t":14797,"text":": 0.8pt)"}
+{"t":14827,"text":"[\n      #place(center +"}
+{"t":14860,"text":" horizon, circle(rad"}
+{"t":14893,"text":"ius: 3pt, f"}
+{"t":14927,"text":"ill: black))\n    ]"}
+{"t":14960,"text":"\n  ]\n\n+"}
+{"t":14993,"text":" Calculate the force of k"}
+{"t":15027,"text":"inetic friction on the cr"}
+{"t":15060,"text":"ate. #mk(2)"}
+{"t":15093,"text":"\n  #v(4"}
+{"t":15126,"text":"em)"}
+{"t":15161,"text":"\n+ Calculate the ac"}
+{"t":15193,"text":"celeration of the crate."}
+{"t":15226,"text":" #mk(2)\n  "}
+{"t":15263,"text":"#v(4em)\n\n#"}
+{"t":15293,"text":"pagebreak()\n\n*"}
+{"t":15327,"text":"Question 13* #mk"}
+{"t":15360,"text":"(12)\n\nA 5."}
+{"t":15393,"text":"0 kg block sl"}
+{"t":15427,"text":"ides down a rough incline that"}
+{"t":15463,"text":" mak"}
+{"t":15493,"text":"es an"}
+{"t":15526,"text":" angle of $the"}
+{"t":15560,"text":"ta = 30 "}
+{"t":15593,"text":"degree$ with the horiz"}
+{"t":15627,"text":"ontal. The coefficient"}
+{"t":15660,"text":" of kinetic friction between"}
+{"t":15697,"text":" the block and the incline is $"}
+{"t":15726,"text":"mu_k = 0."}
+{"t":15760,"text":"20$. The diagram below"}
+{"t":15794,"text":" shows the block and"}
+{"t":15827,"text":" three of"}
+{"t":15860,"text":" the forces acting on it,"}
+{"t":15895,"text":" label"}
+{"t":15927,"text":"led A, B, and C."}
+{"t":15960,"text":"\n\n#align(center)["}
+{"t":15993,"text":"\n  #box(width: 7"}
+{"t":16027,"text":"."}
+{"t":16061,"text":"5cm, height: 5"}
+{"t":16093,"text":".4cm)[\n    "}
+{"t":16126,"text":"// Inc"}
+{"t":16160,"text":"line\n    #place(top +"}
+{"t":16193,"text":" left, polygon("}
+{"t":16227,"text":"\n      fill: luma(225"}
+{"t":16281,"text":"),\n      stroke: "}
+{"t":16293,"text":"1pt,\n      (0"}
+{"t":16327,"text":"cm, 5cm),"}
+{"t":16360,"text":" (7cm, 5c"}
+{"t":16402,"text":"m), (7cm, "}
+{"t":16429,"text":"0.96cm),\n    "}
+{"t":16460,"text":"))\n    // Block ("}
+{"t":16495,"text":"r"}
+{"t":16527,"text":"otated to"}
+{"t":16572,"text":" s"}
+{"t":16593,"text":"it fl"}
+{"t":16627,"text":"at on the incline)\n    "}
+{"t":16662,"text":"#place(top + left, d"}
+{"t":16693,"text":"x: 2.564cm"}
+{"t":16727,"text":", dy: 1.88"}
+{"t":16760,"text":"cm,"}
+{"t":16793,"text":"\n      rotate(30de"}
+{"t":16830,"text":"g, rect(width: "}
+{"t":16864,"text":"1.2cm, height:"}
+{"t":16900,"text":" 1.2cm, f"}
+{"t":16926,"text":"ill: rgb(\"#c"}
+{"t":16960,"text":"fe2ff\"), st"}
+{"t":16994,"text":"roke: 1pt)"}
+{"t":17028,"text":"))\n    //"}
+{"t":17060,"text":" For"}
+{"t":17095,"text":"ces dr"}
+{"t":17127,"text":"awn from the cent"}
+{"t":17163,"text":"re of the block\n    #ar"}
+{"t":17197,"text":"row(3.164, "}
+{"t":17234,"text":"2.48, 0, "}
+{"t":17262,"text":"1.5, col: rg"}
+{"t":17293,"text":"b(\"#c"}
+{"t":17327,"text":"0"}
+{"t":17362,"text":"392b\"))\n    #ar"}
+{"t":17393,"text":"row(3.164, "}
+{"t":17426,"text":"2.48, -0.75"}
+{"t":17462,"text":", -1.3, col:"}
+{"t":17494,"text":" rgb(\"#2471"}
+{"t":17527,"text":"a"}
+{"t":17560,"text":"3"}
+{"t":17594,"text":"\"))\n    #arrow"}
+{"t":17627,"text":"(3.164, 2."}
+{"t":17661,"text":"48, 1.04, -"}
+{"t":17697,"text":"0.6, col: rg"}
+{"t":17727,"text":"b(\"#1e"}
+{"t":17760,"text":"8449"}
+{"t":17794,"text":"\"))\n    // Lab"}
+{"t":17828,"text":"els\n    #place(top +"}
+{"t":17860,"text":" left, dx: 3."}
+{"t":17894,"text":"3cm, dy: "}
+{"t":17928,"text":"3.7cm, text("}
+{"t":17960,"text":"weight: \"bold\")["}
+{"t":17993,"text":"A])\n    #place(top"}
+{"t":18027,"text":" + left, dx: 1"}
+{"t":18060,"text":".85"}
+{"t":18094,"text":"cm, dy: 0"}
+{"t":18126,"text":".7"}
+{"t":18171,"text":"cm, text(weight:"}
+{"t":18194,"text":" \"bold\")[B])"}
+{"t":18227,"text":"\n    #place(top + left,"}
+{"t":18260,"text":" dx: 4.3c"}
+{"t":18293,"text":"m, dy: 1."}
+{"t":18327,"text":"35cm, text(weight"}
+{"t":18362,"text":": \"bold\")[C])"}
+{"t":18393,"text":"\n    #place(top + left"}
+{"t":18427,"text":", dx: 0"}
+{"t":18460,"text":".9cm, dy:"}
+{"t":18501,"text":" 4.45"}
+{"t":18527,"text":"cm, ["}
+{"t":18561,"text":"$theta = 30 deg"}
+{"t":18594,"text":"ree$])\n  ]"}
+{"t":18627,"text":"\n]\n\n+ Name each of"}
+{"t":18660,"text":" the for"}
+{"t":18697,"text":"ces A, B, and C."}
+{"t":18727,"text":" #mk(3)\n  "}
+{"t":18760,"text":"#v(1"}
+{"t":18793,"text":".5em)\n  "}
+{"t":18827,"text":"A: #"}
+{"t":18863,"text":"h"}
+{"t":18904,"text":"(1fr) #box("}
+{"t":18927,"text":"width: 70"}
+{"t":18966,"text":"%, line"}
+{"t":18993,"text":"(length: 100%)"}
+{"t":19027,"text":") \\\n  #"}
+{"t":19060,"text":"v(0"}
+{"t":19093,"text":".3"}
+{"t":19132,"text":"em)\n  B: #h"}
+{"t":19160,"text":"(1fr) #box("}
+{"t":19193,"text":"width: 70%, line("}
+{"t":19227,"text":"length: 100%)) \\"}
+{"t":19260,"text":"\n  #v(0.3"}
+{"t":19293,"text":"em)\n  C: #h"}
+{"t":19327,"text":"(1fr) #box("}
+{"t":19360,"text":"width: 70%, line("}
+{"t":19394,"text":"length: 100%))\n+"}
+{"t":19427,"text":" Calculate the component"}
+{"t":19460,"text":" of the block"}
+{"t":19496,"text":"'s weight ac"}
+{"t":19527,"text":"ting par"}
+{"t":19560,"text":"allel to the incline and the"}
+{"t":19593,"text":" component acting perpendicular"}
+{"t":19627,"text":" to the incline. #mk"}
+{"t":19662,"text":"(2)\n  #v("}
+{"t":19693,"text":"6em)\n+ Cal"}
+{"t":19727,"text":"culate the normal force on"}
+{"t":19763,"text":" the block and the force of kin"}
+{"t":19794,"text":"etic friction ac"}
+{"t":19827,"text":"ting on it"}
+{"t":19871,"text":". #mk(3)"}
+{"t":19893,"text":"\n  #v(6em)"}
+{"t":19927,"text":"\n+ Calculate the ac"}
+{"t":19961,"text":"celeration of the block down"}
+{"t":19994,"text":" the incline. #mk("}
+{"t":20027,"text":"2)\n  #v(6"}
+{"t":20060,"text":"em)\n+ If"}
+{"t":20095,"text":" the inc"}
+{"t":20127,"text":"line were r"}
+{"t":20161,"text":"ougher,"}
+{"t":20195,"text":" what"}
+{"t":20228,"text":" is the minimum coeffic"}
+{"t":20262,"text":"ient of static friction $m"}
+{"t":20296,"text":"u_s$ that"}
+{"t":20327,"text":" would keep this"}
+{"t":20361,"text":" block at"}
+{"t":20393,"text":" rest on"}
+{"t":20428,"text":" the "}
+{"t":20462,"text":"30°"}
+{"t":20504,"text":" incline? #mk(2"}
+{"t":20529,"text":")\n  #v(6em"}
+{"t":20561,"text":")\n\n#pagebreak"}
+{"t":20599,"text":"()\n\n*Question 14*"}
+{"t":20631,"text":" #mk(4)"}
+{"t":20660,"text":"\n\nTwo blocks, of"}
+{"t":20694,"text":" mass 4.0 k"}
+{"t":20728,"text":"g and 6.0 k"}
+{"t":20761,"text":"g, are connected by a light"}
+{"t":20796,"text":" rope and rest on a fr"}
+{"t":20827,"text":"ictionless horizontal table"}
+{"t":20862,"text":". A horizontal force of"}
+{"t":20894,"text":" 20 N pulls the"}
+{"t":20928,"text":" 6.0 kg block"}
+{"t":20960,"text":","}
+{"t":20995,"text":" so"}
+{"t":21027,"text":" that"}
+{"t":21061,"text":" both blocks acc"}
+{"t":21094,"text":"elerate together"}
+{"t":21127,"text":"."}
+{"t":21175,"text":"\n\n#"}
+{"t":21193,"text":"align(center"}
+{"t":21229,"text":")[\n  #box(width"}
+{"t":21263,"text":": 11"}
+{"t":21296,"text":"cm, height: 2"}
+{"t":21327,"text":".4cm)[\n    "}
+{"t":21362,"text":"#place(top + left, d"}
+{"t":21395,"text":"x: 0c"}
+{"t":21427,"text":"m, dy: 1."}
+{"t":21460,"text":"4cm, line"}
+{"t":21493,"text":"(length: 11"}
+{"t":21527,"text":"cm, stroke: "}
+{"t":21560,"text":"1."}
+{"t":21594,"text":"2pt))\n    #place"}
+{"t":21627,"text":"(top + left, dx:"}
+{"t":21660,"text":" 1.2"}
+{"t":21693,"text":"cm, dy: 0"}
+{"t":21727,"text":".5"}
+{"t":21760,"text":"cm, rect(width:"}
+{"t":21795,"text":" 2"}
+{"t":21828,"text":"c"}
+{"t":21861,"text":"m, height: 0.9"}
+{"t":21893,"text":"cm, fill: rg"}
+{"t":21927,"text":"b(\"#d"}
+{"t":21960,"text":"5"}
+{"t":21995,"text":"f"}
+{"t":22028,"text":"5"}
+{"t":22060,"text":"e3"}
+{"t":22094,"text":"\"), stroke: 1"}
+{"t":22127,"text":"pt)[#"}
+{"t":22160,"text":"align(center +"}
+{"t":22195,"text":" horizon)[4.0"}
+{"t":22229,"text":" kg]])\n    #"}
+{"t":22263,"text":"place(top + left, dx"}
+{"t":22318,"text":": 3.2cm,"}
+{"t":22339,"text":" dy: 0.95"}
+{"t":22371,"text":"cm, line(length: "}
+{"t":22402,"text":"2.2"}
+{"t":22432,"text":"cm, stroke: "}
+{"t":22462,"text":"1."}
+{"t":22494,"text":"2pt))\n    #place"}
+{"t":22527,"text":"(top + left, dx:"}
+{"t":22561,"text":" 5.4cm, d"}
+{"t":22596,"text":"y: 0.3cm"}
+{"t":22628,"text":", rect(width: 2"}
+{"t":22660,"text":".6"}
+{"t":22693,"text":"cm, height: 1."}
+{"t":22728,"text":"1cm, fill: r"}
+{"t":22763,"text":"gb(\"#fd"}
+{"t":22794,"text":"eb"}
+{"t":22829,"text":"d"}
+{"t":22867,"text":"0\"), stroke: "}
+{"t":22896,"text":"1pt)[#align("}
+{"t":22927,"text":"center + horizon)[6"}
+{"t":22963,"text":".0 kg]])"}
+{"t":22993,"text":"\n    #arrow(8"}
+{"t":23027,"text":".0, 0.85"}
+{"t":23061,"text":", 2"}
+{"t":23094,"text":".2, 0,"}
+{"t":23127,"text":" col: rgb(\"#c"}
+{"t":23161,"text":"0392b\"))\n    #"}
+{"t":23194,"text":"place(top + left, dx"}
+{"t":23228,"text":": 8.5cm,"}
+{"t":23261,"text":" dy: 0.3"}
+{"t":23294,"text":"cm, [20"}
+{"t":23330,"text":" N])\n  ]"}
+{"t":23363,"text":"\n]\n\n+ Calculate"}
+{"t":23394,"text":" the acceleration of the two"}
+{"t":23427,"text":"-"}
+{"t":23460,"text":"block system. #mk(2"}
+{"t":23495,"text":")\n  #v(5"}
+{"t":23529,"text":"em)\n+ Calcul"}
+{"t":23561,"text":"ate the tension in the rope"}
+{"t":23603,"text":" connecting the bl"}
+{"t":23635,"text":"ocks. #mk(2"}
+{"t":23663,"text":")\n  #v(5em"}
+{"t":23694,"text":")\n\n*Question 15*"}
+{"t":23728,"text":" #mk(4)\n\nA"}
+{"t":23760,"text":" b"}
+{"t":23795,"text":"us is trav"}
+{"t":23828,"text":"elling at const"}
+{"t":23863,"text":"ant vel"}
+{"t":23894,"text":"ocity when"}
+{"t":23927,"text":" the driver su"}
+{"t":23960,"text":"ddenly appl"}
+{"t":23995,"text":"ies the brakes. The"}
+{"t":24028,"text":" passengers,"}
+{"t":24063,"text":" who are not wearing seat"}
+{"t":24093,"text":"belts, lurch for"}
+{"t":24127,"text":"ward. Using"}
+{"t":24163,"text":" Newton's first law,"}
+{"t":24196,"text":" explain why this happens."}
+{"t":24228,"text":" Mention what"}
+{"t":24260,"text":" a"}
+{"t":24293,"text":" seatbelt does"}
+{"t":24329,"text":" in"}
+{"t":24360,"text":" this situation.\n\n#v"}
+{"t":24396,"text":"(1"}
+{"t":24429,"text":"em"}
+{"t":24475,"text":")\n#line(length: "}
+{"t":24495,"text":"100%)\n#v(1"}
+{"t":24528,"text":".5em)\n#line("}
+{"t":24563,"text":"length: 100%)\n#"}
+{"t":24594,"text":"v(1.5em)"}
+{"t":24629,"text":"\n#line(length: 100%"}
+{"t":24661,"text":")\n#v(1.5"}
+{"t":24694,"text":"em)\n#line(length:"}
+{"t":24727,"text":" 100%)\n\n#v("}
+{"t":24760,"text":"2em)\n#align(center"}
+{"t":24793,"text":")[*End of Exam"}
+{"t":24813,"text":"*]"}

@@ -1,0 +1,158 @@
+{"t":0,"text":"#show"}
+{"t":5,"text":": worksheet."}
+{"t":17,"text":"with(\n  title: ["}
+{"t":37,"text":"Balancing Ch"}
+{"t":59,"text":"emical Equations],\n  "}
+{"t":78,"text":"subject: [Chemist"}
+{"t":98,"text":"ry],\n  grade: ["}
+{"t":119,"text":"Grade 9],\n  "}
+{"t":145,"text":"info: (\"name\", \"class"}
+{"t":161,"text":"\", \"roll\"),\n  "}
+{"t":182,"text":"instructions: ["}
+{"t":200,"text":"Balance each"}
+{"t":221,"text":" equation by"}
+{"t":249,"text":" chang"}
+{"t":261,"text":"ing only"}
+{"t":289,"text":" the coefficients ("}
+{"t":303,"text":"the"}
+{"t":323,"text":" numbers in front)."}
+{"t":343,"text":" Never"}
+{"t":363,"text":" change the subscripts."}
+{"t":385,"text":" Quest"}
+{"t":404,"text":"ions get"}
+{"t":424,"text":" har"}
+{"t":445,"text":"der as you"}
+{"t":466,"text":" go"}
+{"t":488,"text":".],\n)\n\n#"}
+{"t":507,"text":"callout(k"}
+{"t":526,"text":"ind: \"t"}
+{"t":546,"text":"ip\")[\n  "}
+{"t":572,"text":"Bal"}
+{"t":590,"text":"ance met"}
+{"t":616,"text":"als and"}
+{"t":628,"text":" non-metals first, then o"}
+{"t":655,"text":"xygen, then hydr"}
+{"t":671,"text":"ogen. Count the at"}
+{"t":692,"text":"oms of each element"}
+{"t":710,"text":" on both"}
+{"t":732,"text":" sides before"}
+{"t":751,"text":" you fin"}
+{"t":772,"text":"ish.\n]\n\n= Part"}
+{"t":792,"text":" A: Intro"}
+{"t":813,"text":"ductory\n\n#question(points:"}
+{"t":833,"text":" 1)[\n  Bal"}
+{"t":855,"text":"ance:"}
+{"t":875,"text":" #ce(\"H2 +"}
+{"t":896,"text":" O2 -> H2O"}
+{"t":914,"text":"\")\n  #answer-l"}
+{"t":935,"text":"ines(count: 1, answ"}
+{"t":956,"text":"er: ce(\"2H2"}
+{"t":976,"text":" + O2 -> "}
+{"t":997,"text":"2H2O\"))\n]"}
+{"t":1016,"text":"\n\n#question(points: 1"}
+{"t":1037,"text":")[\n  Balance:"}
+{"t":1057,"text":" #ce(\"Na +"}
+{"t":1079,"text":" Cl2 -> Na"}
+{"t":1098,"text":"Cl\")\n  #answer"}
+{"t":1118,"text":"-lines(count: 1"}
+{"t":1139,"text":", answer: ce(\"2"}
+{"t":1160,"text":"Na + Cl2 "}
+{"t":1180,"text":"-> 2NaCl"}
+{"t":1202,"text":"\"))\n]\n\n#question("}
+{"t":1221,"text":"points: 1)[\n  "}
+{"t":1244,"text":"Balance: #ce(\""}
+{"t":1261,"text":"Mg + O2 -"}
+{"t":1283,"text":"> MgO\")\n  #"}
+{"t":1302,"text":"answer-lines(count:"}
+{"t":1323,"text":" 1, answer: ce"}
+{"t":1344,"text":"(\"2Mg + O2"}
+{"t":1364,"text":" -> 2MgO"}
+{"t":1385,"text":"\"))\n]\n\n= Part"}
+{"t":1405,"text":" B: Int"}
+{"t":1427,"text":"ermediate\n\n#question(points"}
+{"t":1445,"text":": 2)[\n  "}
+{"t":1466,"text":"Balance: #ce(\"C"}
+{"t":1486,"text":"H4 + O2 -"}
+{"t":1507,"text":"> CO2 + H2"}
+{"t":1529,"text":"O\")\n  #answer-"}
+{"t":1548,"text":"lines(count: 1,"}
+{"t":1569,"text":" answer: ce(\"CH"}
+{"t":1592,"text":"4 + 2O2 "}
+{"t":1609,"text":"-> CO2 + "}
+{"t":1645,"text":"2H2O\"))\n]"}
+{"t":1654,"text":"\n\n#question(points: 2"}
+{"t":1670,"text":")[\n  Balance:"}
+{"t":1691,"text":" #ce(\"Al + O"}
+{"t":1713,"text":"2 -> Al2O"}
+{"t":1732,"text":"3\")\n  #answer-"}
+{"t":1753,"text":"lines(count: 1,"}
+{"t":1772,"text":" answer: ce(\"4"}
+{"t":1793,"text":"Al + 3O2 -"}
+{"t":1814,"text":"> 2Al2O3"}
+{"t":1834,"text":"\"))\n]\n\n#question("}
+{"t":1855,"text":"points: 2)[\n  "}
+{"t":1874,"text":"Balance: #ce(\""}
+{"t":1895,"text":"Fe + O2 -"}
+{"t":1915,"text":"> Fe2O3\")"}
+{"t":1938,"text":"\n  #answer-lines"}
+{"t":1957,"text":"(count: 1, answer"}
+{"t":1977,"text":": ce(\"4Fe"}
+{"t":1999,"text":" + 3O2 ->"}
+{"t":2017,"text":" 2Fe2O3"}
+{"t":2039,"text":"\"))\n]\n\n= Part"}
+{"t":2062,"text":" C: Challenge"}
+{"t":2080,"text":"\n\n#question(points: 2"}
+{"t":2099,"text":")[\n  Balance:"}
+{"t":2120,"text":" #ce(\"C3H8"}
+{"t":2141,"text":" + O2 -> C"}
+{"t":2160,"text":"O2 + H2O\")"}
+{"t":2181,"text":"\n  #answer-lines"}
+{"t":2201,"text":"(count: 1, answer"}
+{"t":2222,"text":": ce(\"C3H8"}
+{"t":2242,"text":" + 5O2 -"}
+{"t":2263,"text":"> 3CO2 +"}
+{"t":2283,"text":" 4H2O\"))"}
+{"t":2304,"text":"\n]\n\n#question(points: "}
+{"t":2325,"text":"2)[\n  Balance"}
+{"t":2347,"text":": #ce(\"Ca"}
+{"t":2365,"text":"(OH)2 + H"}
+{"t":2391,"text":"3PO4 ->"}
+{"t":2406,"text":" Ca3(PO4)"}
+{"t":2426,"text":"2 + H2O\")"}
+{"t":2446,"text":"\n  #answer-lines("}
+{"t":2467,"text":"count: 1, answer:"}
+{"t":2488,"text":" ce(\"3Ca("}
+{"t":2508,"text":"OH)2 + 2"}
+{"t":2528,"text":"H3PO4 ->"}
+{"t":2550,"text":" Ca3(PO4"}
+{"t":2569,"text":")2 + 6H2"}
+{"t":2591,"text":"O\"))\n]\n\n#question"}
+{"t":2610,"text":"(points: 3)["}
+{"t":2632,"text":"\n  Balance: #ce"}
+{"t":2655,"text":"(\"KMnO4 +"}
+{"t":2671,"text":" HCl -> KCl"}
+{"t":2701,"text":" + MnCl2 +"}
+{"t":2712,"text":" H2O + Cl2"}
+{"t":2732,"text":"\")\n  #answer-l"}
+{"t":2756,"text":"ines(count: 1, answ"}
+{"t":2773,"text":"er: ce(\"2KM"}
+{"t":2794,"text":"nO4 + 16H"}
+{"t":2815,"text":"Cl -> 2KC"}
+{"t":2836,"text":"l + 2MnCl"}
+{"t":2855,"text":"2 + 8H2O"}
+{"t":2876,"text":" + 5Cl2\""}
+{"t":2897,"text":"))\n]\n\n#question"}
+{"t":2916,"text":"(points: 2"}
+{"t":2937,"text":")[\n  Balance:"}
+{"t":2958,"text":" #ce(\"Al + H"}
+{"t":2978,"text":"2SO4 ->"}
+{"t":2998,"text":" Al2(SO4)3"}
+{"t":3018,"text":" + H2\")\n  #"}
+{"t":3039,"text":"answer-lines(count:"}
+{"t":3060,"text":" 1, answer: ce"}
+{"t":3080,"text":"(\"2Al + 3H"}
+{"t":3100,"text":"2SO4 ->"}
+{"t":3121,"text":" Al2(SO4)3"}
+{"t":3142,"text":" + 3H2\"))"}
+{"t":3164,"text":"\n]\n\n#answer-key"}
+{"t":3190,"text":"()"}

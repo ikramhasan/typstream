@@ -1,0 +1,242 @@
+{"t":0,"text":"="}
+{"t":32,"text":" M"}
+{"t":69,"text":"ean, Median, Mode"}
+{"t":104,"text":" and Range\n\n*"}
+{"t":142,"text":"Grade 9 Stat"}
+{"t":176,"text":"istics"}
+{"t":216,"text":" Worksheet*\n\nName"}
+{"t":251,"text":": #"}
+{"t":286,"text":"box"}
+{"t":321,"text":"(width: 8"}
+{"t":360,"text":"c"}
+{"t":392,"text":"m, line("}
+{"t":426,"text":"length: 100%)) #"}
+{"t":462,"text":"h(1"}
+{"t":497,"text":"em) Date: #box("}
+{"t":534,"text":"width: 4cm, line"}
+{"t":571,"text":"(length: 100%))"}
+{"t":606,"text":"\n\n== Reminders\n\n-"}
+{"t":642,"text":" *Mean*"}
+{"t":688,"text":" = ("}
+{"t":715,"text":"sum of all values) $"}
+{"t":751,"text":"div"}
+{"t":785,"text":"$ (number of values)"}
+{"t":820,"text":"\n- *Median* = the midd"}
+{"t":856,"text":"le value when the"}
+{"t":891,"text":" data are in"}
+{"t":928,"text":" order."}
+{"t":964,"text":" With"}
+{"t":1000,"text":" an"}
+{"t":1035,"text":" even number of values, take the m"}
+{"t":1070,"text":"ean of the two middle values."}
+{"t":1106,"text":"\n- *Mode* ="}
+{"t":1143,"text":" the value"}
+{"t":1182,"text":" that occurs most often."}
+{"t":1216,"text":" There can"}
+{"t":1252,"text":" be more"}
+{"t":1286,"text":" than one mode, or"}
+{"t":1320,"text":" none"}
+{"t":1357,"text":".\n- *Range* ="}
+{"t":1391,"text":" larg"}
+{"t":1428,"text":"est value $"}
+{"t":1463,"text":"-$ smallest value"}
+{"t":1507,"text":"\n\n== Part A: Math"}
+{"t":1547,"text":" Test Scores"}
+{"t":1581,"text":"\n\nTen students wrote a"}
+{"t":1616,"text":" math test mar"}
+{"t":1642,"text":"ked out of 100.\n\n#"}
+{"t":1680,"text":"table(\n  "}
+{"t":1714,"text":"columns: 11"}
+{"t":1749,"text":",\n  align"}
+{"t":1785,"text":": center,\n  [*"}
+{"t":1821,"text":"Student*], [A], ["}
+{"t":1858,"text":"B], [C], [D],"}
+{"t":1893,"text":" [E], [F], [G"}
+{"t":1931,"text":"], [H], [I], ["}
+{"t":1965,"text":"J],\n  [*Score"}
+{"t":2001,"text":"*], [72], [85],"}
+{"t":2039,"text":" [90], [68], [85"}
+{"t":2072,"text":"], [77], [94], ["}
+{"t":2110,"text":"85], [60], [74],"}
+{"t":2144,"text":"\n)\n\n+ Find"}
+{"t":2185,"text":" the sum of all"}
+{"t":2215,"text":" ten scores."}
+{"t":2253,"text":" #v(2"}
+{"t":2286,"text":"em)\n+ Cal"}
+{"t":2323,"text":"culate the *mean* score"}
+{"t":2358,"text":". #v(2em)"}
+{"t":2397,"text":"\n+ Write the scores in"}
+{"t":2431,"text":" order from least"}
+{"t":2468,"text":" to greatest."}
+{"t":2505,"text":"\n  #v"}
+{"t":2537,"text":"(1em)\n  #line"}
+{"t":2573,"text":"(length: 100%)"}
+{"t":2609,"text":"\n  #v(1"}
+{"t":2644,"text":"em)\n+ Find the"}
+{"t":2683,"text":" *median* score. #v("}
+{"t":2719,"text":"2em)\n+ Find"}
+{"t":2755,"text":" the *mode*"}
+{"t":2791,"text":". #v(2em)"}
+{"t":2825,"text":"\n+ Find the *range*"}
+{"t":2861,"text":". #v(2em)"}
+{"t":2897,"text":"\n\n== Part B: What"}
+{"t":2931,"text":" If"}
+{"t":2969,"text":"?"}
+{"t":3003,"text":"\n\nStudent I"}
+{"t":3039,"text":"'s"}
+{"t":3077,"text":" pa"}
+{"t":3111,"text":"per was re"}
+{"t":3145,"text":"-marked, and the"}
+{"t":3181,"text":" score of"}
+{"t":3218,"text":" 60 was changed to "}
+{"t":3260,"text":"100.\n\n+ Write"}
+{"t":3291,"text":" the new "}
+{"t":3323,"text":"ordered list"}
+{"t":3359,"text":" of scores.\n  #v"}
+{"t":3404,"text":"(1em)\n  #line"}
+{"t":3430,"text":"(length: 100%)"}
+{"t":3467,"text":"\n  #v(1em)"}
+{"t":3504,"text":"\n+ Compl"}
+{"t":3538,"text":"ete the table."}
+{"t":3577,"text":"\n\n  "}
+{"t":3609,"text":"#table(\n    columns:"}
+{"t":3645,"text":" 4,\n    align: center"}
+{"t":3691,"text":",\n    [*Measure"}
+{"t":3727,"text":"*], [*Original*"}
+{"t":3755,"text":"], [*New*], [*"}
+{"t":3791,"text":"Changed?*],\n    "}
+{"t":3825,"text":"[Mean], [],"}
+{"t":3862,"text":" [], [],\n    ["}
+{"t":3896,"text":"Median], [], [], [],"}
+{"t":3932,"text":"\n    [Mode], ["}
+{"t":3967,"text":"], [], [],\n    ["}
+{"t":4005,"text":"Range], [], [], ["}
+{"t":4040,"text":"],\n  )\n\n+"}
+{"t":4080,"text":" Which measure changed the most?"}
+{"t":4112,"text":" Explain why"}
+{"t":4146,"text":" in"}
+{"t":4182,"text":" a"}
+{"t":4218,"text":" sentence.\n  #v"}
+{"t":4254,"text":"(1"}
+{"t":4290,"text":"em)\n  #line(length"}
+{"t":4325,"text":": 100%)\n  #"}
+{"t":4361,"text":"v"}
+{"t":4398,"text":"(1em)\n\n== Part"}
+{"t":4439,"text":" C: Missing Value"}
+{"t":4468,"text":"\n\nFour"}
+{"t":4505,"text":" qu"}
+{"t":4539,"text":"iz scores are 12,"}
+{"t":4576,"text":" 15, 18 and "}
+{"t":4611,"text":"20. A"}
+{"t":4649,"text":" fifth score, $x$"}
+{"t":4682,"text":", is added"}
+{"t":4719,"text":" so that the mean of"}
+{"t":4754,"text":" all"}
+{"t":4790,"text":" five scores is 16."}
+{"t":4835,"text":"\n\n+ Write an"}
+{"t":4862,"text":" equation for the mean of"}
+{"t":4899,"text":" the five scores."}
+{"t":4935,"text":" #v(2em)\n+"}
+{"t":4971,"text":" Solve for $x$"}
+{"t":5007,"text":". #v(3"}
+{"t":5041,"text":"em)\n\n== Part D:"}
+{"t":5075,"text":" Reflection"}
+{"t":5114,"text":"\n\nWhich measure of"}
+{"t":5147,"text":" center ("}
+{"t":5183,"text":"mean, median or"}
+{"t":5220,"text":" mode) would you use"}
+{"t":5254,"text":" to describe the \""}
+{"t":5291,"text":"typical\" score"}
+{"t":5329,"text":" in Part A? Just"}
+{"t":5361,"text":"ify your choice."}
+{"t":5398,"text":"\n\n#v(1em)\n#"}
+{"t":5433,"text":"line(length: 100%)"}
+{"t":5477,"text":"\n#v(1em)"}
+{"t":5515,"text":"\n#line(length: 100%"}
+{"t":5540,"text":")\n\n#pagebreak"}
+{"t":5576,"text":"()\n\n=="}
+{"t":5613,"text":" Answer Key"}
+{"t":5647,"text":"\n\n*"}
+{"t":5686,"text":"Part A*"}
+{"t":5720,"text":"\n\n+"}
+{"t":5754,"text":" Sum = 790"}
+{"t":5799,"text":"\n+ Mean = $790"}
+{"t":5826,"text":" /"}
+{"t":5863,"text":" 10 = 79$"}
+{"t":5897,"text":"\n+ "}
+{"t":5933,"text":"60, 68, 72,"}
+{"t":5969,"text":" 74, 77, 85"}
+{"t":6006,"text":", 85, 85, "}
+{"t":6044,"text":"90, 94\n+"}
+{"t":6076,"text":" Median = $(77 + "}
+{"t":6112,"text":"85) / 2 = "}
+{"t":6149,"text":"81$\n+ Mode"}
+{"t":6184,"text":" = 85\n+ Range"}
+{"t":6219,"text":" = $94 - 60 "}
+{"t":6257,"text":"= 34$\n\n*Part"}
+{"t":6291,"text":" B*\n\n+ 68,"}
+{"t":6329,"text":" 72, 74, 77"}
+{"t":6363,"text":", 85, 85, "}
+{"t":6399,"text":"85, 90, 94,"}
+{"t":6435,"text":" 100\n+ New sum"}
+{"t":6471,"text":" = 830."}
+{"t":6506,"text":"\n\n  #table(\n    colum"}
+{"t":6542,"text":"ns: 4,\n    align"}
+{"t":6578,"text":": center,\n    [*"}
+{"t":6614,"text":"Measure*], [*Original"}
+{"t":6651,"text":"*], [*New*], ["}
+{"t":6685,"text":"*Changed?*],"}
+{"t":6725,"text":"\n    [Mean], [79"}
+{"t":6756,"text":"], [83], [Yes"}
+{"t":6795,"text":"],\n    [Median], ["}
+{"t":6831,"text":"81], [85], [Y"}
+{"t":6863,"text":"es],\n    [Mode"}
+{"t":6902,"text":"], [85], [85], ["}
+{"t":6938,"text":"No],\n    [Range],"}
+{"t":6978,"text":" [34], [32], ["}
+{"t":7006,"text":"Yes],\n  )\n\n+"}
+{"t":7042,"text":" The mean and"}
+{"t":7081,"text":" the"}
+{"t":7114,"text":" median each"}
+{"t":7149,"text":" increased by 4 "}
+{"t":7185,"text":"and "}
+{"t":7221,"text":"2 "}
+{"t":7257,"text":"respectively?"}
+{"t":7292,"text":" Check"}
+{"t":7327,"text":": the mean r"}
+{"t":7363,"text":"ose by 4 and"}
+{"t":7401,"text":" the median rose by 4"}
+{"t":7435,"text":" "}
+{"t":7470,"text":"as well (81"}
+{"t":7509,"text":" to 85), so they"}
+{"t":7544,"text":" chang"}
+{"t":7577,"text":"ed equally here"}
+{"t":7614,"text":". The mode did not change because"}
+{"t":7656,"text":" 85 is still"}
+{"t":7685,"text":" the most frequent score"}
+{"t":7720,"text":"."}
+{"t":7763,"text":" Acc"}
+{"t":7793,"text":"ept any reasonable expl"}
+{"t":7829,"text":"anation that"}
+{"t":7865,"text":" ref"}
+{"t":7901,"text":"ers to how each"}
+{"t":7960,"text":" measure is cal"}
+{"t":7970,"text":"culated.\n\n*Part C"}
+{"t":8007,"text":"*\n\n+ $("}
+{"t":8042,"text":"12 + 15 + "}
+{"t":8079,"text":"18 + 20 + x"}
+{"t":8115,"text":") / 5 = 16"}
+{"t":8154,"text":"$\n+ $65"}
+{"t":8187,"text":" + x = 80$,"}
+{"t":8221,"text":" so $x = 15$"}
+{"t":8257,"text":"\n\n*Part D*\n\nAnsw"}
+{"t":8299,"text":"ers vary. A"}
+{"t":8336,"text":" good answer pic"}
+{"t":8365,"text":"ks a"}
+{"t":8399,"text":" measure and gives a reason"}
+{"t":8437,"text":", for example that the median (81"}
+{"t":8472,"text":") is not affected by ext"}
+{"t":8507,"text":"reme scores, or that the"}
+{"t":8543,"text":" mean (79) u"}
+{"t":8578,"text":"ses every"}
+{"t":8608,"text":" score."}

@@ -1,0 +1,522 @@
+{"t":0,"text":"#"}
+{"t":29,"text":"show: exam.with("}
+{"t":62,"text":"\n  title: [Algebra"}
+{"t":96,"text":" II Final Examination],"}
+{"t":130,"text":"\n  subject: [Math"}
+{"t":165,"text":"ematics],\n  grade:"}
+{"t":246,"text":" [Grade 11],"}
+{"t":246,"text":"\n  duration: [90 min"}
+{"t":263,"text":"utes],\n  instructions"}
+{"t":296,"text":": [\n    Answer *"}
+{"t":328,"text":"all* questions. The"}
+{"t":366,"text":" pa"}
+{"t":396,"text":"per has"}
+{"t":429,"text":" three sections and is worth "}
+{"t":463,"text":"100 points in"}
+{"t":497,"text":" total.\n    - Section"}
+{"t":529,"text":" A: multiple choice,"}
+{"t":562,"text":" 2"}
+{"t":595,"text":" points each."}
+{"t":634,"text":" Circle one answ"}
+{"t":662,"text":"er.\n    - Section B"}
+{"t":696,"text":": short answer, 5 "}
+{"t":729,"text":"points each. Show your working."}
+{"t":763,"text":"\n    - Section C: ext"}
+{"t":796,"text":"ended response."}
+{"t":831,"text":" Points"}
+{"t":863,"text":" for"}
+{"t":896,"text":" each part are sh"}
+{"t":929,"text":"own in brackets."}
+{"t":962,"text":"\n    A"}
+{"t":996,"text":" sc"}
+{"t":1029,"text":"ientific or"}
+{"t":1064,"text":" graphing calculator is all"}
+{"t":1100,"text":"owed.\n  ],"}
+{"t":1135,"text":"\n)\n\n= Section A:"}
+{"t":1163,"text":" Multiple Choice (20"}
+{"t":1197,"text":" points)\n\n#question(points"}
+{"t":1229,"text":": 2)[\n  "}
+{"t":1262,"text":"Solve $|2 x -"}
+{"t":1297,"text":" 3| = 7$."}
+{"t":1330,"text":"\n  #mcq([$"}
+{"t":1362,"text":"x = 5$ or $"}
+{"t":1397,"text":"x = -2$], [$"}
+{"t":1430,"text":"x = 5$ or $"}
+{"t":1462,"text":"x = 2$], [$"}
+{"t":1496,"text":"x = -5$ or $"}
+{"t":1530,"text":"x = 2$], [$"}
+{"t":1562,"text":"x = 10$ or $"}
+{"t":1597,"text":"x = -4$], answer"}
+{"t":1630,"text":": 1)\n]\n\n#"}
+{"t":1663,"text":"question(points: 2)["}
+{"t":1696,"text":"\n  What is the vertex"}
+{"t":1730,"text":" of $f(x) = x"}
+{"t":1763,"text":"^2 - 6 x"}
+{"t":1798,"text":" + 14$?\n  #"}
+{"t":1829,"text":"mcq([$(3,"}
+{"t":1864,"text":" 5)$], [$("}
+{"t":1896,"text":"-3, 5)$],"}
+{"t":1929,"text":" [$(3, -5)"}
+{"t":1963,"text":"$], [$(5, "}
+{"t":1996,"text":"3)$], answer: "}
+{"t":2030,"text":"1)\n]\n\n#question("}
+{"t":2063,"text":"points: 2)[\n  "}
+{"t":2097,"text":"What is the sum of the ro"}
+{"t":2130,"text":"ots of $2 x^2"}
+{"t":2163,"text":" - 8 x + "}
+{"t":2197,"text":"3 = 0$?"}
+{"t":2230,"text":"\n  #mcq([$-"}
+{"t":2263,"text":"4$], [$4$],"}
+{"t":2296,"text":" [$3/2$], ["}
+{"t":2330,"text":"$-3/2$], answ"}
+{"t":2363,"text":"er: 2)\n]"}
+{"t":2397,"text":"\n\n#question(points: 2)"}
+{"t":2431,"text":"[\n  Simplify $"}
+{"t":2464,"text":"(2 + 3 i"}
+{"t":2497,"text":")(1 - i)$"}
+{"t":2530,"text":".\n  #mcq(["}
+{"t":2563,"text":"$5 + i$], ["}
+{"t":2597,"text":"$5 - i$], ["}
+{"t":2631,"text":"$-1 + i$],"}
+{"t":2664,"text":" [$2 - 3 "}
+{"t":2699,"text":"i$], answer: 1"}
+{"t":2732,"text":")\n]\n\n#question(points"}
+{"t":2764,"text":": 2)[\n  What"}
+{"t":2799,"text":" is the domain of $f("}
+{"t":2833,"text":"x) = sqrt("}
+{"t":2864,"text":"x - 4)$?"}
+{"t":2898,"text":"\n  #mcq([$x"}
+{"t":2930,"text":" >= 4$], [$"}
+{"t":2968,"text":"x > 4$], [$"}
+{"t":3002,"text":"x <= 4$], ["}
+{"t":3031,"text":"All real numbers], answer"}
+{"t":3065,"text":": 1)\n]\n\n#"}
+{"t":3101,"text":"question(points: 2)["}
+{"t":3131,"text":"\n  Evaluate $"}
+{"t":3165,"text":"log_3 81$."}
+{"t":3200,"text":"\n  #mcq([$3"}
+{"t":3231,"text":"$], [$4$], ["}
+{"t":3264,"text":"$9$], [$27$"}
+{"t":3298,"text":"], answer: 2)"}
+{"t":3332,"text":"\n]\n\n#question(points: "}
+{"t":3369,"text":"2)[\n  What is the"}
+{"t":3398,"text":" inverse of $f(x"}
+{"t":3431,"text":") = 2 x + "}
+{"t":3464,"text":"6$?\n  #mc"}
+{"t":3498,"text":"q([$(x - 6"}
+{"t":3531,"text":")/2$], [$("}
+{"t":3564,"text":"x + 6)/2$"}
+{"t":3599,"text":"], [$2 x - "}
+{"t":3631,"text":"6$], [$1/("}
+{"t":3665,"text":"2 x + 6)$"}
+{"t":3698,"text":"], answer: 1)"}
+{"t":3732,"text":"\n)"}
+{"t":3798,"text":"\n\n#question(points: 2)"}
+{"t":3833,"text":"[\n  "}
+{"t":3866,"text":"Describe the end behav"}
+{"t":3898,"text":"ior of $f(x) ="}
+{"t":3931,"text":" -3 x^4 +"}
+{"t":3965,"text":" x$.\n  #mc"}
+{"t":3999,"text":"q([Falls to the left"}
+{"t":4033,"text":", rises to the right], ["}
+{"t":4065,"text":"Rises to"}
+{"t":4101,"text":" the left and to the right], ["}
+{"t":4131,"text":"Falls to the left and to"}
+{"t":4165,"text":" the right], [Rises to"}
+{"t":4199,"text":" the left, falls to the right"}
+{"t":4233,"text":"], answer: 3,"}
+{"t":4265,"text":" columns: 1"}
+{"t":4299,"text":")\n]\n\n#question(points"}
+{"t":4332,"text":": 2)[\n  "}
+{"t":4365,"text":"Solve $2^("}
+{"t":4399,"text":"x + 1) = 16"}
+{"t":4431,"text":"$.\n  #mcq"}
+{"t":4465,"text":"([$x = 2$],"}
+{"t":4498,"text":" [$x = 3$],"}
+{"t":4532,"text":" [$x = 4$],"}
+{"t":4565,"text":" [$x = 7$],"}
+{"t":4600,"text":" answer: 2)\n]"}
+{"t":4632,"text":"\n\n#question(points: 2"}
+{"t":4666,"text":")[\n  What is the hor"}
+{"t":4699,"text":"izontal asymptote of"}
+{"t":4732,"text":" $f(x) = (3"}
+{"t":4765,"text":" x^2 + 1"}
+{"t":4799,"text":")/(x^2 -"}
+{"t":4832,"text":" 4)$?\n  #"}
+{"t":4865,"text":"mcq([$y = "}
+{"t":4899,"text":"0$], [$y = "}
+{"t":4933,"text":"3$], [$y = -"}
+{"t":4967,"text":"1/4$], [$x"}
+{"t":4999,"text":" = 2$], answer:"}
+{"t":5032,"text":" 2)\n]\n\n="}
+{"t":5065,"text":" Section B: Short Answer"}
+{"t":5110,"text":" (30 points)\n\n#question"}
+{"t":5132,"text":"(points: 5)["}
+{"t":5167,"text":"\n  Solve $x^2"}
+{"t":5218,"text":" + 4 x - "}
+{"t":5232,"text":"12 = 0$ by"}
+{"t":5267,"text":" factoring.\n  #answ"}
+{"t":5314,"text":"er-space(height: 6"}
+{"t":5343,"text":"em, answer: [$("}
+{"t":5368,"text":"x + 6)(x -"}
+{"t":5399,"text":" 2) = 0$,"}
+{"t":5432,"text":" so $x = -6$"}
+{"t":5467,"text":" or $x = 2$."}
+{"t":5499,"text":"])\n]\n\n#question(points"}
+{"t":5533,"text":": 5)[\n  "}
+{"t":5566,"text":"Use the quadratic formula"}
+{"t":5600,"text":" to solve $x^2 "}
+{"t":5633,"text":"- 4 x + 13"}
+{"t":5678,"text":" = 0$. Write"}
+{"t":5699,"text":" your answers in the"}
+{"t":5732,"text":" form $a + b"}
+{"t":5766,"text":" i$.\n  #answer"}
+{"t":5799,"text":"-space(height: 7em"}
+{"t":5833,"text":", answer: ["}
+{"t":5867,"text":"\n    $x = (4 pl"}
+{"t":5899,"text":"us.minus s"}
+{"t":5933,"text":"qrt(16"}
+{"t":5968,"text":" - 52))/2 "}
+{"t":6000,"text":"= (4 plus.min"}
+{"t":6032,"text":"us "}
+{"t":6066,"text":"6 i)/2 ="}
+{"t":6099,"text":" 2 plus.minus"}
+{"t":6133,"text":" 3 i$.\n  "}
+{"t":6167,"text":"])\n]\n\n#question("}
+{"t":6200,"text":"points: 5)[\n  "}
+{"t":6233,"text":"Solve $log_2 "}
+{"t":6267,"text":"(x + 3) + log"}
+{"t":6300,"text":"_2 (x - 3"}
+{"t":6333,"text":") = 4$."}
+{"t":6368,"text":" Check for"}
+{"t":6399,"text":" extraneous solutions."}
+{"t":6433,"text":"\n  #answer-space("}
+{"t":6466,"text":"height: 8"}
+{"t":6500,"text":"em, answer: [\n    "}
+{"t":6533,"text":"$log_2 (x^"}
+{"t":6567,"text":"2 - 9) = "}
+{"t":6600,"text":"4$, so $x^2"}
+{"t":6633,"text":" - 9 = 16"}
+{"t":6667,"text":"$"}
+{"t":6700,"text":" and $x ="}
+{"t":6733,"text":" pl"}
+{"t":6766,"text":"us.minus 5$."}
+{"t":6799,"text":" For $x = -5$"}
+{"t":6833,"text":" the log"}
+{"t":6867,"text":"arithms are und"}
+{"t":6900,"text":"efined, so it"}
+{"t":6933,"text":" is ext"}
+{"t":6966,"text":"raneous. The sol"}
+{"t":7001,"text":"ution is $x = 5$"}
+{"t":7033,"text":".\n  ])\n]"}
+{"t":7067,"text":"\n\n#question(points: 5)"}
+{"t":7101,"text":"[\n  Simplify $"}
+{"t":7134,"text":"(x^2 - 9"}
+{"t":7166,"text":")/(x^2 +"}
+{"t":7200,"text":" x - 6)$"}
+{"t":7233,"text":" and state the values of"}
+{"t":7267,"text":" $x$ that are exc"}
+{"t":7300,"text":"luded.\n  #answer"}
+{"t":7334,"text":"-space(height: 7em"}
+{"t":7367,"text":", answer: [\n    $"}
+{"t":7400,"text":"(("}
+{"t":7433,"text":"x - 3)(x +"}
+{"t":7466,"text":" 3))/((x + "}
+{"t":7500,"text":"3)(x - 2)"}
+{"t":7534,"text":") = (x - 3)"}
+{"t":7567,"text":"/(x - 2)$"}
+{"t":7600,"text":", with $x !="}
+{"t":7635,"text":" -"}
+{"t":7666,"text":"3$ and $x != "}
+{"t":7700,"text":"2$.\n  ])"}
+{"t":7733,"text":"\n]\n\n#question(points: "}
+{"t":7766,"text":"5)[\n  Let $"}
+{"t":7800,"text":"f(x) = x^2"}
+{"t":7833,"text":" + 1$ and $"}
+{"t":7866,"text":"g(x) = 3 "}
+{"t":7901,"text":"x - 2$. Find"}
+{"t":7933,"text":" $f(g(2))$"}
+{"t":7967,"text":" and $g(f(x"}
+{"t":8000,"text":"))$.\n  #answer"}
+{"t":8034,"text":"-space(height: 7em"}
+{"t":8068,"text":", answer: [\n    $"}
+{"t":8102,"text":"g(2) = 4$"}
+{"t":8136,"text":", so $f(g"}
+{"t":8167,"text":"(2)) = f"}
+{"t":8200,"text":"(4) = 17$."}
+{"t":8240,"text":" \\"}
+{"t":8301,"text":"\n    $g(f(x)"}
+{"t":8335,"text":") = 3("}
+{"t":8368,"text":"x^2 + 1)"}
+{"t":8400,"text":" - 2 = 3 "}
+{"t":8434,"text":"x^2 + 1$"}
+{"t":8469,"text":".\n  ])\n]"}
+{"t":8500,"text":"\n\n#question(points: 5)"}
+{"t":8534,"text":"[\n  Solve the"}
+{"t":8567,"text":" compound inequality $-3"}
+{"t":8601,"text":" < 2 x + "}
+{"t":8634,"text":"1 <= 9$"}
+{"t":8667,"text":" and graph the sol"}
+{"t":8703,"text":"ution on the number line.\n  "}
+{"t":8734,"text":"#answ"}
+{"t":8768,"text":"er-space(height: 4"}
+{"t":8800,"text":"em, answer: [\n    "}
+{"t":8835,"text":"$-4 < 2 "}
+{"t":8867,"text":"x <= 8$, so"}
+{"t":8901,"text":" $-2 < x <="}
+{"t":8934,"text":" 4$."}
+{"t":8969,"text":"\n    #number-line(from"}
+{"t":9002,"text":": -5, to: 6"}
+{"t":9034,"text":", length"}
+{"t":9068,"text":": 11"}
+{"t":9103,"text":"cm, open-points: ("}
+{"t":9134,"text":"-2,), points: (4"}
+{"t":9167,"text":",))\n  ])\n  "}
+{"t":9201,"text":"#number-line(from: -"}
+{"t":9234,"text":"5, to: 6, length"}
+{"t":9268,"text":": 11cm)\n]"}
+{"t":9301,"text":"\n\n= Section C: Ext"}
+{"t":9335,"text":"ended Response (50 points)"}
+{"t":9367,"text":"\n\n#question(points: 12"}
+{"t":9401,"text":")[\n  "}
+{"t":9434,"text":"Cons"}
+{"t":9468,"text":"ider the function"}
+{"t":9502,"text":" $f(x) = x^"}
+{"t":9536,"text":"2 - 6 x +"}
+{"t":9570,"text":" 5$.\n  +"}
+{"t":9601,"text":" R"}
+{"t":9634,"text":"ewrite $f(x)"}
+{"t":9670,"text":"$ in vertex form by"}
+{"t":9700,"text":" completing the square. (3 "}
+{"t":9734,"text":"pts)\n    #answer"}
+{"t":9767,"text":"-space(height: 5"}
+{"t":9801,"text":"em, answer: [$f"}
+{"t":9854,"text":"(x) = (x - "}
+{"t":9867,"text":"3)^2 - 4"}
+{"t":9901,"text":"$.])\n  + State"}
+{"t":9938,"text":" the vertex and the axis"}
+{"t":9968,"text":" of symmetry. (2"}
+{"t":10001,"text":" pts)\n    #answ"}
+{"t":10034,"text":"er-space"}
+{"t":10067,"text":"(height: 3"}
+{"t":10102,"text":"em, answer: [V"}
+{"t":10135,"text":"ertex $(3, -4"}
+{"t":10167,"text":")$; axis of symm"}
+{"t":10201,"text":"etry $x = 3$"}
+{"t":10235,"text":".])\n  + Find the"}
+{"t":10269,"text":" $x$-intercepts"}
+{"t":10301,"text":"."}
+{"t":10335,"text":" (3 pts)\n    "}
+{"t":10369,"text":"#answer-space(height:"}
+{"t":10402,"text":" 5em, answer: ["}
+{"t":10434,"text":"$(x - 1)("}
+{"t":10469,"text":"x - 5) = 0"}
+{"t":10517,"text":"$, so $x = 1"}
+{"t":10534,"text":"$ and $x = 5"}
+{"t":10569,"text":"$.])\n  + S"}
+{"t":10603,"text":"ketch the"}
+{"t":10636,"text":" graph of $f$"}
+{"t":10668,"text":" on the"}
+{"t":10701,"text":" gr"}
+{"t":10735,"text":"id,"}
+{"t":10769,"text":" lab"}
+{"t":10801,"text":"elling the v"}
+{"t":10835,"text":"ertex and the int"}
+{"t":10868,"text":"ercepts. (4 p"}
+{"t":10901,"text":"ts)\n    #coordin"}
+{"t":10934,"text":"ate-plane(x: ("}
+{"t":10968,"text":"-1, 7), y:"}
+{"t":11001,"text":" (-5, 6), un"}
+{"t":11034,"text":"it: 6"}
+{"t":11068,"text":"mm)\n    #answer"}
+{"t":11105,"text":"[\n      Up"}
+{"t":11135,"text":"ward par"}
+{"t":11169,"text":"abola through"}
+{"t":11201,"text":" $(1"}
+{"t":11234,"text":", 0)$, $("}
+{"t":11268,"text":"5, 0)$ and"}
+{"t":11302,"text":" $(0, 5)$"}
+{"t":11334,"text":", with vertex $(3"}
+{"t":11368,"text":", -4)$.\n      "}
+{"t":11404,"text":"#coordinate-plane"}
+{"t":11435,"text":"(x: (-1, "}
+{"t":11468,"text":"7), y: (-5,"}
+{"t":11501,"text":" 6), unit: 6"}
+{"t":11534,"text":"mm, points: ((3"}
+{"t":11568,"text":", -4, [V]),"}
+{"t":11601,"text":" (1, 0),"}
+{"t":11634,"text":" (5, 0), (0"}
+{"t":11669,"text":", 5)))\n    "}
+{"t":11701,"text":"]\n]\n\n#question(points"}
+{"t":11735,"text":": 12"}
+{"t":11768,"text":")[\n  Let $p"}
+{"t":11801,"text":"(x) = x^3 "}
+{"t":11835,"text":"- 2 x^2 "}
+{"t":11868,"text":"- 5 x + 6"}
+{"t":11902,"text":"$.\n  + Show that"}
+{"t":11934,"text":" $x = 1$ is"}
+{"t":11968,"text":" a root of $p$"}
+{"t":12001,"text":". (2 pts)"}
+{"t":12035,"text":"\n    #answer-space(height"}
+{"t":12070,"text":": 4em, answer:"}
+{"t":12104,"text":" [$p(1) = "}
+{"t":12135,"text":"1 - 2 - "}
+{"t":12168,"text":"5 + 6 = "}
+{"t":12201,"text":"0$.])\n  +"}
+{"t":12235,"text":" Factor $p(x)$"}
+{"t":12268,"text":" completely. (4 p"}
+{"t":12302,"text":"ts)\n    #answer-"}
+{"t":12335,"text":"space(height: 6em,"}
+{"t":12372,"text":" answer: [\n      D"}
+{"t":12402,"text":"ividing by $(x - "}
+{"t":12435,"text":"1)$ gives $p"}
+{"t":12468,"text":"(x) = (x - "}
+{"t":12501,"text":"1)(x^2 -"}
+{"t":12536,"text":" x - 6)"}
+{"t":12568,"text":" = (x - 1)("}
+{"t":12602,"text":"x - 3)(x +"}
+{"t":12635,"text":" 2)$.\n    "}
+{"t":12670,"text":"])\n  + State"}
+{"t":12704,"text":" all zeros of $p$"}
+{"t":12735,"text":". (2 pts)"}
+{"t":12768,"text":"\n    #answer-space(height"}
+{"t":12803,"text":": 3"}
+{"t":12836,"text":"em, answer: [$x"}
+{"t":12869,"text":" = -"}
+{"t":12902,"text":"2$, $x = 1"}
+{"t":12936,"text":"$, $x = 3$"}
+{"t":12971,"text":".])\n  + Solve"}
+{"t":13002,"text":" $p(x) > 0"}
+{"t":13035,"text":"$. (4 pts)"}
+{"t":13069,"text":"\n    #answer-space("}
+{"t":13102,"text":"height: 6em, answer"}
+{"t":13135,"text":": [\n      The leading co"}
+{"t":13169,"text":"efficient is positive, so"}
+{"t":13202,"text":" $p$ is positive between"}
+{"t":13237,"text":" $-2$ and $1"}
+{"t":13268,"text":"$ and after $3$."}
+{"t":13304,"text":" \\"}
+{"t":13340,"text":"\n      Solution: $("}
+{"t":13370,"text":"-2, 1) union ("}
+{"t":13402,"text":"3, infinity)$."}
+{"t":13436,"text":"\n    ])\n]\n\n#"}
+{"t":13469,"text":"question(points: 13)["}
+{"t":13502,"text":"\n  A cul"}
+{"t":13536,"text":"ture star"}
+{"t":13568,"text":"ts with 500 bacte"}
+{"t":13602,"text":"ria,"}
+{"t":13655,"text":" and the population doubles every "}
+{"t":13668,"text":"3 hours.\n  +"}
+{"t":13702,"text":" Write a function"}
+{"t":13736,"text":" $P(t)$ for"}
+{"t":13772,"text":" the population"}
+{"t":13802,"text":" after $t$ hours."}
+{"t":13836,"text":" (3 pts)\n    "}
+{"t":13869,"text":"#answer-space(height:"}
+{"t":13902,"text":" 4em, answer: ["}
+{"t":13935,"text":"$P(t) = 500"}
+{"t":13969,"text":" dot 2^(t"}
+{"t":14002,"text":"/3)$.])\n  "}
+{"t":14036,"text":"+ How many bacteria are"}
+{"t":14068,"text":" there after 12 hours?"}
+{"t":14102,"text":" (3 pts)\n    "}
+{"t":14135,"text":"#answer-space(height:"}
+{"t":14169,"text":" 4"}
+{"t":14202,"text":"em, answer: [$P"}
+{"t":14235,"text":"(12) = 500 d"}
+{"t":14270,"text":"ot 2^4 = "}
+{"t":14302,"text":"8000$.])\n  +"}
+{"t":14335,"text":" After"}
+{"t":14369,"text":" how many hours will"}
+{"t":14402,"text":" the population reach 32 "}
+{"t":14435,"text":"000? (4 pts)"}
+{"t":14469,"text":"\n    #answer-space("}
+{"t":14503,"text":"height: 6em, answer"}
+{"t":14535,"text":": [\n      $500 d"}
+{"t":14569,"text":"ot 2^(t/3"}
+{"t":14602,"text":") = 32000$, so"}
+{"t":14635,"text":" $2^(t/3)"}
+{"t":14669,"text":" = 64 "}
+{"t":14702,"text":"= 2^6$."}
+{"t":14736,"text":" Then $t/3 = "}
+{"t":14768,"text":"6$ and $t = "}
+{"t":14802,"text":"18$ hours.\n    "}
+{"t":14844,"text":"])\n  + Explain"}
+{"t":14870,"text":" why this model would"}
+{"t":14902,"text":" not"}
+{"t":14936,"text":" st"}
+{"t":14968,"text":"ay realistic over"}
+{"t":15002,"text":" a long time. (3 p"}
+{"t":15036,"text":"ts)\n    #answer-"}
+{"t":15069,"text":"lines(count: 2"}
+{"t":15103,"text":", answer: ["}
+{"t":15137,"text":"Resources such"}
+{"t":15169,"text":" as food and space are"}
+{"t":15202,"text":" limited, so grow"}
+{"t":15236,"text":"th sl"}
+{"t":15269,"text":"ows and lev"}
+{"t":15304,"text":"els off rather than doubling"}
+{"t":15335,"text":" forever.])\n]\n\n#"}
+{"t":15369,"text":"question(points: 13)["}
+{"t":15405,"text":"\n  Consider the line $"}
+{"t":15435,"text":"y = x + "}
+{"t":15469,"text":"1$ and the parabola"}
+{"t":15503,"text":" $y = x^2 -"}
+{"t":15535,"text":" 3 x + 5$"}
+{"t":15569,"text":".\n  + Solve the"}
+{"t":15602,"text":" system algebraically."}
+{"t":15636,"text":" (5 pts)\n    "}
+{"t":15669,"text":"#answer-space(height:"}
+{"t":15702,"text":" 7"}
+{"t":15736,"text":"em, answer: [\n      "}
+{"t":15769,"text":"$x + 1 = x"}
+{"t":15802,"text":"^2 - 3 x"}
+{"t":15836,"text":" + 5$"}
+{"t":15869,"text":" gives $x^2 -"}
+{"t":15902,"text":" 4 x + 4 "}
+{"t":15936,"text":"= 0$, so $("}
+{"t":15969,"text":"x - 2)^2 "}
+{"t":16002,"text":"= 0$ and $x"}
+{"t":16036,"text":" = 2$. Then $"}
+{"t":16069,"text":"y = 3$."}
+{"t":16102,"text":" The solution is $(2,"}
+{"t":16136,"text":" 3)$.\n    "}
+{"t":16170,"text":"])\n  + What"}
+{"t":16202,"text":" does the number"}
+{"t":16236,"text":" of solutions tell you about"}
+{"t":16269,"text":" the graphs? ("}
+{"t":16302,"text":"3 pts)\n    #"}
+{"t":16336,"text":"answ"}
+{"t":16369,"text":"er-lines(count: "}
+{"t":16402,"text":"2, answer: [There is"}
+{"t":16436,"text":" ex"}
+{"t":16469,"text":"actly one solution ("}
+{"t":16507,"text":"a double root), so the line tou"}
+{"t":16536,"text":"ches the parabola at one point"}
+{"t":16570,"text":":"}
+{"t":16603,"text":" it is tangent to it."}
+{"t":16636,"text":"])\n  + For which values of"}
+{"t":16669,"text":" $k$ does the line $"}
+{"t":16703,"text":"y = x + k$ int"}
+{"t":16743,"text":"ersect the parabola in two"}
+{"t":16769,"text":" dist"}
+{"t":16804,"text":"inct points? (5 p"}
+{"t":16836,"text":"ts)\n    #answer-"}
+{"t":16869,"text":"space(height: 7em,"}
+{"t":16903,"text":" answer: [\n      $x"}
+{"t":16936,"text":" + k = x^2 -"}
+{"t":16970,"text":" 3 x + 5$"}
+{"t":17004,"text":" gives $x^2 "}
+{"t":17036,"text":"- 4 x + (5"}
+{"t":17069,"text":" - k) = 0$"}
+{"t":17103,"text":". The discriminant is $"}
+{"t":17137,"text":"16 - 4(5 "}
+{"t":17171,"text":"- k) = 4 k"}
+{"t":17204,"text":" - 4$"}
+{"t":17238,"text":". Two dist"}
+{"t":17269,"text":"inct points"}
+{"t":17303,"text":" need $4 k - 4"}
+{"t":17337,"text":" > 0$, so $"}
+{"t":17370,"text":"k > 1$.\n    "}
+{"t":17403,"text":"])\n]\n\n#answer"}
+{"t":17437,"text":"-key()"}

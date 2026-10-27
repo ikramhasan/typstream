@@ -1,0 +1,256 @@
+{"t":0,"text":"="}
+{"t":18,"text":" Pl"}
+{"t":38,"text":"otting Points and"}
+{"t":58,"text":" Reading Coordinates"}
+{"t":100,"text":"\n\n*"}
+{"t":119,"text":"Gr"}
+{"t":142,"text":"ade 7 M"}
+{"t":160,"text":"athematics*"}
+{"t":183,"text":" #"}
+{"t":203,"text":"h"}
+{"t":221,"text":"("}
+{"t":243,"text":"1f"}
+{"t":263,"text":"r)"}
+{"t":284,"text":" Name: #"}
+{"t":305,"text":"box"}
+{"t":323,"text":"(width: 6"}
+{"t":345,"text":"cm, line"}
+{"t":367,"text":"(length: 100%)"}
+{"t":391,"text":")"}
+{"t":410,"text":" Date: #box(width: "}
+{"t":425,"text":"3cm, line(length:"}
+{"t":448,"text":" 100%))\n\n=="}
+{"t":467,"text":" Part A: Vocab"}
+{"t":486,"text":"ulary"}
+{"t":507,"text":"\n\nFill in each"}
+{"t":529,"text":" blank using"}
+{"t":547,"text":" the words"}
+{"t":568,"text":" in the box:"}
+{"t":589,"text":" _"}
+{"t":616,"text":"origin_, _x"}
+{"t":630,"text":"-axis_, _y-"}
+{"t":656,"text":"axis_, _ordered"}
+{"t":671,"text":" pair_, _quadr"}
+{"t":693,"text":"ant_.\n\n+ The"}
+{"t":711,"text":" horizontal number"}
+{"t":734,"text":" line in"}
+{"t":754,"text":" a"}
+{"t":774,"text":" coordinate plane is the"}
+{"t":793,"text":" #"}
+{"t":813,"text":"box(width: 3"}
+{"t":833,"text":"cm, line(length: "}
+{"t":859,"text":"100%))."}
+{"t":875,"text":"\n+ The vertical number"}
+{"t":895,"text":" line is the #box(width:"}
+{"t":917,"text":" 3cm, line(length"}
+{"t":936,"text":": 100%)).\n+"}
+{"t":957,"text":" The point $(0, "}
+{"t":976,"text":"0)$,"}
+{"t":997,"text":" where the two"}
+{"t":1017,"text":" axes meet, is the"}
+{"t":1039,"text":" #box(width: 3c"}
+{"t":1059,"text":"m, line(length: 100"}
+{"t":1079,"text":"%)).\n+ A"}
+{"t":1100,"text":" pair of numbers $("}
+{"t":1121,"text":"x, y)$ that names"}
+{"t":1141,"text":" one"}
+{"t":1161,"text":" point"}
+{"t":1181,"text":" is"}
+{"t":1204,"text":" called an #box(width: "}
+{"t":1221,"text":"3cm, line(length:"}
+{"t":1242,"text":" 100%)).\n+"}
+{"t":1266,"text":" The pl"}
+{"t":1282,"text":"ane is divided into four regions"}
+{"t":1305,"text":" called"}
+{"t":1323,"text":" #"}
+{"t":1344,"text":"box(width: 3"}
+{"t":1364,"text":"cm, line(length: "}
+{"t":1387,"text":"100%)).\n\n== Part"}
+{"t":1405,"text":" B: Reading Coord"}
+{"t":1427,"text":"inates\n\nThe grid below has"}
+{"t":1447,"text":" the"}
+{"t":1466,"text":" origin at its"}
+{"t":1490,"text":" center. Each square"}
+{"t":1507,"text":" is one"}
+{"t":1529,"text":" unit."}
+{"t":1552,"text":" The letters m"}
+{"t":1568,"text":"ark points"}
+{"t":1589,"text":". Write the "}
+{"t":1609,"text":"ordered pair for each point."}
+{"t":1632,"text":"\n\n#let pts = (("}
+{"t":1652,"text":"3, 2, [A]"}
+{"t":1672,"text":"), (-2, 4,"}
+{"t":1695,"text":" [B]), (-4,"}
+{"t":1711,"text":" -3, [C]), ("}
+{"t":1732,"text":"0, 0, [D]"}
+{"t":1752,"text":"), (4, -1, ["}
+{"t":1775,"text":"E]))\n#let lab"}
+{"t":1795,"text":"(x, y) = {"}
+{"t":1814,"text":"\n  let h = pts.find"}
+{"t":1834,"text":"(p => p.at(0"}
+{"t":1856,"text":") == x and p.at("}
+{"t":1875,"text":"1) == y)\n  if"}
+{"t":1896,"text":" h != none { h.at("}
+{"t":1917,"text":"2) } else { [] }"}
+{"t":1939,"text":"\n}\n#let cells ="}
+{"t":1957,"text":" {\n  let out = ()"}
+{"t":1977,"text":"\n  for yy in range("}
+{"t":1999,"text":"9) {\n    for xx"}
+{"t":2020,"text":" in range(9) {\n      "}
+{"t":2040,"text":"out.push(box(width:"}
+{"t":2060,"text":" 18pt, height: "}
+{"t":2080,"text":"18pt, align(center +"}
+{"t":2099,"text":" horizon, lab(x"}
+{"t":2125,"text":"x - 4, 4 "}
+{"t":2142,"text":"- yy))))\n    }"}
+{"t":2161,"text":"\n  }\n  out\n}"}
+{"t":2204,"text":"\n\n#align"}
+{"t":2223,"text":"(center,"}
+{"t":2242,"text":" gr"}
+{"t":2267,"text":"id(columns: 9,"}
+{"t":2285,"text":" stroke: 0.5"}
+{"t":2308,"text":"pt, ..cells))"}
+{"t":2326,"text":"\n\n+"}
+{"t":2345,"text":" Point A"}
+{"t":2365,"text":" is"}
+{"t":2386,"text":" at #box(width: 3"}
+{"t":2408,"text":"cm, line(length: "}
+{"t":2426,"text":"100%)).\n+"}
+{"t":2447,"text":" Point B is at #box(width"}
+{"t":2476,"text":": 3cm, line("}
+{"t":2488,"text":"length: 100%))."}
+{"t":2510,"text":"\n+ Point C is at #"}
+{"t":2530,"text":"box(width: 3cm"}
+{"t":2548,"text":", line(length: 100%"}
+{"t":2569,"text":")).\n+ Point D"}
+{"t":2589,"text":" is at #box(width: "}
+{"t":2611,"text":"3cm, line(length:"}
+{"t":2631,"text":" 100%)).\n+"}
+{"t":2651,"text":" Point E is at #box("}
+{"t":2672,"text":"width: 3cm, line"}
+{"t":2691,"text":"(length: 100%))."}
+{"t":2719,"text":"\n\n== Part C: Pl"}
+{"t":2733,"text":"otting Points\n\nPl"}
+{"t":2753,"text":"ot each"}
+{"t":2774,"text":" point"}
+{"t":2793,"text":" on the blank grid below."}
+{"t":2815,"text":" Label"}
+{"t":2834,"text":" each"}
+{"t":2861,"text":" point with its letter. Use"}
+{"t":2877,"text":" the same origin at the center."}
+{"t":2896,"text":" Start from"}
+{"t":2920,"text":" the origin: move"}
+{"t":2937,"text":" along"}
+{"t":2957,"text":" the $"}
+{"t":2983,"text":"x$-axis first, then"}
+{"t":2999,"text":" up"}
+{"t":3018,"text":" or down along the $y$-"}
+{"t":3041,"text":"axis.\n\n#"}
+{"t":3064,"text":"table"}
+{"t":3085,"text":"("}
+{"t":3106,"text":"\n  columns: 3,"}
+{"t":3122,"text":"\n  [*"}
+{"t":3140,"text":"Point*], [*"}
+{"t":3162,"text":"Ordered pair*], [*"}
+{"t":3183,"text":"Qu"}
+{"t":3203,"text":"adrant or"}
+{"t":3222,"text":" ax"}
+{"t":3250,"text":"is*],\n  [F],"}
+{"t":3263,"text":" [$(2, 3"}
+{"t":3284,"text":")$], [#"}
+{"t":3304,"text":"v(1"}
+{"t":3337,"text":"em)],\n  [G],"}
+{"t":3348,"text":" [$(-3, "}
+{"t":3366,"text":"1)$], [#v("}
+{"t":3385,"text":"1em)],\n  [H"}
+{"t":3423,"text":"], [$(-1, -"}
+{"t":3429,"text":"4)$], [#v("}
+{"t":3449,"text":"1em)],\n  [J"}
+{"t":3467,"text":"], [$(4, "}
+{"t":3490,"text":"0)$], [#v("}
+{"t":3510,"text":"1em)],\n)"}
+{"t":3528,"text":"\n\n#v"}
+{"t":3550,"text":"(1"}
+{"t":3574,"text":"em)"}
+{"t":3590,"text":"\n\n#align(center, grid("}
+{"t":3610,"text":"columns: 9, stro"}
+{"t":3643,"text":"ke: 0.5pt"}
+{"t":3654,"text":", ..range(81).map"}
+{"t":3673,"text":"(i => box(width: "}
+{"t":3692,"text":"18pt, height: 18"}
+{"t":3713,"text":"pt))))\n\n== Part"}
+{"t":3735,"text":" D: Think"}
+{"t":3755,"text":" About"}
+{"t":3774,"text":" It\n\n+ Two points have"}
+{"t":3794,"text":" the same $"}
+{"t":3814,"text":"x$-coordinate."}
+{"t":3835,"text":" What do they have in common,"}
+{"t":3856,"text":" and how are"}
+{"t":3880,"text":" they different"}
+{"t":3897,"text":"?\n  "}
+{"t":3917,"text":"#v(2em"}
+{"t":3937,"text":")\n+ Expl"}
+{"t":3970,"text":"ain why the"}
+{"t":3983,"text":" point $(-5"}
+{"t":4002,"text":", 2)$ is in"}
+{"t":4021,"text":" a"}
+{"t":4040,"text":" different place"}
+{"t":4060,"text":" than $"}
+{"t":4080,"text":"(5"}
+{"t":4101,"text":", "}
+{"t":4121,"text":"2)$."}
+{"t":4142,"text":" Describe the"}
+{"t":4162,"text":" path"}
+{"t":4182,"text":" from the"}
+{"t":4202,"text":" origin to each point"}
+{"t":4223,"text":".\n  #v(2em"}
+{"t":4245,"text":")\n+ Max"}
+{"t":4263,"text":" says"}
+{"t":4287,"text":" the point $(3"}
+{"t":4306,"text":", -2)$ is in"}
+{"t":4347,"text":" Quadrant I. Is"}
+{"t":4365,"text":" he"}
+{"t":4386,"text":" correct? Explain your re"}
+{"t":4440,"text":"asoning.\n  #v"}
+{"t":4444,"text":"(2em)\n+ A"}
+{"t":4464,"text":" tre"}
+{"t":4470,"text":"asure is"}
+{"t":4488,"text":" bu"}
+{"t":4509,"text":"ried at $(-4"}
+{"t":4529,"text":", 6)$. Describ"}
+{"t":4555,"text":"e two"}
+{"t":4576,"text":" different"}
+{"t":4596,"text":" "}
+{"t":4610,"text":"ways a"}
+{"t":4631,"text":" map"}
+{"t":4651,"text":" re"}
+{"t":4671,"text":"ader could find"}
+{"t":4698,"text":" it using"}
+{"t":4712,"text":" the grid and"}
+{"t":4738,"text":" the axes.\n  #v"}
+{"t":4757,"text":"(2em)"}
+{"t":4778,"text":"\n\n== Challenge"}
+{"t":4797,"text":"\n\n+ Pl"}
+{"t":4816,"text":"ot the"}
+{"t":4834,"text":" points $(1"}
+{"t":4857,"text":", 1"}
+{"t":4880,"text":")$, $(1"}
+{"t":4896,"text":", -"}
+{"t":4919,"text":"3"}
+{"t":4938,"text":")$, $(-2"}
+{"t":4957,"text":", -"}
+{"t":4980,"text":"3)$, and $(-"}
+{"t":5000,"text":"2, 1)$"}
+{"t":5021,"text":" on"}
+{"t":5039,"text":" a"}
+{"t":5060,"text":" grid. Connect them"}
+{"t":5083,"text":" in order and"}
+{"t":5101,"text":" then"}
+{"t":5121,"text":" back"}
+{"t":5141,"text":" to the first"}
+{"t":5161,"text":" point. What shape do"}
+{"t":5181,"text":" you get"}
+{"t":5204,"text":","}
+{"t":5224,"text":" and what is its area in"}
+{"t":5243,"text":" square units?\n  #v("}
+{"t":5257,"text":"2em)"}

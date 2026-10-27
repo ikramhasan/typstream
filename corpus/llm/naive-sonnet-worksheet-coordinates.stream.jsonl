@@ -1,0 +1,350 @@
+{"t":0,"text":"#"}
+{"t":34,"text":"set page("}
+{"t":65,"text":"margin: 1"}
+{"t":98,"text":".8c"}
+{"t":132,"text":"m)\n#set text(size"}
+{"t":165,"text":": 11pt)"}
+{"t":199,"text":"\n\n#let pl"}
+{"t":234,"text":"ane(n: 6, u"}
+{"t":267,"text":": 0.58"}
+{"t":299,"text":"cm, pts: ()"}
+{"t":336,"text":") = {\n  let"}
+{"t":367,"text":" r = 2."}
+{"t":399,"text":"2"}
+{"t":432,"text":"pt\n  box(width:"}
+{"t":467,"text":" 2 * n * u,"}
+{"t":507,"text":" height: 2 * n *"}
+{"t":534,"text":" u, {\n    for i in"}
+{"t":568,"text":" range(0, 2 *"}
+{"t":600,"text":" n + 1) {\n      "}
+{"t":636,"text":"let s = if i == n {"}
+{"t":667,"text":" 1.2"}
+{"t":702,"text":"pt + black } else { "}
+{"t":736,"text":"0.4pt + luma"}
+{"t":768,"text":"(190"}
+{"t":800,"text":") }\n      place(top +"}
+{"t":833,"text":" left, dx: i * u"}
+{"t":870,"text":", dy: 0pt"}
+{"t":901,"text":", line(start: (0p"}
+{"t":935,"text":"t, 0pt), end"}
+{"t":967,"text":": (0pt, 2"}
+{"t":1003,"text":" * n * u), stro"}
+{"t":1034,"text":"ke: s))\n      place("}
+{"t":1069,"text":"top + left, dx: "}
+{"t":1103,"text":"0pt, dy: i"}
+{"t":1135,"text":" * u, line(start: ("}
+{"t":1168,"text":"0pt, 0pt"}
+{"t":1201,"text":"), end: (2 * n"}
+{"t":1238,"text":" * u, 0pt),"}
+{"t":1270,"text":" stroke: s))\n    "}
+{"t":1301,"text":"}\n    for k in range("}
+{"t":1335,"text":"-n, n + 1)"}
+{"t":1369,"text":" {\n      if k != 0"}
+{"t":1402,"text":" {\n        place(top +"}
+{"t":1435,"text":" left, dx: (n +"}
+{"t":1469,"text":" k) * u - 3p"}
+{"t":1502,"text":"t, dy: n * u"}
+{"t":1535,"text":" + 2pt, text("}
+{"t":1569,"text":"size: 7pt)["}
+{"t":1602,"text":"#k])\n        place(top"}
+{"t":1636,"text":" + left, dx: n *"}
+{"t":1669,"text":" u - 9"}
+{"t":1702,"text":"pt, dy: (n"}
+{"t":1736,"text":" - k) * u - 4"}
+{"t":1770,"text":"pt, text(size: "}
+{"t":1803,"text":"7pt)[#k])"}
+{"t":1838,"text":"\n      }\n    }\n    "}
+{"t":1870,"text":"for p in pts {\n      "}
+{"t":1903,"text":"place(top + left, dx"}
+{"t":1938,"text":": (n + p."}
+{"t":1973,"text":"at(1)) * u -"}
+{"t":2003,"text":" r, dy: (n -"}
+{"t":2036,"text":" p.at(2)) *"}
+{"t":2075,"text":" u - r, circle(rad"}
+{"t":2106,"text":"ius: r, fill: black"}
+{"t":2136,"text":"))\n      place(top + left"}
+{"t":2170,"text":", dx: ("}
+{"t":2205,"text":"n + p.at(1)"}
+{"t":2237,"text":") * u + 3"}
+{"t":2272,"text":"pt, dy: (n"}
+{"t":2306,"text":" - p.at(2))"}
+{"t":2337,"text":" * u - 11"}
+{"t":2370,"text":"pt, text(size: "}
+{"t":2403,"text":"9pt, weight: \""}
+{"t":2437,"text":"bold\")[#p.at"}
+{"t":2470,"text":"(0)])\n    }"}
+{"t":2504,"text":"\n  })\n}\n\n#"}
+{"t":2537,"text":"align"}
+{"t":2574,"text":"(center)["}
+{"t":2605,"text":"\n  #"}
+{"t":2638,"text":"text(size: 18pt"}
+{"t":2671,"text":", weight: \"bold\")"}
+{"t":2709,"text":"[Pl"}
+{"t":2738,"text":"otting and"}
+{"t":2771,"text":" Reading Points in the"}
+{"t":2806,"text":" Coordinate Plane]"}
+{"t":2837,"text":"\n]"}
+{"t":2904,"text":"\n\n#"}
+{"t":2938,"text":"v(0"}
+{"t":2972,"text":".5em)\nName:"}
+{"t":3004,"text":" #box"}
+{"t":3037,"text":"(width: 6"}
+{"t":3070,"text":"c"}
+{"t":3104,"text":"m, line"}
+{"t":3137,"text":"(length"}
+{"t":3170,"text":": 100%)) #h"}
+{"t":3205,"text":"(1"}
+{"t":3239,"text":"f"}
+{"t":3272,"text":"r) Date: #box("}
+{"t":3305,"text":"width: 3cm, line"}
+{"t":3338,"text":"(length: 100%))"}
+{"t":3375,"text":"\n\n#v(0.5"}
+{"t":3408,"text":"em)"}
+{"t":3437,"text":"\n*Remember:* An "}
+{"t":3472,"text":"ordered pair $(x,"}
+{"t":3504,"text":" y)$ t"}
+{"t":3537,"text":"ells you where a"}
+{"t":3570,"text":" point is. The"}
+{"t":3604,"text":" first number $"}
+{"t":3637,"text":"x$ t"}
+{"t":3670,"text":"ells you how far to"}
+{"t":3704,"text":" move left"}
+{"t":3740,"text":" or right from"}
+{"t":3773,"text":" the origin $"}
+{"t":3804,"text":"(0, 0)$."}
+{"t":3837,"text":" The second number $y$ t"}
+{"t":3871,"text":"ells you how far to"}
+{"t":3904,"text":" move up or down.\n\nThe ax"}
+{"t":3937,"text":"es split the plane into four qu"}
+{"t":3970,"text":"adrants: I"}
+{"t":4005,"text":" (top"}
+{"t":4040,"text":" right), II (top left), III"}
+{"t":4071,"text":" (bottom left), IV"}
+{"t":4106,"text":" (bottom right)."}
+{"t":4137,"text":"\n\n== Part A: Re"}
+{"t":4172,"text":"ading Coordinates"}
+{"t":4206,"text":"\n\nLook"}
+{"t":4238,"text":" at the gr"}
+{"t":4278,"text":"id. Write the co"}
+{"t":4307,"text":"ordinates of each point and t"}
+{"t":4341,"text":"ell which"}
+{"t":4373,"text":" quadrant it is in"}
+{"t":4404,"text":"."}
+{"t":4438,"text":" If it lies on an axis"}
+{"t":4472,"text":", write \""}
+{"t":4504,"text":"x-"}
+{"t":4538,"text":"axis\" or \"y-ax"}
+{"t":4571,"text":"is.\""}
+{"t":4604,"text":"\n\n#grid("}
+{"t":4637,"text":"\n  columns: (auto,"}
+{"t":4674,"text":" 1f"}
+{"t":4705,"text":"r),\n  gutter:"}
+{"t":4737,"text":" 1.5"}
+{"t":4771,"text":"em,\n  plane(p"}
+{"t":4805,"text":"ts: ((\"A\", 3"}
+{"t":4838,"text":", 2), (\"B\","}
+{"t":4871,"text":" -4, 3), (\""}
+{"t":4905,"text":"C\", -2, -5),"}
+{"t":4944,"text":" (\"D\", 5, -"}
+{"t":4972,"text":"3), (\"E\", 0"}
+{"t":5006,"text":", 4), (\"F\","}
+{"t":5038,"text":" -6, 0))),"}
+{"t":5071,"text":"\n  table(\n    columns:"}
+{"t":5105,"text":" (au"}
+{"t":5138,"text":"to, "}
+{"t":5171,"text":"1fr, 1fr"}
+{"t":5206,"text":"),\n    inset: 9"}
+{"t":5238,"text":"pt,\n    align: center"}
+{"t":5273,"text":" +"}
+{"t":5305,"text":" horizon,\n    [*"}
+{"t":5341,"text":"Point*], [*Co"}
+{"t":5372,"text":"ordinates*], [*"}
+{"t":5407,"text":"Quadrant or"}
+{"t":5438,"text":" axis*],\n    [A"}
+{"t":5475,"text":"], [], [],"}
+{"t":5506,"text":"\n    [B], [], ["}
+{"t":5539,"text":"],\n    [C], [],"}
+{"t":5573,"text":" [],\n    [D], ["}
+{"t":5607,"text":"], [],\n    [E],"}
+{"t":5642,"text":" [], [],\n    [F"}
+{"t":5672,"text":"], [],"}
+{"t":5705,"text":" ["}
+{"t":5738,"text":"],\n  ),\n)"}
+{"t":5772,"text":"\n\n#"}
+{"t":5805,"text":"v(1"}
+{"t":5838,"text":"em)\n== Part B:"}
+{"t":5873,"text":" Plotting Points"}
+{"t":5906,"text":"\n\nPlot and"}
+{"t":5939,"text":" label each point on the gr"}
+{"t":5973,"text":"id below.\n\n#"}
+{"t":6007,"text":"grid(\n  columns:"}
+{"t":6040,"text":" (auto, 1fr"}
+{"t":6105,"text":"),\n  gutter: "}
+{"t":6105,"text":"1.5em,\n  pl"}
+{"t":6139,"text":"ane(),\n  [\n    "}
+{"t":6172,"text":"+ $G(2, 5"}
+{"t":6205,"text":")$\n    + $H("}
+{"t":6240,"text":"-3, -1)$"}
+{"t":6275,"text":"\n    + $I(4, "}
+{"t":6306,"text":"0)$\n    + $J"}
+{"t":6340,"text":"(0, -4)$"}
+{"t":6375,"text":"\n    + $K(-5,"}
+{"t":6406,"text":" 2)$\n    + $"}
+{"t":6441,"text":"L(1, -6)$"}
+{"t":6506,"text":"\n\n    #v(0"}
+{"t":6542,"text":".8"}
+{"t":6574,"text":"em)\n    Which of"}
+{"t":6607,"text":" these"}
+{"t":6640,"text":" points lie"}
+{"t":6673,"text":" on an"}
+{"t":6706,"text":" axis? \\"}
+{"t":6806,"text":"\n    #line(length: 100"}
+{"t":6808,"text":"%)\n  ],\n)"}
+{"t":6840,"text":"\n\n#p"}
+{"t":6872,"text":"agebreak()"}
+{"t":6906,"text":"\n\n== Part C: Th"}
+{"t":6949,"text":"inking It"}
+{"t":6975,"text":" Through"}
+{"t":7006,"text":"\n\n+"}
+{"t":7073,"text":" Three cor"}
+{"t":7106,"text":"ners of a rectangle are"}
+{"t":7140,"text":" at $(1, 1)"}
+{"t":7173,"text":"$, $(5, 1"}
+{"t":7206,"text":")$ and $(5,"}
+{"t":7239,"text":" 4)$. What are the"}
+{"t":7276,"text":" coordinates of the four"}
+{"t":7306,"text":"th corner?"}
+{"t":7339,"text":"\n  "}
+{"t":7374,"text":"#v(2."}
+{"t":7407,"text":"5em)"}
+{"t":7441,"text":"\n\n+"}
+{"t":7473,"text":" Point $P$"}
+{"t":7506,"text":" is at $(3, -"}
+{"t":7539,"text":"2)$. If"}
+{"t":7575,"text":" you reflect $"}
+{"t":7606,"text":"P$ across the x-ax"}
+{"t":7639,"text":"is, where"}
+{"t":7675,"text":" does"}
+{"t":7709,"text":" it land?\n  #v("}
+{"t":7740,"text":"2.5em)\n\n+"}
+{"t":7814,"text":" Point $Q$"}
+{"t":7841,"text":" is at $(-4,"}
+{"t":7872,"text":" 3)$ and point $"}
+{"t":7909,"text":"R$ is at $(2"}
+{"t":7939,"text":", 3)$."}
+{"t":7973,"text":" Both are"}
+{"t":8007,"text":" jo"}
+{"t":8039,"text":"ined by a hor"}
+{"t":8074,"text":"izontal segment. How long"}
+{"t":8106,"text":" is the segment $"}
+{"t":8172,"text":"Q R$? Explain how"}
+{"t":8208,"text":" you know"}
+{"t":8239,"text":".\n  #v(3"}
+{"t":8273,"text":".5em)\n\n+"}
+{"t":8307,"text":" Without pl"}
+{"t":8340,"text":"otting, tell which"}
+{"t":8373,"text":" quadrant each point is"}
+{"t":8407,"text":" in.\n  #"}
+{"t":8440,"text":"table("}
+{"t":8475,"text":"\n    columns: "}
+{"t":8508,"text":"4,\n    inset: "}
+{"t":8542,"text":"9pt,\n    align:"}
+{"t":8574,"text":" center,\n    [$"}
+{"t":8607,"text":"(-7"}
+{"t":8644,"text":", 2)$], [$"}
+{"t":8673,"text":"(8"}
+{"t":8707,"text":", "}
+{"t":8740,"text":"9)$], [$(-"}
+{"t":8776,"text":"3, -6"}
+{"t":8807,"text":")$], [$(4,"}
+{"t":8840,"text":" -1)$],\n    ["}
+{"t":8874,"text":"], [], [], [],"}
+{"t":8906,"text":"\n  )\n\n+ Ma"}
+{"t":8942,"text":"ria says"}
+{"t":8975,"text":" that $"}
+{"t":9007,"text":"(2"}
+{"t":9043,"text":", 5)$ and $"}
+{"t":9073,"text":"(5, 2)$"}
+{"t":9107,"text":" are the same point. Is"}
+{"t":9140,"text":" she right? Explain."}
+{"t":9173,"text":"\n  #v(3."}
+{"t":9206,"text":"5em)\n\n+"}
+{"t":9249,"text":" *Challenge:*"}
+{"t":9273,"text":" I am"}
+{"t":9306,"text":" a"}
+{"t":9352,"text":" point in"}
+{"t":9384,"text":" Quadrant IV. My"}
+{"t":9426,"text":" $x$-coordinate"}
+{"t":9450,"text":" is "}
+{"t":9473,"text":"3 more"}
+{"t":9506,"text":" than my $y$-coord"}
+{"t":9542,"text":"inate's op"}
+{"t":9573,"text":"posite,"}
+{"t":9606,"text":" and my"}
+{"t":9640,"text":" $y$-coordinate"}
+{"t":9676,"text":" is $-2"}
+{"t":9708,"text":"$. What"}
+{"t":9740,"text":" are my coordinates?"}
+{"t":9776,"text":"\n  #v(3.5em"}
+{"t":9808,"text":")\n\n#v"}
+{"t":9839,"text":"(1f"}
+{"t":9889,"text":"r)\n#"}
+{"t":9908,"text":"line(length: 100%,"}
+{"t":9943,"text":" stroke: 0.5"}
+{"t":9981,"text":"pt + lu"}
+{"t":10006,"text":"ma(150"}
+{"t":10040,"text":"))"}
+{"t":10073,"text":"\n\n== Answer Key ("}
+{"t":10106,"text":"for"}
+{"t":10140,"text":" teachers)\n\n*Part"}
+{"t":10175,"text":" A:* A"}
+{"t":10206,"text":"$"}
+{"t":10242,"text":"(3, 2)$"}
+{"t":10273,"text":" QI; B$(-4"}
+{"t":10306,"text":", 3)$ QII"}
+{"t":10340,"text":"; C$(-2, -"}
+{"t":10375,"text":"5)$ QIII;"}
+{"t":10407,"text":" D$(5, -3)"}
+{"t":10442,"text":"$ QIV; E$"}
+{"t":10474,"text":"(0, 4)$"}
+{"t":10510,"text":" y-axis; F$("}
+{"t":10540,"text":"-6, 0)$"}
+{"t":10575,"text":" x-axis.\n\n*"}
+{"t":10608,"text":"Part B:* I and"}
+{"t":10640,"text":" J lie on ax"}
+{"t":10674,"text":"es (I"}
+{"t":10708,"text":" on the x-axis, J"}
+{"t":10743,"text":" on the y-axis). All"}
+{"t":10776,"text":" other points are in qu"}
+{"t":10814,"text":"adrants: G in I"}
+{"t":10840,"text":", H in III"}
+{"t":10873,"text":", K in II, L in I"}
+{"t":10911,"text":"V.\n\n*Part C:"}
+{"t":10940,"text":"* ("}
+{"t":10973,"text":"1) $(1, 4"}
+{"t":11012,"text":")$. (2) $("}
+{"t":11040,"text":"3, 2)$. ("}
+{"t":11074,"text":"3) 6 units, since"}
+{"t":11106,"text":" the $"}
+{"t":11140,"text":"y$-coordinates match"}
+{"t":11174,"text":" and $"}
+{"t":11209,"text":"2"}
+{"t":11240,"text":" - (-4) = "}
+{"t":11275,"text":"6$. (4) II"}
+{"t":11307,"text":", I"}
+{"t":11340,"text":", III, IV. (5"}
+{"t":11376,"text":") No."}
+{"t":11408,"text":" The order mat"}
+{"t":11440,"text":"ters: $(2, 5"}
+{"t":11473,"text":")$ is "}
+{"t":11507,"text":"2 right and"}
+{"t":11540,"text":" 5 up, while $("}
+{"t":11573,"text":"5, 2)$ is"}
+{"t":11607,"text":" 5 right and 2 "}
+{"t":11640,"text":"up. (6) $x"}
+{"t":11673,"text":" ="}
+{"t":11709,"text":" 3 + "}
+{"t":11741,"text":"2 = 5$, so"}
+{"t":11792,"text":" the point is"}
+{"t":11830,"text":" $(5, -2)$"}
+{"t":11868,"text":"."}

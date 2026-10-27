@@ -1,0 +1,134 @@
+{"t":0,"text":"#"}
+{"t":19,"text":"import \"@preview/unify"}
+{"t":40,"text":":0.8.1\": num"}
+{"t":65,"text":", qty, unit\n#"}
+{"t":81,"text":"show: quiz."}
+{"t":115,"text":"with("}
+{"t":123,"text":"\n  title: [SI Units"}
+{"t":142,"text":" and Con"}
+{"t":164,"text":"versions],\n  subject:"}
+{"t":183,"text":" [Physics],\n  gr"}
+{"t":204,"text":"ade: [Grade 10"}
+{"t":224,"text":"],\n  instructions: ["}
+{"t":245,"text":"Answer all questions."}
+{"t":264,"text":" Show your working for every"}
+{"t":285,"text":" calculation and"}
+{"t":306,"text":" include units in your answers.],"}
+{"t":328,"text":"\n)\n\n#question(points:"}
+{"t":347,"text":" 1)[\n  Which"}
+{"t":367,"text":" of these is the SI base un"}
+{"t":396,"text":"it of mass?\n  #"}
+{"t":409,"text":"mcq([Gram],"}
+{"t":429,"text":" [Kilogram], ["}
+{"t":451,"text":"Pound], [Ton"}
+{"t":470,"text":"ne], answer: 2)"}
+{"t":490,"text":"\n]\n\n#question(points:"}
+{"t":511,"text":" 1)[\n  Which"}
+{"t":538,"text":" quantity is measured in p"}
+{"t":551,"text":"ascals ("}
+{"t":573,"text":"Pa)?\n  #"}
+{"t":592,"text":"mcq([Force], ["}
+{"t":615,"text":"Pressure], [Energ"}
+{"t":634,"text":"y], [Power], answer"}
+{"t":657,"text":": 2)\n]\n\n#"}
+{"t":674,"text":"question(points: 2)["}
+{"t":694,"text":"\n  Fill in the bl"}
+{"t":715,"text":"anks.\n  + One k"}
+{"t":735,"text":"ilometre is"}
+{"t":756,"text":" equal to #blank(width"}
+{"t":779,"text":": 4"}
+{"t":798,"text":"em, answer: [1000"}
+{"t":817,"text":"]) metres.\n  +"}
+{"t":837,"text":" One milligram is equal to"}
+{"t":858,"text":" #blank(width: 4"}
+{"t":878,"text":"em, answer: [0."}
+{"t":899,"text":"001]) grams.\n]"}
+{"t":919,"text":"\n\n#question(points: 2"}
+{"t":948,"text":")[\n  Convert $"}
+{"t":960,"text":"4.5 \"km\"$"}
+{"t":985,"text":" to metres.\n  #"}
+{"t":1001,"text":"answer-space(height: "}
+{"t":1026,"text":"3em, answer: [$"}
+{"t":1042,"text":"4.5 \"km\" ="}
+{"t":1063,"text":" 4500 \"m\"$"}
+{"t":1084,"text":"])\n]\n\n#question(points"}
+{"t":1104,"text":": 2)[\n  "}
+{"t":1124,"text":"Convert $250 \"cm"}
+{"t":1144,"text":"\"^2$ to square"}
+{"t":1165,"text":" metres.\n  #answer"}
+{"t":1186,"text":"-space(height: 3em"}
+{"t":1206,"text":", answer: [$250 "}
+{"t":1227,"text":"\"cm\"^2 ="}
+{"t":1250,"text":" 250 times"}
+{"t":1267,"text":" 10^("}
+{"t":1287,"text":"-4) \"m\"^2"}
+{"t":1308,"text":" = 0.025 \""}
+{"t":1329,"text":"m\"^2$])\n]"}
+{"t":1349,"text":"\n\n#question(points: 3"}
+{"t":1375,"text":")[\n  A car travels"}
+{"t":1390,"text":" at $"}
+{"t":1414,"text":"72 \"km"}
+{"t":1430,"text":"/h\"$. Express its"}
+{"t":1451,"text":" speed in met"}
+{"t":1471,"text":"res per second.\n  #answ"}
+{"t":1492,"text":"er-space(height: 4"}
+{"t":1512,"text":"em, answer: [$72"}
+{"t":1534,"text":" \""}
+{"t":1553,"text":"km/h\" = 72000"}
+{"t":1573,"text":" \""}
+{"t":1594,"text":"m\" / 3600 \""}
+{"t":1616,"text":"s\" = 20 \"m"}
+{"t":1634,"text":"/s\"$])\n]"}
+{"t":1657,"text":"\n\n#question(points: 2)"}
+{"t":1676,"text":"[\n  Write the S"}
+{"t":1697,"text":"I base"}
+{"t":1717,"text":"-"}
+{"t":1738,"text":"unit form of ac"}
+{"t":1759,"text":"celeration, #"}
+{"t":1777,"text":"qty(\"9"}
+{"t":1798,"text":".81\", \"m/s^"}
+{"t":1820,"text":"2\")"}
+{"t":1839,"text":" in base units,"}
+{"t":1859,"text":" and state what"}
+{"t":1880,"text":" the"}
+{"t":1901,"text":" unit $"}
+{"t":1921,"text":"\""}
+{"t":1940,"text":"m s"}
+{"t":1961,"text":"\"^(-2)$"}
+{"t":1981,"text":" means.\n  #answer-"}
+{"t":2002,"text":"lines(count: 2,"}
+{"t":2023,"text":" answer: [Accele"}
+{"t":2043,"text":"ration is meas"}
+{"t":2063,"text":"ured in $"}
+{"t":2084,"text":"\"m s\"^(-2"}
+{"t":2105,"text":")$, met"}
+{"t":2124,"text":"res per second squared:"}
+{"t":2145,"text":" the change"}
+{"t":2166,"text":" in speed in metres per second"}
+{"t":2186,"text":","}
+{"t":2206,"text":" each second.])\n]\n\n#"}
+{"t":2226,"text":"question(points: 3)["}
+{"t":2248,"text":"\n  A block has a"}
+{"t":2268,"text":" mass of #"}
+{"t":2289,"text":"q"}
+{"t":2309,"text":"ty(\"2.4\", \"k"}
+{"t":2328,"text":"g\") and a volume of #"}
+{"t":2349,"text":"qty(\"0.0008\","}
+{"t":2369,"text":" \"m^3\").\n  +"}
+{"t":2390,"text":" Write"}
+{"t":2412,"text":" the formula for density.\n  "}
+{"t":2432,"text":"+ Calculate its density in"}
+{"t":2451,"text":" #un"}
+{"t":2471,"text":"it(\""}
+{"t":2492,"text":"kg/m^3\")."}
+{"t":2512,"text":"\n    "}
+{"t":2534,"text":"#answer-space(height:"}
+{"t":2553,"text":" 3em, answer: ["}
+{"t":2573,"text":"$rho = m"}
+{"t":2595,"text":" / V"}
+{"t":2614,"text":" = 2.4 \"k"}
+{"t":2635,"text":"g\" / ("}
+{"t":2660,"text":"0.0008 \"m\""}
+{"t":2676,"text":"^3) = 3000 "}
+{"t":2698,"text":"\"kg/m\""}
+{"t":2718,"text":"^3$])\n]"}

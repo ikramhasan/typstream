@@ -1,0 +1,279 @@
+{"t":0,"text":"="}
+{"t":16,"text":" Area and Perimeter"}
+{"t":36,"text":" of Rectangles and"}
+{"t":59,"text":" Triangles\n\nName: #"}
+{"t":78,"text":"line("}
+{"t":98,"text":"length: 6cm)"}
+{"t":118,"text":" Date: #line(length: "}
+{"t":141,"text":"3cm)\n\n=="}
+{"t":159,"text":" Key"}
+{"t":203,"text":" Formulas\n\n- Rect"}
+{"t":223,"text":"angle area: $A = l"}
+{"t":241,"text":" times w$\n- Rect"}
+{"t":262,"text":"angle perimeter: $"}
+{"t":284,"text":"P = 2l + 2"}
+{"t":302,"text":"w$\n- Triangle"}
+{"t":323,"text":" area: $A = "}
+{"t":344,"text":"1/2 times b times"}
+{"t":366,"text":" h$,"}
+{"t":384,"text":" where $b$ is the base"}
+{"t":405,"text":" and $h$ is the per"}
+{"t":425,"text":"pendicular height\n\nArea"}
+{"t":445,"text":" is"}
+{"t":466,"text":" measured in square centimetres"}
+{"t":486,"text":" (cm²)."}
+{"t":506,"text":" Perimeter is measured"}
+{"t":528,"text":" in centimetres (cm"}
+{"t":550,"text":").\n\n== Part"}
+{"t":567,"text":" A"}
+{"t":588,"text":": Rectangles\n\n#"}
+{"t":611,"text":"let r"}
+{"t":631,"text":"ectfig(w, h,"}
+{"t":649,"text":" tw, th) = box("}
+{"t":670,"text":"width: w + 40"}
+{"t":693,"text":"pt, height: h + "}
+{"t":711,"text":"30pt)[\n  #"}
+{"t":732,"text":"place(top + left, dx"}
+{"t":753,"text":": 30pt, dy"}
+{"t":774,"text":": 20pt, rect"}
+{"t":799,"text":"(width: w, height: h"}
+{"t":815,"text":", stroke: 1p"}
+{"t":836,"text":"t))\n  #place(top"}
+{"t":855,"text":" + left, dx: 30"}
+{"t":875,"text":"pt, dy: 2"}
+{"t":896,"text":"pt,"}
+{"t":915,"text":" box(width: w, align("}
+{"t":935,"text":"center)[#tw]))"}
+{"t":957,"text":"\n  #place(top + left"}
+{"t":978,"text":", dx: 0pt"}
+{"t":1002,"text":", dy: 20pt"}
+{"t":1019,"text":" + h / 2 - "}
+{"t":1038,"text":"6pt, th)"}
+{"t":1059,"text":"\n]\n\n+"}
+{"t":1078,"text":" Find the area and perimeter"}
+{"t":1099,"text":" of this rectangle."}
+{"t":1119,"text":"\n\n  #align"}
+{"t":1139,"text":"(center,"}
+{"t":1160,"text":" r"}
+{"t":1183,"text":"ectfig(96"}
+{"t":1202,"text":"pt, 60"}
+{"t":1221,"text":"pt, ["}
+{"t":1242,"text":"8 cm], [5 "}
+{"t":1263,"text":"cm]))\n\n  Area"}
+{"t":1283,"text":": #v"}
+{"t":1303,"text":"(1"}
+{"t":1324,"text":".5em)"}
+{"t":1344,"text":"\n  Perimeter: #"}
+{"t":1364,"text":"v(1.5em)"}
+{"t":1387,"text":"\n\n+ Find the area and per"}
+{"t":1412,"text":"imeter of this rectang"}
+{"t":1426,"text":"le.\n\n  #align(center"}
+{"t":1447,"text":", rectfig(108p"}
+{"t":1467,"text":"t, 48pt, ["}
+{"t":1487,"text":"9 cm], [4 "}
+{"t":1512,"text":"cm]))\n\n  Area"}
+{"t":1529,"text":": #v(1.5em"}
+{"t":1548,"text":")\n  Perimeter"}
+{"t":1575,"text":": #v(1.5em"}
+{"t":1590,"text":")\n\n+ A rectang"}
+{"t":1610,"text":"le has an"}
+{"t":1630,"text":" area of 24 cm²."}
+{"t":1652,"text":" Its width is 6 c"}
+{"t":1671,"text":"m. Find its"}
+{"t":1691,"text":" length and its perimeter."}
+{"t":1715,"text":"\n\n  Length: #line"}
+{"t":1733,"text":"(length: 5"}
+{"t":1755,"text":"cm)"}
+{"t":1785,"text":"\n\n  Perimeter: #"}
+{"t":1793,"text":"line(length: 5cm"}
+{"t":1814,"text":")\n\n== Part B:"}
+{"t":1839,"text":" Triangles\n\n#let tr"}
+{"t":1872,"text":"ifig(b"}
+{"t":1875,"text":", h, a,"}
+{"t":1896,"text":" tb"}
+{"t":1916,"text":", th) = box(width:"}
+{"t":1938,"text":" b + 60pt, height"}
+{"t":1962,"text":": h + 40pt)"}
+{"t":1980,"text":"[\n  #place(top +"}
+{"t":2000,"text":" left, dx: 30p"}
+{"t":2020,"text":"t, dy: 20p"}
+{"t":2039,"text":"t, polygon("}
+{"t":2059,"text":"fill: none, stroke"}
+{"t":2082,"text":": 1pt, (0"}
+{"t":2124,"text":"pt, h), (b,"}
+{"t":2130,"text":" h), (a, 0p"}
+{"t":2143,"text":"t)))\n  #place("}
+{"t":2164,"text":"top + left, dx: "}
+{"t":2182,"text":"30pt + a, dy"}
+{"t":2202,"text":": 20pt, line("}
+{"t":2225,"text":"start: (0pt, "}
+{"t":2245,"text":"0pt), end: (0"}
+{"t":2264,"text":"pt, h), stroke"}
+{"t":2285,"text":": (dash: \"dash"}
+{"t":2307,"text":"ed\", paint: gray)"}
+{"t":2328,"text":"))\n  #place(top +"}
+{"t":2346,"text":" left, dx: 30p"}
+{"t":2366,"text":"t, dy: 20p"}
+{"t":2387,"text":"t + h + 6"}
+{"t":2409,"text":"pt, box(width: b"}
+{"t":2427,"text":", align(center)[#t"}
+{"t":2448,"text":"b]))\n  #place("}
+{"t":2470,"text":"top + left, dx: "}
+{"t":2505,"text":"30pt + a + 4"}
+{"t":2518,"text":"pt, dy: 20"}
+{"t":2537,"text":"pt + h / 2 "}
+{"t":2551,"text":"- 6pt, th)"}
+{"t":2572,"text":"\n]\n\n+ Find"}
+{"t":2595,"text":" the area of this triangle."}
+{"t":2611,"text":" The dashed line sh"}
+{"t":2634,"text":"ows the"}
+{"t":2652,"text":" height.\n\n  #align(center"}
+{"t":2673,"text":", trifig(120pt"}
+{"t":2694,"text":", 72pt, "}
+{"t":2713,"text":"48pt, [10 c"}
+{"t":2736,"text":"m], [6 cm]"}
+{"t":2758,"text":"))\n\n  Area: #v"}
+{"t":2779,"text":"(1.5em)\n\n+"}
+{"t":2796,"text":" Find the area of this tri"}
+{"t":2821,"text":"angle."}
+{"t":2836,"text":" The dashed line shows the"}
+{"t":2857,"text":" height.\n\n  #align(center"}
+{"t":2877,"text":", trifig(84pt"}
+{"t":2899,"text":", 60pt, 24"}
+{"t":2918,"text":"pt, [7 cm"}
+{"t":2975,"text":"], [5 cm]))"}
+{"t":2979,"text":"\n\n  Area: #v("}
+{"t":2979,"text":"1.5em)\n\n+"}
+{"t":3005,"text":" A triangle has a"}
+{"t":3023,"text":" base of 9"}
+{"t":3046,"text":" cm and a height of "}
+{"t":3064,"text":"4 cm. Find"}
+{"t":3083,"text":" its area."}
+{"t":3101,"text":" Then expl"}
+{"t":3123,"text":"ain why a"}
+{"t":3145,"text":" rectangle with the same base"}
+{"t":3162,"text":" and height has"}
+{"t":3183,"text":" an area tw"}
+{"t":3205,"text":"ice as large.\n\n  #"}
+{"t":3223,"text":"v(3"}
+{"t":3246,"text":"em)\n\n+"}
+{"t":3265,"text":" A triangle has sides"}
+{"t":3287,"text":" of 5 cm, "}
+{"t":3306,"text":"5 cm and 6 "}
+{"t":3339,"text":"cm. Find its perim"}
+{"t":3350,"text":"eter.\n\n  #v("}
+{"t":3367,"text":"2em)\n\n== Part C"}
+{"t":3392,"text":": Word Problems\n\n+"}
+{"t":3415,"text":" A r"}
+{"t":3428,"text":"ectangular garden is 12"}
+{"t":3450,"text":" m long and 7 m"}
+{"t":3469,"text":" wide."}
+{"t":3510,"text":" Fenc"}
+{"t":3532,"text":"ing cost"}
+{"t":3550,"text":"s \\"}
+{"t":3573,"text":"$4"}
+{"t":3591,"text":" per metre. Find the"}
+{"t":3613,"text":" per"}
+{"t":3632,"text":"imeter of the garden and"}
+{"t":3654,"text":" the"}
+{"t":3676,"text":" total cost of f"}
+{"t":3693,"text":"encing all"}
+{"t":3715,"text":" the way around it"}
+{"t":3736,"text":".\n\n  #v(3"}
+{"t":3757,"text":"em)\n\n+"}
+{"t":3775,"text":" M"}
+{"t":3800,"text":"ia"}
+{"t":3820,"text":" pa"}
+{"t":3837,"text":"ints a tri"}
+{"t":3864,"text":"angular s"}
+{"t":3877,"text":"ign with"}
+{"t":3897,"text":" a base of 80"}
+{"t":3918,"text":" cm and a height of "}
+{"t":3942,"text":"50 cm. One"}
+{"t":3961,"text":" t"}
+{"t":3979,"text":"in of paint cov"}
+{"t":4005,"text":"ers 1"}
+{"t":4038,"text":" m² ("}
+{"t":4040,"text":"10 "}
+{"t":4060,"text":"000 cm²). Does"}
+{"t":4081,"text":" one tin cover the sign"}
+{"t":4103,"text":"? Show"}
+{"t":4122,"text":" your working"}
+{"t":4147,"text":".\n\n  #v(3em"}
+{"t":4163,"text":")\n\n+"}
+{"t":4203,"text":" Write"}
+{"t":4224,"text":" your own r"}
+{"t":4244,"text":"ectangle with an area of"}
+{"t":4267,"text":" 30"}
+{"t":4285,"text":" cm² and a perim"}
+{"t":4305,"text":"eter different"}
+{"t":4326,"text":" from 22"}
+{"t":4348,"text":" cm."}
+{"t":4367,"text":" Dra"}
+{"t":4392,"text":"w it on"}
+{"t":4411,"text":" the"}
+{"t":4428,"text":" back of this"}
+{"t":4448,"text":" s"}
+{"t":4471,"text":"heet and label"}
+{"t":4489,"text":" all s"}
+{"t":4510,"text":"ides.\n\n  "}
+{"t":4530,"text":"#v(2em)\n\n=="}
+{"t":4552,"text":" Teacher Answer"}
+{"t":4570,"text":" Key\n\n+"}
+{"t":4593,"text":" Area "}
+{"t":4615,"text":"40 cm²"}
+{"t":4632,"text":"; perimeter 26 "}
+{"t":4656,"text":"cm.\n+ Area"}
+{"t":4673,"text":" 36 cm²; per"}
+{"t":4695,"text":"imeter 26 cm"}
+{"t":4715,"text":".\n+ Length"}
+{"t":4734,"text":" 4 cm; per"}
+{"t":4755,"text":"imeter 20 cm"}
+{"t":4775,"text":".\n+ Area 30"}
+{"t":4798,"text":" cm².\n+"}
+{"t":4817,"text":" Area 17.5 cm"}
+{"t":4836,"text":"².\n+ Area 18"}
+{"t":4858,"text":" cm²."}
+{"t":4877,"text":"\n+ Tri"}
+{"t":4898,"text":"angle with base 9 c"}
+{"t":4918,"text":"m and height 4 cm"}
+{"t":4939,"text":" has area 18 cm²"}
+{"t":4958,"text":"; the"}
+{"t":4982,"text":" rectangle has area 36"}
+{"t":5002,"text":" cm², so the tri"}
+{"t":5020,"text":"angle is half"}
+{"t":5040,"text":" of it.\n+ Per"}
+{"t":5061,"text":"imeter 16 cm"}
+{"t":5081,"text":".\n+ Perime"}
+{"t":5102,"text":"ter 38 m;"}
+{"t":5124,"text":" cost \\"}
+{"t":5143,"text":"$152."}
+{"t":5163,"text":"\n+ Area"}
+{"t":5185,"text":" 2"}
+{"t":5203,"text":"000 cm²"}
+{"t":5226,"text":" (base"}
+{"t":5245,"text":" 80 cm ×"}
+{"t":5266,"text":" height 50 cm "}
+{"t":5285,"text":"÷ 2);"}
+{"t":5306,"text":" one tin ("}
+{"t":5329,"text":"10 000 cm²)"}
+{"t":5348,"text":" is enough."}
+{"t":5368,"text":"\n+ Answ"}
+{"t":5387,"text":"ers v"}
+{"t":5409,"text":"ary; for example "}
+{"t":5432,"text":"5"}
+{"t":5449,"text":" c"}
+{"t":5469,"text":"m by"}
+{"t":5489,"text":" 6 cm has"}
+{"t":5511,"text":" area 30 cm² and"}
+{"t":5530,"text":" perimeter 22"}
+{"t":5555,"text":" cm,"}
+{"t":5571,"text":" so students"}
+{"t":5595,"text":" should pick different"}
+{"t":5611,"text":" s"}
+{"t":5632,"text":"ides such"}
+{"t":5654,"text":" as 3"}
+{"t":5673,"text":" cm by 10 c"}
+{"t":5694,"text":"m (per"}
+{"t":5717,"text":"imeter 26 cm"}
+{"t":5730,"text":")."}

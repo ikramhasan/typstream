@@ -1,0 +1,147 @@
+{"t":0,"text":"#show: wor"}
+{"t":323,"text":"ksheet.with("}
+{"t":326,"text":"\n  title: [Past T"}
+{"t":326,"text":"ense Verbs],\n  "}
+{"t":326,"text":"subject: [English],\n  "}
+{"t":326,"text":"grade: [Grade "}
+{"t":326,"text":"4],\n  instructions:"}
+{"t":326,"text":" [Read"}
+{"t":326,"text":" each"}
+{"t":326,"text":" question car"}
+{"t":343,"text":"efully. Write your answers"}
+{"t":381,"text":" ne"}
+{"t":408,"text":"atly."}
+{"t":677,"text":"],\n)\n\n#callout("}
+{"t":677,"text":"kind: \"rem"}
+{"t":677,"text":"ember\")[\n  A *past"}
+{"t":677,"text":" tense ver"}
+{"t":677,"text":"b* tells us about"}
+{"t":677,"text":" something that already"}
+{"t":677,"text":" happened. Most ver"}
+{"t":677,"text":"bs add _"}
+{"t":705,"text":"-"}
+{"t":739,"text":"ed_: wal"}
+{"t":771,"text":"k →"}
+{"t":804,"text":" walk"}
+{"t":1021,"text":"*"}
+{"t":1021,"text":"ed*. Some verb"}
+{"t":1021,"text":"s change"}
+{"t":1021,"text":" complet"}
+{"t":1021,"text":"ely: go → *"}
+{"t":1021,"text":"went*.\n]\n\n="}
+{"t":1037,"text":" Part A: Fill in the"}
+{"t":1071,"text":" blanks\n\n#question(points"}
+{"t":1104,"text":": 4"}
+{"t":1138,"text":")[\n  Write the past"}
+{"t":1170,"text":" tense of the"}
+{"t":1205,"text":" verb in br"}
+{"t":1376,"text":"ackets.\n  +"}
+{"t":1376,"text":" Yesterday,"}
+{"t":1376,"text":" I #"}
+{"t":1376,"text":"blank(answer: ["}
+{"t":1376,"text":"walked]) to school. ("}
+{"t":1406,"text":"walk)\n  + She"}
+{"t":1438,"text":" #"}
+{"t":1474,"text":"blank(answer: [played"}
+{"t":1506,"text":"]) with"}
+{"t":1538,"text":" her friends after"}
+{"t":1570,"text":" l"}
+{"t":1606,"text":"unch. (play)\n  "}
+{"t":1720,"text":"+ We #blank(answer"}
+{"t":1720,"text":": ["}
+{"t":1720,"text":"ate]) p"}
+{"t":1737,"text":"izza for"}
+{"t":1777,"text":" dinner last night. (e"}
+{"t":1804,"text":"at)\n  + The dog"}
+{"t":1848,"text":" #blank(answer: ["}
+{"t":1872,"text":"ran]) across"}
+{"t":1905,"text":" the gar"}
+{"t":1943,"text":"den. (run)\n]"}
+{"t":1975,"text":"\n\n#question(points: 2)"}
+{"t":2008,"text":"[\n  Choose the corre"}
+{"t":2059,"text":"ct sentence.\n  #"}
+{"t":2077,"text":"mcq("}
+{"t":2117,"text":"\n    [He"}
+{"t":2138,"text":" go"}
+{"t":2171,"text":"ed"}
+{"t":2204,"text":" to"}
+{"t":2240,"text":" the park"}
+{"t":2271,"text":"."}
+{"t":2306,"text":"],\n    [He went to the"}
+{"t":2338,"text":" park.],\n    [He g"}
+{"t":2372,"text":"one to the park.],\n    "}
+{"t":2405,"text":"answer: 2,\n  "}
+{"t":2439,"text":")\n]\n\n#question(points"}
+{"t":2472,"text":": 2)[\n  #"}
+{"t":2508,"text":"true-false("}
+{"t":2539,"text":"answer: true"}
+{"t":2572,"text":")[The"}
+{"t":2606,"text":" past tense of _"}
+{"t":2639,"text":"j"}
+{"t":2673,"text":"ump_ is _jum"}
+{"t":2707,"text":"ped_.]\n  #true"}
+{"t":2741,"text":"-false(answer: false)"}
+{"t":2772,"text":"[The past tense of _see"}
+{"t":2805,"text":"_ is _seed"}
+{"t":2840,"text":"_.]\n]\n\n="}
+{"t":2874,"text":" Part B: Mat"}
+{"t":2918,"text":"ching\n\n#question(points: "}
+{"t":2948,"text":"5"}
+{"t":2990,"text":")[\n  Match each present"}
+{"t":3008,"text":" t"}
+{"t":3041,"text":"ense verb with its past tense"}
+{"t":3073,"text":"."}
+{"t":3106,"text":"\n  #matching("}
+{"t":3139,"text":"\n    ([go], [went"}
+{"t":3177,"text":"]),\n    ([sw"}
+{"t":3205,"text":"im], [swam]),"}
+{"t":3239,"text":"\n    ([write], [wr"}
+{"t":3273,"text":"ote]),\n    ([b"}
+{"t":3306,"text":"ring], [brought]),"}
+{"t":3339,"text":"\n    ([dr"}
+{"t":3374,"text":"ink], [drank]),"}
+{"t":3406,"text":"\n  )\n]\n\n= Part"}
+{"t":3440,"text":" C: Writing\n\n#question"}
+{"t":3473,"text":"(points: 5"}
+{"t":3508,"text":")[\n  Write "}
+{"t":3541,"text":"3 "}
+{"t":3573,"text":"to 4 sentences about"}
+{"t":3606,"text":" what you"}
+{"t":3640,"text":" did last weekend. Use"}
+{"t":3674,"text":" at least *"}
+{"t":3707,"text":"three* past tense verbs"}
+{"t":3739,"text":"."}
+{"t":3774,"text":" Underline each"}
+{"t":3807,"text":" past"}
+{"t":3841,"text":" tense verb you use."}
+{"t":3873,"text":"\n  #answer-lines("}
+{"t":3908,"text":"count: 5, answ"}
+{"t":3941,"text":"er: ["}
+{"t":3973,"text":"Sample answer: On Sa"}
+{"t":4006,"text":"turday I vis"}
+{"t":4040,"text":"ited my grandmother. We"}
+{"t":4072,"text":" cooked so"}
+{"t":4107,"text":"up"}
+{"t":4142,"text":" and"}
+{"t":4173,"text":" played"}
+{"t":4207,"text":" c"}
+{"t":4239,"text":"ards. Then"}
+{"t":4273,"text":" I hel"}
+{"t":4305,"text":"ped her in"}
+{"t":4339,"text":" the garden."}
+{"t":4372,"text":"])\n  "}
+{"t":4407,"text":"#answer["}
+{"t":4441,"text":"Award"}
+{"t":4471,"text":" "}
+{"t":4507,"text":"1 point for"}
+{"t":4539,"text":" each corre"}
+{"t":4571,"text":"ct past tense verb ("}
+{"t":4605,"text":"up to 3), 1 "}
+{"t":4639,"text":"point for complete sentences with"}
+{"t":4672,"text":" capital letters and"}
+{"t":4714,"text":" full stops, and 1 "}
+{"t":4747,"text":"point for the"}
+{"t":4771,"text":" top"}
+{"t":4806,"text":"ic being about last"}
+{"t":4838,"text":" weekend.]\n]"}
+{"t":4871,"text":"\n\n#answer-key()"}

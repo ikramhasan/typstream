@@ -1,0 +1,119 @@
+{"t":0,"text":"#"}
+{"t":174,"text":"show"}
+{"t":181,"text":": worksheet."}
+{"t":181,"text":"with(title: [Argum"}
+{"t":181,"text":"entative Essay Rub"}
+{"t":181,"text":"ric], subject: [English"}
+{"t":181,"text":" Language"}
+{"t":181,"text":" Arts], grade: ["}
+{"t":200,"text":"Grade 11], info: none"}
+{"t":220,"text":")\n\n#"}
+{"t":240,"text":"instructions["}
+{"t":261,"text":"\n  "}
+{"t":280,"text":"Each cri"}
+{"t":340,"text":"terion is scored on four"}
+{"t":340,"text":" levels. The"}
+{"t":341,"text":" points for"}
+{"t":363,"text":" each level are shown in the table"}
+{"t":382,"text":";"}
+{"t":402,"text":" the total is out"}
+{"t":423,"text":" of 10"}
+{"t":444,"text":"."}
+{"t":464,"text":"\n]\n\n#rubric("}
+{"t":485,"text":"\n  ([Thesis"}
+{"t":506,"text":"],"}
+{"t":525,"text":" [Clear,"}
+{"t":546,"text":" arguable cla"}
+{"t":566,"text":"im st"}
+{"t":589,"text":"ated early"}
+{"t":607,"text":" and s"}
+{"t":629,"text":"ustained throughout the essay"}
+{"t":648,"text":".], [Clear claim"}
+{"t":668,"text":","}
+{"t":688,"text":" though"}
+{"t":712,"text":" it"}
+{"t":729,"text":" we"}
+{"t":752,"text":"akens or"}
+{"t":769,"text":" drifts in places"}
+{"t":790,"text":".], [Cla"}
+{"t":810,"text":"im is present"}
+{"t":831,"text":" but vague or h"}
+{"t":851,"text":"ard to ident"}
+{"t":873,"text":"ify.], [No"}
+{"t":892,"text":" ident"}
+{"t":912,"text":"ifiable claim.]),"}
+{"t":933,"text":"\n  ([Evidence"}
+{"t":954,"text":"], [Strong, rel"}
+{"t":974,"text":"evant, and cited evid"}
+{"t":996,"text":"ence from several"}
+{"t":1015,"text":" cred"}
+{"t":1035,"text":"ible sources.], [Rel"}
+{"t":1058,"text":"evant evidence, with some"}
+{"t":1076,"text":" sources c"}
+{"t":1096,"text":"ited.], [Lim"}
+{"t":1117,"text":"ited or we"}
+{"t":1137,"text":"akly relevant evidence"}
+{"t":1158,"text":";"}
+{"t":1178,"text":" s"}
+{"t":1199,"text":"ources r"}
+{"t":1223,"text":"arely cited.], [No"}
+{"t":1240,"text":" evidence,"}
+{"t":1260,"text":" or ev"}
+{"t":1280,"text":"idence that does"}
+{"t":1301,"text":" not support the claim.]),"}
+{"t":1321,"text":"\n  ([Reaso"}
+{"t":1341,"text":"ning],"}
+{"t":1362,"text":" [Each"}
+{"t":1382,"text":" pi"}
+{"t":1404,"text":"ece of evidence is"}
+{"t":1423,"text":" explained and"}
+{"t":1444,"text":" linked to the claim;"}
+{"t":1464,"text":" counterarguments are address"}
+{"t":1487,"text":"ed fairly.], ["}
+{"t":1505,"text":"Most evidence is expl"}
+{"t":1526,"text":"ained; counterarguments are"}
+{"t":1546,"text":" mentioned.], ["}
+{"t":1568,"text":"Ev"}
+{"t":1588,"text":"idence is m"}
+{"t":1607,"text":"ostly listed r"}
+{"t":1627,"text":"ather than explained.], [No"}
+{"t":1648,"text":" reasoning conn"}
+{"t":1668,"text":"ects ev"}
+{"t":1689,"text":"idence to the claim.]"}
+{"t":1709,"text":"),\n  ([Organization"}
+{"t":1731,"text":" and style"}
+{"t":1750,"text":"], [Log"}
+{"t":1770,"text":"ical structure with"}
+{"t":1791,"text":" sm"}
+{"t":1811,"text":"ooth transitions; prec"}
+{"t":1831,"text":"ise, formal language"}
+{"t":1852,"text":" with"}
+{"t":1872,"text":" no err"}
+{"t":1893,"text":"ors that"}
+{"t":1913,"text":" affect me"}
+{"t":1933,"text":"aning.], [Gener"}
+{"t":1955,"text":"ally log"}
+{"t":1975,"text":"ical struct"}
+{"t":1995,"text":"ure; occasional l"}
+{"t":2015,"text":"apses in transitions or word"}
+{"t":2036,"text":" choice.], [Struct"}
+{"t":2056,"text":"ure is h"}
+{"t":2077,"text":"ard to follow; fr"}
+{"t":2097,"text":"equent errors in gr"}
+{"t":2117,"text":"ammar or"}
+{"t":2155,"text":" word choice.], [No"}
+{"t":2169,"text":" disc"}
+{"t":2188,"text":"ernible structure; errors ob"}
+{"t":2208,"text":"scure me"}
+{"t":2219,"text":"aning.]"}
+{"t":2239,"text":"),\n  "}
+{"t":2260,"text":"levels: "}
+{"t":2281,"text":"([Exc"}
+{"t":2302,"text":"ellent], [Pro"}
+{"t":2321,"text":"ficient], [Develop"}
+{"t":2342,"text":"ing], [Be"}
+{"t":2363,"text":"ginning]),\n  points:"}
+{"t":2383,"text":" (2."}
+{"t":2403,"text":"5, 2,"}
+{"t":2423,"text":" 1, 0."}
+{"t":2444,"text":"5),\n)"}

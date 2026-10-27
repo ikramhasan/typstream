@@ -16,6 +16,7 @@
     "@typstream/edu": "workspace:*",
     "@typstream/engine": "workspace:*",
     "@typstream/engine-wasm": "workspace:*",
-    "@typstream/heal": "workspace:*"
+    "@typstream/heal": "workspace:*",
+    "@typstream/universe": "workspace:*"
   }
 }

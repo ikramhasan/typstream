@@ -1,0 +1,212 @@
+{"t":0,"text":"#"}
+{"t":21,"text":"show: worksheet."}
+{"t":39,"text":"with(title: [Area and"}
+{"t":61,"text":" Perimeter of R"}
+{"t":82,"text":"ectangles and Triangles"}
+{"t":101,"text":"], subject: [Math"}
+{"t":121,"text":"ematics], grade: ["}
+{"t":145,"text":"Grade 6], info: "}
+{"t":163,"text":"(\"name\", \"class\", \"ro"}
+{"t":183,"text":"ll\"))\n#import \"@"}
+{"t":204,"text":"preview/"}
+{"t":226,"text":"cetz:0.5."}
+{"t":244,"text":"3\"\n\n#"}
+{"t":264,"text":"instructions["}
+{"t":287,"text":"\n  - Area"}
+{"t":306,"text":" is"}
+{"t":326,"text":" the space"}
+{"t":348,"text":" inside a"}
+{"t":366,"text":" shape. Give"}
+{"t":387,"text":" area"}
+{"t":407,"text":" in square"}
+{"t":435,"text":" cent"}
+{"t":452,"text":"imetres,"}
+{"t":469,"text":" $\"cm\"^2$"}
+{"t":491,"text":".\n  - Perime"}
+{"t":509,"text":"ter is the distance all"}
+{"t":530,"text":" the"}
+{"t":550,"text":" way around a shape. Give"}
+{"t":571,"text":" it"}
+{"t":590,"text":" in centimetres,"}
+{"t":611,"text":" c"}
+{"t":631,"text":"m.\n  - The"}
+{"t":653,"text":" tri"}
+{"t":676,"text":"angle's height"}
+{"t":693,"text":" is the"}
+{"t":714,"text":" per"}
+{"t":733,"text":"pendicular distance from the"}
+{"t":755,"text":" base to the top"}
+{"t":774,"text":" point ("}
+{"t":795,"text":"the dashed line).\n]"}
+{"t":815,"text":"\n\n= Part A: R"}
+{"t":837,"text":"ectangles and"}
+{"t":858,"text":" triangles\n\n#question(points"}
+{"t":877,"text":": 4"}
+{"t":903,"text":")[\n  A"}
+{"t":917,"text":" rectangle is"}
+{"t":938,"text":" 8 cm long"}
+{"t":958,"text":" and 5 cm wide"}
+{"t":979,"text":".\n  #cetz."}
+{"t":1000,"text":"canvas({\n    import c"}
+{"t":1019,"text":"etz.draw: *"}
+{"t":1040,"text":"\n    rect((0, 0"}
+{"t":1067,"text":"), (4, 2.5"}
+{"t":1080,"text":"))\n    content((2, -"}
+{"t":1111,"text":"0.5), [$8 "}
+{"t":1121,"text":"\"cm\"$])\n    "}
+{"t":1142,"text":"content((4.6, 1"}
+{"t":1163,"text":".25), [$5 \""}
+{"t":1183,"text":"cm\"$])\n  })"}
+{"t":1223,"text":"\n\n  +"}
+{"t":1244,"text":" Find the area of the rectang"}
+{"t":1264,"text":"le.\n    #answer-"}
+{"t":1285,"text":"l"}
+{"t":1307,"text":"ines(count: 1, answ"}
+{"t":1326,"text":"er: [$8"}
+{"t":1348,"text":" times"}
+{"t":1366,"text":" 5 = 40$,"}
+{"t":1387,"text":" so the area is $40 \""}
+{"t":1407,"text":"cm\"^2$.])"}
+{"t":1428,"text":"\n  + Find the perim"}
+{"t":1449,"text":"eter of the rectangle"}
+{"t":1471,"text":".\n    #answer-l"}
+{"t":1489,"text":"ines(count: 1, answ"}
+{"t":1510,"text":"er: [$8 + "}
+{"t":1531,"text":"5 + 8 + "}
+{"t":1551,"text":"5 = 26$, so"}
+{"t":1571,"text":" the perimeter is "}
+{"t":1593,"text":"26 cm.])\n]"}
+{"t":1612,"text":"\n\n#question(points: 4"}
+{"t":1632,"text":")[\n  The"}
+{"t":1655,"text":" triangle below has a base of"}
+{"t":1673,"text":" 6 cm and a"}
+{"t":1694,"text":" height of 4 cm."}
+{"t":1714,"text":" Its two"}
+{"t":1735,"text":" other sides are each"}
+{"t":1755,"text":" 5 cm long."}
+{"t":1777,"text":"\n  #cetz.canv"}
+{"t":1795,"text":"as({\n    import cetz"}
+{"t":1817,"text":".draw: *\n    line"}
+{"t":1838,"text":"((0, 0), (6"}
+{"t":1857,"text":", 0), (3, "}
+{"t":1880,"text":"4), close: true)\n    "}
+{"t":1898,"text":"line((3, 0), ("}
+{"t":1920,"text":"3, 4), stroke"}
+{"t":1939,"text":": (dash: \"dash"}
+{"t":1960,"text":"ed\"))\n    content((3"}
+{"t":1981,"text":", -0.6"}
+{"t":2001,"text":"), [$6 \"cm"}
+{"t":2021,"text":"\"$])\n    content((3"}
+{"t":2041,"text":".5"}
+{"t":2061,"text":", 2"}
+{"t":2082,"text":"), [$4 \"cm"}
+{"t":2103,"text":"\"$])\n    content((1"}
+{"t":2122,"text":".1"}
+{"t":2143,"text":", 2.6"}
+{"t":2165,"text":"), [$5 \"cm"}
+{"t":2184,"text":"\"$])\n    content((4"}
+{"t":2204,"text":".9, 2.6),"}
+{"t":2226,"text":" [$5 \"cm\""}
+{"t":2246,"text":"$])\n  })\n\n  +"}
+{"t":2270,"text":" Find the area of the triang"}
+{"t":2286,"text":"le."}
+{"t":2306,"text":" Use $\""}
+{"t":2330,"text":"area\" = "}
+{"t":2347,"text":"1/2 times \""}
+{"t":2371,"text":"base\" times \""}
+{"t":2388,"text":"height\"$.\n    #answ"}
+{"t":2409,"text":"er-space(height: 3"}
+{"t":2429,"text":"em, answer: [$1"}
+{"t":2449,"text":"/2 times 6 times"}
+{"t":2473,"text":" 4 = 12$,"}
+{"t":2490,"text":" so the area is $12 \""}
+{"t":2511,"text":"cm\"^2$.])"}
+{"t":2531,"text":"\n  + Find the perim"}
+{"t":2551,"text":"eter of the triangle."}
+{"t":2574,"text":"\n    #answer-space("}
+{"t":2592,"text":"height: 3em, answer"}
+{"t":2613,"text":": [$5 + 5"}
+{"t":2635,"text":" + 6 = 16"}
+{"t":2654,"text":"$, so the perimeter"}
+{"t":2674,"text":" is 16 cm.])"}
+{"t":2694,"text":"\n]\n\n= Part B:"}
+{"t":2715,"text":" Probl"}
+{"t":2735,"text":"ems\n\n#question(points: "}
+{"t":2756,"text":"3)[\n  A r"}
+{"t":2776,"text":"ectangular garden is"}
+{"t":2796,"text":" 12 m long and 7"}
+{"t":2820,"text":" m wide. A g"}
+{"t":2837,"text":"ardener wants to put"}
+{"t":2858,"text":" a fence all"}
+{"t":2880,"text":" the way around it,"}
+{"t":2899,"text":" and to"}
+{"t":2919,"text":" c"}
+{"t":2940,"text":"over the in"}
+{"t":2960,"text":"side with grass."}
+{"t":2980,"text":" Find"}
+{"t":3000,"text":":"}
+{"t":3021,"text":"\n  +"}
+{"t":3049,"text":" the length of f"}
+{"t":3062,"text":"encing needed;\n    "}
+{"t":3086,"text":"#answer-l"}
+{"t":3102,"text":"ines(count: 1, answ"}
+{"t":3123,"text":"er: [$12 + "}
+{"t":3144,"text":"7 + 12 + "}
+{"t":3164,"text":"7 = 38$"}
+{"t":3184,"text":" m])"}
+{"t":3204,"text":"\n  + the area of gr"}
+{"t":3225,"text":"ass needed.\n    #answ"}
+{"t":3246,"text":"er-lines(count: "}
+{"t":3266,"text":"1, answer: [$12"}
+{"t":3286,"text":" times 7 = 84"}
+{"t":3307,"text":"$,"}
+{"t":3327,"text":" so $"}
+{"t":3349,"text":"84 \"m\""}
+{"t":3368,"text":"^2$])"}
+{"t":3388,"text":"\n]\n\n#question(points:"}
+{"t":3409,"text":" 2)[\n  A r"}
+{"t":3431,"text":"ectangle has an"}
+{"t":3449,"text":" area of $36 \"cm"}
+{"t":3470,"text":"\"^2$ and a width"}
+{"t":3491,"text":" of 4 cm."}
+{"t":3511,"text":" Find its"}
+{"t":3533,"text":" length and"}
+{"t":3552,"text":" its perimeter.\n  "}
+{"t":3572,"text":"#answer-space(height:"}
+{"t":3593,"text":" 4em, answer: ["}
+{"t":3636,"text":"Length: $36 div"}
+{"t":3654,"text":" 4 = 9$"}
+{"t":3675,"text":" cm. Perimeter"}
+{"t":3695,"text":": $9 + 4 "}
+{"t":3718,"text":"+ 9 + 4 "}
+{"t":3736,"text":"= 26$ cm."}
+{"t":3757,"text":"])\n]\n\n#question(points"}
+{"t":3779,"text":": 2"}
+{"t":3797,"text":")[\n  Two triang"}
+{"t":3822,"text":"les have the same base of"}
+{"t":3844,"text":" 10"}
+{"t":3858,"text":" cm. Tri"}
+{"t":3897,"text":"angle X"}
+{"t":3899,"text":" has a height of 3"}
+{"t":3920,"text":" cm and triangle"}
+{"t":3939,"text":" Y has a height of 6 "}
+{"t":3962,"text":"cm. Which tri"}
+{"t":3981,"text":"angle has the larger area,"}
+{"t":4001,"text":" and how much lar"}
+{"t":4021,"text":"ger is it?\n  #answ"}
+{"t":4043,"text":"er-space(height: 4"}
+{"t":4062,"text":"em, answer: [Tri"}
+{"t":4083,"text":"angle X: $1/2"}
+{"t":4103,"text":" times 10 times 3"}
+{"t":4123,"text":" = 15"}
+{"t":4145,"text":" "}
+{"t":4165,"text":"\"cm\"^2$."}
+{"t":4185,"text":" Triangle Y: $"}
+{"t":4206,"text":"1/2 times 10 "}
+{"t":4225,"text":"times 6 = 30 "}
+{"t":4245,"text":"\"cm\"^2$."}
+{"t":4267,"text":" Triangle Y has the"}
+{"t":4287,"text":" larger area,"}
+{"t":4307,"text":" by $15 \"cm\""}
+{"t":4328,"text":"^2$.])\n]"}
+{"t":4365,"text":"\n\n#answer-key()"}

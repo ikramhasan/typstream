@@ -1,0 +1,207 @@
+{"t":0,"text":"#"}
+{"t":125,"text":"show: handout.with("}
+{"t":125,"text":"\n  title: [Science F"}
+{"t":125,"text":"air Project Rubric],"}
+{"t":134,"text":"\n  subtitle: ["}
+{"t":167,"text":"Sc"}
+{"t":200,"text":"oring gu"}
+{"t":233,"text":"ide for student"}
+{"t":267,"text":" projects],\n  subject:"}
+{"t":300,"text":" [Science],\n)\n\n#"}
+{"t":334,"text":"student-info(\"name\", \"class"}
+{"t":368,"text":"\", \"teacher\")\n\n#"}
+{"t":401,"text":"callout("}
+{"t":528,"text":"kind: \"note\","}
+{"t":528,"text":" title: [How to use this"}
+{"t":528,"text":" rubric])[\n  "}
+{"t":535,"text":"Score each criterion from "}
+{"t":568,"text":"4"}
+{"t":601,"text":" ("}
+{"t":668,"text":"Excellent) to 1 "}
+{"t":702,"text":"(Beginning). There"}
+{"t":735,"text":" are "}
+{"t":769,"text":"7 criteria, so the"}
+{"t":803,"text":" total is out"}
+{"t":835,"text":" of *"}
+{"t":902,"text":"28 points*.\n]"}
+{"t":902,"text":"\n\n= Scient"}
+{"t":935,"text":"ific Content"}
+{"t":970,"text":"\n\n#rubric(\n  "}
+{"t":1002,"text":"([Question and"}
+{"t":1036,"text":" h"}
+{"t":1071,"text":"ypothesis],\n    "}
+{"t":1102,"text":"[Question"}
+{"t":1135,"text":" is foc"}
+{"t":1169,"text":"used and testable. Hyp"}
+{"t":1202,"text":"othesis is clear"}
+{"t":1235,"text":" and based on research"}
+{"t":1269,"text":".],\n    [Question is"}
+{"t":1302,"text":" testable. Hypothes"}
+{"t":1336,"text":"is is clear but"}
+{"t":1369,"text":" only"}
+{"t":1402,"text":" lo"}
+{"t":1436,"text":"osely t"}
+{"t":1470,"text":"ied to research.],\n    ["}
+{"t":1503,"text":"Question is broad or h"}
+{"t":1535,"text":"ard"}
+{"t":1569,"text":" to test. Hypothes"}
+{"t":1604,"text":"is is vague."}
+{"t":1658,"text":"],\n    [Question or"}
+{"t":1671,"text":" hypothesis is missing"}
+{"t":1702,"text":" or not"}
+{"t":1738,"text":" testable.]),\n  "}
+{"t":1769,"text":"([Background research],\n    ["}
+{"t":1803,"text":"U"}
+{"t":1836,"text":"ses several re"}
+{"t":1869,"text":"liable sources."}
+{"t":1904,"text":" Explains key"}
+{"t":1937,"text":" "}
+{"t":1969,"text":"ideas acc"}
+{"t":2002,"text":"urately in"}
+{"t":2036,"text":" own"}
+{"t":2076,"text":" words.],\n    [U"}
+{"t":2103,"text":"ses a few reliable sources"}
+{"t":2136,"text":". Most"}
+{"t":2169,"text":" ideas are expl"}
+{"t":2203,"text":"ained acc"}
+{"t":2237,"text":"urately.],\n    ["}
+{"t":2269,"text":"Uses limited sources."}
+{"t":2302,"text":" Some "}
+{"t":2336,"text":"ideas are unclear or in"}
+{"t":2369,"text":"accurate.],\n    "}
+{"t":2403,"text":"[Little"}
+{"t":2439,"text":" or no research sh"}
+{"t":2469,"text":"own.]),\n  (["}
+{"t":2506,"text":"Experimental design],\n    "}
+{"t":2538,"text":"[Vari"}
+{"t":2569,"text":"ables are"}
+{"t":2606,"text":" clearly identified and"}
+{"t":2636,"text":" controlled. Proc"}
+{"t":2674,"text":"edure is detailed and rep"}
+{"t":2703,"text":"eatable, with mult"}
+{"t":2736,"text":"iple trials.],\n    "}
+{"t":2771,"text":"[Variables are identified."}
+{"t":2804,"text":" Procedure is cl"}
+{"t":2837,"text":"ear,"}
+{"t":2870,"text":" with a few g"}
+{"t":2904,"text":"aps or"}
+{"t":2937,"text":" too"}
+{"t":2971,"text":" few trials.],\n    ["}
+{"t":3006,"text":"Variables are conf"}
+{"t":3037,"text":"used. Procedure is inc"}
+{"t":3070,"text":"omplete."}
+{"t":3104,"text":"],\n    [No"}
+{"t":3137,"text":" cl"}
+{"t":3171,"text":"ear procedure or control"}
+{"t":3203,"text":" of variables.]),\n  "}
+{"t":3240,"text":"([Data and analysis"}
+{"t":3270,"text":"],\n    [Data"}
+{"t":3304,"text":" is accurate"}
+{"t":3337,"text":" and"}
+{"t":3370,"text":" organized in cl"}
+{"t":3403,"text":"ear tables and graphs."}
+{"t":3437,"text":" Patterns are anal"}
+{"t":3471,"text":"yzed th"}
+{"t":3504,"text":"oughtfully.],"}
+{"t":3537,"text":"\n    [Data is organ"}
+{"t":3573,"text":"ized in"}
+{"t":3603,"text":" t"}
+{"t":3637,"text":"ables or graphs. Anal"}
+{"t":3670,"text":"ysis is m"}
+{"t":3704,"text":"ostly correct.],\n    "}
+{"t":3737,"text":"[Data is inc"}
+{"t":3770,"text":"omplete or po"}
+{"t":3805,"text":"orly organized. Analys"}
+{"t":3837,"text":"is is minimal.],"}
+{"t":3871,"text":"\n    ["}
+{"t":3913,"text":"Little or no data,"}
+{"t":3937,"text":" or data"}
+{"t":3970,"text":" is not anal"}
+{"t":4004,"text":"yzed.]),\n  "}
+{"t":4037,"text":"([Conclusion],"}
+{"t":4072,"text":"\n    [Answ"}
+{"t":4104,"text":"ers the question"}
+{"t":4137,"text":" using"}
+{"t":4172,"text":" evidence."}
+{"t":4204,"text":" States"}
+{"t":4240,"text":" whether the hypothesis"}
+{"t":4271,"text":" was supported and suggests impro"}
+{"t":4306,"text":"vements and next steps.],"}
+{"t":4337,"text":"\n    [Answ"}
+{"t":4371,"text":"ers the question using some"}
+{"t":4404,"text":" evidence. M"}
+{"t":4437,"text":"entions the hypothesis"}
+{"t":4471,"text":".],\n    [Concl"}
+{"t":4504,"text":"usion is weak"}
+{"t":4537,"text":"ly conn"}
+{"t":4571,"text":"ected to the data"}
+{"t":4604,"text":".],\n    [Concl"}
+{"t":4638,"text":"usion is missing or un"}
+{"t":4672,"text":"supported.]),\n  "}
+{"t":4704,"text":"points: (4, 3"}
+{"t":4737,"text":", 2, 1),"}
+{"t":4771,"text":"\n  "}
+{"t":4805,"text":"levels: "}
+{"t":4837,"text":"([Excellent], ["}
+{"t":4872,"text":"Proficient], [Developing"}
+{"t":4906,"text":"], [Beginning]),"}
+{"t":4938,"text":"\n)\n\n= Commun"}
+{"t":4971,"text":"ication\n\n#rubric("}
+{"t":5006,"text":"\n  ([Display board"}
+{"t":5038,"text":"],\n    [Ne"}
+{"t":5071,"text":"at, well"}
+{"t":5106,"text":" organized and"}
+{"t":5138,"text":" vis"}
+{"t":5174,"text":"ually eng"}
+{"t":5204,"text":"aging. All required"}
+{"t":5239,"text":" sections are labeled and eas"}
+{"t":5271,"text":"y to foll"}
+{"t":5306,"text":"ow.],\n    [Organ"}
+{"t":5338,"text":"ized and ne"}
+{"t":5371,"text":"at. All required"}
+{"t":5404,"text":" sections are present.],\n    "}
+{"t":5439,"text":"[Some sections are missing"}
+{"t":5473,"text":" or hard to read.],"}
+{"t":5504,"text":"\n    [Dis"}
+{"t":5539,"text":"organized, with"}
+{"t":5571,"text":" several"}
+{"t":5607,"text":" s"}
+{"t":5639,"text":"ections missing."}
+{"t":5671,"text":"]),\n  ([O"}
+{"t":5705,"text":"ral presentation],\n    ["}
+{"t":5745,"text":"Spe"}
+{"t":5771,"text":"aks clearly and"}
+{"t":5805,"text":" confidently. Expl"}
+{"t":5839,"text":"ains the"}
+{"t":5875,"text":" project and answers questions with underst"}
+{"t":5904,"text":"anding.],\n    ["}
+{"t":5938,"text":"Speaks clearly."}
+{"t":5973,"text":" Explains the project and"}
+{"t":6005,"text":" answers most questions.],"}
+{"t":6039,"text":"\n    [H"}
+{"t":6071,"text":"ard to hear or"}
+{"t":6105,"text":" reads from"}
+{"t":6138,"text":" the"}
+{"t":6171,"text":" board. Answ"}
+{"t":6205,"text":"ers few questions.],\n    "}
+{"t":6238,"text":"[Unable to expl"}
+{"t":6273,"text":"ain the project or"}
+{"t":6305,"text":" answer"}
+{"t":6340,"text":" questions.]),\n  points"}
+{"t":6374,"text":": (4, 3, "}
+{"t":6413,"text":"2, 1),\n  lev"}
+{"t":6445,"text":"els: ([Excellent"}
+{"t":6472,"text":"], [Proficient], ["}
+{"t":6505,"text":"Developing], [Begin"}
+{"t":6538,"text":"ning]),\n)\n\n="}
+{"t":6574,"text":" Total"}
+{"t":6605,"text":"\n\n#v"}
+{"t":6639,"text":"(0"}
+{"t":6672,"text":".5em)"}
+{"t":6706,"text":"\nTotal score: #blank("}
+{"t":6738,"text":"width: 4"}
+{"t":6772,"text":"em) out of 28"}
+{"t":6805,"text":"\n\nTe"}
+{"t":6838,"text":"acher comments:"}
+{"t":6872,"text":"\n#answer-lines("}
+{"t":6906,"text":"count: 3)"}

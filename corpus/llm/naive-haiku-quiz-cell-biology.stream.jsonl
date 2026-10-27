@@ -1,0 +1,195 @@
+{"t":0,"text":"="}
+{"t":16,"text":" C"}
+{"t":37,"text":"ell Biology True"}
+{"t":58,"text":" or"}
+{"t":80,"text":" False Quiz\n\n_"}
+{"t":98,"text":"Gr"}
+{"t":119,"text":"ade 9 "}
+{"t":139,"text":"Science_\n\n*Name:*"}
+{"t":160,"text":" #line"}
+{"t":180,"text":"(length: 60"}
+{"t":201,"text":"%)"}
+{"t":221,"text":" *"}
+{"t":241,"text":"Date:* #line(length"}
+{"t":263,"text":": 25"}
+{"t":282,"text":"%)\n\n*Instructions"}
+{"t":304,"text":":* Read"}
+{"t":324,"text":" each statement. Write *"}
+{"t":343,"text":"T* if"}
+{"t":364,"text":" the statement is true or"}
+{"t":387,"text":" *F* if it is false."}
+{"t":404,"text":" For each"}
+{"t":425,"text":" false"}
+{"t":449,"text":" statement, you"}
+{"t":466,"text":" may r"}
+{"t":486,"text":"ewrite the"}
+{"t":506,"text":" stat"}
+{"t":528,"text":"ement so that it"}
+{"t":547,"text":" bec"}
+{"t":568,"text":"omes true.\n\n+ The"}
+{"t":588,"text":" cell membrane controls which"}
+{"t":611,"text":" substances enter and leave the"}
+{"t":629,"text":" cell. #h"}
+{"t":651,"text":"(1"}
+{"t":670,"text":"f"}
+{"t":691,"text":"r) T"}
+{"t":711,"text":" / F #line"}
+{"t":731,"text":"(length: 3"}
+{"t":753,"text":"c"}
+{"t":772,"text":"m)\n+"}
+{"t":793,"text":" Plant cells have a cell"}
+{"t":816,"text":" wall made of cellulose"}
+{"t":837,"text":". #h(1fr)"}
+{"t":854,"text":" T / F #line(length:"}
+{"t":874,"text":" 3cm)\n+"}
+{"t":898,"text":" Mitochondria are the"}
+{"t":916,"text":" site of photosynthesis"}
+{"t":940,"text":" in plant cells. #h"}
+{"t":959,"text":"(1fr) T / F"}
+{"t":980,"text":" #line(length: 3c"}
+{"t":998,"text":"m)\n+ The nuc"}
+{"t":1020,"text":"leus contains most of the c"}
+{"t":1040,"text":"ell's DNA. #h"}
+{"t":1060,"text":"(1fr) T / F"}
+{"t":1079,"text":" #line(length: 3c"}
+{"t":1102,"text":"m)\n+ Prok"}
+{"t":1121,"text":"aryotic cells have a"}
+{"t":1140,"text":" n"}
+{"t":1164,"text":"ucleus sur"}
+{"t":1181,"text":"rounded by a membrane"}
+{"t":1213,"text":". #h(1fr)"}
+{"t":1222,"text":" T / F #line(length:"}
+{"t":1243,"text":" 3cm)\n+"}
+{"t":1263,"text":" Ribosomes are the"}
+{"t":1285,"text":" site of protein synthesis"}
+{"t":1307,"text":". #h(1fr)"}
+{"t":1326,"text":" T / F #line(length:"}
+{"t":1345,"text":" 3cm)\n+"}
+{"t":1366,"text":" Animal cells us"}
+{"t":1387,"text":"ually have one"}
+{"t":1409,"text":" large central vacuole. #"}
+{"t":1427,"text":"h(1fr) T /"}
+{"t":1449,"text":" F #line(length: 3"}
+{"t":1470,"text":"cm)\n+ Os"}
+{"t":1489,"text":"mosis is the movement of"}
+{"t":1509,"text":" water across a membrane from a"}
+{"t":1532,"text":" region of high water concentration to"}
+{"t":1554,"text":" a region of low water concentration"}
+{"t":1571,"text":". #h(1fr)"}
+{"t":1590,"text":" T / F #line(length:"}
+{"t":1611,"text":" 3cm)\n+"}
+{"t":1632,"text":" Lysosomes contain"}
+{"t":1652,"text":" digestive enzymes."}
+{"t":1672,"text":" #h(1fr) T"}
+{"t":1693,"text":" / F #line(length: "}
+{"t":1716,"text":"3cm)\n+ The"}
+{"t":1734,"text":" cytoplasm is the"}
+{"t":1755,"text":" jelly-like fluid"}
+{"t":1775,"text":" that fills the cell and hol"}
+{"t":1795,"text":"ds the organ"}
+{"t":1816,"text":"elles. #h(1f"}
+{"t":1838,"text":"r) T / F #line("}
+{"t":1857,"text":"length: 3cm)"}
+{"t":1877,"text":"\n+ Chloroplas"}
+{"t":1897,"text":"ts contain chlorophy"}
+{"t":1920,"text":"ll. #h(1fr"}
+{"t":1939,"text":") T / F #line(length"}
+{"t":1959,"text":": 3cm)\n+"}
+{"t":1979,"text":" Diffusion requ"}
+{"t":2002,"text":"ires the"}
+{"t":2020,"text":" c"}
+{"t":2042,"text":"ell to use energy from AT"}
+{"t":2061,"text":"P. #h(1fr"}
+{"t":2082,"text":") T / F #line(length"}
+{"t":2101,"text":": 3cm)\n\n#"}
+{"t":2122,"text":"p"}
+{"t":2143,"text":"agebreak()"}
+{"t":2164,"text":"\n\n= Answer Key"}
+{"t":2183,"text":"\n\n+"}
+{"t":2204,"text":" *"}
+{"t":2225,"text":"T."}
+{"t":2244,"text":"* The sel"}
+{"t":2264,"text":"ect"}
+{"t":2286,"text":"ively permeable membrane reg"}
+{"t":2307,"text":"ulates trans"}
+{"t":2329,"text":"port into"}
+{"t":2346,"text":" and out of the cell."}
+{"t":2369,"text":"\n+ *T.* C"}
+{"t":2388,"text":"ellulose g"}
+{"t":2407,"text":"ives the"}
+{"t":2428,"text":" plant cell w"}
+{"t":2450,"text":"all its"}
+{"t":2469,"text":" strength and r"}
+{"t":2491,"text":"igidity.\n+ *"}
+{"t":2511,"text":"F.* Mitochond"}
+{"t":2532,"text":"ria release"}
+{"t":2552,"text":" energ"}
+{"t":2572,"text":"y through"}
+{"t":2591,"text":" cellular respiration."}
+{"t":2616,"text":" Photosynthesis tak"}
+{"t":2634,"text":"es place in chloroplas"}
+{"t":2653,"text":"ts.\n+ *T."}
+{"t":2674,"text":"* The D"}
+{"t":2696,"text":"NA is stored in the n"}
+{"t":2716,"text":"ucleus, with a"}
+{"t":2735,"text":" small amount also"}
+{"t":2756,"text":" found in mitochondria and"}
+{"t":2777,"text":" chloroplasts."}
+{"t":2796,"text":"\n+ *F.*"}
+{"t":2822,"text":" Prokaryotic"}
+{"t":2838,"text":" cells have"}
+{"t":2858,"text":" no memb"}
+{"t":2879,"text":"rane-bound nucle"}
+{"t":2898,"text":"us."}
+{"t":2921,"text":" Their DNA s"}
+{"t":2939,"text":"its in the nucleoid"}
+{"t":2958,"text":" region"}
+{"t":2979,"text":".\n+ *T.*"}
+{"t":3002,"text":" Ribosomes read"}
+{"t":3020,"text":" gen"}
+{"t":3046,"text":"etic inst"}
+{"t":3061,"text":"ructions and assemble am"}
+{"t":3081,"text":"ino acids into"}
+{"t":3102,"text":" proteins.\n+ *"}
+{"t":3127,"text":"F.* Pl"}
+{"t":3142,"text":"ant cells usually have one large"}
+{"t":3171,"text":" central vacuole. Anim"}
+{"t":3183,"text":"al cells have several small vac"}
+{"t":3204,"text":"uoles,"}
+{"t":3224,"text":" if any.\n+ *T"}
+{"t":3247,"text":".* Water"}
+{"t":3265,"text":" mo"}
+{"t":3285,"text":"ves down"}
+{"t":3306,"text":" its"}
+{"t":3330,"text":" concentration gradient across the"}
+{"t":3348,"text":" membrane.\n+ *"}
+{"t":3369,"text":"T.* Lysosom"}
+{"t":3387,"text":"es break down wa"}
+{"t":3408,"text":"ste materials,"}
+{"t":3431,"text":" damaged organ"}
+{"t":3448,"text":"elles, and food"}
+{"t":3470,"text":" partic"}
+{"t":3491,"text":"les.\n+ *T."}
+{"t":3510,"text":"* The cytoplasm"}
+{"t":3533,"text":" sup"}
+{"t":3554,"text":"ports the organ"}
+{"t":3573,"text":"elles and is"}
+{"t":3594,"text":" where many"}
+{"t":3613,"text":" cell"}
+{"t":3633,"text":" re"}
+{"t":3660,"text":"actions occ"}
+{"t":3674,"text":"ur.\n+ *T."}
+{"t":3695,"text":"* Chl"}
+{"t":3715,"text":"orophyll abs"}
+{"t":3734,"text":"orbs light energ"}
+{"t":3755,"text":"y for"}
+{"t":3775,"text":" photosynthesis."}
+{"t":3798,"text":"\n+ *F.* Di"}
+{"t":3818,"text":"ffusion is a"}
+{"t":3836,"text":" passive process and"}
+{"t":3859,"text":" does not require energy from"}
+{"t":3880,"text":" ATP. Mov"}
+{"t":3901,"text":"ement by"}
+{"t":3918,"text":" active"}
+{"t":3940,"text":" transport does"}
+{"t":3942,"text":" require ATP."}

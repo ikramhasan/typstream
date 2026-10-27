@@ -1,0 +1,196 @@
+{"t":0,"text":"#"}
+{"t":32,"text":"show: wor"}
+{"t":66,"text":"ksheet.with("}
+{"t":100,"text":"\n  title: [Reading"}
+{"t":134,"text":" Comprehension: The Sec"}
+{"t":167,"text":"ret of Willow Pond"}
+{"t":200,"text":"],\n  subject: [English"}
+{"t":233,"text":" Language Arts],\n  "}
+{"t":267,"text":"grade: [Grade "}
+{"t":300,"text":"5],\n  instructions:"}
+{"t":339,"text":" [Read the story carefully"}
+{"t":372,"text":". Then"}
+{"t":405,"text":" answer all"}
+{"t":436,"text":" six questions. Use complete"}
+{"t":467,"text":" sentences when you write"}
+{"t":500,"text":" your"}
+{"t":534,"text":" answers.],\n)\n\n="}
+{"t":567,"text":" The Secret of Willow"}
+{"t":601,"text":" Pond\n\nEvery morning"}
+{"t":634,"text":" before school, Nora walked"}
+{"t":669,"text":" to Willow Pond to"}
+{"t":701,"text":" feed the ducks. She"}
+{"t":734,"text":" carried a small paper bag"}
+{"t":767,"text":" of oats and a notebook"}
+{"t":801,"text":", because Nora loved to"}
+{"t":835,"text":" draw. One cold T"}
+{"t":868,"text":"uesday in October, she no"}
+{"t":901,"text":"ticed something strange. The "}
+{"t":934,"text":"ducks were gathered at the"}
+{"t":968,"text":" far edge of the pond,"}
+{"t":1001,"text":" and none of them came to eat"}
+{"t":1035,"text":".\n\n\"What's wrong"}
+{"t":1068,"text":" with you today?\" Nora"}
+{"t":1102,"text":" asked. The ducks only"}
+{"t":1135,"text":" quacked and stared at the"}
+{"t":1170,"text":" reeds.\n\nNora"}
+{"t":1202,"text":" put down her bag and crept"}
+{"t":1235,"text":" closer. Between the tall"}
+{"t":1271,"text":", brown reeds she he"}
+{"t":1302,"text":"ard a thin, shaky"}
+{"t":1335,"text":" sound: _"}
+{"t":1369,"text":"peep, peep, peep"}
+{"t":1402,"text":"._"}
+{"t":1437,"text":" A tiny duckling"}
+{"t":1469,"text":" was tangled in a piece"}
+{"t":1502,"text":" of old fishing line. It"}
+{"t":1535,"text":" was shivering, and each time"}
+{"t":1569,"text":" it tried to swim, the"}
+{"t":1602,"text":" line pulled tighter."}
+{"t":1636,"text":"\n\nNora's heart ra"}
+{"t":1670,"text":"ced. She wanted to r"}
+{"t":1703,"text":"ush in and grab it, but"}
+{"t":1736,"text":" she remembered what her grand"}
+{"t":1769,"text":"father always said: \"Sl"}
+{"t":1802,"text":"ow hands help best.\" She took"}
+{"t":1836,"text":" off her shoes, rol"}
+{"t":1877,"text":"led up her jeans, and"}
+{"t":1903,"text":" stepped into the icy water"}
+{"t":1936,"text":". Gently, she lif"}
+{"t":1969,"text":"ted the duckling and held it"}
+{"t":2003,"text":" against her coat. With the"}
+{"t":2036,"text":" tiny blade of her p"}
+{"t":2070,"text":"encil sharpener, she"}
+{"t":2103,"text":" carefully cut the line,"}
+{"t":2136,"text":" one thread at a time."}
+{"t":2170,"text":"\n\nWhen the duckling was free,"}
+{"t":2203,"text":" it gave a happy peep"}
+{"t":2236,"text":" and paddled back to its m"}
+{"t":2270,"text":"other. The other ducks sw"}
+{"t":2303,"text":"armed around it, quac"}
+{"t":2336,"text":"king loudly, as if they"}
+{"t":2370,"text":" were cheering.\n\nN"}
+{"t":2404,"text":"ora was late for school, and her"}
+{"t":2438,"text":" socks were soaked. But"}
+{"t":2470,"text":" when her teacher asked why"}
+{"t":2503,"text":", Nora only smiled"}
+{"t":2537,"text":" and opened her notebook."}
+{"t":2570,"text":" On the page was a drawing"}
+{"t":2603,"text":" of a small duckling, and"}
+{"t":2655,"text":" be"}
+{"t":2672,"text":"neath it she had written: \""}
+{"t":2704,"text":"Today, patience was braver"}
+{"t":2737,"text":" than hurry.\"\n\n="}
+{"t":2770,"text":" Questions\n\n#question(points:"}
+{"t":2804,"text":" 1)[\n  Why"}
+{"t":2837,"text":" did"}
+{"t":2871,"text":" Nora go to Willow"}
+{"t":2904,"text":" Pond every"}
+{"t":2940,"text":" morning?\n  #mc"}
+{"t":2970,"text":"q("}
+{"t":3004,"text":"\n    [To go"}
+{"t":3037,"text":" swimming],"}
+{"t":3070,"text":"\n    [To feed the "}
+{"t":3104,"text":"ducks],\n    [To cat"}
+{"t":3137,"text":"ch fish],\n    ["}
+{"t":3170,"text":"To me"}
+{"t":3204,"text":"et her gr"}
+{"t":3237,"text":"andfather],\n    answer"}
+{"t":3271,"text":": 2,\n  )"}
+{"t":3304,"text":"\n]\n\n#question(points: "}
+{"t":3337,"text":"1)[\n  What was"}
+{"t":3370,"text":" str"}
+{"t":3404,"text":"ange about the"}
+{"t":3438,"text":" ducks on Tues"}
+{"t":3470,"text":"day?"}
+{"t":3504,"text":"\n  #answ"}
+{"t":3537,"text":"er-lines(count: "}
+{"t":3570,"text":"2, answer: [They st"}
+{"t":3604,"text":"ayed at the far edge of"}
+{"t":3637,"text":" the pond and did not come to"}
+{"t":3670,"text":" eat.])\n]\n\n#"}
+{"t":3704,"text":"question(points: 2)["}
+{"t":3737,"text":"\n  "}
+{"t":3770,"text":"Put these"}
+{"t":3804,"text":" events in the"}
+{"t":3837,"text":" correct order by writ"}
+{"t":3870,"text":"ing 1,"}
+{"t":3904,"text":" 2, 3 "}
+{"t":3937,"text":"and 4 in the"}
+{"t":3971,"text":" blanks."}
+{"t":4004,"text":"\n\n  #"}
+{"t":4037,"text":"blank(width: 2"}
+{"t":4070,"text":"em, answer: [3"}
+{"t":4104,"text":"]) Nora cut the"}
+{"t":4137,"text":" fishing line.\\"}
+{"t":4204,"text":"\n  #blank(width: "}
+{"t":4238,"text":"2em, answer: [1"}
+{"t":4271,"text":"]) The"}
+{"t":4304,"text":" ducks "}
+{"t":4337,"text":"ignored the"}
+{"t":4372,"text":" oats.\\\n  #bl"}
+{"t":4404,"text":"ank(width: 2em,"}
+{"t":4437,"text":" answer: [4]) The"}
+{"t":4471,"text":" duckling sw"}
+{"t":4504,"text":"am back to its mother.\\"}
+{"t":4537,"text":"\n  #blank(width:"}
+{"t":4571,"text":" 2em, answer: ["}
+{"t":4604,"text":"2]) Nora he"}
+{"t":4638,"text":"ard pe"}
+{"t":4671,"text":"eping in"}
+{"t":4704,"text":" the reeds.\n]"}
+{"t":4737,"text":"\n\n#question(points: 1)"}
+{"t":4771,"text":"[\n  In the story, the"}
+{"t":4804,"text":" word _"}
+{"t":4838,"text":"swarmed_ means:"}
+{"t":4871,"text":"\n  #m"}
+{"t":4904,"text":"cq(\n    [fl"}
+{"t":4938,"text":"ew away],\n    [cr"}
+{"t":4971,"text":"owded clos"}
+{"t":5004,"text":"ely around],\n    [f"}
+{"t":5038,"text":"ell as"}
+{"t":5071,"text":"leep],\n    [arg"}
+{"t":5104,"text":"ued with"}
+{"t":5138,"text":"],\n    answer: 2"}
+{"t":5171,"text":",\n  )\n]\n\n#"}
+{"t":5205,"text":"question(points: 2"}
+{"t":5237,"text":")[\n  N"}
+{"t":5271,"text":"ora's"}
+{"t":5304,"text":" grandfather often"}
+{"t":5338,"text":" said, \"Slow hands"}
+{"t":5371,"text":" help best.\" How did"}
+{"t":5405,"text":" Nora follow his"}
+{"t":5438,"text":" advice?\n  #answer"}
+{"t":5471,"text":"-lines(count: 3"}
+{"t":5504,"text":", answer: [She did not"}
+{"t":5538,"text":" r"}
+{"t":5574,"text":"ush in and grab the duck"}
+{"t":5604,"text":"ling. She"}
+{"t":5639,"text":" st"}
+{"t":5671,"text":"ay"}
+{"t":5705,"text":"ed calm and"}
+{"t":5738,"text":" car"}
+{"t":5771,"text":"efully cut the line one th"}
+{"t":5804,"text":"read at a time."}
+{"t":5838,"text":"])\n]\n\n#question(points"}
+{"t":5876,"text":": 3)[\n  "}
+{"t":5916,"text":"Explain what Nora me"}
+{"t":5938,"text":"ant when she wrote,"}
+{"t":5971,"text":" \"Today, patience was bra"}
+{"t":6005,"text":"ver than hurry.\""}
+{"t":6037,"text":" Use details"}
+{"t":6074,"text":" from the story in your answer."}
+{"t":6105,"text":"\n  #answer-lines"}
+{"t":6138,"text":"(count: 4, answer"}
+{"t":6171,"text":": [N"}
+{"t":6205,"text":"ora wanted to r"}
+{"t":6238,"text":"ush,"}
+{"t":6272,"text":" but she was patient and g"}
+{"t":6305,"text":"entle inst"}
+{"t":6339,"text":"ead. Being cal"}
+{"t":6372,"text":"m and care"}
+{"t":6405,"text":"ful let her"}
+{"t":6438,"text":" free"}
+{"t":6471,"text":" the duckling safely, and"}
+{"t":6505,"text":" that took"}
+{"t":6540,"text":" courage.])\n]"}

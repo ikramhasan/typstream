@@ -1,0 +1,293 @@
+{"t":0,"text":"#show: exam."}
+{"t":19,"text":"with(\n  title: ["}
+{"t":38,"text":"Kinematics and"}
+{"t":59,"text":" Newton's Laws],"}
+{"t":80,"text":"\n  subject: [Phys"}
+{"t":100,"text":"ics],\n  gr"}
+{"t":127,"text":"ade: [Grade 11"}
+{"t":141,"text":"],\n  duration: [90"}
+{"t":161,"text":" minutes],\n  inst"}
+{"t":182,"text":"ructions: [Answer *"}
+{"t":202,"text":"all* questions. Take"}
+{"t":224,"text":" $g = 9.8$"}
+{"t":243,"text":" m/s$^2$"}
+{"t":263,"text":" where"}
+{"t":284,"text":" needed. Show your working for"}
+{"t":305,"text":" every cal"}
+{"t":325,"text":"culation.],\n)\n\n="}
+{"t":345,"text":" Section A: Conc"}
+{"t":366,"text":"epts\n\n#question(points:"}
+{"t":387,"text":" 2)[\n  Which"}
+{"t":406,"text":" of these"}
+{"t":427,"text":" qu"}
+{"t":448,"text":"antities is a vector?"}
+{"t":479,"text":"\n  #mcq(["}
+{"t":495,"text":"Speed], [Dist"}
+{"t":517,"text":"ance], [Displacement],"}
+{"t":538,"text":" [Mass], answer:"}
+{"t":558,"text":" 3)\n]\n\n#question"}
+{"t":570,"text":"(points: 2)["}
+{"t":591,"text":"\n  #true-false(answer"}
+{"t":611,"text":": false)[An"}
+{"t":631,"text":" object with"}
+{"t":652,"text":" z"}
+{"t":672,"text":"ero net force ac"}
+{"t":693,"text":"ting on"}
+{"t":714,"text":" it must be at rest.]"}
+{"t":735,"text":"\n]\n\n#question(points:"}
+{"t":755,"text":" 3)[\n  "}
+{"t":774,"text":"Complete the sentences."}
+{"t":795,"text":"\n  +"}
+{"t":815,"text":" Newton's second law states that"}
+{"t":836,"text":" $F_"}
+{"t":856,"text":"\""}
+{"t":878,"text":"net\" = $"}
+{"t":897,"text":" #blank(width"}
+{"t":918,"text":": 5"}
+{"t":938,"text":"em, answer: ["}
+{"t":958,"text":"$m a$]"}
+{"t":981,"text":").\n  + The S"}
+{"t":1000,"text":"I unit of force is the"}
+{"t":1020,"text":" #blank(width"}
+{"t":1040,"text":": 5em, answer:"}
+{"t":1060,"text":" [newton]),"}
+{"t":1081,"text":" written"}
+{"t":1102,"text":" N"}
+{"t":1124,"text":".\n  +"}
+{"t":1141,"text":" M"}
+{"t":1169,"text":"ass is"}
+{"t":1182,"text":" a"}
+{"t":1204,"text":" meas"}
+{"t":1225,"text":"ure of an"}
+{"t":1244,"text":" object's #blank(width:"}
+{"t":1264,"text":" 6"}
+{"t":1286,"text":"em, answer: [inert"}
+{"t":1305,"text":"ia]).\n]\n\n="}
+{"t":1327,"text":" Section B: Kinematics"}
+{"t":1347,"text":"\n\n#question(points: 4"}
+{"t":1366,"text":")[\n  A car accel"}
+{"t":1387,"text":"erates uniformly from $"}
+{"t":1408,"text":"5$ m/s to $"}
+{"t":1428,"text":"25$ m/s in $"}
+{"t":1449,"text":"8$ s.\n  +"}
+{"t":1489,"text":" Calculate its"}
+{"t":1509,"text":" acceleration.\n    #"}
+{"t":1530,"text":"answer-space(height: "}
+{"t":1552,"text":"4"}
+{"t":1571,"text":"em, answer: [$a"}
+{"t":1591,"text":" = (v"}
+{"t":1611,"text":" - u"}
+{"t":1632,"text":")/t = (25 -"}
+{"t":1653,"text":" 5)/8 = "}
+{"t":1675,"text":"2.5$ m/s"}
+{"t":1693,"text":"$^2$])\n  +"}
+{"t":1713,"text":" Calculate the distance it"}
+{"t":1736,"text":" travels in this"}
+{"t":1754,"text":" time.\n    #answer-"}
+{"t":1775,"text":"space(height: 4em,"}
+{"t":1795,"text":" answer: [$s = ("}
+{"t":1816,"text":"u + v)/2 d"}
+{"t":1837,"text":"ot t = (5 + "}
+{"t":1857,"text":"25)/2 dot "}
+{"t":1877,"text":"8 = 120$ m"}
+{"t":1898,"text":"])\n]"}
+{"t":1919,"text":"\n\n#"}
+{"t":1939,"text":"question(points: 4)["}
+{"t":1960,"text":"\n  A ball is th"}
+{"t":1979,"text":"rown horizontally at"}
+{"t":2000,"text":" $10$ m/s from"}
+{"t":2021,"text":" the"}
+{"t":2041,"text":" top of a c"}
+{"t":2061,"text":"liff $"}
+{"t":2081,"text":"20$ m high. "}
+{"t":2102,"text":"Ignore air resistance."}
+{"t":2122,"text":"\n  + Calculate the time"}
+{"t":2144,"text":" ta"}
+{"t":2163,"text":"ken to"}
+{"t":2185,"text":" reach the ground.\n    "}
+{"t":2205,"text":"#answer-space(height:"}
+{"t":2225,"text":" 4em, answer: ["}
+{"t":2249,"text":"$t = sqrt("}
+{"t":2265,"text":"2h"}
+{"t":2286,"text":"/g) = sqrt"}
+{"t":2307,"text":"(40/9.8) appro"}
+{"t":2327,"text":"x 2.0"}
+{"t":2350,"text":"$ s])\n  +"}
+{"t":2368,"text":" Calculate the horizontal"}
+{"t":2388,"text":" distance from"}
+{"t":2408,"text":" the base"}
+{"t":2429,"text":" of the cliff where"}
+{"t":2449,"text":" the ball l"}
+{"t":2470,"text":"ands.\n    #answer-"}
+{"t":2490,"text":"space(height: 4em,"}
+{"t":2511,"text":" answer: [$x = v"}
+{"t":2532,"text":"_"}
+{"t":2551,"text":"x t = 10 dot"}
+{"t":2573,"text":" 2.02"}
+{"t":2592,"text":" approx 20$"}
+{"t":2612,"text":" m])\n]"}
+{"t":2638,"text":"\n\n= Section C: New"}
+{"t":2653,"text":"ton's laws and forces"}
+{"t":2674,"text":"\n\n#question(points: 3)"}
+{"t":2694,"text":"[\n  The"}
+{"t":2715,"text":" di"}
+{"t":2737,"text":"agram sh"}
+{"t":2755,"text":"ows a block res"}
+{"t":2776,"text":"ting on a"}
+{"t":2797,"text":" smooth-"}
+{"t":2821,"text":"loo"}
+{"t":2837,"text":"king incline at"}
+{"t":2858,"text":" angle $the"}
+{"t":2878,"text":"ta$ to the horizont"}
+{"t":2899,"text":"al."}
+{"t":2919,"text":"\n  Label the forces ac"}
+{"t":2939,"text":"ting on the block, then"}
+{"t":2960,"text":" name each force"}
+{"t":2982,"text":" and state"}
+{"t":3001,"text":" its direction.\n\n  #c"}
+{"t":3021,"text":"etz.canvas({"}
+{"t":3042,"text":"\n    import cetz.draw"}
+{"t":3062,"text":": *\n    //"}
+{"t":3082,"text":" inc"}
+{"t":3103,"text":"line\n    line((0,"}
+{"t":3123,"text":" 0), (6, 0"}
+{"t":3143,"text":"), (0, 3), ("}
+{"t":3164,"text":"0, 0))\n    content"}
+{"t":3184,"text":"((5"}
+{"t":3205,"text":".3, 0.35"}
+{"t":3225,"text":"), [$theta$])"}
+{"t":3245,"text":"\n    // block\n    group({"}
+{"t":3266,"text":"\n      translate((3, 1"}
+{"t":3287,"text":".5))\n      rotate"}
+{"t":3307,"text":"(z: -26"}
+{"t":3328,"text":".57deg)\n      r"}
+{"t":3347,"text":"ect((-0.4, "}
+{"t":3370,"text":"0), (0.4, "}
+{"t":3389,"text":"0.8), fill: lu"}
+{"t":3409,"text":"ma(220"}
+{"t":3429,"text":"))\n    })\n    let"}
+{"t":3450,"text":" o"}
+{"t":3471,"text":" = (3.18, 1"}
+{"t":3491,"text":".86)\n    // we"}
+{"t":3511,"text":"ight\n    line(o, ("}
+{"t":3532,"text":"3.18, -0.14"}
+{"t":3552,"text":"), mark: (end"}
+{"t":3572,"text":": \">\"))"}
+{"t":3593,"text":"\n    content((3.7"}
+{"t":3614,"text":", 0.7"}
+{"t":3634,"text":"), [$m g$])"}
+{"t":3654,"text":"\n    // normal\n    line("}
+{"t":3676,"text":"o, (3"}
+{"t":3695,"text":".98, 3.46),"}
+{"t":3716,"text":" mark: (end: \">"}
+{"t":3736,"text":"\"))\n    content((4."}
+{"t":3756,"text":"5, 3.2), ["}
+{"t":3777,"text":"$N$])\n    // fri"}
+{"t":3797,"text":"ction ("}
+{"t":3817,"text":"if block"}
+{"t":3838,"text":" is"}
+{"t":3858,"text":" held"}
+{"t":3879,"text":" by"}
+{"t":3900,"text":" friction)\n    line(o"}
+{"t":3919,"text":", (1.93, 2"}
+{"t":3942,"text":".49), mark: (end"}
+{"t":3960,"text":": \">\"))\n    content"}
+{"t":3982,"text":"((1.4, 2."}
+{"t":4001,"text":"9), [$f$])"}
+{"t":4022,"text":"\n  })\n\n  #answer-"}
+{"t":4044,"text":"lines(count: 2,"}
+{"t":4063,"text":" answer: ["}
+{"t":4084,"text":"Weight $m"}
+{"t":4103,"text":" g$"}
+{"t":4124,"text":" acts vertically down"}
+{"t":4145,"text":"ward. Normal force"}
+{"t":4165,"text":" $N$ acts perp"}
+{"t":4185,"text":"endicular to the surface,"}
+{"t":4206,"text":" away from it"}
+{"t":4226,"text":". Fri"}
+{"t":4248,"text":"ction $f$ acts up"}
+{"t":4266,"text":" the sl"}
+{"t":4287,"text":"ope, par"}
+{"t":4313,"text":"allel to the surface.])"}
+{"t":4330,"text":"\n]"}
+{"t":4349,"text":"\n\n#"}
+{"t":4370,"text":"question(points: 6"}
+{"t":4389,"text":")[\n  A block of m"}
+{"t":4410,"text":"ass $4"}
+{"t":4430,"text":".0$ kg sl"}
+{"t":4475,"text":"ides down a r"}
+{"t":4475,"text":"ough incline at"}
+{"t":4491,"text":" $"}
+{"t":4511,"text":"30 "}
+{"t":4532,"text":"degree"}
+{"t":4553,"text":"$ to the horizontal"}
+{"t":4574,"text":". The coefficient of k"}
+{"t":4594,"text":"inetic friction between"}
+{"t":4614,"text":" the block and the incline is $"}
+{"t":4635,"text":"0.20"}
+{"t":4655,"text":"$.\n  + Cal"}
+{"t":4676,"text":"culate the normal force on"}
+{"t":4696,"text":" the block.\n    #answer"}
+{"t":4716,"text":"-space(height: 4em"}
+{"t":4740,"text":", answer: [$N ="}
+{"t":4758,"text":" m g cos 30 deg"}
+{"t":4777,"text":"ree = 4."}
+{"t":4798,"text":"0 dot 9.8"}
+{"t":4818,"text":" dot "}
+{"t":4839,"text":"0.866 appro"}
+{"t":4859,"text":"x 34"}
+{"t":4879,"text":"$"}
+{"t":4900,"text":" N])\n  + Cal"}
+{"t":4922,"text":"culate the kinetic fri"}
+{"t":4940,"text":"ction force.\n    #answer"}
+{"t":4962,"text":"-space(height: 4em"}
+{"t":4982,"text":", answer: [$f ="}
+{"t":5002,"text":" m"}
+{"t":5025,"text":"u_"}
+{"t":5042,"text":"k N = 0.20 "}
+{"t":5063,"text":"dot 33"}
+{"t":5085,"text":".9 approx 6."}
+{"t":5107,"text":"8$ N])\n  +"}
+{"t":5124,"text":" Calculate the accele"}
+{"t":5145,"text":"ration of the block down"}
+{"t":5165,"text":" the inc"}
+{"t":5188,"text":"line.\n    #answer-"}
+{"t":5206,"text":"space(height: 5"}
+{"t":5226,"text":"em, answer: [$a"}
+{"t":5247,"text":" = ("}
+{"t":5268,"text":"m"}
+{"t":5287,"text":" g sin 30 degree"}
+{"t":5310,"text":" - f)/m = (19"}
+{"t":5330,"text":".6 - 6.8"}
+{"t":5350,"text":")"}
+{"t":5369,"text":"/4."}
+{"t":5392,"text":"0 appro"}
+{"t":5410,"text":"x 3.2$ m"}
+{"t":5431,"text":"/s$^2$])"}
+{"t":5453,"text":"\n]\n\n#question(points: "}
+{"t":5471,"text":"3"}
+{"t":5492,"text":")[\n  Explain,"}
+{"t":5513,"text":" using Newton's first law,"}
+{"t":5533,"text":" why pass"}
+{"t":5554,"text":"engers lurch forward when"}
+{"t":5574,"text":" a bus brakes su"}
+{"t":5595,"text":"ddenly."}
+{"t":5616,"text":"\n  #answer-lines("}
+{"t":5635,"text":"count: 3, answer:"}
+{"t":5655,"text":" [The"}
+{"t":5676,"text":" pass"}
+{"t":5696,"text":"engers are mo"}
+{"t":5720,"text":"ving at"}
+{"t":5737,"text":" the b"}
+{"t":5757,"text":"us's velocity. When the"}
+{"t":5778,"text":" bus slows, their bod"}
+{"t":5799,"text":"ies have"}
+{"t":5818,"text":" no net"}
+{"t":5840,"text":" force to sl"}
+{"t":5861,"text":"ow them,"}
+{"t":5880,"text":" so by"}
+{"t":5900,"text":" in"}
+{"t":5924,"text":"ertia they continue moving for"}
+{"t":5941,"text":"ward rel"}
+{"t":5962,"text":"ative to the b"}
+{"t":6000,"text":"us.])\n]"}

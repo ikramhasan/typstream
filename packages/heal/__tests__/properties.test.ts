@@ -30,6 +30,7 @@ const NO_LINT = {
     "unclosed-delim": false,
     "unclosed-block-comment": false,
     "currency-dollar": false,
+    "math-lone-script": false,
   },
 } as const;
 

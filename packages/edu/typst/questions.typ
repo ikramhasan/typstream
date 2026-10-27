@@ -58,8 +58,8 @@
 } else { m }
 
 /// Multiple-choice options, lettered (a), (b), … in the document's language. Give each option as
-/// its own content argument. `answer` is the correct option's number, counting from 1, or an
-/// array of numbers when several are correct.
+/// its own content argument, in brackets, math too: `[$x = 3$]`. `answer` is the correct option's
+/// number, counting from 1, or an array of numbers when several are correct.
 ///
 /// - answer (int, array, none): The correct option(s), 1-based.
 /// - columns (int, auto): Options per row. `auto` fits short options on one or two rows.
@@ -68,6 +68,10 @@
 /// #question(points: 1)[
 ///   Which planet is closest to the Sun?
 ///   #mcq([Venus], [Mercury], [Mars], [Earth], answer: 2)
+/// ]
+/// #question(points: 1)[
+///   Solve $x^2 = 9$.
+///   #mcq([$x = 3$], [$x = 3$ or $x = -3$], [$x = 9$], answer: 2)
 /// ]
 /// ```
 #let mcq(..options, answer: none, columns: auto) = {

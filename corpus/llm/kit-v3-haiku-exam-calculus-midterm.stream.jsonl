@@ -1,0 +1,265 @@
+{"t":0,"text":"#"}
+{"t":17,"text":"show: exam."}
+{"t":40,"text":"with(\n  title: ["}
+{"t":58,"text":"Calculus Midterm:"}
+{"t":79,"text":" Limits and Derivat"}
+{"t":99,"text":"ives],\n  subject: ["}
+{"t":120,"text":"Mathematics],\n  "}
+{"t":141,"text":"gr"}
+{"t":163,"text":"ade: [Grade 12"}
+{"t":181,"text":"],\n  duration: [60"}
+{"t":202,"text":" minutes],\n  inst"}
+{"t":224,"text":"ructions: ["}
+{"t":244,"text":"Answer *all* questions."}
+{"t":264,"text":" Show your working. Cal"}
+{"t":283,"text":"culators are not perm"}
+{"t":304,"text":"itted.],\n)\n\n="}
+{"t":325,"text":" Section"}
+{"t":347,"text":" A: Limits\n\n#question"}
+{"t":365,"text":"(points: 4"}
+{"t":387,"text":")[\n  Evalu"}
+{"t":408,"text":"ate each"}
+{"t":426,"text":" limit.\n  + $"}
+{"t":447,"text":"lim_(x -> "}
+{"t":471,"text":"3) (x^2 -"}
+{"t":488,"text":" 9)/(x - "}
+{"t":509,"text":"3)$\n    #answer"}
+{"t":534,"text":"-space(height: 3em"}
+{"t":549,"text":", answer: ["}
+{"t":570,"text":"Factor:"}
+{"t":591,"text":" $("}
+{"t":611,"text":"x^2 - 9)"}
+{"t":632,"text":"/(x - 3) ="}
+{"t":652,"text":" (x + 3)("}
+{"t":672,"text":"x - 3)/(x"}
+{"t":693,"text":" - 3) = x + "}
+{"t":712,"text":"3$"}
+{"t":733,"text":" for $x !="}
+{"t":754,"text":" 3$. So"}
+{"t":776,"text":" the limit is $3"}
+{"t":808,"text":" + 3 = 6"}
+{"t":815,"text":"$.])\n  + $l"}
+{"t":836,"text":"im_(x -> 0"}
+{"t":862,"text":") (sin x)/x"}
+{"t":876,"text":"$\n    #answer-space"}
+{"t":897,"text":"(height: 3em, answ"}
+{"t":920,"text":"er: [This"}
+{"t":938,"text":" is the standard limit $l"}
+{"t":961,"text":"im_(x -> 0"}
+{"t":978,"text":") (sin x)/x"}
+{"t":999,"text":" = 1$."}
+{"t":1022,"text":"])\n]\n\n#question(points"}
+{"t":1040,"text":": 3)[\n  "}
+{"t":1061,"text":"Let $f(x) = c"}
+{"t":1083,"text":"ases("}
+{"t":1102,"text":"x^"}
+{"t":1122,"text":"2 + 1 &"}
+{"t":1145,"text":" \""}
+{"t":1163,"text":"if\" x < 2"}
+{"t":1184,"text":", 3"}
+{"t":1205,"text":"x"}
+{"t":1225,"text":" - 1"}
+{"t":1243,"text":" & \"if\" x >="}
+{"t":1264,"text":" 2)$. Find"}
+{"t":1285,"text":" $lim_(x ->"}
+{"t":1306,"text":" 2^"}
+{"t":1326,"text":"-) f(x)$"}
+{"t":1346,"text":" and $lim_(x -"}
+{"t":1366,"text":"> 2^+) f("}
+{"t":1387,"text":"x)$. Does $l"}
+{"t":1407,"text":"im_(x -> 2"}
+{"t":1428,"text":") f(x)$ ex"}
+{"t":1450,"text":"ist?"}
+{"t":1468,"text":" Just"}
+{"t":1489,"text":"ify your"}
+{"t":1509,"text":" answer.\n  #answer"}
+{"t":1530,"text":"-space(height: 6"}
+{"t":1552,"text":"em, answer: [From"}
+{"t":1571,"text":" the left: $2"}
+{"t":1592,"text":"^2"}
+{"t":1612,"text":" + 1 = 5"}
+{"t":1632,"text":"$. From the right: $3"}
+{"t":1653,"text":"("}
+{"t":1673,"text":"2) - 1 = "}
+{"t":1695,"text":"5$. Both"}
+{"t":1713,"text":" one"}
+{"t":1735,"text":"-sided limits equal "}
+{"t":1755,"text":"5, so $"}
+{"t":1775,"text":"lim_(x -> "}
+{"t":1797,"text":"2) f(x)"}
+{"t":1815,"text":" = 5$ exists."}
+{"t":1838,"text":"])\n]\n\n= Section B"}
+{"t":1856,"text":": Derivatives\n\n#"}
+{"t":1877,"text":"question(points: 3"}
+{"t":1899,"text":")[\n  Differenti"}
+{"t":1918,"text":"ate $f(x) = "}
+{"t":1940,"text":"3x^4 - 2"}
+{"t":1958,"text":"x^2 + 5x"}
+{"t":1979,"text":"$"}
+{"t":2006,"text":" with respect to $x$."}
+{"t":2020,"text":"\n  #answer-space("}
+{"t":2041,"text":"height: 4em, answer"}
+{"t":2061,"text":": [$f'(x)"}
+{"t":2081,"text":" = 12x^3 -"}
+{"t":2102,"text":" 4x + 5$])"}
+{"t":2123,"text":"\n]\n\n#question(points:"}
+{"t":2144,"text":" 4)[\n  Differ"}
+{"t":2163,"text":"entiate each"}
+{"t":2183,"text":" function"}
+{"t":2205,"text":"."}
+{"t":2226,"text":"\n  + $y = x^"}
+{"t":2244,"text":"2 e^x$ ("}
+{"t":2265,"text":"use the product rule)\n    "}
+{"t":2288,"text":"#answer-space(height:"}
+{"t":2306,"text":" 4em, answer: ["}
+{"t":2326,"text":"$y'"}
+{"t":2348,"text":" = 2x e^x +"}
+{"t":2367,"text":" x^2 e^x ="}
+{"t":2390,"text":" x(x + 2)e"}
+{"t":2409,"text":"^x$])"}
+{"t":2428,"text":"\n  + $y = (3"}
+{"t":2450,"text":"x + 1)^5$"}
+{"t":2475,"text":" (use the chain rule"}
+{"t":2493,"text":")\n    #answer-space"}
+{"t":2510,"text":"(height: 4em, answ"}
+{"t":2531,"text":"er: [$y' = "}
+{"t":2551,"text":"5("}
+{"t":2571,"text":"3x + 1)^4"}
+{"t":2592,"text":" d"}
+{"t":2613,"text":"ot 3 = 15("}
+{"t":2633,"text":"3x + 1)^4"}
+{"t":2657,"text":"$])"}
+{"t":2673,"text":"\n]\n\n#question(points:"}
+{"t":2696,"text":" 4)[\n  Find"}
+{"t":2714,"text":" the equation of the tangent"}
+{"t":2735,"text":" line to $y = x^3"}
+{"t":2755,"text":" - x$ at the"}
+{"t":2782,"text":" point where"}
+{"t":2796,"text":" $x = 2$."}
+{"t":2818,"text":" Write your"}
+{"t":2840,"text":" answer in the form $y ="}
+{"t":2857,"text":" m x + c"}
+{"t":2878,"text":"$.\n  #answer-"}
+{"t":2900,"text":"space(height: 6"}
+{"t":2921,"text":"em, answer: [$"}
+{"t":2939,"text":"f"}
+{"t":2961,"text":"(2) = 8"}
+{"t":2980,"text":" - 2 = 6"}
+{"t":3000,"text":"$, so the point is $("}
+{"t":3021,"text":"2, 6)$. $"}
+{"t":3045,"text":"f'(x) = 3"}
+{"t":3065,"text":"x^2 - 1$"}
+{"t":3082,"text":", so $m"}
+{"t":3102,"text":" = f"}
+{"t":3126,"text":"'(2) = 11$"}
+{"t":3143,"text":"."}
+{"t":3163,"text":" Then"}
+{"t":3185,"text":" $6"}
+{"t":3205,"text":" ="}
+{"t":3227,"text":" 11(2) + c$"}
+{"t":3267,"text":" gives $c = -16$"}
+{"t":3285,"text":". The tangent line"}
+{"t":3308,"text":" is $y = 11x -"}
+{"t":3329,"text":" 16$.])\n]"}
+{"t":3347,"text":"\n\n#"}
+{"t":3368,"text":"question(points: 3)["}
+{"t":3388,"text":"\n  Use"}
+{"t":3408,"text":" the lim"}
+{"t":3430,"text":"it definition of the derivative"}
+{"t":3450,"text":" to find $"}
+{"t":3470,"text":"f'(x)"}
+{"t":3490,"text":"$ when"}
+{"t":3510,"text":" $f(x) = x^"}
+{"t":3533,"text":"2$.\n  #answer"}
+{"t":3551,"text":"-space(height: 6"}
+{"t":3574,"text":"em, answer: [$f"}
+{"t":3592,"text":"'(x) = lim_"}
+{"t":3612,"text":"(h -> 0) "}
+{"t":3634,"text":"((x + h)^2 "}
+{"t":3653,"text":"- x^2)/h ="}
+{"t":3682,"text":" lim_(h -> "}
+{"t":3697,"text":"0) (2x h"}
+{"t":3716,"text":" + h^2)/h ="}
+{"t":3735,"text":" lim_(h -> "}
+{"t":3762,"text":"0) (2x + h"}
+{"t":3777,"text":") = 2x$.])"}
+{"t":3796,"text":"\n]\n\n= Section C:"}
+{"t":3818,"text":" Applications\n\n#question(points"}
+{"t":3843,"text":": 4"}
+{"t":3857,"text":")[\n  A particle mo"}
+{"t":3880,"text":"ves along a"}
+{"t":3901,"text":" line so that its"}
+{"t":3919,"text":" position at time $t$ se"}
+{"t":3940,"text":"conds is $s(t)"}
+{"t":3959,"text":" = t^3 - 6"}
+{"t":3983,"text":"t^2 + 9t"}
+{"t":4002,"text":"$ met"}
+{"t":4021,"text":"res,"}
+{"t":4046,"text":" for $t >"}
+{"t":4061,"text":"= 0$.\n  +"}
+{"t":4106,"text":" Find the"}
+{"t":4125,"text":" velocity $v(t)"}
+{"t":4144,"text":"$.\n  "}
+{"t":4165,"text":"+ Find the times when the partic"}
+{"t":4184,"text":"le is at rest.\n  "}
+{"t":4208,"text":"+ Find the partic"}
+{"t":4225,"text":"le's acceleration at $"}
+{"t":4247,"text":"t = 1$.\n\n  "}
+{"t":4266,"text":"#answer-space(height:"}
+{"t":4286,"text":" 8"}
+{"t":4309,"text":"em, answer: ["}
+{"t":4330,"text":"\n    ("}
+{"t":4348,"text":"a) $v(t) ="}
+{"t":4370,"text":" s'(t) = 3"}
+{"t":4392,"text":"t^2 - 12t"}
+{"t":4408,"text":" + 9$.\n\n    ("}
+{"t":4433,"text":"b)"}
+{"t":4451,"text":" Set $v(t) = "}
+{"t":4475,"text":"0$: $3t^2"}
+{"t":4491,"text":" - 12t + 9"}
+{"t":4511,"text":" = 3"}
+{"t":4531,"text":"(t -"}
+{"t":4552,"text":" 1)(t - 3"}
+{"t":4573,"text":") = 0$, so $"}
+{"t":4592,"text":"t = 1$ s"}
+{"t":4614,"text":" and $t = 3$"}
+{"t":4636,"text":" s.\n\n    (c) $"}
+{"t":4655,"text":"a(t) = v'("}
+{"t":4675,"text":"t) = 6t - "}
+{"t":4696,"text":"12$, so $a(1"}
+{"t":4715,"text":") = -"}
+{"t":4740,"text":"6$"}
+{"t":4756,"text":" m/s$^2$"}
+{"t":4783,"text":".\n  ])\n]"}
+{"t":4796,"text":"\n\n#"}
+{"t":4817,"text":"question"}
+{"t":4837,"text":"(points: 3)["}
+{"t":4859,"text":"\n  Find and"}
+{"t":4881,"text":" class"}
+{"t":4900,"text":"ify the crit"}
+{"t":4920,"text":"ical points of $f(x)"}
+{"t":4941,"text":" = x^3 - 3"}
+{"t":4960,"text":"x$.\n  #answer"}
+{"t":4984,"text":"-space(height: 6em"}
+{"t":5004,"text":", answer: [$f'"}
+{"t":5025,"text":"(x) = 3x^"}
+{"t":5043,"text":"2 - 3 = "}
+{"t":5063,"text":"0$"}
+{"t":5087,"text":" gives $x = -"}
+{"t":5103,"text":"1$ and $x = "}
+{"t":5124,"text":"1$. $f''(x"}
+{"t":5145,"text":") = 6x$"}
+{"t":5166,"text":". At $x = -1$"}
+{"t":5187,"text":", $f''(-1)"}
+{"t":5205,"text":" = -6 < 0$"}
+{"t":5225,"text":", so $f$"}
+{"t":5246,"text":" has a local maximum there"}
+{"t":5287,"text":", with $f(-1)"}
+{"t":5287,"text":" = 2$. At $x"}
+{"t":5311,"text":" = 1$, $f''"}
+{"t":5330,"text":"(1) = 6 >"}
+{"t":5353,"text":" 0$, so $f$"}
+{"t":5370,"text":" has a local minimum there"}
+{"t":5394,"text":", with $f(1) ="}
+{"t":5412,"text":" -2$.])\n]"}
+{"t":5431,"text":"\n\n#answer-key()"}

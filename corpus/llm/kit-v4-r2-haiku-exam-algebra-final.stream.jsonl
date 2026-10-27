@@ -1,0 +1,207 @@
+{"t":0,"text":"#"}
+{"t":21,"text":"show: exam."}
+{"t":39,"text":"with(\n  title: ["}
+{"t":62,"text":"Algebra II Final Exam"}
+{"t":81,"text":"ination],\n  subject: ["}
+{"t":102,"text":"Mathematics],\n  "}
+{"t":122,"text":"grade: [Grade "}
+{"t":143,"text":"11],\n  duration: ["}
+{"t":163,"text":"90 minutes],\n  "}
+{"t":184,"text":"inst"}
+{"t":204,"text":"ructions: [Answer *"}
+{"t":224,"text":"all* questions in"}
+{"t":245,"text":" all three"}
+{"t":265,"text":" sections. Show your working in"}
+{"t":286,"text":" the"}
+{"t":305,"text":" sp"}
+{"t":327,"text":"aces provided. Cal"}
+{"t":346,"text":"culators are perm"}
+{"t":368,"text":"itted.],\n)\n\n="}
+{"t":390,"text":" Section A: Multiple"}
+{"t":415,"text":" choice"}
+{"t":430,"text":"\n\n#question(points: 2"}
+{"t":458,"text":")[\n  Solve $"}
+{"t":469,"text":"2x + 5 = "}
+{"t":492,"text":"17$.\n  #mc"}
+{"t":511,"text":"q([$x = 6$"}
+{"t":532,"text":"], [$x = 11$"}
+{"t":554,"text":"], [$x = 7$"}
+{"t":572,"text":"], [$x = 12$"}
+{"t":594,"text":"], answer: 1)"}
+{"t":613,"text":"\n]\n\n#question(points: "}
+{"t":649,"text":"2)[\n  What is the"}
+{"t":666,"text":" slope of the line through $("}
+{"t":681,"text":"1, 2)$ and"}
+{"t":708,"text":" $(3, 8)$"}
+{"t":716,"text":"?\n  #mcq(["}
+{"t":737,"text":"$2$], [$3$"}
+{"t":757,"text":"], [$1/3$],"}
+{"t":780,"text":" [$6$], answer:"}
+{"t":797,"text":" 2)\n]\n\n#question"}
+{"t":819,"text":"(points: 2)["}
+{"t":838,"text":"\n  Which"}
+{"t":859,"text":" exp"}
+{"t":879,"text":"ression is"}
+{"t":899,"text":" a factor"}
+{"t":922,"text":"ization of $x^2 -"}
+{"t":940,"text":" 5x + 6$?"}
+{"t":963,"text":"\n  #mcq([$"}
+{"t":981,"text":"(x - 1"}
+{"t":1004,"text":")(x - 6"}
+{"t":1022,"text":")$], [$(x +"}
+{"t":1042,"text":" 2"}
+{"t":1066,"text":")(x + 3)$"}
+{"t":1086,"text":"], [$(x - 2"}
+{"t":1104,"text":")(x - 3)$"}
+{"t":1124,"text":"], [$(x +"}
+{"t":1145,"text":" 1)(x + 6"}
+{"t":1166,"text":")$], answer: 3"}
+{"t":1189,"text":")\n]\n\n#question(points"}
+{"t":1211,"text":": 2)[\n  "}
+{"t":1229,"text":"Let $f(x) = "}
+{"t":1251,"text":"2x^2 - 3"}
+{"t":1268,"text":"$. What"}
+{"t":1290,"text":" is $f(-2)$"}
+{"t":1310,"text":"?\n  #mcq(["}
+{"t":1330,"text":"$-3$], [$5"}
+{"t":1352,"text":"$], [$11$], ["}
+{"t":1370,"text":"$-11$], answer:"}
+{"t":1391,"text":" 2)\n]\n\n#question"}
+{"t":1411,"text":"(points: 2)["}
+{"t":1431,"text":"\n  Which expression is equiv"}
+{"t":1452,"text":"alent to $x^(-"}
+{"t":1472,"text":"2)$?\n  #m"}
+{"t":1493,"text":"cq([$x^2$"}
+{"t":1513,"text":"], [$-2x$],"}
+{"t":1534,"text":" [$1/x^2$"}
+{"t":1565,"text":"], [$2/x$],"}
+{"t":1574,"text":" answer: 3)\n]"}
+{"t":1596,"text":"\n\n= Section B: Short"}
+{"t":1617,"text":" answer\n\n#question(points:"}
+{"t":1636,"text":" 4)[\n  +"}
+{"t":1658,"text":" Solve the system $3x"}
+{"t":1678,"text":" - y = 7$ and"}
+{"t":1697,"text":" $x + y = 5$"}
+{"t":1718,"text":" for"}
+{"t":1739,"text":" $x$ and $y$"}
+{"t":1759,"text":".\n    #answer-l"}
+{"t":1780,"text":"ines(count: 1, answ"}
+{"t":1800,"text":"er: [$x = 3"}
+{"t":1820,"text":"$, $y = 2$"}
+{"t":1841,"text":"])\n  + Simplify"}
+{"t":1861,"text":" $(2x^3 y"}
+{"t":1881,"text":")(4x y^2)"}
+{"t":1902,"text":"$.\n    #answer-"}
+{"t":1923,"text":"lines(count: 1,"}
+{"t":1943,"text":" answer: [$8x^"}
+{"t":1965,"text":"4 y^3$])"}
+{"t":1986,"text":"\n]\n\n#question(points: "}
+{"t":2004,"text":"3)[\n  Solve"}
+{"t":2025,"text":" $x^2 - 6"}
+{"t":2045,"text":"x + 5 = 0"}
+{"t":2066,"text":"$ by factoring."}
+{"t":2086,"text":" Give both"}
+{"t":2106,"text":" sol"}
+{"t":2127,"text":"utions.\n  #answer"}
+{"t":2147,"text":"-space(height: 4"}
+{"t":2168,"text":"em, answer: [$("}
+{"t":2188,"text":"x - 1)(x -"}
+{"t":2209,"text":" 5) = 0$,"}
+{"t":2229,"text":" so $x = 1$"}
+{"t":2249,"text":" or $x = 5$."}
+{"t":2271,"text":"])\n]\n\n#question(points"}
+{"t":2291,"text":": 3)[\n  "}
+{"t":2312,"text":"Write the equation of the line with"}
+{"t":2333,"text":" slope $-2$ that"}
+{"t":2353,"text":" passes through $"}
+{"t":2375,"text":"(0, 4)$"}
+{"t":2413,"text":" in slope-intercept form"}
+{"t":2413,"text":".\n  #answer-space"}
+{"t":2434,"text":"(height: 3em, answ"}
+{"t":2456,"text":"er: [$y = -2"}
+{"t":2474,"text":"x + 4$])"}
+{"t":2496,"text":"\n]\n\n= Section C:"}
+{"t":2517,"text":" Extended response\n\n#question("}
+{"t":2536,"text":"points: 8)[\n  "}
+{"t":2557,"text":"The"}
+{"t":2577,"text":" length of a rectangle is"}
+{"t":2608,"text":" 3 c"}
+{"t":2617,"text":"m more than tw"}
+{"t":2638,"text":"ice its width. The"}
+{"t":2660,"text":" perimeter of"}
+{"t":2678,"text":" the rectangle is 36"}
+{"t":2699,"text":" cm.\n  Find"}
+{"t":2721,"text":" the width"}
+{"t":2740,"text":" and length of the rectangle"}
+{"t":2761,"text":", and its"}
+{"t":2782,"text":" area. Show all"}
+{"t":2801,"text":" steps.\n  #answer"}
+{"t":2824,"text":"-space(height: 9"}
+{"t":2842,"text":"em, answer: [Let"}
+{"t":2863,"text":" the"}
+{"t":2883,"text":" width be $w$. Then"}
+{"t":2905,"text":" the"}
+{"t":2925,"text":" length is $2w + 3"}
+{"t":2944,"text":"$, so"}
+{"t":2965,"text":" $2(w + 2w"}
+{"t":2985,"text":" + 3) = 36$"}
+{"t":3006,"text":", gi"}
+{"t":3026,"text":"ving $6w + 6 "}
+{"t":3049,"text":"= 36$"}
+{"t":3068,"text":" and $w = 5$."}
+{"t":3087,"text":" The length is $13"}
+{"t":3107,"text":"$ cm and"}
+{"t":3127,"text":" the area is $5"}
+{"t":3148,"text":" times"}
+{"t":3168,"text":" 13 = 65$"}
+{"t":3189,"text":" cm$"}
+{"t":3210,"text":"^2$.])\n]"}
+{"t":3230,"text":"\n\n#question(points: 10)"}
+{"t":3250,"text":"[\n  The function $f("}
+{"t":3270,"text":"x) = x^2 -"}
+{"t":3291,"text":" 4x - 5$"}
+{"t":3313,"text":" is given"}
+{"t":3332,"text":".\n  +"}
+{"t":3357,"text":" Find the co"}
+{"t":3375,"text":"ordinates of the vertex"}
+{"t":3393,"text":" of the gra"}
+{"t":3413,"text":"ph of $f$.\n  "}
+{"t":3435,"text":"+ Find the $x$-"}
+{"t":3455,"text":"intercepts and"}
+{"t":3478,"text":" the $y$-intercept"}
+{"t":3496,"text":".\n  + S"}
+{"t":3516,"text":"ketch the graph on"}
+{"t":3536,"text":" the coordinate plane below"}
+{"t":3557,"text":", mar"}
+{"t":3577,"text":"king the vertex and int"}
+{"t":3597,"text":"ercepts."}
+{"t":3620,"text":"\n\n  "}
+{"t":3639,"text":"#coordinate-plane"}
+{"t":3661,"text":"(x: (-3"}
+{"t":3679,"text":", 7"}
+{"t":3699,"text":"), y: (-10"}
+{"t":3720,"text":", 4"}
+{"t":3741,"text":"), unit: 6"}
+{"t":3761,"text":"mm,"}
+{"t":3781,"text":" points: ((2, -"}
+{"t":3802,"text":"9, [V"}
+{"t":3822,"text":"]), (-1, "}
+{"t":3845,"text":"0, [A"}
+{"t":3865,"text":"]), (5, 0,"}
+{"t":3889,"text":" [B]), (0, -"}
+{"t":3904,"text":"5, [C])))\n\n  "}
+{"t":3924,"text":"#answer["}
+{"t":3965,"text":"Vertex $"}
+{"t":3985,"text":"(2, -9)$."}
+{"t":4026,"text":" Fact"}
+{"t":4047,"text":"oring gives $("}
+{"t":4068,"text":"x - 5"}
+{"t":4088,"text":")(x + 1)"}
+{"t":4107,"text":"$, so the"}
+{"t":4129,"text":" $x$-intercepts"}
+{"t":4149,"text":" are $-1$ and $"}
+{"t":4169,"text":"5$; the $y$-"}
+{"t":4191,"text":"intercept is $-5$"}
+{"t":4211,"text":".]\n]"}
+{"t":4233,"text":"\n\n#answer-key"}
+{"t":4247,"text":"()"}

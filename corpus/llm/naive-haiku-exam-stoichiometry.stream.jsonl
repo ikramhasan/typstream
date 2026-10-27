@@ -1,0 +1,475 @@
+{"t":0,"text":"#"}
+{"t":19,"text":"set page("}
+{"t":37,"text":"paper: \"a"}
+{"t":59,"text":"4\", margin: "}
+{"t":81,"text":"2cm)\n#set text"}
+{"t":99,"text":"(size"}
+{"t":123,"text":": 11pt)\n#"}
+{"t":140,"text":"set par"}
+{"t":162,"text":"(just"}
+{"t":197,"text":"ify: false"}
+{"t":201,"text":")\n\n= Grade 11"}
+{"t":223,"text":" Chemistry"}
+{"t":241,"text":" Test: Stoichiomet"}
+{"t":263,"text":"ry and the Mole\n\n#"}
+{"t":282,"text":"table"}
+{"t":305,"text":"("}
+{"t":323,"text":"\n  columns: ("}
+{"t":343,"text":"1"}
+{"t":371,"text":"fr, 1fr),"}
+{"t":385,"text":"\n  [Name: #"}
+{"t":416,"text":"line(length: 75"}
+{"t":428,"text":"%)], [Date: #"}
+{"t":454,"text":"line(length: 60"}
+{"t":477,"text":"%)],\n  [Class"}
+{"t":494,"text":": #line(length: 75"}
+{"t":519,"text":"%)], [Time"}
+{"t":536,"text":" all"}
+{"t":560,"text":"owed: 45 minut"}
+{"t":578,"text":"es],\n)\n\n*"}
+{"t":596,"text":"Total marks: 50*"}
+{"t":616,"text":"\n\n*Instructions*"}
+{"t":634,"text":"\n- Answ"}
+{"t":652,"text":"er all questions. Show all"}
+{"t":680,"text":" working for"}
+{"t":692,"text":" cal"}
+{"t":719,"text":"culations, including"}
+{"t":732,"text":" units."}
+{"t":756,"text":"\n- Use the mol"}
+{"t":774,"text":"ar masses in"}
+{"t":795,"text":" the table below. Give"}
+{"t":814,"text":" final"}
+{"t":837,"text":" num"}
+{"t":856,"text":"erical answers to three"}
+{"t":875,"text":" significant figures un"}
+{"t":896,"text":"less told"}
+{"t":920,"text":" otherwise.\n-"}
+{"t":935,"text":" Use $"}
+{"t":956,"text":"N"}
+{"t":979,"text":"_"}
+{"t":1007,"text":"A = 6.02 times"}
+{"t":1030,"text":" 10^23"}
+{"t":1041,"text":"$ m"}
+{"t":1059,"text":"ol⁻¹ where"}
+{"t":1079,"text":" needed.\n\n#table("}
+{"t":1099,"text":"\n  columns: 8"}
+{"t":1122,"text":",\n  [H], [C"}
+{"t":1140,"text":"], [N"}
+{"t":1160,"text":"], [O], [Na"}
+{"t":1181,"text":"], [M"}
+{"t":1201,"text":"g], [Cl], ["}
+{"t":1223,"text":"F"}
+{"t":1242,"text":"e],\n  [1.01"}
+{"t":1264,"text":"], [12.01], [14"}
+{"t":1286,"text":".01], [16"}
+{"t":1305,"text":".00], [22.99],"}
+{"t":1324,"text":" [24.31], [35."}
+{"t":1344,"text":"45], [55.85"}
+{"t":1364,"text":"],\n)"}
+{"t":1387,"text":"\n#"}
+{"t":1407,"text":"v(0"}
+{"t":1426,"text":".5em)"}
+{"t":1447,"text":"\nMolar masses (g m"}
+{"t":1472,"text":"ol⁻¹): H"}
+{"t":1489,"text":"₂"}
+{"t":1507,"text":" = 2"}
+{"t":1531,"text":".02, O"}
+{"t":1550,"text":"₂ = 32.00"}
+{"t":1571,"text":", Cl₂ ="}
+{"t":1590,"text":" 70.90, H₂"}
+{"t":1610,"text":"O = 18.02, C"}
+{"t":1630,"text":"O₂ = 44."}
+{"t":1667,"text":"01, C₃H₈"}
+{"t":1671,"text":" = 44.10, N"}
+{"t":1691,"text":"aCl = 58.44"}
+{"t":1713,"text":", MgO"}
+{"t":1735,"text":" = 40"}
+{"t":1753,"text":".31"}
+{"t":1784,"text":", MgCl₂"}
+{"t":1795,"text":" = 95.21"}
+{"t":1815,"text":".\n\n=="}
+{"t":1834,"text":" Section A: Multiple"}
+{"t":1855,"text":" choice (10"}
+{"t":1875,"text":" marks, 2 mar"}
+{"t":1898,"text":"ks each)\n\nCircle the"}
+{"t":1916,"text":" correct answer.\n\n*1"}
+{"t":1936,"text":".* How"}
+{"t":1958,"text":" many partic"}
+{"t":1978,"text":"les are in one"}
+{"t":2000,"text":" mole of any"}
+{"t":2035,"text":" substance?\n(a) $"}
+{"t":2039,"text":"6.02 times"}
+{"t":2058,"text":" 10^21"}
+{"t":2082,"text":"$ ("}
+{"t":2100,"text":"b) $6.02 times"}
+{"t":2122,"text":" 10^23$ (c"}
+{"t":2140,"text":") $1"}
+{"t":2163,"text":".00 times 10^23"}
+{"t":2182,"text":"$ (d) $6."}
+{"t":2203,"text":"02 times 10^26"}
+{"t":2223,"text":"$\n\n*2.* What"}
+{"t":2244,"text":" is the mol"}
+{"t":2265,"text":"ar mass of C"}
+{"t":2284,"text":"O₂?\n(a)"}
+{"t":2307,"text":" 12.01"}
+{"t":2326,"text":" g mol⁻"}
+{"t":2350,"text":"¹ (b) 28."}
+{"t":2367,"text":"01 g mol⁻"}
+{"t":2387,"text":"¹ (c) 32"}
+{"t":2407,"text":".00 g mol"}
+{"t":2430,"text":"⁻¹ (d) "}
+{"t":2452,"text":"44.01 g mol"}
+{"t":2467,"text":"⁻¹\n\n*3."}
+{"t":2492,"text":"* In the balanced equation"}
+{"t":2508,"text":" $2 H_2 +"}
+{"t":2529,"text":" O_2 -"}
+{"t":2551,"text":"> 2 H_2 "}
+{"t":2569,"text":"O$, what is the mole"}
+{"t":2595,"text":" ratio of H"}
+{"t":2610,"text":"₂ to O₂?"}
+{"t":2635,"text":"\n(a) 1 "}
+{"t":2651,"text":": 1 (b) "}
+{"t":2671,"text":"2 : 1 (c"}
+{"t":2693,"text":") 1 : 2 "}
+{"t":2714,"text":"(d) 2 : "}
+{"t":2734,"text":"2\n\n*4.* How many"}
+{"t":2756,"text":" moles are"}
+{"t":2775,"text":" in 36.0 g of"}
+{"t":2796,"text":" H₂O?\n(a"}
+{"t":2816,"text":") 0.500"}
+{"t":2841,"text":" mol (b) 1"}
+{"t":2856,"text":".00 mol (c)"}
+{"t":2878,"text":" 2.00 mol ("}
+{"t":2897,"text":"d) 648 mol"}
+{"t":2918,"text":"\n\n*5.* The lim"}
+{"t":2939,"text":"iting reag"}
+{"t":2957,"text":"ent in"}
+{"t":2981,"text":" a reaction is the"}
+{"t":2999,"text":" re"}
+{"t":3018,"text":"act"}
+{"t":3039,"text":"ant that:"}
+{"t":3059,"text":"\n(a) is present"}
+{"t":3080,"text":" in the"}
+{"t":3102,"text":" gre"}
+{"t":3121,"text":"atest m"}
+{"t":3142,"text":"ass (b) is present in exc"}
+{"t":3162,"text":"ess\n(c) is complet"}
+{"t":3183,"text":"ely used up first (d) has"}
+{"t":3207,"text":" the larg"}
+{"t":3222,"text":"est molar mass\n\n=="}
+{"t":3243,"text":" Section B: Balancing equ"}
+{"t":3264,"text":"ations (10 marks,"}
+{"t":3285,"text":" 2"}
+{"t":3304,"text":" marks each)\n\nBal"}
+{"t":3324,"text":"ance each"}
+{"t":3345,"text":" equation by"}
+{"t":3366,"text":" fil"}
+{"t":3385,"text":"ling in the coefficients."}
+{"t":3408,"text":"\n\n+"}
+{"t":3426,"text":" #"}
+{"t":3449,"text":"h"}
+{"t":3467,"text":"("}
+{"t":3489,"text":"0.3"}
+{"t":3508,"text":"em) \\"}
+{"t":3528,"text":"_\\"}
+{"t":3558,"text":"_ Mg + \\_"}
+{"t":3570,"text":"\\_ O₂ →"}
+{"t":3600,"text":" \\_\\_ MgO"}
+{"t":3612,"text":"\n+ #h(0."}
+{"t":3631,"text":"3em) \\_\\_"}
+{"t":3653,"text":" C₃H₈ +"}
+{"t":3671,"text":" \\_\\_ O₂"}
+{"t":3692,"text":" → \\_\\_ C"}
+{"t":3718,"text":"O₂ + \\_\\"}
+{"t":3740,"text":"_ H₂O\n+"}
+{"t":3753,"text":" #h(0.3em"}
+{"t":3780,"text":") \\_\\_ Al"}
+{"t":3797,"text":" + \\_\\_ HC"}
+{"t":3817,"text":"l → \\_\\_ A"}
+{"t":3835,"text":"lCl₃ + \\"}
+{"t":3855,"text":"_\\_ H₂"}
+{"t":3881,"text":"\n+ #h(0.3"}
+{"t":3896,"text":"em) \\_\\_"}
+{"t":3920,"text":" Fe₂O₃"}
+{"t":3942,"text":" + \\_\\_ CO"}
+{"t":3966,"text":" → \\_\\_ F"}
+{"t":3984,"text":"e + \\_\\_ C"}
+{"t":4011,"text":"O₂\n+ #h"}
+{"t":4030,"text":"(0.3em) \\_"}
+{"t":4055,"text":"\\_ N₂ +"}
+{"t":4076,"text":" \\_\\_ H₂"}
+{"t":4081,"text":" → \\_\\_ N"}
+{"t":4107,"text":"H₃\n\n== Section C"}
+{"t":4125,"text":": Mole and"}
+{"t":4148,"text":" mass calculations (15 "}
+{"t":4169,"text":"marks)\n\n*6.*"}
+{"t":4186,"text":" Sodium re"}
+{"t":4209,"text":"acts with chlorine g"}
+{"t":4224,"text":"as according"}
+{"t":4249,"text":" to the balanced equation:"}
+{"t":4271,"text":"\n$"}
+{"t":4304,"text":" 2 \""}
+{"t":4308,"text":"Na\" + \""}
+{"t":4336,"text":"Cl\""}
+{"t":4350,"text":"_2 -> 2 "}
+{"t":4368,"text":"\"NaCl\" $"}
+{"t":4390,"text":"\n\n(a)"}
+{"t":4407,"text":" Calculate the number"}
+{"t":4427,"text":" of moles in"}
+{"t":4450,"text":" 10.0 g of s"}
+{"t":4468,"text":"odium. (2"}
+{"t":4488,"text":" marks)\n\n#"}
+{"t":4509,"text":"v(2"}
+{"t":4535,"text":"."}
+{"t":4550,"text":"5em)\n\n(b)"}
+{"t":4574,"text":" Calculate the mass of s"}
+{"t":4591,"text":"odium chloride form"}
+{"t":4612,"text":"ed from 10.0 g"}
+{"t":4633,"text":" of sodium. (3"}
+{"t":4651,"text":" marks)\n\n#v("}
+{"t":4673,"text":"4"}
+{"t":4694,"text":"em)\n\n(c) Cal"}
+{"t":4716,"text":"culate the mass of chl"}
+{"t":4737,"text":"orine gas need"}
+{"t":4756,"text":"ed to react"}
+{"t":4774,"text":" complet"}
+{"t":4796,"text":"ely with 10.0 g"}
+{"t":4815,"text":" of sodium. (2"}
+{"t":4836,"text":" marks)\n\n#v("}
+{"t":4858,"text":"3"}
+{"t":4879,"text":"em)\n\n*7.*"}
+{"t":4897,"text":" Propane bur"}
+{"t":4918,"text":"ns in o"}
+{"t":4940,"text":"xygen according to the equ"}
+{"t":4961,"text":"ation:\n$ \""}
+{"t":4980,"text":"C\""}
+{"t":5001,"text":"_3 \""}
+{"t":5031,"text":"H\"_8 + 5"}
+{"t":5040,"text":" \"O\"_2 -"}
+{"t":5063,"text":"> 3 \"CO\""}
+{"t":5082,"text":"_2 + 4 \""}
+{"t":5103,"text":"H\"_2 \""}
+{"t":5126,"text":"O\" $\n\nA"}
+{"t":5146,"text":" s"}
+{"t":5162,"text":"ample of "}
+{"t":5182,"text":"5.00 g of propane"}
+{"t":5205,"text":" is burned complet"}
+{"t":5227,"text":"ely."}
+{"t":5244,"text":"\n\n(a) Calculate"}
+{"t":5270,"text":" the moles of propane bur"}
+{"t":5285,"text":"ned. (2 marks)"}
+{"t":5305,"text":"\n\n#v(2"}
+{"t":5326,"text":".5em)\n\n(b)"}
+{"t":5348,"text":" Calculate the mass of"}
+{"t":5369,"text":" carbon dioxide produ"}
+{"t":5387,"text":"ced. (3 marks)"}
+{"t":5408,"text":"\n\n#v(4"}
+{"t":5428,"text":"em)\n\n(c) Cal"}
+{"t":5448,"text":"culate the mass of ox"}
+{"t":5471,"text":"ygen gas that is"}
+{"t":5491,"text":" required. (3"}
+{"t":5509,"text":" marks)\n\n#v("}
+{"t":5530,"text":"4"}
+{"t":5551,"text":"em)\n\n== Section D:"}
+{"t":5575,"text":" Limiting reagent ("}
+{"t":5592,"text":"10 marks)\n\n*8"}
+{"t":5613,"text":".* Magnesium re"}
+{"t":5633,"text":"acts with hydrochlo"}
+{"t":5653,"text":"ric acid:"}
+{"t":5676,"text":"\n$ \""}
+{"t":5699,"text":"Mg\" + 2 "}
+{"t":5713,"text":"\"HCl\" -> \""}
+{"t":5734,"text":"MgCl\"_2 "}
+{"t":5754,"text":"+ \"H\"_2 $"}
+{"t":5778,"text":"\n\nA str"}
+{"t":5794,"text":"ip contain"}
+{"t":5816,"text":"ing 2.43 g of"}
+{"t":5840,"text":" mag"}
+{"t":5856,"text":"nesium is added"}
+{"t":5877,"text":" to a"}
+{"t":5896,"text":" solution containing 0.150"}
+{"t":5921,"text":" mol of H"}
+{"t":5950,"text":"Cl.\n\n(a)"}
+{"t":5960,"text":" Calculate the mo"}
+{"t":5979,"text":"les of mag"}
+{"t":5999,"text":"nesium and"}
+{"t":6022,"text":" state"}
+{"t":6041,"text":" which reactant is the limi"}
+{"t":6061,"text":"ting reagent."}
+{"t":6086,"text":" Justify your answer. (4"}
+{"t":6102,"text":" marks)\n\n#v("}
+{"t":6122,"text":"5"}
+{"t":6142,"text":"em)\n\n(b) Cal"}
+{"t":6162,"text":"culate the mass of hyd"}
+{"t":6184,"text":"rogen g"}
+{"t":6206,"text":"as produced. (3 mar"}
+{"t":6229,"text":"ks)\n\n#v(4em"}
+{"t":6246,"text":")\n\n(c) Calcul"}
+{"t":6273,"text":"ate the mass of magnes"}
+{"t":6290,"text":"ium left"}
+{"t":6311,"text":" un"}
+{"t":6330,"text":"reacted at"}
+{"t":6345,"text":" the end of"}
+{"t":6370,"text":" the reaction. (3 "}
+{"t":6391,"text":"marks)\n\n#v(4"}
+{"t":6411,"text":"em)\n\n== Section E:"}
+{"t":6430,"text":" Percent yield (5 "}
+{"t":6449,"text":"marks)\n\n*9.*"}
+{"t":6473,"text":" In a"}
+{"t":6499,"text":" l"}
+{"t":6513,"text":"ab,"}
+{"t":6531,"text":" the"}
+{"t":6553,"text":" reaction in"}
+{"t":6577,"text":" question"}
+{"t":6601,"text":" 6 was carried out with"}
+{"t":6615,"text":" 10.0 g of s"}
+{"t":6633,"text":"odium. The act"}
+{"t":6655,"text":"ual y"}
+{"t":6676,"text":"ield of sodium chloride"}
+{"t":6694,"text":" was 22.1 g."}
+{"t":6713,"text":"\n\n(a) Use"}
+{"t":6735,"text":" your"}
+{"t":6756,"text":" answer from"}
+{"t":6779,"text":" question 6(b) to state"}
+{"t":6796,"text":" the theoretical yield."}
+{"t":6825,"text":" (1 mark)\n\n#"}
+{"t":6838,"text":"v(1"}
+{"t":6859,"text":".5em)\n\n(b)"}
+{"t":6884,"text":" Calculate the percent y"}
+{"t":6896,"text":"ield. (2"}
+{"t":6920,"text":" marks)\n\n#v("}
+{"t":6937,"text":"3"}
+{"t":6960,"text":"em)\n\n(c) Su"}
+{"t":6979,"text":"ggest one reason why"}
+{"t":6998,"text":" the act"}
+{"t":7021,"text":"ual yield may be less than the"}
+{"t":7039,"text":" theoretical yield. ("}
+{"t":7061,"text":"2"}
+{"t":7083,"text":" marks)\n\n#v("}
+{"t":7104,"text":"2"}
+{"t":7121,"text":"em)\n\n#pagebre"}
+{"t":7142,"text":"ak()\n\n="}
+{"t":7162,"text":" Teacher"}
+{"t":7183,"text":" Answer Key\n\n*Section"}
+{"t":7204,"text":" A:"}
+{"t":7223,"text":"* 1 (b"}
+{"t":7244,"text":"); 2 (d); "}
+{"t":7272,"text":"3 (b); 4 "}
+{"t":7290,"text":"(c); 5 (c"}
+{"t":7308,"text":")\n\n*Section B:*"}
+{"t":7325,"text":" 1) 2,"}
+{"t":7353,"text":" 1, 2  "}
+{"t":7368,"text":"2) 1, 5,"}
+{"t":7392,"text":" 3, 4  3)"}
+{"t":7407,"text":" 2, 6, 2"}
+{"t":7430,"text":", 3  4) 1"}
+{"t":7448,"text":", 3, 2, "}
+{"t":7469,"text":"3  5) 1"}
+{"t":7490,"text":", 3, 2\n\n*"}
+{"t":7511,"text":"Section C:*\n- "}
+{"t":7533,"text":"6(a) $"}
+{"t":7553,"text":"10"}
+{"t":7570,"text":".0 / 22"}
+{"t":7591,"text":".99 = 0.435"}
+{"t":7611,"text":"$ mol"}
+{"t":7631,"text":" Na\n- 6(b)"}
+{"t":7654,"text":" N"}
+{"t":7673,"text":"aCl moles = 0"}
+{"t":7695,"text":".435 mol (1"}
+{"t":7713,"text":":1 ratio with"}
+{"t":7734,"text":" Na);"}
+{"t":7754,"text":" m"}
+{"t":7778,"text":"ass $"}
+{"t":7795,"text":"="}
+{"t":7816,"text":" 0.435 times"}
+{"t":7835,"text":" 58.44 = 25"}
+{"t":7856,"text":".4$ g\n- "}
+{"t":7878,"text":"6(c)"}
+{"t":7900,"text":" Cl₂ moles ="}
+{"t":7917,"text":" $0.435 / 2"}
+{"t":7940,"text":" = 0.2175$"}
+{"t":7958,"text":" mol; mass $="}
+{"t":7983,"text":" 0.2175 times "}
+{"t":8000,"text":"70.90 = 15."}
+{"t":8019,"text":"4$ g\n- 7"}
+{"t":8043,"text":"(a) $5.00 "}
+{"t":8061,"text":"/ 44.10 = "}
+{"t":8082,"text":"0.113"}
+{"t":8102,"text":"$ mol C"}
+{"t":8123,"text":"₃H₈\n- "}
+{"t":8145,"text":"7(b) CO₂"}
+{"t":8165,"text":" moles $"}
+{"t":8184,"text":"= 3"}
+{"t":8204,"text":" times 0.1"}
+{"t":8226,"text":"134 = 0.340$"}
+{"t":8244,"text":" mol; mass $="}
+{"t":8271,"text":" 0.3"}
+{"t":8284,"text":"401 times 44.01 "}
+{"t":8306,"text":"= 15"}
+{"t":8327,"text":".0$ g\n- "}
+{"t":8346,"text":"7(c) O₂"}
+{"t":8367,"text":" moles $= 5 times"}
+{"t":8389,"text":" 0.1134 = "}
+{"t":8419,"text":"0.567$ mol;"}
+{"t":8429,"text":" mass $= 0.5"}
+{"t":8451,"text":"669 times 32.00 "}
+{"t":8469,"text":"= 18.1$ g"}
+{"t":8491,"text":"\n\n*Section D:*"}
+{"t":8518,"text":"\n- 8(a)"}
+{"t":8538,"text":" Mg moles $= 2"}
+{"t":8555,"text":".43 / 24.31"}
+{"t":8572,"text":" = 0.100$"}
+{"t":8591,"text":" mol."}
+{"t":8614,"text":" M"}
+{"t":8634,"text":"g needs $2"}
+{"t":8674,"text":" times 0.100 ="}
+{"t":8674,"text":" 0.200$ mol"}
+{"t":8697,"text":" HCl but"}
+{"t":8714,"text":" only 0.150 mol"}
+{"t":8736,"text":" is available, so HCl is"}
+{"t":8754,"text":" lim"}
+{"t":8778,"text":"iting.\n- 8("}
+{"t":8796,"text":"b) H₂ mo"}
+{"t":8817,"text":"les = half"}
+{"t":8838,"text":" of"}
+{"t":8860,"text":" HCl moles $"}
+{"t":8881,"text":"= 0.075$ m"}
+{"t":8897,"text":"ol; mass $= 0"}
+{"t":8920,"text":".075 times 2.02"}
+{"t":8940,"text":" = 0.151$"}
+{"t":8959,"text":" g\n- 8(c)"}
+{"t":8980,"text":" Mg consumed $"}
+{"t":9000,"text":"= 0.075$ m"}
+{"t":9020,"text":"ol; rem"}
+{"t":9043,"text":"aining $= 0.025"}
+{"t":9061,"text":"$ mol; mass $"}
+{"t":9084,"text":"= 0.025 times "}
+{"t":9102,"text":"24.31 = 0."}
+{"t":9122,"text":"608"}
+{"t":9142,"text":"$ g\n\n*Section E"}
+{"t":9163,"text":":*\n- 9(a"}
+{"t":9186,"text":") Theoretical yield"}
+{"t":9204,"text":" = 25.4 g"}
+{"t":9226,"text":"\n- 9(b) $"}
+{"t":9266,"text":"22"}
+{"t":9282,"text":".1 / 25.4"}
+{"t":9285,"text":" times 100 = 87"}
+{"t":9313,"text":".0%$\n- 9"}
+{"t":9328,"text":"(c) Exam"}
+{"t":9349,"text":"ples:"}
+{"t":9368,"text":" incomplete re"}
+{"t":9389,"text":"action, product"}
+{"t":9408,"text":" l"}
+{"t":9432,"text":"ost during transfer or"}
+{"t":9453,"text":" filtration, imp"}
+{"t":9469,"text":"ure"}
+{"t":9489,"text":" re"}
+{"t":9510,"text":"actants, side reactions."}
+{"t":9530,"text":"\n\n*"}
+{"t":9553,"text":"Mar"}
+{"t":9570,"text":"ks"}
+{"t":9591,"text":" total"}
+{"t":9611,"text":":* A"}
+{"t":9633,"text":" 10, B 10, C"}
+{"t":9660,"text":" 15, D 10, E"}
+{"t":9690,"text":" 5 = 50"}

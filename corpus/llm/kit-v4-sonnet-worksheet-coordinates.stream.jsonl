@@ -1,0 +1,242 @@
+{"t":0,"text":"#"}
+{"t":33,"text":"show: wor"}
+{"t":66,"text":"ksheet.with(\n  "}
+{"t":100,"text":"title: [Plotting and"}
+{"t":133,"text":" Reading Points"}
+{"t":166,"text":" on the"}
+{"t":199,"text":" Coordinate Plane"}
+{"t":233,"text":"],\n  subject: ["}
+{"t":266,"text":"Mathematics],\n  gr"}
+{"t":300,"text":"ade: [Grade 7"}
+{"t":333,"text":"],\n  inst"}
+{"t":367,"text":"ructions: ["}
+{"t":400,"text":"Answer all questions. Rem"}
+{"t":433,"text":"ember to"}
+{"t":466,"text":" give"}
+{"t":499,"text":" the #"}
+{"t":534,"text":"em"}
+{"t":566,"text":"ph["}
+{"t":600,"text":"x]"}
+{"t":636,"text":"-coordinate first, then"}
+{"t":681,"text":" the #emph[y]-"}
+{"t":705,"text":"coordinate. Use a"}
+{"t":742,"text":" pencil and"}
+{"t":772,"text":" a ruler where"}
+{"t":806,"text":" need"}
+{"t":838,"text":"ed.],\n)\n\n#call"}
+{"t":867,"text":"out(kind: \"definition"}
+{"t":900,"text":"\","}
+{"t":933,"text":" title: [Ordered p"}
+{"t":966,"text":"airs])[\n  A"}
+{"t":1001,"text":" point on"}
+{"t":1033,"text":" the coordinate plane is"}
+{"t":1066,"text":" written as an *"}
+{"t":1100,"text":"ordered pair* $("}
+{"t":1134,"text":"x, y)$. The"}
+{"t":1166,"text":" first"}
+{"t":1200,"text":" number t"}
+{"t":1233,"text":"ells you how far to"}
+{"t":1267,"text":" move right ("}
+{"t":1303,"text":"positive)"}
+{"t":1333,"text":" or left (negative)"}
+{"t":1367,"text":" from the origin $"}
+{"t":1400,"text":"(0, 0)$."}
+{"t":1434,"text":" The second tells you how far to"}
+{"t":1468,"text":" move up (positive) or down"}
+{"t":1501,"text":" (negative).\n]\n\n="}
+{"t":1534,"text":" Part A: Reading co"}
+{"t":1568,"text":"ordinates\n\n#question(points"}
+{"t":1600,"text":": 5"}
+{"t":1634,"text":")[\n  Use the gr"}
+{"t":1667,"text":"id to write"}
+{"t":1700,"text":" the coordinates of each point"}
+{"t":1734,"text":".\n\n  #align"}
+{"t":1767,"text":"(center)[\n    #co"}
+{"t":1802,"text":"ordinate-plane("}
+{"t":1834,"text":"\n      x: (-5, "}
+{"t":1867,"text":"5),\n      y: (-"}
+{"t":1901,"text":"5, 5),\n      un"}
+{"t":1934,"text":"it: 6mm,"}
+{"t":1969,"text":"\n      points: ((3, "}
+{"t":2001,"text":"2, [A]), (-"}
+{"t":2034,"text":"4, 3, [B]"}
+{"t":2074,"text":"), (-2, -3,"}
+{"t":2101,"text":" [C]), (4, -"}
+{"t":2145,"text":"4, [D]), (-"}
+{"t":2168,"text":"3, 0, [E])"}
+{"t":2201,"text":"),\n    )\n  ]"}
+{"t":2234,"text":"\n\n  + A = (#bl"}
+{"t":2267,"text":"ank(width: 2."}
+{"t":2301,"text":"5em, answer: [3"}
+{"t":2335,"text":"]), #blank(width:"}
+{"t":2368,"text":" 2.5em, answer"}
+{"t":2401,"text":": [2]))\n  +"}
+{"t":2435,"text":" B = (#blank(width"}
+{"t":2468,"text":": 2.5em, answ"}
+{"t":2501,"text":"er: [$"}
+{"t":2540,"text":"-4$]), #blank"}
+{"t":2568,"text":"(width: 2.5em"}
+{"t":2602,"text":", answer: [3"}
+{"t":2634,"text":"]))\n  + C = ("}
+{"t":2668,"text":"#blank(width: 2"}
+{"t":2701,"text":".5em, answer: ["}
+{"t":2736,"text":"$-2$]), #bl"}
+{"t":2768,"text":"ank(width: 2.5"}
+{"t":2802,"text":"em, answer: [$-"}
+{"t":2846,"text":"3$]))\n  + D"}
+{"t":2868,"text":" = (#blank(width:"}
+{"t":2902,"text":" 2.5em, answer"}
+{"t":2935,"text":": [4]), #blank"}
+{"t":2969,"text":"(width: 2.5em"}
+{"t":3001,"text":", answer: [$-4"}
+{"t":3035,"text":"$]))\n  + E ="}
+{"t":3068,"text":" (#blank(width: "}
+{"t":3103,"text":"2.5em, answer:"}
+{"t":3135,"text":" [$-3$]), #"}
+{"t":3169,"text":"blank(width: 2."}
+{"t":3202,"text":"5em, answer: [0"}
+{"t":3237,"text":"]))\n]\n\n#question("}
+{"t":3268,"text":"points: 1"}
+{"t":3302,"text":")[\n  In which quad"}
+{"t":3335,"text":"rant is the"}
+{"t":3369,"text":" point $("}
+{"t":3402,"text":"-4, 3)$?"}
+{"t":3435,"text":"\n  #mcq(["}
+{"t":3469,"text":"Quadrant I], ["}
+{"t":3504,"text":"Quadrant II], ["}
+{"t":3535,"text":"Quadrant III], ["}
+{"t":3569,"text":"Quadrant IV], answ"}
+{"t":3602,"text":"er: 2)\n]"}
+{"t":3635,"text":"\n\n#question(points: 1)"}
+{"t":3669,"text":"[\n  A"}
+{"t":3702,"text":" point has"}
+{"t":3735,"text":" coordinates $(0,"}
+{"t":3770,"text":" -5)$. Where"}
+{"t":3802,"text":" does it lie?\n  #"}
+{"t":3836,"text":"mcq([On the #em"}
+{"t":3869,"text":"ph["}
+{"t":3903,"text":"x]-axis], [On"}
+{"t":3935,"text":" the #emph[y]-"}
+{"t":3969,"text":"axis], [In Quad"}
+{"t":4002,"text":"rant III], [At the orig"}
+{"t":4036,"text":"in], answer: 2)"}
+{"t":4070,"text":"\n]\n\n#question(points:"}
+{"t":4103,"text":" 2)[\n  M"}
+{"t":4135,"text":"ark each stat"}
+{"t":4170,"text":"ement true or false.\n  #"}
+{"t":4202,"text":"true-false(answer: true"}
+{"t":4236,"text":")[Both co"}
+{"t":4269,"text":"ordinates of every"}
+{"t":4302,"text":" point in Quadrant III"}
+{"t":4337,"text":" are negative.]\n  #"}
+{"t":4369,"text":"true-false(answer: false"}
+{"t":4402,"text":")[The points $(2,"}
+{"t":4435,"text":" 5)$ and $("}
+{"t":4470,"text":"5, 2)$ are"}
+{"t":4502,"text":" the same point.]\n]"}
+{"t":4537,"text":"\n\n= Part B: Plot"}
+{"t":4569,"text":"ting points\n\n#question(points:"}
+{"t":4602,"text":" 4)[\n  Pl"}
+{"t":4636,"text":"ot and"}
+{"t":4669,"text":" label these"}
+{"t":4702,"text":" points on the grid below"}
+{"t":4736,"text":".\n\n  $"}
+{"t":4769,"text":"P(2, 3)$"}
+{"t":4803,"text":" #"}
+{"t":4836,"text":"h"}
+{"t":4869,"text":"("}
+{"t":4903,"text":"1."}
+{"t":4936,"text":"5em"}
+{"t":4969,"text":") $Q(-3,"}
+{"t":5003,"text":" 1)$ #h("}
+{"t":5036,"text":"1.5em) $R("}
+{"t":5070,"text":"-1, -4)$"}
+{"t":5102,"text":" #h(1.5em)"}
+{"t":5137,"text":" $S(4, 0)"}
+{"t":5169,"text":"$\n\n  #align(center)"}
+{"t":5203,"text":"[\n    #coordinate"}
+{"t":5236,"text":"-plane(x: (-"}
+{"t":5269,"text":"5, 5), y: ("}
+{"t":5302,"text":"-5, 5), unit"}
+{"t":5336,"text":": 6mm)\n  "}
+{"t":5369,"text":"]"}
+{"t":5402,"text":"\n\n  #answer[\n    #"}
+{"t":5436,"text":"align(center)[\n      #"}
+{"t":5470,"text":"coordinate-plane("}
+{"t":5502,"text":"\n        x: (-5,"}
+{"t":5536,"text":" 5),\n        y: ("}
+{"t":5569,"text":"-5, 5),\n        "}
+{"t":5603,"text":"unit: 6mm,"}
+{"t":5636,"text":"\n        points: ((2,"}
+{"t":5670,"text":" 3, [P]), ("}
+{"t":5703,"text":"-3, 1, ["}
+{"t":5736,"text":"Q]), (-1, -"}
+{"t":5770,"text":"4, [R]), (4"}
+{"t":5804,"text":", 0, [S])"}
+{"t":5836,"text":"),\n      )\n    ]"}
+{"t":5871,"text":"\n  ]\n]\n\n#"}
+{"t":5903,"text":"question(points: 3)["}
+{"t":5936,"text":"\n  "}
+{"t":5972,"text":"Three cor"}
+{"t":6003,"text":"ners of a rectangle $"}
+{"t":6037,"text":"A"}
+{"t":6073,"text":" B C D"}
+{"t":6103,"text":"$ are shown on the gr"}
+{"t":6136,"text":"id.\n\n  #align(center"}
+{"t":6169,"text":")[\n    #coordin"}
+{"t":6203,"text":"ate-plane(\n      x"}
+{"t":6236,"text":": (-1, 6),"}
+{"t":6270,"text":"\n      y: (-1,"}
+{"t":6303,"text":" 5),\n      unit:"}
+{"t":6337,"text":" 7mm,\n      points"}
+{"t":6370,"text":": ((1, 1,"}
+{"t":6403,"text":" [A]), (5, "}
+{"t":6437,"text":"1, [B]), (5"}
+{"t":6470,"text":", 4, [C])),"}
+{"t":6503,"text":"\n    )\n  ]"}
+{"t":6536,"text":"\n\n  +"}
+{"t":6569,"text":" Write the coordinates of the"}
+{"t":6605,"text":" fourth corner,"}
+{"t":6649,"text":" $D$.\n    #answ"}
+{"t":6670,"text":"er-lines(count: "}
+{"t":6703,"text":"1, answer: [$D"}
+{"t":6737,"text":" = (1, 4)$"}
+{"t":6769,"text":"])\n  + Find"}
+{"t":6804,"text":" the length and width of the rect"}
+{"t":6837,"text":"angle.\n    #answer"}
+{"t":6870,"text":"-lines(count: 1"}
+{"t":6903,"text":", answer: [Length $"}
+{"t":6937,"text":"= 4$ units, width"}
+{"t":6969,"text":" $= 3$ units."}
+{"t":7004,"text":"])\n]"}
+{"t":7037,"text":"\n\n= Part C: Chall"}
+{"t":7075,"text":"enge\n\n#question(points:"}
+{"t":7103,"text":" 3)[\n  Star"}
+{"t":7137,"text":"ting at the"}
+{"t":7170,"text":" origin, a"}
+{"t":7203,"text":" rob"}
+{"t":7243,"text":"ot mo"}
+{"t":7270,"text":"ves "}
+{"t":7303,"text":"4 units right, then"}
+{"t":7336,"text":" 6"}
+{"t":7371,"text":" units up, then 7"}
+{"t":7403,"text":" units left. Where"}
+{"t":7436,"text":" does it end up?"}
+{"t":7470,"text":" Write its"}
+{"t":7504,"text":" final"}
+{"t":7536,"text":" position"}
+{"t":7569,"text":" as an ordered pair and"}
+{"t":7603,"text":" name"}
+{"t":7636,"text":" the quadrant."}
+{"t":7672,"text":"\n  #answer-space("}
+{"t":7704,"text":"height: 5em, answer"}
+{"t":7736,"text":": [$("}
+{"t":7770,"text":"4, 0"}
+{"t":7803,"text":") -"}
+{"t":7837,"text":"> (4, 6) -"}
+{"t":7869,"text":"> (-3, 6)"}
+{"t":7903,"text":"$. The rob"}
+{"t":7936,"text":"ot ends at $(-3"}
+{"t":7973,"text":", 6)$, in"}
+{"t":8003,"text":" Quadrant II.])"}
+{"t":8037,"text":"\n]"}

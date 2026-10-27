@@ -1,0 +1,228 @@
+{"t":0,"text":"#show: lesson-pl"}
+{"t":0,"text":"an.with("}
+{"t":0,"text":"\n  title: [The Water"}
+{"t":0,"text":" Cycle],\n  subject"}
+{"t":0,"text":": [Science],\n  gr"}
+{"t":11,"text":"ade: [Grade 4"}
+{"t":53,"text":"],\n  duration: [45"}
+{"t":55,"text":" minutes],\n)"}
+{"t":74,"text":"\n\n#learning-objectives["}
+{"t":95,"text":"\n  - Name the four main"}
+{"t":118,"text":" stages of the water cycle"}
+{"t":135,"text":": evaporation, condens"}
+{"t":156,"text":"ation, prec"}
+{"t":178,"text":"ipitation and coll"}
+{"t":201,"text":"ection.\n  - Explain"}
+{"t":219,"text":" how the"}
+{"t":241,"text":" Sun prov"}
+{"t":258,"text":"ides the energy that"}
+{"t":278,"text":" mo"}
+{"t":300,"text":"ves water around the c"}
+{"t":320,"text":"ycle.\n  - Describ"}
+{"t":341,"text":"e where"}
+{"t":360,"text":" water is"}
+{"t":381,"text":" stored on"}
+{"t":401,"text":" Earth,"}
+{"t":421,"text":" such as oceans, riv"}
+{"t":446,"text":"ers, lakes and gro"}
+{"t":463,"text":"undwater.\n]\n\n="}
+{"t":484,"text":" Mater"}
+{"t":503,"text":"ials"}
+{"t":525,"text":"\n\n- A"}
+{"t":544,"text":" clear plastic c"}
+{"t":564,"text":"up or j"}
+{"t":585,"text":"ar, h"}
+{"t":605,"text":"ot water, a pl"}
+{"t":625,"text":"ate,"}
+{"t":645,"text":" and "}
+{"t":666,"text":"ice cub"}
+{"t":685,"text":"es ("}
+{"t":708,"text":"for the dem"}
+{"t":727,"text":"onstration)\n- Wh"}
+{"t":747,"text":"iteboard mark"}
+{"t":767,"text":"ers and a"}
+{"t":789,"text":" lab"}
+{"t":809,"text":"elled diagram of the water"}
+{"t":829,"text":" cycle\n- Wor"}
+{"t":849,"text":"ksheet"}
+{"t":869,"text":" cop"}
+{"t":889,"text":"ies,"}
+{"t":911,"text":" one per student (see"}
+{"t":930,"text":" the"}
+{"t":950,"text":" ex"}
+{"t":970,"text":"it "}
+{"t":1001,"text":"ticket below"}
+{"t":1012,"text":")\n\n= Starter"}
+{"t":1032,"text":" (5"}
+{"t":1055,"text":" minutes)"}
+{"t":1073,"text":"\n\nAsk students:"}
+{"t":1093,"text":" \""}
+{"t":1114,"text":"Where does"}
+{"t":1133,"text":" the water in"}
+{"t":1154,"text":" a puddle go after"}
+{"t":1175,"text":" a s"}
+{"t":1196,"text":"unny day?\" Coll"}
+{"t":1215,"text":"ect three"}
+{"t":1235,"text":" or"}
+{"t":1260,"text":" four answers on"}
+{"t":1277,"text":" the board without"}
+{"t":1297,"text":" jud"}
+{"t":1317,"text":"ging them"}
+{"t":1341,"text":". T"}
+{"t":1358,"text":"ell students"}
+{"t":1380,"text":" that today"}
+{"t":1399,"text":" they"}
+{"t":1421,"text":" will foll"}
+{"t":1442,"text":"ow the water on"}
+{"t":1460,"text":" its journey.\n\n= Dem"}
+{"t":1480,"text":"onstration (10 minut"}
+{"t":1505,"text":"es)\n\nPour h"}
+{"t":1521,"text":"ot water into the j"}
+{"t":1542,"text":"ar and place the plate on top"}
+{"t":1562,"text":", with"}
+{"t":1584,"text":" ice cubes on"}
+{"t":1603,"text":" the plate. "}
+{"t":1623,"text":"Ask students to observe the"}
+{"t":1644,"text":" j"}
+{"t":1664,"text":"ar for two"}
+{"t":1684,"text":" minutes. Dro"}
+{"t":1705,"text":"plets will"}
+{"t":1728,"text":" form on the under"}
+{"t":1746,"text":"side of the plate."}
+{"t":1770,"text":"\n\n#callout(kind:"}
+{"t":1796,"text":" \"example"}
+{"t":1807,"text":"\")[\n  The"}
+{"t":1835,"text":" war"}
+{"t":1854,"text":"m water ev"}
+{"t":1874,"text":"aporates,"}
+{"t":1890,"text":" r"}
+{"t":1909,"text":"ises,"}
+{"t":1929,"text":" and"}
+{"t":1950,"text":" then cond"}
+{"t":1973,"text":"enses on the c"}
+{"t":1996,"text":"old plate."}
+{"t":2015,"text":" This"}
+{"t":2031,"text":" is the same process that for"}
+{"t":2051,"text":"ms clouds high"}
+{"t":2071,"text":" in the s"}
+{"t":2092,"text":"ky.\n]\n\n= Te"}
+{"t":2113,"text":"aching the"}
+{"t":2153,"text":" Stages (12"}
+{"t":2173,"text":" minutes)\n\nDra"}
+{"t":2194,"text":"w the water cycle on the"}
+{"t":2217,"text":" board and"}
+{"t":2235,"text":" label each stage as"}
+{"t":2255,"text":" you"}
+{"t":2275,"text":" expl"}
+{"t":2296,"text":"ain it:"}
+{"t":2317,"text":"\n\n+ *"}
+{"t":2338,"text":"Evaporation:"}
+{"t":2357,"text":"* The Sun he"}
+{"t":2378,"text":"ats water in"}
+{"t":2398,"text":" oceans, lakes and"}
+{"t":2419,"text":" rivers, turning it into"}
+{"t":2439,"text":" water"}
+{"t":2460,"text":" vapour.\n+ *"}
+{"t":2480,"text":"Condensation:* V"}
+{"t":2501,"text":"apour c"}
+{"t":2520,"text":"ools high"}
+{"t":2542,"text":" in the air"}
+{"t":2561,"text":" and g"}
+{"t":2583,"text":"athers into tiny dropl"}
+{"t":2602,"text":"ets that"}
+{"t":2623,"text":" form clouds.\n+"}
+{"t":2643,"text":" *Precipitation:*"}
+{"t":2684,"text":" Droplets join"}
+{"t":2704,"text":" together and f"}
+{"t":2725,"text":"all as"}
+{"t":2746,"text":" rain, snow, s"}
+{"t":2766,"text":"leet or hail.\n+"}
+{"t":2786,"text":" *Collection:*"}
+{"t":2807,"text":" Water run"}
+{"t":2828,"text":"s into"}
+{"t":2847,"text":" rivers and"}
+{"t":2868,"text":" l"}
+{"t":2888,"text":"akes, or so"}
+{"t":2909,"text":"aks into the"}
+{"t":2929,"text":" ground as"}
+{"t":2949,"text":" groundwater."}
+{"t":2970,"text":"\n\nAsk: \""}
+{"t":2991,"text":"Which stage did"}
+{"t":3013,"text":" our"}
+{"t":3032,"text":" demonstration show?\""}
+{"t":3052,"text":" Students"}
+{"t":3073,"text":" should answer cond"}
+{"t":3094,"text":"ensation."}
+{"t":3112,"text":"\n\n="}
+{"t":3133,"text":" Guided Activ"}
+{"t":3155,"text":"ity (12"}
+{"t":3174,"text":" minutes)\n\nIn"}
+{"t":3197,"text":" pairs, students draw their"}
+{"t":3216,"text":" own water cycle on"}
+{"t":3236,"text":" gra"}
+{"t":3255,"text":"ph paper or"}
+{"t":3278,"text":" a bl"}
+{"t":3298,"text":"ank sheet. Each"}
+{"t":3319,"text":" pair must include"}
+{"t":3339,"text":" all"}
+{"t":3357,"text":" four stages, arrows show"}
+{"t":3378,"text":"ing the direction of mov"}
+{"t":3398,"text":"ement, and the label"}
+{"t":3420,"text":" \"Sun\" next"}
+{"t":3439,"text":" to the first"}
+{"t":3461,"text":" st"}
+{"t":3496,"text":"age."}
+{"t":3502,"text":"\n\nCirculate and"}
+{"t":3521,"text":" check"}
+{"t":3542,"text":" that"}
+{"t":3563,"text":" pairs label"}
+{"t":3583,"text":" cond"}
+{"t":3604,"text":"ensation as"}
+{"t":3623,"text":" happening in"}
+{"t":3643,"text":" the"}
+{"t":3664,"text":" air, not on the ground."}
+{"t":3684,"text":"\n\n= Review"}
+{"t":3705,"text":" and Ex"}
+{"t":3725,"text":"it Ticket (6 "}
+{"t":3746,"text":"minutes)"}
+{"t":3767,"text":"\n\nAsk students to answ"}
+{"t":3787,"text":"er these"}
+{"t":3808,"text":" questions on a sl"}
+{"t":3827,"text":"ip of paper:\n\n+"}
+{"t":3847,"text":" What"}
+{"t":3867,"text":" caus"}
+{"t":3889,"text":"es water"}
+{"t":3909,"text":" to evaporate?\n+"}
+{"t":3929,"text":" Name"}
+{"t":3949,"text":" one"}
+{"t":3970,"text":" place"}
+{"t":3991,"text":" where"}
+{"t":4010,"text":" water is coll"}
+{"t":4032,"text":"ected."}
+{"t":4052,"text":"\n+"}
+{"t":4092,"text":" Why do"}
+{"t":4115,"text":" clouds form?\n\n#answ"}
+{"t":4134,"text":"er-lines("}
+{"t":4154,"text":"count: 2, answer:"}
+{"t":4173,"text":" [The Sun he"}
+{"t":4194,"text":"ats the water. Water"}
+{"t":4215,"text":" is collected in o"}
+{"t":4235,"text":"ceans and lakes."}
+{"t":4255,"text":" Clouds form when"}
+{"t":4277,"text":" water v"}
+{"t":4296,"text":"apour cools and condenses"}
+{"t":4317,"text":" into"}
+{"t":4337,"text":" droplets.])\n\n#call"}
+{"t":4357,"text":"out(kind: \"t"}
+{"t":4381,"text":"ip\")[\n  Students"}
+{"t":4399,"text":" who stru"}
+{"t":4419,"text":"ggle with the ter"}
+{"t":4441,"text":"ms can use the m"}
+{"t":4461,"text":"nemonic \""}
+{"t":4480,"text":"Evaporate, Condense"}
+{"t":4503,"text":", Precipitate,"}
+{"t":4521,"text":" Collect\" and"}
+{"t":4541,"text":" act"}
+{"t":4561,"text":" out each"}
+{"t":4582,"text":" stage with hand"}
+{"t":4605,"text":" movements.\n]"}

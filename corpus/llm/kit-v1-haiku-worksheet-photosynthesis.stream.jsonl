@@ -1,0 +1,310 @@
+{"t":0,"text":"#"}
+{"t":18,"text":"show: worksheet."}
+{"t":40,"text":"with(\n  title: ["}
+{"t":61,"text":"Photosynthesis],"}
+{"t":89,"text":"\n  subject: [Science],"}
+{"t":248,"text":"\n  grade: [Gr"}
+{"t":248,"text":"ade 7],\n  info"}
+{"t":248,"text":": (\"name\", \"date\","}
+{"t":248,"text":" \"class\"),\n  instruct"}
+{"t":248,"text":"ions: ["}
+{"t":248,"text":"Read"}
+{"t":248,"text":" each"}
+{"t":250,"text":" question car"}
+{"t":266,"text":"efully. Write"}
+{"t":283,"text":" your answers in the sp"}
+{"t":304,"text":"aces provided.],\n)"}
+{"t":326,"text":"\n\n#"}
+{"t":344,"text":"callout(k"}
+{"t":366,"text":"ind: \"remember\")["}
+{"t":385,"text":"\n  Photosynthesis"}
+{"t":406,"text":" is"}
+{"t":432,"text":" the"}
+{"t":447,"text":" process by which green"}
+{"t":467,"text":" plants use"}
+{"t":487,"text":" light"}
+{"t":507,"text":" energ"}
+{"t":529,"text":"y to"}
+{"t":549,"text":" make gl"}
+{"t":571,"text":"ucose from carbon dio"}
+{"t":595,"text":"xide and water. O"}
+{"t":615,"text":"xygen is released as"}
+{"t":631,"text":" a by"}
+{"t":651,"text":"-product.\n]\n\n="}
+{"t":671,"text":" Part"}
+{"t":691,"text":" A: Fill in"}
+{"t":711,"text":" the blanks\n\n#question("}
+{"t":734,"text":"points: 2)[\n  "}
+{"t":753,"text":"Complete the sentences"}
+{"t":773,"text":" using the"}
+{"t":793,"text":" words in the box"}
+{"t":813,"text":":"}
+{"t":837,"text":" _"}
+{"t":856,"text":"chl"}
+{"t":875,"text":"orophyll_, _st"}
+{"t":897,"text":"omata_, _glucose"}
+{"t":916,"text":"_, _ro"}
+{"t":936,"text":"ots_.\n  +"}
+{"t":977,"text":" Green"}
+{"t":997,"text":" pl"}
+{"t":1020,"text":"ants absorb light using"}
+{"t":1038,"text":" a"}
+{"t":1058,"text":" pigment called #blank("}
+{"t":1079,"text":"width"}
+{"t":1099,"text":": 6"}
+{"t":1124,"text":"em, answer: [chl"}
+{"t":1140,"text":"orophyll]).\n  "}
+{"t":1160,"text":"+ Car"}
+{"t":1182,"text":"bon dioxide enters"}
+{"t":1203,"text":" the"}
+{"t":1221,"text":" leaf through t"}
+{"t":1243,"text":"iny p"}
+{"t":1263,"text":"ores called #blank(width:"}
+{"t":1284,"text":" 6em, answer: ["}
+{"t":1304,"text":"stomata]).\n  +"}
+{"t":1324,"text":" The plant u"}
+{"t":1346,"text":"ses light"}
+{"t":1365,"text":" energy to make #blank("}
+{"t":1385,"text":"width: 6em, answer"}
+{"t":1406,"text":": [glucose]) as"}
+{"t":1426,"text":" food"}
+{"t":1449,"text":".\n  "}
+{"t":1469,"text":"+ Water is absorbed"}
+{"t":1488,"text":" from"}
+{"t":1509,"text":" the so"}
+{"t":1528,"text":"il through"}
+{"t":1549,"text":" the #blank(width: "}
+{"t":1569,"text":"5"}
+{"t":1597,"text":"em, answer: [roots"}
+{"t":1611,"text":"]).\n]\n\n= Part"}
+{"t":1630,"text":" B: Multiple choice"}
+{"t":1651,"text":"\n\n#question(points: 1"}
+{"t":1672,"text":")[\n  Which g"}
+{"t":1692,"text":"as do"}
+{"t":1713,"text":" plants take in for"}
+{"t":1732,"text":" photosynthesis?"}
+{"t":1753,"text":"\n  #mcq(["}
+{"t":1774,"text":"Oxygen], [N"}
+{"t":1795,"text":"itrogen], [Car"}
+{"t":1815,"text":"bon dioxide], ["}
+{"t":1836,"text":"Hydrogen], answ"}
+{"t":1855,"text":"er: 3)\n]"}
+{"t":1876,"text":"\n\n#question(points: 1)"}
+{"t":1897,"text":"[\n  Where"}
+{"t":1918,"text":" does"}
+{"t":1939,"text":" most phot"}
+{"t":1975,"text":"osynthesis take"}
+{"t":1978,"text":" place in a plant?\n  "}
+{"t":1999,"text":"#mcq([In"}
+{"t":2021,"text":" the ro"}
+{"t":2040,"text":"ots], [In the st"}
+{"t":2060,"text":"em], [In the leaves"}
+{"t":2080,"text":"], [In the flow"}
+{"t":2101,"text":"ers], answer: 3)"}
+{"t":2126,"text":"\n]\n\n#question(points:"}
+{"t":2143,"text":" 1)[\n  Which"}
+{"t":2166,"text":" cond"}
+{"t":2184,"text":"ition is needed for photosyn"}
+{"t":2203,"text":"thesis?\n  #m"}
+{"t":2230,"text":"cq([Darkness],"}
+{"t":2244,"text":" [Light], ["}
+{"t":2266,"text":"Cold tem"}
+{"t":2286,"text":"peratures], [Sal"}
+{"t":2307,"text":"t water"}
+{"t":2327,"text":"], answer: 2"}
+{"t":2347,"text":")\n]\n\n#question(points"}
+{"t":2368,"text":": 1)[\n  "}
+{"t":2391,"text":"Which gas is released"}
+{"t":2409,"text":" during"}
+{"t":2429,"text":" photosynthesis?"}
+{"t":2448,"text":"\n  #mcq([Car"}
+{"t":2473,"text":"bon dioxide], ["}
+{"t":2489,"text":"Oxygen], ["}
+{"t":2510,"text":"N"}
+{"t":2532,"text":"itrogen], [Meth"}
+{"t":2551,"text":"ane], answer: 2)"}
+{"t":2572,"text":"\n]\n\n= Part C:"}
+{"t":2593,"text":" Label the"}
+{"t":2612,"text":" le"}
+{"t":2634,"text":"af\n\n#question(points:"}
+{"t":2654,"text":" 4"}
+{"t":2677,"text":")[\n  The"}
+{"t":2694,"text":" diagram sh"}
+{"t":2716,"text":"ows a c"}
+{"t":2734,"text":"ross-section of a leaf"}
+{"t":2754,"text":". Label the par"}
+{"t":2775,"text":"ts A"}
+{"t":2795,"text":" to"}
+{"t":2817,"text":" D by"}
+{"t":2841,"text":" writing the corre"}
+{"t":2856,"text":"ct name for"}
+{"t":2877,"text":" each let"}
+{"t":2901,"text":"ter."}
+{"t":2941,"text":"\n\n  #align"}
+{"t":2958,"text":"(center"}
+{"t":2979,"text":")"}
+{"t":3000,"text":"["}
+{"t":3019,"text":"\n    #cetz.canv"}
+{"t":3041,"text":"as({\n      import cetz"}
+{"t":3060,"text":".draw: *\n      //"}
+{"t":3080,"text":" le"}
+{"t":3101,"text":"af bl"}
+{"t":3121,"text":"ade\n      circle((0,"}
+{"t":3142,"text":" 0), radius: (3"}
+{"t":3162,"text":".2"}
+{"t":3184,"text":", 1.6),"}
+{"t":3203,"text":" stroke: "}
+{"t":3224,"text":"1p"}
+{"t":3244,"text":"t +"}
+{"t":3265,"text":" green"}
+{"t":3285,"text":"."}
+{"t":3308,"text":"darken"}
+{"t":3326,"text":"(20"}
+{"t":3349,"text":"%),"}
+{"t":3368,"text":" fill: green.l"}
+{"t":3386,"text":"ighten(75"}
+{"t":3431,"text":"%))\n      // midrib"}
+{"t":3447,"text":"\n      line(("}
+{"t":3469,"text":"-3"}
+{"t":3489,"text":","}
+{"t":3511,"text":" 0), (3, 0"}
+{"t":3534,"text":"), stroke: 0"}
+{"t":3558,"text":".8pt +"}
+{"t":3571,"text":" green.darken(30"}
+{"t":3592,"text":"%))\n      // stem"}
+{"t":3612,"text":"\n      line((-3, "}
+{"t":3631,"text":"0), (-4."}
+{"t":3652,"text":"8, -1.4"}
+{"t":3673,"text":"), stroke: 3"}
+{"t":3693,"text":"pt +"}
+{"t":3713,"text":" green"}
+{"t":3736,"text":".darken(30%))"}
+{"t":3754,"text":"\n      // label"}
+{"t":3774,"text":" le"}
+{"t":3795,"text":"ader"}
+{"t":3817,"text":" lines and"}
+{"t":3835,"text":" let"}
+{"t":3857,"text":"ters\n      line((0"}
+{"t":3876,"text":".5, 0."}
+{"t":3896,"text":"2), (2.2"}
+{"t":3919,"text":", 1"}
+{"t":3937,"text":".9"}
+{"t":3959,"text":"), stroke: "}
+{"t":3980,"text":"0.5pt)\n      "}
+{"t":3998,"text":"content((2"}
+{"t":4019,"text":".5"}
+{"t":4039,"text":", 2.1"}
+{"t":4060,"text":"), [A])\n      line(("}
+{"t":4080,"text":"-0.5, -"}
+{"t":4103,"text":"0.2"}
+{"t":4128,"text":"), (-"}
+{"t":4141,"text":"1.8"}
+{"t":4162,"text":", -1.9), stro"}
+{"t":4182,"text":"ke: 0.5pt"}
+{"t":4204,"text":")\n      content((-2"}
+{"t":4226,"text":".0, -2"}
+{"t":4246,"text":".2), [B])\n      "}
+{"t":4266,"text":"line((1.2, 0"}
+{"t":4286,"text":".0), (2.4,"}
+{"t":4306,"text":" -1.9"}
+{"t":4325,"text":"), stroke: 0."}
+{"t":4346,"text":"5pt)\n      content(("}
+{"t":4368,"text":"2.6, -2.2"}
+{"t":4389,"text":"), [C])\n      line(("}
+{"t":4407,"text":"-4"}
+{"t":4428,"text":"."}
+{"t":4448,"text":"0, -0"}
+{"t":4470,"text":".7), (-5"}
+{"t":4489,"text":".6"}
+{"t":4511,"text":", "}
+{"t":4529,"text":"0.9"}
+{"t":4550,"text":"), stroke: 0."}
+{"t":4573,"text":"5pt)\n      content(("}
+{"t":4591,"text":"-5.9, 1"}
+{"t":4611,"text":".1"}
+{"t":4631,"text":"), [D])\n    })"}
+{"t":4652,"text":"\n  ]\n\n  + A:"}
+{"t":4673,"text":" #blank(width: 8"}
+{"t":4693,"text":"em, answer: [up"}
+{"t":4713,"text":"per epidermis])\n  "}
+{"t":4734,"text":"+ B: #blank(width"}
+{"t":4754,"text":": 8em, answer:"}
+{"t":4781,"text":" [pal"}
+{"t":4798,"text":"isade lay"}
+{"t":4819,"text":"er])\n  + C: #"}
+{"t":4837,"text":"blank(width: 8em"}
+{"t":4856,"text":", answer: [v"}
+{"t":4877,"text":"ein ("}
+{"t":4897,"text":"xylem and"}
+{"t":4920,"text":" phloem)])\n  +"}
+{"t":4938,"text":" D: #blank(width:"}
+{"t":4958,"text":" 8em, answer: ["}
+{"t":4981,"text":"pet"}
+{"t":5000,"text":"iole ("}
+{"t":5020,"text":"le"}
+{"t":5040,"text":"af stal"}
+{"t":5062,"text":"k)])"}
+{"t":5081,"text":"\n\n  #answer["}
+{"t":5103,"text":"Other"}
+{"t":5122,"text":" ac"}
+{"t":5142,"text":"ceptable answ"}
+{"t":5163,"text":"ers include"}
+{"t":5184,"text":" \"stomata\" for"}
+{"t":5204,"text":" a"}
+{"t":5225,"text":" pore on"}
+{"t":5244,"text":" the l"}
+{"t":5264,"text":"ower surface, and"}
+{"t":5286,"text":" \"spongy m"}
+{"t":5305,"text":"esophyll\" for the lay"}
+{"t":5325,"text":"er below the"}
+{"t":5346,"text":" palisade."}
+{"t":5367,"text":" Accept re"}
+{"t":5389,"text":"asonable equ"}
+{"t":5411,"text":"ivalent"}
+{"t":5427,"text":" names"}
+{"t":5448,"text":".]\n]\n\n= Part"}
+{"t":5468,"text":" D: Short answer\n\n#"}
+{"t":5492,"text":"question(points: 3"}
+{"t":5512,"text":")[\n  Write the word"}
+{"t":5530,"text":" equ"}
+{"t":5550,"text":"ation for photosynthesis"}
+{"t":5570,"text":", then write"}
+{"t":5591,"text":" the balanced ch"}
+{"t":5611,"text":"emical equation.\n  #"}
+{"t":5632,"text":"answer-lines(count:"}
+{"t":5653,"text":" 3"}
+{"t":5673,"text":", answer: [Word equ"}
+{"t":5693,"text":"ation: carbon diox"}
+{"t":5714,"text":"ide + water #"}
+{"t":5734,"text":"s"}
+{"t":5756,"text":"ym"}
+{"t":5775,"text":"."}
+{"t":5795,"text":"arrow glucose + o"}
+{"t":5815,"text":"xygen. Balanced"}
+{"t":5838,"text":": #ce(\"6CO"}
+{"t":5859,"text":"2 + 6H2O"}
+{"t":5879,"text":" -> C6H"}
+{"t":5897,"text":"12O6 + 6O"}
+{"t":5918,"text":"2\")])\n]\n\n#question"}
+{"t":5942,"text":"(points: 2)["}
+{"t":5958,"text":"\n  Explain why a plant"}
+{"t":5982,"text":" k"}
+{"t":6001,"text":"ept in a d"}
+{"t":6023,"text":"ark c"}
+{"t":6041,"text":"upboard for several days would e"}
+{"t":6060,"text":"ventually die"}
+{"t":6083,"text":","}
+{"t":6101,"text":" even if"}
+{"t":6123,"text":" it has"}
+{"t":6143,"text":" en"}
+{"t":6162,"text":"ough water.\n  #answer"}
+{"t":6183,"text":"-lines(count: 2"}
+{"t":6203,"text":", answer: ["}
+{"t":6224,"text":"Without light, the plant cann"}
+{"t":6244,"text":"ot car"}
+{"t":6265,"text":"ry out photosynthesis"}
+{"t":6285,"text":", so it cannot make gl"}
+{"t":6305,"text":"ucose for"}
+{"t":6334,"text":" energy and"}
+{"t":6346,"text":" growth.])\n]\n\n#"}
+{"t":6385,"text":"answer-key()"}

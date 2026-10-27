@@ -1,0 +1,138 @@
+{"t":0,"text":"="}
+{"t":11,"text":" Vocabulario"}
+{"t":28,"text":" de"}
+{"t":45,"text":" com"}
+{"t":65,"text":"ida"}
+{"t":88,"text":": Quiz para"}
+{"t":108,"text":" princip"}
+{"t":130,"text":"iantes\n\n*"}
+{"t":147,"text":"Name"}
+{"t":171,"text":":* #"}
+{"t":193,"text":"underline[#"}
+{"t":212,"text":"h(8"}
+{"t":230,"text":"cm)] *Date:"}
+{"t":250,"text":"* #underline[#h("}
+{"t":271,"text":"4"}
+{"t":292,"text":"cm)]\n\n=="}
+{"t":312,"text":" Part"}
+{"t":331,"text":" "}
+{"t":354,"text":"1: Matching\n\nMatch"}
+{"t":372,"text":" each Spanish word in"}
+{"t":395,"text":" the left"}
+{"t":413,"text":" column with its English me"}
+{"t":436,"text":"aning."}
+{"t":454,"text":" Write the mat"}
+{"t":474,"text":"ching letter from"}
+{"t":495,"text":" the right column in"}
+{"t":519,"text":" the answer bl"}
+{"t":535,"text":"ank.\n\n#table("}
+{"t":559,"text":"\n  columns: ("}
+{"t":577,"text":"au"}
+{"t":597,"text":"to, 1f"}
+{"t":617,"text":"r, au"}
+{"t":637,"text":"to, 1fr),"}
+{"t":657,"text":"\n  stroke: "}
+{"t":678,"text":"0.5p"}
+{"t":700,"text":"t,\n  in"}
+{"t":723,"text":"set: 8"}
+{"t":739,"text":"pt,\n  [*"}
+{"t":762,"text":"No"}
+{"t":783,"text":".*], [*Español"}
+{"t":801,"text":"*], [*Answer*"}
+{"t":822,"text":"], [*English ("}
+{"t":844,"text":"letters"}
+{"t":866,"text":")*],\n  [1],"}
+{"t":882,"text":" [el pan], [#under"}
+{"t":903,"text":"line[#h(1.2"}
+{"t":928,"text":"cm)]], [A."}
+{"t":946,"text":" eg"}
+{"t":966,"text":"g],\n  [2], ["}
+{"t":990,"text":"la leche], [#underline"}
+{"t":1006,"text":"[#h(1.2c"}
+{"t":1027,"text":"m)]], [B. water"}
+{"t":1049,"text":"],\n  [3], [la"}
+{"t":1068,"text":" manzana], [#underline"}
+{"t":1089,"text":"[#h(1.2c"}
+{"t":1107,"text":"m)]], [C. b"}
+{"t":1134,"text":"read],\n  [4], ["}
+{"t":1152,"text":"el huevo], [#under"}
+{"t":1175,"text":"line[#h(1.2"}
+{"t":1192,"text":"cm)]], [D."}
+{"t":1210,"text":" ap"}
+{"t":1237,"text":"ple],\n  [5], ["}
+{"t":1251,"text":"el agua], [#underline"}
+{"t":1274,"text":"[#h(1.2c"}
+{"t":1294,"text":"m)]], [E"}
+{"t":1314,"text":". milk],\n  [6"}
+{"t":1334,"text":"], [el queso], [#"}
+{"t":1353,"text":"underline[#h(1."}
+{"t":1378,"text":"2cm)]], [F"}
+{"t":1397,"text":". cheese],\n)"}
+{"t":1417,"text":"\n\n== Part 2: F"}
+{"t":1436,"text":"ill in the"}
+{"t":1457,"text":" Blank\n\nChoose the"}
+{"t":1477,"text":" best word from the word bank and"}
+{"t":1497,"text":" write"}
+{"t":1517,"text":" it in the blank. Use"}
+{"t":1540,"text":" each"}
+{"t":1558,"text":" word only"}
+{"t":1582,"text":" once."}
+{"t":1601,"text":" One"}
+{"t":1621,"text":" word will not"}
+{"t":1643,"text":" be used.\n\n*Word b"}
+{"t":1662,"text":"ank:* arroz #"}
+{"t":1680,"text":"h"}
+{"t":1704,"text":"(0"}
+{"t":1743,"text":".5cm) carne #"}
+{"t":1752,"text":"h(0"}
+{"t":1791,"text":".5cm) pescado"}
+{"t":1829,"text":" #h(0.5cm"}
+{"t":1829,"text":") s"}
+{"t":1857,"text":"opa #h(0.5"}
+{"t":1892,"text":"cm) ag"}
+{"t":1892,"text":"ua #h(0.5c"}
+{"t":1892,"text":"m) que"}
+{"t":1924,"text":"so #h(0.5c"}
+{"t":1954,"text":"m) le"}
+{"t":1978,"text":"che #h(0.5c"}
+{"t":1978,"text":"m) huevo"}
+{"t":2003,"text":"\n\n+"}
+{"t":2009,"text":" Para el desayuno, b"}
+{"t":2029,"text":"ebo un vaso de #"}
+{"t":2048,"text":"underline[#h(3"}
+{"t":2072,"text":"cm)].\n+"}
+{"t":2090,"text":" Para la"}
+{"t":2109,"text":" cena, como"}
+{"t":2132,"text":" #"}
+{"t":2152,"text":"underline[#h(3c"}
+{"t":2173,"text":"m)] con pollo."}
+{"t":2193,"text":"\n+ En"}
+{"t":2211,"text":" la mañana como"}
+{"t":2237,"text":" un #underline[#h("}
+{"t":2256,"text":"3cm)] frito."}
+{"t":2279,"text":"\n+ Compro"}
+{"t":2294,"text":" #underline[#h(3"}
+{"t":2317,"text":"cm)] en la carn"}
+{"t":2334,"text":"icería."}
+{"t":2355,"text":"\n+ Para tomar"}
+{"t":2376,"text":", necesito un vaso"}
+{"t":2399,"text":" de #underline[#h("}
+{"t":2417,"text":"3cm)]"}
+{"t":2437,"text":" fría.\n+ Me"}
+{"t":2457,"text":" gusta po"}
+{"t":2479,"text":"ner #underline[#h("}
+{"t":2499,"text":"3cm)] en el s"}
+{"t":2519,"text":"ándwich.\n\n== Part"}
+{"t":2539,"text":" 3: Write"}
+{"t":2583,"text":" Your Own"}
+{"t":2602,"text":"\n\nWrite one"}
+{"t":2622,"text":" compl"}
+{"t":2644,"text":"ete sentence in Span"}
+{"t":2661,"text":"ish about a"}
+{"t":2682,"text":" food you like to eat."}
+{"t":2704,"text":"\n\n#line"}
+{"t":2724,"text":"(length: 100%)"}
+{"t":2743,"text":"\n#v"}
+{"t":2763,"text":"(1"}
+{"t":2784,"text":"em)\n#line(length:"}
+{"t":2802,"text":" 100%)"}

@@ -52,7 +52,12 @@ export const UNIVERSE_PACKAGES: readonly UniversePackage[] = [
     "0.5.3",
     new URL("../vendor/cetz-0.5.3.tar.gz", import.meta.url),
     "sha256-7uRpaPfYuRjZ0EkPoOM2gkZlOASeDzSguTSJWUx+PVo=",
-    { topic: "diagrams", summary: "drawings: `#cetz.canvas({ import cetz.draw: *; line(..); circle(..) })`" },
+    {
+      topic: "diagrams",
+      // #24: models call Typst's `polygon` and `ellipse` in a canvas, where `cetz.draw` shadows them.
+      summary:
+        "drawings: `#cetz.canvas({ import cetz.draw: *; line((0, 0), (4, 0), (2, 3), close: true); circle((6, 1), radius: (2, 1)); rect((9, 0), (11, 2)); content((2, -0.5), [4 cm]) })`. In a canvas these replace Typst's shapes: a polygon is `line(.., close: true)`, an ellipse a `circle` with two radii",
+    },
   ),
   preview(
     "fletcher",

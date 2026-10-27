@@ -1,0 +1,131 @@
+{"t":0,"text":"#"}
+{"t":34,"text":"set page(margin: 2"}
+{"t":66,"text":"c"}
+{"t":99,"text":"m)\n#set text(size"}
+{"t":132,"text":": 12"}
+{"t":164,"text":"pt)\n#let"}
+{"t":197,"text":" blank = box(width: "}
+{"t":233,"text":"5em, height: 0."}
+{"t":265,"text":"9em, stroke: ("}
+{"t":301,"text":"bottom: 0.5"}
+{"t":332,"text":"pt))\n\n= Past"}
+{"t":365,"text":" Tense Verbs"}
+{"t":402,"text":"\n\nName: #"}
+{"t":431,"text":"box(width: 12"}
+{"t":466,"text":"em, stroke: ("}
+{"t":498,"text":"bottom: 0.5"}
+{"t":531,"text":"pt),"}
+{"t":565,"text":" height: 0.9em)"}
+{"t":601,"text":" #h(1"}
+{"t":631,"text":"f"}
+{"t":668,"text":"r) Date: #box("}
+{"t":698,"text":"width: 7"}
+{"t":734,"text":"em, stroke: (b"}
+{"t":765,"text":"ottom: 0.5p"}
+{"t":799,"text":"t), height: 0.9"}
+{"t":832,"text":"em)\n\nA *"}
+{"t":865,"text":"past tense ver"}
+{"t":898,"text":"b* tells about"}
+{"t":931,"text":" something that already"}
+{"t":966,"text":" happened. Many"}
+{"t":998,"text":" verbs add _"}
+{"t":1032,"text":"-ed_ ("}
+{"t":1067,"text":"j"}
+{"t":1100,"text":"ump → jumped). Some"}
+{"t":1134,"text":" verbs change in"}
+{"t":1165,"text":" special"}
+{"t":1201,"text":" ways (go"}
+{"t":1232,"text":" → went).\n\n== Part "}
+{"t":1265,"text":"1: Fill in the"}
+{"t":1299,"text":" Blanks\n\nWrite the past"}
+{"t":1335,"text":" tense of the verb in par"}
+{"t":1368,"text":"entheses to complete each s"}
+{"t":1398,"text":"entence.\n\n+ Y"}
+{"t":1432,"text":"esterday, I #bl"}
+{"t":1467,"text":"ank (walk) to school."}
+{"t":1501,"text":"\n+ She #blank ("}
+{"t":1532,"text":"eat) pizza for l"}
+{"t":1565,"text":"unch.\n+ The d"}
+{"t":1599,"text":"og #blank (jump)"}
+{"t":1632,"text":" over the fence.\n+"}
+{"t":1665,"text":" We #blank (go) to"}
+{"t":1699,"text":" the park on Saturday."}
+{"t":1735,"text":"\n+ Tom #bl"}
+{"t":1769,"text":"ank (see) a rainb"}
+{"t":1800,"text":"ow after the rain.\n+"}
+{"t":1833,"text":" They #blank (play)"}
+{"t":1868,"text":" soccer last night.\n+"}
+{"t":1902,"text":" My mom #blank ("}
+{"t":1943,"text":"bake) a cake for"}
+{"t":1968,"text":" my birthday.\n+"}
+{"t":1999,"text":" The bird #blank (f"}
+{"t":2035,"text":"ly) away from"}
+{"t":2068,"text":" the tree.\n\n== Part"}
+{"t":2100,"text":" 2: Matching"}
+{"t":2134,"text":"\n\nMatch"}
+{"t":2168,"text":" each present"}
+{"t":2199,"text":" t"}
+{"t":2233,"text":"ense verb with its past tense"}
+{"t":2266,"text":" form. Write the corre"}
+{"t":2302,"text":"ct letter on"}
+{"t":2334,"text":" the line.\n\n#table"}
+{"t":2366,"text":"(\n  columns: ("}
+{"t":2404,"text":"1"}
+{"t":2433,"text":"fr, 1fr,"}
+{"t":2471,"text":" 1fr),\n  align"}
+{"t":2506,"text":": center +"}
+{"t":2534,"text":" horizon"}
+{"t":2566,"text":",\n  inset: 8"}
+{"t":2600,"text":"pt,\n  [*"}
+{"t":2633,"text":"Present"}
+{"t":2667,"text":" Verb*], [*Let"}
+{"t":2700,"text":"ter*], [*Past"}
+{"t":2734,"text":" T"}
+{"t":2767,"text":"ense Verb*],\n  "}
+{"t":2801,"text":"[1. run], [], ["}
+{"t":2835,"text":"A. swam],\n  ["}
+{"t":2870,"text":"2. jump], [], ["}
+{"t":2900,"text":"B. laughed],\n  "}
+{"t":2934,"text":"[3. write], [], ["}
+{"t":2969,"text":"C. "}
+{"t":3000,"text":"ran],\n  [4. sw"}
+{"t":3033,"text":"im], [], [D. took"}
+{"t":3067,"text":"],\n  [5. laug"}
+{"t":3101,"text":"h], [], [E. j"}
+{"t":3137,"text":"umped],\n  [6."}
+{"t":3167,"text":" take], [], [F. w"}
+{"t":3201,"text":"rote],\n)\n\n=="}
+{"t":3233,"text":" Part 3: Writing"}
+{"t":3267,"text":" Task\n\nWrite"}
+{"t":3303,"text":" "}
+{"t":3335,"text":"4 or"}
+{"t":3369,"text":" 5 sentences about something"}
+{"t":3402,"text":" you did last weekend."}
+{"t":3435,"text":" Use at"}
+{"t":3467,"text":" least *"}
+{"t":3500,"text":"four* past tense verbs"}
+{"t":3536,"text":". Then under"}
+{"t":3567,"text":"line each past"}
+{"t":3601,"text":" tense verb you used"}
+{"t":3636,"text":".\n\n#for"}
+{"t":3667,"text":" i in range(6"}
+{"t":3702,"text":") {\n  v(1."}
+{"t":3734,"text":"8em)\n  line(length"}
+{"t":3767,"text":": 100%)\n}"}
+{"t":3802,"text":"\n\n#v(1"}
+{"t":3835,"text":"em)"}
+{"t":3869,"text":"\n*Chec"}
+{"t":3900,"text":"kl"}
+{"t":3933,"text":"ist:*"}
+{"t":3968,"text":"\n- I"}
+{"t":4001,"text":" w"}
+{"t":4033,"text":"rote about something that already"}
+{"t":4069,"text":" happened.\n- I used at"}
+{"t":4101,"text":" least four past tense verbs"}
+{"t":4134,"text":".\n- I underlined my"}
+{"t":4167,"text":" past tense verbs."}
+{"t":4200,"text":"\n- I began"}
+{"t":4234,"text":" each sentence with a capital"}
+{"t":4269,"text":" letter and ended it"}
+{"t":4301,"text":" with a period"}
+{"t":4319,"text":"."}

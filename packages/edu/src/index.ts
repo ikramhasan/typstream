@@ -6,6 +6,8 @@
 import type { FunctionDoc, PromptExample, TemplateSpec, TypstreamPlugin } from "@typstream/core";
 import { CATALOGUE, CSS_SOURCE, EXAMPLES, FILES } from "./assets.generated";
 
+export { buildSystemPrompt, type SystemPromptOptions, typstPromptRules } from "./prompt";
+
 /** The Typst package's version, as in its `typst.toml`. */
 export const EDU_VERSION = "0.1.0";
 
@@ -46,10 +48,10 @@ export const eduExamples: PromptExample[] = EXAMPLES;
  */
 export const eduPromptRules: string[] = [
   'Start the document with one template line, e.g. `#show: worksheet.with(title: [...], subject: [...], grade: [...])`. Templates: worksheet, quiz, exam, lesson-plan, handout. For Arabic or Bengali pass `lang: "ar"` or `lang: "bn"` to the template.',
-  "The edu functions are already imported. Never write an `#import` for them.",
+  "The edu functions are already imported. Never write an `#import` for them. Packages are not: write the `#import` line of every package you use (cetz, physica, unify, …) right after the template line.",
   "Wrap every numbered question in `#question(points: n)[...]`; never number questions by hand. Write sub-parts as a numbered list (`+ ...`) inside the question.",
   "Give every answer to edu, never as plain text: `answer:` on `blank`, `mcq`, `true-false`, `answer-lines` and `answer-space`, and `#answer[...]` for worked solutions. Answers are hidden in the student's copy and shown in the teacher's.",
-  "Use `#blank()` for fill-in blanks, `#answer-lines(count: n)` for written answers and `#answer-space(height: ...)` for working space. Never draw blanks with underscores.",
+  "Use `#blank()` for fill-in blanks, `#answer-lines(count: n)` for written answers and `#answer-space(height: ...)` for working space. Never draw blanks with underscores, not even in example sentences. A blank inside a formula goes in the math: `$2/3 = #blank(answer: [4])/6$`, never one formula split in two around it.",
   "Multiple choice: `#mcq([option], [option], ..., answer: n)` with n counting from 1. Matching: `#matching((left, right), ...)` with the pairs correctly matched; edu shuffles the right column.",
   'Write chemical formulas and equations with `#ce("2H2 + O2 -> 2H2O")`. Use Typst math for mathematics.',
   "Use `#columns(2)[...]` for two flowing columns and `#grid(columns: 2, ...)` for side-by-side content.",

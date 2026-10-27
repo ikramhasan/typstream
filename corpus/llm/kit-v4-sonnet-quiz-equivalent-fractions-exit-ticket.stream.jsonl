@@ -1,0 +1,62 @@
+{"t":0,"text":"#"}
+{"t":57,"text":"show: quiz.with"}
+{"t":222,"text":"("}
+{"t":222,"text":"\n  title: [Ex"}
+{"t":222,"text":"it Ticket: Equ"}
+{"t":222,"text":"ivalent Fractions],"}
+{"t":226,"text":"\n  subject: [M"}
+{"t":260,"text":"athematics],\n  grade"}
+{"t":293,"text":": [Grade 4"}
+{"t":327,"text":"],\n  info: (\"name"}
+{"t":361,"text":"\", \"date\"),\n  "}
+{"t":394,"text":"instructions: ["}
+{"t":427,"text":"Answer all "}
+{"t":460,"text":"3 questions before"}
+{"t":578,"text":" you"}
+{"t":578,"text":" leave."}
+{"t":579,"text":" Show your th"}
+{"t":593,"text":"inking where"}
+{"t":626,"text":" there"}
+{"t":660,"text":" is space.],\n)\n\n#"}
+{"t":693,"text":"question(points: 1)["}
+{"t":726,"text":"\n  Which fraction is"}
+{"t":760,"text":" equivalent to $2"}
+{"t":793,"text":"/3$?\n  #m"}
+{"t":835,"text":"cq([$3"}
+{"t":882,"text":"/4"}
+{"t":958,"text":"$], [$4/6$"}
+{"t":958,"text":"], [$2/6"}
+{"t":976,"text":"$], [$5/6$"}
+{"t":1005,"text":"], answer: 2"}
+{"t":1040,"text":")\n]\n\n#question(points"}
+{"t":1065,"text":": 1)[\n  "}
+{"t":1093,"text":"Fill in the miss"}
+{"t":1126,"text":"ing number."}
+{"t":1193,"text":"\n\n  $1"}
+{"t":1226,"text":"/2 = #blank("}
+{"t":1260,"text":"width"}
+{"t":1308,"text":": 3"}
+{"t":1328,"text":"em, answer: [4])"}
+{"t":1359,"text":"/8$\n]\n\n#question"}
+{"t":1393,"text":"(points: 2)["}
+{"t":1426,"text":"\n  M"}
+{"t":1459,"text":"ia says"}
+{"t":1493,"text":" that"}
+{"t":1527,"text":" $3/6$ and"}
+{"t":1560,"text":" $1/2$ are the"}
+{"t":1593,"text":" same am"}
+{"t":1626,"text":"ount. Is"}
+{"t":1659,"text":" she right? Explain how"}
+{"t":1693,"text":" you"}
+{"t":1726,"text":" know.\n  #answer-"}
+{"t":1760,"text":"lines(count: 2,"}
+{"t":1793,"text":" answer: [Y"}
+{"t":1826,"text":"es. D"}
+{"t":1859,"text":"ividing the"}
+{"t":1893,"text":" top and bottom of $3"}
+{"t":1926,"text":"/6$ by 3 "}
+{"t":1959,"text":"gives $1/2$,"}
+{"t":1993,"text":" so they"}
+{"t":2026,"text":" are equiv"}
+{"t":2060,"text":"alent.])\n]\n\n#"}
+{"t":2087,"text":"answer-key()"}

@@ -1,5 +1,5 @@
 // The shared corpus (corpus/, PLAN.md §11.2) as seen by heal's tests.
-import { type CorpusEntry, loadCorpus } from "@typstream/corpus";
+import { ALL_SETS, type CorpusEntry, loadCorpus } from "@typstream/corpus";
 import type { OracleError } from "./oracle";
 import { syntaxErrors } from "./oracle";
 
@@ -19,8 +19,10 @@ export interface CorpusCase extends CorpusEntry {
   valid: boolean;
 }
 
+// Every set, the recorded model output (llm) too: healing is syntax, so a document written for a
+// plugin's functions heals like any other.
 export const corpusCases = (): CorpusCase[] =>
-  loadCorpus().map((e) => {
+  loadCorpus({ sets: ALL_SETS }).map((e) => {
     const valid = syntaxErrors(e.source).length === 0;
     return { ...e, valid, healable: valid || e.meta.category === "truncated" };
   });

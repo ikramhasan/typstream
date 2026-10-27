@@ -1,0 +1,392 @@
+{"t":0,"text":"#"}
+{"t":32,"text":"show: exam.with("}
+{"t":65,"text":"\n  title: [Calculus"}
+{"t":99,"text":" Midterm: Limits"}
+{"t":146,"text":" and Derivatives],"}
+{"t":166,"text":"\n  subject: [Math"}
+{"t":199,"text":"ematics ("}
+{"t":233,"text":"Calculus)],\n  "}
+{"t":266,"text":"duration: [60 minut"}
+{"t":299,"text":"es],\n  instructions:"}
+{"t":333,"text":" [\n    "}
+{"t":371,"text":"Answer *all* questions."}
+{"t":399,"text":" Show your working"}
+{"t":433,"text":":"}
+{"t":465,"text":" mar"}
+{"t":499,"text":"ks are"}
+{"t":534,"text":" given"}
+{"t":566,"text":" for method as"}
+{"t":600,"text":" well as for"}
+{"t":635,"text":" the final answer.\n    "}
+{"t":666,"text":"Calculators are not perm"}
+{"t":702,"text":"itted."}
+{"t":732,"text":"\n  ],\n)\n\n="}
+{"t":766,"text":" Section A: Limits and"}
+{"t":799,"text":" continuity\n\n#question(points"}
+{"t":832,"text":": 6)[\n  "}
+{"t":866,"text":"Evaluate each"}
+{"t":899,"text":" limit. If"}
+{"t":933,"text":" a"}
+{"t":967,"text":" limit does not exist, say"}
+{"t":1000,"text":" so.\n  + $"}
+{"t":1034,"text":"display"}
+{"t":1066,"text":"("}
+{"t":1099,"text":"lim_(x -> "}
+{"t":1133,"text":"3) (x^2 -"}
+{"t":1173,"text":" 9)/(x - "}
+{"t":1200,"text":"3))$\n    #answer"}
+{"t":1233,"text":"-space(height: 4"}
+{"t":1266,"text":"em, answer: ["}
+{"t":1299,"text":"Factor:"}
+{"t":1333,"text":" $(x-"}
+{"t":1366,"text":"3)(x+3)/"}
+{"t":1400,"text":"(x-3) = x +"}
+{"t":1432,"text":" 3$, so the limit"}
+{"t":1466,"text":" is $6$.])\n  "}
+{"t":1499,"text":"+ $display(lim_("}
+{"t":1535,"text":"x -> 0) ("}
+{"t":1566,"text":"sin(5 x))/"}
+{"t":1602,"text":"x)$\n    #answer"}
+{"t":1635,"text":"-space(height: 4em"}
+{"t":1667,"text":", answer: [$("}
+{"t":1700,"text":"sin(5x"}
+{"t":1734,"text":"))/x"}
+{"t":1766,"text":" = 5 d"}
+{"t":1800,"text":"ot (sin(5x))"}
+{"t":1833,"text":"/(5x) -"}
+{"t":1866,"text":"> 5 "}
+{"t":1899,"text":"dot 1 = 5"}
+{"t":1933,"text":"$.])\n  + $display"}
+{"t":1966,"text":"(lim_(x ->"}
+{"t":1999,"text":" infin"}
+{"t":2033,"text":"ity) (3 x^2"}
+{"t":2067,"text":" + x)/(2 "}
+{"t":2101,"text":"x^2 - 1))"}
+{"t":2133,"text":"$\n    #answer-space"}
+{"t":2167,"text":"(height: 4em, answ"}
+{"t":2200,"text":"er: [Divide by"}
+{"t":2235,"text":" $x^2$: $("}
+{"t":2266,"text":"3 + 1/x)"}
+{"t":2301,"text":"/(2 -"}
+{"t":2334,"text":" 1/x^2) -"}
+{"t":2367,"text":"> 3/2$.])"}
+{"t":2400,"text":"\n]\n\n#question(points:"}
+{"t":2433,"text":" 2)[\n  What"}
+{"t":2468,"text":" is $display(lim_("}
+{"t":2501,"text":"x -> 2) (s"}
+{"t":2537,"text":"qrt(x + 2"}
+{"t":2567,"text":") - 2)/(x"}
+{"t":2600,"text":" - 2))$?\n  "}
+{"t":2633,"text":"#mcq([$0$"}
+{"t":2667,"text":"], [$1/4$],"}
+{"t":2700,"text":" [$1/2$], ["}
+{"t":2735,"text":"The"}
+{"t":2767,"text":" limit does not exist], answ"}
+{"t":2800,"text":"er: 2)\n  #"}
+{"t":2835,"text":"answer[\n    Multi"}
+{"t":2867,"text":"ply by the conjugate:"}
+{"t":2902,"text":" $(x"}
+{"t":2934,"text":" + 2 "}
+{"t":2967,"text":"- 4)/((x -"}
+{"t":3000,"text":" 2)("}
+{"t":3035,"text":"sqrt(x+"}
+{"t":3067,"text":"2) + 2)) ="}
+{"t":3100,"text":" 1/("}
+{"t":3135,"text":"sqrt(x+2"}
+{"t":3167,"text":") + 2) -> "}
+{"t":3200,"text":"1/4$."}
+{"t":3234,"text":"\n    (Equ"}
+{"t":3267,"text":"ivalently, this is the der"}
+{"t":3301,"text":"ivative of $sqrt"}
+{"t":3336,"text":"(x+2)$ at"}
+{"t":3367,"text":" $x"}
+{"t":3400,"text":" = 2$.)\n  "}
+{"t":3434,"text":"]\n]\n\n#question("}
+{"t":3468,"text":"points: 4)[\n  "}
+{"t":3500,"text":"Find"}
+{"t":3534,"text":" the"}
+{"t":3572,"text":" value of the constant $a$"}
+{"t":3600,"text":" that makes $"}
+{"t":3638,"text":"f$ continuous at $"}
+{"t":3667,"text":"x = 1$, and just"}
+{"t":3700,"text":"ify your answer.\n  $"}
+{"t":3767,"text":" f(x) = cases("}
+{"t":3800,"text":"x^2 + a \"if"}
+{"t":3836,"text":"\" x < 1, 3"}
+{"t":3867,"text":" x - 1 \"if"}
+{"t":3901,"text":"\" x >= 1) $"}
+{"t":3934,"text":"\n  #answer-space("}
+{"t":3989,"text":"height: 7"}
+{"t":4000,"text":"em, answer: [\n    "}
+{"t":4034,"text":"$"}
+{"t":4069,"text":"l"}
+{"t":4100,"text":"im_(x -"}
+{"t":4134,"text":"> 1^-) f("}
+{"t":4167,"text":"x) = "}
+{"t":4201,"text":"1 + a$, and"}
+{"t":4234,"text":" $lim_(x ->"}
+{"t":4267,"text":" 1^+) f(x"}
+{"t":4301,"text":") = f"}
+{"t":4334,"text":"(1) = 2$."}
+{"t":4367,"text":"\n    "}
+{"t":4401,"text":"Continuity requires the one"}
+{"t":4435,"text":"-sided limits"}
+{"t":4469,"text":" to agree with $f(1"}
+{"t":4501,"text":")$, so $1 +"}
+{"t":4535,"text":" a = 2$"}
+{"t":4567,"text":" and $a = 1$."}
+{"t":4600,"text":"\n  ])\n]\n\n#"}
+{"t":4636,"text":"question(points: 2)["}
+{"t":4667,"text":"\n  Mark each statement"}
+{"t":4704,"text":" true or false.\n  #true"}
+{"t":4735,"text":"-false(answer: false)"}
+{"t":4768,"text":"[If $f$ is contin"}
+{"t":4801,"text":"uous at $x"}
+{"t":4836,"text":" = a$, then $f$"}
+{"t":4867,"text":" is differentiable at $"}
+{"t":4901,"text":"x = a$.]\n  "}
+{"t":4934,"text":"#true-false(answer:"}
+{"t":4967,"text":" true)[A function can have a"}
+{"t":5001,"text":" limit at a point where it is"}
+{"t":5034,"text":" not defined.]\n  #"}
+{"t":5069,"text":"answer[\n    ("}
+{"t":5102,"text":"1) False: $"}
+{"t":5134,"text":"f(x) = |x|"}
+{"t":5168,"text":"$ is continuous but"}
+{"t":5201,"text":" not differentiable at $0"}
+{"t":5234,"text":"$."}
+{"t":5268,"text":"\n    (2) True: for"}
+{"t":5301,"text":" example $(x^2 -"}
+{"t":5334,"text":" 1)/(x - "}
+{"t":5368,"text":"1)$ has lim"}
+{"t":5401,"text":"it $2"}
+{"t":5434,"text":"$ at $x = 1"}
+{"t":5467,"text":"$"}
+{"t":5501,"text":" but is und"}
+{"t":5536,"text":"efined there.\n  ]"}
+{"t":5569,"text":"\n]\n\n="}
+{"t":5601,"text":" Section B: Derivat"}
+{"t":5636,"text":"ives\n\n#question(points: "}
+{"t":5669,"text":"4)[\n  Use the"}
+{"t":5702,"text":" *limit definition* of the"}
+{"t":5740,"text":" derivative to find $f'"}
+{"t":5768,"text":"(x)$ for $f"}
+{"t":5805,"text":"(x) = x^2 "}
+{"t":5835,"text":"+ 3 x$."}
+{"t":5868,"text":"\n  #answer-space(height"}
+{"t":5901,"text":": 9"}
+{"t":5934,"text":"em, answer: [\n    "}
+{"t":5969,"text":"$f'(x) = l"}
+{"t":6001,"text":"im_(h -> 0"}
+{"t":6034,"text":") "}
+{"t":6070,"text":"((x+"}
+{"t":6108,"text":"h)^2 + 3"}
+{"t":6134,"text":"(x+h) - x^"}
+{"t":6169,"text":"2 - 3x"}
+{"t":6201,"text":")/h ="}
+{"t":6234,"text":" lim_(h -> "}
+{"t":6270,"text":"0) (2 x h +"}
+{"t":6301,"text":" h^2 + 3 "}
+{"t":6335,"text":"h)/h = lim_"}
+{"t":6368,"text":"(h -> 0) ("}
+{"t":6404,"text":"2x"}
+{"t":6435,"text":" + h"}
+{"t":6468,"text":" + 3) = 2x"}
+{"t":6502,"text":" + 3$.\n  "}
+{"t":6534,"text":"])\n]\n\n#question(points"}
+{"t":6568,"text":": 8)[\n  "}
+{"t":6601,"text":"Differentiate."}
+{"t":6635,"text":" You do not need to simplify"}
+{"t":6668,"text":" part (a)."}
+{"t":6703,"text":"\n  + $y"}
+{"t":6735,"text":" = 4 x^3 "}
+{"t":6768,"text":"- 5 x + 7"}
+{"t":6802,"text":"$\n    #answer-space"}
+{"t":6835,"text":"(height: 3"}
+{"t":6868,"text":"em, answer: [$y"}
+{"t":6902,"text":"' = 12 x^2"}
+{"t":6936,"text":" - 5$])"}
+{"t":6968,"text":"\n  + $y = x^"}
+{"t":7002,"text":"2 e^x$\n    "}
+{"t":7038,"text":"#answer-space(height:"}
+{"t":7068,"text":" 4em, answer: ["}
+{"t":7101,"text":"Product rule: $y'"}
+{"t":7135,"text":" = 2 x e^x"}
+{"t":7168,"text":" + x^2 e^x"}
+{"t":7201,"text":" = x"}
+{"t":7234,"text":"("}
+{"t":7269,"text":"x + 2) e^x"}
+{"t":7304,"text":"$.])\n  + $y"}
+{"t":7337,"text":" = (x^2 + "}
+{"t":7368,"text":"1)/(x - 1"}
+{"t":7401,"text":")$\n    #answer-"}
+{"t":7434,"text":"space(height: 5em,"}
+{"t":7469,"text":" answer: [\n      Qu"}
+{"t":7501,"text":"otient rule: $y'"}
+{"t":7535,"text":" = ("}
+{"t":7572,"text":"2x"}
+{"t":7602,"text":"(x - 1) - ("}
+{"t":7634,"text":"x^2 + 1))"}
+{"t":7668,"text":"/(x - 1)^"}
+{"t":7704,"text":"2 = (x^2 "}
+{"t":7734,"text":"- 2x - 1)"}
+{"t":7771,"text":"/(x - 1)^"}
+{"t":7803,"text":"2$.\n    ])"}
+{"t":7834,"text":"\n  + $y = c"}
+{"t":7868,"text":"os(3 x^2)"}
+{"t":7901,"text":"$\n    #answer-space"}
+{"t":7935,"text":"(height: 4em, answ"}
+{"t":7973,"text":"er: [Chain rule"}
+{"t":8002,"text":": $y' = -s"}
+{"t":8035,"text":"in(3x"}
+{"t":8068,"text":"^2) dot 6x"}
+{"t":8102,"text":" = -6 x sin("}
+{"t":8135,"text":"3 x^2)$."}
+{"t":8169,"text":"])\n]\n\n#question(points"}
+{"t":8202,"text":": 5)[\n  "}
+{"t":8235,"text":"Find the equation of the t"}
+{"t":8269,"text":"angent line to $"}
+{"t":8301,"text":"y = x^3 - "}
+{"t":8335,"text":"2 x$ at the"}
+{"t":8368,"text":" point where"}
+{"t":8402,"text":" $x = 2$."}
+{"t":8435,"text":"\n  #answer-space(height"}
+{"t":8468,"text":": 7"}
+{"t":8509,"text":"em, answer: [\n    "}
+{"t":8535,"text":"$y(2) = 8"}
+{"t":8568,"text":" - 4 = 4"}
+{"t":8602,"text":"$. $y' = 3"}
+{"t":8636,"text":"x"}
+{"t":8668,"text":"^2 - 2$,"}
+{"t":8702,"text":" so the"}
+{"t":8735,"text":" slope is"}
+{"t":8769,"text":" $y'"}
+{"t":8801,"text":"(2) = 10"}
+{"t":8841,"text":"$.\n    Tangent"}
+{"t":8875,"text":": $y - 4 ="}
+{"t":8901,"text":" 10(x - 2)"}
+{"t":8935,"text":"$, that"}
+{"t":8968,"text":" is $y = 10 x"}
+{"t":9001,"text":" - 16$.\n  "}
+{"t":9034,"text":"])\n]\n\n#question(points"}
+{"t":9087,"text":": 6)[\n  The"}
+{"t":9102,"text":" circle $x^2 +"}
+{"t":9135,"text":" y^2 = 25$"}
+{"t":9170,"text":" is"}
+{"t":9202,"text":" given"}
+{"t":9235,"text":".\n  +"}
+{"t":9268,"text":" Use implicit differentiation"}
+{"t":9302,"text":" to find $(d y)"}
+{"t":9335,"text":"/(d x)$."}
+{"t":9368,"text":"\n    #answer-space(height"}
+{"t":9403,"text":": 5"}
+{"t":9435,"text":"em, answer: [$2"}
+{"t":9468,"text":"x"}
+{"t":9502,"text":" + 2y ("}
+{"t":9535,"text":"d y)/(d x)"}
+{"t":9568,"text":" = 0$, so $("}
+{"t":9602,"text":"d y)/(d x)"}
+{"t":9636,"text":" = -x/y$.])"}
+{"t":9669,"text":"\n  + Find the slope"}
+{"t":9701,"text":" of the tangent at"}
+{"t":9735,"text":" the point $(3, 4"}
+{"t":9768,"text":")$ and write"}
+{"t":9802,"text":" the"}
+{"t":9835,"text":" t"}
+{"t":9869,"text":"angent line"}
+{"t":9902,"text":"'s equation.\n    #answ"}
+{"t":9935,"text":"er-space(height: 5"}
+{"t":9968,"text":"em, answer: ["}
+{"t":10002,"text":"\n      Slope $= -3"}
+{"t":10036,"text":"/4$. Tangent"}
+{"t":10068,"text":": $y - 4 ="}
+{"t":10102,"text":" -3/4 (x -"}
+{"t":10138,"text":" 3)$, i.e"}
+{"t":10168,"text":". $y = -"}
+{"t":10202,"text":"3/4 x + 25"}
+{"t":10239,"text":"/4$.\n    ])"}
+{"t":10270,"text":"\n]\n\n= Section"}
+{"t":10303,"text":" C: Applications\n\n#question"}
+{"t":10336,"text":"(points: 8)["}
+{"t":10369,"text":"\n  A farmer has $"}
+{"t":10404,"text":"120$ m of fencing"}
+{"t":10436,"text":" to en"}
+{"t":10469,"text":"close a rectangular field"}
+{"t":10503,"text":" along a"}
+{"t":10535,"text":" straight river. No"}
+{"t":10570,"text":" fence is needed along"}
+{"t":10602,"text":" the river. Find the d"}
+{"t":10635,"text":"imensions of the field with"}
+{"t":10670,"text":" the largest area, and justify"}
+{"t":10702,"text":" that your"}
+{"t":10735,"text":" answer is a maximum."}
+{"t":10768,"text":"\n  #answer-space("}
+{"t":10802,"text":"height: 12"}
+{"t":10835,"text":"em, answer: [\n    "}
+{"t":10874,"text":"Let the two sides per"}
+{"t":10906,"text":"pendicular to the river be"}
+{"t":10936,"text":" $x$ and"}
+{"t":10969,"text":" the side par"}
+{"t":11004,"text":"allel to it"}
+{"t":11037,"text":" be $y$."}
+{"t":11072,"text":" Then $2x"}
+{"t":11102,"text":" + y = 120$, so"}
+{"t":11135,"text":" $y = 120 - "}
+{"t":11169,"text":"2x$.\n    Area"}
+{"t":11202,"text":": $A("}
+{"t":11235,"text":"x) = x(120 -"}
+{"t":11268,"text":" 2x) = 120 "}
+{"t":11305,"text":"x - 2 x^2"}
+{"t":11335,"text":"$,"}
+{"t":11369,"text":" with $0 < x < "}
+{"t":11405,"text":"60$.\n    $A'"}
+{"t":11435,"text":"(x) = 120 -"}
+{"t":11470,"text":" 4x"}
+{"t":11502,"text":" = 0$ g"}
+{"t":11536,"text":"ives $x = 30$."}
+{"t":11569,"text":" Since"}
+{"t":11604,"text":" $A''(x"}
+{"t":11636,"text":") = -4 < 0"}
+{"t":11669,"text":"$, this is a maximum"}
+{"t":11702,"text":".\n    Dimensions"}
+{"t":11735,"text":": $30$"}
+{"t":11768,"text":" m by $60$ m"}
+{"t":11803,"text":" "}
+{"t":11836,"text":"($30$"}
+{"t":11868,"text":" m perpendicular to"}
+{"t":11902,"text":" the river), ma"}
+{"t":11935,"text":"ximum area $1"}
+{"t":11968,"text":"800 "}
+{"t":12002,"text":"\"m\""}
+{"t":12035,"text":"^2$.\n  ])"}
+{"t":12069,"text":"\n]\n\n#question(points:"}
+{"t":12111,"text":" 5)[\n  The rad"}
+{"t":12142,"text":"ius of a circular o"}
+{"t":12168,"text":"il spill gr"}
+{"t":12204,"text":"ows at $"}
+{"t":12236,"text":"2$"}
+{"t":12268,"text":" cm/s. How"}
+{"t":12302,"text":" fast is the area incre"}
+{"t":12336,"text":"asing when the radius is $"}
+{"t":12368,"text":"5$ cm?\n  "}
+{"t":12402,"text":"#answer-space(height:"}
+{"t":12435,"text":" 8"}
+{"t":12468,"text":"em, answer: [\n    "}
+{"t":12502,"text":"$A = p"}
+{"t":12539,"text":"i r^2$, so $"}
+{"t":12568,"text":"(d A)/(d t"}
+{"t":12602,"text":") = 2 pi r"}
+{"t":12635,"text":" (d r)/(d t"}
+{"t":12671,"text":")$."}
+{"t":12702,"text":"\n    When"}
+{"t":12735,"text":" $r = 5$ and"}
+{"t":12768,"text":" $(d r)/(d"}
+{"t":12803,"text":" t) = 2$: $"}
+{"t":12835,"text":"(d A)/(d t"}
+{"t":12869,"text":") = 2 pi ("}
+{"t":12902,"text":"5)(2) = 20"}
+{"t":12935,"text":" pi \""}
+{"t":12968,"text":"cm\"^2 \"/"}
+{"t":13002,"text":"s\"$.\n  ])"}
+{"t":13035,"text":"\n]\n\n#answer-key"}
+{"t":13069,"text":"()"}

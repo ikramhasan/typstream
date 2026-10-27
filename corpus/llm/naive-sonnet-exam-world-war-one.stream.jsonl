@@ -1,0 +1,501 @@
+{"t":0,"text":"#"}
+{"t":38,"text":"set"}
+{"t":66,"text":" page("}
+{"t":99,"text":"paper: \"a"}
+{"t":131,"text":"4\", margin"}
+{"t":170,"text":": 2cm, numb"}
+{"t":201,"text":"ering: \"1"}
+{"t":256,"text":" / 1"}
+{"t":276,"text":"\")"}
+{"t":297,"text":"\n#set text"}
+{"t":334,"text":"(size: 11"}
+{"t":365,"text":"pt)\n#set par"}
+{"t":402,"text":"(just"}
+{"t":442,"text":"ify: true"}
+{"t":463,"text":")\n\n#let answer-l"}
+{"t":500,"text":"ines(n) = for i"}
+{"t":529,"text":" in range(n) {"}
+{"t":563,"text":"\n  v(1.5"}
+{"t":603,"text":"em)\n  line(length:"}
+{"t":633,"text":" 100%, stroke:"}
+{"t":666,"text":" 0.5pt + g"}
+{"t":710,"text":"ray)\n}\n\n#let source"}
+{"t":735,"text":"(title"}
+{"t":769,"text":", body) = block"}
+{"t":796,"text":"(\n  width"}
+{"t":831,"text":": 100%,\n  in"}
+{"t":866,"text":"set: 10"}
+{"t":899,"text":"pt,\n  stroke"}
+{"t":934,"text":": 0.8"}
+{"t":965,"text":"pt + black,\n  rad"}
+{"t":997,"text":"ius: 3"}
+{"t":1035,"text":"pt,\n  fill:"}
+{"t":1064,"text":" lu"}
+{"t":1096,"text":"ma"}
+{"t":1131,"text":"(245"}
+{"t":1163,"text":"),\n)"}
+{"t":1197,"text":"[\n  *"}
+{"t":1229,"text":"#title"}
+{"t":1265,"text":"* \\"}
+{"t":1329,"text":"\n  #body"}
+{"t":1362,"text":"\n]\n\n#align(center)"}
+{"t":1402,"text":"[\n  #text(size:"}
+{"t":1433,"text":" 18pt, weight:"}
+{"t":1469,"text":" \"bold\")["}
+{"t":1496,"text":"Grade 10 History"}
+{"t":1530,"text":" Examination]"}
+{"t":1565,"text":" \\\n  #text(size:"}
+{"t":1597,"text":" 14pt)"}
+{"t":1631,"text":"[World War I:"}
+{"t":1666,"text":" Causes, Exper"}
+{"t":1696,"text":"ience and"}
+{"t":1730,"text":" Consequences]\n]"}
+{"t":1763,"text":"\n\n#v(0"}
+{"t":1796,"text":".5em)\n\nName:"}
+{"t":1829,"text":" #box"}
+{"t":1872,"text":"(width: 8"}
+{"t":1896,"text":"cm, line"}
+{"t":1932,"text":"(length: 100%)"}
+{"t":1972,"text":") #"}
+{"t":1996,"text":"h(1"}
+{"t":2033,"text":"em) Date: #box("}
+{"t":2063,"text":"width: 3cm, line"}
+{"t":2101,"text":"(length: 100%))"}
+{"t":2130,"text":"\n\n#v(0.5em)"}
+{"t":2165,"text":"\n\n#"}
+{"t":2197,"text":"table(\n  columns: ("}
+{"t":2259,"text":"1"}
+{"t":2265,"text":"fr, 1fr,"}
+{"t":2298,"text":" 1fr),\n  align"}
+{"t":2334,"text":": center,\n  [*"}
+{"t":2363,"text":"Time all"}
+{"t":2396,"text":"owed*], [*Total"}
+{"t":2438,"text":" marks*], [*S"}
+{"t":2464,"text":"ections*],\n  [75 "}
+{"t":2502,"text":"minutes], [50],"}
+{"t":2531,"text":" [A (source"}
+{"t":2563,"text":"-based):"}
+{"t":2597,"text":" 30 "}
+{"t":2631,"text":"marks \\"}
+{"t":2665,"text":" B"}
+{"t":2697,"text":" (essay): 20 mar"}
+{"t":2730,"text":"ks],\n)\n\n*"}
+{"t":2766,"text":"Instructions*"}
+{"t":2798,"text":"\n- Answer all questions"}
+{"t":2831,"text":" in both"}
+{"t":2865,"text":" sections.\n- Read"}
+{"t":2896,"text":" each"}
+{"t":2932,"text":" source carefully before answering the"}
+{"t":2965,"text":" questions that follow it"}
+{"t":3004,"text":".\n- Use ev"}
+{"t":3035,"text":"idence from the sources and"}
+{"t":3064,"text":" your own knowledge where"}
+{"t":3101,"text":" as"}
+{"t":3131,"text":"ked.\n- Write in full"}
+{"t":3167,"text":" sentences. The"}
+{"t":3202,"text":" mar"}
+{"t":3233,"text":"ks sh"}
+{"t":3264,"text":"own in"}
+{"t":3299,"text":" brackets are"}
+{"t":3336,"text":" a guide to how"}
+{"t":3364,"text":" much"}
+{"t":3406,"text":" detail is needed.\n\n#"}
+{"t":3430,"text":"pagebreak("}
+{"t":3472,"text":"weak"}
+{"t":3496,"text":": true)\n\n="}
+{"t":3530,"text":" Section A: Source-"}
+{"t":3567,"text":"Based Questions (30 mar"}
+{"t":3610,"text":"ks)\n\n== Part"}
+{"t":3630,"text":" 1: The Out"}
+{"t":3666,"text":"break of War"}
+{"t":3704,"text":"\n\n#"}
+{"t":3731,"text":"source["}
+{"t":3768,"text":"Source A"}
+{"t":3796,"text":":"}
+{"t":3831,"text":" Sir Edward Grey"}
+{"t":3867,"text":", British"}
+{"t":3903,"text":" Foreign Secretary"}
+{"t":3930,"text":", on the"}
+{"t":3964,"text":" e"}
+{"t":3998,"text":"ve of war (3"}
+{"t":4033,"text":" August 1914, as"}
+{"t":4063,"text":" later"}
+{"t":4100,"text":" recalled in his memoir"}
+{"t":4131,"text":"s)][\n  \"The l"}
+{"t":4178,"text":"amps are going out all over"}
+{"t":4196,"text":" Europe;"}
+{"t":4230,"text":" we shall not see them lit"}
+{"t":4264,"text":" again in our lifetime.\""}
+{"t":4299,"text":"\n]\n\n#"}
+{"t":4330,"text":"v(0"}
+{"t":4364,"text":".5em)\n\n+"}
+{"t":4400,"text":" Ident"}
+{"t":4436,"text":"ify the message Grey is"}
+{"t":4466,"text":" exp"}
+{"t":4498,"text":"ressing in"}
+{"t":4530,"text":" Source A. #"}
+{"t":4564,"text":"h"}
+{"t":4603,"text":"(1"}
+{"t":4631,"text":"fr) *("}
+{"t":4672,"text":"2)*\n  "}
+{"t":4704,"text":"#answer-lines(2"}
+{"t":4731,"text":")\n\n+ Explain how"}
+{"t":4767,"text":" the alliance system hel"}
+{"t":4800,"text":"ped tur"}
+{"t":4833,"text":"n a reg"}
+{"t":4863,"text":"ional cr"}
+{"t":4913,"text":"isis in"}
+{"t":4931,"text":" the Balkans into a European"}
+{"t":4969,"text":" war. Ref"}
+{"t":4996,"text":"er to at least *"}
+{"t":5032,"text":"two* al"}
+{"t":5071,"text":"liances or"}
+{"t":5105,"text":" count"}
+{"t":5130,"text":"ries in your answer. #h"}
+{"t":5166,"text":"(1fr) *(3"}
+{"t":5197,"text":")*\n  #answer-"}
+{"t":5232,"text":"lines(4)\n\n=="}
+{"t":5264,"text":" Part 2: Recruit"}
+{"t":5315,"text":"ment and Propaganda"}
+{"t":5332,"text":"\n\n#source[Source B: British"}
+{"t":5363,"text":" recruitment poster, "}
+{"t":5397,"text":"1914]["}
+{"t":5432,"text":"\n  _"}
+{"t":5463,"text":"Description:"}
+{"t":5496,"text":"_ A poster sh"}
+{"t":5531,"text":"ows Lord Kitch"}
+{"t":5563,"text":"ener, the Secretary of"}
+{"t":5599,"text":" State for War, in military"}
+{"t":5631,"text":" uniform. He"}
+{"t":5671,"text":" st"}
+{"t":5697,"text":"ares directly at the vi"}
+{"t":5736,"text":"ewer and points his finger for"}
+{"t":5763,"text":"ward. The large"}
+{"t":5799,"text":" ca"}
+{"t":5830,"text":"ption reads: *"}
+{"t":5874,"text":"\"BRITON"}
+{"t":5897,"text":"S:"}
+{"t":5970,"text":" L"}
+{"t":5997,"text":"ord Kitchener W"}
+{"t":6030,"text":"ANTS YOU."}
+{"t":6074,"text":" Join your"}
+{"t":6099,"text":" country's army"}
+{"t":6130,"text":"!"}
+{"t":6166,"text":" God save the King"}
+{"t":6197,"text":".\"*"}
+{"t":6232,"text":"\n]\n\n#"}
+{"t":6272,"text":"v("}
+{"t":6301,"text":"0.5em"}
+{"t":6330,"text":")\n\n+ State"}
+{"t":6370,"text":" *"}
+{"t":6403,"text":"two* techniques used in"}
+{"t":6430,"text":" Source B to persuade men"}
+{"t":6466,"text":" to en"}
+{"t":6504,"text":"list. #h(1f"}
+{"t":6530,"text":"r) *(2)*"}
+{"t":6572,"text":"\n  #answer-lines("}
+{"t":6602,"text":"2)\n\n+ Explain"}
+{"t":6635,"text":" why"}
+{"t":6670,"text":" govern"}
+{"t":6704,"text":"ments on"}
+{"t":6738,"text":" all"}
+{"t":6765,"text":" sides made such"}
+{"t":6799,"text":" he"}
+{"t":6835,"text":"avy use of propaganda"}
+{"t":6864,"text":" during"}
+{"t":6905,"text":" the"}
+{"t":6932,"text":" war. Use"}
+{"t":6997,"text":" Source B and your own knowled"}
+{"t":7032,"text":"ge. #h(1fr"}
+{"t":7064,"text":") *(4)*\n  "}
+{"t":7113,"text":"#answer-lines(5"}
+{"t":7131,"text":")\n\n#"}
+{"t":7166,"text":"pagebreak(weak"}
+{"t":7200,"text":": true)\n\n== Part "}
+{"t":7231,"text":"3:"}
+{"t":7266,"text":" Life in"}
+{"t":7301,"text":" the Trenches\n\n#source"}
+{"t":7331,"text":"[Source C: Wil"}
+{"t":7366,"text":"fred Owen, \""}
+{"t":7398,"text":"Dulce et Decor"}
+{"t":7432,"text":"um Est\" (written "}
+{"t":7464,"text":"1917,"}
+{"t":7499,"text":" published 1920"}
+{"t":7531,"text":")][\n  \""}
+{"t":7566,"text":"If in some smothering dre"}
+{"t":7603,"text":"ams you too could pace \\"}
+{"t":7631,"text":"\n  Behind the wag"}
+{"t":7665,"text":"on that we flung him in,"}
+{"t":7700,"text":" \\\n  And watch the"}
+{"t":7731,"text":" white eyes writ"}
+{"t":7766,"text":"hing in his face, \\"}
+{"t":7797,"text":"\n  His h"}
+{"t":7837,"text":"anging face,"}
+{"t":7871,"text":" like a dev"}
+{"t":7898,"text":"il's"}
+{"t":7943,"text":" sick of sin;"}
+{"t":7966,"text":" \\\n  \\"}
+{"t":7997,"text":"\n  My"}
+{"t":8030,"text":" friend, you would"}
+{"t":8063,"text":" not tell with"}
+{"t":8106,"text":" such high z"}
+{"t":8130,"text":"est"}
+{"t":8164,"text":" \\\n  To"}
+{"t":8208,"text":" children "}
+{"t":8234,"text":"ardent for some des"}
+{"t":8269,"text":"perate glory, \\\n  "}
+{"t":8299,"text":"The old Lie: D"}
+{"t":8330,"text":"ulce et decorum est \\"}
+{"t":8368,"text":"\n  Pro patria m"}
+{"t":8397,"text":"ori.\""}
+{"t":8432,"text":"\n\n  _"}
+{"t":8474,"text":"Note: The Latin ph"}
+{"t":8497,"text":"rase means \"It"}
+{"t":8531,"text":" is sweet and f"}
+{"t":8567,"text":"itting to die for one"}
+{"t":8606,"text":"'s country.\""}
+{"t":8635,"text":"_\n]\n\n#"}
+{"t":8664,"text":"v("}
+{"t":8697,"text":"0.5em"}
+{"t":8735,"text":")\n\n+ What does Ow"}
+{"t":8767,"text":"en call \""}
+{"t":8798,"text":"the old Lie\" in"}
+{"t":8836,"text":" Source C? #h(1f"}
+{"t":8865,"text":"r) *(2)*"}
+{"t":8897,"text":"\n  #answer-lines("}
+{"t":8932,"text":"2)\n\n+"}
+{"t":8967,"text":" Ow"}
+{"t":8997,"text":"en was a soldier who"}
+{"t":9033,"text":" served on"}
+{"t":9068,"text":" the"}
+{"t":9101,"text":" Western Front. Expl"}
+{"t":9130,"text":"ain how this"}
+{"t":9167,"text":" aff"}
+{"t":9197,"text":"ects the"}
+{"t":9230,"text":" *"}
+{"t":9266,"text":"usefulness* of Source"}
+{"t":9297,"text":" C for"}
+{"t":9338,"text":" a"}
+{"t":9365,"text":" historian stud"}
+{"t":9402,"text":"ying so"}
+{"t":9435,"text":"ldiers' experi"}
+{"t":9468,"text":"ences of the"}
+{"t":9497,"text":" war."}
+{"t":9530,"text":" Cons"}
+{"t":9565,"text":"ider both"}
+{"t":9597,"text":" str"}
+{"t":9631,"text":"engths and limitations. #"}
+{"t":9664,"text":"h(1fr) *("}
+{"t":9699,"text":"4)*\n  #answer"}
+{"t":9730,"text":"-lines(5"}
+{"t":9763,"text":")\n\n== Part 4:"}
+{"t":9797,"text":" The"}
+{"t":9832,"text":" Wid"}
+{"t":9884,"text":"ening of the War"}
+{"t":9896,"text":"\n\n#source["}
+{"t":9937,"text":"Source D: Ext"}
+{"t":9968,"text":"ract from the Zimmerm"}
+{"t":9997,"text":"ann Telegram,"}
+{"t":10034,"text":" sent by German Foreign"}
+{"t":10064,"text":" Secretary Arthur"}
+{"t":10100,"text":" Zimmermann to the"}
+{"t":10139,"text":" German "}
+{"t":10165,"text":"ambassador in Mexico"}
+{"t":10197,"text":" (January 1917)]["}
+{"t":10230,"text":"\n  \"We intend to begin"}
+{"t":10265,"text":" on the first of February unrest"}
+{"t":10301,"text":"ricted submarine warfare"}
+{"t":10332,"text":". We shall endeavor"}
+{"t":10380,"text":" in spite of this to keep"}
+{"t":10406,"text":" the United States of America neutral"}
+{"t":10438,"text":". In the event of this not succ"}
+{"t":10467,"text":"eeding, we make M"}
+{"t":10506,"text":"exico a proposal of al"}
+{"t":10538,"text":"liance on the following basis:"}
+{"t":10565,"text":" make war together, make peace together"}
+{"t":10597,"text":", generous financial support and an"}
+{"t":10631,"text":" understanding on our part that"}
+{"t":10667,"text":" Mexico is to reconqu"}
+{"t":10699,"text":"er"}
+{"t":10736,"text":" the lost territory in Tex"}
+{"t":10772,"text":"as, New Mexico,"}
+{"t":10798,"text":" and Arizona.\"\n]"}
+{"t":10831,"text":"\n\n#v(0.5em"}
+{"t":10865,"text":")\n\n+ According"}
+{"t":10898,"text":" to Source D, what did"}
+{"t":10932,"text":" Germany offer Mex"}
+{"t":10966,"text":"ico?"}
+{"t":10997,"text":" #h(1fr) *"}
+{"t":11031,"text":"(2)*\n  #answ"}
+{"t":11069,"text":"er-lines(2)"}
+{"t":11097,"text":"\n\n+ Explain how the tel"}
+{"t":11133,"text":"egram,"}
+{"t":11164,"text":" together with unrestricted subm"}
+{"t":11198,"text":"arine warfare, contribut"}
+{"t":11230,"text":"ed to the United States entering the"}
+{"t":11266,"text":" war in April 1917. #"}
+{"t":11307,"text":"h(1fr) *("}
+{"t":11332,"text":"3)*\n  #answer"}
+{"t":11375,"text":"-lines(4)\n\n#"}
+{"t":11399,"text":"pagebreak(weak"}
+{"t":11431,"text":": true)\n\n== Part "}
+{"t":11464,"text":"5: The Pe"}
+{"t":11499,"text":"ace Settlement\n\n#source"}
+{"t":11532,"text":"[Source E: Article "}
+{"t":11571,"text":"231 of the Treaty"}
+{"t":11603,"text":" of Versailles ("}
+{"t":11632,"text":"1919)][\n  \"The"}
+{"t":11666,"text":" Allied and Associated"}
+{"t":11706,"text":" Governments affirm and Germ"}
+{"t":11740,"text":"any accepts the responsib"}
+{"t":11775,"text":"ility of Germany and her all"}
+{"t":11801,"text":"ies for causing all the loss"}
+{"t":11833,"text":" and damage to which the All"}
+{"t":11871,"text":"ied and Associated Governments"}
+{"t":11908,"text":" and their nationals have been sub"}
+{"t":11932,"text":"jected as a consequence of"}
+{"t":11974,"text":" the war imposed upon them"}
+{"t":11997,"text":" by the aggression of Germ"}
+{"t":12032,"text":"any and her allies.\"\n]"}
+{"t":12071,"text":"\n\n#"}
+{"t":12097,"text":"v(0.5em"}
+{"t":12134,"text":")\n\n+ What is"}
+{"t":12171,"text":" Germ"}
+{"t":12202,"text":"any being made"}
+{"t":12231,"text":" to accept in Source E?"}
+{"t":12264,"text":" #h(1f"}
+{"t":12300,"text":"r) *(3)*"}
+{"t":12332,"text":"\n  #answer-lines("}
+{"t":12374,"text":"3)\n\n+ \""}
+{"t":12397,"text":"The"}
+{"t":12433,"text":" pe"}
+{"t":12465,"text":"ace sett"}
+{"t":12498,"text":"lement of"}
+{"t":12540,"text":" 1919 was f"}
+{"t":12564,"text":"air and br"}
+{"t":12606,"text":"ought l"}
+{"t":12633,"text":"asting peace.\""}
+{"t":12668,"text":" \\"}
+{"t":12700,"text":"\n  Using Source"}
+{"t":12731,"text":" E and your own knowledge"}
+{"t":12767,"text":", expl"}
+{"t":12797,"text":"ain how far"}
+{"t":12832,"text":" you"}
+{"t":12869,"text":" agree with this statement."}
+{"t":12910,"text":" Ref"}
+{"t":12932,"text":"er to at least *two* ter"}
+{"t":12972,"text":"ms of the"}
+{"t":13000,"text":" Treaty of Versailles"}
+{"t":13034,"text":"."}
+{"t":13068,"text":" #h(1fr) *"}
+{"t":13101,"text":"(5)*\n  #answ"}
+{"t":13142,"text":"er-lines(7"}
+{"t":13167,"text":")\n\n#pagebreak"}
+{"t":13200,"text":"(weak: true)\n\n="}
+{"t":13236,"text":" Section B: Essay ("}
+{"t":13274,"text":"20 marks)\n\nCho"}
+{"t":13298,"text":"ose *"}
+{"t":13332,"text":"one* stat"}
+{"t":13370,"text":"ement of"}
+{"t":13405,"text":" the two below"}
+{"t":13433,"text":" only"}
+{"t":13464,"text":" if your"}
+{"t":13503,"text":" teacher has"}
+{"t":13540,"text":" instructed you to. Ot"}
+{"t":13566,"text":"herwise, answ"}
+{"t":13605,"text":"er the question"}
+{"t":13635,"text":" as"}
+{"t":13665,"text":" set."}
+{"t":13699,"text":"\n\n*"}
+{"t":13733,"text":"Essay question:*\n\n#"}
+{"t":13770,"text":"block"}
+{"t":13801,"text":"(\n  width: 100%"}
+{"t":13833,"text":",\n  inset: 10"}
+{"t":13865,"text":"pt,\n  stroke"}
+{"t":13907,"text":": 1pt + black,"}
+{"t":13933,"text":"\n  radius: 3p"}
+{"t":13966,"text":"t,\n)[\n  \""}
+{"t":13999,"text":"World"}
+{"t":14031,"text":" War I was ca"}
+{"t":14066,"text":"used more"}
+{"t":14097,"text":" by long"}
+{"t":14135,"text":"-term t"}
+{"t":14167,"text":"ensions in"}
+{"t":14204,"text":" Europe than by the ass"}
+{"t":14234,"text":"assination of Archduke"}
+{"t":14270,"text":" Franz Ferdinand"}
+{"t":14300,"text":" in"}
+{"t":14333,"text":" "}
+{"t":14380,"text":"1914.\"\n\n  To what ext"}
+{"t":14399,"text":"ent do you agree with this stat"}
+{"t":14431,"text":"ement?"}
+{"t":14464,"text":"\n]\n\n#v(0"}
+{"t":14502,"text":".5em)\n\nIn"}
+{"t":14533,"text":" your ess"}
+{"t":14566,"text":"ay you"}
+{"t":14598,"text":" should:\n- Write"}
+{"t":14631,"text":" an"}
+{"t":14667,"text":" introduction that"}
+{"t":14698,"text":" states your position clearly."}
+{"t":14750,"text":"\n- Discuss the *long"}
+{"t":14773,"text":"-term causes* ("}
+{"t":14799,"text":"for"}
+{"t":14838,"text":" example milit"}
+{"t":14869,"text":"arism, alliances, im"}
+{"t":14900,"text":"perialism and nationalism"}
+{"t":14935,"text":").\n- Discuss the"}
+{"t":14967,"text":" *short-term tr"}
+{"t":14999,"text":"igger* ("}
+{"t":15031,"text":"the ass"}
+{"t":15067,"text":"assination, the July Cris"}
+{"t":15097,"text":"is and the dec"}
+{"t":15136,"text":"isions of the great"}
+{"t":15164,"text":" powers).\n- Support"}
+{"t":15203,"text":" each"}
+{"t":15234,"text":" point with specific historical evid"}
+{"t":15271,"text":"ence."}
+{"t":15299,"text":"\n- Reach a bal"}
+{"t":15340,"text":"anced,"}
+{"t":15365,"text":" supported conclusion that answ"}
+{"t":15406,"text":"ers the"}
+{"t":15436,"text":" question.\n\n#v("}
+{"t":15472,"text":"0.5em)\n\n*"}
+{"t":15497,"text":"Marking gu"}
+{"t":15536,"text":"ide*"}
+{"t":15599,"text":"\n\n#table(\n  columns:"}
+{"t":15632,"text":" (2fr, 1f"}
+{"t":15665,"text":"r),\n  align: ("}
+{"t":15698,"text":"left, center),\n  [*"}
+{"t":15733,"text":"Crite"}
+{"t":15764,"text":"ria*], [*Marks"}
+{"t":15797,"text":"*],\n  [Argument"}
+{"t":15833,"text":" and cl"}
+{"t":15868,"text":"ear position thro"}
+{"t":15897,"text":"ughout], [5"}
+{"t":15932,"text":"],\n  [Accur"}
+{"t":15969,"text":"ate, detailed histor"}
+{"t":16004,"text":"ical kn"}
+{"t":16034,"text":"owledge], [6"}
+{"t":16066,"text":"],\n  [Anal"}
+{"t":16100,"text":"ysis of long-term caus"}
+{"t":16132,"text":"es and the"}
+{"t":16166,"text":" trigger,"}
+{"t":16212,"text":" with"}
+{"t":16234,"text":" a"}
+{"t":16264,"text":" weighing of their"}
+{"t":16298,"text":" importance], [5],\n  "}
+{"t":16333,"text":"[Struct"}
+{"t":16368,"text":"ure, clarity and con"}
+{"t":16401,"text":"clusion], [4],"}
+{"t":16433,"text":"\n  [*Total*], ["}
+{"t":16464,"text":"*20*],\n)\n\n#"}
+{"t":16500,"text":"v(0"}
+{"t":16531,"text":".5em)\n\n#answer"}
+{"t":16566,"text":"-lines(16)\n\n#"}
+{"t":16597,"text":"v(2"}
+{"t":16631,"text":"em)"}
+{"t":16664,"text":"\n#"}
+{"t":16699,"text":"align(center)"}
+{"t":16732,"text":"[_End"}
+{"t":16770,"text":" of exam"}
+{"t":16803,"text":"ination_]"}

@@ -1,0 +1,238 @@
+{"t":0,"text":"="}
+{"t":22,"text":" Gr"}
+{"t":40,"text":"ade 10 Physics"}
+{"t":59,"text":" Quiz: SI Units"}
+{"t":84,"text":" and Unit Conversions"}
+{"t":100,"text":"\n\nName: #"}
+{"t":140,"text":"line(length: 6"}
+{"t":143,"text":"c"}
+{"t":249,"text":"m)"}
+{"t":249,"text":" Date: #line(length:"}
+{"t":249,"text":" 3cm)"}
+{"t":249,"text":" Score"}
+{"t":249,"text":": \\"}
+{"t":263,"text":"_"}
+{"t":286,"text":"\\_\\_\\_"}
+{"t":304,"text":" / 20"}
+{"t":325,"text":"\n\n_"}
+{"t":345,"text":"Instructions: Answer"}
+{"t":365,"text":" every"}
+{"t":388,"text":" question. Show your working"}
+{"t":408,"text":" for"}
+{"t":426,"text":" conversions. Each"}
+{"t":447,"text":" question is"}
+{"t":467,"text":" worth the"}
+{"t":492,"text":" points"}
+{"t":508,"text":" shown in"}
+{"t":530,"text":" brackets._\n\n== Part"}
+{"t":551,"text":" A"}
+{"t":571,"text":": Base and"}
+{"t":591,"text":" Derived Units\n\n+"}
+{"t":611,"text":" Name the SI base unit"}
+{"t":633,"text":" for each"}
+{"t":652,"text":" qu"}
+{"t":676,"text":"antity. [2 points]"}
+{"t":694,"text":"\n  - Length: #line"}
+{"t":715,"text":"(length: 4"}
+{"t":737,"text":"cm)\n  - M"}
+{"t":755,"text":"ass: #line(length: "}
+{"t":774,"text":"4cm)\n  -"}
+{"t":798,"text":" Time: #line(length: "}
+{"t":816,"text":"4cm)\n\n+ The"}
+{"t":837,"text":" newton is the"}
+{"t":856,"text":" SI unit of force."}
+{"t":881,"text":" Express one"}
+{"t":897,"text":" newton in terms of S"}
+{"t":922,"text":"I base units. [2 points"}
+{"t":939,"text":"]\n\n  "}
+{"t":962,"text":"$"}
+{"t":978,"text":"1$ N"}
+{"t":1000,"text":" = #"}
+{"t":1019,"text":"line(length: 5"}
+{"t":1042,"text":"cm)\n\n+ Which"}
+{"t":1063,"text":" pr"}
+{"t":1080,"text":"efix means"}
+{"t":1101,"text":" $"}
+{"t":1123,"text":"10^(-3)$,"}
+{"t":1141,"text":" and which means $10^(3"}
+{"t":1166,"text":")$? [2 points]"}
+{"t":1184,"text":"\n\n  $"}
+{"t":1203,"text":"10^(-3)$:"}
+{"t":1226,"text":" #line(length: 4"}
+{"t":1244,"text":"cm) $10^(3"}
+{"t":1264,"text":")$: #line(length:"}
+{"t":1287,"text":" 4cm)\n\n=="}
+{"t":1305,"text":" Part B: Un"}
+{"t":1329,"text":"it Conversions\n\n+"}
+{"t":1350,"text":" Convert the"}
+{"t":1373,"text":" following."}
+{"t":1392,"text":" Show"}
+{"t":1407,"text":" your working. [6"}
+{"t":1427,"text":" points]\n  - $"}
+{"t":1451,"text":"3.5$"}
+{"t":1468,"text":" km to"}
+{"t":1493,"text":" m"}
+{"t":1509,"text":":"}
+{"t":1531,"text":" #v"}
+{"t":1551,"text":"(1"}
+{"t":1570,"text":".5em)\n  - $"}
+{"t":1593,"text":"250$ g to k"}
+{"t":1613,"text":"g: #v(1.5"}
+{"t":1631,"text":"em)\n  - $45"}
+{"t":1653,"text":"$ min to s: #v"}
+{"t":1677,"text":"(1.5em)\n\n+"}
+{"t":1696,"text":" A"}
+{"t":1724,"text":" car trav"}
+{"t":1734,"text":"els at"}
+{"t":1755,"text":" $72$ km/h."}
+{"t":1776,"text":" Convert this spe"}
+{"t":1798,"text":"ed to m"}
+{"t":1818,"text":"/s. [2"}
+{"t":1836,"text":" points]\n\n  "}
+{"t":1856,"text":"#v(3"}
+{"t":1877,"text":"em)\n\n+ Convert"}
+{"t":1897,"text":" $4.2 times"}
+{"t":1919,"text":" 10^(-6)$"}
+{"t":1938,"text":" m to μm. [2"}
+{"t":1959,"text":" points]\n\n  #v("}
+{"t":1981,"text":"2em)\n\n+ A block"}
+{"t":2004,"text":" of a"}
+{"t":2023,"text":"luminium has a density of $"}
+{"t":2040,"text":"2700$ kg/m"}
+{"t":2063,"text":"$^3$. Convert"}
+{"t":2082,"text":" this density"}
+{"t":2106,"text":" to g/cm$^3"}
+{"t":2124,"text":"$."}
+{"t":2143,"text":" Remember that"}
+{"t":2167,"text":" $1$"}
+{"t":2183,"text":" m $"}
+{"t":2203,"text":"= 100$ cm."}
+{"t":2225,"text":" [3"}
+{"t":2245,"text":" points]\n\n  #v("}
+{"t":2266,"text":"3em)\n\n== Part C"}
+{"t":2288,"text":": Re"}
+{"t":2308,"text":"asoning"}
+{"t":2332,"text":"\n\n+ Expl"}
+{"t":2346,"text":"ain why the S"}
+{"t":2366,"text":"I system"}
+{"t":2387,"text":" is used"}
+{"t":2411,"text":" in science"}
+{"t":2428,"text":" instead of a"}
+{"t":2448,"text":" mix of un"}
+{"t":2470,"text":"it systems."}
+{"t":2489,"text":" Give one"}
+{"t":2512,"text":" spec"}
+{"t":2532,"text":"ific example of"}
+{"t":2552,"text":" conf"}
+{"t":2586,"text":"usion that"}
+{"t":2596,"text":" can"}
+{"t":2611,"text":" arise when units are not cons"}
+{"t":2632,"text":"istent. [3"}
+{"t":2654,"text":" points]\n\n  #v("}
+{"t":2673,"text":"4"}
+{"t":2694,"text":"em)\n\n+ A"}
+{"t":2723,"text":" student"}
+{"t":2734,"text":" records"}
+{"t":2761,"text":" a"}
+{"t":2774,"text":" distance as"}
+{"t":2795,"text":" $850"}
+{"t":2815,"text":"$ c"}
+{"t":2836,"text":"m and"}
+{"t":2858,"text":" a"}
+{"t":2879,"text":" time as $0"}
+{"t":2897,"text":".5$ min"}
+{"t":2917,"text":"utes,"}
+{"t":2937,"text":" then calculates spe"}
+{"t":2959,"text":"ed in"}
+{"t":2978,"text":" m/s."}
+{"t":2999,"text":" Write"}
+{"t":3020,"text":" the conver"}
+{"t":3042,"text":"ted values"}
+{"t":3060,"text":" and the final"}
+{"t":3098,"text":" speed. [0"}
+{"t":3102,"text":" points,"}
+{"t":3121,"text":" b"}
+{"t":3142,"text":"onus: "}
+{"t":3173,"text":"2"}
+{"t":3183,"text":" points]\n\n  #v"}
+{"t":3205,"text":"(4em)\n\n#p"}
+{"t":3223,"text":"agebreak()"}
+{"t":3244,"text":"\n\n== Teacher"}
+{"t":3264,"text":" Answer Key\n\n+"}
+{"t":3286,"text":" Length"}
+{"t":3309,"text":": met"}
+{"t":3325,"text":"re ("}
+{"t":3353,"text":"m); mass: kilog"}
+{"t":3369,"text":"ram (kg); time: second"}
+{"t":3391,"text":" (s)."}
+{"t":3407,"text":"\n+ $"}
+{"t":3434,"text":"1$ N $"}
+{"t":3449,"text":"= 1$ kg·"}
+{"t":3479,"text":"m/s$^2$."}
+{"t":3489,"text":"\n+ $10^(-"}
+{"t":3511,"text":"3)$ is mil"}
+{"t":3530,"text":"li ("}
+{"t":3550,"text":"m); $10^(3)"}
+{"t":3570,"text":"$ is kilo (k"}
+{"t":3591,"text":").\n+ $3"}
+{"t":3612,"text":".5$ km $"}
+{"t":3632,"text":"= 3500$ m;"}
+{"t":3652,"text":" $250$ g $= "}
+{"t":3676,"text":"0.25$ kg;"}
+{"t":3700,"text":" $45$ min $= "}
+{"t":3714,"text":"2700$ s.\n+"}
+{"t":3735,"text":" $72$ km/h"}
+{"t":3759,"text":" $= 72 times"}
+{"t":3774,"text":" 1000 "}
+{"t":3795,"text":"/ 3"}
+{"t":3817,"text":"600 = 20$ m"}
+{"t":3838,"text":"/s.\n+ $4"}
+{"t":3860,"text":".2 "}
+{"t":3880,"text":"times 10^(-6)"}
+{"t":3900,"text":"$ m $= 4."}
+{"t":3920,"text":"2$ μm.\n+"}
+{"t":3941,"text":" $2700$ kg"}
+{"t":3961,"text":"/m$^3 "}
+{"t":3979,"text":"= 2.7$ g"}
+{"t":4000,"text":"/cm$^3$"}
+{"t":4020,"text":" (since $1$"}
+{"t":4040,"text":" kg/m$^3"}
+{"t":4066,"text":" = 0"}
+{"t":4082,"text":".001$ g/cm"}
+{"t":4102,"text":"$^3$).\n+"}
+{"t":4126,"text":" Answers v"}
+{"t":4142,"text":"ary."}
+{"t":4163,"text":" Look"}
+{"t":4185,"text":" for:"}
+{"t":4205,"text":" a"}
+{"t":4225,"text":" sh"}
+{"t":4244,"text":"ared stand"}
+{"t":4265,"text":"ard all"}
+{"t":4285,"text":"ows global"}
+{"t":4313,"text":" comparison; a"}
+{"t":4326,"text":" m"}
+{"t":4348,"text":"ix"}
+{"t":4366,"text":" of units ("}
+{"t":4389,"text":"for"}
+{"t":4409,"text":" example, feet and"}
+{"t":4430,"text":" met"}
+{"t":4448,"text":"res, or"}
+{"t":4469,"text":" New"}
+{"t":4490,"text":"ton and p"}
+{"t":4510,"text":"ound-force) can cause cal"}
+{"t":4531,"text":"culation errors,"}
+{"t":4550,"text":" as"}
+{"t":4573,"text":" in"}
+{"t":4591,"text":" the "}
+{"t":4613,"text":"1999 Mars Clim"}
+{"t":4632,"text":"ate Orbiter loss"}
+{"t":4653,"text":".\n+ B"}
+{"t":4673,"text":"onus: $850$"}
+{"t":4695,"text":" cm $= 8."}
+{"t":4714,"text":"5$ m; $0."}
+{"t":4740,"text":"5$ min $= 30"}
+{"t":4760,"text":"$ s;"}
+{"t":4776,"text":" speed $= 8.5"}
+{"t":4799,"text":" / 30 appro"}
+{"t":4819,"text":"x 0.28"}
+{"t":4855,"text":"$ m/s."}

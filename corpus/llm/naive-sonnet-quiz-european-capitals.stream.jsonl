@@ -1,0 +1,154 @@
+{"t":0,"text":"#"}
+{"t":20,"text":"set"}
+{"t":54,"text":" page"}
+{"t":86,"text":"(marg"}
+{"t":122,"text":"in: 2"}
+{"t":154,"text":"c"}
+{"t":192,"text":"m)\n#set text(size"}
+{"t":220,"text":": 12pt)\n\n#"}
+{"t":253,"text":"let q(n, pr"}
+{"t":288,"text":"ompt, a, b, c"}
+{"t":321,"text":", d) = block(break"}
+{"t":355,"text":"able: false, below"}
+{"t":387,"text":": 1."}
+{"t":421,"text":"2em)[\n  *#"}
+{"t":456,"text":"n.*"}
+{"t":487,"text":" #prompt \\"}
+{"t":523,"text":"\n  #h(1."}
+{"t":554,"text":"5em) A) #a"}
+{"t":588,"text":" #h(1."}
+{"t":620,"text":"2"}
+{"t":665,"text":"em) B) #b"}
+{"t":699,"text":" #h(1.2em)"}
+{"t":729,"text":" C) #c"}
+{"t":761,"text":" #h(1.2em)"}
+{"t":795,"text":" D) #d"}
+{"t":824,"text":"\n]\n\n= European"}
+{"t":856,"text":" Capitals Quiz"}
+{"t":925,"text":"\n\n*"}
+{"t":963,"text":"Grade 6 Ge"}
+{"t":988,"text":"ography*"}
+{"t":1021,"text":" #"}
+{"t":1054,"text":"h(1"}
+{"t":1087,"text":"fr)"}
+{"t":1124,"text":" Name: #box"}
+{"t":1154,"text":"(width: 6"}
+{"t":1188,"text":"cm, line"}
+{"t":1221,"text":"(length: 100%))"}
+{"t":1255,"text":" #h(1em"}
+{"t":1288,"text":") Date: #box(width"}
+{"t":1324,"text":": 3cm, line("}
+{"t":1355,"text":"length: 100%))\n\n*"}
+{"t":1389,"text":"Directions:* Circle"}
+{"t":1421,"text":" the let"}
+{"t":1455,"text":"ter of"}
+{"t":1489,"text":" the best"}
+{"t":1522,"text":" answer for each question. Each"}
+{"t":1557,"text":" question is worth "}
+{"t":1588,"text":"1 point.\n\n#v("}
+{"t":1623,"text":"1em)\n\n#q(1"}
+{"t":1657,"text":", ["}
+{"t":1690,"text":"What is the capital of France?"}
+{"t":1722,"text":"],"}
+{"t":1756,"text":" [Paris], [L"}
+{"t":1790,"text":"yon], [Brussels"}
+{"t":1823,"text":"], [Madrid])"}
+{"t":1856,"text":"\n\n#q(2, [What is"}
+{"t":1892,"text":" the capital of Italy?"}
+{"t":1923,"text":"], [Mil"}
+{"t":1956,"text":"an], [Rome], ["}
+{"t":1990,"text":"Venice], [Naples"}
+{"t":2024,"text":"])\n\n#q(3, ["}
+{"t":2057,"text":"What is the capital of Sp"}
+{"t":2092,"text":"ain?], [Barcel"}
+{"t":2123,"text":"ona], [L"}
+{"t":2158,"text":"isbon], [Madr"}
+{"t":2191,"text":"id], [Seville])"}
+{"t":2224,"text":"\n\n#q(4, [What is"}
+{"t":2258,"text":" the capital of Germany?"}
+{"t":2292,"text":"], [Munich], ["}
+{"t":2325,"text":"Hamburg], [V"}
+{"t":2359,"text":"ienna], [Berlin"}
+{"t":2392,"text":"])\n\n#q(5, ["}
+{"t":2425,"text":"What is the capital of the United"}
+{"t":2459,"text":" Kingdom?], ["}
+{"t":2492,"text":"Dublin], [London],"}
+{"t":2527,"text":" [Edinburgh],"}
+{"t":2559,"text":" [Manchester])\n\n#"}
+{"t":2592,"text":"q(6, [What is the"}
+{"t":2626,"text":" capital of Greece?],"}
+{"t":2662,"text":" [Athens], [R"}
+{"t":2694,"text":"ome], [Istanbul"}
+{"t":2727,"text":"], [Sofia])"}
+{"t":2766,"text":"\n\n#q(7, [What is"}
+{"t":2809,"text":" the capital of Portugal"}
+{"t":2827,"text":"?], [Porto], ["}
+{"t":2860,"text":"Madrid], [L"}
+{"t":2894,"text":"isbon], [Barc"}
+{"t":2927,"text":"elona])\n\n#q(8"}
+{"t":2960,"text":", [What is the capital of"}
+{"t":2994,"text":" Poland?], [Pr"}
+{"t":3027,"text":"ague], [Warsaw"}
+{"t":3061,"text":"], [Krakow], ["}
+{"t":3094,"text":"Budapest])\n\n#q"}
+{"t":3127,"text":"(9, [What is the cap"}
+{"t":3161,"text":"ital of Austria?], ["}
+{"t":3194,"text":"Vienna], [Z"}
+{"t":3228,"text":"urich], [Berlin"}
+{"t":3262,"text":"], [Salzburg])"}
+{"t":3302,"text":"\n\n#q(10, [What"}
+{"t":3330,"text":" is the capital of Swe"}
+{"t":3362,"text":"den?], [Oslo"}
+{"t":3395,"text":"], [Copenhagen"}
+{"t":3429,"text":"], [Helsinki],"}
+{"t":3462,"text":" [Stockholm])"}
+{"t":3497,"text":"\n\n#v(1f"}
+{"t":3528,"text":"r)\n\nScore: #box"}
+{"t":3562,"text":"(width: 2"}
+{"t":3595,"text":"cm, line(length: "}
+{"t":3630,"text":"100%)) /"}
+{"t":3662,"text":" 10\n\n#pagebre"}
+{"t":3698,"text":"ak()"}
+{"t":3729,"text":"\n\n="}
+{"t":3762,"text":" Answer Key (Te"}
+{"t":3797,"text":"acher"}
+{"t":3829,"text":" Copy)\n\n#"}
+{"t":3867,"text":"table("}
+{"t":3896,"text":"\n  columns: 10"}
+{"t":3931,"text":",\n  align"}
+{"t":3964,"text":": center,\n  [*"}
+{"t":3995,"text":"1*], [*"}
+{"t":4030,"text":"2*], [*3*],"}
+{"t":4064,"text":" [*4*], [*5"}
+{"t":4095,"text":"*], [*6*], ["}
+{"t":4129,"text":"*7*], [*8*"}
+{"t":4163,"text":"], [*9*], [*"}
+{"t":4196,"text":"10*],\n  [A],"}
+{"t":4229,"text":" [B], [C], [D"}
+{"t":4264,"text":"], [B], [A], ["}
+{"t":4298,"text":"C], [B], [A],"}
+{"t":4332,"text":" [D],\n)\n\n#v"}
+{"t":4363,"text":"(1em)\n\n#table("}
+{"t":4397,"text":"\n  columns: ("}
+{"t":4430,"text":"au"}
+{"t":4463,"text":"to, "}
+{"t":4498,"text":"1fr),\n  [*"}
+{"t":4530,"text":"Country*], [*"}
+{"t":4563,"text":"Capital*],\n  ["}
+{"t":4600,"text":"France], [Paris],"}
+{"t":4630,"text":"\n  [Italy], ["}
+{"t":4665,"text":"Rome],\n  [Sp"}
+{"t":4698,"text":"ain], [Madrid],"}
+{"t":4732,"text":"\n  [Germany], ["}
+{"t":4765,"text":"Berlin],\n  ["}
+{"t":4799,"text":"United Kingdom], ["}
+{"t":4830,"text":"London],\n  [Greece"}
+{"t":4867,"text":"], [Athens],\n  "}
+{"t":4897,"text":"[Portugal], ["}
+{"t":4933,"text":"Lisbon],\n  ["}
+{"t":4966,"text":"Poland], [Wars"}
+{"t":4997,"text":"aw],\n  [Aust"}
+{"t":5031,"text":"ria], [Vienna],"}
+{"t":5064,"text":"\n  [Sweden],"}
+{"t":5098,"text":" [Stockholm],"}
+{"t":5120,"text":"\n)"}

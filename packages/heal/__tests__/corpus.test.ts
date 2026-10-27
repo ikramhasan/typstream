@@ -35,9 +35,17 @@ describe("corpus: every prefix heals to valid syntax", () => {
 });
 
 describe("corpus: complete documents", () => {
+  // Real model output (corpus/llm, #24) has Markdown habits that parse, such as `**one**`: lint
+  // fixes those and must change nothing else.
   it.each(cases.filter((c) => c.valid).map((c) => [c.id, c] as const))("%s comes back unchanged", (_, c) => {
-    expect(heal(c.source).source).toBe(c.source);
-    expect(heal(c.source, { final: true }).source).toBe(c.source);
+    const final = heal(c.source, { final: true });
+    const changes = final.findings.filter((f) => f.severity === "fix").flatMap((f) => f.changes);
+    let expected = c.source;
+    for (const ch of [...changes].sort((a, b) => b.from - a.from)) {
+      expected = expected.slice(0, ch.from) + ch.insert + expected.slice(ch.to);
+    }
+    expect(final.source).toBe(expected);
+    if (changes.length === 0) expect(heal(c.source).source).toBe(c.source);
   });
 });
 

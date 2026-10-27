@@ -1,0 +1,302 @@
+{"t":0,"text":"#"}
+{"t":32,"text":"show: wor"}
+{"t":66,"text":"ksheet.with("}
+{"t":99,"text":"\n  title: [Area and"}
+{"t":134,"text":" Perimeter of Rect"}
+{"t":166,"text":"angles and Triangles],"}
+{"t":199,"text":"\n  subject: [M"}
+{"t":233,"text":"athematics],\n  grade"}
+{"t":266,"text":": [Grade 6],"}
+{"t":301,"text":"\n  instructions: ["}
+{"t":333,"text":"Answer all questions. Show"}
+{"t":367,"text":" your working and write the corre"}
+{"t":400,"text":"ct units."}
+{"t":435,"text":" Diagrams are not dr"}
+{"t":466,"text":"awn to scale.],"}
+{"t":500,"text":"\n)\n#import \"@preview"}
+{"t":533,"text":"/cetz:0.5"}
+{"t":566,"text":".3\""}
+{"t":600,"text":"\n\n#callout(kind:"}
+{"t":633,"text":" \"remember\","}
+{"t":666,"text":" title: ["}
+{"t":700,"text":"Formulas])[\n  "}
+{"t":733,"text":"- R"}
+{"t":767,"text":"ectangle:"}
+{"t":800,"text":" perimeter $P"}
+{"t":834,"text":" = 2("}
+{"t":867,"text":"l + w)$, area $"}
+{"t":900,"text":"A = l times"}
+{"t":935,"text":" w$"}
+{"t":966,"text":"\n  - Triangle: per"}
+{"t":1000,"text":"imeter $P = a +"}
+{"t":1034,"text":" b + c$"}
+{"t":1068,"text":" (add"}
+{"t":1100,"text":" all"}
+{"t":1134,"text":" three sides), area $A ="}
+{"t":1167,"text":" 1/2 times b"}
+{"t":1200,"text":" times h$"}
+{"t":1233,"text":"\n\n  The height"}
+{"t":1266,"text":" $h$ of"}
+{"t":1301,"text":" a triangle is"}
+{"t":1335,"text":" meas"}
+{"t":1367,"text":"ured at"}
+{"t":1401,"text":" a"}
+{"t":1452,"text":" right angle to the base $"}
+{"t":1467,"text":"b$.\n]\n\n="}
+{"t":1500,"text":" Part A: Rectangles"}
+{"t":1533,"text":"\n\n#question(points: 3"}
+{"t":1567,"text":")[\n  "}
+{"t":1600,"text":"Look"}
+{"t":1633,"text":" at the rectangle."}
+{"t":1700,"text":"\n\n  #align"}
+{"t":1734,"text":"(center)["}
+{"t":1767,"text":"\n    #cetz.can"}
+{"t":1800,"text":"vas({\n      import cet"}
+{"t":1833,"text":"z.draw: *\n      "}
+{"t":1867,"text":"rect((0, 0),"}
+{"t":1900,"text":" (4, 2.5))"}
+{"t":1937,"text":"\n      content((2,"}
+{"t":1967,"text":" -0.45"}
+{"t":2002,"text":"), [$8 \"cm"}
+{"t":2034,"text":"\"$])\n      content((-"}
+{"t":2068,"text":"0.6, 1.25"}
+{"t":2101,"text":"), [$5 \"cm"}
+{"t":2135,"text":"\"$])\n    })\n  "}
+{"t":2175,"text":"]"}
+{"t":2200,"text":"\n\n  + Find the perime"}
+{"t":2234,"text":"ter. #"}
+{"t":2267,"text":"answ"}
+{"t":2300,"text":"er-space(height: 3"}
+{"t":2334,"text":"em, answer: [$P"}
+{"t":2367,"text":" = 2("}
+{"t":2400,"text":"8 + 5) = "}
+{"t":2434,"text":"26 \"cm\"$])"}
+{"t":2469,"text":"\n  + Find the area."}
+{"t":2501,"text":" #answer-space(height:"}
+{"t":2538,"text":" 3em, answer: ["}
+{"t":2567,"text":"$A = 8 times "}
+{"t":2601,"text":"5 = 40 \"c"}
+{"t":2635,"text":"m\"^2$])\n]"}
+{"t":2670,"text":"\n\n#question(points: 2"}
+{"t":2701,"text":")[\n  A rectang"}
+{"t":2737,"text":"ular pool is"}
+{"t":2768,"text":" shown below."}
+{"t":2801,"text":"\n\n  #align(center)["}
+{"t":2836,"text":"\n    #cetz.can"}
+{"t":2868,"text":"vas({\n      import cet"}
+{"t":2901,"text":"z.draw: *\n      "}
+{"t":2935,"text":"rect((0, 0),"}
+{"t":2968,"text":" (5, 2))\n      "}
+{"t":3001,"text":"content((2."}
+{"t":3034,"text":"5, -0.45"}
+{"t":3068,"text":"), [$12 \"m\""}
+{"t":3101,"text":"$])\n      content((-0"}
+{"t":3136,"text":".6, 1),"}
+{"t":3168,"text":" [$7 \"m\"$"}
+{"t":3201,"text":"])\n    })\n  ]"}
+{"t":3236,"text":"\n\n  The perimeter is"}
+{"t":3268,"text":" #blank(answer: ["}
+{"t":3301,"text":"$38"}
+{"t":3334,"text":" \"m\"$]) and"}
+{"t":3368,"text":" the area is #blank(answ"}
+{"t":3402,"text":"er: [$84 \"m"}
+{"t":3435,"text":"\"^2$]).\n]"}
+{"t":3468,"text":"\n\n#question(points: 2"}
+{"t":3501,"text":")[\n  The area of this"}
+{"t":3538,"text":" rectangle is $48 "}
+{"t":3568,"text":"\"cm\""}
+{"t":3601,"text":"^2$. Its"}
+{"t":3636,"text":" length is $8 \"cm"}
+{"t":3675,"text":"\""}
+{"t":3701,"text":"$."}
+{"t":3737,"text":" Find the miss"}
+{"t":3768,"text":"ing width"}
+{"t":3801,"text":".\n\n  #align("}
+{"t":3836,"text":"center)[\n    #cet"}
+{"t":3870,"text":"z.canvas({\n      "}
+{"t":3902,"text":"import cetz.draw:"}
+{"t":3935,"text":" *\n      rect((0,"}
+{"t":3968,"text":" 0), (4, 2"}
+{"t":4001,"text":"))\n      content((2, -"}
+{"t":4036,"text":"0.45), [$8 "}
+{"t":4069,"text":"\"cm\"$"}
+{"t":4104,"text":"])\n      content((-0."}
+{"t":4135,"text":"5, 1), [$?"}
+{"t":4168,"text":"$])\n      content((2,"}
+{"t":4202,"text":" 1), [$"}
+{"t":4235,"text":"A = 48 \"cm"}
+{"t":4268,"text":"\"^2$])\n    })"}
+{"t":4302,"text":"\n  ]\n\n  #answ"}
+{"t":4335,"text":"er-space(height: 3"}
+{"t":4372,"text":"."}
+{"t":4402,"text":"5em, answer: [$"}
+{"t":4435,"text":"w = 48 div"}
+{"t":4468,"text":" 8 = 6 \""}
+{"t":4502,"text":"cm\"$])\n]"}
+{"t":4536,"text":"\n\n= Part B: Triang"}
+{"t":4568,"text":"les\n\n#question(points: "}
+{"t":4602,"text":"2"}
+{"t":4637,"text":")[\n  "}
+{"t":4670,"text":"Find the area of the triangle"}
+{"t":4702,"text":". The dash"}
+{"t":4735,"text":"ed line is"}
+{"t":4769,"text":" the height.\n\n  #align("}
+{"t":4803,"text":"center)[\n    #cet"}
+{"t":4835,"text":"z.canvas({\n      "}
+{"t":4870,"text":"import cetz.draw:"}
+{"t":4903,"text":" *\n      line((0, "}
+{"t":4935,"text":"0), (5, 0),"}
+{"t":4969,"text":" (3, 3), close:"}
+{"t":5002,"text":" true)\n      line((3,"}
+{"t":5035,"text":" 0), (3, 3"}
+{"t":5076,"text":"), stroke: (dash"}
+{"t":5102,"text":": \"dashed\"))"}
+{"t":5137,"text":"\n      line((3, 0."}
+{"t":5169,"text":"3), (3.3, "}
+{"t":5202,"text":"0.3), (3.3"}
+{"t":5236,"text":", 0))\n      content(("}
+{"t":5269,"text":"2.5, -0.45"}
+{"t":5302,"text":"), [$10 \"cm"}
+{"t":5335,"text":"\"$])\n      content((3"}
+{"t":5369,"text":".15, 1.5),"}
+{"t":5402,"text":" [$6 \"cm\""}
+{"t":5437,"text":"$], anchor: \"west"}
+{"t":5469,"text":"\")\n    })\n  ]"}
+{"t":5502,"text":"\n\n  #answer-space("}
+{"t":5537,"text":"height: 3."}
+{"t":5569,"text":"5em, answer: [$"}
+{"t":5602,"text":"A = 1/2 times"}
+{"t":5636,"text":" 10 times 6 ="}
+{"t":5670,"text":" 30 \"cm\""}
+{"t":5704,"text":"^2$])\n]\n\n#"}
+{"t":5736,"text":"question(points: 4"}
+{"t":5770,"text":")[\n  This is a right"}
+{"t":5803,"text":"-"}
+{"t":5838,"text":"angled triangle."}
+{"t":5869,"text":"\n\n  #align("}
+{"t":5906,"text":"center)[\n    #cet"}
+{"t":5940,"text":"z.canvas({\n      "}
+{"t":5972,"text":"import cetz.draw:"}
+{"t":6003,"text":" *\n      line((0, "}
+{"t":6036,"text":"0), (4, 0),"}
+{"t":6069,"text":" (0, 3), close:"}
+{"t":6102,"text":" true)\n      line"}
+{"t":6135,"text":"((0.3, 0),"}
+{"t":6169,"text":" (0.3, 0."}
+{"t":6205,"text":"3), (0, 0."}
+{"t":6235,"text":"3))\n      content((2,"}
+{"t":6269,"text":" -0.45), [$8"}
+{"t":6303,"text":" \"cm\"$"}
+{"t":6337,"text":"])\n      content((-0."}
+{"t":6369,"text":"6, 1"}
+{"t":6403,"text":".5), [$6 \""}
+{"t":6437,"text":"cm\"$])\n      content"}
+{"t":6469,"text":"((2.1"}
+{"t":6502,"text":", 1.65"}
+{"t":6537,"text":"), [$10 \"cm"}
+{"t":6571,"text":"\"$], anchor: \""}
+{"t":6602,"text":"south-west\")\n    })"}
+{"t":6636,"text":"\n  ]\n\n  + Find"}
+{"t":6669,"text":" the perimeter. #answ"}
+{"t":6703,"text":"er-space(height: 3"}
+{"t":6736,"text":"em, answer: [$P"}
+{"t":6770,"text":" = 8 + 6 "}
+{"t":6804,"text":"+ 10 = 24 "}
+{"t":6836,"text":"\"cm\"$])\n  "}
+{"t":6869,"text":"+ Find the area,"}
+{"t":6902,"text":" using the two s"}
+{"t":6936,"text":"ides that form the"}
+{"t":6971,"text":" right angle as"}
+{"t":7003,"text":" base and height. #answer-"}
+{"t":7036,"text":"space(height: 3em,"}
+{"t":7070,"text":" answer: [$A = "}
+{"t":7104,"text":"1/2 times 8 "}
+{"t":7136,"text":"times 6 = 24 "}
+{"t":7170,"text":"\"cm\"^2$])"}
+{"t":7203,"text":"\n]\n\n#"}
+{"t":7236,"text":"question(points: 1"}
+{"t":7269,"text":")[\n  A"}
+{"t":7305,"text":" triangle has"}
+{"t":7336,"text":" base"}
+{"t":7369,"text":" $12"}
+{"t":7405,"text":" \"cm\"$ and"}
+{"t":7436,"text":" height $5"}
+{"t":7469,"text":" \"cm\""}
+{"t":7503,"text":"$. What"}
+{"t":7536,"text":" is its area?\n  #m"}
+{"t":7569,"text":"cq([$60"}
+{"t":7603,"text":" \"cm\"^2$"}
+{"t":7636,"text":"], [$30 \"cm"}
+{"t":7669,"text":"\"^2$], [$17"}
+{"t":7703,"text":" \"cm\"^2$"}
+{"t":7736,"text":"], [$34"}
+{"t":7769,"text":" \"cm\"^2$"}
+{"t":7803,"text":"], answer: 2)"}
+{"t":7836,"text":"\n]\n\n= Part C:"}
+{"t":7869,"text":" Problem solving\n\n#question("}
+{"t":7904,"text":"points: 4)[\n  "}
+{"t":7936,"text":"A rectangular garden is"}
+{"t":7970,"text":" $"}
+{"t":8003,"text":"15 \"m\""}
+{"t":8037,"text":"$ long and $9 \""}
+{"t":8070,"text":"m\"$ wide."}
+{"t":8103,"text":"\n\n  #align(center)["}
+{"t":8137,"text":"\n    #cetz.canv"}
+{"t":8169,"text":"as({\n      import cetz"}
+{"t":8203,"text":".draw: *\n      r"}
+{"t":8240,"text":"ect((0, 0), ("}
+{"t":8272,"text":"5, 3"}
+{"t":8303,"text":"))\n      content((2"}
+{"t":8336,"text":".5, -0.45),"}
+{"t":8369,"text":" [$15 \"m\"$"}
+{"t":8404,"text":"])\n      content((-0."}
+{"t":8437,"text":"6, 1.5), ["}
+{"t":8470,"text":"$9 \"m\"$])"}
+{"t":8503,"text":"\n      "}
+{"t":8537,"text":"content((2.5, 1"}
+{"t":8570,"text":".5), [Garden])"}
+{"t":8603,"text":"\n    })\n  ]"}
+{"t":8636,"text":"\n\n  + How"}
+{"t":8672,"text":" much fenc"}
+{"t":8703,"text":"ing is needed to go"}
+{"t":8737,"text":" all"}
+{"t":8771,"text":" the way around the garden?"}
+{"t":8803,"text":"\n    #answer-space("}
+{"t":8837,"text":"height: 3em, answer"}
+{"t":8872,"text":": [$P = 2("}
+{"t":8903,"text":"15 + 9) = "}
+{"t":8937,"text":"48 \"m\"$])"}
+{"t":8977,"text":"\n  + One"}
+{"t":9004,"text":" bag of grass se"}
+{"t":9038,"text":"ed covers $27"}
+{"t":9069,"text":" \"m\"^2$."}
+{"t":9103,"text":" How many bags are needed to"}
+{"t":9137,"text":" cover the whole garden?"}
+{"t":9170,"text":"\n    #answer-space("}
+{"t":9203,"text":"height: 4em, answer"}
+{"t":9237,"text":": [$A = 15"}
+{"t":9270,"text":" times 9 = 135"}
+{"t":9303,"text":" \"m\""}
+{"t":9339,"text":"^2$,"}
+{"t":9371,"text":" and $135 div 27 "}
+{"t":9404,"text":"= 5$ bags."}
+{"t":9436,"text":"])\n]\n\n#question(points"}
+{"t":9470,"text":": 2)[\n  A"}
+{"t":9513,"text":" triangular sail has"}
+{"t":9541,"text":" a base of $4"}
+{"t":9577,"text":" \"m\""}
+{"t":9609,"text":"$ and a height of $6"}
+{"t":9647,"text":" \"m\""}
+{"t":9670,"text":"$. Explain how"}
+{"t":9707,"text":" to find its area, then"}
+{"t":9744,"text":" calculate it.\n  #"}
+{"t":9769,"text":"answer-lines(count:"}
+{"t":9803,"text":" 3, answer: ["}
+{"t":9837,"text":"Use"}
+{"t":9870,"text":" $A"}
+{"t":9903,"text":" = 1/2 times b"}
+{"t":9936,"text":" times h ="}
+{"t":9970,"text":" 1/2 times 4"}
+{"t":10003,"text":" times 6 = 12"}
+{"t":10036,"text":" \"m\"^2$."}
+{"t":10070,"text":"])\n]"}

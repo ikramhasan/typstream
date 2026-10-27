@@ -1,0 +1,201 @@
+{"t":0,"text":"= Arg"}
+{"t":19,"text":"umentative Essay R"}
+{"t":39,"text":"ubric\n\n#"}
+{"t":62,"text":"set text(size: 9."}
+{"t":80,"text":"5pt)\n\n#table("}
+{"t":101,"text":"\n  columns: ("}
+{"t":125,"text":"1.3"}
+{"t":143,"text":"fr, 2f"}
+{"t":164,"text":"r, 2fr, "}
+{"t":185,"text":"2fr, 2"}
+{"t":206,"text":"fr),\n  [*"}
+{"t":223,"text":"Criterion*], [*4"}
+{"t":246,"text":" Exemplary*"}
+{"t":265,"text":"], [*3 Profic"}
+{"t":288,"text":"ient*], [*2 "}
+{"t":308,"text":"Developing*], [*1 "}
+{"t":326,"text":"Beginning*],\n  "}
+{"t":347,"text":"[*Thesis and"}
+{"t":368,"text":" Claim*],\n  [The"}
+{"t":389,"text":" thesis is clear, spec"}
+{"t":411,"text":"ific, and arguable"}
+{"t":429,"text":"."}
+{"t":463,"text":" It takes a defined"}
+{"t":473,"text":" position and previews the main"}
+{"t":504,"text":" reasons that"}
+{"t":535,"text":" support it.],\n  [The"}
+{"t":535,"text":" thesis is clear and ar"}
+{"t":554,"text":"guable but"}
+{"t":572,"text":" som"}
+{"t":597,"text":"ewhat general. It states"}
+{"t":623,"text":" a"}
+{"t":637,"text":" position and h"}
+{"t":655,"text":"ints at the re"}
+{"t":673,"text":"asons beh"}
+{"t":695,"text":"ind it.],\n  [The"}
+{"t":714,"text":" thesis is present but vague"}
+{"t":738,"text":" or only"}
+{"t":755,"text":" partly ar"}
+{"t":776,"text":"guable. The"}
+{"t":796,"text":" position is"}
+{"t":816,"text":" h"}
+{"t":837,"text":"ard to p"}
+{"t":858,"text":"in down.],\n  [No"}
+{"t":877,"text":" clear thesis."}
+{"t":898,"text":" The position is miss"}
+{"t":918,"text":"ing, un"}
+{"t":938,"text":"ar"}
+{"t":961,"text":"guable, or un"}
+{"t":979,"text":"related to the pr"}
+{"t":1000,"text":"ompt.],"}
+{"t":1020,"text":"\n\n  [*Evidence and"}
+{"t":1041,"text":" Reasoning*],"}
+{"t":1061,"text":"\n  [Each"}
+{"t":1082,"text":" claim is supported by relev"}
+{"t":1102,"text":"ant, cred"}
+{"t":1125,"text":"ible, and well"}
+{"t":1160,"text":"-ch"}
+{"t":1167,"text":"osen evidence. Expl"}
+{"t":1184,"text":"anations show"}
+{"t":1204,"text":" cl"}
+{"t":1226,"text":"early how the"}
+{"t":1248,"text":" evidence sup"}
+{"t":1265,"text":"ports the"}
+{"t":1286,"text":" claim, and the re"}
+{"t":1306,"text":"asoning is logical thro"}
+{"t":1329,"text":"ughout.],\n  ["}
+{"t":1348,"text":"Most cla"}
+{"t":1367,"text":"ims are supported by relevant"}
+{"t":1388,"text":" evidence."}
+{"t":1410,"text":" Some explanations conn"}
+{"t":1429,"text":"ect ev"}
+{"t":1449,"text":"idence to cla"}
+{"t":1470,"text":"ims, though"}
+{"t":1491,"text":" a"}
+{"t":1510,"text":" few links are"}
+{"t":1530,"text":" under"}
+{"t":1559,"text":"developed.],"}
+{"t":1573,"text":"\n  [Evidence is lim"}
+{"t":1596,"text":"ited,"}
+{"t":1617,"text":" we"}
+{"t":1633,"text":"ak, or s"}
+{"t":1654,"text":"ometimes irrelevant"}
+{"t":1679,"text":". Reasoning is m"}
+{"t":1712,"text":"ostly summ"}
+{"t":1720,"text":"ary, with little"}
+{"t":1735,"text":" anal"}
+{"t":1760,"text":"ysis of why"}
+{"t":1775,"text":" the evidence mat"}
+{"t":1798,"text":"ters.],\n  [Little"}
+{"t":1817,"text":" or no evidence is"}
+{"t":1839,"text":" off"}
+{"t":1865,"text":"ered. Claims are as"}
+{"t":1879,"text":"serted without support, or the"}
+{"t":1900,"text":" re"}
+{"t":1921,"text":"asoning is ill"}
+{"t":1939,"text":"ogical or miss"}
+{"t":1961,"text":"ing.],\n\n  [*"}
+{"t":1994,"text":"Organization and Counterargument"}
+{"t":2004,"text":"*],\n  [The"}
+{"t":2021,"text":" ess"}
+{"t":2045,"text":"ay has"}
+{"t":2064,"text":" a logical structure with"}
+{"t":2082,"text":" sm"}
+{"t":2103,"text":"ooth transitions."}
+{"t":2126,"text":" It fairly ac"}
+{"t":2143,"text":"knowledges and eff"}
+{"t":2164,"text":"ectively ref"}
+{"t":2184,"text":"utes the str"}
+{"t":2207,"text":"ongest op"}
+{"t":2225,"text":"posing view, and the con"}
+{"t":2245,"text":"clusion ext"}
+{"t":2267,"text":"ends the argument."}
+{"t":2287,"text":"],\n  [The struct"}
+{"t":2306,"text":"ure is gener"}
+{"t":2330,"text":"ally log"}
+{"t":2349,"text":"ical with"}
+{"t":2367,"text":" clear transitions. A coun"}
+{"t":2390,"text":"terargument is addressed,"}
+{"t":2411,"text":" though the"}
+{"t":2435,"text":" r"}
+{"t":2460,"text":"ebuttal may be brief"}
+{"t":2473,"text":" or less"}
+{"t":2494,"text":" convincing.],\n  ["}
+{"t":2513,"text":"The structure is u"}
+{"t":2532,"text":"neven,"}
+{"t":2554,"text":" and some paragraphs w"}
+{"t":2574,"text":"ander from"}
+{"t":2598,"text":" the main point"}
+{"t":2613,"text":". A counterargument is m"}
+{"t":2634,"text":"entioned but"}
+{"t":2653,"text":" not me"}
+{"t":2676,"text":"aningfully answered.],"}
+{"t":2708,"text":"\n  [The ess"}
+{"t":2717,"text":"ay l"}
+{"t":2735,"text":"acks cl"}
+{"t":2757,"text":"ear organization. No counterarg"}
+{"t":2776,"text":"ument is ac"}
+{"t":2796,"text":"knowledged, and the con"}
+{"t":2817,"text":"clusion is miss"}
+{"t":2838,"text":"ing or only"}
+{"t":2860,"text":" rep"}
+{"t":2879,"text":"eats the intro"}
+{"t":2901,"text":"duction.],\n\n  [*"}
+{"t":2921,"text":"Conventions and Cit"}
+{"t":2942,"text":"ation"}
+{"t":2959,"text":"*],\n  [S"}
+{"t":2980,"text":"entences"}
+{"t":3003,"text":" are var"}
+{"t":3020,"text":"ied and prec"}
+{"t":3042,"text":"ise,"}
+{"t":3062,"text":" with vir"}
+{"t":3083,"text":"tually no errors in gramm"}
+{"t":3102,"text":"ar, punctuation, or"}
+{"t":3122,"text":" spelling. Sources are"}
+{"t":3144,"text":" cited consistently in"}
+{"t":3173,"text":" the required format.],\n  ["}
+{"t":3185,"text":"Min"}
+{"t":3204,"text":"or errors in"}
+{"t":3225,"text":" grammar or pun"}
+{"t":3245,"text":"ctuation do not h"}
+{"t":3267,"text":"inder me"}
+{"t":3289,"text":"aning. Citations are m"}
+{"t":3306,"text":"ostly acc"}
+{"t":3327,"text":"urate,"}
+{"t":3347,"text":" with a few form"}
+{"t":3370,"text":"atting slips.],\n  "}
+{"t":3393,"text":"[Fr"}
+{"t":3411,"text":"equent errors s"}
+{"t":3429,"text":"ometimes make"}
+{"t":3452,"text":" meaning un"}
+{"t":3469,"text":"clear. Citations are in"}
+{"t":3492,"text":"consistent or inc"}
+{"t":3512,"text":"omplete.],"}
+{"t":3534,"text":"\n  [Err"}
+{"t":3551,"text":"ors are"}
+{"t":3576,"text":" pervasive and imp"}
+{"t":3594,"text":"ede understanding. Sources"}
+{"t":3615,"text":" are missing or"}
+{"t":3633,"text":" not"}
+{"t":3655,"text":" cited."}
+{"t":3678,"text":"],\n)\n\n#v(1"}
+{"t":3696,"text":"."}
+{"t":3714,"text":"5em)\n\n*Sc"}
+{"t":3736,"text":"oring:"}
+{"t":3759,"text":"* Each criterion is"}
+{"t":3779,"text":" sc"}
+{"t":3796,"text":"ored from"}
+{"t":3816,"text":" 1 to 4. The"}
+{"t":3840,"text":" ma"}
+{"t":3859,"text":"ximum total"}
+{"t":3878,"text":" is 16 points."}
+{"t":3901,"text":"\n\nStudent name: #"}
+{"t":3918,"text":"line(length: 60"}
+{"t":3939,"text":"%)\n\nTotal"}
+{"t":3964,"text":" score"}
+{"t":3981,"text":": #line(length: 25"}
+{"t":4000,"text":"%) / 16\n\nCom"}
+{"t":4021,"text":"ments:"}
+{"t":4043,"text":"\n\n#v"}
+{"t":4063,"text":"(3"}
+{"t":4082,"text":"em)"}

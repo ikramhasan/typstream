@@ -1,0 +1,42 @@
+{"t":0,"text":"#"}
+{"t":20,"text":"show: exit-"}
+{"t":40,"text":"ticket-"}
+{"t":61,"text":"plac"}
+{"t":81,"text":"eholder"}
+{"t":121,"text":"\n\nO"}
+{"t":142,"text":"ops, that"}
+{"t":162,"text":" first"}
+{"t":184,"text":" line is wrong. Here"}
+{"t":203,"text":" is the ex"}
+{"t":224,"text":"it ticket:"}
+{"t":244,"text":"\n\n#show: quiz."}
+{"t":265,"text":"with(title: [Exit"}
+{"t":285,"text":" Ticket: Equiv"}
+{"t":305,"text":"alent Fractions], sub"}
+{"t":326,"text":"ject: [Mathematics"}
+{"t":347,"text":"])\n\n#question(points: "}
+{"t":367,"text":"1)[\n  Fill"}
+{"t":390,"text":" in the miss"}
+{"t":409,"text":"ing number so"}
+{"t":429,"text":" the"}
+{"t":449,"text":" fractions are equiv"}
+{"t":473,"text":"alent: $1"}
+{"t":490,"text":"/2 = #blank("}
+{"t":510,"text":"answer: [4])/8"}
+{"t":532,"text":"$"}
+{"t":551,"text":"\n]\n\n#question(points: "}
+{"t":572,"text":"1)[\n  Fill"}
+{"t":592,"text":" in the missing number so the f"}
+{"t":613,"text":"ractions are equivalent:"}
+{"t":633,"text":" $2/3 = "}
+{"t":654,"text":"6/#blank(answer"}
+{"t":679,"text":": [9])$\n]"}
+{"t":695,"text":"\n\n#question(points: 1)"}
+{"t":715,"text":"[\n  Which fraction"}
+{"t":736,"text":" is equivalent to $3"}
+{"t":758,"text":"/4$?\n  #m"}
+{"t":776,"text":"cq([$3/8$"}
+{"t":797,"text":"], [$6/8$],"}
+{"t":817,"text":" [$4/3$], ["}
+{"t":838,"text":"$7/8$], answer"}
+{"t":871,"text":": 2)\n]"}

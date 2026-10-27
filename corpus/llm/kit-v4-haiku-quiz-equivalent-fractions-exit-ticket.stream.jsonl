@@ -1,0 +1,62 @@
+{"t":0,"text":"#"}
+{"t":15,"text":"show: qu"}
+{"t":36,"text":"iz.with("}
+{"t":60,"text":"\n  title: [Exit"}
+{"t":77,"text":" Ticket: Equival"}
+{"t":98,"text":"ent Fractions],\n  "}
+{"t":119,"text":"subject: [M"}
+{"t":139,"text":"athematics],\n  grade"}
+{"t":159,"text":": [Grade 5],"}
+{"t":180,"text":"\n  info: (\"name\","}
+{"t":200,"text":" \"date\", \"class\"),"}
+{"t":221,"text":"\n  instructions: [Answ"}
+{"t":241,"text":"er all three questions. Show"}
+{"t":262,"text":" your th"}
+{"t":282,"text":"inking where"}
+{"t":304,"text":" space"}
+{"t":322,"text":" is"}
+{"t":343,"text":" given.],\n)\n\n#question"}
+{"t":365,"text":"(points: 1)["}
+{"t":384,"text":"\n  Fill in the miss"}
+{"t":405,"text":"ing num"}
+{"t":425,"text":"erator so the"}
+{"t":445,"text":" fractions are equivalent"}
+{"t":465,"text":":"}
+{"t":486,"text":"\n  $1"}
+{"t":507,"text":"/2 = #blank("}
+{"t":527,"text":"answer: [3])/6"}
+{"t":548,"text":"$\n]"}
+{"t":569,"text":"\n\n#question(points: 1"}
+{"t":588,"text":")[\n  Which fra"}
+{"t":609,"text":"ction is equivalent to $"}
+{"t":629,"text":"3/4$?\n  #"}
+{"t":650,"text":"mcq([$6/7"}
+{"t":672,"text":"$], [$4"}
+{"t":691,"text":"/3$], [$6/"}
+{"t":711,"text":"8$], [$3/8"}
+{"t":733,"text":"$], answer: 3)"}
+{"t":754,"text":"\n]\n\n#question(points:"}
+{"t":780,"text":" 2)[\n  True"}
+{"t":794,"text":" or false:"}
+{"t":818,"text":" $2/5$"}
+{"t":839,"text":" and $4/10$"}
+{"t":856,"text":" are equivalent fractions"}
+{"t":875,"text":". Explain how"}
+{"t":901,"text":" you know.\n  #true-"}
+{"t":916,"text":"false(answer: true)["}
+{"t":938,"text":"$"}
+{"t":956,"text":"2/5$ and $4"}
+{"t":977,"text":"/10$ are equival"}
+{"t":998,"text":"ent."}
+{"t":1018,"text":"]\n  #answer-space"}
+{"t":1039,"text":"(height: 3"}
+{"t":1059,"text":"em, answer: [Mult"}
+{"t":1079,"text":"iply the"}
+{"t":1099,"text":" num"}
+{"t":1120,"text":"erator and denominator of"}
+{"t":1141,"text":" $2/5$ by "}
+{"t":1160,"text":"2 "}
+{"t":1181,"text":"to get $4/10$,"}
+{"t":1201,"text":" so they name"}
+{"t":1225,"text":" the same am"}
+{"t":1246,"text":"ount.])\n]"}

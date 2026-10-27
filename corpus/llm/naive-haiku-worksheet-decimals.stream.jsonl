@@ -1,0 +1,134 @@
+{"t":0,"text":"#"}
+{"t":16,"text":"set page(marg"}
+{"t":43,"text":"in: 2cm)"}
+{"t":68,"text":"\n#set text(size"}
+{"t":87,"text":": 11"}
+{"t":102,"text":"pt)"}
+{"t":122,"text":"\n\n#"}
+{"t":149,"text":"align(center)["}
+{"t":166,"text":"\n  = Multiplying"}
+{"t":180,"text":" Decimals\n  *"}
+{"t":197,"text":"Grade 5 "}
+{"t":218,"text":"Math"}
+{"t":238,"text":" Worksheet*\n]"}
+{"t":261,"text":"\n\n*"}
+{"t":279,"text":"Name:"}
+{"t":319,"text":"* #box"}
+{"t":337,"text":"(width: 8"}
+{"t":349,"text":"c"}
+{"t":364,"text":"m,"}
+{"t":389,"text":" line(length: 100%)"}
+{"t":403,"text":") *Date:* #box"}
+{"t":422,"text":"(width: 4"}
+{"t":445,"text":"cm, line(length: "}
+{"t":466,"text":"100%))\n\n=="}
+{"t":486,"text":" Part"}
+{"t":509,"text":" A"}
+{"t":543,"text":": Practice"}
+{"t":546,"text":"\n\nMult"}
+{"t":564,"text":"iply."}
+{"t":586,"text":" Show"}
+{"t":613,"text":" your work in"}
+{"t":626,"text":" the space provided.\n\n+"}
+{"t":651,"text":" $0"}
+{"t":669,"text":".3 times 4$"}
+{"t":686,"text":"\n  "}
+{"t":709,"text":"#v(1"}
+{"t":729,"text":".5em)\n+"}
+{"t":750,"text":" $2.5 times "}
+{"t":769,"text":"3$\n  #v(1"}
+{"t":789,"text":".5em)\n+ $"}
+{"t":812,"text":"0.6 times 0."}
+{"t":832,"text":"5$\n  #v(1"}
+{"t":852,"text":".5em)\n+ $"}
+{"t":871,"text":"1.2 times 0."}
+{"t":896,"text":"4$\n  #v(1"}
+{"t":912,"text":".5em)\n+ $"}
+{"t":933,"text":"3.75 times 2$"}
+{"t":955,"text":"\n  #v(1.5"}
+{"t":977,"text":"em)\n+ $0."}
+{"t":994,"text":"08 times 6$\n  "}
+{"t":1014,"text":"#v(1.5em)"}
+{"t":1038,"text":"\n+ $4.6 "}
+{"t":1056,"text":"times 0.3$\n  "}
+{"t":1076,"text":"#v(1.5em)"}
+{"t":1101,"text":"\n+ $12.5 "}
+{"t":1122,"text":"times 0.4$\n  "}
+{"t":1139,"text":"#v(1.5em)"}
+{"t":1157,"text":"\n+ $0.25 "}
+{"t":1180,"text":"times 0.12$\n  "}
+{"t":1199,"text":"#v(1.5em)"}
+{"t":1224,"text":"\n+ $7.05 "}
+{"t":1242,"text":"times 6$\n  #v"}
+{"t":1260,"text":"(1.5em)\n\n=="}
+{"t":1283,"text":" Part B: Word Probl"}
+{"t":1305,"text":"ems\n\nRead each probl"}
+{"t":1323,"text":"em carefully. Write"}
+{"t":1344,"text":" a"}
+{"t":1365,"text":" number s"}
+{"t":1383,"text":"entence and then sol"}
+{"t":1403,"text":"ve."}
+{"t":1425,"text":"\n\n+ Ma"}
+{"t":1445,"text":"ya buys 6 bott"}
+{"t":1466,"text":"les of juice. Each b"}
+{"t":1485,"text":"ottle holds 1.25"}
+{"t":1506,"text":" liters."}
+{"t":1525,"text":" How many"}
+{"t":1546,"text":" liters of juice does"}
+{"t":1566,"text":" Maya have in"}
+{"t":1589,"text":" total?\n  #v(3"}
+{"t":1610,"text":"em)\n+"}
+{"t":1635,"text":" A"}
+{"t":1648,"text":" cra"}
+{"t":1670,"text":"ft store"}
+{"t":1689,"text":" s"}
+{"t":1713,"text":"ells ribbon for"}
+{"t":1731,"text":" \\"}
+{"t":1755,"text":"$2.40 per meter"}
+{"t":1772,"text":". J"}
+{"t":1790,"text":"am"}
+{"t":1812,"text":"al buys 3.5 "}
+{"t":1832,"text":"meters of ribbon."}
+{"t":1856,"text":" How much does he"}
+{"t":1873,"text":" pay in"}
+{"t":1898,"text":" total?\n  #v(3"}
+{"t":1917,"text":"em)\n\n#"}
+{"t":1934,"text":"pagebreak()"}
+{"t":1957,"text":"\n\n== Answ"}
+{"t":1976,"text":"er Key\n\n*"}
+{"t":1997,"text":"Part A*"}
+{"t":2017,"text":"\n\n+ $0.3 "}
+{"t":2037,"text":"times 4 = 1."}
+{"t":2057,"text":"2$\n+ $2."}
+{"t":2079,"text":"5 times 3 = "}
+{"t":2098,"text":"7.5$\n+ $"}
+{"t":2118,"text":"0.6 times 0."}
+{"t":2139,"text":"5 = 0.3$"}
+{"t":2161,"text":"\n+ $1.2 "}
+{"t":2179,"text":"times 0.4 = "}
+{"t":2203,"text":"0.48$\n+ $"}
+{"t":2232,"text":"3.75 times 2 "}
+{"t":2243,"text":"= 7.5$\n+"}
+{"t":2262,"text":" $0.08 times "}
+{"t":2291,"text":"6 = 0.48$"}
+{"t":2302,"text":"\n+ $4.6 "}
+{"t":2322,"text":"times 0.3 = "}
+{"t":2344,"text":"1.38$\n+ $"}
+{"t":2363,"text":"12.5 times 0."}
+{"t":2383,"text":"4 = 5$\n+"}
+{"t":2403,"text":" $0.25 times "}
+{"t":2426,"text":"0.12 = 0."}
+{"t":2452,"text":"03$\n+ $7."}
+{"t":2465,"text":"05 times 6 = "}
+{"t":2495,"text":"42.3$\n\n*Part"}
+{"t":2506,"text":" B*\n\n+ $6"}
+{"t":2527,"text":" times 1.25 ="}
+{"t":2550,"text":" 7.5$."}
+{"t":2570,"text":" Maya has 7.5"}
+{"t":2591,"text":" liters of juice."}
+{"t":2610,"text":"\n+ $3"}
+{"t":2631,"text":".5 times 2.40"}
+{"t":2652,"text":" = 8.40"}
+{"t":2672,"text":"$. Jamal pays"}
+{"t":2693,"text":" \\$8.40 in total"}
+{"t":2717,"text":"."}
