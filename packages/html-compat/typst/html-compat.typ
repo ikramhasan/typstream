@@ -340,6 +340,14 @@
 // ---------------------------------------------------------------------------
 // Placement: absolutely positioned, relative to the nearest mapped container
 
+/// The sign of a placement offset (a relative length): -1, 0 or 1. A ratio of the
+/// container counts as more than any length, its size being unknown here.
+#let _sign(d) = {
+  let (r, l) = if type(d) == relative { (float(d.ratio), d.length) } else if type(d) == ratio { (float(d), 0pt) } else { (0, d) }
+  let v = if r != 0 { r } else { l.to-absolute().pt() }
+  if v > 0 { 1 } else if v < 0 { -1 } else { 0 }
+}
+
 #let _place(it) = {
   if it.float { return _el("div", "ts-place ts-float", it.body) }
   let a = it.alignment
@@ -354,7 +362,12 @@
   if shift != ("0", "0") { transform.push("translate(" + shift.join(", ") + ")") }
   if dx not in (none, "0pt") or dy not in (none, "0pt") { transform.push("translate(" + (dx, dy).map(d => if d == none { "0" } else { d }).join(", ") + ")") }
   if transform.len() > 0 { props.insert("transform", transform.join(" ")) }
-  _el("div", "ts-place", style: _style(props), it.body)
+  // Offset away from the edge it's anchored to (`bottom` with a positive dy), the
+  // piece sits outside its container, on the page: the theme keeps the page's
+  // colors for it rather than a fill's (a shape's dimension labels).
+  let out = (x in (right, end) and _sign(it.dx) > 0 or x in (left, start) and _sign(it.dx) < 0
+    or y == bottom and _sign(it.dy) > 0 or y == top and _sign(it.dy) < 0)
+  _el("div", "ts-place" + if out { " ts-place-out" }, style: _style(props), it.body)
 }
 
 // ---------------------------------------------------------------------------

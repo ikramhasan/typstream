@@ -79,11 +79,6 @@ const KNOWN: { rule: string; where: (el: Element) => boolean; why: string }[] = 
     where: (el) => !!el.closest("pre"),
     why: "Typst's syntax highlighting colors (its default theme, written inline) on the document's code background",
   },
-  {
-    rule: "color-contrast",
-    where: (el) => !!el.closest(".ts-place")?.parentElement?.closest('[style*="background"]'),
-    why: "#64: dark theme, `place`d text inside a filled area (CSS can't tell it from a label placed outside)",
-  },
 ];
 
 const audit = async (el: HTMLElement): Promise<string[]> => {

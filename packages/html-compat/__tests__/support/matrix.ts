@@ -228,7 +228,16 @@ export const MATRIX: MatrixEntry[] = [
     name: "rect with placed labels",
     source:
       "#rect(width: 3.5cm, height: 2cm)[#place(bottom + center, dy: 1.2em)[7 cm] #place(right + horizon, dx: 3.4em)[4 cm]]",
-    html: /ts-place/,
+    // Both point away from their edge: outside the rect, so the theme keeps the page's colors (#64).
+    html: /class="ts-place ts-place-out"[^>]*>7 cm.*class="ts-place ts-place-out"[^>]*>4 cm/s,
+    nativeDrops: true,
+  },
+  {
+    name: "place: offsets inside the container",
+    source:
+      "#rect(width: 4cm, height: 3cm, fill: white)[#place(bottom + right)[Corner] #place(top + left, dx: 4pt, dy: 4pt)[Inset] #place(left + horizon, dx: -1cm)[Margin]]",
+    // Only the label pushed past the left edge is outside (#64).
+    html: /class="ts-place"[^>]*>Corner.*class="ts-place"[^>]*>Inset.*class="ts-place ts-place-out"[^>]*>Margin/s,
     nativeDrops: true,
   },
 
