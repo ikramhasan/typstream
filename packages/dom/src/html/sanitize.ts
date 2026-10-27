@@ -104,9 +104,15 @@ const REMOVE = set(
 /** URL-bearing attributes nothing may allow (the ones we check are href, xlink:href and src). */
 const DENY_ATTRS = /^(?:on|formaction$|action$|srcdoc$|srcset$|poster$|background$|ping$|codebase$|data$|is$)/i;
 
-/** Attributes that hold id references. */
+/** The URL attributes the sanitizer checks; a plugin may allow them by tag, not with `"*"`. */
+const URL_ATTRS = set("href xlink:href src");
+
+/**
+ * Attributes that hold id references, and `name`, which a plugin may allow: it is
+ * prefixed like an id, or `<img name="cookie">` would clobber `document.cookie`.
+ */
 const IDREFS = set(
-  "headers for aria-labelledby aria-describedby aria-controls aria-owns aria-activedescendant aria-details " +
+  "name headers for aria-labelledby aria-describedby aria-controls aria-owns aria-activedescendant aria-details " +
     "aria-errormessage aria-flowto",
 );
 
@@ -223,7 +229,12 @@ export const createSanitizer = (options: SanitizeOptions): Sanitizer => {
     const tag = el.localName;
     if (ns === SVG_NS) return SVG_ATTRS.has(attr);
     if (ns === MATHML_NS) return MATHML_ATTRS.has(attr);
-    return HTML_TAGS.get(tag)?.has(attr) === true || extraAttrs.get(tag)?.has(attr) === true;
+    // `"*"` is every HTML element (SVG and MathML keep their lists above), but never a URL attribute.
+    return !!(
+      HTML_TAGS.get(tag)?.has(attr) ||
+      extraAttrs.get(tag)?.has(attr) ||
+      (!URL_ATTRS.has(attr) && extraAttrs.get("*")?.has(attr))
+    );
   };
 
   /** A fragment link into this document, prefixed; `null` if `value` isn't one. */
@@ -282,7 +293,7 @@ export const createSanitizer = (options: SanitizeOptions): Sanitizer => {
         continue;
       }
       let next: string | null = value;
-      if (attr === "href" || attr === "xlink:href" || attr === "src") next = url(el, attr, value);
+      if (URL_ATTRS.has(attr)) next = url(el, attr, value);
       else if (attr === "id") next = idPrefix + value;
       else if (attr === "class")
         next =

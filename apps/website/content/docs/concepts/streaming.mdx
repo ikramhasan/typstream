@@ -9,12 +9,13 @@ A typstream document has two modes. While the model is writing it is **streaming
 
 There are two ways to give a document its text.
 
-**`source`**: the whole text so far, as a string that grows. This is what a chat UI usually has (an AI SDK message's text), and it pairs with `isStreaming`:
+**`source`**: the whole text so far, as a string that grows. This is what a chat UI usually has (an AI SDK message's text), and it pairs with `isStreaming`. With the AI SDK, [`@typstream/ai`](/docs/reference/ai) reads both from the message:
 
 ```tsx
+import { isStreaming, textOf } from "@typstream/ai";
 import { Typstream } from "typstream";
 
-<Typstream source={message.text} isStreaming={status === "streaming"} animated caret />;
+<Typstream source={textOf(message)} isStreaming={isStreaming(message, chat)} animated caret />;
 ```
 
 A new `source` that extends the previous one is appended; any other change replaces the text, and the healer diffs it into an edit, so it stays cheap. When `isStreaming` turns false, the document is finished.

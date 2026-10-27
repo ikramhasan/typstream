@@ -1,3 +1,6 @@
 .next/
 next-env.d.ts
 smoke.png
+# Secrets (ANTHROPIC_API_KEY) and the TypeScript build cache
+.env*.local
+*.tsbuildinfo

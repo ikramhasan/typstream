@@ -247,7 +247,7 @@ functions, so worker-side code is referenced by module URL (`fixerModules`).
 | `engine` | `@typstream/engine` | Fixer module URLs, files (such as a local Typst package), allowed packages and fonts (beta), and a preamble. |
 | `templates` | `mountTypstream` (`template` option) | Named document setups: a preamble and default `sys.inputs`. |
 | `prompt` | Prompt builders (`@typstream/edu`'s `buildSystemPrompt`) | A function catalogue, rules and few-shot examples for the model. |
-| `sanitize` | The HTML renderer | Extra tags and attributes (by tag, `"*"` for all) to let through. |
+| `sanitize` | The HTML renderer | Extra tags, attributes (by tag, `"*"` for every HTML element) and classes to let through. |
 | `stylesheets` | The HTML renderer, `standaloneHtml` | CSS for the HTML this plugin's Typst writes. |
 | `islands` | The HTML renderer, `@typstream/react` | Render islands by name (beta): which island markers mount, and `parse`, which checks their data. See [Writing an island](/docs/guides/islands). |
 | `editor` | Nothing yet | Reserved (beta) for the visual editor. |

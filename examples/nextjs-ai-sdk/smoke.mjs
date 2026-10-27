@@ -1,8 +1,9 @@
 // Smoke test (PLAN §10.4: example apps build and run): builds the app, starts it,
-// asks for a worksheet in Chromium and checks that the answer streams into
-// <Typstream>, finishes, never had an error frame, and that its telemetry
-// reached the example's sink. Without ANTHROPIC_API_KEY
-// the server replays a recorded worksheet, so this runs offline.
+// asks for a worksheet in Chromium (a suggestion, rendered as pages, then a
+// follow-up typed in the field, as HTML) and checks that each answer streams into
+// <Typstream>, finishes, never had an error frame, and that telemetry reached
+// the example's sink. Without
+// ANTHROPIC_API_KEY the server replays a recorded worksheet, so this runs offline.
 
 import { spawn } from "node:child_process";
 import { chromium } from "playwright";
@@ -31,16 +32,30 @@ try {
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
   await page.goto(`http://localhost:${PORT}/`);
-  await page.getByRole("button", { name: "Send" }).click();
-  const answer = page.locator("article.answer").first();
-  // Streaming shows a caret.
-  await answer.locator(".typstream-caret").waitFor({ timeout: 60_000 });
-  await page.waitForSelector('article.answer[data-status="done"]', { timeout: 120_000 });
-  const stale = await answer.getAttribute("data-stale");
-  const text = await answer.locator(".typstream").textContent();
-  if (stale !== "0") throw new Error(`${stale} error frames while streaming`);
+  const answers = page.locator("article.answer");
+  /** Waits for the nth answer to render (a page, or HTML's streaming caret) and finish, with no error frame; returns its text. */
+  const answered = async (n, target) => {
+    const answer = answers.nth(n);
+    await answer
+      .locator(target === "paged" ? ".typstream-page" : ".typstream-caret")
+      .first()
+      .waitFor({ timeout: 60_000 });
+    await answer.and(page.locator('[data-status="done"]')).waitFor({ timeout: 120_000 });
+    const stale = await answer.getAttribute("data-stale");
+    if (stale !== "0") throw new Error(`answer ${n + 1}: ${stale} error frames while streaming`);
+    return answer.locator(".typstream-host").textContent();
+  };
+
+  await page.getByRole("button", { name: "Handout", exact: true }).click();
+  const text = await answered(0, "paged");
   if (!process.env.ANTHROPIC_API_KEY && !text.includes("Pythagorean triples"))
     throw new Error(`unexpected render: ${text}`);
+  // A second turn as HTML, typed and sent with Enter.
+  await page.getByRole("combobox", { name: "Render as" }).click();
+  await page.getByRole("option", { name: "HTML" }).click();
+  await page.getByRole("textbox", { name: "Message" }).fill("Now add an answer key.");
+  await page.getByRole("textbox", { name: "Message" }).press("Enter");
+  await answered(1, "html");
   if (errors.length) throw new Error(`console errors:\n${errors.join("\n")}`);
   // The telemetry hooks (app/telemetry.tsx) reached the example's sink.
   const reached = () => /\[telemetry\] rendered \S+ rev \d+ \(final\)/.test(log);
@@ -48,7 +63,7 @@ try {
   while (!reached() && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 200));
   if (!reached()) throw new Error(`no telemetry reached /api/telemetry:\n${log}`);
   if (process.argv.includes("--screenshot")) await page.screenshot({ path: "smoke.png", fullPage: true });
-  console.log(`ok: streamed and finished with no error frames (${text.length} characters rendered)`);
+  console.log(`ok: streamed two answers with no error frames (${text.length} characters in the first)`);
 } finally {
   await browser.close();
   server.kill();

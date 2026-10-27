@@ -395,10 +395,12 @@ export interface TypstreamPlugin {
   /** Rendering. Islands by name. @beta */
   islands?: Record<string, IslandSpec>;
   /**
-   * Extra tags, attributes (by tag, `"*"` for all) and classes the sanitizer lets
-   * through. The HTML renderer drops every other class, so a document can't take
-   * on the page's own (#69): list the ones this plugin's Typst writes, by name or
-   * as a prefix (`"ts-*"`).
+   * Extra tags, attributes (by tag, `"*"` for every HTML element) and classes the
+   * sanitizer lets through. Event handlers and loading attributes stay blocked,
+   * `"*"` can't allow `href` or `src`, and SVG and MathML keep their own lists.
+   * The HTML renderer drops every other class, so a document can't take on the
+   * page's own (#69): list the ones this plugin's Typst writes, by name or as a
+   * prefix (`"ts-*"`).
    */
   sanitize?: { allowTags?: string[]; allowAttrs?: Record<string, string[]>; allowClasses?: string[] };
   /**

@@ -223,6 +223,35 @@ describe("sanitizer", () => {
     expect(template.innerHTML).toBe('<x-card kind="tip">a</x-card>');
   });
 
+  it('applies allowAttrs["*"] to every HTML element, never to URLs, handlers, SVG or MathML', () => {
+    const sanitize = createSanitizer({
+      idPrefix: "p-",
+      plugins: [
+        {
+          key: "t",
+          sanitize: {
+            allowTags: ["x-card"],
+            allowAttrs: { "*": ["data-name", "name", "onclick", "srcdoc", "href", "src", "xlink:href"] },
+          },
+        },
+      ],
+    });
+    const template = document.createElement("template");
+    template.innerHTML =
+      '<p data-name="a" onclick="x" srcdoc="y" href="https://x" src="data:image/png;base64,AA">a</p>' +
+      '<x-card data-name="b">b</x-card><a href="https://x" data-name="c">c</a>' +
+      '<img name="cookie" src="data:image/png;base64,AA">' +
+      '<svg data-name="d"><g data-name="e"></g></svg><math data-name="g"><mi data-name="h">x</mi></math>';
+    sanitize(template.content);
+    expect(template.innerHTML).toBe(
+      '<p data-name="a">a</p><x-card data-name="b">b</x-card>' +
+        '<a href="https://x" data-name="c" rel="noopener noreferrer" target="_blank">c</a>' +
+        // `name` is prefixed like an id, so it can't clobber `document.cookie`.
+        '<img name="p-cookie" src="data:image/png;base64,AA">' +
+        "<svg><g></g></svg><math><mi>x</mi></math>",
+    );
+  });
+
   it("runs nothing when rendered", async () => {
     window.pwned = undefined;
     const root = document.createElement("div");
