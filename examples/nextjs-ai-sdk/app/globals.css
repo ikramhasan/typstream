@@ -134,9 +134,19 @@
   }
 }
 
-/* Pages as sheets on a desk. fit-width stacks them with no gap, so the end of one page and the top
-   margin of the next would read as a blank stretch inside the document. The paged view's own sheet is
-   an adopted stylesheet, which comes later in the cascade, hence the extra specificity. */
+/* Pages as sheets lifted off the background, as on the website's demo. fit-width stacks them with no
+   gap, so the end of one page and the top margin of the next would read as a blank stretch inside the
+   document. The paged view's own sheet is an adopted stylesheet, which comes later in the cascade, hence
+   the extra specificity. */
 .answer .typstream-paged[data-layout] {
-  gap: 16px;
+  gap: 24px;
+}
+
+.answer .typstream-paged .typstream-page {
+  border-radius: 2px;
+  /* A hairline edge, then shadows on every side: the page and the chat are both white. */
+  box-shadow:
+    0 0 0 1px oklch(0 0 0 / 0.06),
+    0 2px 6px oklch(0 0 0 / 0.06),
+    0 10px 28px oklch(0.2 0.03 255 / 0.13);
 }

@@ -365,14 +365,19 @@ const Answer = ({ text, streaming, target, answers, busy, onRetry }: AnswerProps
     <Message>
       <MessageContent>
         <article
-          className="answer rounded-xl border bg-card px-8 py-6 shadow-xs data-[target=paged]:bg-neutral-700 data-[target=paged]:p-4"
+          // HTML in a card; pages on their own, as sheets with shadows (app/globals.css), inset so the
+          // chat's scroll area doesn't cut the shadows off at the sides.
+          className={
+            target === "paged" ? "answer px-4 pt-2 pb-8" : "answer rounded-xl border bg-card px-8 py-6 shadow-xs"
+          }
           data-status={t.status}
           data-stale={stale}
           data-target={target}
         >
           <div
             ref={host}
-            className={clip === null ? undefined : "overflow-hidden"}
+            // Clipped vertically only: the pages' shadows stay at their sides while the answer streams.
+            className={clip === null ? undefined : "overflow-y-clip"}
             style={clip === null ? undefined : { height: clip }}
           >
             <Typstream
@@ -516,7 +521,9 @@ export default function Page() {
               </Empty>
             ) : (
               <MessageScroller>
-                <MessageScrollerViewport>
+                {/* No scrollbar: the scroller follows the answer, and its button jumps to the end. Important,
+                    since the component's own `scrollbar-thin` sets the same property. */}
+                <MessageScrollerViewport className="no-scrollbar!">
                   <MessageScrollerContent aria-busy={busy} className="px-4 pb-4">
                     {messages.map((message) => (
                       <MessageScrollerItem
