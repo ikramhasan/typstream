@@ -91,6 +91,7 @@ text that heals but doesn't compile yet still renders:
 | `pending-ref` | A reference to a label that doesn't exist yet (a citation before `#bibliography`) shows its key as a muted placeholder. In final mode the error is still reported. |
 | `package-stub` | An import of a package the document can't have (not allowed, still loading, failed to load) binds the names it imports to placeholders showing the package's spec. Wildcard imports and modules whose fields are used can't be stood in for. |
 | `missing-image` | An image the document has no file for shows as a placeholder with the file's name, keeping the call's size and alt text and a figure's caption. String paths are replaced before the first compile, all at once; the fixer handles paths in variables, and files whose extension names another format. In final mode the error is still reported. See [Images](/docs/guides/images). |
+| `hoist-import` | A name used before the package import that binds it (a helper on CeTZ above `#import "@preview/cetz:0.5.3"`, `#unit(…)` in a template's arguments above unify's import) moves that import to the document's start. Only an import that binds the name outright (bare, `as`, items) at the top level; not a wildcard. While streaming, only a settled import. In final mode the error is still reported. |
 
 Fixed errors are reported as `info` diagnostics while streaming, with the fixer's name as `source`. Plugins add
 fixers as ES modules loaded in the worker; see [Writing a plugin](/docs/guides/writing-a-plugin).
@@ -534,16 +535,17 @@ A server that accepts connections from clients it doesn't control must set `clie
 ### Fixers
 
 ```ts
-const DEFAULT_FIXERS: readonly DiagnosticFixer[]; // [pendingRef, missingImage, packageStub, tailCut]
+const DEFAULT_FIXERS: readonly DiagnosticFixer[]; // [pendingRef, missingImage, packageStub, hoistImport, tailCut]
 const pendingRef: DiagnosticFixer;
 const missingImage: DiagnosticFixer;
 const packageStub: DiagnosticFixer;
+const hoistImport: DiagnosticFixer;
 const tailCut: DiagnosticFixer;
 ```
 
 The built-in Layer 3 fixers described [above](#fixers-and-fallback), exported so a custom worker can keep some of them
 next to its own. Fixers are tried by `priority` (`pendingRef` runs at 10, `missingImage` at 15, `packageStub` at 20,
-`tailCut`, the catch-all, at 100). Write your own as a [`DiagnosticFixer`](/docs/reference/core#diagnosticfixer).
+`hoistImport` at 25, `tailCut`, the catch-all, at 100). Write your own as a [`DiagnosticFixer`](/docs/reference/core#diagnosticfixer).
 Leaving `missingImage` out also turns off the placeholders the server stands in before the first compile.
 
 ### Writing an adapter

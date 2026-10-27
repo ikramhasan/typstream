@@ -145,6 +145,24 @@ exports[`diagnostic shapes > matches the snapshot 1`] = `
   {
     "diagnostics": [
       {
+        "at": "x",
+        "message": "unknown variable: x",
+        "severity": "error",
+        "trace": [
+          [
+            "while calling \`f\`",
+            "f()",
+          ],
+        ],
+      },
+    ],
+    "text": "#let f() = x
+#let x = 1
+#f()",
+  },
+  {
+    "diagnostics": [
+      {
         "at": ""cat.png"",
         "message": "file not found (searched at /cat.png)",
         "severity": "error",
