@@ -64,6 +64,44 @@ describe("layoutRuns", () => {
     const laid = layoutRuns([{ ...run("Rotated", 73, 539, 64), matrix: [0.866, 0.5, -0.5, 0.866] }]);
     expect(laid[0]?.matrix).toEqual([0.866, 0.5, -0.5, 0.866]);
   });
+
+  // Runs come in reading order: in right-to-left text the next one is to the left.
+  // Positions from the Arabic corpus quiz (#63).
+  it("spaces right-to-left runs across the gap on their left, stretching the run over it", () => {
+    const laid = layoutRuns(
+      [run("1", 533, 176.15, 5.58), run(".", 530.36, 176.15, 2.64), run("ما هو أقرب كوكب", 392.49, 176.15, 131.87)],
+      "rtl",
+    );
+    expect(laid.map((r) => r.text)).toEqual(["1", ". ", "ما هو أقرب كوكب"]);
+    expect(laid[1]?.x).toBeCloseTo(524.36);
+    expect(laid[1]?.width).toBeCloseTo(8.64);
+  });
+
+  it("breaks right-to-left lines where the next run starts back at the right", () => {
+    const laid = layoutRuns([run("سطر أول طويل", 300, 100, 238), run("ثان", 500, 114, 38)], "rtl");
+    expect(laid.map((r) => r.br)).toEqual([true, false]);
+    // A left-to-right run ending a line of an RTL document breaks it too.
+    const mixed = layoutRuns([{ ...run("word", 56, 100, 30), dir: "ltr" }, run("ثان", 500, 114, 38)], "rtl");
+    expect(mixed[0]?.br).toBe(true);
+  });
+
+  it("doesn't space runs with others between them on screen", () => {
+    // `answers 1-ب، 2-ب، 3-أ. Jupiter`: an RTL stretch inside LTR text inside an RTL document.
+    const runs: TextRun[] = [
+      { ...run("answers 1-", 56.69, 664.97, 202.55, 9), dir: "ltr" },
+      run("ب، ", 286.48, 664.97, 11.11, 9),
+      run("2", 282.48, 664.97, 4, 9),
+      run("-ب، ", 268.38, 664.97, 14.1, 9),
+      run("3", 264.39, 664.97, 4, 9),
+      run("-أ", 259.25, 664.97, 5.14, 9),
+      { ...run(". Jupiter is 5th.", 297.59, 664.97, 52.67, 9), dir: "ltr" },
+    ];
+    const laid = layoutRuns(runs, "rtl");
+    expect(laid.map((r) => r.text).join("")).toBe("answers 1-ب، 2-ب، 3-أ. Jupiter is 5th.");
+    expect(laid.every((r) => !r.br)).toBe(true);
+    // Their language and direction stay.
+    expect(laid[0]?.dir).toBe("ltr");
+  });
 });
 
 describe("fitWidthInputs", () => {

@@ -64,6 +64,15 @@ describe("standaloneHtml", () => {
     expect(out.match(/<\/style>/g)).toHaveLength(1);
   });
 
+  it("sets the direction of right-to-left documents from their language", () => {
+    const arabic = standaloneHtml(TYPST.replace('lang="en"', 'lang="ar"'));
+    expect(arabic).toMatch(/^<!DOCTYPE html><html lang="ar" dir="rtl"><head>/);
+    expect(standaloneHtml(TYPST.replace('lang="en"', 'lang="he-IL"'))).toContain('<html lang="he-IL" dir="rtl">');
+    // Left to right is the default; a direction already there stays.
+    expect(standaloneHtml(TYPST)).toContain('<html lang="en"><head>');
+    expect(standaloneHtml(TYPST.replace('lang="en"', 'lang="ar" dir="ltr"'))).toContain('<html lang="ar" dir="ltr">');
+  });
+
   it("creates <head> when the document has none", () => {
     expect(standaloneHtml("<html><body><p>Hi</p></body></html>")).toMatch(
       /^<html>\n<head>\n<meta http-equiv="Content-Security-Policy"[^>]*>\n<style>[\s\S]*<\/style>\n<\/head><body class="typstream"/,

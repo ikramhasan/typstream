@@ -6,8 +6,9 @@ import { build } from "esbuild";
 
 const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
 // 15 KB until #19's renderer fixes (language and direction, filled areas in the dark theme, unchanged pages
-// not redrawn, lone wrappers) added 0.3 KB to a bundle that was at 14.9.
-const BUDGET = 15.5 * 1024;
+// not redrawn, lone wrappers) added 0.3 KB to a bundle that was at 14.9; 15.5 KB until the paged text
+// layer's structure, language and direction (#63) added 0.5 KB to 15.3.
+const BUDGET = 16 * 1024;
 
 const result = await build({
   entryPoints: ["src/index.ts"],

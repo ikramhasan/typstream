@@ -9,6 +9,7 @@
 // from the network or submit forms. It's a string transform (Typst's
 // serializer is regular, see ../html/split.ts), so it runs anywhere.
 
+import { directionOf } from "../html/dir";
 import { THEME_CSS } from "../html/theme";
 
 /**
@@ -80,7 +81,8 @@ const withAttr = (attrs: string, name: string, value: string, append = false): s
  * `typstream` on `<body>`, an optional math font, and a Content-Security-Policy
  * that keeps the document from running scripts or loading anything except
  * inline styles and `data:` images and fonts (plus `mathFont`'s origin when it
- * is a URL). `<meta http-equiv="refresh">` is removed.
+ * is a URL). `<meta http-equiv="refresh">` is removed, and an RTL document's
+ * `<html>` gets `dir="rtl"` from its `lang` (Typst writes no direction).
  *
  * @example
  * ```ts
@@ -124,6 +126,11 @@ export const standaloneHtml = (html: string, options: StandaloneHtmlOptions = {}
     head += `\n<title>${escapeText(options.title)}</title>`;
 
   let out = html.replace(/<meta\b[^>]*\bhttp-equiv\s*=\s*["']?refresh\b[^>]*>/gi, "");
+  // Typst writes the language but no direction; without one an RTL document opens left to right.
+  out = out.replace(/<html\b([^>]*)>/i, (tag, attrs: string) => {
+    const lang = /\slang="([^"]*)"/i.exec(attrs)?.[1] ?? "";
+    return directionOf(lang) === "rtl" && !/\sdir=/i.test(attrs) ? `<html${withAttr(attrs, "dir", "rtl")}>` : tag;
+  });
   // First in <head>, before anything the document put there.
   if (/<head\b[^>]*>/i.test(out)) out = out.replace(/<head\b[^>]*>/i, (tag) => `${tag}\n${head}`);
   else if (/<html\b[^>]*>/i.test(out)) out = out.replace(/<html\b[^>]*>/i, (tag) => `${tag}\n<head>\n${head}\n</head>`);

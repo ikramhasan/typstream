@@ -45,7 +45,11 @@ caught up, while MutationObservers record what the renderers remove and add.
 
 - HTML: the root has the document's `lang` and `dir`, equations are MathML, every `table.header` is a row of `<th>`;
 - paged: page SVGs are `aria-hidden`, and the text layers hold the document's text (the letters and digits of the
-  HTML target's text, 98% at least: what a screen reader gets from either target).
+  HTML target's text, 98% at least: what a screen reader gets from either target), have the document's `lang` and
+  `dir` on every page, and have the HTML target's headings, levels and text (#63). In Chromium the headings are also
+  read from the browser's accessibility tree (CDP `Accessibility.getFullAXTree`), which is what heading navigation
+  uses: content skipped by `content-visibility: auto` isn't in it. `HEADINGS_HTML_LOSES` lists documents whose
+  headings a show rule takes out of typst-html's output.
 
 Violations that come from Typst's own HTML or from axe's limits are listed in `KNOWN`, each with where it may occur
 and why; so is a known bug, with its issue.

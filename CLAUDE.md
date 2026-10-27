@@ -100,7 +100,7 @@ In `packages/dom`:
 
 In `packages/react`:
 - `pnpm test`: Node tests (provider merging, the shared engine's lifetime). `pnpm test:browser`: `<Typstream>` with React Testing Library against the real engine worker in Chromium, Firefox and WebKit (StrictMode, lazy opening, worker cleanup). `BROWSERS=chromium` runs one. Needs engine-wasm's `dist/`.
-- `pnpm size`: ≤ 15.5 KB gzipped including `@typstream/dom` (React and the engine external).
+- `pnpm size`: ≤ 16 KB gzipped including `@typstream/dom` (React and the engine external).
 - Its bundle starts with `"use client"` (tsup banner), as does `typstream`'s, for Next.js's App Router.
 
 In `examples/nextjs-ai-sdk`: `pnpm test` builds the app (Turbopack) and streams one answer into `<Typstream>` in Chromium, failing on any error frame. Without `ANTHROPIC_API_KEY` the route replays a recorded worksheet; build the packages first (`pnpm turbo run build --filter=typstream...`). CI runs it in the browsers job.

@@ -1,4 +1,5 @@
 /// <reference lib="dom" />
+/// <reference types="@vitest/browser-playwright" />
 // Accessibility (PLAN §11.4, #19): every edu corpus document, finished, in both
 // targets, checked with axe-core (WCAG 2.2 A/AA and best practices; page-level
 // rules are off, since a document is a component of a page) and with what axe
@@ -9,12 +10,15 @@
 //   order is axe's `heading-order`.) Dark as well as light: contrast differs.
 // - Paged: page SVGs are hidden from assistive technology and the text layer
 //   holds the document's text: what a screen reader gets of the HTML target.
+//   Its headings are the HTML target's (levels and text), as the browser's
+//   accessibility tree has them in Chromium (#63), and every page's layer has
+//   the document's language and direction.
 
 import { mountTypstream } from "@typstream/dom";
 import type { Engine } from "@typstream/engine";
 import axe from "axe-core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { server } from "vitest/browser";
+import { cdp, server } from "vitest/browser";
 import {
   appOptions,
   type CorpusDocument,
@@ -114,6 +118,39 @@ const render = async (entry: CorpusDocument, target: Target, theme?: "light" | "
 /** The language a document sets first (`#set text(lang: "ar")`), or Typst's default. */
 const languageOf = (source: string) => /#set text\([^)]*\blang: "([a-z]+)"/.exec(source)?.[1] ?? "en";
 
+/** Letters and digits in order, compatibility-normalized (math italic 𝑥 is x). */
+const lettersOf = (text: string) => (text.normalize("NFKC").match(/[\p{L}\p{N}]/gu) ?? []).join("");
+
+/** Headings as `level text`, in document order: <h1>–<h6> and role="heading". */
+const headingsIn = (el: Element) =>
+  [...el.querySelectorAll("h1, h2, h3, h4, h5, h6, [role=heading]")].map(
+    (h) => `${h.getAttribute("aria-level") ?? h.localName.slice(1)} ${lettersOf(h.textContent ?? "")}`,
+  );
+
+/**
+ * Typst headings as Chromium's accessibility tree exposes them: what a screen
+ * reader's heading navigation finds. The test runs in an iframe of the page
+ * CDP is attached to.
+ */
+const axHeadings = async (): Promise<string[]> => {
+  const session = cdp();
+  const { frameTree } = await session.send("Page.getFrameTree");
+  const frame = frameTree.childFrames?.find((f) => f.frame.url === location.href)?.frame ?? frameTree.frame;
+  const { nodes } = await session.send("Accessibility.getFullAXTree", { frameId: frame.id });
+  return nodes
+    .filter((n) => n.role?.value === "heading")
+    .map(
+      (n) => `${n.properties?.find((p) => p.name === "level")?.value.value} ${lettersOf(String(n.name?.value ?? ""))}`,
+    );
+};
+
+/**
+ * Documents whose headings the HTML target doesn't have: a show rule that
+ * replaces the heading leaves typst-html without its <h2>, while its tag still
+ * marks it as a heading in paged output.
+ */
+const HEADINGS_HTML_LOSES = new Set(["exam-algebra-final"]);
+
 /** Letters and digits, counted: text compared across targets whatever its spacing and line breaks. */
 const letters = (text: string) => {
   const counts = new Map<string, number>();
@@ -122,7 +159,7 @@ const letters = (text: string) => {
 };
 
 describe(`accessibility in ${browser}`, () => {
-  it("paged: axe finds nothing; pages are hidden and their text layers hold the document's text", async () => {
+  it("paged: axe finds nothing; pages are hidden; text layers hold the document's text, headings, language and direction", async () => {
     const problems: string[] = [];
     for (const entry of corpus) {
       const paged = await render(entry, "paged");
@@ -132,12 +169,35 @@ describe(`accessibility in ${browser}`, () => {
         if (svgOf(page)?.getAttribute("aria-hidden") !== "true")
           problems.push(`${entry.name}: page ${i + 1}'s SVG is exposed`);
       }
-      const layerText = pages.map((p) => textLayerOf(p)?.textContent ?? "").join("\n");
+      const layers = pages.map((p) => textLayerOf(p) as HTMLElement);
+      const layerText = layers.map((l) => l.textContent ?? "").join("\n");
+      const lang = languageOf(entry.source);
+      const dir = lang === "ar" ? "rtl" : "ltr";
+      for (const [i, layer] of layers.entries()) {
+        if (layer.lang.split("-")[0] !== lang || layer.dir !== dir)
+          problems.push(`${entry.name}: page ${i + 1}'s text layer is lang="${layer.lang}" dir="${layer.dir}"`);
+      }
+      const headings = layers.flatMap(headingsIn);
+      if (browser === "chromium") {
+        const exposed = await axHeadings();
+        if (JSON.stringify(exposed) !== JSON.stringify(headings))
+          problems.push(
+            `${entry.name}: the accessibility tree has headings ${exposed.join(", ")}, not ${headings.join(", ")}`,
+          );
+      }
       paged.done();
 
       // What the HTML target reads out, the text layers must too (they may hold more: page numbers, headers).
       const html = await render(entry, "html");
       const want = letters(html.el.textContent ?? "");
+      // And they have its headings.
+      const htmlHeadings = headingsIn(html.el);
+      if (HEADINGS_HTML_LOSES.has(entry.name)) {
+        if (htmlHeadings.length > 0 || headings.length === 0)
+          problems.push(`${entry.name}: remove it from HEADINGS_HTML_LOSES`);
+      } else if (JSON.stringify(headings) !== JSON.stringify(htmlHeadings)) {
+        problems.push(`${entry.name}: paged headings ${headings.join(", ")}; HTML ${htmlHeadings.join(", ")}`);
+      }
       html.done();
       const have = letters(layerText);
       let total = 0;

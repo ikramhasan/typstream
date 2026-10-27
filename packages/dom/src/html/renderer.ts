@@ -17,6 +17,7 @@ import {
   type Timings,
   visibleText,
 } from "./animate";
+import { directionOf } from "./dir";
 import { createSanitizer, type Sanitizer } from "./sanitize";
 import { type Split, splitHtml } from "./split";
 import { htmlRendererCss } from "./styles";
@@ -110,7 +111,6 @@ const SRC_ATTRIBUTE = "data-typstream-src";
  * typst-library's lang.rs), as the renderer does for its root.
  */
 const HTML_LANG = /^(?:<!DOCTYPE html>\s*)?<html[^>]*?\slang="([^"]+)"/i;
-const RTL = /^(ar|dv|fa|he|ks|pa|ps|sd|ug|ur|yi)\b/i;
 
 let renderers = 0;
 
@@ -250,7 +250,7 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
     language = lang;
     if (lang) {
       root.lang = lang;
-      root.dir = RTL.test(lang) ? "rtl" : "ltr";
+      root.dir = directionOf(lang);
     } else {
       root.removeAttribute("lang");
       root.removeAttribute("dir");
