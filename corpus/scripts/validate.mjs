@@ -128,6 +128,9 @@ const run = (entry) =>
     }
     const compile = [
       "compile",
+      // `html.elem` exists only with the feature; paged output is the same either way.
+      "--features",
+      "html",
       "--ignore-system-fonts",
       "--diagnostic-format",
       "short",

@@ -6,7 +6,7 @@
 
 import type { Artifact, PagedArtifact } from "@typstream/core";
 import { type MountedTypstream, registerMathFont, type TypstreamOptions } from "@typstream/dom";
-import { createEngine, type DocumentState, type Engine, fromWorker } from "@typstream/engine";
+import { createEngine, type DocumentState, type Engine, type EngineOptions, fromWorker } from "@typstream/engine";
 import { htmlCompat, htmlCompatCss } from "@typstream/html-compat";
 import { commands } from "vitest/browser";
 
@@ -37,12 +37,13 @@ export const loadCorpus = (): Promise<CorpusDocument[]> => commands.corpusEntrie
 // outside this package's root (and bundles the worker).
 
 /** The real engine worker, spawned from source as the packages' own browser tests do. */
-export const startEngine = (): Engine =>
+export const startEngine = (options: Partial<EngineOptions> = {}): Engine =>
   createEngine({
     spawn: fromWorker(
       () => new Worker(new URL("../../../../packages/engine/src/worker.ts", import.meta.url), { type: "module" }),
     ),
     spare: false,
+    ...options,
   });
 
 /**
@@ -138,6 +139,30 @@ export const until = (view: MountedTypstream, done: (s: DocumentState) => boolea
     const stop = view.subscribe(check);
     check();
   });
+
+/**
+ * Streams `entry` into a mount as an app feeds an LLM's answer: the growing text
+ * with `isStreaming`, then the complete text. Paced so that the stream takes
+ * about `seconds` whatever its length, and compiles happen along the way.
+ */
+export const streamInto = async (
+  view: MountedTypstream,
+  opts: TypstreamOptions,
+  entry: CorpusDocument,
+  seconds = 2,
+): Promise<void> => {
+  const perSecond = Math.max(200, entry.chunks.length / seconds);
+  const start = performance.now();
+  let text = "";
+  let i = 0;
+  while (i < entry.chunks.length) {
+    await sleep(8);
+    const due = Math.min(entry.chunks.length, Math.ceil(((performance.now() - start) / 1000) * perSecond));
+    for (; i < due; i++) text += entry.chunks[i];
+    view.update({ ...opts, source: text, isStreaming: true });
+  }
+  view.update({ ...opts, source: text, isStreaming: false });
+};
 
 /** The finished document compiled (`done`) or failed for good (`error`). */
 export const finished = (s: DocumentState) => s.status === "done" || s.status === "error";

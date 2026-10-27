@@ -11,11 +11,13 @@ export type {
   DocumentStatus,
   EngineDocument,
   ExportOptions,
+  LimitOptions,
   WatchdogOptions,
 } from "./document";
 export { ExportError } from "./document";
 export {
   createEngine,
+  DEFAULT_LIMITS,
   DEFAULT_RECYCLE_BYTES,
   DEFAULT_WATCHDOG,
   type Engine,

@@ -493,6 +493,85 @@ describe("watchdog", () => {
   });
 });
 
+describe("limits", () => {
+  it("doesn't heal or compile input longer than maxLength until set() shortens it", async () => {
+    const { workers, engine } = setup({}, { limits: { maxLength: 20 } });
+    const doc = engine.open({ text: "Short" });
+    await tick(100);
+    doc.push(" and then far too long");
+    let s = doc.getState();
+    expect(s.status).toBe("stale");
+    expect(s.failure).toMatchObject({ reason: "too-large" });
+    expect(s.failure?.message).toContain("27 characters");
+    expect(s.heal.source).toBe("Short");
+    // Later chunks would follow text that was dropped: they are dropped too.
+    doc.push("!");
+    doc.applyEdit({ from: 0, to: 5, insert: "Long" });
+    await tick(1000);
+    expect(workers.compileRequests()).toHaveLength(1);
+    expect(html(doc.getState())).toBe("<p>Short</p>");
+    await expect(doc.exportHtml()).rejects.toMatchObject({ reason: "too-large" });
+
+    doc.finish();
+    s = doc.getState();
+    expect(s.status).toBe("error");
+    expect(s.failure?.reason).toBe("too-large");
+
+    doc.set("Short again");
+    await tick(100);
+    s = doc.getState();
+    expect(s.status).toBe("done");
+    expect(s.failure).toBeNull();
+    expect(html(s)).toBe("<p>Short again</p>");
+  });
+
+  it("applies the limit to opening text, edits and reset()", async () => {
+    const { workers, engine } = setup({}, { limits: { maxLength: 10 } });
+    const doc = engine.open({ text: "x".repeat(11) });
+    await tick(100);
+    expect(doc.getState().failure?.reason).toBe("too-large");
+    expect(doc.getState().heal.source).toBe("");
+    expect(workers.compileRequests()).toHaveLength(0);
+
+    doc.reset("Fits");
+    await tick(100);
+    expect(doc.getState().failure).toBeNull();
+    doc.applyEdit({ from: 4, to: 4, insert: " no more" });
+    expect(doc.getState().failure?.reason).toBe("too-large");
+    doc.reset("y".repeat(11));
+    expect(doc.getState().failure?.reason).toBe("too-large");
+    expect(doc.getState().heal.source).toBe("");
+  });
+
+  it("stops compiling live past livePages and compiles every page when finished", async () => {
+    const { workers, engine } = setup({}, { limits: { livePages: 3 } });
+    const doc = engine.open({ target: "paged", text: "A\n\nB\n\nC" });
+    await tick(100);
+    expect(doc.getState().live).toBe(true);
+    doc.push("\n\nD");
+    await tick(100);
+    let s = doc.getState();
+    expect(s.live).toBe(false);
+    expect(s.status).toBe("stale");
+    expect(s.failure).toMatchObject({ reason: "too-complex" });
+    expect(s.failure?.message).toContain("more than 3 pages");
+    // The pages that compiled stay.
+    expect((s.artifact as PagedArtifact).pages).toHaveLength(4);
+
+    const count = workers.compileRequests().length;
+    doc.push("\n\nE");
+    await tick(1000);
+    expect(workers.compileRequests()).toHaveLength(count);
+
+    doc.finish();
+    await tick(100);
+    s = doc.getState();
+    expect(s.status).toBe("done");
+    expect(s.failure).toBeNull();
+    expect((s.artifact as PagedArtifact).pages).toHaveLength(5);
+  });
+});
+
 describe("recycling", () => {
   it("swaps in a fresh worker between compiles past the memory threshold", async () => {
     const MB = 1024 * 1024;

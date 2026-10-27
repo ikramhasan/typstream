@@ -15,3 +15,5 @@ It is `@typstream/react`'s `<Typstream>` with defaults an app wants:
 - **Typst packages** (`@typstream/universe`): documents may import CeTZ and fletcher (diagrams), cetz-plot, physica and unify (math), chemformula and alchemist (chemistry), at the vendored versions. The tarballs are served from your app's origin (your bundler emits them as assets) and fetched only when a document imports one. `packages={false}` turns them off; the `universe` plugin's `prompt.rules` tell the model what it may import.
 
 It also re-exports `TypstreamProvider`, `useTypstream`, the engine (`createEngine`, `engineWorker`), the healer (`createHealer`, `heal`), html-compat and the vendored packages. See `@typstream/react`'s README for the props, and `examples/nextjs-ai-sdk` for a chat with the Vercel AI SDK.
+
+Documents are untrusted code: what they can't do, and the Content-Security-Policy to serve typstream under (no `'unsafe-inline'` or `'unsafe-eval'`, just `'wasm-unsafe-eval'`), are in [`docs/security.md`](../../docs/security.md).

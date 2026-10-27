@@ -23,7 +23,8 @@ export type CorpusSet = (typeof ALL_SETS)[number];
  * - `ok`: compiles; warnings all match `allowedWarnings`; page count equals `expectedPages`.
  * - `error`: fails, and every string in `expectedErrors` appears in the diagnostics.
  * - `limit`: must not succeed within the validator's time and memory limits
- *   (runaway loops, memory bombs). The engine's watchdog has to stop these.
+ *   (runaway loops, memory bombs, a stack overflow). The engine's watchdog, or
+ *   its handling of a worker that traps, has to stop these.
  */
 export type Expectation = "ok" | "error" | "limit";
 

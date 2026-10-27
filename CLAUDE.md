@@ -40,7 +40,9 @@ tools/browser-suites  Corpus-wide browser suites (#19): final-render equivalence
 tools/repo        Repo tooling: package layer table (layers.mjs), layering check, shared tsup and api-extractor configs.
 corpus/           @typstream/corpus (private): shared test documents (edu/, adversarial/, llm/), meta.json, stream replay.
 apps/playground   Dev playground (Vite + React): replay streams, inspect healing and the engine's raw output, record corpus cases.
-examples/         node-validate (@typstream/node fix loop), nextjs-ai-sdk (useChat → <Typstream>, Next.js App Router).
+examples/         node-validate (@typstream/node fix loop), nextjs-ai-sdk (useChat → <Typstream>, Next.js App Router),
+                  strict-csp (both targets under a strict Content-Security-Policy, checked in three browsers).
+docs/             security.md: threat model, defences and the CSP guide (#29).
 spikes/phase0     Throwaway Phase 0 experiments: browser harness (harness/) and custom Typst wasm engine (custom-engine/).
                   Port code out of here into packages/; don't import from spikes.
 PLAN.md           Design and roadmap.
@@ -102,8 +104,10 @@ In `packages/dom`:
 
 In `packages/react`:
 - `pnpm test`: Node tests (provider merging, the shared engine's lifetime). `pnpm test:browser`: `<Typstream>` with React Testing Library against the real engine worker in Chromium, Firefox and WebKit (StrictMode, lazy opening, worker cleanup). `BROWSERS=chromium` runs one. Needs engine-wasm's `dist/`.
-- `pnpm size`: ≤ 16 KB gzipped including `@typstream/dom` (React and the engine external).
+- `pnpm size`: ≤ 16.5 KB gzipped including `@typstream/dom` (React and the engine external).
 - Its bundle starts with `"use client"` (tsup banner), as does `typstream`'s, for Next.js's App Router.
+
+In `examples/strict-csp`: `pnpm test` builds the page, serves it with the policy in `csp.mjs` and fails on any CSP violation or console error in Chromium, Firefox and WebKit (`BROWSERS=` picks some). Build the packages first (`pnpm turbo run build --filter=@typstream/example-strict-csp^...`). CI runs it in the browsers job. Hostile documents go in `corpus/adversarial/hostile-*.typ` (category `hostile-…`); the engine's and the browser suites' `security.test.ts` run them all.
 
 In `examples/nextjs-ai-sdk`: `pnpm test` builds the app (Turbopack) and streams one answer into `<Typstream>` in Chromium, failing on any error frame. Without `ANTHROPIC_API_KEY` the route replays a recorded worksheet; build the packages first (`pnpm turbo run build --filter=typstream...`). CI runs it in the browsers job.
 

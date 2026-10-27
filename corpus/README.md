@@ -26,7 +26,12 @@ Sets:
   habit, a truncated response, runaway loops and recursion, memory bombs, zalgo
   text, mixed-direction text and backtick runs. The big ones come from
   `scripts/generate-adversarial.mjs`, which is deterministic. Re-run it after
-  editing it.
+  editing it. The `hostile-*` documents attack the sandbox and the page (#29,
+  `docs/security.md`): reads, images, imports, plugins and XML outside the
+  virtual file system; `javascript:` and `data:` links; `html.elem` scripts,
+  handlers, frames, forms and CSS; markup in text; a runaway wasm plugin;
+  content nested too deep for the stack; huge dimensions. Their categories start
+  with `hostile-`; the engine's and the browser suites' security tests run them all.
 
 - **`llm/`**: real model output (#24), recorded by `tools/llm-corpus`: each
   document exactly as Claude streamed it (`.stream.jsonl` with the API's own
@@ -61,7 +66,7 @@ Sets:
 
 - `ok`: compiles; the page count matches; every warning matches `allowedWarnings`, and each allowed warning occurs.
 - `error`: fails, and each `expectedErrors` string appears in the diagnostics.
-- `limit`: must not finish within 10 s and 2 GiB (runaway code, memory bombs). The engine's watchdog has to stop these.
+- `limit`: must not finish within 10 s and 2 GiB (runaway code, memory bombs), or dies trying (a stack overflow). The engine's watchdog, or its handling of a worker that traps, has to stop these.
 
 ### `.stream.jsonl`
 
@@ -107,7 +112,8 @@ fails as it does in the app.
 
 `corpus:validate` needs **`typst` 0.15.1** on `PATH`, or `TYPST=/path/to/typst`.
 It compiles with `--ignore-system-fonts`, so results don't depend on installed
-fonts. Bengali, Devanagari and CJK text renders as missing glyphs without a
+fonts, and with `--features html`, so documents may use `html.elem` (paged
+output ignores it, with a warning). Bengali, Devanagari and CJK text renders as missing glyphs without a
 warning, which is fine for validation (fonts are #11). `limit` entries run under
 `prlimit` (util-linux) and are skipped where it's missing (macOS).
 `--write-pages` records the page counts of `ok` entries in `meta.json`. It and
