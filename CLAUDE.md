@@ -82,7 +82,7 @@ In `packages/engine-wasm` (Rust build, ~3 min cold):
 In `packages/engine`:
 - `pnpm test`: the `node` vitest project (client against a fake worker; server and protocol conformance against engine-wasm in-process). Needs engine-wasm's `dist/`.
 - `pnpm test:browser`: the `browser` project, the real worker in Chromium, Firefox and WebKit (vitest browser mode, Playwright). `BROWSERS=chromium` runs one.
-- `pnpm size`: main thread ≤ 8 KB, worker JS ≤ 40 KB gzipped.
+- `pnpm size`: main thread ≤ 8.5 KB, worker JS ≤ 40 KB gzipped.
 - Two API reports: `api/engine.api.md` (main entry) and `api/engine-server.api.md` (`@typstream/engine/server`).
 
 In `packages/html-compat`:

@@ -25,8 +25,12 @@ const measure = async (label, entry, budget, external) => {
   return gz <= budget;
 };
 
+// 8 KB until plugins (#27) moved their facet merging here from @typstream/dom and resolved them
+// (dependencies, duplicates) once for every package: 0.7 KB, when #29's limits had left it at 7.5.
+const MAIN_THREAD = 8.5 * 1024;
+
 const ok = [
-  await measure("@typstream/engine (main thread)", "src/index.ts", 8 * 1024, ["@typstream/heal"]),
+  await measure("@typstream/engine (main thread)", "src/index.ts", MAIN_THREAD, ["@typstream/heal"]),
   await measure("@typstream/engine (worker JS, excl. wasm and fonts)", "src/worker.ts", 40 * 1024, []),
 ];
 process.exitCode = ok.every(Boolean) ? 0 : 1;
