@@ -1,5 +1,7 @@
 # CI for PRs and main (PLAN.md §11.8). Each check is its own job so a PR shows lint, types, tests,
-# size and perf separately. The long property campaign runs nightly (nightly.yml).
+# size and perf separately, and slow ones are split across parallel jobs: a PR's CI should finish in
+# about 5 minutes. Checks that can't run in that time go in nightly.yml: the long property campaign,
+# mutation testing and the corpus-wide browser suites.
 name: CI
 
 on:
@@ -18,12 +20,12 @@ permissions:
 # then runs `pnpm install --frozen-lockfile` against a cached store.
 env:
   NODE: node@24
-  # engine-wasm's own checks need Rust, binaryen and native typst; only the engine job has them. Jobs that reach
-  # it through @typstream/engine restore its dist/ with ./.github/actions/engine-wasm instead.
+  # engine-wasm's own checks need native typst and cargo; only the engine jobs have them. Every job restores its
+  # dist/ with ./.github/actions/engine-wasm (built with Rust and binaryen on a cache miss).
   # The compile oracle (tools/compile-oracle) needs the built engine, and html-compat's and edu's tests compile with it
-  # (a devDependency turbo would build), so they run in the engine job too. So do @typstream/node and its example
+  # (a devDependency turbo would build), so they run in the engine jobs too. So do @typstream/node and its example
   # (its build copies Typst's fonts out of the Rust crate graph).
-  # examples/nextjs-ai-sdk's and examples/strict-csp's tests drive browsers, so they run in the browsers job.
+  # examples/nextjs-ai-sdk's and examples/strict-csp's tests drive browsers, so they run in the browser jobs.
   NOT_ENGINE: >-
     --filter=!@typstream/engine-wasm --filter=!@typstream/compile-oracle --filter=!@typstream/html-compat --filter=!@typstream/edu
     --filter=!@typstream/node --filter=!@typstream/example-node-validate --filter=!@typstream/example-nextjs-ai-sdk
@@ -120,95 +122,81 @@ jobs:
             echo '```'
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
-  # The Typst engine: Rust build (cached by rust-cache), tests against native typst, wasm size budget, API report and
-  # package lint. Also html-compat and edu, whose tests compile with the engine (and native typst). Then the compile oracle (#13): do heal's outputs
-  # compile with the engine? Then @typstream/node on top of it (corpus, watchdog, protocol conformance) and its example.
+  # The Typst engine, in two parallel shards on the cached dist/ (./.github/actions/engine-wasm builds it on a miss,
+  # with Rust). One runs engine-wasm's tests against native typst, its wasm size budget, API report and package lint,
+  # and html-compat's and edu's, whose tests compile with the engine (and native typst). The other runs the compile
+  # oracle (#13: do heal's outputs compile with the engine?), then @typstream/node on top of it (corpus, watchdog,
+  # protocol conformance) and its example. Their tests (and node's build) take Typst's fonts from the typst-assets crate, found with `cargo metadata`,
+  # so each shard has cargo and the crate registry, though no target/.
   engine:
-    name: Engine (wasm)
+    name: Engine (${{ matrix.shard }})
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: wasm, html-compat, edu
+            run: >-
+              pnpm exec turbo run build check-types test size check:api check:package
+              --filter=@typstream/engine-wasm --filter=@typstream/html-compat --filter=@typstream/edu
+          - shard: compile oracle, node
+            run: >-
+              pnpm exec turbo run check-types test --filter=@typstream/compile-oracle &&
+              pnpm exec turbo run build check-types test check:api check:package --filter=@typstream/node &&
+              pnpm exec turbo run test --filter=@typstream/example-node-validate
     env:
-      # Typst is pinned everywhere (CLAUDE.md); binaryen 133 is what Phase 0 measured with.
+      # Typst is pinned everywhere (CLAUDE.md).
       TYPST: 0.15.1
-      BINARYEN: "133"
     steps:
       - uses: actions/checkout@v7
-      # Typst 0.15.1 needs Rust ≥ 1.92 (CLAUDE.md).
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
-      - uses: Swatinem/rust-cache@v2
+      - id: wasm
+        uses: ./.github/actions/engine-wasm
+      # Set up already when the action built dist/. Typst 0.15.1 needs Rust ≥ 1.92 (CLAUDE.md).
+      - if: steps.wasm.outputs.cache-hit == 'true'
+        uses: dtolnay/rust-toolchain@stable
+      - if: steps.wasm.outputs.cache-hit == 'true'
+        uses: Swatinem/rust-cache@v2
         with:
           workspaces: packages/engine-wasm -> target
-      # wasm-bindgen-cli must match the wasm-bindgen crate in Cargo.lock exactly, so read it from there.
-      - id: bindgen
+          shared-key: engine-registry
+          cache-targets: false
+      - name: Install native typst
         run: |
-          version=$(awk '/^name = "wasm-bindgen"$/ { getline; gsub(/version = |"/, ""); print; exit }' packages/engine-wasm/Cargo.lock)
-          test -n "$version"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-      - uses: taiki-e/install-action@v2
-        with:
-          tool: wasm-bindgen@${{ steps.bindgen.outputs.version }}
-      - name: Install wasm-opt and native typst
-        run: |
-          bin="$RUNNER_TEMP/bin"
-          mkdir -p "$bin"
-          curl -fsSL "https://github.com/WebAssembly/binaryen/releases/download/version_$BINARYEN/binaryen-version_$BINARYEN-x86_64-linux.tar.gz" \
-            | tar -xz -C "$RUNNER_TEMP"
-          ln -s "$RUNNER_TEMP/binaryen-version_$BINARYEN/bin/wasm-opt" "$bin/wasm-opt"
           curl -fsSL "https://github.com/typst/typst/releases/download/v$TYPST/typst-x86_64-unknown-linux-musl.tar.xz" \
             | tar -xJ -C "$RUNNER_TEMP"
-          ln -s "$RUNNER_TEMP/typst-x86_64-unknown-linux-musl/typst" "$bin/typst"
-          echo "$bin" >> "$GITHUB_PATH"
+          echo "$RUNNER_TEMP/typst-x86_64-unknown-linux-musl" >> "$GITHUB_PATH"
       - uses: pnpm/setup@v3
         with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
-      - run: pnpm exec turbo run build check-types test size check:api check:package --filter=@typstream/engine-wasm --filter=@typstream/html-compat --filter=@typstream/edu
-      - run: pnpm exec turbo run check-types test --filter=@typstream/compile-oracle
-      - run: pnpm exec turbo run build check-types test check:api check:package --filter=@typstream/node
-      - name: examples/node-validate
-        run: pnpm exec turbo run test --filter=@typstream/example-node-validate
+      - run: ${{ matrix.run }}
 
   # The engine worker in real browsers (packages/engine/__tests__/browser): protocol conformance, streaming through
-  # client + worker + engine-wasm, and the watchdog, in Chromium, Firefox and WebKit. Then the renderers
-  # (packages/dom/__tests__/browser) and <Typstream> (packages/react/__tests__/browser) against that worker. Last,
-  # examples/nextjs-ai-sdk: a production Next.js build streaming an answer into <Typstream> in Chromium; and
-  # examples/strict-csp: both targets under a strict Content-Security-Policy in all three browsers, with no violation.
+  # client + worker + engine-wasm, and the watchdog. Then the renderers (packages/dom/__tests__/browser) and <Typstream>
+  # (packages/react/__tests__/browser) against that worker, and examples/strict-csp: both targets under a strict
+  # Content-Security-Policy, with no violation. One job per browser; Chromium's also runs examples/nextjs-ai-sdk, a
+  # production Next.js build streaming an answer into <Typstream>.
   browsers:
-    name: Engine (browsers)
+    name: Engine (${{ matrix.browser }})
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/engine-wasm
-      - uses: pnpm/setup@v3
-        with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
-      - run: pnpm --filter @typstream/engine exec playwright install --with-deps chromium firefox webkit
-      - run: pnpm --filter @typstream/engine test:browser
-      - run: pnpm --filter @typstream/dom test:browser
-      - run: pnpm --filter @typstream/react test:browser
-      - run: pnpm exec turbo run test --filter=@typstream/example-nextjs-ai-sdk
-      - run: pnpm exec turbo run test --filter=@typstream/example-strict-csp
-
-  # Corpus-wide browser suites (tools/browser-suites, #19): final-render equivalence, flicker and accessibility over
-  # mountTypstream on the real worker. One job per browser (Chromium also runs the adversarial set's equivalence).
-  # Tests take 10-20 min; the timeout leaves room for `--with-deps`, whose apt mirror has taken 20 min on a bad day.
-  suites:
-    name: Browser suites (${{ matrix.browser }})
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
         browser: [chromium, firefox, webkit]
+    env:
+      BROWSERS: ${{ matrix.browser }}
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/engine-wasm
       - uses: pnpm/setup@v3
         with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
-      - run: pnpm --filter @typstream/browser-suites exec playwright install --with-deps ${{ matrix.browser }}
-      - run: pnpm --filter @typstream/browser-suites test:browser
-        env:
-          BROWSERS: ${{ matrix.browser }}
+      - run: pnpm --filter @typstream/engine exec playwright install --with-deps ${{ matrix.browser }}
+      - run: pnpm --filter @typstream/engine test:browser
+      - run: pnpm --filter @typstream/dom test:browser
+      - run: pnpm --filter @typstream/react test:browser
+      - run: pnpm exec turbo run test --filter=@typstream/example-strict-csp
+      - if: matrix.browser == 'chromium'
+        run: pnpm exec turbo run test --filter=@typstream/example-nextjs-ai-sdk
 
   # Visual regression (tools/browser-suites): screenshots against committed baselines, taken inside Playwright's
   # Docker image as they are locally (scripts/visual.mjs), so the runner's fonts don't matter. On a mismatch the

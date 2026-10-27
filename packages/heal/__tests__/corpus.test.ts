@@ -2,28 +2,26 @@
 // real documents, written as models write them, instead of generated ones.
 // Documents above SMALL_DOC are covered by corpus-large.test.ts.
 
+import { existsSync } from "node:fs";
 import { streamOf } from "@typstream/corpus";
 import { describe, expect, it } from "vitest";
 import { createHealer, heal } from "../src";
-import { corpusCases, describeFailure, KNOWN_HEAL_BUGS, knownBug, SMALL_DOC } from "./support/corpus";
+import { corpusCases, KNOWN_HEAL_BUGS, prefixShard, SMALL_DOC } from "./support/corpus";
+import { PREFIX_SHARDS } from "./support/corpus-prefixes";
 import { syntaxErrors } from "./support/oracle";
 
 const cases = corpusCases().filter((c) => c.source.length <= SMALL_DOC);
 
 describe("corpus: every prefix heals to valid syntax", () => {
-  // One character at a time through the incremental healer (which equals
-  // stateless healing, checked below), with Typst's parser on every output.
-  it.each(cases.filter((c) => c.healable).map((c) => [c.id, c] as const))("%s", (_, c) => {
-    const healer = createHealer();
-    const unknown: string[] = [];
-    // Index by UTF-16 unit: streams may split surrogate pairs.
-    for (let i = 0; i <= c.source.length; i++) {
-      const out = i === 0 ? healer.result().source : healer.push(c.source[i - 1] as string).source;
-      const errors = syntaxErrors(out);
-      const prefix = c.source.slice(0, i);
-      if (errors.length > 0 && !knownBug(prefix, errors)) unknown.push(describeFailure(c.id, prefix, out, errors));
+  // The suite itself is split across corpus-prefixes-<n>.test.ts, one worker each.
+  it("its shards cover every small healable document once, each with a test file", () => {
+    const healable = cases.filter((c) => c.healable);
+    const sharded = Array.from({ length: PREFIX_SHARDS }, (_, i) => prefixShard(healable, i + 1, PREFIX_SHARDS)).flat();
+    const ids = (cs: readonly { id: string }[]) => cs.map((c) => c.id).sort();
+    expect(ids(sharded)).toEqual(ids(healable));
+    for (let n = 1; n <= PREFIX_SHARDS; n++) {
+      expect(existsSync(new URL(`./corpus-prefixes-${n}.test.ts`, import.meta.url)), `shard ${n}`).toBe(true);
     }
-    expect(unknown.slice(0, 5).join("\n\n")).toBe("");
   });
 
   it.each(KNOWN_HEAL_BUGS.map((b) => [b.name, b] as const))("known bug still reproduces: %s", (_, b) => {

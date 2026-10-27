@@ -31,3 +31,20 @@ export const corpusCases = (): CorpusCase[] =>
 export const describeFailure = (id: string, prefix: string, output: string, errors: OracleError[]): string =>
   `${id} @${prefix.length}: …${JSON.stringify(prefix.slice(-60))}\n` +
   `healed tail: …${JSON.stringify(output.slice(-80))}\nerrors: ${JSON.stringify(errors)}`;
+
+/**
+ * Shard `shard` (1-based) of `shards` of the small healable documents, for the every-prefix
+ * suite: one test file per shard lets vitest run them on separate workers. Each prefix costs a
+ * parse of the whole prefix, so a document costs about its length squared; documents go to the
+ * least loaded shard, longest first, so the shards finish together.
+ */
+export const prefixShard = (cases: readonly CorpusCase[], shard: number, shards: number): CorpusCase[] => {
+  const load = new Array<number>(shards).fill(0);
+  const out: CorpusCase[][] = Array.from({ length: shards }, () => []);
+  for (const c of [...cases].sort((a, b) => b.source.length - a.source.length || a.id.localeCompare(b.id))) {
+    const i = load.indexOf(Math.min(...load));
+    load[i] = (load[i] as number) + c.source.length ** 2;
+    out[i]?.push(c);
+  }
+  return out[shard - 1] ?? [];
+};
