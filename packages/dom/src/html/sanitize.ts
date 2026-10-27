@@ -17,6 +17,11 @@
 // Firefox refuse those, even in an inert template, and report each one. The
 // renderer renames them (`hideStyles`) and the sanitizer applies them through
 // the CSSOM (`style.cssText`), which no policy restricts (#29, apps/website/content/docs/guides/security.mdx).
+//
+// Classes are allowlisted too (#69): a document's `class` would otherwise take
+// the page's own styles (Tailwind's `fixed inset-0 z-50`, an app's button) and
+// whatever its scripts hang on them. The renderer's CSS keeps what is left
+// inside the root (styles.ts).
 
 import type { TypstreamPlugin } from "@typstream/core";
 
@@ -74,6 +79,16 @@ const SVG_ATTRS = set(
 
 /** On every allowed element. */
 const GLOBAL_ATTRS = set("class style id lang dir title role");
+
+/**
+ * Classes Typst's HTML export writes (typst-html 0.15.1: mathml.rs's equation
+ * tables and accents, rules.rs's bibliography). Plugins add theirs; `typstream-*`
+ * (the engine's placeholders and error blocks) is always kept.
+ */
+const TYPST_CLASSES = set(
+  "multiline-equation aligned left-align right-align cases flushed left-flush right-flush dotted prefix light indent " +
+    "hanging-indent",
+);
 
 /** Removed with everything inside; no plugin can allow them. */
 const REMOVE = set(
@@ -143,7 +158,7 @@ export interface SanitizeOptions {
    * global (`<config>` would otherwise define `window.config`).
    */
   idPrefix: string;
-  /** Plugins whose `sanitize` facet allows more tags and attributes. */
+  /** Plugins whose `sanitize` facet allows more tags, attributes and classes. */
   plugins?: readonly TypstreamPlugin[];
   /** `target` for links to http(s) URLs; `null` leaves them in the same tab. Default `_blank`. */
   linkTarget?: string | null;
@@ -171,8 +186,13 @@ export const createSanitizer = (options: SanitizeOptions): Sanitizer => {
   const linkTarget = options.linkTarget === undefined ? "_blank" : options.linkTarget;
   const extraTags = new Set<string>();
   const extraAttrs = new Map<string, Set<string>>();
+  const classes = new Set(TYPST_CLASSES);
+  const classPrefixes = ["typstream-"];
   for (const plugin of options.plugins ?? []) {
     for (const tag of plugin.sanitize?.allowTags ?? []) extraTags.add(tag.toLowerCase());
+    for (const name of plugin.sanitize?.allowClasses ?? [])
+      if (name.endsWith("*")) classPrefixes.push(name.slice(0, -1));
+      else classes.add(name);
     for (const [tag, attrs] of Object.entries(plugin.sanitize?.allowAttrs ?? {})) {
       const key = tag.toLowerCase();
       const allowed = extraAttrs.get(key) ?? new Set<string>();
@@ -261,6 +281,12 @@ export const createSanitizer = (options: SanitizeOptions): Sanitizer => {
       let next: string | null = value;
       if (attr === "href" || attr === "xlink:href" || attr === "src") next = url(el, attr, value);
       else if (attr === "id") next = idPrefix + value;
+      else if (attr === "class")
+        next =
+          value
+            .split(/\s+/)
+            .filter((name) => classes.has(name) || classPrefixes.some((prefix) => name.startsWith(prefix)))
+            .join(" ") || null;
       else if (IDREFS.has(attr))
         next = value
           .split(/\s+/)

@@ -245,8 +245,13 @@ export interface TypstreamPlugin {
 
   /** Rendering. Islands by name. @beta */
   islands?: Record<string, IslandSpec>;
-  /** Extra tags and attributes (by tag, `"*"` for all) the sanitizer lets through. */
-  sanitize?: { allowTags?: string[]; allowAttrs?: Record<string, string[]> };
+  /**
+   * Extra tags, attributes (by tag, `"*"` for all) and classes the sanitizer lets
+   * through. The HTML renderer drops every other class, so a document can't take
+   * on the page's own (#69): list the ones this plugin's Typst writes, by name or
+   * as a prefix (`"ts-*"`).
+   */
+  sanitize?: { allowTags?: string[]; allowAttrs?: Record<string, string[]>; allowClasses?: string[] };
   /**
    * CSS for the HTML this plugin's Typst writes, added to the HTML renderer and
    * to standalone HTML exports, after earlier plugins' and before the app's own.

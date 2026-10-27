@@ -68,9 +68,22 @@ The renderer parses markup into an inert `<template>`, so nothing runs or loads 
 - the HTML elements Typst writes, MathML Core and drawing SVG;
 - links to `http(s)`, `mailto` and `#fragments` (external links get `rel="noopener noreferrer"`), read the way URL parsers read them (`java\tscript:` is `javascript:`);
 - images from `data:image/*` and `blob:` only;
-- CSS that loads nothing (no `url()`, `image-set()`, `expression()`, bindings) and isn't `position: fixed`.
+- CSS that loads nothing (no `url()`, `image-set()`, `expression()`, bindings) and isn't `position: fixed`;
+- the classes Typst writes (its MathML and bibliography classes), the engine's `typstream-*` placeholders, and the ones plugins list (html-compat's `ts-*`, edu's `edu-*`).
 
-Everything else goes: scripts, styles, frames, objects, forms, `on*` handlers, `data-*`, `name`, `is`, `srcset`, `ping`, SVG animation and `foreignObject`. Ids get a per-renderer prefix, so a label can't clobber a global (`window.location`). Plugins can allow more tags and attributes (the `sanitize` facet), but never handlers, scripts or URL attributes.
+Everything else goes: scripts, styles, frames, objects, forms, `on*` handlers, `data-*`, `name`, `is`, `srcset`, `ping`, SVG animation, `foreignObject`, and every other class, so a document can't take on your page's styles (Tailwind's `fixed inset-0 z-50`, your app's button) or what your scripts attach to a class. Ids get a per-renderer prefix, so a label can't clobber a global (`window.location`). Plugins can allow more tags, attributes and classes (the `sanitize` facet), but never handlers, scripts or URL attributes.
+
+The document also stays inside its element. A document can still lay a box over its own content (CSS such as `position: absolute`, negative margins or `transform` has legitimate uses), and your page's CSS can still reach the elements it writes. So the renderer's stylesheet clips the root, `.typstream`:
+
+```css
+:where(.typstream) {
+  position: relative;
+  overflow: clip;
+  clip-path: inset(0);
+}
+```
+
+`clip-path` clips the painting and the clicks of everything inside, `position: fixed` boxes included, so nothing the document draws covers your app outside its element. `overflow: clip` keeps what it overflows with from making your page scroll. Neither changes layout (no new formatting context, so margins collapse as before). The cost: what reached past the element is cut off, such as a table or equation wider than it, or a focus ring on its edge. Give the element the width the document needs, or scroll it: a rule of yours on `.typstream` wins over `:where()`, and a scrolling ancestor clips as well. If you pass `injectStyles: false`, ship these rules with the rest of `htmlRendererCss`.
 
 ### Paged target
 
@@ -199,9 +212,8 @@ For any other static host, use its header configuration.
 
 ## Known gaps
 
-- A document can draw outside its element in the HTML target: absolutely positioned content sized to the viewport, or the host page's own utility classes (`fixed inset-0`), can cover the app around it ([#69](https://github.com/ikramhasan/typstream/issues/69)). Script, network and navigation stay blocked; this is about deception.
 - The paged view trusts typst-svg's serializer (above): the hostile documents run again on every Typst upgrade, as they do for the plugin sandbox.
 
 ## How this is tested
 
-A corpus of hostile documents (reads, images, imports, plugins and XML outside the sandbox; links to other schemes; `html.elem` scripts, handlers, frames, forms and CSS; runaway plugins; content nested too deep; huge dimensions) streams into the real renderers in CI, in Chromium, Firefox and WebKit, in both targets, along with the sanitizer's XSS and mutation-XSS cases and the strict-CSP page above.
+A corpus of hostile documents (reads, images, imports, plugins and XML outside the sandbox; links to other schemes; `html.elem` scripts, handlers, frames, forms, CSS and overlays; runaway plugins; content nested too deep; huge dimensions) streams into the real renderers in CI, in Chromium, Firefox and WebKit, in both targets, along with the sanitizer's XSS and mutation-XSS cases and the strict-CSP page above.

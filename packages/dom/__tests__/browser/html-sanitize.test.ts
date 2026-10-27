@@ -180,7 +180,34 @@ describe("sanitizer", () => {
   it("keeps html-compat's markup", () => {
     const html =
       '<div class="ts-grid" style="display: grid; grid-template-columns: 1fr 1fr" role="group" aria-label="grid"><span class="ts-b">a</span></div>';
-    expect(out(html)).toBe(html);
+    const template = document.createElement("template");
+    template.innerHTML = html;
+    createSanitizer({ idPrefix: "", plugins: [{ key: "html-compat", sanitize: { allowClasses: ["ts-*"] } }] })(
+      template.content,
+    );
+    expect(template.innerHTML).toBe(html);
+  });
+
+  it("keeps only Typst's classes, the engine's and the ones plugins allow", () => {
+    // The page's own classes (Tailwind's overlay, an app's button) would style the document as the page.
+    expect(out('<div class="fixed inset-0 z-50 bg-white">a</div><a class="btn btn-primary" href="#x">b</a>')).toBe(
+      '<div>a</div><a href="#p-x">b</a>',
+    );
+    expect(
+      out(
+        '<math><mtable class="multiline-equation aligned"><mtr><mtd class="right-flush fixed"></mtd></mtr></mtable></math>' +
+          '<div class="typstream-error-block ts-grid">e</div>',
+      ),
+    ).toBe(
+      '<math><mtable class="multiline-equation aligned"><mtr><mtd class="right-flush"></mtd></mtr></mtable></math>' +
+        '<div class="typstream-error-block">e</div>',
+    );
+    const template = document.createElement("template");
+    template.innerHTML = '<div class="edu-question edu fixed x-card">a</div>';
+    createSanitizer({ idPrefix: "", plugins: [{ key: "t", sanitize: { allowClasses: ["edu-*", "x-card"] } }] })(
+      template.content,
+    );
+    expect(template.innerHTML).toBe('<div class="edu-question x-card">a</div>');
   });
 
   it("lets plugins allow more, but never handlers or scripts", () => {

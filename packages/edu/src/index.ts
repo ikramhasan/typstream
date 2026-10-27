@@ -74,8 +74,8 @@ export const eduTemplates: TemplateSpec[] = (
 ).map(([name, title, description]) => ({ name, title, description, preamble: `#show: ${name}\n` }));
 
 /**
- * edu as a typstream plugin: its files and preamble for the engine, templates, prompt kit, and
- * its stylesheet for the HTML renderer and standalone exports.
+ * edu as a typstream plugin: its files and preamble for the engine, templates, prompt kit, the
+ * classes the sanitizer keeps, and its stylesheet for the HTML renderer and standalone exports.
  */
 export const edu: TypstreamPlugin = {
   key: "edu",
@@ -83,5 +83,6 @@ export const edu: TypstreamPlugin = {
   engine: { files: eduFiles, preamble: eduPreamble },
   templates: eduTemplates,
   prompt: { catalogue: eduCatalogue, rules: eduPromptRules, examples: eduExamples },
+  sanitize: { allowClasses: ["edu-*"] },
   stylesheets: [eduCss],
 };

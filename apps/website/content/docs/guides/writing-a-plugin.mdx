@@ -178,6 +178,8 @@ export const chemistry = definePlugin({
     preamble: `#import "${ROOT}": *`,
     fixerModules: [new URL("./fixers.js", import.meta.url).href],
   },
+  // The renderer drops classes nobody listed, so the page's own can't style a document.
+  sanitize: { allowClasses: ["acme-*"] },
   stylesheets: [CSS],
   prompt: {
     catalogue: [
@@ -226,7 +228,7 @@ The model can now write `#reaction(conditions: [heat])[$2 H_2 + O_2 -> 2 H_2 O$]
 | `engine.fixerModules` | engine worker | ES module URLs whose default export is a `DiagnosticFixer` or an array of them. Loaded inside the worker, once per URL. |
 | `engine.fonts` | engine worker | Fonts for the engine. Worker-wide: see below. Beta. |
 | `templates` | dom, react | Named document setups (`template="worksheet"`): a preamble and default `sys.inputs`. A later plugin's template replaces an earlier one's of the same name. |
-| `sanitize` | dom | Extra tags and attributes the HTML sanitizer lets through. Scripts, event handlers and URL-loading attributes stay blocked whatever a plugin says. |
+| `sanitize` | dom | Extra tags, attributes and classes the HTML sanitizer lets through. Scripts, event handlers and URL-loading attributes stay blocked whatever a plugin says. |
 | `stylesheets` | dom | CSS for the HTML your Typst writes, injected next to the renderer's and included in standalone HTML exports. |
 | `prompt` | your app | The function catalogue, rules and few-shot examples to tell the model about your Typst API. A planned `@typstream/ai` package will read it too. |
 | `islands` | ([#28](https://github.com/ikramhasan/typstream/issues/28)) | Interactive components the renderer swaps in for Typst markers. Reserved; not rendered yet. Beta. |
@@ -277,6 +279,7 @@ resolvePlugins([chemistry, edu]).map((p) => p.key); // ["edu", "acme/chemistry"]
 - **Branch on the target** with `context target()` where the HTML and paged output should differ, and write semantic HTML with classes your `stylesheets` style.
 - **Keep CSS overridable.** Scope rules to the renderer's root and keep their specificity at zero, so apps can override them: `:where(.typstream .acme-formula) { … }`. Follow the theme's custom properties (`--typstream-foreground`, `--typstream-muted`, `--typstream-link`, …) so dark mode works. See [Theming](/docs/guides/theming).
 - **Allow only what you write.** If your HTML needs a tag or attribute the sanitizer drops, list exactly those in `sanitize` (`{ allowTags: ["details"], allowAttrs: { details: ["open"] } }`).
+- **Declare your classes.** The sanitizer drops classes it doesn't know, so a document can't borrow the page's. List the ones your Typst writes in `sanitize.allowClasses`, by name or by a prefix of your own (`["quiz-*"]`, as edu does with `edu-*`), and style only those.
 
 ## Writing a fixer module
 

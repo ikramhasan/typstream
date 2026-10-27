@@ -35,7 +35,7 @@ Teachers' documents are best described in Typst itself: a question, a blank, an 
 | `engine.fixerModules` | engine worker | ES module URLs whose default export is a diagnostic fixer, loaded inside the worker. |
 | `engine.fonts` | engine worker | Fonts; engine-wide only (see below). |
 | `templates` | dom, react | Named document setups (`template="worksheet"`): a preamble and default `sys.inputs`. |
-| `sanitize` | dom | Extra tags and attributes the HTML sanitizer lets through. Scripts, event handlers and URL attributes stay blocked. |
+| `sanitize` | dom | Extra tags, attributes and classes the HTML sanitizer lets through. Scripts, event handlers and URL attributes stay blocked. |
 | `stylesheets` | dom | CSS for the HTML the plugin's Typst writes, in the renderer and in standalone HTML exports. |
 | `prompt` | your app | The function catalogue, rules and examples to give the model. |
 | `islands`, `editor` | reserved | Interactive components ([#28](https://github.com/ikramhasan/typstream/issues/28)) and the future editor. Typed, but nothing reads them yet. |

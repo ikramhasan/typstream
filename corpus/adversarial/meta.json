@@ -31,7 +31,7 @@
     "category": "hostile-output",
     "allowedWarnings": ["was ignored"],
     "tags": ["html", "sanitizer", "css"],
-    "notes": "Event handlers, URL attributes, CSS that loads or leaves the document's box, `is`, data-* and clobbering ids.",
+    "notes": "Event handlers, URL attributes, CSS that loads or draws outside the document's element (fixed, absolute, relative, negative margins, transforms, shadows, the host page's utility classes), `is`, data-* and clobbering ids.",
     "expectedPages": 1
   },
   "hostile-html-elements": {

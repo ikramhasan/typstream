@@ -71,7 +71,7 @@ describe("blocks", () => {
   });
 
   it("splits inside a template's wrapper and rebuilds it when it changes", () => {
-    const r = mount();
+    const r = mount({ plugins: [{ key: "t", sanitize: { allowClasses: ["tpl", "other"] } }] });
     r.update(doc(`${anchor(0)}<div class="tpl">${anchor(10)}<p>a</p><p>b</p></div>`));
     const wrapper = r.root.firstElementChild as Element;
     expect(wrapper.className).toBe("tpl");
@@ -281,6 +281,44 @@ describe("styles and theme", () => {
     expect(r.root.innerHTML).toBe("");
     expect(r.root.classList.contains("typstream")).toBe(false);
     expect(r.root.getAttribute("style")).toBeFalsy();
+  });
+
+  it("keeps the document inside its element, whatever the page's CSS", () => {
+    // Utility classes as Tailwind writes them, and a page rule on an element a document can write.
+    const page = document.createElement("style");
+    page.textContent =
+      ".fixed{position:fixed}.inset-0{inset:0}.z-50{z-index:50} header{position:fixed;inset:0;z-index:50}" +
+      " .typstream *{pointer-events:auto !important}";
+    document.head.append(page);
+    const r = mount();
+    r.root.style.cssText += "width: 200px; margin: 100px";
+    r.update(
+      doc(
+        '<p>text</p><div class="fixed inset-0 z-50">a</div><header>b</header>' +
+          '<div style="position: absolute; inset: -100vh -100vw; z-index: 2147483647">c</div>' +
+          '<div style="position: relative; left: -50vw; width: 300vw; height: 300vh">d</div>' +
+          '<div style="margin: -500px; width: 2000px; height: 2000px; pointer-events: none">e</div>' +
+          '<div style="transform: scale(100)">f</div>',
+      ),
+    );
+    try {
+      expect(r.root.querySelector(".fixed")).toBeNull();
+      const box = r.root.getBoundingClientRect();
+      const escaped: string[] = [];
+      for (let x = 2; x < innerWidth; x += 10)
+        for (let y = 2; y < innerHeight; y += 10) {
+          if (x >= box.left - 1 && x <= box.right + 1 && y >= box.top - 1 && y <= box.bottom + 1) continue;
+          const hit = document.elementFromPoint(x, y);
+          if (hit && r.root.contains(hit)) escaped.push(`${x},${y} ${hit.textContent}`);
+        }
+      expect(escaped.slice(0, 5)).toEqual([]);
+      // Inside, the document is still there.
+      expect(r.root.contains(document.elementFromPoint(box.left + 5, box.top + 5))).toBe(true);
+      // Nothing it overflows with makes the page scroll.
+      expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(innerWidth);
+    } finally {
+      page.remove();
+    }
   });
 
   it("has Typst's MathML rules", () => {
