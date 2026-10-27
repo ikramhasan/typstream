@@ -1,0 +1,149 @@
+---
+title: "@typstream/ai"
+description: typstream with the Vercel AI SDK. An assistant message is a Typst document; textOf, isStreaming and textStream read its text and whether more is coming, from useChat or without React.
+icon: Package
+---
+
+`@typstream/ai` connects typstream to the [Vercel AI SDK](https://ai-sdk.dev). When the model answers in Typst, an
+assistant message is a document. The package reads two things from the message: its text, and whether more of that
+text is coming. They are what `<Typstream>` (or `mountTypstream`) takes as `source` and `isStreaming`.
+
+It reads AI SDK messages by their shape and imports nothing from `ai`, so it adds no dependency and works with AI SDK 5
+and later. It's tested against AI SDK 7.
+
+<Callout title="Streaming edits are coming">
+  Commands that rewrite one part of a document ("rewrite question 3") streaming into just that part are designed on
+  [#34](https://github.com/ikramhasan/typstream/issues/34) and not built yet. This package does generation: one answer,
+  one document.
+</Callout>
+
+## When to use it
+
+Use it when your app streams Typst through the AI SDK: `useChat` in React, or the SDK's transport and stream reader
+without React. On the server, `streamText()`'s `textStream` is already a stream of chunks, so you don't need it there.
+
+## Install
+
+```npm
+npm install @typstream/ai typstream ai @ai-sdk/react
+```
+
+## With useChat
+
+```tsx title="app/page.tsx"
+"use client";
+
+import { useChat } from "@ai-sdk/react";
+import { isStreaming, textOf } from "@typstream/ai";
+import { Typstream } from "typstream";
+
+export default function Chat() {
+  const chat = useChat();
+  return chat.messages.map((message) =>
+    message.role === "user" ? (
+      <p key={message.id}>{textOf(message)}</p>
+    ) : (
+      <Typstream key={message.id} source={textOf(message)} isStreaming={isStreaming(message, chat)} animated caret />
+    ),
+  );
+}
+```
+
+One `<Typstream>` per assistant message, keyed by the message's id. [Next.js and the AI
+SDK](/docs/getting-started/nextjs-ai-sdk) builds the whole app around it.
+
+## Without React
+
+`DefaultChatTransport` posts the conversation to your route and returns its UI message stream. `readUIMessageStream`
+turns that stream into snapshots of the answer, and `textStream` turns the snapshots into chunks for `mountTypstream`'s
+`stream`. The document finishes (final mode) when the stream ends. Add the plugins and the math font as [Without a
+framework](/docs/getting-started/vanilla) shows.
+
+```ts
+import { mountTypstream } from "@typstream/dom";
+import { createEngine, engineWorker } from "@typstream/engine";
+import { textStream } from "@typstream/ai";
+import { DefaultChatTransport, readUIMessageStream } from "ai";
+
+const engine = createEngine({ spawn: engineWorker() });
+const transport = new DefaultChatTransport({ api: "/api/chat" });
+
+const chunks = await transport.sendMessages({
+  chatId: "worksheet",
+  messages: [{ id: "1", role: "user", parts: [{ type: "text", text: "A worksheet on fractions" }] }],
+  trigger: "submit-message",
+  messageId: undefined,
+  abortSignal: undefined,
+});
+mountTypstream(document.querySelector("#answer")!, {
+  engine,
+  target: "paged",
+  stream: textStream(readUIMessageStream({ stream: chunks })),
+});
+```
+
+## API
+
+| Export | What it is |
+| --- | --- |
+| [`textOf`](#textof) | The document a message holds. |
+| [`isStreaming`](#isstreaming) | Whether more of it is coming. |
+| [`textStream`](#textstream) | A message's text as chunks, from its snapshots. |
+| [`MessageLike`, `ChatLike`](#types) | What the functions read of AI SDK messages and chats. |
+
+### textOf
+
+```ts
+function textOf(message: MessageLike): string;
+```
+
+The message's text parts, joined in order. Reasoning, tool, file, source and data parts aren't part of the document.
+Before the first text arrives it's `""`.
+
+### isStreaming
+
+```ts
+function isStreaming(message: MessageLike, chat: ChatLike): boolean;
+```
+
+True while the chat is answering with this message (`status` is `submitted` or `streaming`, and it's the last message)
+and its text hasn't ended: a text part is still open, or none has started (the model is still thinking). False for
+user messages and for every earlier answer. Pass `useChat()`'s result, or an AI SDK `Chat`.
+
+The answer finishes as soon as its text ends, a moment before the chat's status is `ready`.
+
+<Callout type="warn" title="Why not the part's own state">
+  A text part's `state` turns `"done"` only when the model ends it. When an answer stops early (the user presses stop,
+  the network fails), the AI SDK leaves it `"streaming"` and only the chat's `status` changes. Read from the part
+  alone, the document would never finish. Read from `status === "streaming"` alone, every earlier answer would stream
+  again, and start over, whenever a new one streams.
+</Callout>
+
+If a later step adds more text to a message that had finished (text after a tool call), the message streams again,
+and `<Typstream>` starts that document over with the longer text.
+
+### textStream
+
+```ts
+function textStream(messages: AsyncIterable<MessageLike>): AsyncGenerator<string>;
+```
+
+Yields what each snapshot of a message adds to its text: the chunks `stream` reads. The snapshots are of one message
+as it streams, as `readUIMessageStream` yields them. A snapshot whose text doesn't extend the previous one throws,
+which ends the document's stream.
+
+### Types
+
+<auto-type-table path="packages/ai/src/messages.ts" name="MessageLike" />
+
+<auto-type-table path="packages/ai/src/messages.ts" name="MessagePartLike" />
+
+<auto-type-table path="packages/ai/src/messages.ts" name="ChatLike" />
+
+AI SDK's `UIMessage` is a `MessageLike`, and `useChat()`'s result and `Chat` are `ChatLike`s, so you never build them
+yourself. AI SDK 4's messages (`content`, `toolInvocations`) aren't supported.
+
+## The system prompt
+
+The model needs to be told to answer in Typst. `buildSystemPrompt` from `@typstream/edu` writes that prompt for
+teachers' documents; see [Prompting](/docs/guides/prompting).

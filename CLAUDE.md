@@ -33,6 +33,8 @@ packages/dom      @typstream/dom: framework-free renderers. `src/html/`: HTML re
                   `src/export/`: `standaloneHtml`, a downloadable file from an HTML export (theme, CSS, CSP).
 packages/react    @typstream/react: <Typstream>, TypstreamProvider, useTypstream(); a thin layer over mountTypstream.
 packages/typstream  typstream: the convenience package (<Typstream> with html-compat, the math font and universe's packages; re-exports).
+packages/ai       @typstream/ai: typstream with AI SDKs. Generation for now: an assistant message as a document (`textOf`,
+                  `isStreaming`, `textStream`), read structurally, so no `ai` dependency; streaming edits are designed on #34.
 tools/typst-syntax-oracle   Typst's real parser and lexer compiled to wasm for Node; the ground truth in heal's tests.
 tools/compile-oracle        Do healed prefixes compile? heal × engine-wasm over the corpus, then the engine's fixers and fallback;
                             error classes, the prefix compile rate, and final-mode renders of every corpus document.
@@ -119,9 +121,13 @@ In `packages/react`:
 - `pnpm size`: ≤ 17.3 KB gzipped including `@typstream/dom` (React and the engine external).
 - Its bundle starts with `"use client"` (tsup banner), as does `typstream`'s, for Next.js's App Router.
 
+In `packages/ai`: `pnpm test` runs the helpers through AI SDK 7 itself (a devDependency): recorded `corpus/llm` streams
+sent as UI message streams, read back by `readUIMessageStream`, `DefaultChatTransport` and a `Chat`, including `stop()`
+and a failed stream (a text part stays `"streaming"` then; only the chat's status changes). `pnpm size`: ≤ 0.5 KB gzipped.
+
 In `examples/strict-csp`: `pnpm test` builds the page, serves it with the policy in `csp.mjs` and fails on any CSP violation or console error in Chromium, Firefox and WebKit (`BROWSERS=` picks some). Build the packages first (`pnpm turbo run build --filter=@typstream/example-strict-csp^...`). CI runs it in each browser's `Engine (<browser>)` job. Hostile documents go in `corpus/adversarial/hostile-*.typ` (category `hostile-…`); the engine's and the browser suites' `security.test.ts` run them all.
 
-In `examples/nextjs-ai-sdk`: `pnpm test` builds the app (Turbopack) and streams one answer into `<Typstream>` in Chromium, failing on any error frame. Without `ANTHROPIC_API_KEY` the route replays a recorded worksheet; build the packages first (`pnpm turbo run build --filter=typstream...`). CI runs it in the `Engine (chromium)` job.
+In `examples/nextjs-ai-sdk`: `pnpm test` builds the app (Turbopack) and streams one answer into `<Typstream>` in Chromium, failing on any error frame. Without `ANTHROPIC_API_KEY` the route replays a recorded worksheet; build the packages first (`pnpm turbo run build --filter=@typstream/example-nextjs-ai-sdk^...`). CI runs it in the `Engine (chromium)` job.
 
 In `packages/heal`:
 - `pnpm test:long`: 20,000-run property campaign (minutes).

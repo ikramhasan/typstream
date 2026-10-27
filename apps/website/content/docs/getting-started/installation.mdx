@@ -28,6 +28,7 @@ The simplest way to use the built packages is to put your app inside the reposit
 | An app without React | `@typstream/dom` and `@typstream/engine` | `mountTypstream`, a document in an element, and the renderers it uses. You add html-compat, the packages and the math font yourself. |
 | A server that validates, renders or repairs documents | `@typstream/node` | `validate`, `render` (PDF, HTML, SVG), `formatDiagnosticsForLLM`, `fixLoop`, and a WebSocket protocol server. |
 | Your own pipeline that only needs healing | `@typstream/heal` | `heal()` and `createHealer()`: any prefix of streamed Typst in, a source that parses out. Plain TypeScript, no wasm and no worker. |
+| A chat on the Vercel AI SDK | `@typstream/ai`, next to one of the above | `textOf` and `isStreaming`: an assistant message as `<Typstream>`'s `source` and `isStreaming`, including answers that stop early; `textStream` for apps without React. |
 | Worksheets, quizzes and exams | `@typstream/edu`, next to one of the above | The edu vocabulary (`#question`, `#mcq`, `#blank`, …) as a plugin, its CSS, and the prompt kit. |
 
 ```npm

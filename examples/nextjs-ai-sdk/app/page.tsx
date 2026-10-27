@@ -1,12 +1,15 @@
 "use client";
-// A chat whose answers are Typst documents: useChat streams the model's text
-// parts, and each part renders as a <Typstream>. It heals every prefix so it
+// A chat whose answers are Typst documents: useChat streams the model's
+// answers, and each one renders as a <Typstream> (@typstream/ai's textOf and
+// isStreaming read the document and whether it is still being written from the
+// message). It heals every prefix so it
 // compiles, keeps the last good render while one doesn't, and finishes the
 // document (strict compile, no caret) once the answer is complete. All answers
 // share one engine worker; only visible or streaming ones compile. <Telemetry>
 // wires typstream's events to the console and an analytics sink.
 
 import { useChat } from "@ai-sdk/react";
+import { isStreaming, textOf } from "@typstream/ai";
 import { useState } from "react";
 import { Typstream, useTypstream } from "typstream";
 import { Telemetry } from "./telemetry";
@@ -43,10 +46,10 @@ const Answer = ({ text, streaming, target }: { text: string; streaming: boolean;
 };
 
 export default function Page() {
-  const { messages, sendMessage, status } = useChat();
+  const chat = useChat();
+  const { messages, sendMessage, status } = chat;
   const [input, setInput] = useState("A one-page worksheet on the Pythagorean theorem for grade 8");
   const [target, setTarget] = useState<Target>("html");
-  const last = messages[messages.length - 1];
 
   return (
     <Telemetry>
@@ -60,21 +63,12 @@ export default function Page() {
           </select>
         </label>
         {messages.map((message) =>
-          message.parts.map((part, i) =>
-            part.type !== "text" ? null : message.role === "user" ? (
-              // biome-ignore lint/suspicious/noArrayIndexKey: a message's parts never reorder.
-              <p key={`${message.id}-${i}`} className="user">
-                {part.text}
-              </p>
-            ) : (
-              <Answer
-                // biome-ignore lint/suspicious/noArrayIndexKey: a message's parts never reorder.
-                key={`${message.id}-${i}`}
-                text={part.text}
-                streaming={status === "streaming" && message.id === last?.id}
-                target={target}
-              />
-            ),
+          message.role === "user" ? (
+            <p key={message.id} className="user">
+              {textOf(message)}
+            </p>
+          ) : (
+            <Answer key={message.id} text={textOf(message)} streaming={isStreaming(message, chat)} target={target} />
           ),
         )}
         <form

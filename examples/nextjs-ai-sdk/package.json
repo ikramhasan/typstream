@@ -13,6 +13,7 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.88",
     "@ai-sdk/react": "^4.0.157",
+    "@typstream/ai": "workspace:*",
     "ai": "^7.0.153",
     "next": "^16.4.3",
     "react": "^19.3.1",
