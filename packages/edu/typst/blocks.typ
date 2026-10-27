@@ -11,6 +11,33 @@
   remember: rgb("#b45309"),
 )
 
+// A thin frame with its label set into the top edge on the starting side, like a fieldset's
+// legend: it groups without filling the page with colour, and it prints in black and white.
+#let _framed(color, label, body) = context {
+  let side = _start-side()
+  let inset = (x: 11pt, top: if label == none { 9pt } else { 11pt }, bottom: 9pt)
+  // The label's box covers the stroke in the page's colour.
+  let paper = if page.fill in (auto, none) { white } else { page.fill }
+  block(
+    width: 100%,
+    above: if label == none { 1.1em } else { 1.6em },
+    below: 1.1em,
+    inset: inset,
+    stroke: 0.8pt + color,
+    radius: 4pt,
+    {
+      if label != none {
+        let tab = box(fill: paper, inset: (x: 4pt, y: 1pt), label)
+        // Centred on the stroke: half the label's height above the frame's top edge.
+        let h = measure(tab).height
+        let (align, dx) = if side == "left" { (left, -4pt) } else { (right, 4pt) }
+        place(top + align, dx: dx, dy: -inset.top - h / 2, tab)
+      }
+      body
+    },
+  )
+}
+
 /// A highlighted box for a note, tip, warning, definition, worked example or something to
 /// remember. Its title defaults to the kind's name in the document's language.
 ///
@@ -31,20 +58,7 @@
         body
       })
     } else {
-      let side = _start-side()
-      block(
-        width: 100%,
-        above: 1.1em,
-        below: 1.1em,
-        inset: (x: 10pt, y: 8pt),
-        fill: color.lighten(92%),
-        stroke: ((side): 3pt + color),
-        radius: if side == "left" { (right: 3pt) } else { (left: 3pt) },
-        {
-          if title != none { block(below: 0.6em, text(weight: "bold", fill: color.darken(15%), title)) }
-          body
-        },
-      )
+      _framed(color, if title != none { text(weight: "bold", fill: color, title) }, body)
     }
   }
 }
@@ -64,10 +78,7 @@
       body
     })
   } else {
-    block(width: 100%, above: 1.1em, below: 1.1em, inset: 10pt, stroke: 0.6pt + _rule, radius: 2pt, {
-      block(below: 0.6em, strong(_word("instructions")))
-      body
-    })
+    _framed(_rule, strong(_word("instructions")), body)
   }
 }
 
