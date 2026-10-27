@@ -26,10 +26,14 @@ runs:
       with:
         targets: wasm32-unknown-unknown
 
+    # One target/ cache for every job (the default key includes the job's name: each job that built saved its own
+    # ~350 MB copy), saved only from main, whose caches PRs can read.
     - if: steps.dist.outputs.cache-hit != 'true'
       uses: Swatinem/rust-cache@v2
       with:
         workspaces: packages/engine-wasm -> target
+        shared-key: engine-wasm
+        save-if: ${{ github.ref == 'refs/heads/main' }}
 
     # wasm-bindgen-cli must match the wasm-bindgen crate in Cargo.lock exactly, so read it from there.
     - if: steps.dist.outputs.cache-hit != 'true'

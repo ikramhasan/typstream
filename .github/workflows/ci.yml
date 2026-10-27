@@ -16,8 +16,8 @@ concurrency:
 permissions:
   contents: read
 
-# Every job's pnpm/setup installs this Node and the pnpm pinned in package.json's packageManager,
-# then runs `pnpm install --frozen-lockfile` against a cached store.
+# Every job's ./.github/actions/pnpm installs this Node and the pnpm pinned in package.json's packageManager,
+# then runs `pnpm install --frozen-lockfile` against a store cached once per lockfile (saved by lint, on main).
 env:
   NODE: node@24
   # engine-wasm's own checks need native typst and cargo; only the engine jobs have them. Every job restores its
@@ -36,10 +36,15 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # actions: write lets ./.github/actions/pnpm delete the store caches of earlier lockfiles.
+    permissions:
+      contents: read
+      actions: write
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/setup@v3
-        with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
+      # The one job that saves the pnpm store, on pushes to main: PRs restore main's.
+      - uses: ./.github/actions/pnpm
+        with: { runtime: "${{ env.NODE }}", save: "${{ github.event_name == 'push' }}" }
       - run: pnpm check
       # TODO(#3): layering check (dependency-cruiser), API report diff (api-extractor), publint and attw.
 
@@ -50,8 +55,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/engine-wasm
-      - uses: pnpm/setup@v3
-        with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
+      - uses: ./.github/actions/pnpm
+        with: { runtime: "${{ env.NODE }}" }
       - run: pnpm check-types $NOT_ENGINE
 
   test:
@@ -62,8 +67,8 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/oracle
       - uses: ./.github/actions/engine-wasm
-      - uses: pnpm/setup@v3
-        with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
+      - uses: ./.github/actions/pnpm
+        with: { runtime: "${{ env.NODE }}" }
       - run: pnpm build $NOT_ENGINE
       - run: pnpm test $NOT_ENGINE
 
@@ -83,8 +88,8 @@ jobs:
           curl -fsSL "https://github.com/typst/typst/releases/download/v$TYPST_VERSION/typst-x86_64-unknown-linux-musl.tar.xz" \
             | tar -xJ -C "$RUNNER_TEMP"
           echo "$RUNNER_TEMP/typst-x86_64-unknown-linux-musl" >> "$GITHUB_PATH"
-      - uses: pnpm/setup@v3
-        with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
+      - uses: ./.github/actions/pnpm
+        with: { runtime: "${{ env.NODE }}" }
       - run: pnpm corpus:validate
 
   size:
@@ -94,8 +99,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/engine-wasm
-      - uses: pnpm/setup@v3
-        with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
+      - uses: ./.github/actions/pnpm
+        with: { runtime: "${{ env.NODE }}" }
       - run: pnpm size $NOT_ENGINE
 
   # Shared runners are too noisy for the strict latency budgets: report every number, fail only on a
@@ -107,8 +112,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/engine-wasm
-      - uses: pnpm/setup@v3
-        with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
+      - uses: ./.github/actions/pnpm
+        with: { runtime: "${{ env.NODE }}" }
       - run: pnpm build $NOT_ENGINE
       - name: node packages/heal/scripts/perf.mjs
         env:
@@ -161,13 +166,14 @@ jobs:
           workspaces: packages/engine-wasm -> target
           shared-key: engine-registry
           cache-targets: false
+          save-if: ${{ github.ref == 'refs/heads/main' }}
       - name: Install native typst
         run: |
           curl -fsSL "https://github.com/typst/typst/releases/download/v$TYPST/typst-x86_64-unknown-linux-musl.tar.xz" \
             | tar -xJ -C "$RUNNER_TEMP"
           echo "$RUNNER_TEMP/typst-x86_64-unknown-linux-musl" >> "$GITHUB_PATH"
-      - uses: pnpm/setup@v3
-        with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
+      - uses: ./.github/actions/pnpm
+        with: { runtime: "${{ env.NODE }}" }
       - run: ${{ matrix.run }}
 
   # The engine worker in real browsers (packages/engine/__tests__/browser): protocol conformance, streaming through
@@ -188,8 +194,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/engine-wasm
-      - uses: pnpm/setup@v3
-        with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
+      - uses: ./.github/actions/pnpm
+        with: { runtime: "${{ env.NODE }}" }
       # Inside Playwright's image (tools/repo/playwright-docker.mjs; the first step pulls it): its browsers and their
       # libraries are installed there, so no `playwright install --with-deps`, whose apt mirror has stalled these jobs
       # for 10+ minutes.
@@ -214,8 +220,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/engine-wasm
-      - uses: pnpm/setup@v3
-        with: { runtime: "${{ env.NODE }}", cache: true, require-lockfile: true }
+      - uses: ./.github/actions/pnpm
+        with: { runtime: "${{ env.NODE }}" }
       - run: pnpm --filter @typstream/browser-suites test:visual
         env:
           BROWSERS: ${{ matrix.browser }}
