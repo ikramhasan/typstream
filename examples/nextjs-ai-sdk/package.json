@@ -16,6 +16,7 @@
     "@base-ui/react": "^1.9.0",
     "@shadcn/react": "^0.3.1",
     "@typstream/edu": "workspace:*",
+    "@typstream/google-fonts": "workspace:*",
     "@typstream/universe": "workspace:*",
     "ai": "^7.0.153",
     "class-variance-authority": "^0.7.1",

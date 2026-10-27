@@ -341,6 +341,9 @@ importers:
       '@typstream/edu':
         specifier: workspace:*
         version: link:../../packages/edu
+      '@typstream/google-fonts':
+        specifier: workspace:*
+        version: link:../../packages/google-fonts
       '@typstream/universe':
         specifier: workspace:*
         version: link:../../packages/universe

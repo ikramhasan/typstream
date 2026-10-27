@@ -17,6 +17,7 @@
 
 import { useChat } from "@ai-sdk/react";
 import { edu, SHOW_ANSWERS_INPUT } from "@typstream/edu";
+import { googleFonts } from "@typstream/google-fonts";
 import type { UIDataTypes, UIMessage } from "ai";
 import {
   ArrowUpIcon,
@@ -59,8 +60,12 @@ const TARGETS = [
   { label: "Pages", value: "paged" },
 ] satisfies { label: string; value: Target }[];
 
-/** The vocabulary the route's prompt teaches. A constant: a new array would reopen every answer. */
-const PLUGINS = [edu];
+/**
+ * The vocabulary and fonts the route's prompt teaches: edu, and any Google Fonts family, which the
+ * engine downloads from jsDelivr the first time an answer names it. A constant: a new array would
+ * reopen every answer.
+ */
+const PLUGINS = [edu, googleFonts];
 
 /**
  * The images the model's searches found: resized ones on thumb.wikimedia.org, small originals on
@@ -173,10 +178,15 @@ const SUGGESTIONS: { group: string; items: Suggestion[] }[] = [
     ],
   },
   {
-    group: "Languages",
+    group: "Languages and fonts",
     items: [
       { label: "Arabic", prompt: "A short multiple-choice quiz in Arabic for grade 4 on the solar system." },
       { label: "Bengali", prompt: "A grade 3 multiplication quiz in Bengali, 8 questions." },
+      {
+        label: "Fonts",
+        prompt:
+          "A grade 2 handwriting practice sheet on animal names, in a friendly handwritten font with rounded headings.",
+      },
     ],
   },
 ];
@@ -232,61 +242,91 @@ const Action = ({ label, onClick, disabled, children }: ActionProps) => (
 
 type ActionProps = { label: string; onClick: () => void; disabled?: boolean; children: ReactNode };
 
-const CopySource = ({ text, disabled }: { text: string; disabled: boolean }) => {
-  const [copied, setCopied] = useState(false);
+type CopySourceProps = { target: Target; text: string; exportHtml: TypstreamInfo["exportHtml"]; disabled: boolean };
+
+/**
+ * Copies the answer in the view's form: as pages, its Typst source; as HTML, the file
+ * `useTypstream().exportHtml()` makes (the export with edu's CSS, the theme and the fonts the answer
+ * uses), which opens on its own. The HTML is a promise in a ClipboardItem, since Safari copies only
+ * within the click, not after an await.
+ */
+const CopySource = ({ target, text, exportHtml, disabled }: CopySourceProps) => {
+  const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
+  const what = target === "html" ? "HTML" : "Typst source";
+  const label = state === "copied" ? "Copied" : state === "failed" ? "Copy failed" : `Copy ${what}`;
+  const copy = () => {
+    const content = target === "html" ? exportHtml() : Promise.resolve(text);
+    return typeof ClipboardItem === "undefined"
+      ? content.then((t) => navigator.clipboard.writeText(t))
+      : navigator.clipboard.write([
+          new ClipboardItem({ "text/plain": content.then((t) => new Blob([t], { type: "text/plain" })) }),
+        ]);
+  };
   return (
     <Action
-      label={copied ? "Copied" : "Copy Typst source"}
+      label={label}
       disabled={disabled}
       onClick={() => {
-        void navigator.clipboard.writeText(text).then(() => {
-          setCopied(true);
-          setTimeout(() => setCopied(false), 2000);
-        });
+        copy()
+          .then(() => setState("copied"))
+          .catch((e: unknown) => {
+            console.error(`[typstream] copying the ${what} failed:`, e);
+            setState("failed");
+          })
+          .finally(() => setTimeout(() => setState("idle"), 2000));
       }}
     >
-      {copied ? <CheckIcon /> : <CopyIcon />}
+      {state === "copied" ? <CheckIcon /> : <CopyIcon />}
     </Action>
   );
 };
 
 /** A file name from the document's title (an edu template's `title:` or the first heading). */
-const fileName = (source: string) => {
+const fileName = (source: string, extension: string) => {
   const title = /title:\s*\[([^\]\n]+)\]/.exec(source)?.[1] ?? /^=+\s+(.+)$/m.exec(source)?.[1] ?? "document";
   const name = title
     .replace(/[*_#$\\]/g, "")
     .replace(/[^\p{L}\p{N}]+/gu, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 60);
-  return `${name || "document"}.pdf`;
+  return `${name || "document"}.${extension}`;
 };
 
-type ExportPdfProps = { exportPdf: TypstreamInfo["exportPdf"]; source: string; disabled: boolean };
+type ExportProps = { target: Target; source: string; disabled: boolean } & Pick<
+  TypstreamInfo,
+  "exportPdf" | "exportHtml"
+>;
 
 /**
- * Downloads the answer as PDF, from `useTypstream().exportPdf()`: compiled in final mode at the
- * document's own page size (fit-width only sizes the preview), with the component's `inputs`, so with
- * "Show answers" on the PDF is the teacher's copy too.
+ * Downloads the answer in the view's form, compiled in final mode with the component's `inputs`, so
+ * with "Show answers" on it's the teacher's copy too. As pages, a PDF (`useTypstream().exportPdf()`)
+ * at the document's own page size (fit-width only sizes the preview); as HTML, the file
+ * `exportHtml()` makes (edu's CSS, the theme and the fonts the answer uses), which opens on its own.
  */
-const ExportPdf = ({ exportPdf, source, disabled }: ExportPdfProps) => {
+const Export = ({ target, exportPdf, exportHtml, source, disabled }: ExportProps) => {
   const [state, setState] = useState<"idle" | "exporting" | "failed">("idle");
-  const label = state === "exporting" ? "Exporting…" : state === "failed" ? "Export failed" : "Export PDF";
+  const what = target === "html" ? "HTML" : "PDF";
+  const label = state === "exporting" ? "Exporting…" : state === "failed" ? "Export failed" : `Export ${what}`;
+  const file = (): Promise<Blob> =>
+    target === "html"
+      ? exportHtml().then((html) => new Blob([html], { type: "text/html" }))
+      : exportPdf().then((bytes) => new Blob([bytes as BlobPart], { type: "application/pdf" }));
   return (
     <Action
       label={label}
       disabled={disabled || state === "exporting"}
       onClick={() => {
         setState("exporting");
-        exportPdf()
-          .then((bytes) => {
-            const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: "application/pdf" }));
-            const link = Object.assign(window.document.createElement("a"), { href: url, download: fileName(source) });
-            link.click();
+        file()
+          .then((blob) => {
+            const url = URL.createObjectURL(blob);
+            const download = fileName(source, target === "html" ? "html" : "pdf");
+            Object.assign(window.document.createElement("a"), { href: url, download }).click();
             setTimeout(() => URL.revokeObjectURL(url), 1000);
             setState("idle");
           })
           .catch((e: unknown) => {
-            console.error("[typstream] PDF export failed:", e);
+            console.error(`[typstream] ${what} export failed:`, e);
             setState("failed");
             setTimeout(() => setState("idle"), 3000);
           });
@@ -399,8 +439,14 @@ const Answer = ({ text, streaming, target, answers, busy, onRetry }: AnswerProps
           </div>
         </article>
         <MessageFooter className="gap-1 px-0">
-          <CopySource text={text} disabled={streaming} />
-          <ExportPdf exportPdf={t.exportPdf} source={text} disabled={streaming} />
+          <CopySource target={target} text={text} exportHtml={t.exportHtml} disabled={streaming} />
+          <Export
+            target={target}
+            exportPdf={t.exportPdf}
+            exportHtml={t.exportHtml}
+            source={text}
+            disabled={streaming}
+          />
           <Action label="Retry" onClick={onRetry} disabled={busy}>
             <RotateCwIcon />
           </Action>
