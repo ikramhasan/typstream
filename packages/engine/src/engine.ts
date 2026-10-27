@@ -14,6 +14,7 @@ import {
   type RequestId,
   type Revision,
   type ServerNotification,
+  type TypstreamPlugin,
 } from "@typstream/core";
 import { type Clock, systemClock } from "./clock";
 import { Connection, type GoneReason, type SpawnEngine } from "./connection";
@@ -28,6 +29,7 @@ import {
   type LimitOptions,
   type WatchdogOptions,
 } from "./document";
+import { documentOptions, initializeOptions } from "./plugins";
 import { DEFAULT_SCHEDULE, type ScheduleOptions } from "./schedule";
 
 /**
@@ -39,6 +41,13 @@ export interface EngineOptions {
   spawn: SpawnEngine;
   /** Fonts and packages shared by every document, sent with `initialize`. @beta */
   initialize?: InitializeOptions;
+  /**
+   * Plugins whose worker-wide facets the engine loads (PLAN §8.0): their
+   * `engine.fonts`, `engine.packages` and `engine.fixerModules` join
+   * `initialize`'s. Their document facets (files, preamble, heal) apply to the
+   * documents that list them in {@link DocumentOptions.plugins}.
+   */
+  plugins?: readonly TypstreamPlugin[];
   /** Sent with `initialize`, for the worker's logs. */
   clientInfo?: { name: string; version?: string };
   /** Compile budgets and strikes; defaults in {@link DEFAULT_WATCHDOG}. */
@@ -165,6 +174,9 @@ class EngineImpl implements Engine, DocumentHost {
   private nextUri = 1;
   private readonly listeners = new Set<(event: EngineEvent) => void>();
   private disposed = false;
+  private readonly initialize: InitializeOptions | undefined;
+  /** Plugins already warned about for fonts the engine doesn't load. */
+  private readonly fontWarnings = new Set<string>();
 
   constructor(options: EngineOptions) {
     this.options = options;
@@ -173,6 +185,7 @@ class EngineImpl implements Engine, DocumentHost {
     this.limits = { ...DEFAULT_LIMITS, ...options.limits };
     this.schedule = { ...DEFAULT_SCHEDULE, ...options.schedule };
     this.recycleBytes = options.recycleBytes ?? DEFAULT_RECYCLE_BYTES;
+    this.initialize = initializeOptions(options.initialize, options.plugins ?? []);
     this.active = this.spawn();
     this.ready = this.active.ready;
   }
@@ -187,7 +200,17 @@ class EngineImpl implements Engine, DocumentHost {
       throw new Error(`document ${uri} is already open`);
     }
     const schedule = { ...this.schedule, ...options.schedule };
-    const doc = new DocumentImpl(uri, this, schedule, options);
+    const resolved = documentOptions(options, this.initialize?.fonts ?? []);
+    for (const { key } of resolved.fonts) {
+      if (this.fontWarnings.has(key)) continue;
+      this.fontWarnings.add(key);
+      this.emit({
+        type: "log",
+        level: "warn",
+        message: `plugin "${key}" brings fonts the engine doesn't have; pass the plugin to createEngine's plugins to load them`,
+      });
+    }
+    const doc = new DocumentImpl(uri, this, schedule, resolved.options);
     this.docs.set(uri, doc);
     if (this.broken) doc.engineFailed(this.broken);
     return doc;
@@ -282,7 +305,7 @@ class EngineImpl implements Engine, DocumentHost {
         protocolVersion: PROTOCOL_VERSION,
         capabilities: { pagedDiff: true },
         clientInfo: this.options.clientInfo,
-        options: this.options.initialize,
+        options: this.initialize,
       })
       .result.then((info) => {
         if (info.protocolVersion !== PROTOCOL_VERSION) {

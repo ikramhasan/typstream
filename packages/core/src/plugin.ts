@@ -246,6 +246,11 @@ export interface TypstreamPlugin {
   islands?: Record<string, IslandSpec>;
   /** Extra tags and attributes (by tag, `"*"` for all) the sanitizer lets through. */
   sanitize?: { allowTags?: string[]; allowAttrs?: Record<string, string[]> };
+  /**
+   * CSS for the HTML this plugin's Typst writes, added to the HTML renderer and
+   * to standalone HTML exports, after earlier plugins' and before the app's own.
+   */
+  stylesheets?: string[];
 
   /** Editor (future). @beta */
   editor?: EditorFacet;
@@ -261,3 +266,48 @@ export interface TypstreamPlugin {
  * @public
  */
 export const definePlugin = <P extends TypstreamPlugin>(plugin: P): P => plugin;
+
+/**
+ * The plugins to load, in the order their facets apply: each key once, and
+ * every plugin after the plugins it depends on.
+ *
+ * - A key given more than once is loaded once, as its last definition, at the
+ *   place of its first (a provider's plugin overridden by a component's).
+ * - Otherwise plugins keep the order they were given in; a dependency given
+ *   later moves up to just before the first plugin that needs it.
+ * - A dependency that isn't among `plugins`, a cycle of dependencies, or a
+ *   plugin without a key is an error: the facets of a half-loaded plugin set
+ *   would compile documents differently, unnoticed.
+ *
+ * Facets this version of typstream doesn't know (e.g. a future `editor` facet)
+ * are left alone: every package reads only the facets it understands.
+ * @public
+ */
+export const resolvePlugins = <P extends TypstreamPlugin>(plugins: readonly P[]): P[] => {
+  const byKey = new Map<string, P>();
+  for (const plugin of plugins) {
+    if (typeof plugin?.key !== "string" || !plugin.key) throw new Error("typstream plugin without a key");
+    byKey.set(plugin.key, plugin);
+  }
+  const order: P[] = [];
+  /** Keys of the plugins being placed, each a dependency of the one before: a cycle if one comes back. */
+  const path: string[] = [];
+  const place = (plugin: P): void => {
+    if (order.includes(plugin)) return;
+    const at = path.indexOf(plugin.key);
+    if (at >= 0)
+      throw new Error(
+        `typstream plugins depend on each other in a cycle: ${[...path.slice(at), plugin.key].join(" → ")}`,
+      );
+    path.push(plugin.key);
+    for (const key of plugin.dependencies ?? []) {
+      const dependency = byKey.get(key);
+      if (!dependency) throw new Error(`typstream plugin "${plugin.key}" depends on "${key}", which isn't loaded`);
+      place(dependency);
+    }
+    path.pop();
+    order.push(plugin);
+  };
+  for (const plugin of byKey.values()) place(plugin);
+  return order;
+};

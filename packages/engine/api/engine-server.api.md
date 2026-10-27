@@ -155,6 +155,7 @@ export const serve: (adapter: EngineAdapter, scope?: WorkerScope, options?: Pick
 
 // @public
 export interface ServerOptions {
+    clientFixers?: boolean;
     fixers?: readonly DiagnosticFixer[];
     onFatal?(error: unknown): void;
     // @beta

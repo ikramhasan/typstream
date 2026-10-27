@@ -240,8 +240,9 @@ export const createProtocolServer = (options: ProtocolServerOptions = {}): Proto
           if ("id" in message) outstanding.delete(message.id);
           if (!closed) send(message);
         },
-        // Clients are untrusted: their package lists would make the server fetch any URL.
-        { packages: { trustClient: false } },
+        // Clients are untrusted: their package lists would make the server fetch any URL, and
+        // their fixer modules would run code in it.
+        { packages: { trustClient: false }, clientFixers: false },
       );
       const reply = (message: ServerMessage): void => {
         if (!closed) send(message);

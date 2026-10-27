@@ -1,5 +1,5 @@
 // A downloadable HTML file from an HTML export (PLAN §6.5, #18): Typst's HTML
-// document plus the renderer's theme, the app's stylesheets (html-compat's) and
+// document plus the renderer's theme, plugins' and the app's stylesheets and
 // a math font, so it looks like the preview when opened on its own.
 //
 // The HTML is LLM-written and isn't sanitized here: the renderer's sanitizer
@@ -9,15 +9,19 @@
 // from the network or submit forms. It's a string transform (Typst's
 // serializer is regular, see ../html/split.ts), so it runs anywhere.
 
+import type { TypstreamPlugin } from "@typstream/core";
 import { directionOf } from "../html/dir";
 import { THEME_CSS } from "../html/theme";
+import { stylesheetsOf } from "../plugins";
 
 /**
  * How {@link standaloneHtml} builds the file.
  * @public
  */
 export interface StandaloneHtmlOptions {
-  /** CSS added after the theme: html-compat's stylesheet, an app's own. */
+  /** Plugins whose `stylesheets` are added after the theme (html-compat's, edu's), in the order given. */
+  plugins?: readonly TypstreamPlugin[];
+  /** CSS added after the theme and the plugins' stylesheets: an app's own. */
   stylesheets?: readonly string[];
   /**
    * `light` (default: files get printed and shared), `dark`, or `auto`
@@ -77,7 +81,7 @@ const withAttr = (attrs: string, name: string, value: string, append = false): s
 
 /**
  * Makes an HTML export (`EngineDocument.exportHtml()`) a file that opens on
- * its own: the renderer's theme and `stylesheets` inline, the root class
+ * its own: the renderer's theme, the plugins' stylesheets and `stylesheets` inline, the root class
  * `typstream` on `<body>`, an optional math font, and a Content-Security-Policy
  * that keeps the document from running scripts or loading anything except
  * inline styles and `data:` images and fonts (plus `mathFont`'s origin when it
@@ -86,7 +90,7 @@ const withAttr = (attrs: string, name: string, value: string, append = false): s
  *
  * @example
  * ```ts
- * const file = standaloneHtml(await doc.exportHtml(), { stylesheets: [htmlCompatCss], mathFont });
+ * const file = standaloneHtml(await doc.exportHtml(), { plugins: [htmlCompat], mathFont });
  * const url = URL.createObjectURL(new Blob([file], { type: "text/html" }));
  * ```
  * @public
@@ -116,7 +120,7 @@ export const standaloneHtml = (html: string, options: StandaloneHtmlOptions = {}
     "form-action 'none'",
   ].join("; ");
   // `</style` would end the element early wherever it appears in the CSS.
-  const css = [fontFace, THEME_CSS, PAGE_CSS, ...(options.stylesheets ?? [])]
+  const css = [fontFace, THEME_CSS, PAGE_CSS, ...stylesheetsOf(options.plugins, options.stylesheets)]
     .join("\n")
     .replace(/<\/(style)/gi, "<\\/$1");
 

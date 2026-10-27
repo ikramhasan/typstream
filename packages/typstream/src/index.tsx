@@ -6,7 +6,7 @@
 // that drive documents themselves.
 
 import { baseFonts } from "@typstream/engine-wasm/fonts";
-import { htmlCompat, htmlCompatCss } from "@typstream/html-compat";
+import { htmlCompat } from "@typstream/html-compat";
 import { type TypstreamProps as BaseProps, Typstream as BaseTypstream } from "@typstream/react";
 import { universe } from "@typstream/universe";
 
@@ -16,23 +16,23 @@ const MATH_FONT = baseFonts.find((url) => url.pathname.includes("NewCMMath"));
 /** Props of {@link Typstream}. @public */
 export interface TypstreamProps extends BaseProps {
   /**
-   * Add `@typstream/html-compat` (its preamble, the sanitizer allowances and
-   * its stylesheet), so grids, alignment and shapes survive the HTML target.
-   * Default true.
+   * Add the `@typstream/html-compat` plugin (its preamble, the sanitizer
+   * allowances and its stylesheet), so grids, alignment and shapes survive the
+   * HTML target. Default true.
    */
   htmlCompat?: boolean;
   /**
-   * Let documents import the Typst packages `@typstream/universe` vendors
-   * (CeTZ, fletcher, cetz-plot, physica, unify, chemformula, alchemist),
-   * fetched from the app's own origin when a document imports one. Default true.
+   * Add the `@typstream/universe` plugin: documents may import the Typst
+   * packages it vendors (CeTZ, fletcher, cetz-plot, physica, unify,
+   * chemformula, alchemist), fetched from the app's own origin when a document
+   * imports one. Default true.
    */
   packages?: boolean;
 }
 
-const STYLESHEETS = [htmlCompatCss];
-
 /**
- * `@typstream/react`'s `<Typstream>` with html-compat and the math font set up.
+ * `@typstream/react`'s `<Typstream>` with the html-compat and universe plugins
+ * (before the `plugins` given) and the math font set up.
  *
  * @example
  * ```tsx
@@ -46,14 +46,12 @@ export const Typstream = ({
   htmlCompat: compat = true,
   packages = true,
   plugins,
-  stylesheets,
   mathFont,
   ...props
 }: TypstreamProps) => (
   <BaseTypstream
     {...props}
     plugins={[...(compat ? [htmlCompat] : []), ...(packages ? [universe] : []), ...(plugins ?? [])]}
-    stylesheets={compat ? [...STYLESHEETS, ...(stylesheets ?? [])] : stylesheets}
     mathFont={mathFont ?? MATH_FONT}
   />
 );

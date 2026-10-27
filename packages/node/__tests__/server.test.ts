@@ -192,6 +192,18 @@ describe("serving from Node", () => {
     c.close();
   });
 
+  it("never imports a client's fixer modules", async () => {
+    const run = `data:text/javascript,${encodeURIComponent("globalThis.typstreamRan = true; export default [];")}`;
+    const c = new TestClient(inProcess(server));
+    await c.request("initialize", { protocolVersion: 1, capabilities: {}, options: { fixerModules: [run] } });
+    await c.request("document/open", { uri: "a", rev: 1, text: "ok", fixerModules: [run] });
+    expect((await c.request("compile", { uri: "a", rev: 1, target: "html" })).status).toBe("ok");
+    expect((globalThis as { typstreamRan?: boolean }).typstreamRan).toBeUndefined();
+    const warnings = c.notifications().filter((n) => n.method === "$/log" && n.params.level === "warn");
+    expect(warnings).toHaveLength(2);
+    c.close();
+  });
+
   it("limits documents per connection and their size", async () => {
     const small = createProtocolServer({ engine, maxDocuments: 2, maxTextLength: 100 });
     const c = await ready(small);

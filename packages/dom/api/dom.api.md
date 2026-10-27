@@ -154,6 +154,7 @@ export const standaloneHtml: (html: string, options?: StandaloneHtmlOptions) => 
 // @public
 export interface StandaloneHtmlOptions {
     mathFont?: Uint8Array | string | URL;
+    plugins?: readonly TypstreamPlugin[];
     stylesheets?: readonly string[];
     theme?: "light" | "dark" | "auto";
     title?: string;

@@ -28,12 +28,14 @@ import {
   type Revision,
   type ServerNotification,
   type TextEdit,
+  type TypstreamPlugin,
 } from "@typstream/core";
 import { createHealer, type Healer, type HealOptions, type HealResult } from "@typstream/heal";
 import type { Clock } from "./clock";
 import { type Connection, WorkerGone } from "./connection";
 import { HangSearch } from "./hang";
 import { applyPaged } from "./paged";
+import type { ResolvedDocumentOptions } from "./plugins";
 import { compileInterval, type ScheduleOptions, updateEma } from "./schedule";
 
 /**
@@ -129,6 +131,14 @@ export interface DocumentOptions {
   packages?: PackageSpec[];
   /** Passed to `createHealer`. Use `finish()` rather than `final`. */
   heal?: HealOptions;
+  /**
+   * Plugins (PLAN §8.0) whose engine and heal facets apply to the document:
+   * their files, packages and preambles (before `preamble`), heal handlers and
+   * lint settings, and fixer modules, which the worker loads for this
+   * document. Fonts are the worker's: a plugin's `engine.fonts` load only from
+   * `createEngine`'s `plugins`. Fixed for the document's lifetime.
+   */
+  plugins?: readonly TypstreamPlugin[];
   /** Overrides the engine's schedule for this document. */
   schedule?: Partial<ScheduleOptions>;
   /**
@@ -150,6 +160,11 @@ export interface DocumentOptions {
 export interface EngineDocument {
   /** Names the document in the worker; unique among the engine's open documents. */
   readonly uri: DocumentUri;
+  /**
+   * Its plugins as they load (`resolvePlugins` from `@typstream/core`): each
+   * key once, dependencies first. Renderers apply their facets in this order.
+   */
+  readonly plugins: readonly TypstreamPlugin[];
   /** Appends streamed text. */
   push(chunk: string): void;
   /** Replaces the whole input (a growing `source` prop, a regenerated answer). */
@@ -350,12 +365,14 @@ const sameInputs = (a: Record<string, string> | undefined, b: Record<string, str
 /** @internal */
 export class DocumentImpl implements EngineDocument {
   readonly uri: DocumentUri;
+  readonly plugins: readonly TypstreamPlugin[];
   private readonly host: DocumentHost;
   private readonly schedule: ScheduleOptions;
   private readonly healer: Healer;
   private readonly preamble: string | undefined;
   private readonly fallback: boolean;
   private readonly packages: PackageSpec[] | undefined;
+  private readonly fixerModules: string[] | undefined;
   private healed: HealResult;
   private target: CompileTarget;
   private inputs: Record<string, string> | undefined;
@@ -412,8 +429,9 @@ export class DocumentImpl implements EngineDocument {
   private readonly eventListeners = new Set<(event: DocumentEvent) => void>();
   private disposed = false;
 
-  constructor(uri: DocumentUri, host: DocumentHost, schedule: ScheduleOptions, options: DocumentOptions) {
+  constructor(uri: DocumentUri, host: DocumentHost, schedule: ScheduleOptions, options: ResolvedDocumentOptions) {
     this.uri = uri;
+    this.plugins = options.plugins ?? [];
     this.host = host;
     this.schedule = schedule;
     this.healer = createHealer({ ...options.heal, final: false });
@@ -426,6 +444,7 @@ export class DocumentImpl implements EngineDocument {
     this.preamble = options.preamble;
     this.fallback = options.fallback !== false;
     this.packages = options.packages;
+    this.fixerModules = options.fixerModules;
     this.files = { ...options.files };
     this.state = this.snapshot();
     this.scheduleCompile();
@@ -687,6 +706,7 @@ export class DocumentImpl implements EngineDocument {
         preamble: this.preamble,
         files: this.files,
         packages: this.packages,
+        fixerModules: this.fixerModules,
       });
       this.openedIn = generation;
       this.pendingFiles = null;

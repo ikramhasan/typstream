@@ -86,9 +86,17 @@ export interface ServerOptions {
   /**
    * Layer 3 diagnostic fixers (PLAN §5.5), tried by priority. Default
    * {@link DEFAULT_FIXERS}; `[]` turns them off. Fixers from `initialize`'s
-   * `fixerModules` join these.
+   * and `document/open`'s `fixerModules` join these.
    */
   fixers?: readonly DiagnosticFixer[];
+  /**
+   * Import the fixer modules the client names (`initialize`'s and
+   * `document/open`'s `fixerModules`). Default true, for a worker serving its
+   * own page. Importing a module runs its code, so a server facing untrusted
+   * clients must set false (`@typstream/node` does): their lists are then
+   * ignored, with a warning.
+   */
+  clientFixers?: boolean;
   /**
    * Typst packages (PLAN §6.4): the server's own allowlist, whether to take the
    * client's, where packages without a URL come from. Default: only what the
@@ -149,6 +157,8 @@ interface Doc {
   shown: { target: CompileTarget; text: string } | null;
   /** Packages it may import, and those mounted in `compiler`. */
   packages: DocumentPackages;
+  /** Layer 3 fixers in the order they're tried: the server's, plus the document's fixer modules'. */
+  fixers: DiagnosticFixer[];
   /**
    * What the last compile lacked and is on its way (a lazy font), with that
    * compile's params to repeat once it arrives. Any compile replaces it.
@@ -265,6 +275,10 @@ class Server implements EngineServer {
   private readonly cancelled = new Set<RequestId>();
   /** Layer 3 fixers in the order they're tried; plugin modules join at `initialize`. */
   private fixers: DiagnosticFixer[];
+  /** Fixer modules loaded at `initialize`, which documents already have. */
+  private sharedModules = new Set<string>();
+  /** Documents' fixer modules by URL, each imported once. */
+  private readonly documentModules = new Map<string, Promise<DiagnosticFixer[]>>();
   private readonly packages: PackageStore;
 
   constructor(
@@ -483,6 +497,42 @@ class Server implements EngineServer {
     return r.pending && (await arrives(r.pending, EXPORT_WAIT_MS)) ? compile() : r;
   }
 
+  /**
+   * The server's fixers plus those of a document's fixer modules. Unlike
+   * `initialize`'s, a module that fails to load doesn't fail the request (the
+   * client would only see the document missing): the document compiles
+   * without it, and the failure is logged.
+   */
+  private async documentFixers(urls: readonly string[]): Promise<DiagnosticFixer[]> {
+    const own = [...new Set(this.clientModules(urls))].filter((url) => !this.sharedModules.has(url));
+    if (!own.length) return this.fixers;
+    const loaded = await Promise.all(
+      own.map(async (url) => {
+        const load = this.documentModules.get(url) ?? loadFixers(url);
+        this.documentModules.set(url, load);
+        try {
+          return await load;
+        } catch (e) {
+          // Tried again by the next document that lists it.
+          this.documentModules.delete(url);
+          this.post({
+            method: "$/log",
+            params: { level: "error", message: e instanceof Error ? e.message : String(e) },
+          });
+          return [];
+        }
+      }),
+    );
+    return orderFixers([...this.fixers, ...loaded.flat()]);
+  }
+
+  /** The fixer modules of a client's list the server may import: none unless it trusts the client. */
+  private clientModules(urls: readonly string[]): readonly string[] {
+    if (this.options.clientFixers !== false || !urls.length) return urls;
+    this.post({ method: "$/log", params: { level: "warn", message: "ignored the client's fixer modules" } });
+    return [];
+  }
+
   private unsupported(what: string): never {
     throw new ProtocolError("unsupported", `${this.adapter.info.name} doesn't support ${what}`);
   }
@@ -500,12 +550,14 @@ class Server implements EngineServer {
       }
       this.phase = "initializing";
       this.packages.setClientPackages(params.options?.packages);
+      const urls = this.clientModules(params.options?.fixerModules ?? []);
       try {
         const [, modules] = await Promise.all([
           this.adapter.init(params.options ?? {}),
-          Promise.all((params.options?.fixerModules ?? []).map(loadFixers)),
+          Promise.all(urls.map(loadFixers)),
         ]);
         this.fixers = orderFixers([...(this.options.fixers ?? DEFAULT_FIXERS), ...modules.flat()]);
+        this.sharedModules = new Set(urls);
       } catch (e) {
         this.phase = "new";
         throw e;
@@ -531,9 +583,10 @@ class Server implements EngineServer {
       return null;
     },
 
-    "document/open": async ({ uri, rev, text, preamble, files, packages }) => {
+    "document/open": async ({ uri, rev, text, preamble, files, packages, fixerModules }) => {
       this.ready();
       if (this.docs.has(uri)) throw new ProtocolError("document-already-open", `document ${uri} is already open`);
+      const fixers = await this.documentFixers(fixerModules ?? []);
       const compiler = this.adapter.open();
       try {
         // Before the document's files, so one at the same path replaces it.
@@ -563,6 +616,7 @@ class Server implements EngineServer {
           compiler.setFiles(files);
           doc.memo = null;
         }),
+        fixers,
       };
       this.docs.set(uri, doc);
       return null;
@@ -646,13 +700,13 @@ class Server implements EngineServer {
         let ok = !diagnostics.some(isError);
         fixes = [];
         let compiled = base;
-        if (!ok && this.fixers.length > 0) {
+        if (!ok && doc.fixers.length > 0) {
           const fixStart = performance.now();
           const outcome = await runFixers({
             text: base.text,
             settled: settledIn,
             mode,
-            fixers: this.fixers,
+            fixers: doc.fixers,
             diagnostics,
             deadline: received + FIX_BUDGET_MS[mode],
             compile: async (text, toBase) => {

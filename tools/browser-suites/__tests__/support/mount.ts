@@ -7,7 +7,7 @@
 import type { Artifact, PagedArtifact } from "@typstream/core";
 import { type MountedTypstream, registerMathFont, type TypstreamOptions } from "@typstream/dom";
 import { createEngine, type DocumentState, type Engine, type EngineOptions, fromWorker } from "@typstream/engine";
-import { htmlCompat, htmlCompatCss } from "@typstream/html-compat";
+import { htmlCompat } from "@typstream/html-compat";
 import { commands } from "vitest/browser";
 
 export interface CorpusDocument {
@@ -108,7 +108,6 @@ export const appOptions = (engine: Engine, entry: CorpusDocument, o: MountOption
   ...(o.theme ? { theme: o.theme } : {}),
   caret: o.caret ?? false,
   plugins: [htmlCompat],
-  stylesheets: [htmlCompatCss],
   files: entry.files,
   lazy: false,
 });

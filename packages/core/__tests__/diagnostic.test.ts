@@ -116,6 +116,7 @@ describe("plugin contract", () => {
       prompt: { catalogue: [{ name: "ce", signature: "ce(formula: str)", description: "A formula." }], rules: [] },
       islands: { molecule: { display: "block", propsSchema: {} } },
       sanitize: { allowTags: ["typstream-island"], allowAttrs: { "*": ["data-name"] } },
+      stylesheets: [".typstream .molecule { display: block }"],
       // Loosely typed until the editor exists.
       editor: { nodes: [{ type: "formula" }], someFutureFacet: true },
     });
