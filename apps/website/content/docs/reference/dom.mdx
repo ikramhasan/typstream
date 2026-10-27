@@ -60,9 +60,10 @@ The [vanilla JS guide](/docs/getting-started/vanilla) walks through it step by s
   finished and the error goes to `reportError`. Mounts given the same stream share one reader: each shows all of its
   text, including what arrived before it mounted, so a mount replaced while the stream continues loses nothing. The
   stream is closed when a chunk arrives after the last mount reading it is destroyed.
-- **In place or a new document.** `target`, `inputs` and `files` change in place. A different `engine`, `plugins`,
-  `preamble` or `template`, `heal` or `schedule` options, or switching to or from the fit-width layout opens a new
-  document; the old output stays until its first compile.
+- **In place or a new document.** `target`, `inputs` and `files` change in place, and the latest `resolveImage` is
+  the one called. A different `engine`, `plugins`, `preamble` or `template`, `heal` or `schedule` options, adding or
+  removing `resolveImage`, or switching to or from the fit-width layout opens a new document; the old output stays
+  until its first compile.
 - **Lazy.** The document opens when the element comes within one screen of the viewport, or as soon as it streams.
   Offscreen, finished documents apply changes when they scroll back. `lazy: false` opens it right away.
 - **Renderers follow the artifact's target**, so after `target` changes the old output stays until the first

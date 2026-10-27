@@ -275,7 +275,8 @@ export const conformance = (name: string, spawn: () => SpawnEngine, timeout = 30
         expect(html(await c.compile({ uri, rev: 1, target: "html" }))).toContain("Quiz 3");
         await c.request("document/setFiles", { uri, rev: 2, files: { "data/q.json": '{ "title": "Quiz 4" }' } });
         expect(html(await c.compile({ uri, rev: 2, target: "html" }))).toContain("Quiz 4");
-        await c.request("document/setFiles", { uri, rev: 3, files: { "pic.svg": null } });
+        // (A deleted image would show as a placeholder: the engine's missing-image fixer.)
+        await c.request("document/setFiles", { uri, rev: 3, files: { "data/q.json": null } });
         const gone = await c.compile({ uri, rev: 3, target: "html" });
         expect(gone.result.status).toBe("error");
         expect(errors(gone.diagnostics)[0]?.message).toMatch(/not found/);

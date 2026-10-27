@@ -15,6 +15,7 @@ export default defineConfig({
       ["@typstream/engine", "../engine/src/index.ts"],
       ["@typstream/engine/server", "../engine/src/server.ts"],
       ["@typstream/engine/websocket", "../engine/src/websocket.ts"],
+      ["@typstream/engine/images", "../engine/src/images.ts"],
       ["@typstream/heal", "../heal/src/index.ts"],
       ["@typstream/corpus", "../../corpus/src/index.ts"],
     ].map(([name, path]) => ({ find: new RegExp(`^${name}$`), replacement: new URL(path, import.meta.url).pathname })),

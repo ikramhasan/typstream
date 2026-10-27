@@ -78,6 +78,9 @@ const ENGINE_ERRORS: Record<string, string> = {
   "hostile-import-unlisted": "package @preview/typstream-hostile-not-a-package:0.0.1 is not allowed",
 };
 
+/** Hostile documents that render with a placeholder where Typst refused. */
+const PLACEHOLDERS = new Set(["hostile-image-url"]);
+
 describe("sandbox", { timeout: 60_000 }, () => {
   // Reads, images, imports, plugins and XML outside what the app mounted fail inside Typst.
   const failing = hostile.filter((e) => e.meta.expect === "error");
@@ -101,7 +104,9 @@ describe("sandbox", { timeout: 60_000 }, () => {
         const messages = r.errors.map((d) => d.message).join("\n");
         const expected = ENGINE_ERRORS[entry.name] ? [ENGINE_ERRORS[entry.name]] : (entry.meta.expectedErrors ?? []);
         for (const e of expected) expect.soft(messages, entry.name).toContain(e);
-        expect.soft(r.artifact, entry.name).toBeUndefined();
+        // An image it can't read shows as a placeholder (missing-image), which loads nothing from its URL.
+        if (PLACEHOLDERS.has(entry.name)) expect.soft(text(r.artifact), entry.name).not.toContain("tracker.example");
+        else expect.soft(r.artifact, entry.name).toBeUndefined();
       }
       expect(s.fatal).toEqual([]);
     });

@@ -23,7 +23,8 @@ import {
   SourceMap,
   type TextEdit,
 } from "@typstream/core";
-import { DEFAULT_LINT, heal, type LintRuleId } from "@typstream/heal";
+import { DEFAULT_LINT, heal, type LintRuleId, type ModeSpan, recognize } from "@typstream/heal";
+import { imageSources } from "../image-paths";
 import { typstString } from "./runtime";
 
 const LABEL = /^label `<(.+)>` does not exist in the document$/;
@@ -105,6 +106,100 @@ export const packageStub: DiagnosticFixer = {
       names.length === 1 ? `let ${names[0]} = ${stub}` : `let (${names.join(", ")}) = (${stub},) * ${names.length}`;
     return [{ from, to: d.span.to + tail[0].length, insert }];
   },
+};
+
+const IMAGE_ERROR = /^file not found \(searched at |^failed to decode image|^unknown image format$/;
+/** What precedes an image's source: the call's opening and maybe the argument's name. */
+const IMAGE_OPEN = /\bimage\(\s*(?:source\s*:\s*)?$/;
+const STRING = String.raw`"(?:[^"\\\n]|\\.)*"`;
+/** The source an image call starts with: a string, a name (path), or a `read` the first round wrote. */
+const IMAGE_SOURCE = new RegExp(
+  String.raw`^image\(\s*(?:source\s*:\s*)?(?:(${STRING})|read\((${STRING}), encoding: none\)|(${NAME}(?:\.${NAME})*)(?![\p{XID_Continue}\-.(]))`,
+  "u",
+);
+
+/**
+ * An image the document can't read shows as a placeholder of the same size
+ * rules (PLAN §5.5): its source becomes `typstream.missing-image(source)`, an
+ * SVG showing the file's name, so the call's width, fit and alt text and a
+ * figure's caption still apply. Models write paths the document has no file
+ * for (`#image("diagram.png")`, a URL), and an app's `resolveImage` may still
+ * be fetching one. A file whose bytes aren't the format its extension names
+ * (a `.png` URL that sends a JPEG) is read as bytes first, so Typst goes by
+ * its content; one that still isn't an image gets the placeholder. Final
+ * compiles show the placeholder too and report the error.
+ * @public
+ */
+export const missingImage: DiagnosticFixer = {
+  name: "missing-image",
+  priority: 15,
+  match: IMAGE_ERROR,
+  fix(d, { text }) {
+    if (!d.span) return null;
+    const { from, to } = d.span;
+    // Not found: the span is the source argument (a path, or the name holding it).
+    if (d.message.startsWith("file not found")) {
+      if (!IMAGE_OPEN.test(text.slice(Math.max(0, from - 64), from))) return null;
+      return [{ from, to, insert: `typstream.missing-image(${text.slice(from, to)})` }];
+    }
+    // Not an image (or not the format its extension says): the span is the whole call.
+    const m = IMAGE_SOURCE.exec(text.slice(from, to));
+    if (!m) return null;
+    const [whole, path, read, name] = m;
+    const value = (path ?? read ?? name) as string;
+    const start = from + whole.length - (read ? `read(${read}, encoding: none)`.length : value.length);
+    const insert =
+      path && d.message.startsWith("failed to decode")
+        ? `read(${path}, encoding: none)`
+        : `typstream.missing-image(${value})`;
+    return [{ from: start, to: from + whole.length, insert }];
+  },
+};
+
+/** The mode at `pos`, from the recognizer's mode changes (ascending). */
+const modeAt = (modes: readonly ModeSpan[], pos: number): ModeSpan["mode"] => {
+  let mode: ModeSpan["mode"] = "markup";
+  for (let lo = 0, hi = modes.length - 1; lo <= hi; ) {
+    const mid = (lo + hi) >> 1;
+    const m = modes[mid] as ModeSpan;
+    if (m.at <= pos) {
+      mode = m.mode;
+      lo = mid + 1;
+    } else hi = mid - 1;
+  }
+  return mode;
+};
+
+/**
+ * {@link missingImage} for every image at once, before the first compile:
+ * Typst stops at the first image it can't read, so a document with several
+ * would take a fix round each, and two rounds are all a revision gets. Each
+ * image whose source is a string with no file at its path (`has` takes
+ * `fileKey`s) becomes a placeholder, with the error Typst reports for it.
+ * Strings in raw text or comments aren't images.
+ */
+export const placeholderImages = (
+  text: string,
+  has: (key: string) => boolean,
+): { edits: TextEdit[]; errors: Diagnostic[] } | null => {
+  const missing = imageSources(text).filter((s) => !has(s.key));
+  if (missing.length === 0) return null;
+  const { modes } = recognize(text);
+  const edits: TextEdit[] = [];
+  const errors: Diagnostic[] = [];
+  for (const { from, to, key } of missing) {
+    if (modeAt(modes, from) !== "code") continue;
+    edits.push({ from, to, insert: `typstream.missing-image(${text.slice(from, to)})` });
+    errors.push({
+      severity: "error",
+      span: { from, to },
+      message: `file not found (searched at ${key})`,
+      hints: [],
+      trace: [],
+      source: "typst",
+    });
+  }
+  return edits.length ? { edits, errors } : null;
 };
 
 // Lint already ran on the client's text; re-healing a prefix of it only closes what the cut left open.
@@ -211,10 +306,10 @@ export const tailCut: DiagnosticFixer = {
 };
 
 /**
- * The built-in fixers: {@link pendingRef}, {@link packageStub}, then {@link tailCut}.
+ * The built-in fixers: {@link pendingRef}, {@link missingImage}, {@link packageStub}, then {@link tailCut}.
  * @public
  */
-export const DEFAULT_FIXERS: readonly DiagnosticFixer[] = [pendingRef, packageStub, tailCut];
+export const DEFAULT_FIXERS: readonly DiagnosticFixer[] = [pendingRef, missingImage, packageStub, tailCut];
 
 /** Most rounds of fixes after the first compile (PLAN §5.5). */
 export const MAX_FIX_ROUNDS = 2;

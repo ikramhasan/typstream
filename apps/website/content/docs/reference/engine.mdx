@@ -90,6 +90,7 @@ text that heals but doesn't compile yet still renders:
 | `tail-cut` | Streaming only. An error in the text still being typed (after heal's `stableOffset`) cuts the text there and heals the rest again. `#text(` without its body, `#v(1`, `rgb("#e` and closure parameters before `=>` drop out until the next tokens bring them back. |
 | `pending-ref` | A reference to a label that doesn't exist yet (a citation before `#bibliography`) shows its key as a muted placeholder. In final mode the error is still reported. |
 | `package-stub` | An import of a package the document can't have (not allowed, still loading, failed to load) binds the names it imports to placeholders showing the package's spec. Wildcard imports and modules whose fields are used can't be stood in for. |
+| `missing-image` | An image the document has no file for shows as a placeholder with the file's name, keeping the call's size and alt text and a figure's caption. String paths are replaced before the first compile, all at once; the fixer handles paths in variables, and files whose extension names another format. In final mode the error is still reported. See [Images](/docs/guides/images). |
 
 Fixed errors are reported as `info` diagnostics while streaming, with the fixer's name as `source`. Plugins add
 fixers as ES modules loaded in the worker; see [Writing a plugin](/docs/guides/writing-a-plugin).
@@ -114,6 +115,13 @@ events too. A compile reports, in this order and before the state it leads to is
 
 The event shapes are in [`@typstream/core`](/docs/reference/core#telemetry-events). See
 [Telemetry](/docs/guides/telemetry).
+
+## Images
+
+An image the document has no file for shows as a placeholder. Give the document a `resolveImage` to fill such paths
+in: the client finds complete `image("…")` strings in the input, calls it once per path, and writes the bytes it
+returns into the document's files. `fetchImages` from [`@typstream/engine/images`](#typstreamengineimages) downloads
+URLs from the hosts you allow. See [Images](/docs/guides/images).
 
 ## Typst packages
 
@@ -526,15 +534,17 @@ A server that accepts connections from clients it doesn't control must set `clie
 ### Fixers
 
 ```ts
-const DEFAULT_FIXERS: readonly DiagnosticFixer[]; // [pendingRef, packageStub, tailCut]
+const DEFAULT_FIXERS: readonly DiagnosticFixer[]; // [pendingRef, missingImage, packageStub, tailCut]
 const pendingRef: DiagnosticFixer;
+const missingImage: DiagnosticFixer;
 const packageStub: DiagnosticFixer;
 const tailCut: DiagnosticFixer;
 ```
 
 The built-in Layer 3 fixers described [above](#fixers-and-fallback), exported so a custom worker can keep some of them
-next to its own. Fixers are tried by `priority` (`pendingRef` runs at 10, `tailCut`, the catch-all, at 100). Write your
-own as a [`DiagnosticFixer`](/docs/reference/core#diagnosticfixer).
+next to its own. Fixers are tried by `priority` (`pendingRef` runs at 10, `missingImage` at 15, `packageStub` at 20,
+`tailCut`, the catch-all, at 100). Write your own as a [`DiagnosticFixer`](/docs/reference/core#diagnosticfixer).
+Leaving `missingImage` out also turns off the placeholders the server stands in before the first compile.
 
 ### Writing an adapter
 
@@ -662,6 +672,53 @@ const engine = createEngine({ spawn: fromWebSocket("wss://typst.example.com/typs
 
 `WebSocketLike` is the part of the WHATWG `WebSocket` it uses: `readyState`, `send`, `close`, and `open`, `message` and
 `close` events.
+
+## `@typstream/engine/images`
+
+Downloads the image URLs a document names. It is its own entry point, so apps that don't show images from the web
+don't download it (about 1 KB gzipped).
+
+### `fetchImages`
+
+```ts
+const fetchImages: (options: FetchImagesOptions) => ImageResolver;
+```
+
+An `ImageResolver` for `http(s)` URLs from the hosts you allow; other paths are left to the document's files (`null`).
+Pass it as a document's `resolveImage`.
+
+```ts
+import { fetchImages } from "@typstream/engine/images";
+
+const resolveImage = fetchImages({ hosts: ["upload.wikimedia.org"] });
+const doc = engine.open({ resolveImage });
+```
+
+- **Hosts** are required: `"example.org"`, `"*.example.org"` (its subdomains) or `"*"`. A URL from another host fails
+  with `… isn't an allowed image host`, and nothing is fetched.
+- **Requests** go without credentials or referrer. With `proxy`, the URL it returns is fetched instead, with the page's
+  credentials: your server can then cache, resize, and reach hosts that don't allow cross-origin requests.
+- **Content.** PNG, JPEG, GIF, WebP and SVG, recognised by their bytes, up to `maxBytes` (10 MB) and within
+  `timeoutMs` (15 s). Anything else fails with the reason, which the image's diagnostic shows.
+- **Caching.** Each URL is downloaded once for every document that asks, for as long as the resolver lives, so create
+  one per app. A failed download is tried again by the next document that asks.
+
+#### `FetchImagesOptions`
+
+<auto-type-table path="packages/engine/src/images.ts" name="FetchImagesOptions" />
+
+#### `ImageResolver`
+
+```ts
+type ImageResolver = (
+  path: string,
+  options: { signal: AbortSignal },
+) => Promise<Uint8Array | null | undefined> | Uint8Array | null | undefined;
+```
+
+Exported from `@typstream/engine` too. Called once per path and document, once the path's string is complete; `signal`
+aborts when the document is disposed. Return `null` to leave the image missing; a throw's message shows in the image's
+diagnostic.
 
 ## `@typstream/engine/worker`
 

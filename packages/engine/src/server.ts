@@ -25,7 +25,7 @@ export {
   type LazyFontInput,
   TYPST_VERSION,
 } from "./server/engine-wasm";
-export { DEFAULT_FIXERS, packageStub, pendingRef, tailCut } from "./server/fixers";
+export { DEFAULT_FIXERS, missingImage, packageStub, pendingRef, tailCut } from "./server/fixers";
 export type { PackageOptions } from "./server/packages";
 export { RUNTIME_PATH } from "./server/runtime";
 export { inProcess, serve, type WorkerScope } from "./server/serve";

@@ -73,6 +73,23 @@ export const RUNTIME = `// typstream runtime library: placeholders for what a st
 /// allowed, still loading, failed to load): a function that shows the
 /// package's spec wherever it is called.
 #let missing-package(spec) = (..args) => _muted("typstream-missing-package", [[#spec]])
+
+/// Stands for an image the document can't read (not among its files, still
+/// loading, not an image): an SVG for \`image\` to show instead, so the call's
+/// size, fit and alt text, and a figure's caption, still apply. It shows the
+/// file's name and translucent grey, so it reads on light and dark pages.
+#let missing-image(path) = {
+  let name = if type(path) == str { path.split("?").first().split("/").filter(s => s != "").at(-1, default: "") } else { "" }
+  if name.clusters().len() > 28 { name = name.clusters().slice(0, 27).join() + "…" }
+  for (c, e) in (("&", "&amp;"), ("<", "&lt;"), (">", "&gt;"), ("'", "&apos;")) { name = name.replace(c, e) }
+  bytes(
+    "<svg xmlns='http://www.w3.org/2000/svg' width='200' height='150' viewBox='0 0 200 150'>"
+      + "<rect x='0.5' y='0.5' width='199' height='149' rx='4' fill='#888888' fill-opacity='0.12' stroke='#888888' stroke-opacity='0.6' stroke-dasharray='4 3'/>"
+      + "<g fill='#888888' fill-opacity='0.55'><circle cx='88' cy='54' r='7'/><path d='M68 90 L88 68 L100 80 L112 66 L132 90 Z'/></g>"
+      + "<text x='100' y='114' text-anchor='middle' font-family='sans-serif' font-size='10' fill='#888888'>" + name + "</text>"
+      + "</svg>",
+  )
+}
 `;
 
 const ESCAPES: Record<string, string> = { "\n": "\\n", "\r": "\\r", "\t": "\\t", "\\": "\\\\", '"': '\\"' };

@@ -60,6 +60,7 @@ export interface DocumentOptions {
     packages?: PackageSpec[];
     plugins?: readonly TypstreamPlugin[];
     preamble?: string;
+    resolveImage?: ImageResolver;
     schedule?: Partial<ScheduleOptions>;
     target?: CompileTarget;
     text?: string;
@@ -192,6 +193,11 @@ export interface ExportOptions {
 
 // @public
 export const fromWorker: (create: () => WorkerLike) => SpawnEngine;
+
+// @public
+export type ImageResolver = (path: string, options: {
+    signal: AbortSignal;
+}) => Promise<Uint8Array | null | undefined> | Uint8Array | null | undefined;
 
 // @public
 export interface LimitOptions {

@@ -31,7 +31,7 @@ Typst sees a virtual file system that the app fills. It holds the document, its 
 |---|---|
 | `#read("/etc/passwd")`, `#read("file:///etc/passwd")` | `file not found (searched at /etc/passwd)`: paths name virtual files only |
 | `#read("../../../etc/passwd")` | `path … would escape the project root` |
-| `#image("https://tracker.example/pixel.png")` | `file not found`: a URL is just a path |
+| `#image("https://tracker.example/pixel.png")` | `file not found`: a URL is just a path. The image shows as a placeholder, and nothing is fetched |
 | reading another document's files | `file not found`: each document's engine mounts only its own files |
 | `#import "@local/…"`, a package not on the allowlist | `package … is not allowed`, and nothing is fetched |
 | a wasm plugin importing a host function | `cannot find definition for import env::fetch`: plugins get only Typst's two protocol functions |
@@ -40,6 +40,11 @@ Typst sees a virtual file system that the app fills. It holds the document, its 
 Diagnostics name virtual paths only, never the server's or the machine's.
 
 Packages come from an allowlist with pinned versions and integrity hashes, served from the app's own origin by default (`@typstream/universe`; see [Typst packages](/docs/guides/typst-packages)). A server facing untrusted clients ignores the lists they send (`trustClient: false`, which `@typstream/node` sets), and the fixer modules they name (`clientFixers: false`, also set), since importing a module runs its code.
+
+Images from the web are the one exception, and it is the app's choice: a `resolveImage` (such as `fetchImages`) runs
+on the main thread, where the app decides which paths to fetch and from which hosts. The engine still fetches nothing,
+so a `@typstream/node` server stays offline whatever its clients' documents name. An image URL is a way out for data
+the model read, so allow only hosts you trust; see [Images](/docs/guides/images#images-from-the-web).
 
 <Callout type="error" title="Keep the engine offline">
   Don't give typstream an engine whose file access goes to the network. typst.ts's `FetchAccessModel`, for example, turns every path a document names into a request to your origin.

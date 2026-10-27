@@ -180,6 +180,7 @@ export interface TypstreamOptions {
     pageHeight?: "a4" | "auto";
     plugins?: readonly TypstreamPlugin[];
     preamble?: string;
+    resolveImage?: DocumentOptions["resolveImage"];
     schedule?: DocumentOptions["schedule"];
     source?: string;
     stream?: AsyncIterable<string> | null;

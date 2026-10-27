@@ -55,6 +55,7 @@ When a compile fails, the server tries its diagnostic fixers and recompiles, at 
 - **`tail-cut`** (streaming only): an error in the text still being typed (after heal's `stableOffset`, which the client sends as `settled`) cuts the text there and heals the rest again. `#text(` without its body, `#v(1`, `rgb("#e` and closure parameters before `=>` drop out until the next tokens bring them back.
 - **`pending-ref`**: a reference to a label that doesn't exist yet (a citation before `#bibliography`) shows its key as a muted placeholder. In final mode the error is still reported.
 - **`package-stub`**: an import of a package the document can't have (not allowed, still loading, failed to load) binds the names it imports to placeholders showing the package's spec. Wildcard imports and modules whose fields are used (`cetz.draw`) can't be stood in for; their error stays, and the fallback isolates the block.
+- **`missing-image`**: an image the document has no file for (`#image("diagram.png")`, a URL) shows as a placeholder with the file's name, keeping the call's size and alt text and a figure's caption. Typst stops at the first image it can't read, so the server stands placeholders in for every string path without a file before the first compile; the fixer covers paths in variables, and files whose extension names another format (it reads them as bytes so Typst goes by the content, and replaces them if that fails too). In final mode the error is still reported.
 
 Placeholders come from a small Typst library mounted at `/@typstream/runtime.typ` (a document's own file at that path replaces it). Fixed errors are reported as `info` diagnostics (`source` is the fixer's name) while streaming. Plugins add fixers as ES modules whose default export is a `DiagnosticFixer` or an array of them:
 
@@ -95,6 +96,21 @@ The library sends nothing anywhere (PLAN §8.6); it reports, and the app decides
 | `watchdog` | a compile ran past its budget or crashed the worker | `reason`, `budgetMs`, `strikes`, `live`, `searching` (final mode: looking for the block that hangs) |
 
 The worker says which fixers made a compile's output (`CompileResult.fixes`) and which rung of the ladder (`CompileResult.fallback.level`); the client adds the healing. `@typstream/dom`'s `mountTypstream` (and so `<Typstream>`) turns `compiled` into `onRendered`, with what drawing cost.
+
+## Images
+
+Typst reads images only from the document's files, and a model can only write a path. Without a file, an image is a placeholder (`missing-image`, above). To fill such paths in, give the document a `resolveImage(path, { signal })`: the client finds complete `image("…")` strings in the input, calls it once per path the document has no file for, and writes the bytes it returns into the document's files, which recompiles it. `null` or a throw keeps the placeholder. While an image loads its diagnostic is an `info` (`image "…" is loading`); after a throw it says why it failed.
+
+`fetchImages({ hosts })` from `@typstream/engine/images` (its own entry point, 0.9 KB) is the resolver for `http(s)` URLs:
+
+```ts
+import { fetchImages } from "@typstream/engine/images";
+
+const resolveImage = fetchImages({ hosts: ["upload.wikimedia.org", "*.example.edu"] });
+engine.open({ resolveImage });
+```
+
+Hosts are required: a model can be steered into writing an image URL that carries what it read to someone else's server, and the page fetches it as soon as the string is complete. Requests go without credentials or referrer (`proxy` routes them through your server instead, with them). It accepts PNG, JPEG, GIF, WebP and SVG by content, up to `maxBytes` (10 MB) and `timeoutMs` (15 s), and downloads each URL once for every document. The worker never fetches images itself: a `@typstream/node` server stays offline whatever its clients' documents name.
 
 ## Typst packages
 

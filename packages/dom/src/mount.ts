@@ -69,6 +69,14 @@ export interface TypstreamOptions {
   inputs?: Record<string, string>;
   /** Files the document reads (images, data), relative to its root. */
   files?: FileDelta;
+  /**
+   * Gives the bytes of images the document names but `files` doesn't have,
+   * such as URLs a model wrote (`fetchImages({ hosts })` from
+   * `@typstream/engine/images` downloads those). Without it nothing is fetched, and
+   * such images show as placeholders. The latest one is called, so it may
+   * change between updates; adding or removing it reopens the document.
+   */
+  resolveImage?: DocumentOptions["resolveImage"];
   /** Healing options; plugins' heal handlers and lint settings are added to them. */
   heal?: DocumentOptions["heal"];
   /** Overrides the engine's compile schedule for this document. */
@@ -185,6 +193,7 @@ interface OpenKey {
   preamble: string;
   heal: DocumentOptions["heal"];
   schedule: DocumentOptions["schedule"];
+  images: boolean;
 }
 
 /** The template named `o.template`, the last plugin's if two have one by that name. */
@@ -206,12 +215,20 @@ const openKey = (o: TypstreamOptions): OpenKey => {
   ]
     .filter((p) => p)
     .join("\n");
-  return { engine: o.engine, plugins: o.plugins ?? [], preamble, heal: o.heal, schedule: o.schedule };
+  return {
+    engine: o.engine,
+    plugins: o.plugins ?? [],
+    preamble,
+    heal: o.heal,
+    schedule: o.schedule,
+    images: !!o.resolveImage,
+  };
 };
 
 const sameKey = (a: OpenKey, b: OpenKey) =>
   a.engine === b.engine &&
   a.preamble === b.preamble &&
+  a.images === b.images &&
   equal(a.plugins, b.plugins) &&
   equal(a.heal, b.heal) &&
   equal(a.schedule, b.schedule);
@@ -473,6 +490,7 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
         ...(want.preamble ? { preamble: want.preamble } : {}),
         ...(want.heal ? { heal: want.heal } : {}),
         ...(want.schedule ? { schedule: want.schedule } : {}),
+        ...(want.images ? { resolveImage: (path, o) => opts.resolveImage?.(path, o) } : {}),
       });
       fedText = text;
       fedFinal = false;
