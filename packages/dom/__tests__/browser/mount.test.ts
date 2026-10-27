@@ -177,7 +177,8 @@ describe(`mountTypstream in ${browser}`, () => {
       expect(view.document).toBe(doc);
       // Through the renderer's sanitizer, a data: URL: the placeholder, with the file's name.
       await expect.poll(images).toEqual([expect.stringContaining("cell.svg</text>")]);
-      expect(el.textContent).toContain("A cell");
+      // Pages build their text layer in idle time, after the page itself.
+      await expect.poll(() => el.textContent).toContain("A cell");
       give(svg("#123456"));
       await expect.poll(images, { timeout: 15_000 }).toEqual([expect.stringContaining("#123456")]);
       expect(asked).toEqual(["https://x.org/cell.svg"]);
