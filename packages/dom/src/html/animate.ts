@@ -21,7 +21,10 @@ export const MIN_STAGGER_STEP_MS = 4;
 
 /** Word fade-in settings. @public */
 export interface AnimateOptions {
-  /** Keyframes: `fadeIn` (default), `blurIn`, `slideUp`, or the name of your own `@keyframes`. */
+  /**
+   * Keyframes: `fadeIn` (default), `blurIn`, `slideUp`, or your own `@keyframes`, whose name must be
+   * `typstream-` followed by this value: `"pop"` plays `@keyframes typstream-pop` (add it with `stylesheets`).
+   */
   animation?: "fadeIn" | "blurIn" | "slideUp" | (string & {});
   /** Per word, in ms. Default 150. */
   duration?: number;

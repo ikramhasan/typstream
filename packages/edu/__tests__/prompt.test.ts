@@ -67,6 +67,12 @@ describe("prompt kit", () => {
     expect(buildSystemPrompt([edu])).toBe(prompt);
   });
 
+  it("stays about the size the README gives", () => {
+    // 17,549 characters for edu alone (kit-v4); with universe's rules 19,024, which the API counts as
+    // 8,354 tokens. A change that grows it past this bound should update packages/edu/README.md.
+    expect(prompt.length).toBeLessThan(18_500);
+  });
+
   it("adds other plugins' rules and leaves out examples when asked", () => {
     const other: TypstreamPlugin = { key: "acme", prompt: { rules: ["Use only acme's colours."] } };
     const both = buildSystemPrompt([edu, other], { examples: false });
