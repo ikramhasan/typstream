@@ -90,7 +90,8 @@ type Suggestion = { label: string; prompt: string };
 /**
  * One request per thing edu and its Universe packages can write, to try each with a click. Most are
  * tools/llm-corpus's requests (src/requests.mjs), the ones the prompt kit was measured on; number
- * lines, graph paper, photos (the image search) and the fletcher, cetz-plot and alchemist ones are new.
+ * lines, graph paper, photos (the image search), mind maps and the fletcher, cetz-plot and alchemist
+ * ones are new.
  */
 const SUGGESTIONS: { group: string; items: Suggestion[] }[] = [
   {
@@ -178,6 +179,23 @@ const SUGGESTIONS: { group: string; items: Suggestion[] }[] = [
       {
         label: "Photos",
         prompt: "A grade 6 geography handout on the New Seven Wonders of the World, with a photo of each.",
+      },
+    ],
+  },
+  {
+    // @typstream/mindmap: interactive in the HTML target (pan, zoom, open and close branches), the
+    // Typst drawing as pages and in exports.
+    group: "Mind maps",
+    items: [
+      { label: "Mind map", prompt: "A mind map of photosynthesis for grade 7, standard depth, as a teaching aid." },
+      {
+        label: "Revision map",
+        prompt:
+          "A detailed, text-focused revision mind map of the causes of World War I for grade 10, with a colour per kind of cause and the immediate trigger in red.",
+      },
+      {
+        label: "Map with photos",
+        prompt: "A visual mind map of the water cycle for grade 4, with photos on the main stages.",
       },
     ],
   },
@@ -550,8 +568,8 @@ export default function Page() {
                   </EmptyMedia>
                   <EmptyTitle>What should we write?</EmptyTitle>
                   <EmptyDescription>
-                    Ask for a worksheet, quiz or handout, or try one of edu's capabilities below. The model writes
-                    Typst, and it renders as it streams.
+                    Ask for a worksheet, quiz, handout or mind map, or try one of the capabilities below. The model
+                    writes Typst, and it renders as it streams.
                   </EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent className="max-w-2xl gap-4">
