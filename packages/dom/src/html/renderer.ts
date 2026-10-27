@@ -9,7 +9,6 @@
 // range without asking the engine (§10.2).
 
 import type { TypstreamPlugin } from "@typstream/core";
-import { stylesheetsOf } from "../plugins";
 import {
   type AnimateOptions,
   AnimateTimeline,
@@ -213,7 +212,9 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
   root.style.setProperty("--typstream-duration", `${config.duration}ms`);
   root.style.setProperty("--typstream-easing", config.easing);
   if (options.injectStyles !== false) {
-    for (const css of [htmlRendererCss, ...stylesheetsOf(options.plugins, options.stylesheets)]) injectCss(root, css);
+    // injectCss adds each stylesheet once per root, so a plugin's and the app's copy of one don't repeat.
+    const plugins = (options.plugins ?? []).flatMap((p) => p.stylesheets ?? []);
+    for (const css of [htmlRendererCss, ...plugins, ...(options.stylesheets ?? [])]) injectCss(root, css);
   }
 
   let shell: string | null = null;

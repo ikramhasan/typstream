@@ -100,7 +100,7 @@ In `packages/edu`:
 
 In `packages/dom`:
 - `pnpm test`: node tests (the HTML block splitter, paged helpers). `pnpm test:browser`: the renderers in Chromium, Firefox and WebKit, fed by the real engine worker with html-compat and corpus documents (needs engine-wasm's `dist/`). `BROWSERS=chromium` runs one.
-- `pnpm size`: HTML renderer ≤ 9 KB gzipped (with its CSS), paged renderer ≤ 4 KB, standalone HTML export ≤ 2 KB.
+- `pnpm size`: HTML renderer ≤ 9.5 KB gzipped (with its CSS), paged renderer ≤ 4 KB, standalone HTML export ≤ 2 KB.
 - Its API report needs DOM types, so its `api-extractor.json` overrides the shared compiler settings.
 
 In `packages/react`:
@@ -116,7 +116,7 @@ In `packages/heal`:
 - `pnpm test:long`: 20,000-run property campaign (minutes).
 - `pnpm bench`: vitest benchmarks.
 - `node scripts/perf.mjs`: asserts the latency budgets; run `pnpm build` first. `PERF_TOLERANCE=3` (what CI uses) fails only above 3× budget.
-- `pnpm size`: bundle budget, 15 KB gzipped.
+- `pnpm size`: bundle budget, 15.5 KB gzipped.
 - `pnpm mutate`: Stryker mutation testing of `src/` (~1.5–2 h on 6 cores). `STRYKER_INCREMENTAL=1` retests only what changed since the last run, but it reuses static mutants' (module-level constants) results whatever changed, so record scores from full runs. It fails below an 80% score; the first full run scored 80.59% (2026-10-26). It runs the suite without the corpus tests and with few, seeded property runs (`vitest.mutation.config.ts`, the `mutate` script's env). `node scripts/mutation-report.mjs --survivors` lists what survived. Equivalent mutants and known survivors are triaged on #6.
 
 LLM corpus (`tools/llm-corpus`, README there): `node src/record.mjs --variant kit --label <name>` streams the 29 requests

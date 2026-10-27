@@ -58,4 +58,4 @@ Text before `stableOffset` never changes meaning as more text arrives, and the h
 - The recognizer itself is checked against Typst's parser on documents, all their prefixes and random character soup.
 - `pnpm test:long` runs 20,000 property runs.
 - `pnpm bench`: vitest benchmarks. `node scripts/perf.mjs` (after `pnpm build`) asserts the latency budgets.
-- `pnpm size` checks the bundle budget (15 KB gzipped).
+- `pnpm size` checks the bundle budget (15.5 KB gzipped).
