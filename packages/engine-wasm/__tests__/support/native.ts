@@ -35,15 +35,31 @@ const withProject = <T>(source: string, run: (dir: string) => T): T => {
 // Only the fonts the wasm tests load (see fonts.ts), nothing from the system.
 const FONT_ARGS = ["--ignore-system-fonts", "--ignore-embedded-fonts", "--font-path", fontDir()];
 
+export interface FontOptions {
+  /** Only the fonts in `fontPaths`, without typst-assets'. Default false. */
+  only?: boolean;
+}
+
+const fontArgs = (fontPaths: string[], { only = false }: FontOptions): string[] => [
+  ...(only ? FONT_ARGS.slice(0, 2) : FONT_ARGS),
+  ...fontPaths.flatMap((path) => ["--font-path", path]),
+];
+
 /** Native `typst compile` to SVG: one string per page. `fontPaths` add font directories. */
-export const nativeSvgPages = (source: string, fontPaths: string[] = []): string[] =>
+export const nativeSvgPages = (source: string, fontPaths: string[] = [], options: FontOptions = {}): string[] =>
   withProject(source, (dir) => {
-    const extra = fontPaths.flatMap((path) => ["--font-path", path]);
-    typst(["compile", ...FONT_ARGS, ...extra, join(dir, "main.typ"), join(dir, "page-{0p}.svg")]);
+    typst(["compile", ...fontArgs(fontPaths, options), join(dir, "main.typ"), join(dir, "page-{0p}.svg")]);
     return readdirSync(dir)
       .filter((name) => name.startsWith("page-"))
       .sort()
       .map((name) => readFileSync(join(dir, name), "utf8"));
+  });
+
+/** Native `typst compile` to PDF. */
+export const nativePdf = (source: string, fontPaths: string[] = [], options: FontOptions = {}): Uint8Array =>
+  withProject(source, (dir) => {
+    typst(["compile", ...fontArgs(fontPaths, options), join(dir, "main.typ"), join(dir, "out.pdf")]);
+    return readFileSync(join(dir, "out.pdf"));
   });
 
 /** Native `typst compile` to HTML. */
