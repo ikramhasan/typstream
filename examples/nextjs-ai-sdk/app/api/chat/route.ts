@@ -1,13 +1,16 @@
 // The chat endpoint. With ANTHROPIC_API_KEY set it asks Claude for a Typst
-// document; without one it replays a recorded worksheet token by token, so the
+// document; without one it replays a worksheet token by token, so the
 // example (and its smoke test) runs offline. Either way the client sees the
 // same UI message stream.
 
 import { anthropic } from "@ai-sdk/anthropic";
+import { buildSystemPrompt, edu } from "@typstream/edu";
+import { universe } from "@typstream/universe";
 import {
   convertToModelMessages,
   createUIMessageStream,
   createUIMessageStreamResponse,
+  type SystemModelMessage,
   streamText,
   type UIMessage,
 } from "ai";
@@ -15,13 +18,16 @@ import { WORKSHEET } from "./worksheet";
 
 export const maxDuration = 60;
 
-const INSTRUCTIONS = `You write educational documents (worksheets, quizzes, handouts) in Typst 0.15 markup.
-Reply with the Typst source only: no Markdown, no code fences, no commentary before or after.
-- Headings are "= Title", "== Section"; *bold*, _italic_; "- " bullets and "+ " numbered items.
-- Math goes between dollar signs: $a^2 + b^2 = c^2$, with a space inside for display math: $ x = 1/2 $.
-- Tables: #table(columns: 3, [Header], [Header], [Header], [cell], [cell], [cell]).
-- Write a literal dollar sign, hash or at sign as \\$, \\#, \\@.
-- Leave room for answers with #v(2em) or #line(length: 100%).`;
+// edu's prompt kit: Typst rules that target the mistakes models make, the vocabulary (templates,
+// questions, answers, rubrics) with each function's signature and example, and example documents.
+// The page renders with the same plugin, so every function the model is told about exists. Import
+// `universe` from @typstream/universe here: the typstream bundle is a client module. It's ~8.4K tokens
+// and the same for every request, so it's marked for Anthropic's prompt cache.
+const INSTRUCTIONS: SystemModelMessage = {
+  role: "system",
+  content: buildSystemPrompt([edu, universe]),
+  providerOptions: { anthropic: { cacheControl: { type: "ephemeral" } } },
+};
 
 /** Splits text into token-sized chunks (words and the space before them), as a model streams. */
 const tokens = (text: string): string[] => text.match(/\s*\S+|\s+$/g) ?? [];

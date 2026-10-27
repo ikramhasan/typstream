@@ -1,5 +1,5 @@
 // The prompts the harness compares. `naive` is what an app writes without the kit: the
-// instructions of examples/nextjs-ai-sdk, plain Typst with no vocabulary. `kit` is edu's prompt
+// instructions examples/nextjs-ai-sdk had before it used the kit, plain Typst with no vocabulary. `kit` is edu's prompt
 // kit as the code has it now (buildSystemPrompt over edu and universe), compiled with edu's
 // preamble. Each recorded run keeps the exact system prompt it used (runs/<label>/system.md),
 // so labels such as kit-v1 and kit-v2 stay comparable after the kit changes.

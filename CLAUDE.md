@@ -110,7 +110,7 @@ In `packages/react`:
 
 In `examples/strict-csp`: `pnpm test` builds the page, serves it with the policy in `csp.mjs` and fails on any CSP violation or console error in Chromium, Firefox and WebKit (`BROWSERS=` picks some). Build the packages first (`pnpm turbo run build --filter=@typstream/example-strict-csp^...`). CI runs it in each browser's `Engine (<browser>)` job. Hostile documents go in `corpus/adversarial/hostile-*.typ` (category `hostile-…`); the engine's and the browser suites' `security.test.ts` run them all.
 
-In `examples/nextjs-ai-sdk`: `pnpm test` builds the app (Turbopack) and streams one answer into `<Typstream>` in Chromium, failing on any error frame. Without `ANTHROPIC_API_KEY` the route replays a recorded worksheet; build the packages first (`pnpm turbo run build --filter=typstream...`). CI runs it in the `Engine (chromium)` job.
+In `examples/nextjs-ai-sdk`: `pnpm test` builds the app (Turbopack) and streams two answers into `<Typstream>` in Chromium (pages, then HTML), failing on any error frame. The route prompts with edu's kit and the page renders with its plugin; the UI is shadcn/ui (AI Elements, Base UI, Tailwind 4) in `components/ui/`, added with the shadcn CLI. Without `ANTHROPIC_API_KEY` the route replays a worksheet that compiles at every prefix (a kit recording doesn't, and the test fails on any error frame); a key in `.env.local` reaches `next start` too, so run the test with `ANTHROPIC_API_KEY=` to keep it offline. Build the packages first (`pnpm turbo run build --filter=@typstream/example-nextjs-ai-sdk^...`). CI runs it in the `Engine (chromium)` job.
 
 In `packages/heal`:
 - `pnpm test:long`: 20,000-run property campaign (minutes).
