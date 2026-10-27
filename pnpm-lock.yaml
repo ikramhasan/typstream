@@ -374,6 +374,9 @@ importers:
       typstream:
         specifier: workspace:*
         version: link:../../packages/typstream
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
     devDependencies:
       '@tailwindcss/postcss':
         specifier: ^4.3.3

@@ -14,20 +14,26 @@ import {
   streamText,
   type UIMessage,
 } from "ai";
+import { IMAGE_RULES, stopWhen, tools } from "./images";
 import { WORKSHEET } from "./worksheet";
 
-export const maxDuration = 60;
+// Image searches come before the document, so an answer can take longer than one model call.
+export const maxDuration = 120;
 
 // edu's prompt kit: Typst rules that target the mistakes models make, the vocabulary (templates,
 // questions, answers, rubrics) with each function's signature and example, and example documents.
 // The page renders with the same plugin, so every function the model is told about exists. Import
 // `universe` from @typstream/universe here: the typstream bundle is a client module. It's ~8.4K tokens
 // and the same for every request, so it's marked for Anthropic's prompt cache.
-const INSTRUCTIONS: SystemModelMessage = {
-  role: "system",
-  content: buildSystemPrompt([edu, universe]),
-  providerOptions: { anthropic: { cacheControl: { type: "ephemeral" } } },
-};
+const INSTRUCTIONS: SystemModelMessage[] = [
+  {
+    role: "system",
+    content: buildSystemPrompt([edu, universe]),
+    providerOptions: { anthropic: { cacheControl: { type: "ephemeral" } } },
+  },
+  // This example's addition, after the measured kit: images from Wikimedia Commons (./images.ts).
+  { role: "system", content: IMAGE_RULES },
+];
 
 /** Splits text into token-sized chunks (words and the space before them), as a model streams. */
 const tokens = (text: string): string[] => text.match(/\s*\S+|\s+$/g) ?? [];
@@ -53,7 +59,9 @@ export async function POST(request: Request) {
   const result = streamText({
     model: anthropic(process.env.TYPSTREAM_MODEL ?? "claude-sonnet-5-5"),
     instructions: INSTRUCTIONS,
-    messages: await convertToModelMessages(messages),
+    messages: await convertToModelMessages(messages, { tools, ignoreIncompleteToolCalls: true }),
+    tools,
+    stopWhen,
   });
   return result.toUIMessageStreamResponse();
 }

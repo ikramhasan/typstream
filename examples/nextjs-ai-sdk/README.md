@@ -33,6 +33,14 @@ The route (`app/api/chat/route.ts`) asks Claude with edu's prompt kit, `buildSys
 
 Without a key, the route replays a worksheet (`app/api/chat/worksheet.ts`) token by token. It's plain Typst written so that every prefix compiles, which the smoke test relies on: it fails on any compile error while streaming, and real model output, kit answers included, has a few at the prefixes where a call is cut.
 
+## Images
+
+Typst reads images only from the document's files, and a model can't know a real image URL, so the route gives it a tool: `searchImages` (`app/api/chat/images.ts`) searches [Wikimedia Commons](https://commons.wikimedia.org), whose images are freely licensed, and returns each image's URL (resized to 960 px), size, description, author and license. A short addition to edu's prompt tells the model when to search (pictures, photos, real things; a diagram it can draw is better drawn), to search before writing anything, to use only the URLs it got, and to credit each image in its figure's caption. `streamText` runs up to five steps, searches then the document.
+
+The page fetches the images itself: `fetchImages({ hosts: ["thumb.wikimedia.org", "upload.wikimedia.org"] })` as `<Typstream resolveImage>`. Both hosts send CORS headers, so no proxy is needed, and no other host is allowed: a model can be steered into writing an image URL that carries what it read to someone else's server. While an image downloads, typstream shows a placeholder, and the PDF export includes the images. Each search shows above the answer ("Searching Wikimedia Commons for …", then what it found).
+
+Commons needs no API key. The route identifies itself with a `User-Agent`, as Wikimedia asks, which allows 200 requests a minute.
+
 ## The page
 
 - **Suggestions.** One button per thing edu can write (each template, question kind, drawing, the Universe packages, Arabic and Bengali), most of them the requests the prompt kit was measured on. They show in an empty chat and in a row above the field after; **New chat** starts over.

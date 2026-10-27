@@ -6,7 +6,9 @@
 // share one engine worker; only visible or streaming ones compile. <Telemetry>
 // wires typstream's events to the console and an analytics sink. The model
 // writes with @typstream/edu's vocabulary (the route's prompt), so answers
-// render with its plugin; "Show answers" turns on the teacher's copy.
+// render with its plugin; "Show answers" turns on the teacher's copy. Images
+// come from the model's Wikimedia Commons searches (app/api/chat/images.ts),
+// fetched here by `fetchImages`.
 //
 // The chat around it is built from shadcn/ui's AI Elements patterns (Chat,
 // Message, Prompt Input, Suggestion): Message Scroller follows the answer while
@@ -15,20 +17,21 @@
 
 import { useChat } from "@ai-sdk/react";
 import { edu, SHOW_ANSWERS_INPUT } from "@typstream/edu";
-import type { UIMessage } from "ai";
+import type { UIDataTypes, UIMessage } from "ai";
 import {
   ArrowUpIcon,
   CheckIcon,
   CopyIcon,
   FileDownIcon,
   FileTextIcon,
+  ImageIcon,
   LoaderCircleIcon,
   RotateCwIcon,
   SquareIcon,
   SquarePenIcon,
 } from "lucide-react";
 import { type FormEvent, type ReactNode, useCallback, useLayoutEffect, useRef, useState } from "react";
-import { type DocumentState, Typstream, type TypstreamInfo, useTypstream } from "typstream";
+import { type DocumentState, fetchImages, Typstream, type TypstreamInfo, useTypstream } from "typstream";
 import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
@@ -46,6 +49,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import type { ChatTools } from "./api/chat/images";
 import { Telemetry } from "./telemetry";
 
 type Target = "html" | "paged";
@@ -57,6 +61,18 @@ const TARGETS = [
 
 /** The vocabulary the route's prompt teaches. A constant: a new array would reopen every answer. */
 const PLUGINS = [edu];
+
+/**
+ * The images the model's searches found: resized ones on thumb.wikimedia.org, small originals on
+ * upload.wikimedia.org. Both send CORS headers, so no proxy. Only these hosts: a model can be
+ * steered into writing an image URL that carries what it read to someone else's server. One
+ * resolver for every answer, so each image downloads once.
+ */
+const IMAGES = fetchImages({ hosts: ["thumb.wikimedia.org", "upload.wikimedia.org"] });
+
+/** Messages with the route's tools: an image search shows up as a `tool-searchImages` part. */
+type ChatMessage = UIMessage<unknown, UIDataTypes, ChatTools>;
+type ImageSearchPart = Extract<ChatMessage["parts"][number], { type: "tool-searchImages" }>;
 /** edu's answers (blanks filled in, worked answers, answer keys) appear only with this input. */
 const ANSWERS = { [SHOW_ANSWERS_INPUT]: "true" };
 
@@ -65,7 +81,7 @@ type Suggestion = { label: string; prompt: string };
 /**
  * One request per thing edu and its Universe packages can write, to try each with a click. Most are
  * tools/llm-corpus's requests (src/requests.mjs), the ones the prompt kit was measured on; number
- * lines, graph paper and the fletcher, cetz-plot and alchemist ones are new.
+ * lines, graph paper, photos (the image search) and the fletcher, cetz-plot and alchemist ones are new.
  */
 const SUGGESTIONS: { group: string; items: Suggestion[] }[] = [
   {
@@ -150,6 +166,10 @@ const SUGGESTIONS: { group: string; items: Suggestion[] }[] = [
         prompt: "A grade 11 chemistry handout on alkanes, with the skeletal structures of methane to pentane.",
       },
       { label: "Units", prompt: "A short grade 10 physics quiz on SI units and unit conversions." },
+      {
+        label: "Photos",
+        prompt: "A grade 6 geography handout on the New Seven Wonders of the World, with a photo of each.",
+      },
     ],
   },
   {
@@ -161,7 +181,42 @@ const SUGGESTIONS: { group: string; items: Suggestion[] }[] = [
   },
 ];
 
-const textOf = (message: UIMessage) => message.parts.map((part) => (part.type === "text" ? part.text : "")).join("");
+const textOf = (message: ChatMessage) => message.parts.map((part) => (part.type === "text" ? part.text : "")).join("");
+
+/**
+ * The document in an answer: its text after the last image search. The model is told to search
+ * first and write nothing before the document, so anything it says before a search is chatter, not
+ * Typst; and one answer is one document even if its text comes in several parts.
+ */
+const documentOf = (message: ChatMessage) => {
+  const searches = message.parts.map((part, i) => (part.type === "tool-searchImages" ? i : -1));
+  return message.parts
+    .slice(Math.max(...searches) + 1)
+    .map((part) => (part.type === "text" ? part.text : ""))
+    .join("");
+};
+
+/** One image search: what it's looking for while it runs, then what it found. */
+const ImageSearch = ({ part }: { part: ImageSearchPart }) => {
+  const query = part.input?.query ? `“${part.input.query}”` : "images";
+  let text = `Searching Wikimedia Commons for ${query}…`;
+  if (part.state === "output-available") {
+    const output = part.output;
+    text =
+      "error" in output
+        ? `Image search for ${query} failed: ${output.error}`
+        : `Found ${output.images.length} images for ${query} on Wikimedia Commons`;
+  } else if (part.state === "output-error") {
+    text = `Image search for ${query} failed: ${part.errorText}`;
+  }
+  const running = part.state === "input-streaming" || part.state === "input-available";
+  return (
+    <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <ImageIcon className="size-3.5 shrink-0" />
+      <span className={running ? "shimmer" : undefined}>{text}</span>
+    </p>
+  );
+};
 
 /** A ghost icon button with a tooltip, as Message's actions are. */
 const Action = ({ label, onClick, disabled, children }: ActionProps) => (
@@ -328,6 +383,7 @@ const Answer = ({ text, streaming, target, answers, busy, onRetry }: AnswerProps
               isStreaming={streaming}
               target={target}
               plugins={PLUGINS}
+              resolveImage={IMAGES}
               inputs={answers ? ANSWERS : undefined}
               layout="fit-width"
               animated
@@ -384,7 +440,7 @@ type SuggestionButtonProps = {
 };
 
 export default function Page() {
-  const { messages, setMessages, sendMessage, regenerate, stop, status, error } = useChat();
+  const { messages, setMessages, sendMessage, regenerate, stop, status, error } = useChat<ChatMessage>();
   const [input, setInput] = useState("");
   const [target, setTarget] = useState<Target>("paged");
   const [answers, setAnswers] = useState(false);
@@ -479,20 +535,24 @@ export default function Page() {
                             </MessageContent>
                           </Message>
                         ) : (
-                          message.parts.map((part, i) =>
-                            part.type !== "text" ? null : (
-                              <Answer
+                          <div className="flex flex-col gap-3">
+                            {message.parts.map((part, i) =>
+                              part.type === "tool-searchImages" ? (
                                 // biome-ignore lint/suspicious/noArrayIndexKey: a message's parts never reorder.
-                                key={i}
-                                text={part.text}
+                                <ImageSearch key={i} part={part} />
+                              ) : null,
+                            )}
+                            {documentOf(message) && (
+                              <Answer
+                                text={documentOf(message)}
                                 streaming={status === "streaming" && message.id === last?.id}
                                 target={target}
                                 answers={answers}
                                 busy={busy}
                                 onRetry={() => void regenerate({ messageId: message.id })}
                               />
-                            ),
-                          )
+                            )}
+                          </div>
                         )}
                       </MessageScrollerItem>
                     ))}
