@@ -27,6 +27,7 @@ import type { AnimateOptions } from "./html/animate";
 import { createHtmlRenderer, type HtmlRenderer } from "./html/renderer";
 import { FIT_WIDTH_PREAMBLE, fitWidthInputs } from "./paged/mount";
 import { createPagedView, type PagedView } from "./paged/view";
+import { type StreamText, subscribeStream } from "./stream";
 
 /** Options of {@link mountTypstream}. @public */
 export interface TypstreamOptions {
@@ -37,6 +38,13 @@ export interface TypstreamOptions {
   /**
    * Chunks to read instead of `source`. The document starts over when a new
    * stream is given, and is complete when the stream ends.
+   *
+   * A stream is read once, however many mounts are given it: each shows all
+   * of its text, including what arrived before it mounted, so a mount replaced
+   * while the stream continues (React StrictMode mounts twice) loses nothing.
+   * The stream is closed (`return()`) when a chunk arrives after the last mount
+   * reading it was destroyed; a mount given it later shows what was read, as a
+   * finished document. To show an answer from the start again, pass a new stream.
    */
   stream?: AsyncIterable<string> | null;
   /**
@@ -258,10 +266,9 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
   let fedFinal = false;
   let fedFiles: FileDelta = {};
 
-  // A `stream` being read: its text so far, and whether it has ended.
+  // A `stream` being read (shared with any other mount given it): its text so far, and whether it has ended.
   let stream: AsyncIterable<string> | null = null;
-  let streamText = "";
-  let streamOpen = false;
+  let reading: { state: StreamText; stop: () => void } | null = null;
 
   // Visibility (lazy) and the element's width (fit-width). An export opens the
   // document whatever its visibility (`exporting`).
@@ -282,7 +289,7 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
   let lastDiagnostics: Diagnostic[] | null = null;
   let lastOk: CompiledEvent | null = null;
 
-  const streaming = () => (opts.stream ? streamOpen : (opts.isStreaming ?? false));
+  const streaming = () => (reading ? reading.state.open : (opts.isStreaming ?? false));
 
   // --- rendering ---
 
@@ -450,7 +457,7 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
     const target = opts.target ?? "html";
     const inputs = { ...exportInputs(), ...fitInputs };
     const files = opts.files ?? {};
-    const text = opts.stream ? streamText : (opts.source ?? "");
+    const text = reading ? reading.state.text : (opts.source ?? "");
     const final = !streaming();
 
     const want = openKey(opts);
@@ -498,36 +505,13 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
     onState(doc.getState());
   };
 
-  const read = async (source: AsyncIterable<string>) => {
-    const iterator = source[Symbol.asyncIterator]();
-    try {
-      for (;;) {
-        const next = await iterator.next();
-        if (stream !== source || destroyed) {
-          await iterator.return?.();
-          return;
-        }
-        if (next.done) break;
-        streamText += next.value;
-        sync();
-      }
-    } catch (error) {
-      // The stream failed: show what arrived, complete, and let the app hear of it.
-      if (stream === source && !destroyed) globalThis.reportError?.(error);
-    }
-    if (stream !== source || destroyed) return;
-    streamOpen = false;
-    sync();
-  };
-
   const apply = (next: TypstreamOptions) => {
     opts = next;
     const nextStream = next.stream ?? null;
     if (nextStream !== stream) {
+      reading?.stop();
       stream = nextStream;
-      streamText = "";
-      streamOpen = nextStream !== null;
-      if (nextStream) void read(nextStream);
+      reading = nextStream ? subscribeStream(nextStream, sync) : null;
     }
     sync();
   };
@@ -573,7 +557,8 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
     destroy() {
       if (destroyed) return;
       destroyed = true;
-      stream = null;
+      reading?.stop();
+      reading = null;
       io?.disconnect();
       ro?.disconnect();
       clearTimeout(resizeTimer);

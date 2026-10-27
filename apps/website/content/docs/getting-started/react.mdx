@@ -136,7 +136,7 @@ The model must write Typst, not Markdown: [Prompting](/docs/guides/prompting) ha
 | `caret` | `false` | Show a caret after the last text while streaming (HTML target). |
 | `target` | `"html"` | `"html"`: semantic HTML with MathML, which reflows and inherits your page's fonts. `"paged"`: SVG pages, laid out exactly as Typst lays them out. Switching keeps the document; the old output stays until the new target's first compile. |
 
-`stream` is an alternative to `source`: an `AsyncIterable<string>` of chunks, finished when it ends. A new stream object starts the document over, so create it once rather than on every render. Under React StrictMode, prefer `source` for now: a generator shared by StrictMode's two mounts may lose chunks ([#81](https://github.com/ikramhasan/typstream/issues/81)).
+`stream` is an alternative to `source`: an `AsyncIterable<string>` of chunks, finished when it ends. A new stream object starts the document over, so create it once rather than on every render. Instances given the same stream share one reader, so StrictMode's second mount shows every chunk, including those the first one read.
 
 The other props (`layout`, `theme`, `inputs`, `files`, `preamble`, `heal`, `lazy`, `engine`, the callbacks) are in the [`@typstream/react` reference](/docs/reference/react). `typstream`'s `<Typstream>` adds two of its own: `htmlCompat={false}` and `packages={false}` turn off html-compat and the vendored Typst packages ([`typstream` reference](/docs/reference/typstream)).
 

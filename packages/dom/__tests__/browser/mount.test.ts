@@ -45,6 +45,7 @@ const until = (view: MountedTypstream, done: (s: DocumentState) => boolean, ms =
   });
 
 const settled = (s: DocumentState) => s.status === "done" || s.status === "error";
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 describe(`mountTypstream in ${browser}`, () => {
   it("follows a growing source, finishes it, and cleans up on destroy", async () => {
@@ -222,6 +223,37 @@ describe(`mountTypstream in ${browser}`, () => {
       globalThis.reportError = report;
       el.remove();
     }
+  });
+
+  it("keeps every chunk of a stream when a mount is replaced while it reads it", async () => {
+    const chunks = ["= Shared\n", "First ", "paragraph.\n\n", "Second ", "paragraph ", "ends here."];
+    async function* slow() {
+      for (const chunk of chunks) {
+        await sleep(20);
+        yield chunk;
+      }
+    }
+    const stream = slow();
+    const el = host();
+    const first = mountTypstream(el, { engine, stream, lazy: false });
+    // The first mount reads a chunk, then is destroyed while it waits for the next one.
+    await sleep(30);
+    first.destroy();
+    const second = mountTypstream(el, { engine, stream, lazy: false });
+    // A mount alongside, on the same stream from part way through, sees it all too.
+    await sleep(50);
+    const other = host();
+    const third = mountTypstream(other, { engine, stream, lazy: false });
+    for (const view of [second, third]) {
+      const final = await until(view, settled);
+      expect(final.final).toBe(true);
+      expect(view.exportSource()).toBe(chunks.join(""));
+    }
+    expect(el.textContent).toContain("ends here.");
+    second.destroy();
+    third.destroy();
+    el.remove();
+    other.remove();
   });
 
   it("reports renders with their compile's report, and fallbacks with the source to replay", async () => {

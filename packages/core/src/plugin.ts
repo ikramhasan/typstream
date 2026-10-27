@@ -110,8 +110,9 @@ export type FontSource = ({ kind: "url"; url: string } | { kind: "bytes"; data: 
   scripts?: string[];
   /**
    * The engine's metadata for the file's faces, which it selects fonts by.
-   * For engine-wasm, Typst's `FontInfo` per face as JSON: `Engine.font_info`,
-   * or `node scripts/fonts.mjs --info font.ttf` in `@typstream/engine-wasm`.
+   * For engine-wasm, Typst's `FontInfo` per face as JSON: what
+   * `Engine.font_info(bytes)` from `@typstream/engine-wasm` returns for the
+   * file (after `initSync`), computed once at build time.
    */
   info?: string;
 };

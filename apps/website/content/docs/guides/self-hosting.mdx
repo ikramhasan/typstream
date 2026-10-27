@@ -89,7 +89,7 @@ Write the `new Worker(new URL("…", import.meta.url), …)` exactly like that, 
 
 <auto-type-table path="packages/engine/src/server/engine-wasm.ts" name="EngineWasmOptions" />
 
-Fonts in `fonts` load when the worker starts, for every document. For fonts only some documents need, add lazy fonts: each needs Typst's metadata for the file (`info`), which `node scripts/fonts.mjs --info font.ttf` in `@typstream/engine-wasm` prints. [Fonts and languages](/docs/guides/fonts-and-languages) covers this in detail.
+Fonts in `fonts` load when the worker starts, for every document. For fonts only some documents need, add lazy fonts: each needs Typst's metadata for the file (`info`), which `Engine.font_info(bytes)` from `@typstream/engine-wasm` computes. [Fonts and languages](/docs/guides/fonts-and-languages#compute-info) shows a script that prints it.
 
 ## Loading from a CDN
 

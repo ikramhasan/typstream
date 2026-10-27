@@ -189,6 +189,26 @@ describe(`<Typstream> in ${browser}`, () => {
     expect(docs.every((d) => d.disposed)).toBe(true);
   }, 60_000);
 
+  it("is StrictMode-safe with a stream: the document ends with every chunk", async () => {
+    const { chunks } = await commands.recordedStream();
+    async function* chunked() {
+      for (const chunk of chunks) {
+        await sleep(1);
+        yield chunk;
+      }
+    }
+    const stream = chunked();
+    const handle = createRef<TypstreamHandle>();
+    const r = recorder();
+    render(
+      <StrictMode>
+        <Typstream ref={handle} engine={engine} stream={stream} {...r.props} />
+      </StrictMode>,
+    );
+    await waitFor(() => expect(r.last()).toBe("done"), LONG);
+    expect(handle.current?.document?.exportSource()).toBe(chunks.join(""));
+  }, 120_000);
+
   it("opens a document offscreen only once it nears the viewport, unless it is streaming", async () => {
     const lazy = createRef<TypstreamHandle>();
     const streaming = createRef<TypstreamHandle>();
