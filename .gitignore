@@ -10,7 +10,7 @@ spikes/phase0/harness/results/
 coverage/
 
 # Reference material (streamdown checkout) is not part of this repo
-reference/
+/reference/
 
 # Raw spike outputs (summaries live in spikes/phase0/RESULTS.md)
 spikes/phase0/custom-engine/logs/

@@ -1,0 +1,220 @@
+---
+title: "@typstream/react"
+description: React bindings for typstream, with the Typstream component, TypstreamProvider for app-wide settings and the useTypstream() hook.
+icon: Atom
+---
+
+`@typstream/react` renders Typst streamed from an LLM, live, in React. It is a thin layer over
+[`@typstream/dom`](/docs/reference/dom)'s `mountTypstream`: the component owns a `<div>`, and everything inside it
+belongs to the framework-free renderers, which React never touches. On top of that it adds app-wide settings
+(`TypstreamProvider`), a hook to read a document's state (`useTypstream`), and one engine worker shared by the whole
+page.
+
+## When to use it
+
+Most apps install [`typstream`](/docs/reference/typstream) instead, which is this package with html-compat, the math
+font and the vendored Typst packages set up. Use `@typstream/react` directly when you want to pick every plugin
+yourself. Without React, use [`@typstream/dom`](/docs/reference/dom).
+
+## Install
+
+```npm
+npm install @typstream/react
+```
+
+React 19 is a peer dependency (`react@^19`). The bundle is marked `"use client"`, so it works in Next.js's App Router.
+
+## Example
+
+```tsx title="Answer.tsx"
+"use client";
+import { Typstream, useTypstream } from "@typstream/react";
+
+export function Answer({ text, streaming }: { text: string; streaming: boolean }) {
+  const t = useTypstream();
+  return (
+    <article>
+      <Typstream ref={t.ref} source={text} isStreaming={streaming} animated caret />
+      <footer>
+        {t.status}
+        {streaming && t.openFrames[0] ? ` · writing a ${t.openFrames[0].frame}…` : ""}
+      </footer>
+    </article>
+  );
+}
+```
+
+## Behaviour
+
+- **One worker, many documents.** Instances without an `engine` share one engine for the page. It is created on first
+  use and terminated one second after the last instance (or provider) unmounts, so it survives StrictMode's remount
+  and answers replacing each other. Compiles run one at a time across all its documents.
+- **Only visible or streaming documents compile.** A document opens when its element comes within one screen of the
+  viewport, or as soon as it streams. Offscreen, finished documents apply prop changes when they scroll back.
+  `lazy={false}` opens the document right away.
+- **StrictMode-safe.** The mount follows the component's lifetime: StrictMode's second mount opens a fresh document
+  and the first is disposed. Unmounting disposes the document.
+- **Server rendering.** On the server the component renders an empty `<div>` and starts in the browser.
+- **Props apply in place.** Every render passes the latest props to the mount, which acts only on what changed.
+  Inline objects (`inputs={{ showAnswers: "true" }}`) are compared by value, so they don't reopen the document on
+  every render. Changing the engine, `preamble`, `template`, `plugins`, `heal` or `schedule`, or switching to or from the
+  fit-width layout, opens a new document, and the
+  old output stays until its first compile.
+- **The host element** is a `<div class="typstream-host">`, plus your `className`.
+
+## API
+
+### `Typstream`
+
+```ts
+const Typstream: (props: TypstreamProps) => JSX.Element;
+```
+
+Renders a streaming Typst document. Heals each prefix, compiles it in the engine's worker and shows HTML (default) or
+SVG pages, keeping the last good output while a prefix doesn't compile.
+
+The document is either `source`, its whole text so far (as streamdown takes it), or `stream`, an
+`AsyncIterable<string>` of chunks. Create a stream once (for example in `useMemo`): a new stream starts the document
+over.
+
+- `isStreaming` says more `source` is coming. When it turns false, the document is finished: compiled strictly (final
+  mode), without the caret. Turning it true again starts over, as for a regenerated answer. With `stream` it is
+  ignored; the document finishes when the stream ends.
+- `target` switches between `"html"` and `"paged"` in place; the old output stays until the new target's first
+  compile.
+- `inputs` sets `sys.inputs`, for example `{ showAnswers: "true" }` to recompile with an answer key instead of asking
+  the model again.
+
+```tsx
+<Typstream
+  source={text}
+  isStreaming={streaming}
+  target="paged"
+  layout="fit-width"
+  inputs={{ showAnswers: String(showAnswers) }}
+  onStatusChange={(status) => console.log(status)}
+/>
+```
+
+### `TypstreamProps`
+
+Unset settings come from the nearest `TypstreamProvider`, then the defaults.
+
+<auto-type-table path="packages/react/src/Typstream.tsx" name="TypstreamProps" />
+
+Not available yet: a prop to turn off the engine's [fallback](/docs/concepts/fallback) (it is always on), render
+islands ([#28](https://github.com/ikramhasan/typstream/issues/28)), and engine options such as fonts or an adapter on
+the component. For those, create an engine with
+[`createEngine`](/docs/reference/engine#createengine) and pass it as `engine`.
+
+### `TypstreamHandle`
+
+What a `<Typstream>`'s `ref` receives: the same object for the component's lifetime, for reading its document from
+outside. `useTypstream()` wraps it; use the handle directly when you need the raw `EngineDocument`, for example to
+export.
+
+<auto-type-table path="packages/react/src/Typstream.tsx" name="TypstreamHandle" />
+
+```tsx
+const ref = useRef<TypstreamHandle>(null);
+// …
+const pdf = await ref.current?.document?.exportPdf();
+```
+
+The document is `null` until it opens (documents open lazily, near the viewport). Its exports use the document's
+current `sys.inputs`; in the fit-width layout those include the preview's page size, so pass `{ inputs }` without it to
+export at the document's own size. See [Exports](/docs/guides/exports).
+
+### `TypstreamProvider`
+
+```ts
+const TypstreamProvider: (props: TypstreamProviderProps) => JSX.Element;
+```
+
+App-wide settings for every `<Typstream>` below it: the same props as the component, except the document (`source`,
+`stream`, `isStreaming`) and `onStatusChange`.
+
+```tsx
+import { edu } from "@typstream/edu";
+import { TypstreamProvider } from "@typstream/react";
+
+<TypstreamProvider plugins={[edu]} theme="dark" heal={{ lint: { "currency-dollar": "warn" } }}>
+  <App />
+</TypstreamProvider>;
+```
+
+Settings merge from the outside in: library defaults, then each provider, then the component's own props.
+
+| Setting | How it merges |
+| --- | --- |
+| `plugins`, `stylesheets` | Lists add up, outer first. A plugin key given at two levels is applied once, as the innermost definition. |
+| `inputs`, `files` | Records merge; inner keys win. |
+| `onRendered`, `onFallback`, `onWatchdog`, `onDiagnostics` | All are called, outer ones first. |
+| Everything else | The innermost value that is set wins. |
+
+Without an `engine`, the provider keeps the page's shared engine alive while it is mounted, so the worker survives
+documents coming and going (a chat switching conversations). A provider is also the place to wire every document to
+a log or analytics sink once; see [Telemetry](/docs/guides/telemetry).
+
+### `TypstreamProviderProps`
+
+<auto-type-table path="packages/react/src/context.tsx" name="TypstreamProviderProps" />
+
+### `TypstreamDefaults`
+
+The settings a provider holds, and that `TypstreamProps` extends. Everything except `engine` and plugins' functions
+is serializable, so it can be stored per organization or per user.
+
+<auto-type-table path="packages/react/src/context.tsx" name="TypstreamDefaults" />
+
+### `TelemetryHooks`
+
+```ts
+type TelemetryHooks = Pick<TypstreamOptions, "onRendered" | "onFallback" | "onWatchdog" | "onDiagnostics">;
+```
+
+The callbacks for logging and telemetry, on the component and on the provider. The library sends nothing itself;
+the app decides what to collect. The event shapes are [`@typstream/core`'s](/docs/reference/core#telemetry-events).
+
+### `useTypstream`
+
+```ts
+const useTypstream: () => TypstreamInfo;
+```
+
+Reads a `<Typstream>`'s document: status, diagnostics, healed source, open frames. Pass `t.ref` to the component.
+React refs don't announce when they're set, so the hook hands out its own callback ref rather than reading yours.
+
+```tsx
+const t = useTypstream();
+return (
+  <>
+    <Typstream ref={t.ref} source={text} isStreaming />
+    {t.status === "stale" ? <p>Showing the last good render…</p> : null}
+  </>
+);
+```
+
+### `TypstreamInfo`
+
+<auto-type-table path="packages/react/src/useTypstream.ts" name="TypstreamInfo" />
+
+`status` is `"idle"` until the document opens, then one of the engine's
+[document statuses](/docs/reference/engine#documentstatus): `idle`, `compiling`, `stale`, `error` or `done`.
+
+### Re-exported types
+
+For convenience the package re-exports types from the packages it builds on:
+
+- From [`@typstream/engine`](/docs/reference/engine): `Engine`, `DocumentState`, `DocumentStatus`.
+- From [`@typstream/core`](/docs/reference/core#telemetry-events): `AppliedFix`, `CompiledEvent`, `CompileReport`,
+  `DocumentEvent`, `FallbackEvent`, `FallbackLevel`, `RenderedEvent`, `WatchdogEvent`.
+
+## See also
+
+- [Rendering in React](/docs/getting-started/react)
+- [Next.js and the AI SDK](/docs/getting-started/nextjs-ai-sdk)
+- [Streaming](/docs/concepts/streaming)
+- [Render targets](/docs/concepts/render-targets)
+- [Telemetry](/docs/guides/telemetry)
+- [`@typstream/dom`](/docs/reference/dom), which this package wraps

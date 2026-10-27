@@ -1,0 +1,690 @@
+---
+title: "@typstream/core"
+description: The contracts every typstream package shares, with text edits and position mapping, diagnostics, the plugin contract, telemetry events and the engine protocol.
+icon: Boxes
+---
+
+`@typstream/core` holds the types and small pure helpers the other packages agree on: text edits and source maps,
+the `Diagnostic` shape, the plugin contract (`TypstreamPlugin`), the telemetry events, and the protocol between the
+engine client and its worker. It has no dependencies and runs anywhere. All offsets are **UTF-16 code unit indices**
+(JavaScript string indices).
+
+## When to use it
+
+You rarely install it on its own: the packages you use re-export the types you need (the event types come with
+`typstream` and `@typstream/react`). Import from it directly when you write a [plugin](/docs/guides/writing-a-plugin)
+(`definePlugin`, `DiagnosticFixer`, `HealHandler`), handle diagnostics (`formatDiagnostic`, `mapDiagnostic`), or
+implement an engine transport or server ([remote engine](/docs/guides/remote-engine): the protocol types and
+`serializeMessage`).
+
+## Install
+
+```npm
+npm install @typstream/core
+```
+
+## Example
+
+A plugin is a plain object; `definePlugin` type-checks it and keeps its literal type:
+
+```ts title="acme-plugin.ts"
+import { definePlugin } from "@typstream/core";
+
+export const acme = definePlugin({
+  key: "acme/branding",
+  engine: {
+    preamble: '#set text(font: "Libertinus Serif", size: 11pt)',
+  },
+  templates: [
+    { name: "letter", title: "Letter", preamble: '#set page(paper: "us-letter")', inputs: { logo: "true" } },
+  ],
+  prompt: { rules: ["Start every document with a level-1 heading."] },
+  stylesheets: [".typstream h1 { color: #0b5394; }"],
+});
+```
+
+Pass it in `plugins` to `<Typstream>`, `mountTypstream` or `engine.open()`. [Writing a plugin](/docs/guides/writing-a-plugin)
+covers every facet.
+
+## API
+
+The exports fall into six groups:
+
+| Group | Main exports |
+| --- | --- |
+| [Text edits and positions](#text-edits-and-positions) | `TextEdit`, `applyEdit`, `mapPosition`, `diffEdit`, `SourceMap`, `Patch`, `Range` |
+| [Diagnostics](#diagnostics) | `Diagnostic`, `formatDiagnostic`, `mapDiagnostic`, `normalizeDiagnostics`, `lineColumn` |
+| [Plugins](#plugins) | `TypstreamPlugin`, `definePlugin`, `resolvePlugins`, `HealHandler`, `DiagnosticFixer`, `TemplateSpec` |
+| [Telemetry events](#telemetry-events) | `DocumentEvent`, `CompiledEvent`, `RenderedEvent`, `FallbackEvent`, `WatchdogEvent`, `FallbackLevel` |
+| [Protocol](#protocol) | `PROTOCOL_VERSION`, `RequestMap`, `CompileParams`, `CompileResult`, `Artifact`, `ProtocolError` |
+| [Serialization](#serialization) | `serializeMessage`, `deserializeMessage` |
+
+## Text edits and positions
+
+Streaming is one kind of edit: the engine, the healer and (later) the editor all describe changes as `TextEdit`s and
+map positions through them.
+
+### `TextEdit`, `Range` and `EditOrigin`
+
+```ts
+interface Range {
+  from: number;
+  to: number;
+}
+
+type EditOrigin = "stream" | "user" | "ai" | "remote";
+
+interface TextEdit {
+  from: number;
+  to: number;
+  insert: string;
+  origin?: EditOrigin;
+}
+```
+
+A `Range` is half-open, `[from, to)`. A `TextEdit` replaces `[from, to)` with `insert`; an append is
+`from = to = length`. `origin` says who made the edit.
+
+### `applyEdit`
+
+```ts
+const applyEdit: (text: string, edit: TextEdit) => string;
+```
+
+Applies one edit to a string.
+
+### `diffEdit`
+
+```ts
+const diffEdit: (prev: string, next: string) => TextEdit | null;
+```
+
+The smallest single edit that turns `prev` into `next` (common prefix and suffix), or `null` when they are equal. It
+never splits a surrogate pair.
+
+### `mapPosition`
+
+```ts
+const mapPosition: (pos: number, edit: TextEdit, assoc?: 1 | -1) => number;
+```
+
+Maps a position through an edit, for example a cursor or a diagnostic's offset to the next revision. Positions inside
+the replaced range move to the end of the insertion when `assoc` is `1` (default), or to its start when `-1`.
+
+```ts
+mapPosition(10, { from: 0, to: 0, insert: "Hi " }); // 13
+```
+
+### `SourceMap` and `Patch`
+
+```ts
+class SourceMap {
+  constructor(patches: readonly Patch[]);
+  readonly patches: readonly Patch[];
+  toResult(pos: number): number;
+  toOriginal(pos: number, assoc?: 1 | -1): number;
+}
+```
+
+Bidirectional position mapping between an input and the output of a transform (such as healing), built from
+non-overlapping patches sorted by `original.from`.
+
+- `toResult(pos)` maps an input position to the output. Positions inside deleted text map to the deletion point.
+- `toOriginal(pos, assoc)` maps an output position to the input. Positions inside inserted text map to the insertion
+  point. At a deletion, `assoc` `1` (default) maps past the deleted text, `-1` before it.
+
+A `Patch` is one change a transform made: `original` is its range in the input, `result` its range in the output.
+Deletions have an empty `result`, pure insertions an empty `original`.
+
+<auto-type-table path="packages/core/src/index.ts" name="Patch" />
+
+### `PositionMapper`
+
+```ts
+type PositionMapper = (pos: number, assoc: 1 | -1) => number;
+```
+
+Maps a position, as `SourceMap.toOriginal`, heal's `map.toInput` and `mapPosition` (curried over an edit) all do.
+`assoc` says which side to stick to at a change: `1` after it, `-1` before it. `mapDiagnostic` takes one.
+
+## Diagnostics
+
+Problems from the compiler, the healer and the fixers all come in one shape, so nothing downstream parses
+compiler-specific strings.
+
+### `Diagnostic`
+
+Positions are UTF-16 offsets into the document text. The engine converts Typst's UTF-8 byte spans at the wasm
+boundary and undoes its own worker-side patches before reporting; the client then maps them to the raw stream through
+heal's source map. `EngineDocument` states and `onDiagnostics` give you diagnostics already in input coordinates.
+
+<auto-type-table path="packages/core/src/diagnostic.ts" name="Diagnostic" />
+
+#### `DiagnosticSeverity`
+
+```ts
+type DiagnosticSeverity = "error" | "warning" | "info";
+```
+
+Typst itself reports only `error` and `warning`. `info` is for reports from typstream, such as an error a fixer fixed
+while streaming.
+
+#### `TraceItem`
+
+One step of the call chain that led to a diagnostic, as Typst reports it ("error occurred in this call of function
+`table`").
+
+<auto-type-table path="packages/core/src/diagnostic.ts" name="TraceItem" />
+
+### `formatDiagnostic`
+
+```ts
+const formatDiagnostic: (d: Diagnostic, text?: string) => string;
+```
+
+Plain text for logs and test failures: `error 3:5: unclosed delimiter`, followed by indented `hint:` lines. Pass the
+document text to get one-based `line:column` instead of offsets.
+
+### `lineColumn`
+
+```ts
+const lineColumn: (text: string, offset: number) => { line: number; column: number };
+```
+
+Zero-based line and UTF-16 column of `offset` in `text`. Lines end at `\n`.
+
+### `mapDiagnostic`
+
+```ts
+const mapDiagnostic: (d: Diagnostic, map: PositionMapper) => Diagnostic;
+```
+
+Maps a diagnostic's document positions (`span` and trace spans; not `file`, which is in another file). Use it to carry
+diagnostics from healed source to the raw stream, or across edits to a later revision. Range starts stick right and
+ends stick left, so text inserted exactly at a boundary doesn't widen the range.
+
+```ts
+mapDiagnostic(d, (pos, assoc) => healed.map.toInput(pos, assoc));
+mapDiagnostic(d, (pos, assoc) => mapPosition(pos, edit, assoc));
+```
+
+### `compareDiagnostics` and `normalizeDiagnostics`
+
+```ts
+const compareDiagnostics: (a: Diagnostic, b: Diagnostic) => number;
+const normalizeDiagnostics: (ds: readonly Diagnostic[]) => Diagnostic[];
+```
+
+`compareDiagnostics` orders by position (diagnostics without a span last), then severity, then message: a total
+order, so sorted lists compare equal across runs. `normalizeDiagnostics` sorts with it and drops repeats (same
+severity, span, message, hints and file); Typst reports an error once per evaluation of a repeated call.
+
+### `isError` and `hasErrors`
+
+```ts
+const isError: (d: Diagnostic) => boolean;
+const hasErrors: (ds: readonly Diagnostic[]) => boolean;
+```
+
+Whether a diagnostic is an error, and whether a list has one.
+
+## Plugins
+
+One plugin contract for the whole toolkit. A plugin is a plain object with a key and optional facets; each package
+reads only the facets it understands, so new facets never break old plugins. `@typstream/edu`,
+`@typstream/html-compat` and `@typstream/universe` are plugins.
+
+### `TypstreamPlugin`
+
+Everything except `heal.handlers` is plain data. The `engine` facet is sent to the worker, which can't receive
+functions, so worker-side code is referenced by module URL (`fixerModules`).
+
+<auto-type-table path="packages/core/src/plugin.ts" name="TypstreamPlugin" />
+
+| Facet | Read by | What it holds |
+| --- | --- | --- |
+| `heal` | `@typstream/heal` | Heal handlers, and overrides of built-in lint rules by id (`{ "currency-dollar": "fix" }`). |
+| `engine` | `@typstream/engine` | Fixer module URLs, files (such as a local Typst package), allowed packages and fonts (beta), and a preamble. |
+| `templates` | `mountTypstream` (`template` option) | Named document setups: a preamble and default `sys.inputs`. |
+| `prompt` | Prompt builders (`@typstream/edu`'s `buildSystemPrompt`) | A function catalogue, rules and few-shot examples for the model. |
+| `sanitize` | The HTML renderer | Extra tags and attributes (by tag, `"*"` for all) to let through. |
+| `stylesheets` | The HTML renderer, `standaloneHtml` | CSS for the HTML this plugin's Typst writes. |
+| `islands`, `editor` | Nothing yet | Reserved (beta): render islands ([#28](https://github.com/ikramhasan/typstream/issues/28)) and the visual editor. |
+
+A plugin's `engine.fonts` load only from `createEngine`'s `plugins`, since fonts belong to the worker; their other
+facets apply to the documents that list them.
+
+### `definePlugin`
+
+```ts
+const definePlugin: <P extends TypstreamPlugin>(plugin: P) => P;
+```
+
+Identity function that type-checks a plugin while keeping its literal type.
+
+### `resolvePlugins`
+
+```ts
+const resolvePlugins: <P extends TypstreamPlugin>(plugins: readonly P[]) => P[];
+```
+
+The plugins to load, in the order their facets apply: each key once, and every plugin after the plugins it depends
+on. The engine calls it when a document opens (`EngineDocument.plugins` is the result).
+
+- A key given more than once is loaded once, as its last definition, at the place of its first (a provider's plugin
+  overridden by a component's).
+- Otherwise plugins keep the order they were given in; a dependency given later moves up to just before the first
+  plugin that needs it.
+- A dependency that isn't among `plugins`, a cycle of dependencies, or a plugin without a key throws.
+
+### `HealHandler`
+
+The extension point of `@typstream/heal`: product-specific fixes, run alongside the built-in lint rules (phase
+`settled`, on text whose parse can no longer change) or on the final healed source (phase `output`). Returned edits
+are against `ctx.text`, non-overlapping, inside `[ctx.from, ctx.to)`.
+
+<auto-type-table path="packages/core/src/plugin.ts" name="HealHandler" />
+
+#### `HealHandlerContext`
+
+<auto-type-table path="packages/core/src/plugin.ts" name="HealHandlerContext" />
+
+#### `SyntaxMode`
+
+```ts
+type SyntaxMode = "markup" | "math" | "code" | "raw" | "comment";
+```
+
+Typst's lexical modes, plus the inside of raw blocks and comments, which handlers almost always need to leave alone.
+
+#### `LintSetting`
+
+```ts
+type LintSetting = "fix" | "warn" | "off";
+```
+
+`fix` applies a lint rule's change, `warn` only reports it.
+
+### `DiagnosticFixer`
+
+Turns a compile error into edits that should make it go away; the worker applies them and recompiles, at most twice
+per revision. For each error, fixers are tried in priority order and the first that returns edits fixes it. A round is
+applied only when every error has a fix. Fixers run in the worker, so plugins ship them as ES modules
+(`engine.fixerModules`) whose default export is a fixer or an array of them. Fixed compiles import typstream's runtime
+library as `typstream`, so fixes can insert placeholders such as `#typstream.pending-ref("key");`.
+
+<auto-type-table path="packages/core/src/plugin.ts" name="DiagnosticFixer" />
+
+```ts title="acme-fixers.js"
+export default {
+  name: "acme/old-macro",
+  match: /^unknown variable: oldbox$/,
+  fix: (d, { text }) => [{ from: d.span.from, to: d.span.to, insert: "box" }],
+};
+```
+
+#### `FixContext`
+
+<auto-type-table path="packages/core/src/plugin.ts" name="FixContext" />
+
+### `TemplateSpec`
+
+A named document setup: page, fonts, header. Select one with the `template` option.
+
+<auto-type-table path="packages/core/src/plugin.ts" name="TemplateSpec" />
+
+### `FunctionDoc` and `PromptExample`
+
+What a plugin's `prompt` facet holds: the catalogue of its Typst functions (generated from doc comments, for
+`@typstream/edu`) and few-shot examples. See [Prompting](/docs/guides/prompting).
+
+<auto-type-table path="packages/core/src/plugin.ts" name="FunctionDoc" />
+
+<auto-type-table path="packages/core/src/plugin.ts" name="PromptExample" />
+
+### `PackageSpec` and `FontSource` (beta)
+
+<Callout type="warn" title="Beta">
+`PackageSpec`, `FontSource`, `IslandSpec` and `EditorFacet` are beta and may change before the first stable release.
+</Callout>
+
+A `PackageSpec` is an entry of the engine's package allowlist (`#import "@preview/cetz:0.5.3"`). The engine fetches it
+only when a document imports it. Without `url`, the server resolves it from its configured registry, if it has one.
+
+<auto-type-table path="packages/core/src/plugin.ts" name="PackageSpec" />
+
+A `FontSource` is a font for the engine: a URL the worker fetches, or the bytes. A URL with `info` is a lazy font,
+registered from `info` and downloaded only when a document uses it. See
+[Fonts and languages](/docs/guides/fonts-and-languages).
+
+```ts
+type FontSource = ({ kind: "url"; url: string } | { kind: "bytes"; data: Uint8Array }) & {
+  family?: string;
+  scripts?: string[]; // ISO 15924 codes the font is for, e.g. ["Beng"]
+  info?: string; // the engine's metadata for the file's faces
+};
+```
+
+`IslandSpec` describes an interactive component the renderer will swap in for a Typst marker
+([#28](https://github.com/ikramhasan/typstream/issues/28)); `EditorFacet` is reserved for the visual editor. Both are
+typed loosely on purpose, and nothing reads them yet.
+
+## Telemetry events
+
+The library sends nothing anywhere: the engine client emits these per document, the renderers add what they drew, and
+the app decides what to log or collect. Every field is plain data, so an event can be serialized as it is. You receive
+them from `EngineDocument.onEvent`, `Engine.onEvent` (wrapped as `{ type: "document", event }`), and the `onRendered`,
+`onFallback` and `onWatchdog` callbacks. See [Telemetry](/docs/guides/telemetry).
+
+### `DocumentEvent`
+
+```ts
+type DocumentEvent = CompiledEvent | FallbackEvent | WatchdogEvent | DiagnosticsEvent;
+```
+
+Everything a document reports. For one compile: `diagnostics`, then `compiled`, then `fallback` if it fell back. A
+watchdog stop reports `watchdog` instead.
+
+### `DocumentEventBase`
+
+What every document event says about the compile it is about.
+
+<auto-type-table path="packages/core/src/telemetry.ts" name="DocumentEventBase" />
+
+### `CompileReport`
+
+What a compile cost and what it took to make the text compile: the fields `compiled` and `rendered` events share.
+
+<auto-type-table path="packages/core/src/telemetry.ts" name="CompileReport" />
+
+### `CompiledEvent`
+
+A compile finished, whether or not it published an artifact (`status`). Probe compiles of a hang search aren't
+reported; the `watchdog` events that started the search are.
+
+<auto-type-table path="packages/core/src/telemetry.ts" name="CompiledEvent" />
+
+### `RenderedEvent`
+
+The renderer showed an artifact: the report of the compile that made it, and what drawing it cost. What `onRendered`
+receives.
+
+<auto-type-table path="packages/core/src/telemetry.ts" name="RenderedEvent" />
+
+### `FallbackEvent`
+
+The document's output isn't its text as it is: a candidate test case. Fired with every such compile, so a lasting
+error in a stream fires once per revision; `consecutive` tells a new failure from a lasting one.
+
+<auto-type-table path="packages/core/src/telemetry.ts" name="FallbackEvent" />
+
+### `FallbackLevel`
+
+```ts
+type FallbackLevel = 0 | 1 | 2 | 3 | 4;
+```
+
+| Level | Output |
+| --- | --- |
+| `0` | The text itself (healed, and fixed by the worker's fixers if it needed it). |
+| `1` | The compile failed; the last good artifact stays. |
+| `2` | The settled text, with the unsettled tail as plain text (streaming). |
+| `3` | Failing or hanging blocks shown as error boxes. |
+| `4` | Nothing compiled: the whole document shown as its source (final mode). |
+
+See [Fallback](/docs/concepts/fallback).
+
+### `WatchdogEvent`
+
+A compile of the document ran past its budget or crashed the worker, which was replaced.
+
+<auto-type-table path="packages/core/src/telemetry.ts" name="WatchdogEvent" />
+
+### `DiagnosticsEvent`
+
+A compile replaced the document's diagnostics (in input coordinates, sorted). Fired with every compile that reports,
+even when they didn't change.
+
+<auto-type-table path="packages/core/src/telemetry.ts" name="DiagnosticsEvent" />
+
+### `AppliedFix`
+
+An error a diagnostic fixer fixed to make a compile's output, as listed in `fixersApplied`.
+
+<auto-type-table path="packages/core/src/protocol.ts" name="AppliedFix" />
+
+## Protocol
+
+The engine client and its worker talk in LSP-shaped messages: `{ id, method, params }` requests answered by
+`{ id, result }` or `{ id, error }`, plus `{ method, params }` notifications. Messages are plain structured-clonable
+data, so they cross `postMessage` as they are, and a socket as JSON through `serializeMessage`. You need these types
+only to write a transport, a server or an adapter; see [Remote engine](/docs/guides/remote-engine).
+
+The lifecycle: `initialize` first, then any number of documents, each opened, edited, compiled and closed
+independently; `shutdown` last. Documents share the worker's fonts, packages and Typst's memoization cache. Every
+document-scoped message carries the document's `uri` and a `rev` (revision) the client chooses, increasing with every
+change, so stale output can be dropped.
+
+### `PROTOCOL_VERSION`
+
+```ts
+const PROTOCOL_VERSION = 1;
+```
+
+Bumped only for breaking changes. Additive changes (new methods, new optional fields) are announced through
+capabilities instead. A server that doesn't speak the client's version answers `initialize` with a
+`protocol-version-mismatch` error whose `data` is `VersionMismatchData` (`{ supported: number[] }`).
+
+### Requests
+
+`RequestMap` maps every request method to its params and result:
+
+| Method | Params | Result |
+| --- | --- | --- |
+| `initialize` | `InitializeParams` | `InitializeResult` |
+| `shutdown` | `null` | `null` |
+| `document/open` | `DocumentOpenParams` | `null` |
+| `document/edit` | `DocumentEditParams` | `null` |
+| `document/setFiles` | `DocumentSetFilesParams` | `null` |
+| `document/close` | `DocumentCloseParams` | `null` |
+| `compile` | `CompileParams` | `CompileResult` |
+| `export/pdf` | `ExportParams` | `ExportResult<Uint8Array>` |
+| `export/html` | `ExportParams` | `ExportResult<string>` |
+| `resolve/span` (beta) | `ResolveSpanParams` | `ResolveSpanResult` |
+| `resolve/location` (beta) | `ResolveLocationParams` | `ResolveLocationResult` |
+
+A compile's output arrives as notifications sent before its response: `document/diagnostics` always, then
+`document/artifact` when the compile succeeded. The same notifications carry compiles the server starts itself, such
+as when a lazily loaded font arrives.
+
+Notifications:
+
+| Direction | Method | Params |
+| --- | --- | --- |
+| Client to server | `$/cancel` | `CancelParams` (`{ id }`): drop a request that hasn't started. |
+| Server to client | `document/diagnostics` | `DiagnosticsNotification`: the complete set for one compile, replacing earlier ones. |
+| Server to client | `document/artifact` | `ArtifactNotification`: a successful compile's `artifact`. |
+| Server to client | `$/log` | `LogParams` (`{ level, message }`): debugging only, never user-facing. |
+
+Helper types: `RequestMethod`, `ClientNotificationMethod` and `ServerNotificationMethod` (the method names),
+`ParamsOf<M>` and `ResultOf<M>`, `RequestId` (a number unique among pending requests), `Request<M>`,
+`ClientNotification<M>`, `ServerNotification<M>`, `SuccessResponse<M>`, `ErrorResponse`, `Response<M>`, and the unions
+`ClientMessage` (what the client posts) and `ServerMessage` (what the worker posts). `RequestMap`,
+`ClientNotificationMap` and `ServerNotificationMap` are the tables they derive from. The guards `isRequest`,
+`isClientNotification`, `isResponse`, `isServerNotification` and `isErrorResponse` tell messages apart.
+
+### `initialize`
+
+`InitializeParams` holds the client's `protocolVersion`, its `ClientCapabilities` (`pagedDiff`: it can apply
+changed-page updates), optional `clientInfo`, and `options` (beta `InitializeOptions`: `fonts`, `packages` and
+`fixerModules` shared by every document).
+
+<auto-type-table path="packages/core/src/protocol.ts" name="InitializeResult" />
+
+<auto-type-table path="packages/core/src/protocol.ts" name="ServerCapabilities" />
+
+### Documents
+
+`document/open` opens a document at revision `rev` with the text to compile (the healed source, in the streaming
+pipeline). `document/edit` applies `edits: TextEdit[]` in order, each to the result of the previous one, and must
+raise `rev`. `document/setFiles` writes (or, with `null`, deletes) files, as a new revision. `document/close` frees the
+document.
+
+<auto-type-table path="packages/core/src/protocol.ts" name="DocumentOpenParams" />
+
+Related types: `DocumentUri` (any string unique among the worker's open documents), `Revision` (a number),
+`DocumentParams` (`{ uri, rev }`, the base of every document message), `FileContent` (`string | Uint8Array`; strings
+are UTF-8 text) and `FileDelta` (`Record<string, FileContent | null>`, paths relative to the document root).
+
+### `compile`
+
+```ts
+type CompileTarget = "html" | "paged";
+type CompileMode = "streaming" | "final";
+```
+
+Compiles the document as of `rev`, which must be its current revision (otherwise `content-modified`). `streaming`
+compiles may apply streaming-only fixers and are expected to be superseded; `final` compiles the finished document.
+
+<auto-type-table path="packages/core/src/protocol.ts" name="CompileParams" />
+
+<auto-type-table path="packages/core/src/protocol.ts" name="FallbackParams" />
+
+`SkippedRange` is a `Range` with a `reason` (`"timeout"` or `"crash"`): a part of the text the compiler can't get
+through.
+
+<auto-type-table path="packages/core/src/protocol.ts" name="CompileResult" />
+
+<auto-type-table path="packages/core/src/protocol.ts" name="CompileTimings" />
+
+<auto-type-table path="packages/core/src/protocol.ts" name="CompileFallback" />
+
+### Artifacts
+
+```ts
+type Artifact = HtmlArtifact | PagedArtifact;
+```
+
+An `HtmlArtifact` is `{ target: "html", html }`: the complete HTML document Typst exported. It is untrusted; the
+renderer sanitizes it.
+
+Compiled pages. With `base: null` a `PagedArtifact` holds every page. Otherwise it holds only the pages that changed
+since the paged artifact of revision `base`; pages it doesn't list are unchanged, and pages at or past `pageCount` no
+longer exist. A client whose displayed pages aren't from `base` must not apply it, and should recompile with
+`fullPages`. The engine client merges them for you: `DocumentState.artifact` is always complete.
+
+<auto-type-table path="packages/core/src/protocol.ts" name="PagedArtifact" />
+
+<auto-type-table path="packages/core/src/protocol.ts" name="PageUpdate" />
+
+#### `TextRun`
+
+A run of text drawn on a page, for a selectable text layer. In points from the page's top left: `(x, y)` is the start
+of the baseline (its left end, whatever the direction).
+
+<auto-type-table path="packages/core/src/protocol.ts" name="TextRun" />
+
+#### `TextNode`
+
+A structure element around some of a page's text runs: a heading, a list or its item, a table, a row or a cell.
+
+<auto-type-table path="packages/core/src/protocol.ts" name="TextNode" />
+
+### Exports
+
+```ts
+type ExportFormat = "pdf" | "html";
+type ExportResult<Data> = DocumentParams & { diagnostics: Diagnostic[] } & (
+  | { status: "ok"; data: Data }
+  | { status: "error" }
+);
+```
+
+`export/pdf` and `export/html` take `ExportParams` (`uri`, `rev`, optional `inputs`) and export the current revision
+in a final, anchor-free form. `error` means the document doesn't compile; diagnostics are included either way.
+
+### Resolving positions (beta)
+
+<Callout type="warn" title="Beta">
+`resolve/span` and `resolve/location` are reserved for click-to-edit and cursor sync, and their types (`PagePoint`,
+`ResolveSpanParams`, `ResolveSpanResult`, `ResolveLocationParams`, `ResolveLocationResult`) may change. Servers
+announce them with `capabilities.resolveSpan` and `resolveLocation`.
+</Callout>
+
+`resolve/span` takes a `point` (`{ page, x, y }` in points) and returns the source `span` that produced it, or `null`.
+`resolve/location` takes an `offset` and returns every `locations` point it was laid out at.
+
+### Errors
+
+```ts
+type ErrorCode =
+  | "not-initialized"
+  | "protocol-version-mismatch"
+  | "method-not-found"
+  | "invalid-params"
+  | "document-not-open"
+  | "document-already-open"
+  | "stale-revision"
+  | "content-modified"
+  | "request-cancelled"
+  | "unsupported"
+  | "internal";
+
+interface ResponseError {
+  code: ErrorCode;
+  message: string;
+  data?: unknown;
+}
+```
+
+Protocol failures only: a document that doesn't compile is a successful `compile` with `status: "error"`.
+`stale-revision` is an edit whose `rev` doesn't exceed the current one; `content-modified` is a compile, export or
+resolve for a revision that is no longer current.
+
+#### `ProtocolError`
+
+```ts
+class ProtocolError extends Error {
+  constructor(code: ErrorCode, message: string, data?: unknown);
+  readonly code: ErrorCode;
+  readonly data: unknown;
+  static from(e: ResponseError): ProtocolError;
+  toJSON(): ResponseError;
+}
+```
+
+A protocol failure as a throwable. Errors lose their class when posted, so the wire carries a `ResponseError`; convert
+with `ProtocolError.from()` and `toJSON()`.
+
+## Serialization
+
+### `serializeMessage`
+
+```ts
+const serializeMessage: (message: unknown) => string;
+```
+
+Writes a protocol message (or any plain data holding `Uint8Array`s) as JSON text, for transports that can't
+structured-clone, such as a WebSocket. Bytes (files, PDF exports) are written as `{ "$bytes": "<base64>" }`.
+
+### `deserializeMessage`
+
+```ts
+const deserializeMessage: (text: string) => unknown;
+```
+
+Parses text written by `serializeMessage`, restoring the `Uint8Array`s. It only parses: validate the result before
+trusting it.
+
+```ts
+socket.send(serializeMessage(message));
+socket.onmessage = (e) => server.receive(deserializeMessage(e.data) as ClientMessage);
+```
+
+## See also
+
+- [Writing a plugin](/docs/guides/writing-a-plugin)
+- [Plugins](/docs/concepts/plugins)
+- [Telemetry](/docs/guides/telemetry)
+- [Remote engine](/docs/guides/remote-engine)
+- [`@typstream/engine`](/docs/reference/engine), the client and server that speak the protocol

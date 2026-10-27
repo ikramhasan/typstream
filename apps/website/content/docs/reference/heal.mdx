@@ -1,0 +1,318 @@
+---
+title: "@typstream/heal"
+description: The self-healing parser that turns any prefix of streamed Typst into a source that parses, with lint fixes for Markdown habits.
+icon: Bandage
+---
+
+`@typstream/heal` takes any prefix of a model's Typst output and returns a source that parses. It closes what is open
+(`[b` becomes `[b]`), drops what can't be completed yet (`#let x = `), and fixes Markdown habits in text that has
+settled (`## Heading` becomes `== Heading`). It is a faithful port of Typst 0.15.1's lexer and parser, checked against
+Typst's own parser, with no dependencies beyond `@typstream/core`. [Healing](/docs/concepts/healing) explains the
+model behind it.
+
+## When to use it
+
+You usually don't call it yourself. `@typstream/engine` heals every document before compiling it, and `<Typstream>` and
+`mountTypstream` pass their `heal` option through to it. Use this package directly when you:
+
+- compile streamed Typst with your own engine and need each prefix to parse;
+- want the "writing a table…" status from `openFrames` without rendering anything;
+- lint a finished document for Markdown habits (`@typstream/node`'s `validate` does this for you);
+- write [heal handlers](#handlers) for a plugin and want to test them in isolation.
+
+## Install
+
+```npm
+npm install @typstream/heal
+```
+
+## Example
+
+```ts
+import { createHealer, heal } from "@typstream/heal";
+
+heal("#table(columns: 2, [a], [b").source; // "#table(columns: 2, [a], [b])"
+heal("Hello *bold").source; // "Hello *bold*"
+heal("$x^").source; // "$x$"
+heal("#let x = ").source; // ""  (an incomplete statement is dropped, not guessed)
+heal("#set text(size: 12").source; // ""  (a half-written rule is never applied)
+
+// Streaming: re-parses only from the last checkpoint before each change.
+const healer = createHealer();
+for await (const chunk of stream) {
+  const { source, openFrames, stableOffset } = healer.push(chunk);
+  compile(source); // always parses
+}
+const done = healer.finish(); // the complete document: lint everything, report what's still broken
+```
+
+## How it works
+
+1. **Normalize** the raw output: strip a ```` ```typst ```` (or ```` ```typ ````) fence around the whole document and a
+   BOM, and hold back half a surrogate pair at the end.
+2. **Recognize** the text with the ported lexer and parser. It records what the end of the text needs (close a
+   delimiter, or cut an incomplete construct), settled syntax errors, and checkpoints to resume from after an edit.
+3. **Repair the tail**: cut, then close. Every candidate is re-recognized before it is accepted. A closer that would
+   merge with the last token (`\` followed by `*`) gets a separator, or the token is dropped.
+4. **Lint settled text**: text before the stable offset, or everything in final mode.
+
+Text before `stableOffset` never changes meaning as more text arrives, and the healer never rewrites it except for lint
+fixes. All offsets are UTF-16 indices into the input (JS string indices).
+
+## API
+
+| Export | What it is |
+| --- | --- |
+| [`heal(input, options?)`](#heal) | One-shot healing. |
+| [`createHealer(options?)`](#createhealer) | Incremental healer: `push`, `set`, `applyEdit`, `setStreamingRange`, `finish`, `result`, `reset`. |
+| [`HealOptions`](#healoptions) | `final`, `dropIncompleteRules`, `lint`, `unwrapFences`, `streamingRange`, `handlers`. |
+| [`HealResult`](#healresult) | `source`, `stableOffset`, `map`, `patches`, `openFrames`, `findings`, `errors`. |
+| [`DEFAULT_LINT`](#lint-rules) | The lint rules and their default severities. |
+| [`HealHandler`](#handlers) | Product-specific fixes: `{ name, phase, priority?, run(ctx) }`. |
+| [`recognize(text, from?, options?)`](#recognize) | The recognizer on its own: requirements, errors, checkpoints. |
+| [`normalize(raw, options?)`](#normalize) | The normalization step on its own. |
+
+### heal
+
+```ts
+const heal: (input: string, opts?: HealOptions) => HealResult;
+```
+
+Heals a complete or partial Typst source in one call. It is stateless: each call recognizes the whole input. For a
+stream, use [`createHealer`](#createhealer), which gives the same results while re-parsing only what changed.
+
+```ts
+import { heal } from "@typstream/heal";
+
+const { source, openFrames } = heal("= Quiz\n#question(points: 2)[What is $1/2");
+// source: "= Quiz\n#question(points: 2)[What is $1/2$]"
+// openFrames: [{ frame: "math", open: 36 }, { frame: "content", open: 27 }]
+
+// A finished document: no tail repair, and every rule lints the whole text.
+const { source: fixed, findings } = heal("## Results\n**Total**: 12", { final: true });
+// fixed: "== Results\n*Total*: 12"
+```
+
+### createHealer
+
+```ts
+const createHealer: (options?: HealOptions) => Healer;
+```
+
+Creates an incremental healer. It keeps the recognizer's state and, after each change, resumes at the last checkpoint
+before it and stops as soon as recognition is back in step with the previous state. Results equal what
+[`heal`](#heal) returns for the same input and options.
+
+| Method | What it does |
+| --- | --- |
+| `push(chunk)` | Appends streamed text. |
+| `set(input)` | Replaces the whole input (for example a `source` prop that grows) and diffs it against the previous one. |
+| `applyEdit({ from, to, insert })` | Applies an edit to the input: editors, collaboration, AI rewrites. |
+| `setStreamingRange(range)` | Marks `[from, to)` of the input as being written by a model; `null` heals the whole tail again. |
+| `finish()` | The stream ended: heals the complete document (no tail repair) and lints all of it. |
+| `result()` | The latest result, without changing anything. |
+| `reset(input?)` | Starts over with the original options and `input` (default `""`). |
+| `input` | The current input (read-only). |
+
+Every method except `reset` returns a [`HealResult`](#healresult).
+
+```ts
+import { createHealer } from "@typstream/heal";
+
+const healer = createHealer();
+healer.push("= Quiz\n");
+const r = healer.push("#question(points: 2)[What is ");
+r.source; // "= Quiz\n#question(points: 2)[What is ]"
+r.openFrames; // [{ frame: "content", open: 27 }]
+r.stableOffset; // 7: "= Quiz\n" is settled
+
+const done = healer.finish();
+done.errors; // syntax errors healing could not fix, e.g. a delimiter the model never closed
+```
+
+**Streaming into the middle of a document.** When a model rewrites part of an existing document, insert its text with
+`applyEdit` and mark the region with `setStreamingRange`. Only constructs opened inside the region are repaired, and the
+text after it keeps parsing as it did before. The range moves with later edits: text inserted at its end extends it.
+
+```ts
+const healer = createHealer();
+healer.set("= Notes\n\nIntro.\n\nOutro.");
+const at = "= Notes\n\nIntro.\n\n".length;
+healer.applyEdit({ from: at, to: at, insert: "#table(columns: 2, [a" });
+const r = healer.setStreamingRange({ from: at, to: at + 21 });
+r.source; // "= Notes\n\nIntro.\n\n#table(columns: 2, [a])Outro."
+```
+
+<auto-type-table path="packages/heal/src/heal.ts" name="Healer" />
+
+### HealOptions
+
+<auto-type-table path="packages/heal/src/heal.ts" name="HealOptions" />
+
+- `final`: use it when the document is complete. Nothing is cut or closed, every rule lints the whole text, and
+  whatever is still open at the end is reported in `errors`. `Healer.finish()` sets it for you.
+- `dropIncompleteRules` (default `true`): a `set`, `show`, `import` or `include` statement is dropped entirely while it
+  is incomplete, so a half-written `#set text(size: 12` never restyles the whole document for one frame. With `false`
+  it is closed like any other call.
+- `lint`: per-rule overrides of [`DEFAULT_LINT`](#lint-rules), by rule id. `"fix"`, `"warn"` or `"off"`; `true` means
+  `"fix"` and `false` means `"off"`.
+- `unwrapFences` (default `"auto"`): strip a Markdown code fence (`typst` or `typ`) wrapped around the whole output.
+  `"never"` leaves it.
+- `streamingRange`: heal only text written into `[from, to)` of an existing document, in input offsets.
+- `handlers`: [heal handlers](#handlers), run alongside the lint rules or on the healed output.
+
+### HealResult
+
+<auto-type-table path="packages/heal/src/heal.ts" name="HealResult" />
+
+`map` converts positions in both directions. Use `map.toInput` to carry a compile diagnostic from the healed `source`
+back to the raw text the user sees (`@typstream/core`'s `mapDiagnostic` does it for a whole diagnostic):
+
+```ts
+const r = heal("Hello *bold");
+r.map.toSource(6); // 6: the `*` is where it was
+r.map.toInput(12); // 11: the inserted closer maps to the end of the input
+```
+
+`patches` lists every change from the normalized input to `source`, each with a machine-readable `reason`
+(`"heal:close"`, `"heal:cut"`, `"lint:<rule>"`, `"handler"`).
+
+### OpenFrame
+
+<auto-type-table path="packages/heal/src/heal.ts" name="OpenFrame" />
+
+`openFrames` lists the constructs still open at the end of the input, innermost first. Use it for status text such as
+"writing a table…". `FrameKind` is one of `"content"`, `"code-block"`, `"args"`, `"params"`, `"parens"`, `"math"`,
+`"math-args"`, `"math-delimited"`, `"strong"`, `"emph"`, `"string"`, `"raw"`, `"term"` and `"text-bracket"`.
+
+### Lint rules
+
+Lint rules fix mistakes that are permanent, not streaming artifacts: Markdown habits and stray delimiters models
+produce. They only look at settled text (or the whole document in final mode) and only at markup positions, so math,
+code, raw blocks and comments are left alone.
+
+```ts
+const DEFAULT_LINT: Readonly<Record<LintRuleId, LintSeverity>>;
+type LintSeverity = "fix" | "warn" | "off"; // fix applies the change, warn only reports it
+```
+
+| Rule id | Default | What it does |
+| --- | --- | --- |
+| `markdown-heading` | `fix` | `## Heading` becomes `== Heading`. |
+| `markdown-bold` | `fix` | `**bold**` becomes `*bold*` (and `__x__` becomes `_x_`). |
+| `markdown-link` | `fix` | `[text](https://…)` becomes `#link("https://…")[text]` (`http` and `https` URLs). |
+| `email-at` | `fix` | Escapes an `@` inside a word (`a\@b.com`), which Typst would read as a reference. |
+| `bare-hash` | `fix` | Escapes a `#` followed by a space (`\#`), which starts no expression. |
+| `stray-closer` | `fix` | Escapes an unmatched `]` (`\]`). |
+| `unclosed-delim` | `fix` | Escapes a `*` or `_` that is never closed in its paragraph. |
+| `math-lone-script` | `fix` | Gives a `^` or `_` without a base an empty one: `m/s$^2$` becomes `m/s$""^2$`. |
+| `unclosed-block-comment` | `warn` | Reports a `/*` that is never closed and hides the rest of the document. |
+| `currency-dollar` | `warn` | Reports `$` signs that look like prices (`$5 and $10`), not math. As a fix it escapes both (`\$`). |
+
+```ts
+heal("It costs $5 and $10 today", { final: true, lint: { "currency-dollar": "fix" } }).source;
+// "It costs \\$5 and \\$10 today"
+```
+
+Each finding is a `LintFinding`; its `changes` are applied when its severity is `fix`:
+
+<auto-type-table path="packages/heal/src/lint.ts" name="LintFinding" />
+
+<auto-type-table path="packages/heal/src/lint.ts" name="TextChange" />
+
+### Handlers
+
+A heal handler is a product-specific fix that runs inside the healer, for example expanding a `[[blank]]` shorthand your
+prompt allows. `HealHandler` and `HealHandlerContext` are declared in `@typstream/core` and re-exported here. Plugins
+carry them in their `heal.handlers` facet, which the engine passes to the healer; see
+[Writing a plugin](/docs/guides/writing-a-plugin).
+
+```ts
+import { heal, type HealHandler } from "@typstream/heal";
+
+const blanks: HealHandler = {
+  name: "blank-shorthand",
+  phase: "settled",
+  run({ text, from, to, modeAt }) {
+    const edits = [];
+    for (const m of text.slice(from, to).matchAll(/\[\[blank\]\]/g)) {
+      const at = from + m.index;
+      if (modeAt(at) === "markup") edits.push({ from: at, to: at + m[0].length, insert: "#blank()" });
+    }
+    return edits;
+  },
+};
+
+heal("Fill in [[blank]] here", { final: true, handlers: [blanks] }).source; // "Fill in #blank() here"
+```
+
+There are two phases:
+
+- `settled` handlers run with the lint rules on text whose parse can no longer change: `ctx.text` is the normalized
+  input and `[ctx.from, ctx.to)` is the newly settled range. Their edits must lie inside that range (others are
+  ignored), and each one appears in `findings` with the handler's name as its `rule` and severity `fix`.
+- `output` handlers run on the final healed source, over all of it. `modeAt` always answers `"markup"` there.
+
+Edits are against `ctx.text` and must not overlap. Handlers run in ascending `priority` (default 100).
+
+<auto-type-table path="packages/core/src/plugin.ts" name="HealHandler" />
+
+<auto-type-table path="packages/core/src/plugin.ts" name="HealHandlerContext" />
+
+### recognize
+
+```ts
+const recognize: (text: string, from?: Checkpoint, opts?: RecognizeOptions) => Recognition;
+```
+
+Runs the recognizer on its own, without repairing anything. It tells you what the end of `text` needs, the syntax errors
+before it, and the root checkpoints recognition can resume from. Pass a `Checkpoint` as `from` to resume there.
+
+```ts
+import { recognize } from "@typstream/heal";
+
+recognize("#table(columns: 2, [a").requirements;
+// [{ type: "close", text: "]", open: 19, frame: "content" },
+//  { type: "close", text: ")", open: 6, frame: "args" }]
+```
+
+A `Requirement` is either `{ type: "close", text, open, frame, display? }` (append `text` to close the construct opened
+at `open`) or `{ type: "cut", at, reason, soft? }` (the construct from `at` can't be completed yet).
+
+<auto-type-table path="packages/heal/src/recognizer.ts" name="Recognition" />
+
+<auto-type-table path="packages/heal/src/recognizer.ts" name="RecognizeOptions" />
+
+<auto-type-table path="packages/heal/src/recognizer.ts" name="Checkpoint" />
+
+<auto-type-table path="packages/heal/src/recognizer.ts" name="SyntaxIssue" />
+
+The package also exports the `Mode` (`"markup" | "math" | "code"`) and `ModeSpan` types.
+
+### normalize
+
+```ts
+const normalize: (raw: string, opts?: NormalizeOptions) => Normalized;
+```
+
+The first step of healing on its own: strips a code fence around the whole document and a BOM, and with
+`streaming: true` holds back a trailing half surrogate pair or partial fence. `@typstream/node`'s `fixLoop` uses it to
+unwrap a model's fenced reply.
+
+```ts
+import { normalize } from "@typstream/heal";
+
+normalize("```typst\n= Hi\n```").text; // "= Hi"
+```
+
+<auto-type-table path="packages/heal/src/normalize.ts" name="NormalizeOptions" />
+
+<auto-type-table path="packages/heal/src/normalize.ts" name="Normalized" />
+
+## See also
+
+- [Healing](/docs/concepts/healing): what healing guarantees, with an interactive playground.
+- [Streaming](/docs/concepts/streaming): how healed prefixes flow into the engine.
+- [@typstream/engine](/docs/reference/engine): the client that heals and compiles each document.
+- [@typstream/core](/docs/reference/core): `TextEdit`, `Patch`, `SourceMap` and the plugin contract.
+- [Writing a plugin](/docs/guides/writing-a-plugin): shipping heal handlers in a plugin.

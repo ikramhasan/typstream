@@ -1,0 +1,314 @@
+---
+title: "@typstream/edu"
+description: The Typst vocabulary for teachers' documents (templates, questions, answers and keys, callouts, rubrics, drawings, chemistry) as a typstream plugin with a prompt kit.
+icon: GraduationCap
+---
+
+`@typstream/edu` is the vocabulary typstream teaches the model for teachers' documents: worksheets, quizzes, exams,
+lesson plans and handouts. It is a Typst package (functions such as `#question`, `#mcq` and `#blank`, and templates)
+plus the CSS for its HTML, packaged as a `TypstreamPlugin`, with a prompt catalogue generated from the package's doc
+comments. Every function has a page in the [vocabulary](/docs/reference/edu/vocabulary).
+
+## When to use it
+
+Use it when your app writes educational documents. The plugin gives documents the functions without an `#import`, the
+prompt kit tells the model how to use them, and answers stay out of the student's copy. If your documents are something
+else, leave it out: `typstream` renders plain Typst on its own, and you can write your own plugin the same way (see
+[Writing a plugin](/docs/guides/writing-a-plugin)).
+
+## Install
+
+```npm
+npm install @typstream/edu
+```
+
+## Example
+
+```tsx
+import { edu } from "@typstream/edu";
+import { Typstream } from "typstream";
+
+<Typstream plugins={[edu]} source={text} isStreaming={isStreaming} />;
+// A teacher's copy: the same document with answers shown, recompiled, not re-prompted.
+<Typstream plugins={[edu]} source={text} inputs={{ showAnswers: "true" }} />;
+```
+
+The plugin mounts the package's files (`eduFiles`) and adds a preamble (`eduPreamble`) that imports every public name,
+so documents call `#question` and friends directly. Its stylesheet (`eduCss`) is added to the HTML renderer for you.
+The model writes a document like this one (tick **Show answers** to see the teacher's copy):
+
+<TypstPreview edu answers target="paged" height={460}>
+
+```typst
+#show: worksheet.with(title: [Adding Fractions], subject: [Mathematics], grade: [Grade 5])
+
+#question(points: 2)[$1/2 + 1/4 =$ #blank(answer: $3/4$)]
+#question(points: 1)[
+  Which is largest?
+  #mcq([$1/2$], [$2/3$], [$3/5$], answer: 2)
+]
+#question(points: 2)[
+  Explain how you compare fractions.
+  #answer-lines(count: 2, answer: [Rewrite them with a common denominator.])
+]
+#callout(kind: "tip")[Find a common denominator first.]
+#answer-key()
+```
+
+</TypstPreview>
+
+[Edu documents](/docs/guides/edu-documents) builds a complete worksheet app around it.
+
+## Vocabulary
+
+Every function works in the paged and the HTML target. The [vocabulary](/docs/reference/edu/vocabulary) has each one's
+signature, parameters and a live example.
+
+| Kind | Functions |
+| --- | --- |
+| Templates (`#show: name.with(…)`) | [`worksheet`](/docs/reference/edu/vocabulary#worksheet), [`quiz`](/docs/reference/edu/vocabulary#quiz) (adds the total points), [`exam`](/docs/reference/edu/vocabulary#exam) (duration, total, instructions box, running header), [`lesson-plan`](/docs/reference/edu/vocabulary#lesson-plan) (details table), [`handout`](/docs/reference/edu/vocabulary#handout) |
+| Questions | [`question`](/docs/reference/edu/vocabulary#question) (numbered through the document), [`mcq`](/docs/reference/edu/vocabulary#mcq), [`true-false`](/docs/reference/edu/vocabulary#true-false), [`matching`](/docs/reference/edu/vocabulary#matching) (give the correct pairs; edu shuffles the right column and works out the key) |
+| Answer spaces | [`blank`](/docs/reference/edu/vocabulary#blank), [`answer-lines`](/docs/reference/edu/vocabulary#answer-lines), [`answer-space`](/docs/reference/edu/vocabulary#answer-space) |
+| Answers | [`answer`](/docs/reference/edu/vocabulary#answer) (worked solutions), [`answer-key`](/docs/reference/edu/vocabulary#answer-key) |
+| Teaching content | [`callout`](/docs/reference/edu/vocabulary#callout) (note, tip, warning, definition, example, remember), [`instructions`](/docs/reference/edu/vocabulary#instructions), [`learning-objectives`](/docs/reference/edu/vocabulary#learning-objectives), [`rubric`](/docs/reference/edu/vocabulary#rubric), [`student-info`](/docs/reference/edu/vocabulary#student-info) |
+| Drawings | [`number-line`](/docs/reference/edu/vocabulary#number-line), [`graph-paper`](/docs/reference/edu/vocabulary#graph-paper), [`coordinate-plane`](/docs/reference/edu/vocabulary#coordinate-plane) (native shapes; inline SVG with an `aria-label` in HTML) |
+| Chemistry | [`ce`](/docs/reference/edu/vocabulary#ce): `#ce("2H2 + O2 -> 2H2O")`, an mhchem-like subset (subscripts, coefficients, charges, states, hydrates, arrows) written as math, so HTML gets MathML |
+
+## Answers
+
+Answers are part of the document: `answer:` on `blank`, `mcq`, `true-false`, `answer-lines` and `answer-space`,
+`#answer[…]` for worked solutions, and `#answer-key()` to list them all. They appear only when the input `showAnswers`
+(`SHOW_ANSWERS_INPUT`) is `"true"`: written in place in red, the correct option circled, and listed by `answer-key()`
+under their question numbers. Otherwise they produce no output in either target, so a student's copy can't leak them.
+The answer key itself appears only in the teacher's copy.
+
+To switch copies, set the input and recompile. The model isn't asked again:
+
+```tsx
+<Typstream plugins={[edu]} source={text} inputs={{ [SHOW_ANSWERS_INPUT]: showAnswers ? "true" : "false" }} />
+```
+
+## Streaming
+
+edu is written for text that arrives a few characters at a time. Every parameter has a default, and arguments cut
+mid-stream are accepted: `(2` heals to the number `2`, and `5em` arrives as `5` first. A half-written call renders
+instead of failing the compile.
+
+## Languages
+
+Labels, option letters, the points word and callout titles come in English, Arabic and Bengali, picked by the
+document's language. Pass `lang: "ar"` or `lang: "bn"` to the template. In Arabic, edu's HTML gets `dir="rtl"`. The
+Arabic and Bengali wording is a first draft that still needs review by native speakers. See
+[Fonts and languages](/docs/guides/fonts-and-languages) for the script fonts.
+
+```typst
+#show: quiz.with(title: [الكسور], lang: "ar")
+```
+
+## Using it with plain Typst
+
+The package needs no typstream. In typstream it is a local package: the plugin mounts its files under
+`@typstream/edu:0.1.0/…` (`EDU_ROOT`), which the engine roots at that package, so nothing is fetched and it needs no
+package allowlist entry. With the `typst` CLI, put its `typst/` directory where Typst looks for that package, import it
+the same way, and pass `--package-path`:
+
+```bash
+mkdir -p packages/typstream/edu
+cp -r node_modules/@typstream/edu/typst packages/typstream/edu/0.1.0
+typst compile --package-path packages --input showAnswers=true main.typ
+```
+
+```typst title="main.typ"
+#import "@typstream/edu:0.1.0": *
+#show: worksheet.with(title: [Adding Fractions])
+```
+
+On the server, pass `eduPreamble` and `eduFiles` to `@typstream/node`:
+
+```ts
+import { eduFiles, eduPreamble } from "@typstream/edu";
+import { render } from "@typstream/node";
+
+const pdf = await render(source, "pdf", { preamble: eduPreamble, files: eduFiles, inputs: { showAnswers: "true" } });
+```
+
+## API
+
+| Export | What it is |
+| --- | --- |
+| [`edu`](#edu) | The plugin: files, preamble, templates, prompt kit and stylesheet. |
+| [`eduCss`](#educss) | Styles for the HTML edu's functions write. |
+| [`eduFiles`](#edufiles) | The package's Typst sources, keyed by their engine path. |
+| [`eduPreamble`](#edupreamble) | Typst that imports every public name. |
+| [`EDU_ROOT`, `EDU_VERSION`](#edu_root-and-edu_version) | `"@typstream/edu:0.1.0"` and `"0.1.0"`. |
+| [`SHOW_ANSWERS_INPUT`](#show_answers_input) | `"showAnswers"`. |
+| [`eduTemplates`](#edutemplates) | The templates as `TemplateSpec`s, for the `template` option. |
+| [`eduCatalogue`](#educatalogue) | One entry per public function and template, from the doc comments. |
+| [`eduExamples`](#eduexamples) | Whole documents for few-shot prompts. |
+| [`eduPromptRules`](#edupromptrules) | How to write documents with edu, for the system prompt. |
+| [`buildSystemPrompt`](#buildsystemprompt) (beta) | The system prompt for the plugins' vocabulary. |
+| [`typstPromptRules`](#typstpromptrules) (beta) | Typst habits models get wrong whatever the vocabulary. |
+
+### edu
+
+```ts
+const edu: TypstreamPlugin;
+```
+
+edu as a typstream plugin, with key `"edu"` and version `EDU_VERSION`. Its facets:
+
+| Facet | Value |
+| --- | --- |
+| `engine.files` | `eduFiles` |
+| `engine.preamble` | `eduPreamble` |
+| `templates` | `eduTemplates` |
+| `prompt` | `{ catalogue: eduCatalogue, rules: eduPromptRules, examples: eduExamples }` |
+| `stylesheets` | `[eduCss]` |
+
+Pass it in `plugins` to `<Typstream>`, `mountTypstream` or `engine.open`, and to `buildSystemPrompt`. See
+[Plugins](/docs/concepts/plugins).
+
+### eduCss
+
+```ts
+const eduCss: string;
+```
+
+Styles for the HTML edu's functions write. Rules are scoped to the renderer's root (class `typstream`) with zero
+specificity, so your own rules win, and they follow the renderer's theme variables, so dark mode works. Without them the
+HTML keeps its content and structure but loses answer lines and boxes. The plugin's `stylesheets` facet carries it, so
+the HTML renderer and standalone HTML exports include it; you only need it directly when you render edu's HTML
+yourself.
+
+### eduFiles
+
+```ts
+const eduFiles: Readonly<Record<string, string>>;
+```
+
+edu's Typst sources and `typst.toml`, keyed by their path in the engine under `EDU_ROOT`
+(`"@typstream/edu:0.1.0/lib.typ"` and so on). Mount them as a document's files.
+
+### eduPreamble
+
+```ts
+const eduPreamble: string; // '#import "@typstream/edu:0.1.0": *\n'
+```
+
+Typst to put before a document: imports every public function and template.
+
+### EDU_ROOT and EDU_VERSION
+
+```ts
+const EDU_ROOT = "@typstream/edu:0.1.0";
+const EDU_VERSION = "0.1.0";
+```
+
+`EDU_ROOT` is the package spec edu's files are mounted under. The engine roots paths of the form `@ns/name:x.y.z/path`
+at that package, so `#import "@typstream/edu:0.1.0"` reads the mounted files. `EDU_VERSION` is the package's version,
+as in its `typst.toml`.
+
+### SHOW_ANSWERS_INPUT
+
+```ts
+const SHOW_ANSWERS_INPUT = "showAnswers";
+```
+
+The input that shows answers: set it to `"true"` and recompile for a teacher's copy. See [Answers](#answers).
+
+### eduTemplates
+
+```ts
+const eduTemplates: TemplateSpec[];
+```
+
+The five templates by name (`worksheet`, `quiz`, `exam`, `lesson-plan`, `handout`), each with a title, a description
+and a preamble (`#show: worksheet`). They are for apps that let the teacher pick the document type and ask the model
+for the body only: `<Typstream template="quiz">`, or `mountTypstream`'s `template` option.
+
+<Callout type="warn">
+A document that applies its own template (`#show: worksheet.with(…)`, what the prompt kit asks for by default) must
+not also get one of these: the template would apply twice.
+</Callout>
+
+<auto-type-table path="packages/core/src/plugin.ts" name="TemplateSpec" />
+
+### eduCatalogue
+
+```ts
+const eduCatalogue: FunctionDoc[];
+```
+
+One entry per public function and template (23 of them), generated from the `///` doc comments in the package's Typst
+sources, so it can't drift from the functions. `buildSystemPrompt` puts it in the prompt, and the
+[vocabulary](/docs/reference/edu/vocabulary) page is generated from it.
+
+<auto-type-table path="packages/core/src/plugin.ts" name="FunctionDoc" />
+
+### eduExamples
+
+```ts
+const eduExamples: PromptExample[];
+```
+
+Whole documents in edu's vocabulary, for few-shot prompts: a chemistry exam, an Arabic quiz, a Bengali worksheet and a
+fractions worksheet.
+
+<auto-type-table path="packages/core/src/plugin.ts" name="PromptExample" />
+
+### eduPromptRules
+
+```ts
+const eduPromptRules: string[];
+```
+
+How to write documents with edu, for the system prompt: start with one template line, never import edu, wrap numbered
+questions in `#question`, give every answer to edu rather than as plain text, use `#blank` instead of underscores, and
+so on. They come from measuring real models with and without them, and each one targets an error class those runs
+produced. Every edu function they call exists and takes the arguments they name.
+
+### buildSystemPrompt
+
+<Callout type="warn" title="Beta">
+`buildSystemPrompt`, `SystemPromptOptions` and `typstPromptRules` are `@beta`: their output and shape may change
+between releases.
+</Callout>
+
+```ts
+const buildSystemPrompt: (plugins: readonly TypstreamPlugin[], options?: SystemPromptOptions) => string;
+```
+
+Writes the system prompt for documents in the plugins' vocabulary: an introduction, `typstPromptRules`, then each
+plugin's rules and function catalogue, then their example documents. It is deterministic for the same plugins, so the
+prompt caches. Any plugin with a `prompt` facet contributes, for example `@typstream/universe`'s list of packages the
+model may import.
+
+```ts
+import { buildSystemPrompt, edu } from "@typstream/edu";
+import { universe } from "@typstream/universe";
+
+const system = buildSystemPrompt([edu, universe]); // about 19,000 characters, ~8.4K tokens
+const short = buildSystemPrompt([edu, universe], { examples: false });
+```
+
+[Prompting](/docs/guides/prompting) covers how to use it with your model.
+
+<auto-type-table path="packages/edu/src/prompt.ts" name="SystemPromptOptions" />
+
+### typstPromptRules
+
+```ts
+const typstPromptRules: string[];
+```
+
+Beta. Typst habits models get wrong whatever the vocabulary: Markdown syntax, a code fence around the reply, scripts
+without a base in math (`m/s$^2$`), multi-letter names in math, bare math as a function argument, and characters that
+need escaping. `buildSystemPrompt` puts them first; pass `typstRules` to replace them.
+
+## See also
+
+- [Edu vocabulary](/docs/reference/edu/vocabulary): every function, with live examples.
+- [Edu documents](/docs/guides/edu-documents): building a worksheet app.
+- [Prompting](/docs/guides/prompting): the prompt kit with your model.
+- [Plugins](/docs/concepts/plugins): how plugins plug into the engine, healer and renderer.
+- [@typstream/html-compat](/docs/reference/html-compat): layout in the HTML target for the rest of the document.
