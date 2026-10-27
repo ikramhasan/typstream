@@ -39,7 +39,7 @@ Every chunk the model sends goes through the same path:
         ▼
 ┌─ engine worker ────────────────────────────────────────────────┐
 │ Typst 0.15.1 (wasm)    compile → diagnostics + artifact        │
-│ Layer 3 fixers         tail-cut, pending-ref, package-stub     │
+│ Layer 3 fixers         tail-cut, pending-ref, package-stub, …  │
 │ Layer 4 fallback       last good, stable prefix, error blocks  │
 └────────────────────────────────────────────────────────────────┘
         │     HTML, or the SVG of changed pages
@@ -69,7 +69,7 @@ Making a streamed document render is split into four layers, cheapest first. Eac
 |---|---|---|
 | 0–1. Normalize and lint | heal, main thread | Strip a ```` ```typst ```` fence and a byte order mark, hold back half a surrogate pair. Fix Markdown habits and stray delimiters in settled text: `# Heading` → `= Heading`, `me@school.org` → `me\@school.org`. |
 | 2. Tail repair | heal, main thread | Close the constructs still open at the end of the text, and cut incomplete ones back to where they started. The result always parses. |
-| 3. Semantic fixers | engine worker | Errors only the compiler finds: cut text still being typed at the error (`tail-cut`), show a reference to a label that doesn't exist yet as a placeholder (`pending-ref`), stand in for a package that isn't available (`package-stub`). |
+| 3. Semantic fixers | engine worker | Errors only the compiler finds: cut text still being typed at the error (`tail-cut`), show a reference to a label that doesn't exist yet as a placeholder (`pending-ref`), stand in for a package that isn't available (`package-stub`), move a package import above the first use of what it imports (`hoist-import`). |
 | 4. Fallback ladder | engine worker | Keep the last good render, render the settled text with the tail as plain text, or isolate failing blocks as error boxes. |
 
 Layers 0–2 are about parsing and run on the main thread on every chunk; they need no compiler, and they are checked against Typst's own parser. Layers 3 and 4 run in the worker after a compile, because only the compiler knows that `#text()` lacks its body. Together they make nearly every prefix of a stream render: over typstream's test corpus, healing alone makes about 88% of stream prefixes compile, the fixers bring that to 99.9%, and the fallback covers the rest.

@@ -68,6 +68,25 @@ const IMPORT_TAIL = new RegExp(
 );
 
 /**
+ * The names an import of `spec` binds, from what follows the spec
+ * ({@link IMPORT_TAIL}): its alias, its items (an item's own alias, or the last
+ * part of `a.b`), or, for a bare import, the package's name. `null` for a
+ * wildcard, whose names only Typst knows.
+ */
+const importedNames = (spec: string, alias: string | undefined, items: string | undefined): string[] | null => {
+  if (items === "*") return null;
+  const names = alias ? [alias] : [];
+  if (items) {
+    for (const item of items.replace(/^\(|\)$/g, "").split(",")) {
+      const parts = item.trim().split(/\s+as\s+/u);
+      const bound = (parts[1] ?? parts[0]?.split(".").pop())?.trim();
+      if (bound) names.push(bound);
+    }
+  } else if (!alias) names.push(spec.slice(spec.indexOf("/") + 1, spec.lastIndexOf(":")));
+  return names;
+};
+
+/**
  * An import of a package the document can't have (not allowed, still loading,
  * failed to load; PLAN §5.5) binds what it would have imported to
  * placeholders that show the package's spec where they're called:
@@ -92,15 +111,8 @@ export const packageStub: DiagnosticFixer = {
     const from = d.span.from - keyword[0].length;
     const tail = IMPORT_TAIL.exec(text.slice(d.span.to)) as RegExpExecArray;
     const [, alias, items] = tail;
-    if (items === "*") return null;
-    const names = alias ? [alias] : [];
-    if (items) {
-      for (const item of items.replace(/^\(|\)$/g, "").split(",")) {
-        const parts = item.trim().split(/\s+as\s+/u);
-        const bound = (parts[1] ?? parts[0]?.split(".").pop())?.trim();
-        if (bound) names.push(bound);
-      }
-    } else if (!alias) names.push(spec.slice(spec.indexOf("/") + 1, spec.lastIndexOf(":")));
+    const names = importedNames(spec, alias, items);
+    if (!names) return null;
     const stub = `typstream.missing-package(${typstString(spec)})`;
     const insert =
       names.length === 1 ? `let ${names[0]} = ${stub}` : `let (${names.join(", ")}) = (${stub},) * ${names.length}`;
@@ -270,6 +282,53 @@ const unlocatedCut = (text: string, settled: number): number | undefined => {
 
 const unlocated = (d: Diagnostic): boolean => d.span === null && d.trace.every((t) => t.span === null);
 
+const UNKNOWN = /^unknown variable: (\S+)$/;
+/** A top-level package import: `#import "@namespace/name:version"` at the start of a line. */
+const PACKAGE_IMPORT = /^#import\s+"(@[^"\\\n]+)"/gm;
+
+/**
+ * A name used before the package import that binds it: a model writes
+ * a helper on CeTZ, then `#import "@preview/cetz:0.5.3"` below it, or uses
+ * `#unit(…)` in a template's arguments above the imports. A function only sees
+ * what exists where it is defined, so the name is unknown wherever it's called.
+ * The import moves to the document's start. Its names then exist from there:
+ * a `#let` of the same name in between still wins (it comes later), but a
+ * built-in or preamble name of the same name would be shadowed. So it moves
+ * only an import that binds the failing name outright (bare, `as`, items), at
+ * the top level, after the error; a wildcard (`: *`) could bind anything. While
+ * streaming, only an import that has settled. Final compiles report the error:
+ * the source still doesn't compile as written.
+ * @public
+ */
+export const hoistImport: DiagnosticFixer = {
+  name: "hoist-import",
+  priority: 25,
+  match: UNKNOWN,
+  fix(d, { text, settled, mode }) {
+    const name = UNKNOWN.exec(d.message)?.[1];
+    if (!d.span || name === undefined) return null;
+    let modes: readonly ModeSpan[] | undefined;
+    for (const m of text.matchAll(PACKAGE_IMPORT)) {
+      const from = m.index;
+      if (from <= d.span.from) continue;
+      const tail = IMPORT_TAIL.exec(text.slice(from + m[0].length)) as RegExpExecArray;
+      if (!importedNames(m[1] as string, tail[1], tail[2])?.includes(name)) continue;
+      const end = from + m[0].length + tail[0].length;
+      if (mode === "streaming" && end > settled) return null;
+      // Not in raw text or a comment, nor inside a block or a call: its scope would change.
+      modes ??= recognize(text).modes;
+      if (modeAt(modes, from) !== "markup") continue;
+      if (heal(text.slice(0, from), { lint: NO_LINT, unwrapFences: "never" }).openFrames.length > 0) continue;
+      const to = text.startsWith("\r\n", end) ? end + 2 : text[end] === "\n" ? end + 1 : end;
+      return [
+        { from: 0, to: 0, insert: `${text.slice(from, end)}\n` },
+        { from, to, insert: "" },
+      ];
+    }
+    return null;
+  },
+};
+
 /**
  * Streaming only, the catch-all: an error in the text still being typed cuts
  * the text at the error (or at its call site there) and heals the rest of it
@@ -306,10 +365,11 @@ export const tailCut: DiagnosticFixer = {
 };
 
 /**
- * The built-in fixers: {@link pendingRef}, {@link missingImage}, {@link packageStub}, then {@link tailCut}.
+ * The built-in fixers: {@link pendingRef}, {@link missingImage}, {@link packageStub}, {@link hoistImport}, then
+ * {@link tailCut}.
  * @public
  */
-export const DEFAULT_FIXERS: readonly DiagnosticFixer[] = [pendingRef, missingImage, packageStub, tailCut];
+export const DEFAULT_FIXERS: readonly DiagnosticFixer[] = [pendingRef, missingImage, packageStub, hoistImport, tailCut];
 
 /** Most rounds of fixes after the first compile (PLAN §5.5). */
 export const MAX_FIX_ROUNDS = 2;
