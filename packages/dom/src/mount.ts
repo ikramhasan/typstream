@@ -16,6 +16,7 @@ import type {
   DocumentEvent,
   FallbackEvent,
   FileDelta,
+  LoadedFontFamily,
   RenderedEvent,
   TemplateSpec,
   TypstreamPlugin,
@@ -24,6 +25,7 @@ import type {
 import type { DocumentOptions, DocumentState, DocumentStatus, Engine, EngineDocument } from "@typstream/engine";
 import { type StandaloneHtmlOptions, standaloneHtml } from "./export/standalone";
 import type { AnimateOptions } from "./html/animate";
+import { registerLoadedFont } from "./html/fonts";
 import { createHtmlRenderer, type HtmlRenderer } from "./html/renderer";
 import { FIT_WIDTH_PREAMBLE, fitWidthInputs } from "./paged/mount";
 import { createPagedView, type PagedView } from "./paged/view";
@@ -96,7 +98,8 @@ export interface TypstreamOptions {
    * modules, heal handlers and lint settings, templates, sanitizer allowances
    * and stylesheets. A key given twice is loaded once, as its last definition;
    * plugins load after their dependencies, which must be among them. Fonts
-   * load only from the engine's own plugins (`createEngine`).
+   * load only from the engine's own plugins (`createEngine`); the families
+   * font catalogues load (`engine.fontCatalogues`) show in the HTML target too.
    */
   plugins?: readonly TypstreamPlugin[];
   /** More CSS for the HTML target, after the plugins'. */
@@ -162,7 +165,8 @@ export interface MountedTypstream {
   exportPdf(options?: TypstreamExportOptions): Promise<Uint8Array>;
   /**
    * Exports the document as an HTML file that opens on its own
-   * ({@link standaloneHtml}), with the mount's plugins, `stylesheets` and `theme`;
+   * ({@link standaloneHtml}), with the mount's plugins, `stylesheets`, `theme`
+   * and the fonts it uses from the engine's font catalogues;
    * `options` add to or override them (a `mathFont`, a `title`). Otherwise as
    * {@link MountedTypstream.exportPdf}, `options.inputs` included.
    */
@@ -311,6 +315,8 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
   let html: { renderer: HtmlRenderer; root: HTMLElement; key: unknown[] } | null = null;
   let paged: { view: PagedView; key: unknown[] } | null = null;
   let shown: { artifact: unknown; caret: boolean } | null = null;
+  // Families the engine loaded from font catalogues, shown in the HTML target as web fonts (PLAN §6.4).
+  let fonts: { engine: Engine; root: HTMLElement; stop: () => void } | null = null;
 
   // What the callbacks were last told, and the latest compile that published an artifact.
   let lastStatus: DocumentStatus | null = null;
@@ -322,6 +328,7 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
   // --- rendering ---
 
   const dropHtml = () => {
+    stopFonts();
     if (!html) return;
     html.renderer.dispose();
     html.root.remove();
@@ -331,6 +338,29 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
   const dropPaged = () => {
     paged?.view.destroy();
     paged = null;
+  };
+
+  /**
+   * Shows the families the engine loaded, and those it loads from now on, in
+   * the HTML renderer's `root`. A family that fails to load leaves its text in
+   * the page's font.
+   */
+  const showFonts = (root: HTMLElement) => {
+    const { engine } = opts;
+    if (fonts?.engine === engine && fonts.root === root) return;
+    fonts?.stop();
+    const show = (font: LoadedFontFamily) => registerLoadedFont(font, root).catch(() => {});
+    const stop = engine.onEvent((event) => {
+      if (event.type === "font") void show(event.font);
+    });
+    fonts = { engine, root, stop };
+    // An engine from before font catalogues has no `fonts`.
+    for (const font of engine.fonts ?? []) void show(font);
+  };
+
+  const stopFonts = () => {
+    fonts?.stop();
+    fonts = null;
   };
 
   /** `doc`'s plugins as the engine resolved them: dependencies first, each key once. */
@@ -381,6 +411,7 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
     if (artifact.target === "html") {
       dropPaged();
       const renderer = htmlRenderer(doc?.plugins ?? []);
+      showFonts(renderer.root);
       const caret = (opts.caret ?? false) && !state.final;
       if (shown?.artifact === artifact && shown.caret === caret) return;
       shown = { artifact, caret };
@@ -584,6 +615,7 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
         ...options,
         plugins: [...exported.plugins, ...(options.plugins ?? [])],
         stylesheets: [...(opts.stylesheets ?? []), ...(options.stylesheets ?? [])],
+        fonts: [...(opts.engine.fonts ?? []), ...(options.fonts ?? [])],
       });
     },
     exportSource: () => exportDoc().exportSource(),

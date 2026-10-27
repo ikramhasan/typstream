@@ -11,6 +11,7 @@ import { Diagnostic } from '@typstream/core';
 import { DiagnosticFixer } from '@typstream/core';
 import { ExportFormat } from '@typstream/core';
 import { FileContent } from '@typstream/core';
+import { FontCatalogue } from '@typstream/core';
 import { InitializeOptions } from '@typstream/core';
 import { InitInput } from '@typstream/engine-wasm';
 import { PackageSpec } from '@typstream/core';
@@ -67,8 +68,12 @@ export const createServer: (adapter: EngineAdapter, post: (message: ServerMessag
 // @public
 export const DEFAULT_FIXERS: readonly DiagnosticFixer[];
 
+// @beta
+export const DEFAULT_FONT_FAMILY_BYTES = 5000000;
+
 // @public
 export interface EngineAdapter {
+    addFonts?(fonts: readonly (string | URL | Uint8Array)[]): Promise<void>;
     readonly exports: readonly ExportFormat[];
     readonly info: {
         name: string;
@@ -111,6 +116,13 @@ export interface EngineWasmOptions {
     wasm?: InitInput | Promise<InitInput>;
 }
 
+// @beta
+export interface FontCatalogueOptions {
+    catalogues?: readonly FontCatalogue[];
+    fetch?: (url: string) => Promise<Response>;
+    trustClient?: boolean;
+}
+
 // @public
 export type FontInput = string | URL | Uint8Array;
 
@@ -123,7 +135,7 @@ export const hoistImport: DiagnosticFixer;
 export { InitInput }
 
 // @beta
-export const inProcess: (createAdapter: () => EngineAdapter, options?: Pick<ServerOptions, "fixers" | "packages">) => SpawnEngine;
+export const inProcess: (createAdapter: () => EngineAdapter, options?: Pick<ServerOptions, "fixers" | "packages" | "fontCatalogues">) => SpawnEngine;
 
 // @public
 export interface LazyFontInput {
@@ -159,12 +171,14 @@ export const PREAMBLE_PATH = "<preamble>";
 export const RUNTIME_PATH = "/@typstream/runtime.typ";
 
 // @public
-export const serve: (adapter: EngineAdapter, scope?: WorkerScope, options?: Pick<ServerOptions, "fixers" | "packages">) => EngineServer;
+export const serve: (adapter: EngineAdapter, scope?: WorkerScope, options?: Pick<ServerOptions, "fixers" | "packages" | "fontCatalogues">) => EngineServer;
 
 // @public
 export interface ServerOptions {
     clientFixers?: boolean;
     fixers?: readonly DiagnosticFixer[];
+    // @beta
+    fontCatalogues?: FontCatalogueOptions;
     onFatal?(error: unknown): void;
     // @beta
     packages?: PackageOptions;

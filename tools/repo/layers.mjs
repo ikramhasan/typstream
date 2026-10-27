@@ -7,8 +7,9 @@
 // are listed so their rules are in place before their code is.
 //
 // `testDeps` are packages only the package's tests (`__tests__/`) may import too, as
-// devDependencies: html-compat's tests compile documents with the engine, the
-// engine's load the vendored Typst packages, and dom's mount the plugins typstream ships.
+// devDependencies: html-compat's and google-fonts' tests compile documents with the engine, the
+// engine's load the vendored Typst packages, and dom's mount the plugins typstream ships and google-fonts
+// (with engine-wasm's script fonts as a font catalogue's files).
 //
 // `fixed` marks the packages released in one fixed version group (PLAN §10.4).
 // Changesets rejects names that don't exist yet, so .changeset/config.json lists
@@ -43,11 +44,12 @@ export const PACKAGES = {
   universe: { name: "@typstream/universe", layer: 2, deps: ["core"] },
   edu: { name: "@typstream/edu", layer: 3, deps: ["core"], testDeps: ["engine-wasm", "html-compat"] },
   "html-compat": { name: "@typstream/html-compat", layer: 3, deps: ["core"], testDeps: ["engine-wasm", "universe"] },
+  "google-fonts": { name: "@typstream/google-fonts", layer: 3, deps: ["core"], testDeps: ["engine-wasm"] },
   dom: {
     name: "@typstream/dom",
     layer: 4,
     deps: ["core", "engine"],
-    testDeps: ["html-compat", "edu", "universe"],
+    testDeps: ["html-compat", "edu", "universe", "google-fonts", "engine-wasm"],
     fixed: true,
   },
   react: {

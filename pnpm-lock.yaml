@@ -406,6 +406,12 @@ importers:
       '@typstream/edu':
         specifier: workspace:*
         version: link:../edu
+      '@typstream/engine-wasm':
+        specifier: workspace:*
+        version: link:../engine-wasm
+      '@typstream/google-fonts':
+        specifier: workspace:*
+        version: link:../google-fonts
       '@typstream/html-compat':
         specifier: workspace:*
         version: link:../html-compat
@@ -458,6 +464,16 @@ importers:
         version: 1.64.1
 
   packages/engine-wasm: {}
+
+  packages/google-fonts:
+    dependencies:
+      '@typstream/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@typstream/engine-wasm':
+        specifier: workspace:*
+        version: link:../engine-wasm
 
   packages/heal:
     dependencies:

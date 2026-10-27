@@ -52,7 +52,7 @@ const start = async () => {
       const opened = await request("document/open", { uri, rev: 1, text, files });
       notes.length = 0;
       const response = await request("compile", { uri, rev: 1, target, mode: "final" });
-      const mine = notes.filter((n) => n.method !== "$/log" && n.params.uri === uri);
+      const mine = notes.filter((n) => "uri" in n.params && n.params.uri === uri);
       const diagnostics: Diagnostic[] = mine.flatMap((n) =>
         n.method === "document/diagnostics" ? n.params.diagnostics : [],
       );

@@ -58,7 +58,8 @@ const contentHash = (svg: string): string => createHash("sha1").update(svg).dige
 /**
  * engine-wasm on the pool as `@typstream/engine`'s `EngineAdapter`, one per
  * connection. Fonts are the engine's: `initialize`'s fonts and packages are
- * ignored, and so are `document/open`'s packages.
+ * ignored, and so are `document/open`'s packages. It has no `addFonts`, so
+ * nothing loads from font catalogues.
  */
 const poolAdapter = (engine: NodeEngine, options: ProtocolServerOptions): EngineAdapter => {
   const maxDocuments = options.maxDocuments ?? 32;
@@ -240,9 +241,9 @@ export const createProtocolServer = (options: ProtocolServerOptions = {}): Proto
           if ("id" in message) outstanding.delete(message.id);
           if (!closed) send(message);
         },
-        // Clients are untrusted: their package lists would make the server fetch any URL, and
-        // their fixer modules would run code in it.
-        { packages: { trustClient: false }, clientFixers: false },
+        // Clients are untrusted: their package lists and font catalogues would make the server
+        // fetch any URL, and their fixer modules would run code in it.
+        { packages: { trustClient: false }, fontCatalogues: { trustClient: false }, clientFixers: false },
       );
       const reply = (message: ServerMessage): void => {
         if (!closed) send(message);

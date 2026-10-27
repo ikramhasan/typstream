@@ -17,6 +17,7 @@ import {
   type Timings,
   visibleText,
 } from "./animate";
+import { injectCss } from "./css";
 import { directionOf } from "./dir";
 import { createSanitizer, hideStyles, type Sanitizer } from "./sanitize";
 import { type Split, splitHtml } from "./split";
@@ -124,31 +125,6 @@ const firstElement = (nodes: readonly Node[]): Element | null =>
 const lastElement = (nodes: readonly Node[]): Element | null => {
   for (let i = nodes.length - 1; i >= 0; i--) if ((nodes[i] as Node).nodeType === 1) return nodes[i] as Element;
   return null;
-};
-
-// --- styles -------------------------------------------------------------------------
-
-const injected = new WeakMap<Node, Set<string>>();
-
-const injectCss = (root: HTMLElement, css: string): void => {
-  const target = root.getRootNode() as Document | ShadowRoot;
-  const done = injected.get(target) ?? new Set<string>();
-  injected.set(target, done);
-  if (done.has(css)) return;
-  done.add(css);
-  const doc = root.ownerDocument;
-  // The sheet must come from the root's own window (an iframe's, say).
-  const Sheet = (doc.defaultView as (Window & typeof globalThis) | null)?.CSSStyleSheet;
-  if (Sheet && "adoptedStyleSheets" in target && "replaceSync" in Sheet.prototype) {
-    const sheet = new Sheet();
-    sheet.replaceSync(css);
-    target.adoptedStyleSheets = [...target.adoptedStyleSheets, sheet];
-    return;
-  }
-  const style = doc.createElement("style");
-  style.textContent = css;
-  // A shadow root is a document fragment (node type 11).
-  (target.nodeType === 11 ? target : doc.head).append(style);
 };
 
 // --- caret ----------------------------------------------------------------------------

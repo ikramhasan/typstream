@@ -118,6 +118,75 @@ export type FontSource = ({ kind: "url"; url: string } | { kind: "bytes"; data: 
 };
 
 /**
+ * A library of fonts the engine loads by family name (PLAN §6.4): when a
+ * compile names a family no loaded font has (Typst's "unknown font family"
+ * warning), the engine looks it up in the catalogue's index, downloads its
+ * files and compiles the document again. `@typstream/google-fonts` is one,
+ * for the Google Fonts library.
+ * @beta
+ */
+export interface FontCatalogue {
+  /**
+   * URL of the index, a {@link FontCatalogueIndex} as JSON. Fetched the first
+   * time a document names a family the engine doesn't have.
+   */
+  index: string;
+  /**
+   * The most a family may download, in bytes; larger families (CJK fonts run
+   * to 10–20 MB) aren't loaded. Default 5 MB.
+   */
+  maxBytes?: number;
+}
+
+/**
+ * The index of a {@link FontCatalogue}, served as JSON.
+ * @beta
+ */
+export interface FontCatalogueIndex {
+  /** The format's version. */
+  version: 1;
+  /** The URL files' paths are relative to; itself relative to the index's URL. */
+  base: string;
+  /** By family name lowercased, which is how Typst compares family names. */
+  families: Record<string, FontCatalogueFamily>;
+}
+
+/** A family of a {@link FontCatalogueIndex}. @beta */
+export interface FontCatalogueFamily {
+  /** The family's name, as its font files name it (`"Open Sans"`). */
+  name: string;
+  /** Its font files: one per style and weight, or a variable font per style. */
+  files: FontCatalogueFile[];
+}
+
+/** A font file of a {@link FontCatalogueFamily} (TTF or OTF: Typst reads no WOFF). @beta */
+export interface FontCatalogueFile {
+  /** Relative to the index's `base`. */
+  path: string;
+  /** Its faces' style. */
+  style: "normal" | "italic";
+  /** Its weight (`400`), or the range of a variable font's weight axis (`[100, 900]`). */
+  weight: number | [number, number];
+  /** The file's size, which `maxBytes` is checked against. */
+  bytes?: number;
+}
+
+/**
+ * A family the engine loaded from a font catalogue: what the HTML target needs
+ * to show it with the same files, as web fonts. Typst draws the paged target
+ * itself.
+ * @beta
+ */
+export interface LoadedFontFamily {
+  /** The family as documents name it, lowercased (Typst's comparison). */
+  family: string;
+  /** The family's name, as its font files name it. */
+  name: string;
+  /** The files loaded, with absolute URLs. */
+  files: (FontCatalogueFile & { url: string })[];
+}
+
+/**
  * A Typst package the engine may load (`#import "@preview/cetz:0.5.3"`): an
  * entry of its allowlist (PLAN §6.4). The engine fetches it only when a
  * document imports it. A document asking for another version of an allowed
@@ -234,6 +303,12 @@ export interface TypstreamPlugin {
     packages?: PackageSpec[];
     /** @beta */
     fonts?: FontSource[];
+    /**
+     * Font libraries the engine loads families from by name, when a document
+     * names one it doesn't have (PLAN §6.4). Unlike `fonts`, they work from a
+     * document's plugins too: the fonts they load are then the worker's. @beta
+     */
+    fontCatalogues?: FontCatalogue[];
     /** Typst evaluated before every document, after earlier plugins' preambles. */
     preamble?: string;
   };

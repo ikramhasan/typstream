@@ -209,6 +209,8 @@ export interface DocumentOpenParams extends DocumentParams {
     // @beta
     fixerModules?: string[];
     // @beta
+    fontCatalogues?: FontCatalogue[];
+    // @beta
     packages?: PackageSpec[];
     preamble?: string;
     // (undocumented)
@@ -335,6 +337,36 @@ export interface FixContext {
 }
 
 // @beta
+export interface FontCatalogue {
+    index: string;
+    maxBytes?: number;
+}
+
+// @beta
+export interface FontCatalogueFamily {
+    files: FontCatalogueFile[];
+    name: string;
+}
+
+// @beta
+export interface FontCatalogueFile {
+    bytes?: number;
+    path: string;
+    style: "normal" | "italic";
+    weight: number | [number, number];
+}
+
+// @beta
+export interface FontCatalogueIndex {
+    base: string;
+    families: Record<string, FontCatalogueFamily>;
+    version: 1;
+}
+
+// @beta
+export type FontsLoadedParams = LoadedFontFamily;
+
+// @beta
 export type FontSource = ({
     kind: "url";
     url: string;
@@ -395,6 +427,7 @@ export interface HtmlArtifact {
 // @beta
 export interface InitializeOptions {
     fixerModules?: string[];
+    fontCatalogues?: FontCatalogue[];
     // (undocumented)
     fonts?: FontSource[];
     // (undocumented)
@@ -470,6 +503,15 @@ export const lineColumn: (text: string, offset: number) => {
 
 // @public
 export type LintSetting = "fix" | "warn" | "off";
+
+// @beta
+export interface LoadedFontFamily {
+    family: string;
+    files: (FontCatalogueFile & {
+        url: string;
+    })[];
+    name: string;
+}
 
 // @public
 export interface LogParams {
@@ -717,6 +759,8 @@ export interface ServerCapabilities {
     experimental?: Record<string, unknown>;
     // (undocumented)
     exports: ExportFormat[];
+    // @beta
+    fontCatalogues?: boolean;
     pagedDiff?: boolean;
     // @beta
     resolveLocation?: boolean;
@@ -745,6 +789,8 @@ export interface ServerNotificationMap {
     "document/artifact": ArtifactNotification;
     // (undocumented)
     "document/diagnostics": DiagnosticsNotification;
+    // @beta (undocumented)
+    "fonts/loaded": FontsLoadedParams;
 }
 
 // @public (undocumented)
@@ -847,6 +893,7 @@ export interface TypstreamPlugin {
         files?: Record<string, string | Uint8Array>;
         packages?: PackageSpec[];
         fonts?: FontSource[];
+        fontCatalogues?: FontCatalogue[];
         preamble?: string;
     };
     heal?: {

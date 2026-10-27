@@ -22,6 +22,9 @@ packages/html-compat  @typstream/html-compat: Typst prelude + CSS so HTML export
 packages/universe @typstream/universe: the Typst Universe packages allowed by default (CeTZ, fletcher, cetz-plot, physica, unify,
                   chemformula, alchemist), vendored tarballs + integrity, as an allowlist plugin. The engine loads packages
                   in `packages/engine/src/server/packages.ts`.
+packages/google-fonts  @typstream/google-fonts: any Google Fonts family by name, as a plugin: a font catalogue (catalogue.json,
+                  the library's index at a pinned commit; the engine loads families from it in `server/fonts.ts`), the
+                  preamble that marks fonts in the HTML target, prompt rules.
 packages/edu      @typstream/edu: the Typst vocabulary for teachers' documents (templates, questions, answers and keys, callouts,
                   rubrics, drawings, `ce`), its CSS and prompt catalogue, as a plugin (tests need the engine and native typst).
 packages/dom      @typstream/dom: framework-free renderers. `src/html/`: HTML renderer (string block split, sanitizer, source
@@ -94,18 +97,26 @@ In `packages/universe`:
 - `node scripts/vendor.mjs name:version` adds one and prints its integrity; `--check` compares every tarball with upstream (network). The tests check the hashes and that every package a vendored one imports is vendored too.
 - The engine's Node tests and html-compat's matrix mount these packages; html-compat's native `typst` runs get them through `--package-path` (no network).
 
+In `packages/google-fonts`:
+- `node scripts/catalogue.mjs [<commit>]` rewrites `catalogue.json` from github.com/google/fonts (the commit it names, or
+  another: one API call for the tree, then each family's METADATA.pb). Files over 20 MB, which jsDelivr won't serve, are
+  left out.
+- Its tests compile the preamble with engine-wasm (a `testDeps` entry). The engine's catalogue tests
+  (`packages/engine/__tests__/font-catalogues.test.ts`) serve engine-wasm's script fonts as a catalogue, and dom's
+  browser tests (`__tests__/browser/fonts.test.ts`) do too, on a worker with the base fonts only.
+
 In `packages/edu`:
 - Edit `typst/*.typ`, `css/edu.css` or `examples/*.typ`, then `pnpm embed` to regenerate `src/assets.generated.ts` (the files, CSS, the prompt catalogue from the `///` doc comments of the names `lib.typ` imports, and the examples; a test checks it). Every public function needs a doc comment with an `example` block.
 - Answers must produce no output unless `sys.inputs.showAnswers` is `"true"`; every parameter needs a default and must accept what a stream cut leaves (`(2` is the number 2, `5em` arrives as `5`). Its tests compile with engine-wasm and native `typst`, so they run in CI's `Engine (wasm, html-compat, edu)` job; the compile oracle streams `examples/`.
 
 In `packages/dom`:
 - `pnpm test`: node tests (the HTML block splitter, paged helpers). `pnpm test:browser`: the renderers in Chromium, Firefox and WebKit, fed by the real engine worker with html-compat and corpus documents (needs engine-wasm's `dist/`). `BROWSERS=chromium` runs one.
-- `pnpm size`: HTML renderer ≤ 9.5 KB gzipped (with its CSS), paged renderer ≤ 4 KB, standalone HTML export ≤ 2 KB.
+- `pnpm size`: HTML renderer ≤ 9.8 KB gzipped (with its CSS), paged renderer ≤ 4 KB, standalone HTML export ≤ 2 KB.
 - Its API report needs DOM types, so its `api-extractor.json` overrides the shared compiler settings.
 
 In `packages/react`:
 - `pnpm test`: Node tests (provider merging, the shared engine's lifetime). `pnpm test:browser`: `<Typstream>` with React Testing Library against the real engine worker in Chromium, Firefox and WebKit (StrictMode, lazy opening, worker cleanup). `BROWSERS=chromium` runs one. Needs engine-wasm's `dist/`.
-- `pnpm size`: ≤ 16.7 KB gzipped including `@typstream/dom` (React and the engine external).
+- `pnpm size`: ≤ 17.3 KB gzipped including `@typstream/dom` (React and the engine external).
 - Its bundle starts with `"use client"` (tsup banner), as does `typstream`'s, for Next.js's App Router.
 
 In `examples/strict-csp`: `pnpm test` builds the page, serves it with the policy in `csp.mjs` and fails on any CSP violation or console error in Chromium, Firefox and WebKit (`BROWSERS=` picks some). Build the packages first (`pnpm turbo run build --filter=@typstream/example-strict-csp^...`). CI runs it in each browser's `Engine (<browser>)` job. Hostile documents go in `corpus/adversarial/hostile-*.typ` (category `hostile-…`); the engine's and the browser suites' `security.test.ts` run them all.

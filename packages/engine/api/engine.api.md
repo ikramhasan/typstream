@@ -12,10 +12,12 @@ import { Diagnostic } from '@typstream/core';
 import { DocumentEvent } from '@typstream/core';
 import { DocumentUri } from '@typstream/core';
 import { FileDelta } from '@typstream/core';
+import { FontCatalogue } from '@typstream/core';
 import { HealOptions } from '@typstream/heal';
 import { HealResult } from '@typstream/heal';
 import { InitializeOptions } from '@typstream/core';
 import { InitializeResult } from '@typstream/core';
+import { LoadedFontFamily } from '@typstream/core';
 import { PackageSpec } from '@typstream/core';
 import { Revision } from '@typstream/core';
 import { ServerMessage } from '@typstream/core';
@@ -54,6 +56,8 @@ export const DEFAULT_WATCHDOG: Readonly<WatchdogOptions>;
 export interface DocumentOptions {
     fallback?: boolean;
     files?: FileDelta;
+    // @beta
+    fontCatalogues?: FontCatalogue[];
     heal?: HealOptions;
     inputs?: Record<string, string>;
     // @beta
@@ -86,6 +90,8 @@ export type DocumentStatus = "idle" | "compiling" | "stale" | "error" | "done";
 // @public
 export interface Engine {
     dispose(): void;
+    // @beta
+    readonly fonts: readonly LoadedFontFamily[];
     onEvent(listener: (event: EngineEvent) => void): () => void;
     open(options?: DocumentOptions): EngineDocument;
     readonly ready: Promise<InitializeResult>;
@@ -140,6 +146,9 @@ export type EngineEvent = {
     type: "log";
     level: "debug" | "info" | "warn" | "error";
     message: string;
+} | {
+    type: "font";
+    font: LoadedFontFamily;
 } | {
     type: "failed";
     error: Error;

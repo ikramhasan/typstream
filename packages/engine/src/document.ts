@@ -19,6 +19,7 @@ import {
   type FallbackLevel,
   type FallbackParams,
   type FileDelta,
+  type FontCatalogue,
   isError,
   mapDiagnostic,
   normalizeDiagnostics,
@@ -139,14 +140,21 @@ export interface DocumentOptions {
    * (`initialize.packages`); fixed for the document's lifetime. @beta
    */
   packages?: PackageSpec[];
+  /**
+   * Font catalogues the document loads families it names from, in addition
+   * to the engine's (`initialize.fontCatalogues`), as plugins'
+   * `engine.fontCatalogues` do (PLAN §6.4). The fonts they load are the
+   * worker's. Fixed for the document's lifetime. @beta
+   */
+  fontCatalogues?: FontCatalogue[];
   /** Passed to `createHealer`. Use `finish()` rather than `final`. */
   heal?: HealOptions;
   /**
    * Plugins (PLAN §8.0) whose engine and heal facets apply to the document:
    * their files, packages and preambles (before `preamble`), heal handlers and
-   * lint settings, and fixer modules, which the worker loads for this
-   * document. Fonts are the worker's: a plugin's `engine.fonts` load only from
-   * `createEngine`'s `plugins`. Fixed for the document's lifetime.
+   * lint settings, and fixer modules and font catalogues, which the worker
+   * loads for this document. Fonts are the worker's: a plugin's `engine.fonts`
+   * load only from `createEngine`'s `plugins`. Fixed for the document's lifetime.
    */
   plugins?: readonly TypstreamPlugin[];
   /** Overrides the engine's schedule for this document. */
@@ -383,6 +391,7 @@ export class DocumentImpl implements EngineDocument {
   private readonly fallback: boolean;
   private readonly packages: PackageSpec[] | undefined;
   private readonly fixerModules: string[] | undefined;
+  private readonly fontCatalogues: FontCatalogue[] | undefined;
   private healed: HealResult;
   private target: CompileTarget;
   private inputs: Record<string, string> | undefined;
@@ -459,6 +468,7 @@ export class DocumentImpl implements EngineDocument {
     this.fallback = options.fallback !== false;
     this.packages = options.packages;
     this.fixerModules = options.fixerModules;
+    this.fontCatalogues = options.fontCatalogues;
     this.files = { ...options.files };
     this.images = options.resolveImage
       ? new DocumentImages(options.resolveImage, {
@@ -740,6 +750,7 @@ export class DocumentImpl implements EngineDocument {
         files: this.files,
         packages: this.packages,
         fixerModules: this.fixerModules,
+        fontCatalogues: this.fontCatalogues,
       });
       this.openedIn = generation;
       this.pendingFiles = null;
@@ -812,10 +823,10 @@ export class DocumentImpl implements EngineDocument {
   }
 
   /** Output the worker published for this document. */
-  receive(n: ServerNotification): void {
+  receive(n: ServerNotification<"document/diagnostics" | "document/artifact">): void {
     // Only output of the revision last sent counts: anything else is older
     // than what the worker now has, and its positions don't match `sent.heal`.
-    if (this.disposed || n.method === "$/log" || !this.sent || n.params.rev !== this.sent.rev) return;
+    if (this.disposed || !this.sent || n.params.rev !== this.sent.rev) return;
     // A probe for a hang compiles a prefix of the document, with the rest skipped.
     if (this.probing && this.compiling) return;
     const { rev, heal } = this.sent;

@@ -77,7 +77,7 @@ const serverWith = async (options: ServerOptions, packages?: PackageSpec[]) => {
     async compile(params: CompileParams) {
       notes.length = 0;
       const result = (await request("compile", params)) as { status: string };
-      const mine = notes.filter((n) => n.method !== "$/log" && n.params.uri === params.uri);
+      const mine = notes.filter((n) => "uri" in n.params && n.params.uri === params.uri);
       const diagnostics = mine.flatMap((n) => (n.method === "document/diagnostics" ? [n.params.diagnostics] : []));
       const artifacts = mine.flatMap((n) => (n.method === "document/artifact" ? [n.params.artifact] : []));
       return { status: result.status, diagnostics: diagnostics.at(-1) ?? [], artifact: artifacts.at(-1) ?? null };

@@ -18,6 +18,7 @@
       "!**/node_modules",
       "!**/target",
       "!**/*.generated.ts",
+      "!packages/google-fonts/catalogue.json",
       "!**/.stryker-tmp",
       "!**/reports",
       "!!reference",
