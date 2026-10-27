@@ -149,6 +149,32 @@ const calleeStart = (text: string, open: number): number => {
 /** Frames that are empty after a cut fail as values (`rgb()`, `()` as a point): cut them too. */
 const VALUE_FRAMES = new Set(["args", "parens", "params"]);
 
+/** What healing appends after the text being typed (closers), and whitespace. */
+const APPENDED = /[\s)\]}$"*_`]/;
+
+/**
+ * Where an error with no position in the document can be cut: a package or a
+ * library evaluates the document's content in its own code (CeTZ resolving a
+ * half-typed coordinate inside a canvas, #72), so neither the error nor its
+ * trace is in the text. The text being typed is to blame: the innermost
+ * construct open where it ends, as heal sees it once the closers healing
+ * appended are off. A value or a content block loses its opener and what
+ * follows (`(6` of `line((0, 0), (6`, `"` of `unit("`); an argument list, the
+ * whole call. A round that still fails cuts the next construct out, so two
+ * rounds go from the value being typed to the call holding it. Nothing open
+ * there (markup), nothing to cut: the last good render and Layer 4 take it.
+ */
+const unlocatedCut = (text: string, settled: number): number | undefined => {
+  let end = text.length;
+  while (end > 0 && APPENDED.test(text[end - 1] as string)) end--;
+  const [inner] = heal(text.slice(0, end), { lint: NO_LINT, unwrapFences: "never" }).openFrames;
+  if (!inner) return undefined;
+  const cut = inner.frame === "args" ? calleeStart(text, inner.open) : inner.open;
+  return cut >= settled ? cut : undefined;
+};
+
+const unlocated = (d: Diagnostic): boolean => d.span === null && d.trace.every((t) => t.span === null);
+
 /**
  * Streaming only, the catch-all: an error in the text still being typed cuts
  * the text at the error (or at its call site there) and heals the rest of it
@@ -157,8 +183,9 @@ const VALUE_FRAMES = new Set(["args", "parens", "params"]);
  * (`#text(` → `text()`), a value still being typed (`#v(1`, `rgb("#e`), closure
  * parameters before their `=>`. A cut that leaves an argument list or a group
  * empty moves before it (and before the call's name), since `rgb()` would fail
- * the next round. The next tokens usually bring the cut text back in the next
- * revision.
+ * the next round. An error with no position in the document (a package's
+ * panic) cuts the construct open at the end of the text. The next tokens
+ * usually bring the cut text back in the next revision.
  * @public
  */
 export const tailCut: DiagnosticFixer = {
@@ -166,7 +193,7 @@ export const tailCut: DiagnosticFixer = {
   priority: 100,
   modes: ["streaming"],
   fix(d, { text, settled }) {
-    let cut = cutPoint(d, settled);
+    let cut = cutPoint(d, settled) ?? (unlocated(d) ? unlocatedCut(text, settled) : undefined);
     if (cut === undefined) return null;
     let healed = heal(text.slice(0, cut), { lint: NO_LINT, unwrapFences: "never" });
     for (;;) {

@@ -26,8 +26,9 @@ export type ErrorClass =
   /** Syntax errors: healing missed something (the parse oracle should have caught it first). */
   | "syntax"
   /**
-   * No position in the document: a package evaluating the document's content raised it (CeTZ's
-   * plugin panics on a half-typed coordinate `(6` inside a canvas, #24's recordings).
+   * No position in the document, whatever the message: a package or library evaluating the
+   * document's content raised it (CeTZ panics on a half-typed coordinate `(6` inside a canvas,
+   * #24's recordings). Layer 3 cuts what is open at the end of the text (#72).
    */
   | "unlocated"
   | "other";
@@ -75,6 +76,8 @@ const SYNTAX = [/^unclosed /, /^expected (expression|semicolon|block|closing|arg
  */
 export const classify = (error: Diagnostic, document: string): ErrorClass => {
   const { message } = error;
+  // First: where it is decides what Layer 3 can do with it, more than what it says.
+  if (error.span === null && error.trace.every((t) => t.span === null)) return "unlocated";
   const label = /^label `<(.+)>` does not exist/.exec(message)?.[1];
   if (label !== undefined) {
     if (document.includes(`<${label}>`)) return "forward-ref";
@@ -93,6 +96,5 @@ export const classify = (error: Diagnostic, document: string): ErrorClass => {
   // `expected "solid", "dotted", …` without a `found`: a half-typed string.
   if (message.startsWith("expected ")) return "invalid-value";
   if (INVALID_OPERATION.some((re) => re.test(message))) return "invalid-operation";
-  if (error.span === null && error.trace.every((t) => t.span === null)) return "unlocated";
   return "other";
 };
