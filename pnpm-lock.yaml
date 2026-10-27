@@ -338,6 +338,9 @@ importers:
       '@shadcn/react':
         specifier: ^0.3.1
         version: 0.3.1(@types/react@19.3.0)(react@19.3.1)
+      '@typstream/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@typstream/edu':
         specifier: workspace:*
         version: link:../../packages/edu
@@ -427,6 +430,15 @@ importers:
       vite:
         specifier: ^8.3.5
         version: 8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)
+
+  packages/ai:
+    devDependencies:
+      '@typstream/corpus':
+        specifier: workspace:*
+        version: link:../../corpus
+      ai:
+        specifier: ^7.0.153
+        version: 7.0.153(zod@4.6.7)
 
   packages/core: {}
 

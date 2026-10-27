@@ -29,8 +29,7 @@ errors are one-offs, which healing, the engine's fixers and a [server fix loop](
 
 <Callout type="warn" title="Beta">
   `buildSystemPrompt`, `SystemPromptOptions` and `typstPromptRules` are `@beta`: their output may change between
-  releases as the kit is re-measured. Prompting may also move out of the packages into a skill
-  ([#75](https://github.com/ikramhasan/typstream/issues/75)).
+  releases as the kit is re-measured.
 </Callout>
 
 `@typstream/edu` builds a system prompt from the plugins your app renders with:
@@ -63,11 +62,12 @@ Import `universe` from `@typstream/universe` in server code: `typstream` is a cl
 client, render with the same plugins, so the model is told about exactly what the engine can compile:
 
 ```tsx
+import { isStreaming, textOf } from "@typstream/ai";
 import { edu } from "@typstream/edu";
 import { Typstream } from "typstream";
 
 // typstream adds the universe plugin by default; edu you add yourself.
-<Typstream source={text} isStreaming={status === "streaming"} plugins={[edu]} />;
+<Typstream source={textOf(message)} isStreaming={isStreaming(message, chat)} plugins={[edu]} />;
 ```
 
 If you turn packages off on the client (`packages={false}`), leave `universe` out of `buildSystemPrompt` too, or the

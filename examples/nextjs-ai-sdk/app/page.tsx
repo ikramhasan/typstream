@@ -1,6 +1,7 @@
 "use client";
-// A chat whose answers are Typst documents: useChat streams the model's text
-// parts, and each part renders as a <Typstream>. It heals every prefix so it
+// A chat whose answers are Typst documents: useChat streams the model's
+// answers, and each one renders as a <Typstream> (@typstream/ai's isStreaming
+// says whether it is still being written). It heals every prefix so it
 // compiles, keeps the last good render while one doesn't, and finishes the
 // document (strict compile, no caret) once the answer is complete. All answers
 // share one engine worker; only visible or streaming ones compile. <Telemetry>
@@ -16,6 +17,7 @@
 // is cut off below the text being written, so that bottom is the text.
 
 import { useChat } from "@ai-sdk/react";
+import { isStreaming, textOf } from "@typstream/ai";
 import { edu, SHOW_ANSWERS_INPUT } from "@typstream/edu";
 import { googleFonts } from "@typstream/google-fonts";
 import type { UIDataTypes, UIMessage } from "ai";
@@ -191,8 +193,6 @@ const SUGGESTIONS: { group: string; items: Suggestion[] }[] = [
   },
 ];
 
-const textOf = (message: ChatMessage) => message.parts.map((part) => (part.type === "text" ? part.text : "")).join("");
-
 /**
  * The document in an answer: its text after the last image search. The model is told to search
  * first and write nothing before the document, so anything it says before a search is chatter, not
@@ -200,10 +200,7 @@ const textOf = (message: ChatMessage) => message.parts.map((part) => (part.type 
  */
 const documentOf = (message: ChatMessage) => {
   const searches = message.parts.map((part, i) => (part.type === "tool-searchImages" ? i : -1));
-  return message.parts
-    .slice(Math.max(...searches) + 1)
-    .map((part) => (part.type === "text" ? part.text : ""))
-    .join("");
+  return textOf({ ...message, parts: message.parts.slice(Math.max(...searches) + 1) });
 };
 
 /** One image search: what it's looking for while it runs, then what it found. */
@@ -489,13 +486,13 @@ type SuggestionButtonProps = {
 };
 
 export default function Page() {
-  const { messages, setMessages, sendMessage, regenerate, stop, status, error } = useChat<ChatMessage>();
+  const chat = useChat<ChatMessage>();
+  const { messages, setMessages, sendMessage, regenerate, stop, status, error } = chat;
   const [input, setInput] = useState("");
   const [target, setTarget] = useState<Target>("paged");
   const [answers, setAnswers] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const busy = status === "submitted" || status === "streaming";
-  const last = messages.at(-1);
 
   const send = (text: string) => {
     if (!text.trim() || busy) return;
@@ -596,7 +593,7 @@ export default function Page() {
                             {documentOf(message) && (
                               <Answer
                                 text={documentOf(message)}
-                                streaming={status === "streaming" && message.id === last?.id}
+                                streaming={isStreaming(message, chat)}
                                 target={target}
                                 answers={answers}
                                 busy={busy}

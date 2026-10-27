@@ -1,9 +1,9 @@
 ---
 title: Next.js and the AI SDK
-description: A Next.js App Router chat whose answers are Typst documents, streamed with the Vercel AI SDK's streamText and useChat and rendered with the Typstream component.
+description: A Next.js App Router chat whose answers are Typst documents, streamed with the Vercel AI SDK's streamText and useChat and rendered with the Typstream component, with @typstream/ai reading each answer.
 ---
 
-This page builds a chat where the model answers in Typst and every answer renders as a live document. A route handler streams the model's text with `streamText`, `useChat` receives it on the client, and each assistant text part goes into its own `<Typstream>`.
+This page builds a chat where the model answers in Typst and every answer renders as a live document. A route handler streams the model's text with `streamText`, `useChat` receives it on the client, and each assistant message goes into its own `<Typstream>`, with [`@typstream/ai`](/docs/reference/ai) reading its text and whether it's still being written.
 
 It's written against Next.js 16, AI SDK 7 (`ai`), `@ai-sdk/react` 4 and `@ai-sdk/anthropic` 4. `examples/nextjs-ai-sdk` in the repository is the finished version: the same chat with [edu's prompt kit and plugin](#better-prompts-with-the-edu-plugin), answers as pages, [telemetry](/docs/guides/telemetry), and a chat UI from shadcn/ui's AI Elements.
 
@@ -26,7 +26,7 @@ It's written against Next.js 16, AI SDK 7 (`ai`), `@ai-sdk/react` 4 and `@ai-sdk
 ### Install
 
 ```npm
-npm install typstream ai @ai-sdk/react @ai-sdk/anthropic
+npm install typstream @typstream/ai ai @ai-sdk/react @ai-sdk/anthropic
 ```
 
 Set `ANTHROPIC_API_KEY` in `.env.local`. Any AI SDK provider works the same way.
@@ -71,38 +71,36 @@ In AI SDK 7, `instructions` is the system prompt (`system` still works but is de
 
 ### The chat page
 
-The page is a client component: `useChat` holds the messages and posts to `/api/chat`, and each assistant text part renders as a `<Typstream>`.
+The page is a client component: `useChat` holds the messages and posts to `/api/chat`, and each assistant message renders as a `<Typstream>`.
 
 ```tsx title="app/page.tsx"
 "use client";
 
 import { useChat } from "@ai-sdk/react";
+import { isStreaming, textOf } from "@typstream/ai";
 import { useState } from "react";
 import { Typstream } from "typstream";
 
 export default function Page() {
-  const { messages, sendMessage, status } = useChat();
+  const chat = useChat();
+  const { messages, sendMessage, status } = chat;
   const [input, setInput] = useState("");
-  const last = messages[messages.length - 1];
   const busy = status === "streaming" || status === "submitted";
 
   return (
     <main>
       {messages.map((message) =>
-        message.parts.map((part, i) => {
-          if (part.type !== "text") return null;
-          const key = `${message.id}-${i}`;
-          if (message.role === "user") return <p key={key}>{part.text}</p>;
-          return (
-            <Typstream
-              key={key}
-              source={part.text}
-              isStreaming={status === "streaming" && message.id === last?.id}
-              animated
-              caret
-            />
-          );
-        }),
+        message.role === "user" ? (
+          <p key={message.id}>{textOf(message)}</p>
+        ) : (
+          <Typstream
+            key={message.id}
+            source={textOf(message)}
+            isStreaming={isStreaming(message, chat)}
+            animated
+            caret
+          />
+        ),
       )}
       <form
         onSubmit={(e) => {
@@ -129,8 +127,8 @@ Run `npm run dev` and ask for "A one-page worksheet on the Pythagorean theorem f
 
 ## How it fits together
 
-- **One `<Typstream>` per assistant text part.** `part.text` is the whole text of the part so far, which is what `source` expects. Key it by message id and part index, so React keeps each document's component (and its rendered output) across updates.
-- **`isStreaming` only for the message being written.** `status === "streaming"` is true for the whole chat while any answer streams; combine it with "this is the last message", or every earlier answer would go back to streaming and start over. When it turns false, the answer is compiled in final mode and the caret disappears.
+- **One `<Typstream>` per assistant message.** `textOf(message)` is the message's text so far (its text parts; reasoning and tool parts aren't the document), which is what `source` expects. Key it by the message's id, so React keeps each document's component (and its rendered output) across updates.
+- **`isStreaming(message, chat)` only for the answer being written.** It's true while the chat answers with this message and its text hasn't ended (text followed by a tool call hasn't: more may come). Both halves matter: `status === "streaming"` is true for the whole chat while any answer streams, so every earlier answer would go back to streaming and start over; and a text part's own `state` stays `"streaming"` when the user stops the answer or the network fails, so that document would never finish. When it turns false, the answer is compiled in final mode and the caret disappears.
 - **One worker for the whole chat.** Every `<Typstream>` shares one engine worker, and only answers near the viewport or still streaming compile. A long conversation stays cheap.
 - **`"use client"`.** `useChat` already makes the page a client component. The `typstream` bundle is marked `"use client"` itself, so you can also render `<Typstream>` from a Server Component with a fixed `source`. On the server it renders an empty `<div>`; the document appears in the browser.
 - **No Next.js configuration.** The engine's worker, the wasm and the fonts are `new URL(…, import.meta.url)` assets that Turbopack and webpack emit. The example's `next.config.ts` sets only `turbopack.root`, because it lives in a pnpm monorepo whose packages are symlinked from outside the app; a standalone app doesn't need it.
@@ -182,7 +180,7 @@ Import `universe` from `@typstream/universe` here, not from `typstream`: the `ty
 ```tsx
 import { edu } from "@typstream/edu";
 
-<Typstream source={part.text} isStreaming={isLast} plugins={[edu]} animated caret />;
+<Typstream source={textOf(message)} isStreaming={isStreaming(message, chat)} plugins={[edu]} animated caret />;
 ```
 
 [Prompting](/docs/guides/prompting) covers the prompt kit, and [Telemetry](/docs/guides/telemetry) shows how the example wires typstream's events to an analytics endpoint with `<TypstreamProvider>`.

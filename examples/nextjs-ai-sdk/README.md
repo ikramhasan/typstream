@@ -1,6 +1,6 @@
 # nextjs-ai-sdk
 
-A chat whose answers are Typst documents: the Vercel AI SDK's `useChat` streams the model's text, and each text part renders as `<Typstream>` from the `typstream` package (Next.js App Router, Turbopack). The model writes with `@typstream/edu`'s vocabulary for teachers' documents, and the chat around it is built from shadcn/ui's AI Elements.
+A chat whose answers are Typst documents: the Vercel AI SDK's `useChat` streams the model's answers, and each one renders as `<Typstream>` from the `typstream` package, with `@typstream/ai` saying whether it is still being written (Next.js App Router, Turbopack). The model writes with `@typstream/edu`'s vocabulary for teachers' documents, and the chat around it is built from shadcn/ui's AI Elements.
 
 ```bash
 pnpm turbo run build --filter=@typstream/example-nextjs-ai-sdk^...   # once: the packages and the engine's wasm
@@ -13,16 +13,19 @@ If your shell sets `ANTHROPIC_BASE_URL` (a proxy), the route sends requests ther
 
 ## The integration
 
-One component per text part (`app/page.tsx`):
+One component per answer (`app/page.tsx`):
 
 ```tsx
-const { messages, status } = useChat();
-// for each assistant text part:
-<Typstream source={part.text} isStreaming={status === "streaming" && isLastMessage} plugins={[edu]} animated caret />
+const chat = useChat();
+// for each assistant message:
+<Typstream source={textOf(message)} isStreaming={isStreaming(message, chat)} plugins={[edu]} animated caret />
 ```
 
+The page's `documentOf(message)` is `textOf` of the parts after the last image search: what the model says before a search
+isn't the document.
+
 - `source` is the text so far; `<Typstream>` heals each prefix so it compiles, and keeps the last good render while one doesn't.
-- When `isStreaming` turns false the document is finished: compiled strictly, without the caret.
+- When `isStreaming` turns false the document is finished: compiled strictly, without the caret. That's when the answer ends with its text complete, or when it stops early (the user stops it, the network fails), which the message's own part state doesn't say. While an image search runs, the answer is still streaming: more text follows it.
 - Every answer shares one engine worker, and only visible or streaming answers compile, so a long chat stays cheap.
 - `useTypstream()` reads an answer's status, open frames ("writing a table…") and diagnostics, as the footer under each answer shows.
 - No Next.js configuration is needed for the engine: its worker, wasm and fonts are assets Turbopack emits. `next.config.ts` only sets the workspace root.

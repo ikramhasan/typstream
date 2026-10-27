@@ -15,6 +15,7 @@
     "@ai-sdk/react": "^4.0.157",
     "@base-ui/react": "^1.9.0",
     "@shadcn/react": "^0.3.1",
+    "@typstream/ai": "workspace:*",
     "@typstream/edu": "workspace:*",
     "@typstream/google-fonts": "workspace:*",
     "@typstream/universe": "workspace:*",
