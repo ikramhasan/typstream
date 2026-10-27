@@ -55,9 +55,11 @@ export const textOf = (message: MessageLike): string => {
 
 /**
  * Whether more of the message's text is coming: it's the assistant message the
- * chat is answering with, and a text part of it hasn't ended (or none has
- * started). For `<Typstream isStreaming>`: while true the document heals and
- * shows a caret; once false it compiles in final mode.
+ * chat is answering with, and it doesn't end with a text part that has ended.
+ * Before any text, while a text part streams, and after a tool call or other
+ * part (a later step may write more), it's true. For `<Typstream isStreaming>`:
+ * while true the document heals and shows a caret; once false it compiles in
+ * final mode.
  *
  * A text part's own `state` isn't enough: when the answer stops early
  * (`stop()`, a network error), the SDK leaves it `"streaming"` and only the
@@ -68,15 +70,10 @@ export const textOf = (message: MessageLike): string => {
 export const isStreaming = (message: MessageLike, chat: ChatLike): boolean => {
   if (message.role !== "assistant" || (chat.status !== "streaming" && chat.status !== "submitted")) return false;
   if (chat.messages[chat.messages.length - 1]?.id !== message.id) return false;
-  let texts = 0;
-  for (const part of message.parts) {
-    if (part.type !== "text") continue;
-    texts++;
-    if (part.state !== "done") return true;
-  }
-  // Text that ended may still be followed by more, after a tool call in a later step:
-  // then a new text part starts, and the document streams again.
-  return texts === 0;
+  // Text that ended and was followed by a tool call may go on in the next step: only the
+  // last part having ended as text says the answer's text is complete.
+  const last = message.parts[message.parts.length - 1];
+  return last?.type !== "text" || last.state !== "done";
 };
 
 /**

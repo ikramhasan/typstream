@@ -31,6 +31,9 @@
   "linter": { "rules": { "recommended": true } },
   "overrides": [
     { "includes": ["**/api-extractor*.json"], "json": { "parser": { "allowComments": true } } },
-    { "includes": ["apps/website/**/*.css"], "css": { "parser": { "tailwindDirectives": true } } }
+    {
+      "includes": ["apps/website/**/*.css", "examples/nextjs-ai-sdk/**/*.css"],
+      "css": { "parser": { "tailwindDirectives": true } }
+    }
   ]
 }

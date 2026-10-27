@@ -62,11 +62,12 @@ Import `universe` from `@typstream/universe` in server code: `typstream` is a cl
 client, render with the same plugins, so the model is told about exactly what the engine can compile:
 
 ```tsx
+import { isStreaming, textOf } from "@typstream/ai";
 import { edu } from "@typstream/edu";
 import { Typstream } from "typstream";
 
 // typstream adds the universe plugin by default; edu you add yourself.
-<Typstream source={text} isStreaming={status === "streaming"} plugins={[edu]} />;
+<Typstream source={textOf(message)} isStreaming={isStreaming(message, chat)} plugins={[edu]} />;
 ```
 
 If you turn packages off on the client (`packages={false}`), leave `universe` out of `buildSystemPrompt` too, or the
@@ -187,9 +188,8 @@ sources for that reason; a hand-written catalogue drifts as soon as a parameter 
 
 ## Without the kit
 
-If you don't use edu's vocabulary, a short hand-written prompt goes most of the way. The
-[Next.js example](https://github.com/ikramhasan/typstream/blob/main/examples/nextjs-ai-sdk/app/api/chat/route.ts)
-uses this one:
+If you don't use edu's vocabulary, a short hand-written prompt goes most of the way. This is the one the kit was
+measured against (the naive prompt above), with a rule about the page added:
 
 ```text
 You write educational documents (worksheets, quizzes, handouts) in Typst 0.15 markup.
@@ -199,6 +199,7 @@ Reply with the Typst source only: no Markdown, no code fences, no commentary bef
 - Tables: #table(columns: 3, [Header], [Header], [Header], [cell], [cell], [cell]).
 - Write a literal dollar sign, hash or at sign as \$, \#, \@.
 - Leave room for answers with #v(2em) or #line(length: 100%).
+- Leave the page size to the viewer: no paper, width, height or flipped in #set page (margins are fine).
 ```
 
 The essentials are the same whatever the domain:
@@ -210,6 +211,9 @@ The essentials are the same whatever the domain:
 - **Escape `$`, `#` and `@`** when they are literal: `\$5`, `\#1`, `name\@school.org`. Unescaped, they open math, code
   and a reference.
 - **Name the packages** the document may import, at their exact versions (see [Typst packages](/docs/guides/typst-packages)).
+- **Leave the page size to the viewer** if you render pages. Models set their own, often landscape for a wide table
+  such as a rubric, or US Letter, and a document's `#set page(paper: …)` takes precedence over the page the
+  `fit-width` layout sets. Typst has no rule that applies after the document, so only the prompt can prevent it.
 
 You can also append `typstPromptRules` to your own prompt: it's a plain array of strings, and it holds the rules that
 moved the error rate most.

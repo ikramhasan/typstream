@@ -107,10 +107,11 @@ function isStreaming(message: MessageLike, chat: ChatLike): boolean;
 ```
 
 True while the chat is answering with this message (`status` is `submitted` or `streaming`, and it's the last message)
-and its text hasn't ended: a text part is still open, or none has started (the model is still thinking). False for
-user messages and for every earlier answer. Pass `useChat()`'s result, or an AI SDK `Chat`.
+and the message doesn't end with a text part that has ended: before any text (the model is thinking), while a text
+part streams, and after a tool call (a later step may write more). False for user messages and for every earlier
+answer. Pass `useChat()`'s result, or an AI SDK `Chat`.
 
-The answer finishes as soon as its text ends, a moment before the chat's status is `ready`.
+The answer finishes as soon as its last text ends, a moment before the chat's status is `ready`.
 
 <Callout type="warn" title="Why not the part's own state">
   A text part's `state` turns `"done"` only when the model ends it. When an answer stops early (the user presses stop,
@@ -119,8 +120,9 @@ The answer finishes as soon as its text ends, a moment before the chat's status 
   again, and start over, whenever a new one streams.
 </Callout>
 
-If a later step adds more text to a message that had finished (text after a tool call), the message streams again,
-and `<Typstream>` starts that document over with the longer text.
+Text that ends before a tool call doesn't finish the answer: the tool's part comes after it, so the answer streams on
+until text ends with nothing after it. If your document is only the text after a tool call (an image search, say),
+pass `textOf` the parts after it: `textOf({ ...message, parts: message.parts.slice(i + 1) })`.
 
 ### textStream
 

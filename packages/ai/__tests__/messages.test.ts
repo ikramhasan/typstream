@@ -42,6 +42,19 @@ describe("isStreaming", () => {
     expect(isStreaming(ended, chat("streaming", ended))).toBe(false);
   });
 
+  it("is true after text that ended and a tool call: a later step may write more", () => {
+    const searching = assistant([
+      { type: "step-start" },
+      { type: "text", text: "Looking for a diagram.", state: "done" },
+      { type: "tool-searchImages", state: "input-available" },
+    ]);
+    expect(isStreaming(searching, chat("streaming", searching))).toBe(true);
+    const resumed = assistant([...searching.parts, { type: "step-start" }]);
+    expect(isStreaming(resumed, chat("streaming", resumed))).toBe(true);
+    const written = assistant([...resumed.parts, { type: "text", text: "= Cells", state: "done" }]);
+    expect(isStreaming(written, chat("streaming", written))).toBe(false);
+  });
+
   it("is false when the chat stopped or failed, though the part still says streaming", () => {
     expect(isStreaming(writing, chat("ready", writing))).toBe(false);
     expect(isStreaming(writing, chat("error", writing))).toBe(false);
