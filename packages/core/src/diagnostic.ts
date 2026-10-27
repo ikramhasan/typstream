@@ -17,6 +17,7 @@ export type DiagnosticSeverity = "error" | "warning" | "info";
  * @public
  */
 export interface TraceItem {
+  /** Typst's description of the step, e.g. "error occurred in this call of function `table`". */
   message: string;
   /** Where the step happened in the document text (UTF-16), or `null` if outside it. */
   span: Range | null;
@@ -33,6 +34,7 @@ export interface TraceItem {
  * @public
  */
 export interface Diagnostic {
+  /** How serious the problem is (see {@link DiagnosticSeverity}). */
   severity: DiagnosticSeverity;
   /**
    * Where the problem is in the document text. When it originated in another
@@ -42,6 +44,7 @@ export interface Diagnostic {
    * missing font).
    */
   span: Range | null;
+  /** What is wrong, as one line of text (hints are in {@link Diagnostic.hints}). */
   message: string;
   /** Suggestions, one per entry (Typst's `hint:` lines, never folded into `message`). */
   hints: string[];
@@ -55,10 +58,10 @@ export interface Diagnostic {
   code?: string;
 }
 
-/** @public */
+/** Whether a diagnostic's severity is `error`. @public */
 export const isError = (d: Diagnostic): boolean => d.severity === "error";
 
-/** @public */
+/** Whether any of the diagnostics is an error (see {@link isError}). @public */
 export const hasErrors = (ds: readonly Diagnostic[]): boolean => ds.some(isError);
 
 /**

@@ -519,9 +519,10 @@ can't structured-clone, write messages with [`serializeMessage`](/docs/reference
 <auto-type-table path="packages/engine/src/server/server.ts" name="ServerOptions" />
 
 <Callout type="warn" title="Untrusted clients">
-A server that accepts connections from clients it doesn't control must set `clientFixers: false` and
-`packages: { trustClient: false }`. Otherwise any client can make it import code (fixer modules) or fetch any URL
-(packages). [`@typstream/node`](/docs/reference/node) sets both.
+A server that accepts connections from clients it doesn't control must set `clientFixers: false`,
+`packages: { trustClient: false }` and `fontCatalogues: { trustClient: false }`. Otherwise any client can make it
+import code (fixer modules) or fetch any URL (packages, font catalogues). [`@typstream/node`](/docs/reference/node)
+sets all three.
 </Callout>
 
 #### `PackageOptions` (beta)
@@ -531,6 +532,18 @@ A server that accepts connections from clients it doesn't control must set `clie
 </Callout>
 
 <auto-type-table path="packages/engine/src/server/packages.ts" name="PackageOptions" />
+
+#### `FontCatalogueOptions` (beta)
+
+<Callout type="warn" title="Beta">
+`FontCatalogueOptions` and the `fontCatalogues` server option are beta.
+</Callout>
+
+The server's font catalogues ([Fonts and languages](/docs/guides/fonts-and-languages#a-catalogue-of-your-own)): the
+ones every document loads from, and whether the client's count too. A family whose files add up to more than its
+catalogue's `maxBytes` isn't loaded; `DEFAULT_FONT_FAMILY_BYTES` (5 MB) is the limit when a catalogue sets none.
+
+<auto-type-table path="packages/engine/src/server/fonts.ts" name="FontCatalogueOptions" />
 
 ### Fixers
 

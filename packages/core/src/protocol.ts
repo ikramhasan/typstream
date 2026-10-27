@@ -35,10 +35,14 @@ export type DocumentUri = string;
  */
 export type Revision = number;
 
-/** @public */
+/**
+ * What a compile produces: `html`, Typst's HTML export ({@link HtmlArtifact}), or
+ * `paged`, laid-out pages as SVG ({@link PagedArtifact}).
+ * @public
+ */
 export type CompileTarget = "html" | "paged";
 
-/** @public */
+/** What `export/pdf` and `export/html` produce; servers list theirs in their capabilities. @public */
 export type ExportFormat = "pdf" | "html";
 
 /** Contents of a virtual file. Strings are UTF-8 text files. @public */
@@ -54,7 +58,9 @@ export type FileDelta = Record<string, FileContent | null>;
  * @public
  */
 export interface DocumentParams {
+  /** The document the message is about. */
   uri: DocumentUri;
+  /** The revision of it the message is about (see {@link Revision}). */
   rev: Revision;
 }
 
@@ -80,7 +86,9 @@ export interface ClientCapabilities {
  * @public
  */
 export interface ServerCapabilities {
+  /** The targets it compiles to; `compile` to another answers `unsupported`. */
   targets: CompileTarget[];
+  /** The export formats it serves; the other `export/*` requests answer `unsupported`. */
   exports: ExportFormat[];
   /** Paged compiles send only pages that changed. Requires the client's `pagedDiff`. */
   pagedDiff?: boolean;
@@ -90,6 +98,7 @@ export interface ServerCapabilities {
   resolveLocation?: boolean;
   /** Families named in documents load from font catalogues (`fontCatalogues`), announced by `fonts/loaded`. @beta */
   fontCatalogues?: boolean;
+  /** Not yet standardized; keys should be namespaced. */
   experimental?: Record<string, unknown>;
 }
 
@@ -99,7 +108,12 @@ export interface ServerCapabilities {
  * @beta
  */
 export interface InitializeOptions {
+  /** Fonts for every document, in addition to the server's own. Lazy ones (with `info`) download on first use. */
   fonts?: FontSource[];
+  /**
+   * Packages every document may import, added to the server's own allowlist
+   * (PLAN §6.4). A server facing untrusted clients may ignore them.
+   */
   packages?: PackageSpec[];
   /**
    * ES module URLs the worker imports at `initialize`, each exporting a
@@ -115,13 +129,19 @@ export interface InitializeOptions {
   fontCatalogues?: FontCatalogue[];
 }
 
-/** @public */
+/**
+ * The first request: the client's protocol version and capabilities, and the
+ * resources every document in the worker shares.
+ * @public
+ */
 export interface InitializeParams {
   /** The client's {@link PROTOCOL_VERSION}. */
   protocolVersion: number;
+  /** What the client can handle; the server sends only what it can. */
   capabilities: ClientCapabilities;
+  /** Who the client is, e.g. `{ name: "@typstream/react" }`. Informational, for logs. */
   clientInfo?: { name: string; version?: string };
-  /** @beta */
+  /** Fonts, packages, fixer modules and font catalogues every document shares. @beta */
   options?: InitializeOptions;
 }
 
@@ -131,8 +151,11 @@ export interface InitializeParams {
  * @public
  */
 export interface InitializeResult {
+  /** The server's {@link PROTOCOL_VERSION}: the client's, since any other fails `initialize`. */
   protocolVersion: number;
+  /** What the server offers; clients use only what is listed. */
   capabilities: ServerCapabilities;
+  /** Which engine answered, for logs and bug reports. */
   serverInfo: {
     /** Adapter name, e.g. `"engine-wasm"`. */
     name: string;
@@ -142,8 +165,9 @@ export interface InitializeResult {
   };
 }
 
-/** @public */
+/** The `data` of a `protocol-version-mismatch` error. @public */
 export interface VersionMismatchData {
+  /** The protocol versions the server speaks. */
   supported: number[];
 }
 
@@ -156,6 +180,7 @@ export interface VersionMismatchData {
  * @public
  */
 export interface DocumentOpenParams extends DocumentParams {
+  /** The document's text at `rev`, which later `document/edit`s change. */
   text: string;
   /**
    * Typst evaluated before `text` (theme, `@typstream/edu` imports). It is not
@@ -200,6 +225,7 @@ export interface DocumentOpenParams extends DocumentParams {
  * @public
  */
 export interface DocumentEditParams extends DocumentParams {
+  /** The changes, in order, each in UTF-16 offsets into the text the previous one left. */
   edits: TextEdit[];
 }
 
@@ -209,6 +235,7 @@ export interface DocumentEditParams extends DocumentParams {
  * @public
  */
 export interface DocumentSetFilesParams extends DocumentParams {
+  /** The files to write, by path relative to the document root; `null` deletes one. Others stay. */
   files: FileDelta;
 }
 
@@ -243,6 +270,7 @@ export type CompileMode = "streaming" | "final";
  * @public
  */
 export interface CompileParams extends DocumentParams {
+  /** What to compile to: one of the server's `targets`. */
   target: CompileTarget;
   /** `sys.inputs` for this compile (answer-key toggle, fit-width page size, theme). */
   inputs?: Record<string, string>;
@@ -362,11 +390,17 @@ export interface CompileTimings {
   fallbackMs?: number;
 }
 
-/** @public */
+/**
+ * The answer to `compile`, sent after its notifications: whether it published
+ * an artifact, and what it cost.
+ * @public
+ */
 export interface CompileResult extends DocumentParams {
+  /** The target compiled to, as requested. */
   target: CompileTarget;
   /** `ok`: an artifact was published. `error`: only diagnostics; the client keeps its last good artifact. */
   status: "ok" | "error";
+  /** Where the worker's time went. */
   timings: CompileTimings;
   /** Engine memory after the compile (e.g. wasm memory), for recycling decisions (PLAN §6.3). */
   memoryBytes?: number;
@@ -378,6 +412,7 @@ export interface CompileResult extends DocumentParams {
 
 /** Compiled HTML. @public */
 export interface HtmlArtifact {
+  /** Discriminant: the output of an HTML compile. */
   target: "html";
   /** The complete HTML document Typst exported. Untrusted: the renderer sanitizes it. */
   html: string;
@@ -391,10 +426,15 @@ export interface HtmlArtifact {
  * @public
  */
 export interface TextRun {
+  /** The run's characters, in reading order. */
   text: string;
+  /** Left end of the baseline, in points from the page's left edge. */
   x: number;
+  /** The baseline, in points from the page's top edge. */
   y: number;
+  /** Font size, in points. */
   size: number;
+  /** The run's advance along the baseline, in points. */
   width: number;
   /** `[a, b, c, d]` of an SVG `matrix()` (translation is `x`/`y`); only for rotated, skewed or scaled text. */
   matrix?: [number, number, number, number];
@@ -461,7 +501,9 @@ export interface PageUpdate {
   index: number;
   /** Hash of the page's frame. Equal hashes mean identical pages; use it as a key. */
   hash: string;
+  /** Page width, in points. */
   width: number;
+  /** Page height, in points. */
   height: number;
   /** Untrusted SVG markup: the renderer sanitizes it. Empty when the page comes as a `drawing`. */
   svg: string;
@@ -490,14 +532,17 @@ export interface PageUpdate {
  * @public
  */
 export interface PagedArtifact {
+  /** Discriminant: the output of a paged compile. */
   target: "paged";
+  /** The revision whose paged artifact this one updates, or `null` when it holds every page. */
   base: Revision | null;
+  /** How many pages the document has now, whether or not they are in `pages`. */
   pageCount: number;
   /** Ascending by index. */
   pages: PageUpdate[];
 }
 
-/** @public */
+/** What a successful compile publishes (`document/artifact`), by target. @public */
 export type Artifact = HtmlArtifact | PagedArtifact;
 
 // ---------------------------------------------------------------------------
@@ -509,6 +554,7 @@ export type Artifact = HtmlArtifact | PagedArtifact;
  * @public
  */
 export interface ExportParams extends DocumentParams {
+  /** `sys.inputs` for the export (e.g. the answer-key toggle). */
   inputs?: Record<string, string>;
 }
 
@@ -527,8 +573,11 @@ export type ExportResult<Data> = DocumentParams & { diagnostics: Diagnostic[] } 
 
 /** A point on a page, in Typst points from the page's top-left corner. @beta */
 export interface PagePoint {
+  /** Zero-based page index, as {@link PageUpdate.index}. */
   page: number;
+  /** Points from the page's left edge. */
   x: number;
+  /** Points from the page's top edge. */
   y: number;
 }
 
@@ -540,10 +589,11 @@ export interface PagePoint {
  * @beta
  */
 export interface ResolveSpanParams extends DocumentParams {
+  /** The point on a page of revision `rev`'s paged output, e.g. where the user clicked. */
   point: PagePoint;
 }
 
-/** @beta */
+/** The answer to `resolve/span`. @beta */
 export interface ResolveSpanResult extends DocumentParams {
   /** `null` when nothing in the document produced that point. */
   span: Range | null;
@@ -551,10 +601,11 @@ export interface ResolveSpanResult extends DocumentParams {
 
 /** Where a document offset ended up in the paged output (cursor sync). @beta */
 export interface ResolveLocationParams extends DocumentParams {
+  /** UTF-16 offset into the document text at `rev`. */
   offset: number;
 }
 
-/** @beta */
+/** The answer to `resolve/location`. @beta */
 export interface ResolveLocationResult extends DocumentParams {
   /** Every place the offset was laid out (content can repeat, e.g. headers); empty if none. */
   locations: PagePoint[];
@@ -571,6 +622,7 @@ export interface ResolveLocationResult extends DocumentParams {
  * @public
  */
 export interface CancelParams {
+  /** The id of the request to drop. */
   id: RequestId;
 }
 
@@ -587,7 +639,9 @@ export interface CancelParams {
  * @public
  */
 export interface DiagnosticsNotification extends DocumentParams {
+  /** The target of the compile they come from. */
   target: CompileTarget;
+  /** Every diagnostic of the compile, in document coordinates; empty when it had none. */
   diagnostics: Diagnostic[];
 }
 
@@ -597,6 +651,7 @@ export interface DiagnosticsNotification extends DocumentParams {
  * @public
  */
 export interface ArtifactNotification extends DocumentParams {
+  /** The compiled output: an HTML document, or pages. */
   artifact: Artifact;
 }
 
@@ -610,7 +665,9 @@ export type FontsLoadedParams = LoadedFontFamily;
 
 /** Engine messages for debugging; never user-facing. @public */
 export interface LogParams {
+  /** How serious it is, as in `console`'s methods. */
   level: "debug" | "info" | "warn" | "error";
+  /** The text of the message, for developers. */
   message: string;
 }
 
@@ -623,41 +680,53 @@ export interface LogParams {
  * @public
  */
 export interface RequestMap {
+  /** First request: agrees on the protocol version and capabilities, and loads shared resources. */
   initialize: { params: InitializeParams; result: InitializeResult };
   /** Frees everything; the server answers nothing afterwards. */
   shutdown: { params: null; result: null };
+  /** Opens a document at its first revision. */
   "document/open": { params: DocumentOpenParams; result: null };
+  /** Changes an open document's text, as a new revision. */
   "document/edit": { params: DocumentEditParams; result: null };
+  /** Writes or deletes an open document's files, as a new revision. */
   "document/setFiles": { params: DocumentSetFilesParams; result: null };
+  /** Closes a document and frees its state. */
   "document/close": { params: DocumentCloseParams; result: null };
+  /** Compiles the current revision; the output arrives as notifications before the result. */
   compile: { params: CompileParams; result: CompileResult };
+  /** The current revision as PDF bytes. Needs `pdf` in the server's `exports`. */
   "export/pdf": { params: ExportParams; result: ExportResult<Uint8Array> };
+  /** The current revision as an HTML document, without anchors. Needs `html` in the server's `exports`. */
   "export/html": { params: ExportParams; result: ExportResult<string> };
-  /** @beta */
+  /** Click-to-edit: the source that made a point on a page. Needs `resolveSpan`. @beta */
   "resolve/span": { params: ResolveSpanParams; result: ResolveSpanResult };
-  /** @beta */
+  /** Cursor sync: where an offset was laid out on the pages. Needs `resolveLocation`. @beta */
   "resolve/location": { params: ResolveLocationParams; result: ResolveLocationResult };
 }
 
 /** Notifications the client sends. @public */
 export interface ClientNotificationMap {
+  /** Drops a request the server hasn't started (see {@link CancelParams}). */
   "$/cancel": CancelParams;
 }
 
 /** Notifications the server sends. @public */
 export interface ServerNotificationMap {
+  /** A compile's diagnostics: sent for every compile, before its artifact. */
   "document/diagnostics": DiagnosticsNotification;
+  /** A successful compile's output, sent after its diagnostics. */
   "document/artifact": ArtifactNotification;
-  /** @beta */
+  /** A family loaded from a font catalogue; once per family and worker. @beta */
   "fonts/loaded": FontsLoadedParams;
+  /** Engine messages for debugging; never user-facing. */
   "$/log": LogParams;
 }
 
-/** @public */
+/** The name of a request method. @public */
 export type RequestMethod = keyof RequestMap;
-/** @public */
+/** The name of a notification the client sends. @public */
 export type ClientNotificationMethod = keyof ClientNotificationMap;
-/** @public */
+/** The name of a notification the server sends. @public */
 export type ServerNotificationMethod = keyof ServerNotificationMap;
 
 /** Params of a request method. @public */
@@ -673,12 +742,20 @@ export type Request<M extends RequestMethod = RequestMethod> = {
   [K in M]: { id: RequestId; method: K; params: ParamsOf<K> };
 }[M];
 
-/** @public */
+/**
+ * A notification the client sends, discriminated by `method`. It has no `id`
+ * and gets no answer.
+ * @public
+ */
 export type ClientNotification<M extends ClientNotificationMethod = ClientNotificationMethod> = {
   [K in M]: { method: K; params: ClientNotificationMap[K] };
 }[M];
 
-/** @public */
+/**
+ * A notification the server sends, discriminated by `method`. It has no `id`
+ * and gets no answer.
+ * @public
+ */
 export type ServerNotification<M extends ServerNotificationMethod = ServerNotificationMethod> = {
   [K in M]: { method: K; params: ServerNotificationMap[K] };
 }[M];
@@ -710,19 +787,24 @@ export type ErrorCode =
 
 /** The wire form of a failure. Rebuild a throwable with {@link ProtocolError.from}. @public */
 export interface ResponseError {
+  /** Why the request failed. */
   code: ErrorCode;
+  /** Human-readable details, for logs. */
   message: string;
+  /** Machine-readable details, e.g. {@link VersionMismatchData} for `protocol-version-mismatch`. */
   data?: unknown;
 }
 
-/** @public */
+/** The answer to a request that succeeded: its result, under the request's `id`. @public */
 export type SuccessResponse<M extends RequestMethod = RequestMethod> = {
   [K in M]: { id: RequestId; result: ResultOf<K> };
 }[M];
 
-/** @public */
+/** The answer to a request that failed. @public */
 export interface ErrorResponse {
+  /** The id of the request that failed. */
   id: RequestId;
+  /** Why it failed. */
   error: ResponseError;
 }
 
@@ -742,19 +824,19 @@ export type ServerMessage = Response | ServerNotification;
 // ---------------------------------------------------------------------------
 // helpers
 
-/** @public */
+/** Whether a client message is a request (it has an `id`) rather than a notification. @public */
 export const isRequest = (m: ClientMessage): m is Request => "id" in m;
 
-/** @public */
+/** Whether a client message is a notification (it has no `id`) rather than a request. @public */
 export const isClientNotification = (m: ClientMessage): m is ClientNotification => !("id" in m);
 
-/** @public */
+/** Whether a server message is a response (it has an `id`) rather than a notification. @public */
 export const isResponse = (m: ServerMessage): m is Response => "id" in m;
 
-/** @public */
+/** Whether a server message is a notification (it has no `id`) rather than a response. @public */
 export const isServerNotification = (m: ServerMessage): m is ServerNotification => !("id" in m);
 
-/** @public */
+/** Whether a response reports a failure (it has an `error`) rather than a result. @public */
 export const isErrorResponse = (m: Response): m is ErrorResponse => "error" in m;
 
 /**
@@ -765,7 +847,9 @@ export const isErrorResponse = (m: Response): m is ErrorResponse => "error" in m
  * @public
  */
 export class ProtocolError extends Error {
+  /** Why the request failed. */
   readonly code: ErrorCode;
+  /** Machine-readable details, as in {@link ResponseError.data}; `undefined` when there are none. */
   readonly data: unknown;
 
   constructor(code: ErrorCode, message: string, data?: unknown) {
@@ -775,10 +859,12 @@ export class ProtocolError extends Error {
     this.data = data;
   }
 
+  /** Rebuilds the throwable from the wire form a response carried. */
   static from(e: ResponseError): ProtocolError {
     return new ProtocolError(e.code, e.message, e.data);
   }
 
+  /** The wire form, to answer a request with; `data` only when there is some. */
   toJSON(): ResponseError {
     return this.data === undefined
       ? { code: this.code, message: this.message }

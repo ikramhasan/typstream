@@ -24,6 +24,7 @@ export type MaybePromise<T> = T | Promise<T>;
  * @public
  */
 export interface AdapterCompileOptions {
+  /** `streaming` while the document arrives, `final` once it's complete and for exports. Absent means `streaming`. */
   mode?: CompileMode;
 }
 

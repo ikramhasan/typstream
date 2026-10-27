@@ -33,6 +33,8 @@ packages/dom      @typstream/dom: framework-free renderers. `src/html/`: HTML re
                   `src/export/`: `standaloneHtml`, a downloadable file from an HTML export (theme, CSS, CSP).
 packages/react    @typstream/react: <Typstream>, TypstreamProvider, useTypstream(); a thin layer over mountTypstream.
 packages/typstream  typstream: the convenience package (<Typstream> with html-compat, the math font and universe's packages; re-exports).
+packages/ai       @typstream/ai: typstream with AI SDKs. Generation for now: an assistant message as a document (`textOf`,
+                  `isStreaming`, `textStream`), read structurally, so no `ai` dependency; streaming edits are designed on #34.
 tools/typst-syntax-oracle   Typst's real parser and lexer compiled to wasm for Node; the ground truth in heal's tests.
 tools/compile-oracle        Do healed prefixes compile? heal × engine-wasm over the corpus, then the engine's fixers and fallback;
                             error classes, the prefix compile rate, and final-mode renders of every corpus document.
@@ -72,6 +74,7 @@ pnpm check-types
 pnpm check             # Biome lint + format check (pnpm fix to apply)
 pnpm check:layers      # package layering (dependency-cruiser) + package.json deps + changesets fixed group
 pnpm check:api         # public API must match packages/*/api/*.api.md; pnpm api:update to accept a change
+pnpm check:api-docs    # every @public/@beta export and member has TSDoc, and each export is on its website reference page
 pnpm check:packages    # publint + @arethetypeswrong/cli on the built packages
 pnpm changeset         # describe a change to a published package
 pnpm corpus:validate   # native `typst` 0.15.1 compile of every corpus entry (needs typst on PATH or TYPST=)
@@ -119,9 +122,13 @@ In `packages/react`:
 - `pnpm size`: ≤ 19 KB gzipped including `@typstream/dom` (React and the engine external).
 - Its bundle starts with `"use client"` (tsup banner), as does `typstream`'s, for Next.js's App Router.
 
+In `packages/ai`: `pnpm test` runs the helpers through AI SDK 7 itself (a devDependency): recorded `corpus/llm` streams
+sent as UI message streams, read back by `readUIMessageStream`, `DefaultChatTransport` and a `Chat`, including `stop()`
+and a failed stream (a text part stays `"streaming"` then; only the chat's status changes). `pnpm size`: ≤ 0.5 KB gzipped.
+
 In `examples/strict-csp`: `pnpm test` builds the page, serves it with the policy in `csp.mjs` and fails on any CSP violation or console error in Chromium, Firefox and WebKit (`BROWSERS=` picks some). Build the packages first (`pnpm turbo run build --filter=@typstream/example-strict-csp^...`). CI runs it in each browser's `Engine (<browser>)` job. Hostile documents go in `corpus/adversarial/hostile-*.typ` (category `hostile-…`); the engine's and the browser suites' `security.test.ts` run them all.
 
-In `examples/nextjs-ai-sdk`: `pnpm test` builds the app (Turbopack) and streams one answer into `<Typstream>` in Chromium, failing on any error frame. Without `ANTHROPIC_API_KEY` the route replays a recorded worksheet; build the packages first (`pnpm turbo run build --filter=typstream...`). CI runs it in the `Engine (chromium)` job.
+In `examples/nextjs-ai-sdk`: `pnpm test` builds the app (Turbopack) and streams two answers into `<Typstream>` in Chromium (pages, then HTML), failing on any error frame. The route prompts with edu's kit (with universe and google-fonts) and the page renders with their plugins; the UI is shadcn/ui (AI Elements, Base UI, Tailwind 4) in `components/ui/`, added with the shadcn CLI. Without `ANTHROPIC_API_KEY` the route replays a worksheet that compiles at every prefix (a kit recording doesn't, and the test fails on any error frame); a key in `.env.local` reaches `next start` too, so run the test with `ANTHROPIC_API_KEY=` to keep it offline. Build the packages first (`pnpm turbo run build --filter=@typstream/example-nextjs-ai-sdk^...`). CI runs it in the `Engine (chromium)` job.
 
 In `packages/heal`:
 - `pnpm test:long`: 20,000-run property campaign (minutes).
@@ -194,7 +201,7 @@ Spikes (reference only):
 - Property tests build documents from **complete** constructs (`__tests__/support/generators.ts`) and derive truncation from the streaming cut. Every bug fix adds a row to `constructs.test.ts` or a case to the generators.
 - Healing invariants must keep holding (PLAN.md §5.4): healed prefixes parse; settled text is untouched; healing is idempotent; valid documents come back unchanged; incremental, chunked and edited results equal stateless healing.
 - Performance budgets in PLAN.md §1 and §11.5–11.6 are enforced by scripts. Don't regress them silently.
-- **Public API is reviewed through the API reports** (`packages/*/api/*.api.md`). Exports without a release tag are `@public`. Tag unstable ones `@beta`, and things exported only for other typstream packages or for heal's own plumbing `@internal`. Commit the updated report with any API change.
+- **Public API is reviewed through the API reports** (`packages/*/api/*.api.md`). Exports without a release tag are `@public`. Tag unstable ones `@beta`, and things exported only for other typstream packages or for heal's own plumbing `@internal`. Commit the updated report with any API change. Everything not `@internal` needs a TSDoc summary (api-extractor's rule: at least 10 characters), its members included, and each export a mention in code on `apps/website/content/docs/reference/<package>.mdx` (a code span or an `<auto-type-table>`); `pnpm check:api-docs` checks both from the reports.
 
 ## Gotchas
 

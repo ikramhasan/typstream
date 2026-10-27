@@ -28,7 +28,7 @@ export interface DocumentOptions {
     timeoutMs?: number;
 }
 
-// @public (undocumented)
+// @public
 export interface EngineOptions extends FontOptions {
     maxMemoryBytes?: number;
     timeoutMs?: number;
@@ -37,32 +37,26 @@ export interface EngineOptions extends FontOptions {
 
 // @public
 export interface FixAttempt {
-    // (undocumented)
     diagnostics: Diagnostic[];
-    // (undocumented)
     ok: boolean;
-    // (undocumented)
     source: string;
 }
 
 // @public
 export const fixLoop: (options: FixLoopOptions) => Promise<FixLoopResult>;
 
-// @public (undocumented)
+// @public
 export interface FixLoopOptions extends ValidateOptions {
-    // (undocumented)
     format?: FormatOptions;
     generate(request: FixRequest): string | Promise<string>;
     maxRounds?: number;
-    // (undocumented)
     source: string;
     strict?: boolean;
 }
 
-// @public (undocumented)
+// @public
 export interface FixLoopResult {
     attempts: FixAttempt[];
-    // (undocumented)
     diagnostics: Diagnostic[];
     ok: boolean;
     source: string;
@@ -70,14 +64,13 @@ export interface FixLoopResult {
 
 // @public
 export interface FixRequest {
-    // (undocumented)
     diagnostics: Diagnostic[];
     prompt: string;
     round: number;
     source: string;
 }
 
-// @public (undocumented)
+// @public
 export interface FontOptions {
     fontPaths?: string[];
     fonts?: Uint8Array[];
@@ -88,7 +81,7 @@ export interface FontOptions {
 // @public
 export const formatDiagnosticsForLLM: (source: string, diagnostics: readonly Diagnostic[], options?: FormatOptions) => string;
 
-// @public (undocumented)
+// @public
 export interface FormatOptions {
     contextLines?: number;
     includeWarnings?: boolean;
@@ -111,12 +104,12 @@ export interface ProtocolConnection {
     receive(message: unknown): void;
 }
 
-// @public (undocumented)
+// @public
 export interface ProtocolServer {
     connect(send: (message: ServerMessage) => void): ProtocolConnection;
 }
 
-// @public (undocumented)
+// @public
 export interface ProtocolServerOptions {
     engine?: NodeEngine;
     maxDocuments?: number;
@@ -136,18 +129,15 @@ export const render: <F extends RenderFormat>(source: string, format: F, options
 
 // @public
 export interface RenderData {
-    // (undocumented)
     html: string;
-    // (undocumented)
     pdf: Uint8Array;
-    // (undocumented)
     svg: string[];
 }
 
-// @public (undocumented)
+// @public
 export type RenderFormat = "pdf" | "html" | "svg";
 
-// @public (undocumented)
+// @public
 export type RenderResult<F extends RenderFormat = RenderFormat> = {
     ok: true;
     diagnostics: Diagnostic[];
@@ -163,13 +153,13 @@ export type RenderResult<F extends RenderFormat = RenderFormat> = {
 // @public
 export const validate: (source: string, options?: ValidateOptions) => Promise<ValidateResult>;
 
-// @public (undocumented)
+// @public
 export interface ValidateOptions extends DocumentOptions {
     lint?: boolean | HealOptions["lint"];
     target?: CompileTarget;
 }
 
-// @public (undocumented)
+// @public
 export interface ValidateResult {
     diagnostics: Diagnostic[];
     ms: number;
@@ -179,11 +169,8 @@ export interface ValidateResult {
 
 // @public
 export interface WebSocketLike {
-    // (undocumented)
     close(code?: number, reason?: string): void;
-    // (undocumented)
     on(event: string, listener: (...args: never[]) => void): unknown;
-    // (undocumented)
     send(data: string): void;
 }
 

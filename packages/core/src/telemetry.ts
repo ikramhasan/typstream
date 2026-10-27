@@ -23,9 +23,11 @@ export type FallbackLevel = 0 | 1 | 2 | 3 | 4;
 
 /** What every document event says about the compile it is about. @public */
 export interface DocumentEventBase {
+  /** The document's URI, which tells documents apart in `Engine.onEvent`. */
   uri: DocumentUri;
   /** Revision compiled. Revisions count the worker's copies of the document, not the input's chunks. */
   rev: Revision;
+  /** The target compiled to. */
   target: CompileTarget;
   /** `final` once the input is complete (`finish()`). */
   mode: CompileMode;
@@ -56,6 +58,7 @@ export interface CompileReport {
   fallbackLevel: FallbackLevel;
   /** Errors and warnings of the compile, in the document. */
   errors: number;
+  /** Warnings of the compile, counted as `errors` is. */
   warnings: number;
   /** Paged: the document's page count, when the compile published pages. */
   pages?: number;
@@ -70,6 +73,7 @@ export interface CompileReport {
  * @public
  */
 export interface CompiledEvent extends DocumentEventBase, CompileReport {
+  /** Discriminant: a compile finished. */
   type: "compiled";
   /** `ok`: it published an artifact (perhaps from the fallback); `error`: the last good one stays. */
   status: "ok" | "error";
@@ -81,6 +85,7 @@ export interface CompiledEvent extends DocumentEventBase, CompileReport {
  * @public
  */
 export interface RenderedEvent extends DocumentEventBase, CompileReport {
+  /** Discriminant: the renderer showed an artifact. */
   type: "rendered";
   /** Main-thread time handing the artifact to the renderer, ms (paged: offscreen pages draw later). */
   renderMs: number;
@@ -96,7 +101,9 @@ export interface RenderedEvent extends DocumentEventBase, CompileReport {
  * @public
  */
 export interface FallbackEvent extends DocumentEventBase {
+  /** Discriminant: the output isn't the text as it is. */
   type: "fallback";
+  /** The step of the ladder the output came from (see {@link FallbackLevel}). */
   level: Exclude<FallbackLevel, 0>;
   /** Ranges of the compiled source shown as error boxes (levels 3 and 4). */
   isolated: Range[];
@@ -122,7 +129,9 @@ export interface FallbackEvent extends DocumentEventBase {
  * @public
  */
 export interface WatchdogEvent extends DocumentEventBase {
+  /** Discriminant: the watchdog replaced the worker. */
   type: "watchdog";
+  /** The compile ran past `budgetMs` (`timeout`), or the worker died during it (`crash`). */
   reason: "timeout" | "crash";
   /** The compile's budget, ms. */
   budgetMs: number;
@@ -145,7 +154,9 @@ export interface WatchdogEvent extends DocumentEventBase {
  * @public
  */
 export interface DiagnosticsEvent extends DocumentEventBase {
+  /** Discriminant: the document's diagnostics were replaced. */
   type: "diagnostics";
+  /** The new set, in input coordinates and sorted; empty when the compile reported none. */
   diagnostics: Diagnostic[];
 }
 

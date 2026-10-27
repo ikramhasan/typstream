@@ -37,25 +37,31 @@ import {
 // The handler contract is part of the plugin contract, so it lives in core.
 export type { HealHandler, HealHandlerContext } from "@typstream/core";
 
+/** Options for {@link heal} and {@link createHealer}. */
 export interface HealOptions {
   /** The document is complete: no tail repair; lint everything. */
   final?: boolean;
   /** Drop a set/show/import/include rule entirely while it is incomplete (default true). */
   dropIncompleteRules?: boolean;
+  /** Per-rule overrides of {@link DEFAULT_LINT}: a severity, or `true` for `fix` and `false` for `off`. */
   lint?: Partial<Record<LintRuleId, LintSeverity | boolean>>;
   /** Strip a Markdown code fence (typst or typ) around the whole output (default "auto"). */
   unwrapFences?: "auto" | "never";
   /** Heal only text written into `[from, to)` of an existing document (AI edits). */
   streamingRange?: Range | null;
+  /** Product-specific fixes (a plugin's `heal.handlers`): `settled` ones run with lint, `output` ones on `source`. */
   handlers?: HealHandler[];
 }
 
+/** A construct open at the end of the input that tail repair closed in `source` (none in final mode). */
 export interface OpenFrame {
+  /** What kind of construct it is, e.g. `content` for a `[…]` block or `math` for an equation. */
   frame: FrameKind;
   /** Input offset of the opening delimiter. */
   open: number;
 }
 
+/** What healing returns: a source that parses, how it maps to the input, and what was fixed or is still wrong. */
 export interface HealResult {
   /** Source to compile. */
   source: string;
@@ -71,6 +77,10 @@ export interface HealResult {
   patches: Patch[];
   /** Constructs still open at the end of the input, innermost first (e.g. "writing a table…"). */
   openFrames: OpenFrame[];
+  /**
+   * Lint rules' and `settled` handlers' findings on settled text (all of it in final mode), as input offsets.
+   * `fix` findings are already applied to `source`.
+   */
   findings: LintFinding[];
   /** Syntax errors healing could not fix (input offsets). */
   errors: SyntaxIssue[];
@@ -535,6 +545,7 @@ export const heal = (input: string, opts: HealOptions = {}): HealResult => {
   return toResult(input, norm, healCore(norm.text, state, normalizedOpts(opts, norm), { upTo: 0, findings: [] }));
 };
 
+/** An incremental healer ({@link createHealer}): every change returns what {@link heal} gives for the new input. */
 export interface Healer {
   /** Appends streamed text. */
   push(chunk: string): HealResult;
@@ -548,7 +559,9 @@ export interface Healer {
   finish(): HealResult;
   /** The latest result. */
   result(): HealResult;
+  /** Starts over with `input` (default "") and the healer's original options (undoes `finish`, `setStreamingRange`). */
   reset(input?: string): void;
+  /** The current raw input, before normalization: everything pushed, set or edited in so far. */
   readonly input: string;
 }
 

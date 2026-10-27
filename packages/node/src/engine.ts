@@ -10,7 +10,7 @@ import { type FontOptions, loadFonts } from "./fonts";
 import type { JobOp, JobResult } from "./jobs";
 import { EnginePool, type FileEntry } from "./pool";
 
-/** @public */
+/** How {@link createEngine} sizes its worker pool, budgets compiles, and which fonts it loads. @public */
 export interface EngineOptions extends FontOptions {
   /** Most worker threads to run at once, each compiling one document at a time. Default `min(4, cores - 1)`, at least 1. */
   workers?: number;

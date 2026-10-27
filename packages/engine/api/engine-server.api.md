@@ -20,7 +20,6 @@ import { ServerMessage } from '@typstream/core';
 
 // @public
 export interface AdapterCompileOptions {
-    // (undocumented)
     mode?: CompileMode;
 }
 

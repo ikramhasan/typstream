@@ -247,7 +247,7 @@ functions, so worker-side code is referenced by module URL (`fixerModules`).
 | `engine` | `@typstream/engine` | Fixer module URLs, files (such as a local Typst package), allowed packages and fonts (beta), and a preamble. |
 | `templates` | `mountTypstream` (`template` option) | Named document setups: a preamble and default `sys.inputs`. |
 | `prompt` | Prompt builders (`@typstream/edu`'s `buildSystemPrompt`) | A function catalogue, rules and few-shot examples for the model. |
-| `sanitize` | The HTML renderer | Extra tags and attributes (by tag, `"*"` for all) to let through. |
+| `sanitize` | The HTML renderer | Extra tags, attributes (by tag, `"*"` for every HTML element) and classes to let through. |
 | `stylesheets` | The HTML renderer, `standaloneHtml` | CSS for the HTML this plugin's Typst writes. |
 | `islands`, `editor` | Nothing yet | Reserved (beta): render islands ([#28](https://github.com/ikramhasan/typstream/issues/28)) and the visual editor. |
 
@@ -342,10 +342,11 @@ What a plugin's `prompt` facet holds: the catalogue of its Typst functions (gene
 
 <auto-type-table path="packages/core/src/plugin.ts" name="PromptExample" />
 
-### `PackageSpec` and `FontSource` (beta)
+### `PackageSpec`, `FontSource` and font catalogues (beta)
 
 <Callout type="warn" title="Beta">
-`PackageSpec`, `FontSource`, `IslandSpec` and `EditorFacet` are beta and may change before the first stable release.
+`PackageSpec`, `FontSource`, the font catalogue types, `IslandSpec` and `EditorFacet` are beta and may change before
+the first stable release.
 </Callout>
 
 A `PackageSpec` is an entry of the engine's package allowlist (`#import "@preview/cetz:0.5.3"`). The engine fetches it
@@ -364,6 +365,17 @@ type FontSource = ({ kind: "url"; url: string } | { kind: "bytes"; data: Uint8Ar
   info?: string; // the engine's metadata for the file's faces
 };
 ```
+
+A `FontCatalogue` (`{ index, maxBytes? }`, a plugin's `engine.fontCatalogues`) is an index of fonts the engine loads
+by family, only when a document names one it doesn't have; `@typstream/google-fonts` is one. The index is a
+`FontCatalogueIndex` served as JSON: its `families`, keyed by name lowercased, are `FontCatalogueFamily` entries
+(`{ name, files }`), each file a `FontCatalogueFile` (`{ path, style, weight, bytes? }`, TTF or OTF). A family the
+engine loaded is announced as a `LoadedFontFamily`, with the files' absolute URLs, so the HTML renderer can show it
+with the same files. See [A catalogue of your own](/docs/guides/fonts-and-languages#a-catalogue-of-your-own).
+
+<auto-type-table path="packages/core/src/plugin.ts" name="FontCatalogueIndex" />
+
+<auto-type-table path="packages/core/src/plugin.ts" name="LoadedFontFamily" />
 
 `IslandSpec` describes an interactive component the renderer will swap in for a Typst marker
 ([#28](https://github.com/ikramhasan/typstream/issues/28)); `EditorFacet` is reserved for the visual editor. Both are
@@ -504,6 +516,7 @@ Notifications:
 | Client to server | `$/cancel` | `CancelParams` (`{ id }`): drop a request that hasn't started. |
 | Server to client | `document/diagnostics` | `DiagnosticsNotification`: the complete set for one compile, replacing earlier ones. |
 | Server to client | `document/artifact` | `ArtifactNotification`: a successful compile's `artifact`. |
+| Server to client | `fonts/loaded` | `FontsLoadedParams` (beta, a `LoadedFontFamily`): a family loaded from a font catalogue, sent once per family and worker. |
 | Server to client | `$/log` | `LogParams` (`{ level, message }`): debugging only, never user-facing. |
 
 Helper types: `RequestMethod`, `ClientNotificationMethod` and `ServerNotificationMethod` (the method names),
