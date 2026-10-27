@@ -27,11 +27,7 @@ export const startEngine = (): Engine =>
 
 /** A document with html-compat applied, as the bindings will open them. */
 export const openHtml = (engine: Engine, files: Record<string, string> = {}): EngineDocument =>
-  engine.open({
-    target: "html",
-    preamble: htmlCompat.engine?.preamble ?? "",
-    files: { ...(htmlCompat.engine?.files as Record<string, string>), ...files },
-  });
+  engine.open({ target: "html", plugins: [htmlCompat], files });
 
 /** Resolves with the first state that satisfies `done` (now or later). */
 export const until = (doc: EngineDocument, done: (s: DocumentState) => boolean, ms = 60_000): Promise<DocumentState> =>

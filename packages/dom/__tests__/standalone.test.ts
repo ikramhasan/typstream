@@ -29,6 +29,18 @@ describe("standaloneHtml", () => {
     expect(out).toContain("<h2>Title</h2><p>Hi</p></body></html>");
   });
 
+  it("adds plugins' stylesheets after the theme, in the order given, then its own, each once", () => {
+    const compat = { key: "compat", stylesheets: [".compat {}"] };
+    const edu = { key: "edu", dependencies: ["compat"], stylesheets: [".edu {}"] };
+    const out = standaloneHtml(TYPST, { plugins: [compat, edu], stylesheets: [".app {}", ".edu {}"] });
+    const style = /<style>\n([\s\S]*)<\/style>/.exec(out)?.[1] ?? "";
+    const at = (css: string) => style.indexOf(css);
+    expect(at("--typstream-foreground")).toBeLessThan(at(".compat {}"));
+    expect(at(".compat {}")).toBeLessThan(at(".edu {}"));
+    expect(at(".edu {}")).toBeLessThan(at(".app {}"));
+    expect(style.split(".edu {}")).toHaveLength(2);
+  });
+
   it("puts the root class and theme on <body>, keeping its own class", () => {
     expect(standaloneHtml(TYPST)).toContain('<body class="typstream" data-typstream-theme="light">');
     expect(standaloneHtml(TYPST, { theme: "dark" })).toContain('data-typstream-theme="dark"');

@@ -34,7 +34,10 @@ export const htmlCompatPreamble: string = `#import "${HTML_COMPAT_PATH}": html-c
  */
 export const KNOWN_HTML_WARNINGS: readonly string[] = ["page set rule was ignored during HTML export"];
 
-/** html-compat as a typstream plugin: the prelude file, the preamble, and what the sanitizer must let through. */
+/**
+ * html-compat as a typstream plugin: the prelude file, the preamble, what the sanitizer must let
+ * through, and the stylesheet.
+ */
 export const htmlCompat: TypstreamPlugin = {
   key: "html-compat",
   engine: {
@@ -49,4 +52,5 @@ export const htmlCompat: TypstreamPlugin = {
       ol: ["class"],
     },
   },
+  stylesheets: [CSS_SOURCE],
 };

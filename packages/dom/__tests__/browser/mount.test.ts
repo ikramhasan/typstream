@@ -4,8 +4,11 @@
 // stream, exports, telemetry hooks, and destroy(). @typstream/react's browser tests cover the rest
 // through <Typstream>.
 
-import type { FallbackEvent, RenderedEvent, WatchdogEvent } from "@typstream/core";
+import { definePlugin, type FallbackEvent, type RenderedEvent, type WatchdogEvent } from "@typstream/core";
+import { edu } from "@typstream/edu";
 import { createEngine, type DocumentState, type Engine, fromWorker } from "@typstream/engine";
+import { htmlCompat } from "@typstream/html-compat";
+import { universe } from "@typstream/universe";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { server } from "vitest/browser";
 import { type MountedTypstream, mountTypstream, type TypstreamOptions } from "../../src/mount";
@@ -127,6 +130,61 @@ describe(`mountTypstream in ${browser}`, () => {
     expect(file).toContain(".marker { color: red }");
     expect(file).toContain("<h2>Worksheet</h2>");
     expect(view.exportSource()).toBe(source);
+    view.destroy();
+    el.remove();
+  });
+
+  it("loads plugins: preambles in dependency order, files, templates, sanitizer allowances and stylesheets", async () => {
+    const el = host();
+    const base = definePlugin({
+      key: "acme/base",
+      engine: { files: { "/acme/note.typ": '#let note(body) = html.elem("acme-note", body)' } },
+      sanitize: { allowTags: ["acme-note"] },
+      stylesheets: [".typstream acme-note { outline: 3px solid rgb(1, 2, 3) }"],
+    });
+    const notes = definePlugin({
+      key: "acme/notes",
+      dependencies: ["acme/base"],
+      engine: { preamble: '#import "/acme/note.typ": note' },
+      templates: [{ name: "memo", preamble: "#let kind = sys.inputs.kind", inputs: { kind: "memo" } }],
+      // A facet this version doesn't read.
+      editor: { slashItems: [{ title: "Note" }] },
+    });
+    const view = mountTypstream(el, {
+      engine,
+      source: "#note[Kind: #kind]",
+      plugins: [notes, base],
+      template: "memo",
+      lazy: false,
+    });
+    await until(view, (s) => s.status === "done");
+    const note = el.querySelector("acme-note");
+    expect(note?.textContent).toBe("Kind: memo");
+    expect(getComputedStyle(note as Element).outlineColor).toBe("rgb(1, 2, 3)");
+    const file = await view.exportHtml();
+    expect(file).toContain("acme-note { outline");
+    view.destroy();
+    el.remove();
+  });
+
+  it("loads edu, html-compat and universe through the plugin system", async () => {
+    const el = host();
+    const view = mountTypstream(el, {
+      engine,
+      source: "#question(points: 2)[Half of 1 is #blank(answer: [1/2]).]\n#grid(columns: 2)[Left][Right]",
+      plugins: [universe, edu, htmlCompat],
+      template: "worksheet",
+      inputs: { showAnswers: "true" },
+      lazy: false,
+    });
+    const state = await until(view, settled);
+    expect(state.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    // edu's files, preamble, template and stylesheet…
+    const question = el.querySelector(".edu-question");
+    expect(question?.textContent).toContain("1/2");
+    expect(getComputedStyle(question as Element).display).toBe("grid");
+    // …and html-compat's preamble, sanitizer allowances and stylesheet.
+    expect(getComputedStyle(el.querySelector(".ts-grid") as Element).display).toBe("grid");
     view.destroy();
     el.remove();
   });

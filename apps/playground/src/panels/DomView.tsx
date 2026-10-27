@@ -12,7 +12,7 @@ import {
   type PagedView,
   registerMathFont,
 } from "@typstream/dom";
-import { htmlCompat, htmlCompatCss } from "@typstream/html-compat";
+import { htmlCompat } from "@typstream/html-compat";
 import { useLayoutEffect, useRef, useState } from "react";
 import { MATH_FONT } from "../fonts";
 import type { RawEngine } from "../rawEngine";
@@ -70,7 +70,6 @@ const DomHtml = ({ html, compat, caret, follow, onReport }: HtmlProps) => {
     scroller.current?.append(root);
     const created = createHtmlRenderer(root, {
       plugins: compat ? [htmlCompat] : [],
-      stylesheets: compat ? [htmlCompatCss] : [],
     });
     renderer.current = created;
     return () => {

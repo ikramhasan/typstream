@@ -169,6 +169,13 @@ export interface DocumentOpenParams extends DocumentParams {
    * it, and may ignore the list (a server facing untrusted clients). @beta
    */
   packages?: PackageSpec[];
+  /**
+   * Fixer modules for this document, in addition to `initialize`'s (plugins'
+   * `engine.fixerModules`, PLAN §8.2). The server imports each once; one that
+   * fails to load is reported with `$/log` and the document compiles without it.
+   * @beta
+   */
+  fixerModules?: string[];
 }
 
 /**

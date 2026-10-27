@@ -45,6 +45,7 @@ examples/         node-validate (@typstream/node fix loop), nextjs-ai-sdk (useCh
 docs/             security.md: threat model, defences and the CSP guide (#29).
 spikes/phase0     Throwaway Phase 0 experiments: browser harness (harness/) and custom Typst wasm engine (custom-engine/).
                   Port code out of here into packages/; don't import from spikes.
+docs/             User-facing guides the website (#32) will publish: writing-a-plugin.md.
 PLAN.md           Design and roadmap.
 ```
 

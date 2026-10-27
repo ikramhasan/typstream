@@ -13,6 +13,7 @@ describe("package", () => {
     expect(htmlCompatPreamble).toContain(`"${HTML_COMPAT_PATH}"`);
     expect(htmlCompat.engine?.files?.[HTML_COMPAT_PATH]).toBe(htmlCompatSource);
     expect(htmlCompat.engine?.preamble).toBe(htmlCompatPreamble);
+    expect(htmlCompat.stylesheets).toEqual([htmlCompatCss]);
   });
 
   it("scopes every CSS rule to the renderer root", () => {

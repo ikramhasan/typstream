@@ -9,17 +9,18 @@
 // streaming (`lazy`): a chat history of fifty finished answers shares one worker,
 // and only the visible ones are opened and compiled.
 
-import type {
-  CompiledEvent,
-  CompileTarget,
-  Diagnostic,
-  DocumentEvent,
-  FallbackEvent,
-  FileDelta,
-  PackageSpec,
-  RenderedEvent,
-  TypstreamPlugin,
-  WatchdogEvent,
+import {
+  type CompiledEvent,
+  type CompileTarget,
+  type Diagnostic,
+  type DocumentEvent,
+  type FallbackEvent,
+  type FileDelta,
+  type RenderedEvent,
+  resolvePlugins,
+  type TemplateSpec,
+  type TypstreamPlugin,
+  type WatchdogEvent,
 } from "@typstream/core";
 import type { DocumentOptions, DocumentState, DocumentStatus, Engine, EngineDocument } from "@typstream/engine";
 import { type StandaloneHtmlOptions, standaloneHtml } from "./export/standalone";
@@ -52,7 +53,10 @@ export interface TypstreamOptions {
   pageHeight?: "a4" | "auto";
   /** Typst evaluated before the document, after the plugins' and the template's. */
   preamble?: string;
-  /** Name of a template from the plugins' `templates`: its preamble and default inputs apply. */
+  /**
+   * Name of a template from the plugins' `templates` (the last plugin's, if
+   * two have one by that name): its preamble and default inputs apply.
+   */
   template?: string;
   /** `sys.inputs`, over the template's. */
   inputs?: Record<string, string>;
@@ -63,11 +67,14 @@ export interface TypstreamOptions {
   /** Overrides the engine's compile schedule for this document. */
   schedule?: DocumentOptions["schedule"];
   /**
-   * Plugins' engine files, packages and preambles, heal handlers, templates and
-   * sanitizer allowances (html-compat, for one).
+   * Plugins (PLAN §8.0): their engine files, packages, preambles and fixer
+   * modules, heal handlers and lint settings, templates, sanitizer allowances
+   * and stylesheets. A key given twice is loaded once, as its last definition;
+   * plugins load after their dependencies, which must be among them. Fonts
+   * load only from the engine's own plugins (`createEngine`).
    */
   plugins?: readonly TypstreamPlugin[];
-  /** More CSS for the HTML target, such as html-compat's stylesheet. */
+  /** More CSS for the HTML target, after the plugins'. */
   stylesheets?: readonly string[];
   /** Fade in new words while streaming (HTML target). Default false. */
   animated?: boolean | AnimateOptions;
@@ -129,7 +136,7 @@ export interface MountedTypstream {
   exportPdf(): Promise<Uint8Array>;
   /**
    * Exports the document as an HTML file that opens on its own
-   * ({@link standaloneHtml}), with the mount's `stylesheets` and `theme`;
+   * ({@link standaloneHtml}), with the mount's plugins, `stylesheets` and `theme`;
    * `options` add to or override them (a `mathFont`, a `title`). Otherwise as
    * {@link MountedTypstream.exportPdf}.
    */
@@ -166,50 +173,42 @@ const RESIZE_DEBOUNCE = 150;
 /** How the document is opened: a change to any of these opens a new one. */
 interface OpenKey {
   engine: Engine;
+  /** The plugins, resolved: the engine applies their facets (preambles before `preamble`). */
+  plugins: TypstreamPlugin[];
   preamble: string;
   heal: DocumentOptions["heal"];
   schedule: DocumentOptions["schedule"];
-  files: FileDelta;
-  packages: PackageSpec[];
 }
 
+/** The template named `o.template`, the last plugin's if two have one by that name. */
+const templateOf = (o: TypstreamOptions, plugins = resolvePlugins(o.plugins ?? [])): TemplateSpec | undefined =>
+  o.template
+    ? plugins
+        .flatMap((p) => p.templates ?? [])
+        .filter((t) => t.name === o.template)
+        .pop()
+    : undefined;
+
 const openKey = (o: TypstreamOptions): OpenKey => {
-  const plugins = o.plugins ?? [];
-  const template = o.template ? plugins.flatMap((p) => p.templates ?? []).find((t) => t.name === o.template) : null;
+  const plugins = resolvePlugins(o.plugins ?? []);
   const preamble = [
-    ...plugins.map((p) => p.engine?.preamble),
     // Whatever the target, so switching targets doesn't reopen the document: without
     // fit-width's inputs the preamble does nothing.
     o.layout === "fit-width" ? FIT_WIDTH_PREAMBLE : undefined,
-    template?.preamble,
+    templateOf(o, plugins)?.preamble,
     o.preamble,
   ]
     .filter((p) => p)
     .join("\n");
-  const handlers = plugins.flatMap((p) => p.heal?.handlers ?? []);
-  const lint = Object.assign({}, ...plugins.map((p) => p.heal?.lint), o.heal?.lint);
-  const heal = {
-    ...o.heal,
-    ...(handlers.length ? { handlers: [...handlers, ...(o.heal?.handlers ?? [])] } : {}),
-    ...(Object.keys(lint).length ? { lint } : {}),
-  };
-  const files = Object.assign({}, ...plugins.map((p) => p.engine?.files));
-  const packages = plugins.flatMap((p) => p.engine?.packages ?? []);
-  return { engine: o.engine, preamble, heal, schedule: o.schedule, files, packages };
+  return { engine: o.engine, plugins, preamble, heal: o.heal, schedule: o.schedule };
 };
 
 const sameKey = (a: OpenKey, b: OpenKey) =>
   a.engine === b.engine &&
   a.preamble === b.preamble &&
+  equal(a.plugins, b.plugins) &&
   equal(a.heal, b.heal) &&
-  equal(a.schedule, b.schedule) &&
-  equal(a.files, b.files) &&
-  equal(a.packages, b.packages);
-
-const templateInputs = (o: TypstreamOptions): Record<string, string> | undefined =>
-  o.template
-    ? (o.plugins ?? []).flatMap((p) => p.templates ?? []).find((t) => t.name === o.template)?.inputs
-    : undefined;
+  equal(a.schedule, b.schedule);
 
 /** Removed files become `null` deletions; changed ones are sent again. */
 const filesDelta = (from: FileDelta, to: FileDelta): FileDelta | null => {
@@ -303,7 +302,8 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
 
   const htmlRenderer = (): HtmlRenderer => {
     const animation = typeof opts.animated === "object" ? opts.animated : undefined;
-    const want = [opts.theme, animation, opts.plugins, opts.stylesheets, opts.linkTarget];
+    const plugins = resolvePlugins(opts.plugins ?? []);
+    const want = [opts.theme, animation, plugins, opts.stylesheets, opts.linkTarget];
     if (html && equal(html.key, want)) return html.renderer;
     dropHtml();
     const root = element.ownerDocument.createElement("div");
@@ -311,7 +311,7 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
     const renderer = createHtmlRenderer(root, {
       ...(opts.theme ? { theme: opts.theme } : {}),
       ...(animation ? { animation } : {}),
-      ...(opts.plugins ? { plugins: opts.plugins } : {}),
+      ...(plugins.length ? { plugins } : {}),
       ...(opts.stylesheets ? { stylesheets: opts.stylesheets } : {}),
       ...(opts.linkTarget !== undefined ? { linkTarget: opts.linkTarget } : {}),
     });
@@ -397,7 +397,7 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
   const fitWidth = () => opts.target === "paged" && opts.layout === "fit-width";
 
   /** The document's inputs without fit-width's page size: what exports compile with. */
-  const exportInputs = (): Record<string, string> => ({ ...templateInputs(opts), ...opts.inputs });
+  const exportInputs = (): Record<string, string> => ({ ...templateOf(opts)?.inputs, ...opts.inputs });
 
   const measure = () => {
     const width = element.clientWidth;
@@ -463,10 +463,10 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
         target,
         inputs,
         text,
-        files: { ...want.files, ...files },
+        files,
+        ...(want.plugins.length ? { plugins: want.plugins } : {}),
         ...(want.preamble ? { preamble: want.preamble } : {}),
-        ...(want.packages.length ? { packages: want.packages } : {}),
-        heal: want.heal,
+        ...(want.heal ? { heal: want.heal } : {}),
         ...(want.schedule ? { schedule: want.schedule } : {}),
       });
       fedText = text;
@@ -566,6 +566,7 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
       return standaloneHtml(html, {
         ...(opts.theme ? { theme: opts.theme } : {}),
         ...options,
+        plugins: resolvePlugins([...(opts.plugins ?? []), ...(options.plugins ?? [])]),
         stylesheets: [...(opts.stylesheets ?? []), ...(options.stylesheets ?? [])],
       });
     },

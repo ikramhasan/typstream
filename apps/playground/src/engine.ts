@@ -5,7 +5,7 @@
 // may import the packages @typstream/universe vendors, as with `typstream`.
 import type { InitializeResult } from "@typstream/core";
 import { createEngine, type Engine, type EngineEvent, engineWorker } from "@typstream/engine";
-import { UNIVERSE_PACKAGES } from "@typstream/universe";
+import { universe } from "@typstream/universe";
 
 /** An engine event and when it happened (`performance.now()`). */
 export interface LoggedEvent {
@@ -32,7 +32,7 @@ export const sharedEngine = (): Engine => {
   engine = createEngine({
     spawn: engineWorker(),
     clientInfo: { name: "typstream-playground" },
-    initialize: { packages: [...UNIVERSE_PACKAGES] },
+    plugins: [universe],
   });
   engine.onEvent((event) => {
     // Every compile reports; the inspector lists only what went wrong.

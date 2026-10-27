@@ -207,6 +207,8 @@ export interface DocumentEventBase {
 export interface DocumentOpenParams extends DocumentParams {
     files?: FileDelta;
     // @beta
+    fixerModules?: string[];
+    // @beta
     packages?: PackageSpec[];
     preamble?: string;
     // (undocumented)
@@ -672,6 +674,9 @@ export interface ResolveLocationResult extends DocumentParams {
     locations: PagePoint[];
 }
 
+// @public
+export const resolvePlugins: <P extends TypstreamPlugin>(plugins: readonly P[]) => P[];
+
 // @beta
 export interface ResolveSpanParams extends DocumentParams {
     // (undocumented)
@@ -854,6 +859,7 @@ export interface TypstreamPlugin {
         allowTags?: string[];
         allowAttrs?: Record<string, string[]>;
     };
+    stylesheets?: string[];
     templates?: TemplateSpec[];
     // (undocumented)
     version?: string;

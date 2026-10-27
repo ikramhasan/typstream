@@ -6,7 +6,7 @@
 // bindings from one in the renderers or the engine.
 import type { CompileTarget } from "@typstream/core";
 import type { HealOptions } from "@typstream/heal";
-import { htmlCompat, htmlCompatCss } from "@typstream/html-compat";
+import { htmlCompat } from "@typstream/html-compat";
 import { type RenderedEvent, Typstream, type TypstreamInfo } from "@typstream/react";
 import { useCallback, useRef, useState } from "react";
 import { sharedEngine } from "../engine";
@@ -28,7 +28,6 @@ interface Props {
 }
 
 const COMPAT_PLUGINS = [htmlCompat];
-const COMPAT_STYLES = [htmlCompatCss];
 
 const describe = (info: RenderedEvent) =>
   info.target === "html"
@@ -72,7 +71,7 @@ export const TypstreamView = ({ typstream, docKey, input, final, target, compat,
           isStreaming={!final}
           target={target}
           heal={heal}
-          {...(compat ? { plugins: COMPAT_PLUGINS, stylesheets: COMPAT_STYLES } : {})}
+          {...(compat ? { plugins: COMPAT_PLUGINS } : {})}
           {...(MATH_FONT ? { mathFont: MATH_FONT } : {})}
           animated
           caret

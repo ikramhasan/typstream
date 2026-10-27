@@ -6,7 +6,7 @@
 import { mountTypstream, registerMathFont } from "@typstream/dom";
 import { createEngine, engineWorker } from "@typstream/engine";
 import { baseFonts } from "@typstream/engine-wasm/fonts";
-import { htmlCompat, htmlCompatCss } from "@typstream/html-compat";
+import { htmlCompat } from "@typstream/html-compat";
 import { universe } from "@typstream/universe";
 import "./page.css";
 import source from "./worksheet.typ?raw";
@@ -25,7 +25,6 @@ for (const target of ["html", "paged"] as const) {
     source,
     target,
     plugins: [htmlCompat, universe],
-    stylesheets: [htmlCompatCss],
     onStatusChange: (status) => {
       element.dataset.status = status;
     },

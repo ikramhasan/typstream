@@ -53,7 +53,7 @@ export const useRawEngine = (options: RawEngineOptions): RawEngine => {
     const opened = sharedEngine().open({
       target: targetRef.current,
       heal,
-      ...(compat ? { preamble: htmlCompat.engine?.preamble, files: htmlCompat.engine?.files } : {}),
+      ...(compat ? { plugins: [htmlCompat] } : {}),
     });
     compiles.current = [];
     sent.current = null;

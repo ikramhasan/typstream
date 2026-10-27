@@ -9,6 +9,7 @@
 // range without asking the engine (§10.2).
 
 import type { TypstreamPlugin } from "@typstream/core";
+import { stylesheetsOf } from "../plugins";
 import {
   type AnimateOptions,
   AnimateTimeline,
@@ -33,17 +34,21 @@ export interface HtmlRendererOptions {
    * page don't collide. Default: unique per renderer.
    */
   idPrefix?: string;
-  /** Plugins whose `sanitize` facet allows more tags and attributes (html-compat's, for one). */
+  /**
+   * Plugins whose `sanitize` facet allows more tags and attributes, and whose
+   * `stylesheets` are injected before `stylesheets` (html-compat's, for one),
+   * in the order given (mountTypstream passes them resolved, dependencies first).
+   */
   plugins?: readonly TypstreamPlugin[];
   /** `target` of links to http(s) URLs; `null` keeps them in the same tab. Default `_blank`. */
   linkTarget?: string | null;
   /**
-   * More CSS to inject next to the renderer's own, such as html-compat's
-   * stylesheet. Injected once per document or shadow root, as constructable
+   * More CSS to inject next to the renderer's own and the plugins'.
+   * Injected once per document or shadow root, as constructable
    * stylesheets where supported (no `style-src 'unsafe-inline'` needed).
    */
   stylesheets?: readonly string[];
-  /** Inject {@link htmlRendererCss} and `stylesheets`. Default true; pass false to ship them yourself. */
+  /** Inject {@link htmlRendererCss}, the plugins' stylesheets and `stylesheets`. Default true; pass false to ship them yourself. */
   injectStyles?: boolean;
 }
 
@@ -180,7 +185,7 @@ const caretParent = (block: Element): Element => {
  *
  * @example
  * ```ts
- * const renderer = createHtmlRenderer(element, { plugins: [htmlCompat], stylesheets: [htmlCompatCss] });
+ * const renderer = createHtmlRenderer(element, { plugins: [htmlCompat] });
  * doc.subscribe((s) => {
  *   if (s.artifact?.target === "html") renderer.update(s.artifact.html, { animate: !s.final, caret: !s.final });
  * });
@@ -208,7 +213,7 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
   root.style.setProperty("--typstream-duration", `${config.duration}ms`);
   root.style.setProperty("--typstream-easing", config.easing);
   if (options.injectStyles !== false) {
-    for (const css of [htmlRendererCss, ...(options.stylesheets ?? [])]) injectCss(root, css);
+    for (const css of [htmlRendererCss, ...stylesheetsOf(options.plugins, options.stylesheets)]) injectCss(root, css);
   }
 
   let shell: string | null = null;

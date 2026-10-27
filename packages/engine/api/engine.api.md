@@ -20,6 +20,7 @@ import { PackageSpec } from '@typstream/core';
 import { Revision } from '@typstream/core';
 import { ServerMessage } from '@typstream/core';
 import { TextEdit } from '@typstream/core';
+import { TypstreamPlugin } from '@typstream/core';
 
 // @public
 export interface Clock {
@@ -57,6 +58,7 @@ export interface DocumentOptions {
     inputs?: Record<string, string>;
     // @beta
     packages?: PackageSpec[];
+    plugins?: readonly TypstreamPlugin[];
     preamble?: string;
     schedule?: Partial<ScheduleOptions>;
     target?: CompileTarget;
@@ -157,6 +159,7 @@ export interface EngineOptions {
     // @beta
     initialize?: InitializeOptions;
     limits?: Partial<LimitOptions>;
+    plugins?: readonly TypstreamPlugin[];
     recycleBytes?: number;
     schedule?: Partial<ScheduleOptions>;
     spare?: boolean;

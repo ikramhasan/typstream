@@ -31,7 +31,9 @@
   },
   "devDependencies": {
     "@typstream/corpus": "workspace:*",
+    "@typstream/edu": "workspace:*",
     "@typstream/html-compat": "workspace:*",
+    "@typstream/universe": "workspace:*",
     "@vitest/browser-playwright": "4.1.12",
     "playwright": "^1.64.1"
   }

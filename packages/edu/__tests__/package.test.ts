@@ -33,6 +33,7 @@ describe("package", () => {
     expect(Object.keys(eduFiles).every((path) => path.startsWith(`${EDU_ROOT}/`))).toBe(true);
     expect(edu.engine?.files).toBe(eduFiles);
     expect(edu.engine?.preamble).toBe(eduPreamble);
+    expect(edu.stylesheets).toEqual([eduCss]);
   });
 
   it("has a typst.toml for the same version, which Typst checks against the import", () => {
