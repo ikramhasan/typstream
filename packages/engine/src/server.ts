@@ -7,7 +7,8 @@
 
 export type { InitInput } from "@typstream/engine-wasm";
 // What `inProcess` returns; the same types as the main entry's.
-export type { EngineConnection, EngineEvents, SpawnEngine } from "./connection";
+export type { EngineConnection, EngineEvents, SpawnDefaults, SpawnEngine } from "./connection";
+export type { WatchdogOptions } from "./document";
 export type {
   AdapterCompileOptions,
   AdapterCompileResult,

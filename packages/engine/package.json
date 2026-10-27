@@ -17,6 +17,10 @@
       "types": "./dist/server.d.ts",
       "default": "./dist/server.js"
     },
+    "./websocket": {
+      "types": "./dist/websocket.d.ts",
+      "default": "./dist/websocket.js"
+    },
     "./worker": "./dist/worker.js"
   },
   "files": [
@@ -27,8 +31,8 @@
     "test": "vitest run --project node",
     "size": "node scripts/size.mjs",
     "check-types": "tsc -p tsconfig.json",
-    "check:api": "api-extractor run && api-extractor run -c api-extractor.server.json",
-    "api:update": "api-extractor run --local && api-extractor run --local -c api-extractor.server.json",
+    "check:api": "api-extractor run && api-extractor run -c api-extractor.server.json && api-extractor run -c api-extractor.websocket.json",
+    "api:update": "api-extractor run --local && api-extractor run --local -c api-extractor.server.json && api-extractor run --local -c api-extractor.websocket.json",
     "check:package": "publint --strict --pack npm && attw --pack . --profile esm-only",
     "test:browser": "vitest run --project browser"
   },

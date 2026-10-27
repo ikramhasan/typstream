@@ -2,6 +2,8 @@
 // at a time for all of its documents, and replaces the worker when a compile
 // runs past its budget (watchdog), the worker crashes, or its memory grows past
 // a threshold (recycling). A pre-warmed spare makes a replacement immediate.
+// Over a socket, a dropped connection is replaced too, and what it was running
+// retried.
 
 import {
   type DocumentEvent,
@@ -17,7 +19,7 @@ import {
   type TypstreamPlugin,
 } from "@typstream/core";
 import { type Clock, systemClock } from "./clock";
-import { Connection, type GoneReason, type SpawnEngine } from "./connection";
+import { Connection, type GoneReason, type SpawnEngine, WorkerGone } from "./connection";
 import {
   type CompileOutcome,
   type DocumentHost,
@@ -37,7 +39,10 @@ import { DEFAULT_SCHEDULE, type ScheduleOptions } from "./schedule";
  * @public
  */
 export interface EngineOptions {
-  /** Starts a worker running the engine server: {@link engineWorker} in a browser. */
+  /**
+   * Starts a worker running the engine server: {@link engineWorker} in a
+   * browser, or `fromWebSocket` (`@typstream/engine/websocket`) for a server.
+   */
   spawn: SpawnEngine;
   /** Fonts and packages shared by every document, sent with `initialize`. @beta */
   initialize?: InitializeOptions;
@@ -50,7 +55,7 @@ export interface EngineOptions {
   plugins?: readonly TypstreamPlugin[];
   /** Sent with `initialize`, for the worker's logs. */
   clientInfo?: { name: string; version?: string };
-  /** Compile budgets and strikes; defaults in {@link DEFAULT_WATCHDOG}. */
+  /** Compile budgets and strikes; defaults in {@link DEFAULT_WATCHDOG}, or the `spawn`'s own. */
   watchdog?: Partial<WatchdogOptions>;
   /** Input length and live page limits; defaults in {@link DEFAULT_LIMITS}. */
   limits?: Partial<LimitOptions>;
@@ -60,7 +65,7 @@ export interface EngineOptions {
    * and stays flat. Default 256 MiB; `Infinity` disables recycling.
    */
   recycleBytes?: number;
-  /** Keep an initialized spare worker so replacing the active one is instant. Default true. */
+  /** Keep an initialized spare worker so replacing the active one is instant. Default true, or the `spawn`'s own. */
   spare?: boolean;
   /** Default schedule of every document. */
   schedule?: Partial<ScheduleOptions>;
@@ -75,6 +80,8 @@ export interface EngineOptions {
  * - `ready`: a worker finished `initialize` (the first one and every replacement).
  * - `watchdog`: a compile or export ran past its budget; the worker was terminated.
  * - `crash`: a worker failed outside the protocol.
+ * - `disconnect`: the connection to the engine dropped (a WebSocket closed);
+ *   a new one opens.
  * - `recycle`: a worker was replaced because it used too much memory.
  * - `log`: a `$/log` message from the worker.
  * - `failed`: the engine can't run; every document is in `error`.
@@ -86,6 +93,7 @@ export type EngineEvent =
   | { type: "ready"; info: InitializeResult }
   | { type: "watchdog"; uri: DocumentUri; rev: Revision; budgetMs: number }
   | { type: "crash"; error: unknown }
+  | { type: "disconnect"; error: unknown }
   | { type: "recycle"; memoryBytes: number }
   | { type: "log"; level: "debug" | "info" | "warn" | "error"; message: string }
   | { type: "failed"; error: Error }
@@ -151,6 +159,13 @@ interface Slot {
 
 const asError = (e: unknown): Error => (e instanceof Error ? e : new Error(String(e)));
 
+/**
+ * Connections lost in a row with requests in flight, after which a loss counts
+ * as a crash: something in the requests (a message over the server's size
+ * limit) may be what drops them, and crashes are strikes, so it stops.
+ */
+const MAX_LOSSES = 3;
+
 class EngineImpl implements Engine, DocumentHost {
   readonly clock: Clock;
   readonly watchdog: WatchdogOptions;
@@ -171,6 +186,9 @@ class EngineImpl implements Engine, DocumentHost {
   private exports: ExportJob[] = [];
   private busy = false;
   private recycleAfter: number | null = null;
+  private readonly useSpare: boolean;
+  /** Connections lost in a row with requests in flight; reset by an answered compile or export. */
+  private losses = 0;
   private nextUri = 1;
   private readonly listeners = new Set<(event: EngineEvent) => void>();
   private disposed = false;
@@ -181,7 +199,9 @@ class EngineImpl implements Engine, DocumentHost {
   constructor(options: EngineOptions) {
     this.options = options;
     this.clock = options.clock ?? systemClock;
-    this.watchdog = { ...DEFAULT_WATCHDOG, ...options.watchdog };
+    const defaults = options.spawn.defaults;
+    this.watchdog = { ...DEFAULT_WATCHDOG, ...defaults?.watchdog, ...options.watchdog };
+    this.useSpare = (options.spare ?? defaults?.spare) !== false;
     this.limits = { ...DEFAULT_LIMITS, ...options.limits };
     this.schedule = { ...DEFAULT_SCHEDULE, ...options.schedule };
     this.recycleBytes = options.recycleBytes ?? DEFAULT_RECYCLE_BYTES;
@@ -298,7 +318,7 @@ class EngineImpl implements Engine, DocumentHost {
     const conn = new Connection(
       this.options.spawn,
       (n) => this.receive(slot, n),
-      (e) => this.crashed(slot, e),
+      (e, lost) => this.crashed(slot, e, lost),
     );
     const ready = conn
       .request("initialize", {
@@ -322,7 +342,7 @@ class EngineImpl implements Engine, DocumentHost {
         this.emit({ type: "ready", info });
         // Warm the next spare only once the active worker is up, so they don't
         // compete for the first compile.
-        if (slot === this.active && this.options.spare !== false && !this.spare) this.spare = this.trySpawn();
+        if (slot === this.active && this.useSpare && !this.spare) this.spare = this.trySpawn();
       },
       (e) => {
         if (slot === this.active && conn.alive) this.fail(asError(e));
@@ -352,8 +372,9 @@ class EngineImpl implements Engine, DocumentHost {
     else this.docs.get(n.params.uri)?.receive(n);
   }
 
-  private crashed(slot: Slot, error: unknown): void {
-    this.emit({ type: "crash", error });
+  /** The worker failed, or (`lost`) the connection to it dropped. */
+  private crashed(slot: Slot, error: unknown, lost?: boolean): void {
+    this.emit({ type: lost ? "disconnect" : "crash", error });
     if (slot === this.spare) {
       this.dropSpare();
       return;
@@ -365,7 +386,8 @@ class EngineImpl implements Engine, DocumentHost {
       this.fail(asError(error));
       return;
     }
-    this.replace("crash");
+    // A lost connection isn't the document's doing: what it was running is retried.
+    this.replace(lost && !(slot.conn.busy && ++this.losses > MAX_LOSSES) ? "disconnect" : "crash");
   }
 
   /**
@@ -386,7 +408,7 @@ class EngineImpl implements Engine, DocumentHost {
     this.active = next;
     // A promoted spare is already up; start its own spare now. A new worker
     // starts its spare when it is ready (spawn).
-    if (next.isReady && this.options.spare !== false) this.spare = this.trySpawn();
+    if (next.isReady && this.useSpare) this.spare = this.trySpawn();
   }
 
   private fail(error: Error): void {
@@ -460,6 +482,7 @@ class EngineImpl implements Engine, DocumentHost {
     let outcome: CompileOutcome;
     try {
       outcome = { result: await result };
+      this.losses = 0;
       const bytes = outcome.result.memoryBytes;
       if (bytes !== undefined && bytes > this.recycleBytes && slot === this.active) this.recycleAfter = bytes;
     } catch (error) {
@@ -485,7 +508,13 @@ class EngineImpl implements Engine, DocumentHost {
     let outcome: { result: ExportResult<Uint8Array | string> } | { error: unknown };
     try {
       outcome = { result: await result };
+      this.losses = 0;
     } catch (error) {
+      // The connection dropped: export on the next one.
+      if (error instanceof WorkerGone && error.reason === "disconnect") {
+        this.exports.unshift(job);
+        return;
+      }
       outcome = { error };
     } finally {
       disarm();

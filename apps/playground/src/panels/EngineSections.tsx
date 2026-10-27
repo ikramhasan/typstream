@@ -24,6 +24,8 @@ const describeEvent = (event: EngineEvent): string => {
       return `watchdog: rev ${event.rev} ran past ${event.budgetMs} ms; worker replaced`;
     case "crash":
       return `crash: ${event.error instanceof Error ? event.error.message : String(event.error)}`;
+    case "disconnect":
+      return `disconnect: ${event.error instanceof Error ? event.error.message : String(event.error)}`;
     case "recycle":
       return `recycle: worker at ${mib(event.memoryBytes)}, swapped for the spare`;
     case "log":
