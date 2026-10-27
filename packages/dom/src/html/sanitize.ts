@@ -116,7 +116,7 @@ const STYLE_ATTR = "data-typstream-style";
  * Typst writes them all. Neither may contain `<`, so a match never runs past the
  * next tag and hostile raw text (`<a x="<a x="…`) costs linear time.
  */
-const ATTRIBUTE = /(\s+)([^\s"'<>/=]+)(="[^"<]*")?/g;
+const ATTRIBUTE = /(?<=\s)([^\s"'<>/=]+)(="[^"<]*")?/g;
 const START_TAG = /<[a-zA-Z][^\s/<>]*(?:\s+[^\s"'<>/=]+(?:="[^"<]*")?)*\s*\/?>/g;
 
 /**
@@ -130,8 +130,8 @@ const START_TAG = /<[a-zA-Z][^\s/<>]*(?:\s+[^\s"'<>/=]+(?:="[^"<]*")?)*\s*\/?>/g
  */
 export const hideStyles = (html: string): string =>
   html.replace(START_TAG, (tag) =>
-    tag.replace(ATTRIBUTE, (all, space: string, name: string, value = "") =>
-      name.toLowerCase() === "style" ? `${space}${STYLE_ATTR}${value}` : all,
+    tag.replace(ATTRIBUTE, (all, name: string, value = "") =>
+      name.toLowerCase() === "style" ? STYLE_ATTR + value : all,
     ),
   );
 
