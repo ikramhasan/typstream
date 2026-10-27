@@ -1,0 +1,213 @@
+---
+title: Theming and styling
+description: Light and dark themes, the CSS variables and classes typstream exposes, extra stylesheets, and the word fade-in and caret while streaming.
+---
+
+typstream's HTML output follows your app's look: its colors are CSS variables, every built-in rule has zero
+specificity so yours win, and dark mode works without extra code. The paged target shows pages as paper, and you
+style the frame around them. This page covers both, and the streaming effects: words fading in and a caret.
+
+## Light, dark or automatic
+
+The `theme` prop sets the HTML target's colors:
+
+| `theme` | Colors |
+|---|---|
+| `"auto"` (default) | Follow the page's `color-scheme`. |
+| `"light"` | Always light. |
+| `"dark"` | Always dark. |
+
+```tsx
+<Typstream source={text} theme="dark" />
+```
+
+`"auto"` uses CSS `light-dark()`, which follows the `color-scheme` of the element. Most pages never set one, and then
+it's light. To follow the reader's system setting, declare both on your page:
+
+```css
+:root {
+  color-scheme: light dark;
+}
+```
+
+If your app has its own dark mode toggle, set `color-scheme: dark` while it's on, and typstream follows.
+
+`theme` applies to the HTML target and to standalone HTML exports (which default to light, since files get printed).
+The paged target draws pages as white paper in either theme.
+
+## CSS variables
+
+The theme sets these on the renderer's root element (`.typstream`):
+
+| Variable | Default (light, dark) | Used for |
+|---|---|---|
+| `--typstream-foreground` | `#1c1c1e`, `#e8e8ea` | Text. |
+| `--typstream-muted` | `#5c5c63`, `#a4a4ab` | Figure captions, and secondary text in plugins' styles (edu's subject line). |
+| `--typstream-link` | `#1d4ed8`, `#8ab4ff` | Links. |
+| `--typstream-highlight` | `#fff2a8`, `#6b5b00` | The background of `#highlight[…]`. |
+| `--typstream-caret-color` | `currentColor` | The streaming caret. |
+| `--typstream-caret` | `"▋"` | The caret's character (CSS `content`). |
+
+Plugins add their own. `@typstream/edu`'s stylesheet defines `--edu-ink` (answers in the teacher's copy), `--edu-rule`
+and `--edu-faint` (lines and borders), and a color per callout kind: `--edu-note`, `--edu-tip`, `--edu-warning`,
+`--edu-definition`, `--edu-example` and `--edu-remember`.
+
+Override them on the root element. Use `light-dark()` to keep both modes:
+
+```css title="app.css"
+.answer .typstream {
+  --typstream-foreground: light-dark(#0f172a, #e2e8f0);
+  --typstream-link: light-dark(#7c3aed, #c4b5fd);
+  --typstream-highlight: light-dark(#fde68a, #78350f);
+  --edu-ink: light-dark(#be123c, #fda4af);
+  font-family: "Inter", sans-serif;
+}
+```
+
+```tsx
+<Typstream source={text} className="answer" />
+```
+
+Set them on `.typstream` itself, not on an ancestor: the theme declares them on that element, so a value inherited
+from further up would be overridden.
+
+## Classes and structure
+
+**HTML target.** `<Typstream>` renders a `div.typstream-host` (with your `className`, `style` and `id`), and inside it
+the renderer's root:
+
+| Selector | What it is |
+|---|---|
+| `.typstream` | The root. Typst's HTML goes inside it. It carries the document's `lang` and `dir`. |
+| `.typstream[data-typstream-theme]` | Set to `light` or `dark` when `theme` forces one. |
+| `[data-typstream-animate]` | A word fading in. |
+| `.typstream-caret` | The caret, drawn by its `::after`. |
+
+Inside the root is Typst's own HTML: `h1`–`h6`, `p`, `ul`, `table`, `figure`, `math` and so on, which you can style
+like any content. `@typstream/html-compat` and `@typstream/edu` add elements of their own with `ts-` and `edu-`
+class names.
+
+**Paged target.**
+
+| Selector | What it is |
+|---|---|
+| `.typstream-paged` | The column of pages. `data-layout="fit-width"` when pages fill the width. |
+| `.typstream-page` | One page, with `data-page` (1-based). White, sized from the page. |
+| `.typstream-text-layer` | Transparent, selectable text over a page. |
+
+Each page's SVG is in its own shadow root, so your CSS doesn't reach inside a page. Style the frame instead:
+
+```css
+.answer .typstream-paged {
+  gap: 24px;
+}
+.answer .typstream-page {
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.15), 0 8px 24px rgb(0 0 0 / 0.08);
+}
+```
+
+## Your rules win
+
+Every rule of the HTML renderer, `@typstream/html-compat` and `@typstream/edu` is scoped to the root and wrapped in
+`:where()`:
+
+```css
+:where(.typstream) a {
+  color: var(--typstream-link);
+}
+```
+
+`:where()` has zero specificity, so any selector of yours beats it, whatever the order of the stylesheets, with no
+`!important`. A plain `.answer a { … }` is enough. The paged target's few rules (`.typstream-page`,
+`.typstream-paged`) are single-class selectors: override them with one more class, as above.
+
+## Extra stylesheets
+
+The `stylesheets` prop adds CSS for the HTML target:
+
+```tsx
+const css = `
+:where(.typstream) h1 {
+  letter-spacing: -0.02em;
+}
+:where(.typstream) table {
+  font-variant-numeric: tabular-nums;
+}
+`;
+
+<Typstream source={text} stylesheets={[css]} />;
+```
+
+Stylesheets apply in this order: the renderer's own, then each plugin's `stylesheets` (in plugin order, dependencies
+first), then yours. Each is added once per document (or per shadow root, if the renderer is inside one), however many
+`<Typstream>`s use it.
+
+Use `stylesheets` rather than your global CSS for rules that should travel with the document: they are also written
+into [standalone HTML exports](/docs/guides/exports#html), where `<body>` is the `.typstream` root. Scope them to
+`.typstream` as above, so they match in both places and stay out of the rest of your page. Rules for your app's
+chrome around the preview belong in your own CSS.
+
+Stylesheets are added as constructed stylesheets (`adoptedStyleSheets`) where the browser supports them, which a
+Content-Security-Policy without `style-src 'unsafe-inline'` allows. The paged renderer does the same, and Typst's
+inline styles are applied through the CSSOM, so typstream needs no `'unsafe-inline'` for styles. See
+[Security](/docs/guides/security) for the whole policy.
+
+With `@typstream/dom`'s `createHtmlRenderer`, `injectStyles: false` turns the injection off, for apps that ship the
+CSS themselves: the renderer's is exported as `htmlRendererCss`, and plugins carry theirs in `stylesheets`.
+
+## Word fade-in and the caret
+
+While a document streams in the HTML target, new words can fade in, and a caret can blink after the last one:
+
+```tsx
+<Typstream source={text} isStreaming={isStreaming} animated caret />
+```
+
+Only words that are new are animated. Blocks the stream didn't change are left alone, and a block that changed keeps
+the words already on screen. When the stream runs ahead, the delay between words shrinks so the animation never falls
+far behind the text.
+
+`animated` takes `true` for the defaults, or options:
+
+```tsx
+<Typstream source={text} isStreaming={isStreaming} animated={{ animation: "blurIn", duration: 200, stagger: 30 }} />
+```
+
+<auto-type-table path="packages/dom/src/html/animate.ts" name="AnimateOptions" />
+
+Your own keyframes need a `typstream-` prefix: `animation: "pop"` plays `@keyframes typstream-pop`, which you add
+with `stylesheets` ([#83](https://github.com/ikramhasan/typstream/issues/83) tracks documenting or dropping the prefix):
+
+```tsx
+const pop = `@keyframes typstream-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}`;
+
+<Typstream source={text} isStreaming={isStreaming} animated={{ animation: "pop" }} stylesheets={[pop]} />;
+```
+
+The caret is a character drawn after the last text. Change it with `--typstream-caret` and its color with
+`--typstream-caret-color`:
+
+```css
+.answer .typstream {
+  --typstream-caret: "_";
+  --typstream-caret-color: var(--brand);
+}
+```
+
+Both effects respect `prefers-reduced-motion`: words appear without animating and the caret stops blinking. Both
+are off once the document is finished, and neither applies to the paged target.
+
+## Dark mode and the document's own colors
+
+Typst documents can set fills: a highlighted box, a shaded table cell, a code block. The author chose those fills for
+dark text, as on paper. So in the dark theme, anything the document filled keeps the light theme's text color inside
+it, and stays readable. Labels that `@typstream/html-compat` places outside a shape (a dimension under a drawing) sit
+on the page, not on the fill, so they follow the theme.
+
+The paged target shows the document as printed, and doesn't change with the theme: pages are white with the colors
+the document set.

@@ -1,0 +1,193 @@
+---
+title: Self-hosting the engine and assets
+description: What the engine worker downloads, how to serve it fast from your own origin or a CDN, how to write a custom worker, and how to share and dispose of engines.
+---
+
+typstream fetches nothing from third parties. The engine worker, the Typst compiler (WebAssembly), its fonts and the Typst packages documents import all come from your app's origin, emitted by your bundler as assets. This page explains what those files are, how to serve them so the first preview appears quickly, and how to load them from somewhere else.
+
+## What the default worker loads
+
+`engineWorker()` (which `<Typstream>` uses unless you give it an engine) starts a module worker. The worker and everything it loads are referenced as `new URL("./…", import.meta.url)`, so Vite, webpack and Next.js (Turbopack or webpack) find them, bundle the worker and emit the rest as files. They need no configuration.
+
+| File | Size | Loaded | From |
+|---|---|---|---|
+| The worker script | small | When the engine is created (with React's default engine: when the first `<Typstream>` or `<TypstreamProvider>` mounts) | `@typstream/engine`'s `worker.js`, bundled |
+| `engine_bg.wasm`, Typst 0.15.1 | about 21 MB (6.2 MB brotli, 8.2 MB gzip) | When the worker starts | `@typstream/engine-wasm` |
+| Base fonts: Libertinus Serif (regular, bold, italic), New Computer Modern Math, DejaVu Sans Mono | 2.6 MB | When the worker starts | `@typstream/engine-wasm/fonts` |
+| Script fonts: Noto Naskh Arabic, Noto Serif Bengali, Noto Serif Devanagari, regular and bold | 47–79 KB brotli each | The first time a document uses the script | `@typstream/engine-wasm/fonts` |
+| Typst package tarballs (CeTZ, fletcher, …) | about 740 KB in all | The first time a document imports one | `@typstream/universe` |
+| New Computer Modern Math, for MathML | 1.3 MB | When an HTML document first renders, on the main thread | `typstream` sets it from `@typstream/engine-wasm/fonts` |
+
+Fonts and package tarballs are kept in Cache Storage after their first download (caches named `typstream-fonts` and `typstream-packages`), so they are fetched once rather than once per visit. The wasm is cached by the browser's HTTP cache, so how you serve it matters most.
+
+## Serve the assets compressed and cacheable
+
+The wasm is most of the download. Serve it so it downloads once, compressed, and compiles while it streams in:
+
+| Header | Value | Why |
+|---|---|---|
+| `Content-Type` | `application/wasm` | The engine compiles the module while it downloads (`WebAssembly.instantiateStreaming`). With another type it falls back to downloading everything first, with a console warning. |
+| `Content-Encoding` | `br` (or `gzip`) | 21 MB becomes 6.2 MB with brotli at its highest level, 8.2 MB with gzip. Precompress at build time (`brotli -q 11`): compressing 21 MB per request is slow. |
+| `Cache-Control` | `public, max-age=31536000, immutable` | Bundlers put a content hash in emitted file names, so a new version gets a new URL. Use it only for hashed files. |
+
+Do the same for the fonts. Package tarballs are already gzip files: serve them as they are, with the same `Cache-Control`.
+
+Most static hosts and CDNs compress and cache hashed assets for you. Check the response headers of the wasm in your browser's network panel after deploying.
+
+<Callout type="idea">
+  Start the download before the first answer streams in. With React, a `<TypstreamProvider>` near the top of the app keeps the page's engine alive while it is mounted, so mounting it early also starts the worker early; see [the engine](/docs/concepts/engine).
+</Callout>
+
+## A custom worker
+
+To load the wasm or fonts from somewhere else, or to change what the worker does, write your own worker with `@typstream/engine/server`. A worker script is one call to `serve`:
+
+```ts title="engine.worker.ts"
+import { engineWasm, serve } from "@typstream/engine/server";
+import { baseFonts, scriptFonts } from "@typstream/engine-wasm/fonts";
+
+serve(
+  engineWasm({
+    wasm: "https://cdn.example.com/typst-0.15.1.wasm", // a URL, a Response, bytes or a compiled WebAssembly.Module
+    fonts: [...baseFonts, "/fonts/Inter-Regular.otf"], // fetched when the worker starts
+    lazyFonts: scriptFonts, // registered now, downloaded when a document uses one
+  }),
+);
+```
+
+Then spawn it on the main thread with `fromWorker`, and give the engine to your components:
+
+```ts title="engine.ts"
+import { createEngine, type Engine, fromWorker } from "@typstream/engine";
+
+let engine: Engine | undefined;
+
+/** The page's engine, created on first use. Browser only: there are no workers during server rendering. */
+export const getEngine = (): Engine =>
+  (engine ??= createEngine({
+    spawn: fromWorker(() => new Worker(new URL("./engine.worker.ts", import.meta.url), { type: "module" })),
+  }));
+```
+
+```tsx title="providers.tsx"
+"use client";
+
+import type { ReactNode } from "react";
+import { TypstreamProvider } from "typstream";
+import { getEngine } from "./engine";
+
+export const Providers = ({ children }: { children: ReactNode }) => (
+  <TypstreamProvider engine={typeof window === "undefined" ? undefined : getEngine()}>{children}</TypstreamProvider>
+);
+```
+
+`createEngine` starts its worker at once, so create it lazily, and only in the browser if your app renders on the server (Next.js renders client components on the server too). In an app that only renders in the browser, a module-level `createEngine(...)` is fine.
+
+Write the `new Worker(new URL("…", import.meta.url), …)` exactly like that, with a literal path: bundlers recognize that pattern and bundle the worker. With Vite, also set `worker: { format: "es" }` in `vite.config`, since the worker is a module worker. `fromWorker` is called again for every replacement worker (after a watchdog timeout, a crash or recycling), so it must create a new `Worker` each time.
+
+`engineWasm` takes these options:
+
+<auto-type-table path="packages/engine/src/server/engine-wasm.ts" name="EngineWasmOptions" />
+
+Fonts in `fonts` load when the worker starts, for every document. For fonts only some documents need, add lazy fonts: each needs Typst's metadata for the file (`info`), which `node scripts/fonts.mjs --info font.ttf` in `@typstream/engine-wasm` prints. [Fonts and languages](/docs/guides/fonts-and-languages) covers this in detail.
+
+## Loading from a CDN
+
+The worker script itself must come from your origin: browsers don't start workers from other origins. Everything the worker fetches can come from anywhere:
+
+```ts title="engine.worker.ts"
+import { engineWasm, serve } from "@typstream/engine/server";
+import { scriptFonts } from "@typstream/engine-wasm/fonts";
+
+const CDN = "https://cdn.example.com/typstream/0.15.1";
+
+serve(
+  engineWasm({
+    wasm: `${CDN}/engine_bg.wasm`,
+    fonts: [
+      "LibertinusSerif-Regular.otf",
+      "LibertinusSerif-Bold.otf",
+      "LibertinusSerif-Italic.otf",
+      "NewCMMath-Regular.otf",
+      "DejaVuSansMono.ttf",
+    ].map((file) => `${CDN}/fonts/${file}`),
+    // `file` is each script font's name in @typstream/engine-wasm's dist/fonts/.
+    lazyFonts: scriptFonts.map((font) => ({ url: `${CDN}/fonts/${font.file}`, info: font.info })),
+  }),
+);
+```
+
+Upload `engine_bg.wasm` and the `fonts/` folder from `node_modules/@typstream/engine-wasm/dist/`. Your bundler may still emit its own copies, because the default URLs are in the modules you import; they are never fetched.
+
+For package tarballs, replace the `universe` plugin with one of the same key whose packages point at the CDN. A plugin given twice loads once, as its last definition, so this one replaces the copy `<Typstream>` adds:
+
+```tsx
+import { Typstream } from "typstream";
+import { universe, UNIVERSE_PACKAGES } from "@typstream/universe";
+
+const cdnUniverse = {
+  ...universe,
+  engine: {
+    packages: UNIVERSE_PACKAGES.map(({ namespace, name, version, integrity }) => ({
+      namespace,
+      name,
+      version,
+      integrity, // checked before use, wherever the file comes from
+      url: `https://cdn.example.com/typstream/packages/${name}-${version}.tar.gz`,
+    })),
+  },
+};
+
+<Typstream source={text} plugins={[cdnUniverse]} />;
+```
+
+Upload the `.tar.gz` files from `node_modules/@typstream/universe/vendor/` unchanged.
+
+Two things change when the files live on another origin:
+
+- **CORS.** The worker fetches the wasm, fonts and tarballs with `fetch`, so the CDN must send `Access-Control-Allow-Origin` for your app's origin (or `*`).
+- **Content-Security-Policy.** Add the CDN's origin to `connect-src`: `connect-src 'self' https://cdn.example.com`. `worker-src 'self'` stays, since the worker is yours. See [Security](/docs/guides/security#content-security-policy).
+
+## Replacing the fixers
+
+When a compile fails, the worker tries its diagnostic fixers and recompiles. The built-in list is `DEFAULT_FIXERS`: `pendingRef`, `packageStub` and `tailCut`. A custom worker can replace it:
+
+```ts title="engine.worker.ts"
+import { engineWasm, packageStub, pendingRef, serve, tailCut } from "@typstream/engine/server";
+import { myFixer } from "./my-fixer";
+
+serve(engineWasm(), undefined, { fixers: [pendingRef, packageStub, myFixer, tailCut] });
+```
+
+The second argument is the worker scope (it defaults to the worker's global scope). Fixers are tried by `priority`, not by their place in the list. `fixers: []` turns them off. Plugins' fixer modules still join the list; to add a fixer without a custom worker, use a plugin ([Writing a plugin](/docs/guides/writing-a-plugin#writing-a-fixer-module)).
+
+## Sharing one engine
+
+An engine is one worker and the documents compiling on it, one compile at a time. Documents on one engine share its wasm, fonts and caches, so a page with many documents (a chat history) should use one engine.
+
+With React you get this for free: every `<Typstream>` without an `engine` shares the page's default engine, created on first use and disposed a second after the last component using it unmounts. Pass an engine yourself when you want to configure it (a custom worker, watchdog budgets, limits, engine plugins):
+
+```tsx title="App.tsx"
+import { createEngine, engineWorker, TypstreamProvider } from "typstream";
+
+// A single-page app rendered in the browser only; with server rendering, create it lazily as above.
+const engine = createEngine({ spawn: engineWorker(), watchdog: { streamingMs: 5000 } });
+
+export const App = () => (
+  <TypstreamProvider engine={engine}>
+    <Chat />
+  </TypstreamProvider>
+);
+```
+
+With `@typstream/dom`, `mountTypstream` always takes an engine: create one and pass it to every mount.
+
+## Disposing
+
+| Call | What it stops |
+|---|---|
+| `mounted.destroy()` (`@typstream/dom`) | The mounted document and what it rendered. The engine stays. |
+| `doc.dispose()` (`@typstream/engine`) | One document. |
+| `engine.dispose()` | Every document of the engine, and its workers (the active one and the spare). |
+
+An engine you create is yours to dispose of, for example when a single-page app leaves the screen that needed it. A `<Typstream>` never disposes an engine you passed it. By default the engine keeps an initialized spare worker so that replacing a stuck one is instant; `createEngine({ spare: false })` saves its memory, at the cost of a slower recovery.

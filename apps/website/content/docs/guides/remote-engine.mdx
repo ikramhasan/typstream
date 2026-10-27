@@ -1,0 +1,175 @@
+---
+title: Running the engine on a server
+description: Serve typstream's engine protocol over WebSocket with @typstream/node, so browsers render live previews without downloading the 6 MB compiler, and connect the browser client to it.
+---
+
+By default each browser runs Typst itself, in a worker: a 6.2 MB download (brotli) before the first preview. `@typstream/node` can run the engine on your server instead and serve the same protocol over WebSocket. The browser still heals the stream and renders the result; only compiling moves to the server.
+
+Consider it for devices too slow or too constrained for the wasm engine, or for pages that show a document once and don't justify the download. The cost is a round trip per compile and compile time on your servers.
+
+<Callout type="warn" title="Bring your own browser client">
+  typstream doesn't ship a ready-made browser transport for this yet: the server side is built and tested over a real WebSocket, and the browser side is about 30 lines you write against `SpawnEngine` ([below](#connect-the-browser); a shipped client is [#85](https://github.com/ikramhasan/typstream/issues/85)). Switching from server previews to the local engine once its download finishes isn't built either.
+</Callout>
+
+## Serve the protocol
+
+```npm
+npm install @typstream/node ws
+```
+
+```ts title="server.ts"
+import { WebSocketServer } from "ws";
+import { createProtocolServer, handleWebSocket } from "@typstream/node";
+
+const server = createProtocolServer({ timeouts: { streaming: 3_000, final: 10_000 }, maxDocuments: 32 });
+
+new WebSocketServer({ port: 8080, maxPayload: 8 << 20 }).on("connection", (ws) => handleWebSocket(ws, server));
+```
+
+`createProtocolServer` runs `@typstream/engine`'s protocol server, the same code that runs in the browser worker, over an adapter that compiles on `@typstream/node`'s worker pool. `handleWebSocket` attaches one socket to it; anything with `ws`'s `on`, `send` and `close` works.
+
+To share a port with your HTTP server and decide who may connect, handle the upgrade yourself. typstream doesn't authenticate connections:
+
+```ts title="server.ts"
+import { createServer } from "node:http";
+import { WebSocketServer } from "ws";
+import { createEngine, createProtocolServer, handleWebSocket } from "@typstream/node";
+
+const engine = createEngine({ workers: 4 });
+const typst = createProtocolServer({ engine });
+const wss = new WebSocketServer({ noServer: true, maxPayload: 8 << 20 });
+
+const http = createServer(app); // your app's request handler
+http.on("upgrade", (req, socket, head) => {
+  if (req.url !== "/typst" || !isSignedIn(req)) {
+    socket.destroy();
+    return;
+  }
+  wss.handleUpgrade(req, socket, head, (ws) => handleWebSocket(ws, typst));
+});
+http.listen(3000);
+```
+
+The options:
+
+<auto-type-table path="packages/node/src/server.ts" name="ProtocolServerOptions" />
+
+The engine's own options (workers, fonts, the default budget) are `createEngine`'s; see [Validating and repairing on the server](/docs/guides/server-fix-loop#the-engine). One engine can serve the protocol and your `validate` and `render` calls at the same time.
+
+## What the server offers
+
+| | |
+|---|---|
+| Targets | HTML, and paged with changed-page updates (only pages whose content changed are sent). |
+| Exports | PDF and HTML: `doc.exportPdf()` and `doc.exportHtml()` work over the connection. |
+| Fixers and fallback | The built-in fixers and the fallback ladder run on the server, as they do in the browser worker. |
+| Fonts | The server engine's: Typst's bundled fonts and the script fonts, plus any you give `createEngine`. Fonts a client sends are ignored. |
+| Packages | None by default. The server ignores the package lists clients send (see below) and has no allowlist of its own, so `#import "@preview/…"` reports that the package isn't allowed. Local packages in a plugin's `files`, such as `@typstream/edu`'s, work. |
+| Fixer modules | Ignored, with a warning: importing a module would run the client's code on your server. |
+| `resolve/*` | Not offered. |
+
+**Sessions.** Each connection is a session with its own documents. Closing the socket cancels its queued requests and frees its documents.
+
+**Watchdog.** Documents live on the server's main thread and pool workers only compile, so a compile over budget costs one compile, not the session: the pool terminates that worker and the compile answers with an error diagnostic, `code: "timeout"` (or `"engine-crashed"` when it ran out of memory). The fallback then finds the block that hangs and shows it as an error box.
+
+## The wire format
+
+Messages are JSON text, one per WebSocket message. They are the protocol's plain data (`@typstream/core`'s `ClientMessage` and `ServerMessage`), except that bytes (files, PDF exports) are written as `{ "$bytes": "<base64>" }`. `serializeMessage` and `deserializeMessage` from `@typstream/core` read and write it, in the browser and in Node:
+
+```ts
+import { deserializeMessage, serializeMessage } from "@typstream/core";
+
+serializeMessage({ id: 1, method: "export/pdf", params: { uri: "doc-1", rev: 3 } });
+// '{"id":1,"method":"export/pdf","params":{"uri":"doc-1","rev":3}}'
+deserializeMessage('{"id":1,"result":{"uri":"doc-1","rev":3,"diagnostics":[],"status":"ok","data":{"$bytes":"JVBERi0="}}}');
+// result.data is a Uint8Array
+```
+
+`deserializeMessage` only parses: validate the result before trusting it, as the server does.
+
+## Untrusted clients
+
+Anyone who can open the socket can send the server anything, so the server treats every client as untrusted:
+
+- **Shapes are checked** before the protocol server reads a message. A malformed request is answered `invalid-params`; anything else malformed gets a `$/log` warning back and is dropped. The only notification clients may send is `$/cancel`.
+- **Limits.** More than `maxDocuments` open documents (32), or a document longer than `maxTextLength` (1,000,000 UTF-16 code units, preamble and text), answers `invalid-params`. Cap the size of a single message on the socket server: `ws`'s `maxPayload` (8 MiB above).
+- **No fetching for clients.** The protocol server runs with `trustClient: false`, so it ignores the package allowlists clients send. Otherwise a client could make your server fetch any URL.
+- **No code from clients.** It runs with `clientFixers: false`, so it ignores the fixer modules clients name. Otherwise a client could run code in your server (a `data:` URL is a module).
+- **The sandbox.** Documents can't read the server's filesystem or the network, only the files the client sent to that document, and diagnostics name virtual paths only. See [Security](/docs/guides/security).
+
+Authentication, rate limits and the number of connections per user are yours to enforce, in the upgrade handler or in front of the server.
+
+## Connect the browser
+
+The engine client (`createEngine` from `@typstream/engine`) talks to whatever its `spawn` function starts. In a browser that is usually a worker (`engineWorker()`); a `SpawnEngine` over a WebSocket connects it to your server instead:
+
+```ts title="websocket-engine.ts"
+import { deserializeMessage, type ServerMessage, serializeMessage } from "@typstream/core";
+import type { SpawnEngine } from "@typstream/engine";
+
+/** The engine at `url`, over a WebSocket. Each call opens a new connection, as each spawn must start a fresh engine. */
+export const webSocketEngine =
+  (url: string): SpawnEngine =>
+  (events) => {
+    const socket = new WebSocket(url);
+    const queued: string[] = [];
+    let closing = false;
+
+    socket.addEventListener("open", () => {
+      for (const text of queued.splice(0)) socket.send(text);
+    });
+    socket.addEventListener("message", (event) => {
+      events.message(deserializeMessage(event.data as string) as ServerMessage);
+    });
+    // A lost connection is a crashed engine to the client: it opens a new one and reopens its documents.
+    socket.addEventListener("error", (event) => events.error(event));
+    socket.addEventListener("close", (event) => {
+      if (!closing) events.error(new Error(`engine connection closed (${event.code})`));
+    });
+
+    return {
+      postMessage(message) {
+        const text = serializeMessage(message);
+        if (socket.readyState === WebSocket.OPEN) socket.send(text);
+        else queued.push(text); // messages sent before the socket opens
+      },
+      terminate() {
+        closing = true;
+        socket.close();
+      },
+    };
+  };
+```
+
+```ts title="engine.ts"
+import { createEngine } from "@typstream/engine";
+import { webSocketEngine } from "./websocket-engine";
+
+export const engine = createEngine({
+  spawn: webSocketEngine("wss://typst.example.com/typst"),
+  // The server stops a compile at 3 s / 10 s and answers with a timeout error.
+  // Give that answer time to arrive before the client gives up on the connection.
+  watchdog: { streamingMs: 6_000, finalMs: 15_000 },
+  // One connection per page; a replacement opens when it's needed.
+  spare: false,
+});
+```
+
+Then use it like any engine: `<TypstreamProvider engine={engine}>` in React, or `mountTypstream(element, { engine, … })`. In an app rendered on the server, create the engine in the browser only, as in [Self-hosting](/docs/guides/self-hosting#a-custom-worker).
+
+How the client behaves over this transport:
+
+- **Healing stays in the browser.** The client heals each chunk on the main thread and sends the server one diff right before each compile, so the server sees healed source, never half a token.
+- **The watchdog.** Past its budget, the client closes the connection and opens a new one, a new session; documents open themselves again before their next compile. Keeping the client's budgets above the server's (as above) lets the server's own timeout answer first, which costs one compile instead of the session.
+- **A server that can't be reached.** A connection that fails before the server answers `initialize` fails the engine (an engine `failed` event, every document in `error`) rather than reconnecting in a loop. A connection lost later is replaced.
+- **Telemetry** works as with a worker: the [events](/docs/guides/telemetry) come from the client. `serverInfo.name` in the engine's `ready` event is `@typstream/node`.
+
+## Content-Security-Policy
+
+Under a policy, allow the socket's origin in `connect-src`:
+
+```text
+connect-src 'self' wss://typst.example.com
+```
+
+If no page uses the local engine, `'wasm-unsafe-eval'` and `worker-src` aren't needed for typstream. See [Security](/docs/guides/security#content-security-policy) for the rest of the policy.

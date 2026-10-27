@@ -1,0 +1,16 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    // The landing page replays recordings from corpus/llm at build time.
+    "build": {
+      "outputs": [".next/**", "!.next/cache/**"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/corpus/llm/meta.json",
+        "$TURBO_ROOT$/corpus/llm/kit-v4-sonnet-*.stream.jsonl"
+      ],
+      "env": ["SITE_URL"]
+    }
+  }
+}

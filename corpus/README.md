@@ -27,7 +27,7 @@ Sets:
   text, mixed-direction text and backtick runs. The big ones come from
   `scripts/generate-adversarial.mjs`, which is deterministic. Re-run it after
   editing it. The `hostile-*` documents attack the sandbox and the page (#29,
-  `docs/security.md`): reads, images, imports, plugins and XML outside the
+  `apps/website/content/docs/guides/security.mdx`): reads, images, imports, plugins and XML outside the
   virtual file system; `javascript:` and `data:` links; `html.elem` scripts,
   handlers, frames, forms and CSS; markup in text; a runaway wasm plugin;
   content nested too deep for the stack; huge dimensions. Their categories start

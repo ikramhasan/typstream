@@ -1,0 +1,235 @@
+---
+title: React
+description: Render streamed Typst in a Vite and React app with the typstream package's Typstream component, from a fake stream to a real one.
+---
+
+`<Typstream>` takes the text a model has written so far and shows it as a document, updating as more arrives. Each prefix is healed so it compiles, compiled in a worker, and shown as HTML (or as pages). While a prefix doesn't compile, the last good render stays on screen.
+
+This page builds a Vite app step by step. The same component works in any React 19 app; for Next.js with the Vercel AI SDK, see [Next.js and the AI SDK](/docs/getting-started/nextjs-ai-sdk).
+
+<Steps>
+<Step>
+
+### Create the app
+
+```bash
+npm create vite@latest typstream-demo -- --template react-ts
+cd typstream-demo
+```
+
+</Step>
+<Step>
+
+### Install typstream
+
+```npm
+npm install typstream
+```
+
+Vite needs no configuration: the engine's worker, the Typst wasm and its fonts are emitted as assets when you build.
+
+</Step>
+<Step>
+
+### Stream a document
+
+Replace `src/App.tsx` with a component that replays a Typst document a few characters at a time, the way a model streams it:
+
+```tsx title="src/App.tsx"
+import { useEffect, useState } from "react";
+import { Typstream } from "typstream";
+
+const DOCUMENT = `= Fractions
+Add the fractions. Simplify where you can.
+
++ $1/2 + 1/4 = 3/4$
++ $2/3 + 1/6 = 5/6$
+
+#table(
+  columns: 2,
+  [*Fraction*], [*Decimal*],
+  [$1/4$], [$0.25$],
+  [$3/4$], [$0.75$],
+)
+`;
+
+export default function App() {
+  const [source, setSource] = useState("");
+
+  useEffect(() => {
+    let length = 0;
+    const timer = setInterval(() => {
+      length = Math.min(length + 4, DOCUMENT.length);
+      setSource(DOCUMENT.slice(0, length));
+      if (length === DOCUMENT.length) clearInterval(timer);
+    }, 30);
+    return () => clearInterval(timer);
+  }, []);
+
+  return <Typstream source={source} isStreaming={source.length < DOCUMENT.length} animated caret />;
+}
+```
+
+Run `npm run dev`. The heading, the list and the table appear while the text arrives, words fade in, and a caret follows the end. Half-written constructs such as `#table(columns: 2, [*Frac` are closed for each compile, so they render instead of failing.
+
+When `isStreaming` turns false, the document is finished: it is compiled strictly (final mode), and the caret goes away.
+
+</Step>
+<Step>
+
+### Stream from your server
+
+Replace the fake stream with a real one. This version reads a plain-text response from an endpoint of your own (`/api/generate` here) that streams the model's output:
+
+```tsx title="src/App.tsx"
+import { useState } from "react";
+import { Typstream } from "typstream";
+
+export default function App() {
+  const [source, setSource] = useState("");
+  const [streaming, setStreaming] = useState(false);
+
+  async function generate(prompt: string) {
+    setSource("");
+    setStreaming(true);
+    try {
+      const response = await fetch("/api/generate", { method: "POST", body: JSON.stringify({ prompt }) });
+      if (!response.body) throw new Error(`HTTP ${response.status}`);
+      const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
+      let text = "";
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        text += value;
+        setSource(text);
+      }
+    } finally {
+      setStreaming(false);
+    }
+  }
+
+  return (
+    <>
+      <button type="button" disabled={streaming} onClick={() => generate("A worksheet on fractions")}>
+        Generate
+      </button>
+      <Typstream source={source} isStreaming={streaming} animated caret />
+    </>
+  );
+}
+```
+
+`source` is always the whole text so far, not the latest chunk. typstream notices when the new text extends the old one and only sends the difference to the engine. Setting `isStreaming` back to true after a document finished starts it over, which is what a regenerated answer needs.
+
+The model must write Typst, not Markdown: [Prompting](/docs/guides/prompting) has the instructions that work.
+
+</Step>
+</Steps>
+
+## Props you will use first
+
+| Prop | Default | What it does |
+|---|---|---|
+| `source` | | The document's whole text so far. |
+| `isStreaming` | `false` | More `source` is coming. When it turns false, the document is compiled in final mode and the caret goes away. |
+| `animated` | `false` | Fade in new words while streaming (HTML target). `true`, or options such as `{ animation: "blurIn", duration: 300 }`. |
+| `caret` | `false` | Show a caret after the last text while streaming (HTML target). |
+| `target` | `"html"` | `"html"`: semantic HTML with MathML, which reflows and inherits your page's fonts. `"paged"`: SVG pages, laid out exactly as Typst lays them out. Switching keeps the document; the old output stays until the new target's first compile. |
+
+`stream` is an alternative to `source`: an `AsyncIterable<string>` of chunks, finished when it ends. A new stream object starts the document over, so create it once rather than on every render. Under React StrictMode, prefer `source` for now: a generator shared by StrictMode's two mounts may lose chunks ([#81](https://github.com/ikramhasan/typstream/issues/81)).
+
+The other props (`layout`, `theme`, `inputs`, `files`, `preamble`, `heal`, `lazy`, `engine`, the callbacks) are in the [`@typstream/react` reference](/docs/reference/react). `typstream`'s `<Typstream>` adds two of its own: `htmlCompat={false}` and `packages={false}` turn off html-compat and the vendored Typst packages ([`typstream` reference](/docs/reference/typstream)).
+
+## Read the document's state
+
+`useTypstream()` gives you a `ref` to pass to one `<Typstream>`, and that document's live state: for a status line, a diagnostics panel, or a "writing a table…" hint.
+
+```tsx
+import { Typstream, useTypstream } from "typstream";
+
+function Answer({ text, streaming }: { text: string; streaming: boolean }) {
+  const t = useTypstream();
+  const frame = t.openFrames[0]?.frame; // innermost construct still open, e.g. "math" or "args"
+  return (
+    <article>
+      <Typstream ref={t.ref} source={text} isStreaming={streaming} animated caret />
+      <footer>
+        {t.status}
+        {streaming && frame ? ` · writing ${frame}…` : ""}
+        {t.diagnostics.length ? ` · ${t.diagnostics.length} diagnostics` : ""}
+      </footer>
+    </article>
+  );
+}
+```
+
+| Field | What it is |
+|---|---|
+| `status` | `"idle"` until the document opens and between compiles, `"compiling"`, `"stale"` (streaming and the latest compile failed; the last good render is shown), `"error"` (the finished document failed), `"done"`. |
+| `diagnostics` | Typst's errors and warnings from the latest compile, with offsets into `source` (UTF-16, as JavaScript strings index). |
+| `openFrames` | Constructs still open at the end of the text, innermost first. |
+| `healedSource` | The healed text the engine compiled. |
+| `document` | The engine document, once it has opened, for exports such as `document.exportPdf()`. |
+| `state` | The whole `DocumentState`, `null` until the document opens. |
+
+`"stale"` while streaming is normal: a prefix that doesn't compile yet keeps the previous render on screen. It is not an error to show the user. To react to status changes without a hook, pass `onStatusChange={(status, state) => …}`.
+
+## Set app-wide defaults
+
+`<TypstreamProvider>` sets defaults for every `<Typstream>` below it: theme, plugins, heal options, telemetry hooks, an engine. Lists (`plugins`, `stylesheets`) add up, `inputs` and `files` merge, telemetry hooks are all called, and anything else a `<Typstream>` sets itself wins.
+
+```tsx title="src/main.tsx"
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { TypstreamProvider } from "typstream";
+import App from "./App";
+
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    <TypstreamProvider theme="light" heal={{ lint: { "currency-dollar": "fix" } }}>
+      <App />
+    </TypstreamProvider>
+  </StrictMode>,
+);
+```
+
+Every `<Typstream>` without its own `engine` shares one engine worker, created when the first one mounts. Without a provider, the worker is shut down a second after the last `<Typstream>` unmounts; a provider keeps it alive while the provider is mounted, so a chat that switches conversations doesn't restart the engine.
+
+## Add the edu vocabulary
+
+For worksheets, quizzes and exams, add the `@typstream/edu` plugin. It brings the Typst functions (`#question`, `#mcq`, `#blank`, templates, answer keys) and their CSS.
+
+```npm
+npm install @typstream/edu
+```
+
+```tsx
+import { edu } from "@typstream/edu";
+import { Typstream } from "typstream";
+
+<Typstream source={text} isStreaming={streaming} plugins={[edu]} />;
+
+// The teacher's copy: the same document with answers, recompiled rather than re-prompted.
+<Typstream source={text} plugins={[edu]} inputs={{ showAnswers: "true" }} />;
+```
+
+Put `plugins={[edu]}` on the provider instead to make the vocabulary available everywhere. The model also needs to know the functions exist: [Prompting](/docs/guides/prompting) shows how to build the system prompt, and [Edu documents](/docs/guides/edu-documents) covers the vocabulary.
+
+<TypstPreview edu answers height={260}>
+
+```typst
+#question(points: 2)[$1/2 + 1/4 =$ #blank(answer: $3/4$)]
+#question(points: 1)[
+  Which is largest?
+  #mcq([$1/2$], [$2/3$], [$3/5$], answer: 2)
+]
+```
+
+</TypstPreview>
+
+## Next steps
+
+- [How it works](/docs/concepts/how-it-works): healing, the engine worker and the fallback, in one page.
+- [Render targets](/docs/concepts/render-targets): when to use HTML and when to use pages.
+- [Exports](/docs/guides/exports): PDF and standalone HTML from a rendered document.
+- [Troubleshooting](/docs/resources/troubleshooting).

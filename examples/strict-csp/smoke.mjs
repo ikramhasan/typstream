@@ -1,4 +1,4 @@
-// Smoke test (#29, docs/security.md): builds the page, serves it with the strict
+// Smoke test (#29, apps/website/content/docs/guides/security.mdx): builds the page, serves it with the strict
 // policy in csp.mjs, and opens it in Chromium, Firefox and WebKit (BROWSERS=…
 // runs some). The worksheet must finish in both targets, with its layout, math,
 // lazily loaded font and package diagram, and without a single CSP violation or

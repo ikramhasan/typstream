@@ -1,0 +1,100 @@
+---
+title: The engine
+description: How @typstream/engine compiles streamed Typst in a Web Worker, when it compiles, how the watchdog keeps runaway documents from freezing the page, and its limits.
+---
+
+`@typstream/engine` compiles documents with Typst 0.15.1 in a Web Worker and keeps the preview alive when compiles fail, hang or crash. It has two halves: a small **client** on the main thread, which heals each document and decides when to compile, and a **server** in the worker, which runs Typst. The bindings create and share an engine for you; you use it directly for a custom renderer, to run several documents on one worker, or to tune budgets.
+
+```ts
+import { createEngine, engineWorker } from "@typstream/engine";
+
+const engine = createEngine({ spawn: engineWorker() });
+const doc = engine.open({ target: "html" }); // or "paged"
+
+doc.subscribe(({ status, artifact, diagnostics }) => render(artifact, status, diagnostics));
+for await (const chunk of llmStream) doc.push(chunk);
+doc.finish(); // strict heal, final compile → status "done" or "error"
+```
+
+## Client and worker
+
+```text
+┌─ main thread: client ───────────────┐        ┌─ worker: server ─────────────────────┐
+│ documents: heal every push/edit     │        │ documents: text, preamble, files     │
+│ scheduler: one compile at a time    │──────▶ │ Typst 0.15.1 (engine-wasm)           │
+│ watchdog: budget per compile        │  diff  │ fixers (Layer 3), fallback (Layer 4) │
+│ state: last good artifact, status   │ ◀──────│ packages, lazy fonts                 │
+└─────────────────────────────────────┘ result └──────────────────────────────────────┘
+          spare worker, initialized, waiting to take over
+```
+
+The client and the worker talk through a versioned protocol defined in `@typstream/core`, shaped like a language server's: documents are opened, edited by revision, compiled and closed, and the worker pushes diagnostics and artifacts back. Healing stays on the main thread, because it is cheap and runs on every token; the worker only sees the healed source, as one diff right before each compile.
+
+Because the protocol is plain messages, the same server runs elsewhere: `@typstream/node` serves it over WebSocket from Node worker threads ([Remote engine](/docs/guides/remote-engine)), and `@typstream/engine/server` lets you write your own worker, for example to load the wasm and fonts from a CDN ([Self-hosting](/docs/guides/self-hosting)).
+
+## When it compiles
+
+- **One compile at a time, per engine.** The worker is single-threaded anyway, and running one compile at a time across all documents means a watchdog budget only ever measures that document's own compile.
+- **Latest wins.** Tokens arrive every few milliseconds and a compile takes 5–100 ms, so compiles are never queued. Each document has at most one compile pending, and it reads the newest healed source when its turn comes. Chunks pushed in the same task share a compile.
+- **Adaptive interval.** Compiles of a document start at most every `clamp(minInterval, 1.25 × average compile time, maxInterval)`: 33 ms to 500 ms by default. Small documents update about 30 times a second; big ones update less often, and the worker never falls behind.
+- **Boundary bias.** When a line or block has just finished (heal's stable offset moved forward), the next compile is due after `minInterval` instead: a finished paragraph is a better moment to show than the middle of a word.
+- **Nothing to do, no compile.** A change that heals to the same source (typing inside a `#let x =` that is still cut) doesn't compile.
+- **Stale output is dropped.** Diagnostics and artifacts count only for the revision last sent, and diagnostics are mapped back to input positions.
+
+The schedule is set per engine or per document (`schedule` on `createEngine`, `engine.open` or `<Typstream>`):
+
+<auto-type-table path="packages/engine/src/schedule.ts" name="ScheduleOptions" />
+
+## The last good artifact
+
+A failed compile publishes nothing, and the document keeps showing its last good artifact. While streaming the status is `stale`; in final mode it is `error`. In practice the worker's fixers and fallback usually find something to show first ([Fixers and fallback](/docs/concepts/fallback)). For paged documents the client merges changed pages into what it has, so `state.artifact` always holds every page.
+
+## Watchdog
+
+Typst limits loop iterations and recursion, but not time or memory, and a compile can't be interrupted from inside. So the client times every compile, and stops one that runs too long by terminating its worker.
+
+- **Budgets.** 3 s per compile while streaming, 10 s in final mode. The clock starts once the worker is initialized, so its cold start doesn't count.
+- **Spare worker.** An initialized spare waits in the background, so a replacement is instant. Documents reopen in the new worker at their next compile, with their current text.
+- **Strikes.** A timeout or a worker crash (a Typst panic, running out of memory) is a strike against the document. After 3, live compiling stops: the status is `stale` with `failure.reason` `"too-complex"`, and the document compiles once more when it's finished, with the final budget.
+- **Finished documents.** A final compile that hangs or crashes doesn't fail the document: the client searches for the block responsible, compiling prefixes with the rest skipped, each under its own budget (`probeMs`, 5 s), and shows that block as an error box ([Fixers and fallback](/docs/concepts/fallback)).
+
+<auto-type-table path="packages/engine/src/document.ts" name="WatchdogOptions" />
+
+## Recycling and memory
+
+Typst memoizes work between compiles, which is what makes a streamed recompile take milliseconds. Its cache would grow with every compile, so the worker evicts old entries after every compile, and memory stays flat over a long session. As a safety net, a worker that reports more than 256 MiB after a compile is replaced by the spare between compiles (`recycleBytes`; `Infinity` disables it). The next compile then runs without the old worker's caches.
+
+## Limits
+
+Hostile or runaway input stops at these limits instead of loading the main thread or the page:
+
+- **`maxLength`**: input longer than 1 MiB (1,048,576 UTF-16 code units) isn't healed or compiled. The document reports `too-large` and keeps its last artifact until `set()` or `reset()` brings it back under the limit.
+- **`livePages`**: a streaming paged compile with more than 100 pages stops live compiling (`too-complex`), keeping its pages. `finish()` compiles every page.
+
+<auto-type-table path="packages/engine/src/document.ts" name="LimitOptions" />
+
+More on what documents can and can't do: [Security](/docs/guides/security).
+
+## Fonts and packages, loaded lazily
+
+The default worker starts with a small base set of fonts: Libertinus Serif, New Computer Modern Math (for equations) and DejaVu Sans Mono (for code). Fonts for other scripts are registered without their bytes: Noto Naskh Arabic, Noto Serif Bengali and Noto Serif Devanagari. When a compile needs one, that compile uses another font (or draws empty boxes), the worker downloads the font, and the document recompiles on its own once it arrives. A Bengali worksheet fetches about 150 KB; an English one fetches nothing. CJK fonts aren't included; you add them. See [Fonts and languages](/docs/guides/fonts-and-languages).
+
+Typst Universe packages work the same way: before each compile the worker looks for `#import "@preview/…"` specs, fetches the allowed ones, checks their integrity, and mounts them. A compile waits a moment for its packages; one that arrives later recompiles the document. Fonts and packages are kept in Cache Storage, so they work offline after the first load. See [Typst packages](/docs/guides/typst-packages).
+
+## One engine, many documents
+
+Documents opened on one engine share its worker, its fonts, its packages and Typst's cache, and compile one at a time. In React, every `<Typstream>` without an `engine` prop shares one engine per page: it is created on first use and terminated a second after the last component (or `TypstreamProvider`) unmounts, so answers coming and going keep it warm. Only documents near the viewport or still streaming compile, so a chat with fifty finished answers costs one worker and no idle compiles.
+
+Pass your own `Engine` (from `createEngine`) to change its options or to share it with code outside React.
+
+<auto-type-table path="packages/engine/src/engine.ts" name="EngineOptions" />
+
+<Callout type="warn" title="Beta">
+`initialize` (fonts and packages for every document, sent to the worker at start) is `@beta`. Prefer `plugins`, whose `engine.fonts` and `engine.packages` the engine loads the same way ([Plugins](/docs/concepts/plugins)).
+</Callout>
+
+## The worker and its assets
+
+`engineWorker()` spawns the default worker. It is written as `new Worker(new URL("./worker.js", import.meta.url), { type: "module" })`, and the worker refers to the wasm and fonts the same way, so Vite and Next.js (Turbopack or webpack) bundle all of them as assets with no configuration. The wasm is about 19 MB, about 6 MB with brotli; the base fonts are 2.6 MB. Serve them compressed and cacheable.
+
+Reference: [`@typstream/engine`](/docs/reference/engine).

@@ -16,7 +16,7 @@
 // Content-Security-Policy (`style-src` without 'unsafe-inline'), Chromium and
 // Firefox refuse those, even in an inert template, and report each one. The
 // renderer renames them (`hideStyles`) and the sanitizer applies them through
-// the CSSOM (`style.cssText`), which no policy restricts (#29, docs/security.md).
+// the CSSOM (`style.cssText`), which no policy restricts (#29, apps/website/content/docs/guides/security.mdx).
 
 import type { TypstreamPlugin } from "@typstream/core";
 

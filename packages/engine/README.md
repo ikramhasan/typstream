@@ -24,7 +24,7 @@ doc.finish(); // strict heal, final compile → status "done" or "error"
   - Each compile gets 3 s while streaming and 10 s in final mode. Past that, the worker is terminated and an initialized spare takes over.
   - After 3 timeouts or crashes, live compiling stops (`failure.reason === "too-complex"`). `finish()` still compiles once.
 - **Recycling.** A worker that reports more than 256 MiB after a compile is swapped for the spare between compiles.
-- **Limits** (`limits`, PLAN §9). Input longer than `maxLength` (1 MiB of UTF-16 code units) isn't healed or compiled: the document reports `too-large` and keeps its last artifact until `set()` or `reset()` brings it back under the limit. A streaming paged compile with more than `livePages` (100) pages stops live compiling (`too-complex`); `finish()` compiles every page. How these fit the rest of the defences: `docs/security.md`.
+- **Limits** (`limits`, PLAN §9). Input longer than `maxLength` (1 MiB of UTF-16 code units) isn't healed or compiled: the document reports `too-large` and keeps its last artifact until `set()` or `reset()` brings it back under the limit. A streaming paged compile with more than `livePages` (100) pages stops live compiling (`too-complex`); `finish()` compiles every page. How these fit the rest of the defences: the [security guide](../../apps/website/content/docs/guides/security.mdx).
 - **Paged output.** Changed-page artifacts are merged, so `state.artifact` always has every page.
 
 Status: `idle` → `compiling` → `idle` while streaming; `stale` after a failure; `done` / `error` once finished. Everything runs on injected timers (`clock`), so the client works in Node with a fake worker. See `__tests__/support/fake-worker.ts`.

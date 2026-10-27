@@ -1,0 +1,93 @@
+---
+title: Installation
+description: Which typstream package to install for your app, what your bundler and browsers need, and what the engine downloads and when.
+---
+
+typstream is a set of packages. Most apps need one of them; the others are for apps that render without React, run on a server, or only need part of the pipeline.
+
+<Callout type="warn" title="Not on npm yet">
+The packages haven't had their first npm release ([#4](https://github.com/ikramhasan/typstream/issues/4)). The install commands in these docs are what you will run once they are published. Until then, build them from the repository:
+
+```bash
+git clone https://github.com/ikramhasan/typstream.git
+cd typstream
+pnpm install
+pnpm build
+```
+
+The build compiles Typst to WebAssembly, so it needs Rust ≥ 1.92 with the `wasm32-unknown-unknown` target, `wasm-bindgen-cli` 0.2.129 (exactly the version in the crate's `Cargo.lock`), and binaryen's `wasm-opt`. The repository's `CLAUDE.md` lists the whole toolchain.
+
+The simplest way to use the built packages is to put your app inside the repository's pnpm workspace, as the apps in `examples/` are, and depend on them with `"typstream": "workspace:*"`. To use them from another project, run `pnpm pack` in each package your app needs, including the `@typstream/*` packages it depends on (pack rewrites `workspace:*` to real versions), and install the tarballs with `file:` dependencies.
+</Callout>
+
+## Choose a package
+
+| You are building | Install | You get |
+|---|---|---|
+| A React app (Vite, Next.js, …) | `typstream` | `<Typstream>` with the defaults an app wants: html-compat (layout survives the HTML target), the math font for MathML, and the vendored Typst packages. Also re-exports the provider, the hook, the engine and the healer. |
+| An app without React | `@typstream/dom` and `@typstream/engine` | `mountTypstream`, a document in an element, and the renderers it uses. You add html-compat, the packages and the math font yourself. |
+| A server that validates, renders or repairs documents | `@typstream/node` | `validate`, `render` (PDF, HTML, SVG), `formatDiagnosticsForLLM`, `fixLoop`, and a WebSocket protocol server. |
+| Your own pipeline that only needs healing | `@typstream/heal` | `heal()` and `createHealer()`: any prefix of streamed Typst in, a source that parses out. Plain TypeScript, no wasm and no worker. |
+| Worksheets, quizzes and exams | `@typstream/edu`, next to one of the above | The edu vocabulary (`#question`, `#mcq`, `#blank`, …) as a plugin, its CSS, and the prompt kit. |
+
+```npm
+npm install typstream
+```
+
+For an app without React, add html-compat, the packages and the engine's fonts too, so you can pass them to `mountTypstream` as `typstream` does for you (see [Without a framework](/docs/getting-started/vanilla)):
+
+```npm
+npm install @typstream/dom @typstream/engine @typstream/engine-wasm @typstream/html-compat @typstream/universe
+```
+
+`typstream` needs React 19. `@typstream/node` needs Node.js 20 or later. Every package is ESM only and ships its own types.
+
+## Your bundler
+
+The engine runs in a module worker, and the worker loads the Typst wasm and its fonts. All of them are referenced as `new URL("./file", import.meta.url)`, the pattern bundlers recognise to emit a file as an asset and rewrite the URL. You don't copy anything into `public/`.
+
+- **Vite** needs no configuration.
+- **Next.js** needs none either, with Turbopack or webpack. In a monorepo, Turbopack may need `turbopack.root` set to the repository root so it can follow symlinked packages; that has nothing to do with typstream.
+
+If your bundler doesn't handle `new URL(…, import.meta.url)` for workers and assets, or you want to load the wasm and fonts from a CDN, write your own worker with `@typstream/engine/server`. See [Self-hosting the engine](/docs/guides/self-hosting).
+
+## Browsers
+
+typstream runs in current Chromium, Firefox and WebKit, which its tests run in. It needs:
+
+- **Module workers** (`new Worker(url, { type: "module" })`) and **WebAssembly**. Under a Content-Security-Policy, the page needs `script-src 'wasm-unsafe-eval'` (not `'unsafe-eval'`) and `worker-src 'self'`. The whole policy is in [Security](/docs/guides/security).
+- **Constructed stylesheets** (`adoptedStyleSheets`) to add the renderers' CSS without inline styles. Browsers without them (Safari before 16.4) get a `<style>` element instead, which a strict CSP refuses unless it allows `'unsafe-inline'`.
+- **MathML** for math in the HTML target. The paged target draws math itself.
+
+`IntersectionObserver`, `ResizeObserver`, `requestIdleCallback` and Cache Storage are used where they exist: without `IntersectionObserver` documents open right away instead of near the viewport, and without Cache Storage fonts and packages come from the HTTP cache. typstream doesn't need cross-origin isolation (COOP/COEP).
+
+## What gets downloaded, and when
+
+Your JavaScript bundle holds only the main-thread code (healer, scheduler, renderers; a few tens of KB gzipped, see [Compatibility](/docs/resources/compatibility#bundle-sizes)). The heavy parts are separate files, fetched by the worker when they are needed:
+
+| File | Size | When |
+|---|---|---|
+| Worker script | ≤ 40 KB gzipped | When the engine starts: `createEngine()`, or the first `<Typstream>` or `<TypstreamProvider>` that mounts |
+| Typst wasm (`engine_bg.wasm`) | about 19 MB, ≈ 6 MB with brotli | When the engine starts |
+| Base fonts: Libertinus Serif, New Computer Modern Math, DejaVu Sans Mono | 2.6 MB | When the engine starts |
+| Script fonts: Noto Naskh Arabic, Noto Serif Bengali, Noto Serif Devanagari (regular and bold) | 47–79 KB brotli each | The first time a document needs one, per face |
+| Typst packages (CeTZ, fletcher, …) | tarballs, up to a few hundred KB | The first time a document imports one |
+
+Once a worker is ready, the engine starts a second, spare one, so a worker that hangs or crashes is replaced at once. The spare loads the same wasm and fonts, from cache when your server lets them be cached. Pass `spare: false` to `createEngine` to turn it off.
+
+Documents themselves are lazy: a `<Typstream>` opens and compiles only when its element comes within a screen of the viewport, or as soon as it streams. A chat with fifty finished answers compiles only the ones on screen.
+
+Serve the assets so they download once:
+
+- **Compressed.** Brotli or gzip for the `.wasm` and the fonts. The wasm shrinks from about 19 MB to about 6 MB.
+- **Cacheable.** Bundlers put a content hash in the asset names, so they can be cached for a long time (`Cache-Control: public, max-age=31536000, immutable`). The worker also keeps fonts and package tarballs in Cache Storage.
+- **As `application/wasm`.** With that content type the browser compiles the wasm while it downloads. Without it, the engine falls back to a slower path and logs a warning.
+
+## Next steps
+
+<Cards>
+  <Card title="React" href="/docs/getting-started/react">`<Typstream>` in a Vite app, from a fake stream to a real one.</Card>
+  <Card title="Next.js and the AI SDK" href="/docs/getting-started/nextjs-ai-sdk">A chat whose answers are Typst documents, with `useChat`.</Card>
+  <Card title="Without a framework" href="/docs/getting-started/vanilla">`mountTypstream` and the engine, in plain TypeScript.</Card>
+  <Card title="Node.js (server)" href="/docs/getting-started/node">Validate, render and repair documents on the server.</Card>
+</Cards>

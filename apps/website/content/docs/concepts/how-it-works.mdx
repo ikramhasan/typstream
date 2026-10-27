@@ -1,0 +1,102 @@
+---
+title: How it works
+description: Why streaming Typst is harder than streaming Markdown, and the pipeline typstream runs every token through, from the model's text to pixels.
+---
+
+typstream turns a model's Typst output into a live preview while the model is still writing. This page explains the problem it solves and the pipeline it runs, so the rest of the docs make sense. You don't need any of it to render your first document: see [Getting started](/docs/getting-started/react) for that.
+
+## Why Typst is harder to stream than Markdown
+
+Markdown degrades gracefully. An unclosed `**` is just two asterisks, and every paragraph renders on its own, so a Markdown streamer can show whatever has arrived.
+
+Typst is a compiled language. The compiler reads the whole document, and one problem anywhere fails all of it:
+
+- **One unclosed delimiter fails the whole document.** `#table(columns: 2, [a], [b` is not "a table with a missing bracket": it is an `unclosed delimiter` error, and there is no output at all. Without help, most prefixes of a streamed document don't compile.
+- **Documents are programs.** `#let` defines names, `#set` and `#show` rules restyle everything after them, counters and references flow across the document. You can't render blocks independently, as a Markdown renderer does.
+- **Some prefixes can't be closed, only cut.** `#let x =` or `#set text(size:` have no sensible completion. Guessing one would apply a half-written rule to the whole document and make it flicker.
+- **Some errors appear only when compiling.** `#text(` closed as `#text()` parses, but fails because the function needs its body. A citation before the bibliography it points to fails until the bibliography arrives.
+- **Documents can run away.** Typst limits loop iterations and recursion depth, but not time or memory: an AI-written `range(100000000).map(x => x)` would freeze the tab if it ran on the main thread.
+
+So typstream must make every prefix compile, or show something sensible when it can't, and it must never block the page.
+
+## The pipeline
+
+Every chunk the model sends goes through the same path:
+
+```text
+  model output, chunk by chunk
+        │
+        ▼
+┌─ main thread ──────────────────────────────────────────────────┐
+│ heal          on every chunk                                   │
+│   normalize → recognize → repair tail → lint settled text      │
+│         │     healed source + stable offset + source map       │
+│         ▼                                                      │
+│ scheduler     latest wins, one compile at a time,              │
+│               every 33–500 ms (adapts to compile time)         │
+└────────────────────────────────────────────────────────────────┘
+        │     one diff of the healed source
+        ▼
+┌─ engine worker ────────────────────────────────────────────────┐
+│ Typst 0.15.1 (wasm)    compile → diagnostics + artifact        │
+│ Layer 3 fixers         tail-cut, pending-ref, package-stub     │
+│ Layer 4 fallback       last good, stable prefix, error blocks  │
+└────────────────────────────────────────────────────────────────┘
+        │     HTML, or the SVG of changed pages
+        ▼
+┌─ main thread: renderer ────────────────────────────────────────┐
+│ html     sanitize → diff blocks → fade in words, caret         │
+│ paged    redraw changed pages, visible first → text layer      │
+└────────────────────────────────────────────────────────────────┘
+
+  watchdog (main thread): compile over budget → new worker
+```
+
+1. **Heal** (`@typstream/heal`, main thread, every chunk). The healer turns the text so far into a source that parses: it closes what is open (`[b` becomes `[b]`), drops what can't be completed yet (`#let x =`), and fixes Markdown habits such as `**bold**` in text that has settled. It works incrementally, so a token costs a fraction of a millisecond even in a long document. See [Healing](/docs/concepts/healing).
+2. **Schedule** (`@typstream/engine`, main thread). Tokens arrive every few milliseconds and a compile takes 5–100 ms, so compiles are never queued. Each document has at most one compile pending, and it reads the newest healed source when its turn comes. The interval between compiles follows how long they take: small documents update about 30 times a second, big ones less often.
+3. **Compile** (engine worker). A Web Worker runs Typst 0.15.1, compiled to WebAssembly (`@typstream/engine-wasm`). Only the change to the source crosses to the worker, and Typst's incremental compilation reuses what didn't change. See [The engine](/docs/concepts/engine).
+4. **Fix** (engine worker, Layer 3). When a compile fails, diagnostic fixers turn the errors into edits and the worker recompiles, at most twice per revision.
+5. **Fall back** (engine worker, Layer 4). What still fails is never a blank screen: the last good render stays, failing blocks become "This part couldn't be displayed" boxes, or the settled text renders with the rest as plain text. See [Fixers and fallback](/docs/concepts/fallback).
+6. **Render** (`@typstream/dom`, main thread). The artifact is either Typst's HTML, which is sanitized and split into blocks so only changed blocks touch the DOM, or SVG pages, of which only changed ones are redrawn, with an invisible text layer for selection and screen readers. See [Render targets](/docs/concepts/render-targets).
+
+A **watchdog** on the main thread times every compile. One that runs past its budget (3 s while streaming) is stopped by terminating the worker, and a spare worker that is already initialized takes over.
+
+## Four layers of error correction
+
+Making a streamed document render is split into four layers, cheapest first. Each one handles what the layer before it can't.
+
+| Layer | Where | What it does |
+|---|---|---|
+| 0–1. Normalize and lint | heal, main thread | Strip a ```` ```typst ```` fence and a byte order mark, hold back half a surrogate pair. Fix Markdown habits and stray delimiters in settled text: `# Heading` → `= Heading`, `me@school.org` → `me\@school.org`. |
+| 2. Tail repair | heal, main thread | Close the constructs still open at the end of the text, and cut incomplete ones back to where they started. The result always parses. |
+| 3. Semantic fixers | engine worker | Errors only the compiler finds: cut text still being typed at the error (`tail-cut`), show a reference to a label that doesn't exist yet as a placeholder (`pending-ref`), stand in for a package that isn't available (`package-stub`). |
+| 4. Fallback ladder | engine worker | Keep the last good render, render the settled text with the tail as plain text, or isolate failing blocks as error boxes. |
+
+Layers 0–2 are about parsing and run on the main thread on every chunk; they need no compiler, and they are checked against Typst's own parser. Layers 3 and 4 run in the worker after a compile, because only the compiler knows that `#text()` lacks its body. Together they make nearly every prefix of a stream render: over typstream's test corpus, healing alone makes about 88% of stream prefixes compile, the fixers bring that to 99.9%, and the fallback covers the rest.
+
+## Streaming and final mode
+
+A document is in **streaming** mode while the model writes, and in **final** mode once it is complete (`isStreaming` turns false, or `finish()` is called). Streaming mode hides what is unfinished: the tail is repaired, still-typed text is cut, failures keep the last good render. Final mode reports what is wrong instead: no tail repair, every lint rule runs on the whole text, errors are reported, and the fallback searches the whole document. A truncated answer shows up as an error rather than being silently completed.
+
+See [Streaming and final mode](/docs/concepts/streaming).
+
+## Where each package sits
+
+The packages are layered: a package imports only packages below it, and nothing below the bindings imports React.
+
+| Layer | Packages | What they hold |
+|---|---|---|
+| Contracts | `@typstream/core` | Types and small utilities with no dependencies: edits, ranges, the source map, diagnostics, the worker protocol, the plugin contract, telemetry events. |
+| Language | `@typstream/heal` | Normalizer, recognizer (a port of Typst 0.15.1's parser), tail repair, lint, the incremental healer. Pure TypeScript. |
+| Runtime | `@typstream/engine`, `@typstream/engine-wasm`, `@typstream/node`, `@typstream/universe` | The main-thread client and the worker (scheduler, watchdog, fixers, fallback), Typst as wasm, the same engine on Node servers, and the Typst Universe packages allowed by default. |
+| Content | `@typstream/edu`, `@typstream/html-compat` | Typst libraries shipped as plugins: the vocabulary for teachers' documents, and the prelude that keeps layout in the HTML target. |
+| Bindings | `@typstream/dom`, `@typstream/react`, `typstream` | The framework-free renderers and `mountTypstream`, the React component, and the convenience package that wires the defaults together. |
+
+Most apps install only `typstream`. You reach for the lower packages when you need them: `@typstream/dom` without React, `@typstream/engine` for a custom renderer, `@typstream/heal` on its own, `@typstream/node` to validate documents on a server.
+
+<Cards>
+  <Card title="Healing" href="/docs/concepts/healing">How a prefix becomes a source that parses.</Card>
+  <Card title="Streaming and final mode" href="/docs/concepts/streaming">The document lifecycle and its statuses.</Card>
+  <Card title="Render targets" href="/docs/concepts/render-targets">HTML or SVG pages, and when to pick which.</Card>
+  <Card title="The engine" href="/docs/concepts/engine">The worker, scheduling, the watchdog and limits.</Card>
+</Cards>

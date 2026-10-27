@@ -18,4 +18,4 @@ MathML, the diagram is drawn and the pages have text. Last, it checks that the p
 style the test adds itself must be refused. `BROWSERS=chromium` runs one browser, and `--screenshot` saves
 `smoke-<browser>.png`.
 
-What each directive is for, and what isn't supported yet (Trusted Types): [`docs/security.md`](../../docs/security.md).
+What each directive is for, and what isn't supported yet (Trusted Types): [Security](../../apps/website/content/docs/guides/security.mdx).

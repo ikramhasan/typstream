@@ -58,7 +58,7 @@ caught up, while MutationObservers record what the renderers remove and add.
 Violations that come from Typst's own HTML or from axe's limits are listed in `KNOWN`, each with where it may occur
 and why; so is a known bug, with its issue.
 
-**Security** (`security.test.ts`, #29, `docs/security.md`). Every `hostile-*` document of the adversarial set,
+**Security** (`security.test.ts`, #29, `apps/website/content/docs/guides/security.mdx`). Every `hostile-*` document of the adversarial set,
 streamed and finished in both targets, in all three browsers:
 
 - nothing forbidden is left on the page, shadow roots included: no script, style, frame, object, form or SVG

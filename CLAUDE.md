@@ -42,10 +42,10 @@ corpus/           @typstream/corpus (private): shared test documents (edu/, adve
 apps/playground   Dev playground (Vite + React): replay streams, inspect healing and the engine's raw output, record corpus cases.
 examples/         node-validate (@typstream/node fix loop), nextjs-ai-sdk (useChat → <Typstream>, Next.js App Router),
                   strict-csp (both targets under a strict Content-Security-Policy, checked in three browsers).
-docs/             security.md: threat model, defences and the CSP guide (#29).
 spikes/phase0     Throwaway Phase 0 experiments: browser harness (harness/) and custom Typst wasm engine (custom-engine/).
                   Port code out of here into packages/; don't import from spikes.
-docs/             User-facing guides the website (#32) will publish: writing-a-plugin.md.
+apps/website      The website (#32, #33): landing page and docs (Next.js + Fumadocs). content/docs/ holds every page as MDX,
+                  the user-facing guides included (security, writing a plugin); llms.txt and a Markdown twin of each page.
 PLAN.md           Design and roadmap.
 ```
 
@@ -142,6 +142,24 @@ In `tools/browser-suites` (PLAN.md §11.4, #19; details in its README):
   (`scripts/visual.mjs`; needs Docker) so baselines don't depend on the machine. `pnpm visual:update` accepts changes;
   commit the PNGs it writes (stored as palette PNGs). Engine, renderer, html-compat or CSS changes that alter output need
   it, as does a `playwright` upgrade (new image).
+
+In `apps/website` (PLAN.md §10.5, #32, #33):
+- `pnpm --filter @typstream/website dev` (http://localhost:3000), `build`, `test` (scripts/check-docs.mjs: titles,
+  descriptions, `meta.json` navigation, and every `/docs/…` link and `#anchor`), `check-types`. Needs the packages built
+  (turbo's `^build`) and engine-wasm's `dist/` for the live examples.
+- Pages are `content/docs/**/*.mdx`, listed in each folder's `meta.json`. `title` and `description` are required: the
+  description is the page's summary in llms.txt. Write Typst fences as ```typst (Shiki has no `typ` alias).
+- **Agent-readable docs**: `/llms.txt` (an index linking every page's Markdown), `/llms-full.txt`, and every page as
+  Markdown at `/docs/<page>.md` or with `Accept: text/markdown` (`proxy.ts`). The Markdown is the processed MDX
+  (`source.config.ts`): `<HealPlayground>` is dropped, `<TypstPreview>` keeps only its code block. Set `SITE_URL` in
+  deployments so llms.txt links are absolute.
+- **Generated reference**: `<auto-type-table path="packages/…/src/file.ts" name="Type" />` (path from the repo root, the
+  file that declares the type) renders the type's TSDoc, as a Markdown table in the `.md` version too.
+  `scripts/generate.mjs` writes `content/docs/reference/edu/vocabulary.mdx` (gitignored) from edu's `eduCatalogue`
+  before `dev`/`build`; a new edu function must be added to its `GROUPS`.
+- **Live examples** render through the real engine: `<TypstPreview edu answers target="paged">` around a ```typst block,
+  and the landing page replays `corpus/llm` recordings (`kit-v4-sonnet-*`) into `<Typstream>`. So a docs example that
+  stops compiling shows on the page.
 
 In `apps/playground` (PLAN.md §10.5, #31):
 - `pnpm --filter playground dev`: Vite dev server on http://localhost:5173. `@typstream/*` resolves to `packages/*/src` (see `vite.config.ts`), so heal and engine edits hot-reload. The exception is engine-wasm: build its `dist/` once (`pnpm --filter @typstream/engine-wasm build`) before rendering works.

@@ -1,0 +1,338 @@
+---
+title: Writing a plugin
+description: Package your own Typst functions, styles, prompt rules and compile fixes as a typstream plugin, and load it in React, the DOM renderer or the engine.
+---
+
+A plugin is one plain object with a `key` and any of a set of optional **facets**. Each typstream package reads the facets it understands and ignores the rest, so a plugin written for the renderer keeps working when new packages (the editor) add facets of their own. `@typstream/html-compat`, `@typstream/universe` and `@typstream/edu` are plugins; so are a school's branded templates or a chemistry pack.
+
+```ts
+import { definePlugin } from "@typstream/core";
+
+export const chemistry = definePlugin({
+  key: "acme/chemistry", // unique; namespace third-party keys
+  version: "1.0.0",
+  dependencies: ["edu"], // keys of plugins that must load too, before this one
+  engine: {
+    files: { "@acme/chemistry:1.0.0/lib.typ": LIB, "@acme/chemistry:1.0.0/typst.toml": TOML },
+    preamble: '#import "@acme/chemistry:1.0.0": *',
+  },
+  stylesheets: [CSS],
+});
+```
+
+`definePlugin` only type-checks the literal; a plugin needs no runtime from typstream. For the concepts behind plugins, see [Plugins](/docs/concepts/plugins).
+
+## Using plugins
+
+```tsx
+// React: on a provider (every document below it) or on one <Typstream>.
+<TypstreamProvider plugins={[edu, chemistry]}>…</TypstreamProvider>
+
+// Without a framework.
+mountTypstream(element, { engine, source, plugins: [edu, chemistry] });
+
+// The engine alone (Node, a custom renderer).
+const doc = engine.open({ plugins: [edu, chemistry] });
+```
+
+`typstream`'s `<Typstream>` adds `htmlCompat` and `universe` before the plugins you give it (turn them off with `htmlCompat={false}` and `packages={false}`).
+
+## Build a plugin step by step
+
+The example below is a small chemistry pack: one Typst function, `#reaction`, that shows an equation with the conditions it needs. It works in both render targets, is styled for the HTML target, tells the model how to use it, and comes with a fixer for a common mistake.
+
+<Files>
+  <Folder name="acme-chemistry" defaultOpen>
+    <Folder name="typst" defaultOpen>
+      <File name="typst.toml" />
+      <File name="lib.typ" />
+    </Folder>
+    <Folder name="scripts" defaultOpen>
+      <File name="embed.mjs" />
+    </Folder>
+    <Folder name="css" defaultOpen>
+      <File name="chemistry.css" />
+    </Folder>
+    <Folder name="src" defaultOpen>
+      <File name="index.ts" />
+      <File name="fixers.js" />
+      <File name="assets.generated.ts" />
+    </Folder>
+  </Folder>
+</Files>
+
+<Steps>
+<Step>
+
+### Write the Typst side as a local package
+
+A `typst.toml` and an entry point make the files a Typst package. Documents import it by name, and the same files work with the native CLI (`typst compile --package-path`), so you can test them outside typstream.
+
+```toml title="typst/typst.toml"
+[package]
+name = "chemistry"
+version = "1.0.0"
+entrypoint = "lib.typ"
+compiler = "0.15.1"
+```
+
+```typst title="typst/lib.typ"
+/// A labelled reaction: the equation, with what it needs after it.
+///
+/// - conditions (content, none): What the reaction needs, e.g. heat.
+#let reaction(conditions: none, body) = context {
+  if target() == "html" {
+    html.elem("div", attrs: (class: "acme-reaction"), {
+      body
+      if conditions != none { html.elem("span", attrs: (class: "acme-conditions"), conditions) }
+    })
+  } else {
+    block(inset: 6pt, stroke: 0.5pt + gray, radius: 3pt, {
+      body
+      if conditions != none { h(1em); text(size: 0.85em, fill: gray)[(#conditions)] }
+    })
+  }
+}
+```
+
+`context target()` tells the HTML target from the paged one, so each gets output that suits it: semantic HTML with classes your stylesheet styles, and Typst layout for pages and PDF.
+
+</Step>
+<Step>
+
+### Style the HTML
+
+Scope rules to the renderer's root (`.typstream`) and wrap them in `:where()`, so their specificity is zero and an app's own rules win without `!important`. Use the theme's custom properties so dark mode works.
+
+```css title="css/chemistry.css"
+:where(.typstream .acme-reaction) {
+  display: flex;
+  align-items: baseline;
+  gap: 1em;
+  margin-block: 0.8em;
+  padding: 0.4em 0.8em;
+  border: 1px solid var(--typstream-muted);
+  border-radius: 4px;
+}
+:where(.typstream .acme-conditions) {
+  color: var(--typstream-muted);
+  font-size: 0.85em;
+}
+```
+
+</Step>
+<Step>
+
+### Embed the files
+
+The engine mounts files you give it as strings or bytes, and the renderer takes CSS as strings. Any build step that turns the files into a module works; this script needs nothing but Node:
+
+```js title="scripts/embed.mjs"
+// Writes src/assets.generated.ts from typst/ and css/. Run it after every change to them.
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+
+const files = Object.fromEntries(readdirSync("typst").map((name) => [name, readFileSync(`typst/${name}`, "utf8")]));
+const css = readFileSync("css/chemistry.css", "utf8");
+writeFileSync(
+  "src/assets.generated.ts",
+  `export const FILES: Record<string, string> = ${JSON.stringify(files, null, 2)};\n` +
+    `export const CSS: string = ${JSON.stringify(css)};\n`,
+);
+```
+
+With Vite you can import them directly instead (`import LIB from "../typst/lib.typ?raw"`).
+
+</Step>
+<Step>
+
+### Write a fixer module (optional)
+
+Fixers run in the engine worker after a compile fails, and turn an error into edits that make it go away. Because the worker can't receive functions, a plugin ships them as an ES module your app serves, referenced by URL. This one writes an unknown `#name` as the plain word, so a misspelt function doesn't break the rest of the document:
+
+```js title="src/fixers.js"
+// Default export: a fixer or an array of them.
+export default {
+  name: "acme/unknown-as-text", // `#foo` with no `foo` defined: write the word
+  match: /^unknown variable: (\w+)$/,
+  fix: (d, ctx) => (d.span ? [{ from: d.span.from - 1, to: d.span.to, insert: ctx.text.slice(d.span.from, d.span.to) }] : null),
+};
+```
+
+</Step>
+<Step>
+
+### Define the plugin
+
+```ts title="src/index.ts"
+import { definePlugin } from "@typstream/core";
+import { CSS, FILES } from "./assets.generated";
+
+const ROOT = "@acme/chemistry:1.0.0";
+
+export const chemistry = definePlugin({
+  key: "acme/chemistry",
+  version: "1.0.0",
+  engine: {
+    // `@ns/name:x.y.z/path` keys make a local Typst package: importable by name, nothing downloaded.
+    files: Object.fromEntries(Object.entries(FILES).map(([name, text]) => [`${ROOT}/${name}`, text])),
+    preamble: `#import "${ROOT}": *`,
+    fixerModules: [new URL("./fixers.js", import.meta.url).href],
+  },
+  stylesheets: [CSS],
+  prompt: {
+    catalogue: [
+      {
+        name: "reaction",
+        signature: "reaction(conditions: content, body: content) -> content",
+        description: "A chemical reaction, with what it needs (heat, a catalyst) after it.",
+        example: "#reaction(conditions: [heat])[$2 H_2 + O_2 -> 2 H_2 O$]",
+      },
+    ],
+    rules: ["Write every chemical reaction with `#reaction`; never draw the arrow and conditions by hand."],
+  },
+});
+```
+
+Ship `fixers.js` next to the built `index.js` (copy it into `dist/`): the `new URL(…, import.meta.url)` resolves next to the module, and the app's bundler emits the file as an asset.
+
+The `prompt` facet describes your Typst API to the model. `buildSystemPrompt(plugins)` from `@typstream/edu` (beta) turns plugins' prompt facets into a system prompt; see [Prompting](/docs/guides/prompting).
+
+</Step>
+<Step>
+
+### Use it
+
+```tsx
+import { Typstream } from "typstream";
+import { chemistry } from "@acme/chemistry";
+
+<Typstream source={text} isStreaming={streaming} plugins={[chemistry]} />;
+```
+
+The model can now write `#reaction(conditions: [heat])[$2 H_2 + O_2 -> 2 H_2 O$]` with no import of its own: the plugin's preamble imports the package before every document.
+
+</Step>
+</Steps>
+
+## Facets
+
+| Facet | Read by | What it does |
+|---|---|---|
+| `heal.handlers` | heal (main thread) | `HealHandler`s: product-specific fixes on settled text (`settled`) or on the healed source (`output`). The only facet that holds functions. |
+| `heal.lint` | heal | Overrides built-in lint rules by id: `{ "currency-dollar": "fix" }`. Later plugins and the document's own `heal.lint` win. |
+| `engine.files` | engine | Files mounted for every document. Keys of the form `@ns/name:x.y.z/path` make a local Typst package, importable with no download. |
+| `engine.preamble` | engine | Typst evaluated before the document, after earlier plugins' preambles and before a template's and the app's. |
+| `engine.packages` | engine | Typst Universe packages the document may import (an allowlist entry: name, version, URL, integrity). Fetched only when imported. Beta. |
+| `engine.fixerModules` | engine worker | ES module URLs whose default export is a `DiagnosticFixer` or an array of them. Loaded inside the worker, once per URL. |
+| `engine.fonts` | engine worker | Fonts for the engine. Worker-wide: see below. Beta. |
+| `templates` | dom, react | Named document setups (`template="worksheet"`): a preamble and default `sys.inputs`. A later plugin's template replaces an earlier one's of the same name. |
+| `sanitize` | dom | Extra tags and attributes the HTML sanitizer lets through. Scripts, event handlers and URL-loading attributes stay blocked whatever a plugin says. |
+| `stylesheets` | dom | CSS for the HTML your Typst writes, injected next to the renderer's and included in standalone HTML exports. |
+| `prompt` | your app | The function catalogue, rules and few-shot examples to tell the model about your Typst API. A planned `@typstream/ai` package will read it too. |
+| `islands` | ([#28](https://github.com/ikramhasan/typstream/issues/28)) | Interactive components the renderer swaps in for Typst markers. Reserved; not rendered yet. Beta. |
+| `editor` | (future editor) | Reserved; typed loosely so plugins can fill it in early. Beta. |
+
+The full type:
+
+<auto-type-table path="packages/core/src/plugin.ts" name="TypstreamPlugin" />
+
+<Callout type="warn" title="Beta facets">
+  `engine.packages`, `engine.fonts`, `islands` and `editor` are beta: their shape may change before 1.0.
+</Callout>
+
+### What runs where
+
+Everything except `heal.handlers` is plain data. The `engine` facet is posted to the worker, which can't receive functions, so it must stay structured-clonable: code that runs in the worker is referenced by URL (`engine.fixerModules`).
+
+A document's plugins bring their files, packages, preamble, heal handlers and lint settings, and their fixer modules, which the worker loads for that document only. A fixer module that fails to load is logged (an engine `log` event) and the document compiles without it.
+
+Fonts belong to the worker, not to a document: give a plugin with `engine.fonts` to the engine itself.
+
+```tsx
+const engine = createEngine({ spawn: engineWorker(), plugins: [bengali] }); // fonts, packages, fixer modules
+
+<TypstreamProvider engine={engine} plugins={[bengali]}>…</TypstreamProvider>;
+```
+
+The engine's plugins' fonts, packages and fixer modules are sent when each worker starts, so every worker (including replacements after a watchdog restart) has them. A document whose plugin brings fonts the engine doesn't have logs a warning once per plugin. See [Fonts and languages](/docs/guides/fonts-and-languages).
+
+### Order, duplicates and errors
+
+**Order.** Plugins load in the order given, except that a plugin always comes after its dependencies: a dependency listed later moves up to just before the first plugin that needs it. Order matters where facets add up: preambles run in that order, a later plugin's file replaces an earlier one's at the same path, and later stylesheets come later in the cascade.
+
+**Duplicates.** A key given more than once loads once, as its last definition, at the place of its first. A provider's plugin can be overridden by a component's with the same key.
+
+**Errors.** A dependency that isn't among the plugins, a cycle, or a plugin without a key throws when the document opens. `resolvePlugins` from `@typstream/core` does the resolution, if you want to check a list yourself:
+
+```ts
+import { resolvePlugins } from "@typstream/core";
+
+resolvePlugins([chemistry, edu]).map((p) => p.key); // ["edu", "acme/chemistry"]: edu moved up before its dependent
+```
+
+## Writing the Typst side
+
+- **Mount it as a local package** (`@acme/chemistry:1.0.0/…` keys with a `typst.toml`), so documents and exported sources can `#import` it by name and the same files work with native `typst --package-path`.
+- **Expect cut-off input.** The model's output is compiled after every token. Give every named parameter a default, and accept what a stream cut leaves: `(2` arrives as `2`, `5em` as `5`. `@typstream/edu`'s sources show patterns for this.
+- **Branch on the target** with `context target()` where the HTML and paged output should differ, and write semantic HTML with classes your `stylesheets` style.
+- **Keep CSS overridable.** Scope rules to the renderer's root and keep their specificity at zero, so apps can override them: `:where(.typstream .acme-formula) { … }`. Follow the theme's custom properties (`--typstream-foreground`, `--typstream-muted`, `--typstream-link`, …) so dark mode works. See [Theming](/docs/guides/theming).
+- **Allow only what you write.** If your HTML needs a tag or attribute the sanitizer drops, list exactly those in `sanitize` (`{ allowTags: ["details"], allowAttrs: { details: ["open"] } }`).
+
+## Writing a fixer module
+
+When a compile fails, the worker offers each error to its fixers in priority order; the first that returns edits fixes it. A round of fixes is applied only when every error has one, then the worker recompiles, at most twice per revision.
+
+<auto-type-table path="packages/core/src/plugin.ts" name="DiagnosticFixer" />
+
+`fix` returns edits against `ctx.text` (the document without its preamble), or `null`. Edits are `{ from, to, insert }` in UTF-16 offsets, non-overlapping and ascending. `fix` may be async, for example to fetch something; the compile waits for it.
+
+<auto-type-table path="packages/core/src/plugin.ts" name="FixContext" />
+
+- **Priority.** Default 50. The built-in `pending-ref` runs at 10 and the catch-all `tail-cut` at 100, so most fixers run between them.
+- **Modes.** `modes: ["streaming"]` keeps a fixer out of final compiles, for fixes that only make sense while text is still arriving. Use `ctx.settled` to leave text that is still being typed alone, or to change only it.
+- **Errors.** A fixer that throws is skipped.
+- **Reporting.** While streaming, the errors a fixer fixed are reported as `info` diagnostics whose `source` is the fixer's name. In final mode the output is the fixed one, but the error is still reported as an error, so the finished document's diagnostics show what the model got wrong. `fixersApplied` in the [`compiled` event](/docs/guides/telemetry#compiled) names it either way.
+- **Placeholders.** Fixed compiles import typstream's runtime library as `typstream`, so a fix can insert its placeholders, such as `#typstream.pending-ref("key");`.
+
+To add fixers to every document rather than through a document's plugins, pass the module to the engine: `createEngine({ spawn: engineWorker(), initialize: { fixerModules: [url] } })`. To replace the built-in list, write your own worker ([Self-hosting](/docs/guides/self-hosting#replacing-the-fixers)).
+
+<Callout type="warn" title="Fixer modules are code">
+  Importing a module runs it in the worker. A server that faces untrusted clients must not load modules they name; `@typstream/node`'s protocol server ignores them. See [Security](/docs/guides/security).
+</Callout>
+
+## Testing a plugin
+
+Open a document with your plugin on a real engine and check what it renders, as typstream's own contract tests do. In Node, `@typstream/engine/server`'s `inProcess` runs the worker on the calling thread:
+
+```js title="test-plugin.mjs"
+import { readFileSync } from "node:fs";
+import { createEngine } from "@typstream/engine";
+import { engineWasm, inProcess } from "@typstream/engine/server";
+import { baseFonts } from "@typstream/engine-wasm/fonts";
+import { chemistry } from "./dist/index.js";
+
+const wasm = readFileSync(new URL(import.meta.resolve("@typstream/engine-wasm/engine_bg.wasm")));
+const fonts = baseFonts.map((url) => new Uint8Array(readFileSync(url)));
+const engine = createEngine({ spawn: inProcess(() => engineWasm({ wasm, fonts })), spare: false });
+
+const doc = engine.open({ plugins: [chemistry], target: "html" });
+doc.onEvent((event) => {
+  if (event.type === "compiled") console.log(event.status, event.fixersApplied);
+});
+doc.set("#reaction(conditions: [heat])[$2 H_2 + O_2 -> 2 H_2 O$] and #foo here");
+doc.finish();
+
+const state = await new Promise((resolve) => {
+  const stop = doc.subscribe((s) => {
+    if (s.status === "done" || s.status === "error") (stop(), resolve(s));
+  });
+});
+console.log(state.status, state.diagnostics.map((d) => d.message), state.artifact?.html.includes("acme-reaction"));
+engine.dispose();
+```
+
+Here `fixersApplied` lists `acme/unknown-as-text` for `unknown variable: foo`, and the HTML contains the `acme-reaction` element. Test the paged target the same way (`target: "paged"`), and stream the document in chunks with `doc.push()` to see that every prefix renders.
+
+<Callout type="warn" title="inProcess is beta">
+  `inProcess` blocks the calling thread while it compiles, and the watchdog can't stop a runaway compile there. Use it for tests and scripts, not to serve users.
+</Callout>

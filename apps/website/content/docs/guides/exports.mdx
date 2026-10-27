@@ -1,0 +1,242 @@
+---
+title: "Exports: PDF, HTML and source"
+description: Export a rendered document as a PDF, a standalone HTML file or its Typst source, in the browser or on the server, and handle export errors.
+---
+
+A document on screen can be saved three ways: as a **PDF**, as an **HTML file** that opens on its own, or as its
+**Typst source**. Exports run in the same engine that renders the preview, so the file matches what the reader sees,
+and they don't need a second download or a server.
+
+## Where the exports are
+
+| | PDF | HTML | Source |
+|---|---|---|---|
+| `EngineDocument` (`@typstream/engine`) | `exportPdf(options?)` | `exportHtml(options?)`: Typst's raw HTML | `exportSource()` |
+| `MountedTypstream` (`@typstream/dom`) | `exportPdf()` | `exportHtml(options?)`: a standalone file | `exportSource()` |
+| React (`typstream`, `@typstream/react`) | `document.exportPdf(options?)` | `document.exportHtml(options?)`, then `standaloneHtml` | `document.exportSource()` |
+
+In React, the `EngineDocument` is `useTypstream().document`, or `document` on the handle `<Typstream ref>` gives you.
+It is `null` until the document opens: documents open when their element comes near the viewport, or when they start
+streaming.
+
+## What an export compiles
+
+An export compiles `exportSource()`: the healed input, with lint fixes applied. It compiles it in final mode (strictly,
+as a finished document) with the document's preamble and files, in the engine's worker.
+
+- **Export the finished document.** While the document is still streaming, the healed source includes tail repair:
+  whatever the stream cut left open, closed. Export after streaming ends (`isStreaming` back to false, or `finish()`
+  on an `EngineDocument`).
+- **Exports go first.** An export runs before compiles that are waiting, so a busy preview doesn't hold it up.
+- **Budget.** An export has the final watchdog budget, 10 seconds by default (`createEngine({ watchdog: { finalMs } })`).
+  Past it, the worker is replaced and the export fails with `timeout`.
+- **Packages and fonts.** An export waits up to 3 seconds for packages the document imports and for fonts its compile
+  lacked, then compiles with what has arrived.
+
+### Inputs
+
+`exportPdf` and `exportHtml` on an `EngineDocument` take `{ inputs }`, the `sys.inputs` to compile with. By default
+they use the document's current inputs. Pass them explicitly when they should differ from the preview's: a teacher's
+copy (`{ showAnswers: "true" }`, see [edu documents](/docs/guides/edu-documents#export-the-students-and-teachers-pdfs)),
+or a student's copy while the preview shows answers.
+
+Also pass them when the preview uses `layout="fit-width"`: that layout lays pages out at the element's width through
+inputs of its own, and you want the export at the document's own page size. `MountedTypstream`'s exports leave the
+layout's inputs out for you: they compile with the template's inputs and your `inputs`.
+
+## PDF
+
+```ts
+const pdf: Uint8Array = await doc.exportPdf();
+```
+
+It is Typst's own PDF export, with selectable text and the fonts embedded.
+
+## HTML
+
+`EngineDocument.exportHtml()` returns Typst's HTML export: a complete HTML document, without the source anchors the
+live preview uses. It is **not sanitized**. The model wrote it, so don't insert it into your page.
+
+`standaloneHtml(html, options)` from `@typstream/dom` makes it a file that is safe to download and open:
+
+- the renderer's theme, then the plugins' stylesheets (html-compat's, edu's), then your `stylesheets`, all inline;
+- the root class `typstream` on `<body>`, so those styles apply;
+- a Content-Security-Policy as the first thing in `<head>`, so whatever the document contains can't run scripts, load
+  anything from the network or submit forms. Only inline styles and `data:` images and fonts are allowed, plus the
+  math font's origin if you give it as a URL;
+- `<meta http-equiv="refresh">` removed, and `dir="rtl"` on `<html>` for a right-to-left language;
+- optionally the math font, so MathML renders properly wherever the file is opened.
+
+The file isn't sanitized; the policy is what makes it safe. Re-serializing sanitized nodes for a file would invite
+mutation XSS, which the policy avoids.
+
+<auto-type-table path="packages/dom/src/export/standalone.ts" name="StandaloneHtmlOptions" />
+
+```ts
+import { standaloneHtml } from "@typstream/dom";
+
+const file = standaloneHtml(await doc.exportHtml(), { plugins: doc.plugins, title: "Worksheet" });
+```
+
+`doc.plugins` is the document's resolved plugin list, so the file gets the same plugin stylesheets as the preview.
+
+`MountedTypstream.exportHtml(options?)` does both steps, with the mount's plugins, `stylesheets` and `theme`;
+`options` add to or override them.
+
+To embed the math font, fetch the engine's copy once:
+
+```ts
+import { baseFonts } from "@typstream/engine-wasm/fonts";
+
+const url = baseFonts.find((u) => u.pathname.includes("NewCMMath"));
+const mathFont = new Uint8Array(await (await fetch(url!)).arrayBuffer());
+const file = standaloneHtml(await doc.exportHtml(), { plugins: doc.plugins, mathFont });
+```
+
+Embedded, it adds about 0.7 MB to the file. Given as a URL instead, the file stays small but needs that URL to be
+reachable when it's opened.
+
+## Source
+
+`exportSource()` returns the healed source as a string, synchronously. It doesn't include the preamble or the files.
+Save it to store the document, or offer it as a `.typ` download.
+
+To compile the source elsewhere, give it what the preview had. For a document written with `@typstream/edu`, that
+means its files and preamble (`eduFiles`, `eduPreamble`), or, with the Typst CLI, edu's package and an
+`#import "@typstream/edu:0.1.0": *` line in front.
+
+## Errors
+
+Exports reject with an `ExportError`. Its `reason` says what went wrong, and `diagnostics` holds the export's
+diagnostics in input coordinates:
+
+| `reason` | Meaning |
+|---|---|
+| `diagnostics` | The source has errors; they are in `diagnostics`. |
+| `unsupported` | The engine doesn't offer this format. |
+| `timeout` | The export ran past the final watchdog budget; the worker was replaced. |
+| `crash` | The worker died during the export. |
+| `too-large` | The input is longer than `limits.maxLength` (1 MiB by default). |
+| `engine` | The engine can't run, was disposed or refused the request, or the document was disposed. |
+
+```ts
+import { ExportError } from "@typstream/engine";
+
+try {
+  await doc.exportPdf();
+} catch (error) {
+  if (error instanceof ExportError && error.reason === "diagnostics") {
+    showErrors(error.diagnostics);
+  } else throw error;
+}
+```
+
+`error.name` is always `"ExportError"`, if you'd rather not import the class.
+
+## A download button in React
+
+```tsx title="components/download-buttons.tsx"
+"use client";
+import { standaloneHtml } from "@typstream/dom";
+import { useState } from "react";
+import type { TypstreamInfo } from "typstream";
+
+const save = (data: BlobPart, type: string, name: string) => {
+  const url = URL.createObjectURL(new Blob([data], { type }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = name;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+};
+
+export function DownloadButtons({ t, disabled }: { t: TypstreamInfo; disabled: boolean }) {
+  const [error, setError] = useState<string | null>(null);
+  const doc = t.document;
+
+  const run = async (download: () => Promise<void>) => {
+    setError(null);
+    try {
+      await download();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  return (
+    <div>
+      <button
+        type="button"
+        disabled={!doc || disabled}
+        onClick={() =>
+          run(async () => {
+            const pdf = await doc!.exportPdf();
+            // TypeScript 5.7+ types Blob parts as ArrayBuffer-backed views.
+            save(pdf as Uint8Array<ArrayBuffer>, "application/pdf", "document.pdf");
+          })
+        }
+      >
+        PDF
+      </button>
+      <button
+        type="button"
+        disabled={!doc || disabled}
+        onClick={() =>
+          run(async () => {
+            const html = await doc!.exportHtml();
+            save(standaloneHtml(html, { plugins: doc!.plugins }), "text/html", "document.html");
+          })
+        }
+      >
+        HTML
+      </button>
+      <button
+        type="button"
+        disabled={!doc}
+        onClick={() => save(doc!.exportSource(), "text/plain", "document.typ")}
+      >
+        Typst source
+      </button>
+      {error && <p role="alert">{error}</p>}
+    </div>
+  );
+}
+```
+
+```tsx title="components/answer.tsx"
+"use client";
+import { Typstream, useTypstream } from "typstream";
+import { DownloadButtons } from "./download-buttons";
+
+export function Answer({ text, isStreaming }: { text: string; isStreaming: boolean }) {
+  const t = useTypstream();
+  return (
+    <>
+      <Typstream ref={t.ref} source={text} isStreaming={isStreaming} />
+      <DownloadButtons t={t} disabled={isStreaming} />
+    </>
+  );
+}
+```
+
+`typstream` doesn't re-export `standaloneHtml` or `ExportError`: install `@typstream/dom` and `@typstream/engine` to
+import them (`npm install @typstream/dom @typstream/engine`).
+
+## On the server
+
+`@typstream/node` renders a document without a browser, on the same Typst build:
+
+```ts
+import { writeFile } from "node:fs/promises";
+import { render } from "@typstream/node";
+
+const result = await render(source, "pdf");
+if (result.ok) await writeFile("document.pdf", result.data);
+else console.error(result.diagnostics);
+```
+
+`render(source, format, options?)` takes `"pdf"` (bytes), `"html"` (Typst's HTML as a string) or `"svg"` (one string
+per page), and the options every compile takes: `preamble`, `files`, `inputs`, `timeoutMs` and `engine`. A result is
+`{ ok: true, data, diagnostics, pageCount?, ms }` or `{ ok: false, diagnostics, ms }`. `standaloneHtml` is a string
+transform, so it works on the server's HTML too. See [`@typstream/node`](/docs/reference/node) and
+[the server fix loop](/docs/guides/server-fix-loop).
