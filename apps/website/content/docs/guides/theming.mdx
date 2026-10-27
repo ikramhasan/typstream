@@ -78,14 +78,15 @@ the renderer's root:
 
 | Selector | What it is |
 |---|---|
-| `.typstream` | The root. Typst's HTML goes inside it. It carries the document's `lang` and `dir`. |
+| `.typstream` | The root. Typst's HTML goes inside it. It carries the document's `lang` and `dir`, and clips what the document draws to its box ([Security](/docs/guides/security#html-target)). |
 | `.typstream[data-typstream-theme]` | Set to `light` or `dark` when `theme` forces one. |
 | `[data-typstream-animate]` | A word fading in. |
 | `.typstream-caret` | The caret, drawn by its `::after`. |
 
 Inside the root is Typst's own HTML: `h1`–`h6`, `p`, `ul`, `table`, `figure`, `math` and so on, which you can style
 like any content. `@typstream/html-compat` and `@typstream/edu` add elements of their own with `ts-` and `edu-`
-class names.
+class names. Other classes a document writes are dropped, so your page's own classes never apply to it; a plugin
+that writes classes for your CSS lists them in its `sanitize` facet (`allowClasses`).
 
 **Paged target.**
 

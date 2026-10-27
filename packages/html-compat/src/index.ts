@@ -51,6 +51,7 @@ export const htmlCompat: TypstreamPlugin = {
       span: ["class", "style", "role", "aria-label"],
       ol: ["class"],
     },
+    allowClasses: ["ts-*"],
   },
   stylesheets: [CSS_SOURCE],
 };

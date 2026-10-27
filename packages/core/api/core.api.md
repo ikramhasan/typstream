@@ -864,6 +864,7 @@ export interface TypstreamPlugin {
     sanitize?: {
         allowTags?: string[];
         allowAttrs?: Record<string, string[]>;
+        allowClasses?: string[];
     };
     stylesheets?: string[];
     templates?: TemplateSpec[];

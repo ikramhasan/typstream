@@ -78,11 +78,28 @@ export const TYPST_MATH_CSS = `/* Alignment */
 `;
 
 /**
- * The renderer's CSS: theme variables, word fade-in, the caret, and Typst's
- * MathML rules. The renderer injects it unless told not to.
+ * The renderer's CSS: containment, theme variables, word fade-in, the caret,
+ * and Typst's MathML rules. The renderer injects it unless told not to.
+ *
+ * Containment (#69): the document draws nothing and takes no clicks outside
+ * its element, whatever its CSS or the page's (a page class that sets
+ * `position: fixed`). `clip-path` clips every descendant, fixed ones included,
+ * and hit testing with it; `overflow: clip` keeps what overflows from making
+ * the page scroll, and `position: relative` (html-compat's too) puts absolute
+ * boxes under it. None starts a formatting context (`contain: paint` and
+ * `overflow: auto` would), so margins still collapse through the root and
+ * layout is as before; what reached past the element (a table wider than it)
+ * is cut off.
  * @public
  */
 export const htmlRendererCss: string = `${THEME_CSS}
+/* Containment */
+:where(.typstream) {
+  position: relative;
+  overflow: clip;
+  clip-path: inset(0);
+}
+
 /* Word fade-in. Durations and easing are set on the root; each word has its own delay. */
 @keyframes typstream-fadeIn {
   from {

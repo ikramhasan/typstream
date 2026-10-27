@@ -5,6 +5,10 @@
 // - nothing on the page can run script, load from the network, submit a form or
 //   escape into a fixed position: the sanitizer (HTML) and the paged view's link
 //   filter leave only allowed elements, attributes, URLs and CSS;
+// - nothing the document draws covers the page outside its element (#69), on a
+//   page with utility CSS whose classes a document could name (Tailwind's
+//   `fixed inset-0 z-50`): no point outside it hits the document, even with
+//   every element of it made to take clicks;
 // - nothing ran (`window.typstreamPwned` is what the documents' scripts set)
 //   and nothing was fetched from the hosts they name;
 // - the sandbox holds (reads, imports and plugins fail inside Typst; the engine
@@ -51,6 +55,19 @@ beforeAll(async () => {
   hostile = corpus.filter((e) => e.name.startsWith("hostile-"));
 }, 60_000);
 afterAll(() => engine.dispose());
+
+/** Utility classes as Tailwind writes them: what a hostile document would borrow to cover the app. */
+const UTILITY_CSS = `.fixed { position: fixed } .absolute { position: absolute } .inset-0 { inset: 0 }
+.z-50 { z-index: 50 } .bg-white { background: #fff } .w-screen { width: 100vw } .h-screen { height: 100vh }`;
+
+/** For the containment check: an overlay that lets clicks through still covers what is under it. */
+const HIT_EVERYTHING_CSS = ".suite-host * { pointer-events: auto !important; }";
+
+beforeAll(() => {
+  const style = document.createElement("style");
+  style.textContent = UTILITY_CSS;
+  document.head.append(style);
+});
 
 declare global {
   interface Window {
@@ -122,6 +139,32 @@ const violations = (el: HTMLElement): string[] => {
   return found;
 };
 
+/**
+ * Points of the viewport outside `el` (10 px apart) where the document is hit:
+ * what it would cover. Every element in it takes clicks for the check.
+ */
+const outside = (el: HTMLElement): string[] => {
+  const style = document.createElement("style");
+  style.textContent = HIT_EVERYTHING_CSS;
+  document.head.append(style);
+  try {
+    const box = el.getBoundingClientRect();
+    const found: string[] = [];
+    for (let x = 2; x < innerWidth; x += 10)
+      for (let y = 2; y < innerHeight; y += 10) {
+        if (x >= box.left - 1 && x <= box.right + 1 && y >= box.top - 1 && y <= box.bottom + 1) continue;
+        const hit = document.elementFromPoint(x, y);
+        if (hit && hit !== el && el.contains(hit) && found.length < 5)
+          found.push(`<${hit.localName}> "${hit.textContent?.slice(0, 30)}" at ${x},${y}`);
+      }
+    // What overflows doesn't make the page scroll either.
+    if (document.documentElement.scrollWidth > innerWidth) found.push("the page scrolls sideways");
+    return found;
+  } finally {
+    style.remove();
+  }
+};
+
 /** Resource loads from the hostile hosts so far. */
 const hostileLoads = () =>
   performance
@@ -155,13 +198,15 @@ const SURVIVES: Record<string, string[]> = {
 /** And in the HTML target, where `html.elem` exists (paged export ignores it). */
 const SURVIVES_HTML: Record<string, string[]> = {
   "hostile-html-elements": ["A custom element is unwrapped; its text stays."],
-  "hostile-html-attributes": ["Handlers", "Data and names"],
+  "hostile-html-attributes": ["Handlers", "Data and names", "overlay classes"],
   "hostile-markup-text": ['<script>window.typstreamPwned = "raw"</script>', "<b onmouseover=", "Attribute value"],
 };
 
 /** Streams `entry` into a fresh mount, finishes it, and waits until it is on screen. */
 const render = async (entry: CorpusDocument, target: Target) => {
-  const el = host(600);
+  // Narrower than the viewport, with room around it for the containment check.
+  const el = host(300);
+  el.style.margin = "150px 0 0 50px";
   const opts = appOptions(engine, entry, { target, source: "", isStreaming: true });
   const view = mountTypstream(el, opts);
   await streamInto(view, opts, entry, 1);
@@ -183,6 +228,7 @@ describe(`hostile documents in ${browser}`, () => {
         try {
           const id = `${entry.name} (${target})`;
           for (const v of violations(el)) problems.push(`${id}: ${v}`);
+          for (const v of outside(el)) problems.push(`${id}: outside its element: ${v}`);
           if (window.typstreamPwned) problems.push(`${id}: script ran (${window.typstreamPwned})`);
           // Documents Typst refuses (the sandbox) show an error block; the others render.
           if (entry.expect === "ok" && state.status !== "done") problems.push(`${id}: ${state.status}`);
