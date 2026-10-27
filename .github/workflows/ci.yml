@@ -46,7 +46,10 @@ jobs:
       - uses: ./.github/actions/pnpm
         with: { runtime: "${{ env.NODE }}", save: "${{ github.event_name == 'push' }}" }
       - run: pnpm check
-      # TODO(#3): layering check (dependency-cruiser), API report diff (api-extractor), publint and attw.
+      - run: pnpm check:layers
+      # Reads the API reports, which the test job's check:api keeps equal to the built packages.
+      - run: pnpm check:api-docs
+      # TODO(#3): publint and attw outside the engine jobs.
 
   types:
     name: Types
@@ -70,6 +73,8 @@ jobs:
       - uses: ./.github/actions/pnpm
         with: { runtime: "${{ env.NODE }}" }
       - run: pnpm build $NOT_ENGINE
+      # The public API reports (api/*.api.md) match the built packages; the engine jobs check the rest.
+      - run: pnpm check:api $NOT_ENGINE
       - run: pnpm test $NOT_ENGINE
 
   # Every corpus document against native typst (corpus/README.md): page counts, warnings, expected errors,

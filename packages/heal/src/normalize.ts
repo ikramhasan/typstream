@@ -3,6 +3,7 @@
 
 import { isHighSurrogate, type Patch } from "@typstream/core";
 
+/** Options for {@link normalize}. */
 export interface NormalizeOptions {
   /** Strip a Markdown code fence (typst or typ) wrapped around the whole document. */
   unwrapFences?: "auto" | "never";
@@ -10,7 +11,9 @@ export interface NormalizeOptions {
   streaming?: boolean;
 }
 
+/** What {@link normalize} returns: the cleaned text and how it maps back to the raw input. */
 export interface Normalized {
+  /** The raw input without what normalization removed: the text healing recognizes. */
   text: string;
   /** Changes from the raw input to `text`, sorted. */
   patches: Patch[];
@@ -20,6 +23,11 @@ const FENCE_OPEN = /^[ \t]*(?:\r?\n)*[ \t]*```(?:typst|typ)[ \t]*(?:\r?\n|$)/;
 const FENCE_CLOSE = /\r?\n[ \t]*```[ \t]*(?:\r?\n[ \t]*)*$/;
 const FENCE_CLOSE_PARTIAL = /\r?\n[ \t]*`{1,2}$/;
 
+/**
+ * Layer 0 of healing: strips a Markdown code fence around the whole document and a leading BOM, and while
+ * streaming holds back a trailing half surrogate pair or partial closing fence. It only looks at the start and
+ * end of the text.
+ */
 export const normalize = (raw: string, opts: NormalizeOptions = {}): Normalized => {
   let start = 0;
   let end = raw.length;

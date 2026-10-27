@@ -24,7 +24,7 @@ import { type Compiled, compile, defaultEngine, type NodeEngine } from "./engine
 import type { JobOp } from "./jobs";
 import type { FileEntry } from "./pool";
 
-/** @public */
+/** Limits and identity for {@link createProtocolServer}; every connection gets the same. @public */
 export interface ProtocolServerOptions {
   /** Default: {@link defaultEngine}. */
   engine?: NodeEngine;
@@ -46,7 +46,7 @@ export interface ProtocolConnection {
   close(): void;
 }
 
-/** @public */
+/** The engine protocol served from Node: one session per client connection. @public */
 export interface ProtocolServer {
   /** Starts a session; `send` delivers server messages to the client, in order. */
   connect(send: (message: ServerMessage) => void): ProtocolConnection;
@@ -294,8 +294,11 @@ export const createProtocolServer = (options: ProtocolServerOptions = {}): Proto
  * @public
  */
 export interface WebSocketLike {
+  /** Sends one text message: a server message in core's wire format. */
   send(data: string): void;
+  /** Closes the socket with a WebSocket close code and reason. */
   close(code?: number, reason?: string): void;
+  /** Subscribes to `"message"` (a text frame: string, `Buffer`, `ArrayBuffer` or fragments) and `"close"`. */
   on(event: string, listener: (...args: never[]) => void): unknown;
 }
 

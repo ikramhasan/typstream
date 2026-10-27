@@ -202,7 +202,7 @@ heal("The capital of France is [[blank]].\n\nNext", { handlers: [blanks] }).sour
 // "The capital of France is #box(width: 3em, stroke: (bottom: 0.5pt)).\n\nNext"
 ```
 
-Edits must be non-overlapping and inside `[ctx.from, ctx.to)`. `priority` orders handlers (lower first; the built-in rules run at 50). Plugins ship handlers in their `heal.handlers` facet ([Plugins](/docs/concepts/plugins)).
+Edits must be non-overlapping and inside `[ctx.from, ctx.to)`. `priority` orders handlers (lower first, default 100); the built-in lint rules run before them all. Plugins ship handlers in their `heal.handlers` facet ([Plugins](/docs/concepts/plugins)).
 
 ## What healing guarantees
 
