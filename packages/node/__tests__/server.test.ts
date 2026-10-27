@@ -142,7 +142,7 @@ describe("serving from Node", () => {
     });
     expect(result.status).toBe("ok");
     const block = { from: text.indexOf("#let"), to: text.indexOf("More") };
-    expect(result.fallback).toEqual({ isolated: [block], plainFrom: null });
+    expect(result.fallback).toEqual({ level: 3, isolated: [block], plainFrom: null });
     expect(diagnosticsOf(c, 1)[0]).toMatchObject([{ code: "timeout", span: block }]);
     expect(
       await c.errorOf("compile", { uri: "a", rev: 1, target: "html", fallback: { skip: [{ from: 0 }] } } as never),

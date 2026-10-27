@@ -9,6 +9,7 @@ import { ClientMessage } from '@typstream/core';
 import { CompileResult } from '@typstream/core';
 import { CompileTarget } from '@typstream/core';
 import { Diagnostic } from '@typstream/core';
+import { DocumentEvent } from '@typstream/core';
 import { DocumentUri } from '@typstream/core';
 import { FileDelta } from '@typstream/core';
 import { HealOptions } from '@typstream/heal';
@@ -99,6 +100,7 @@ export interface EngineDocument {
     exportSource(): string;
     finish(): void;
     getState(): DocumentState;
+    onEvent(listener: (event: DocumentEvent) => void): () => void;
     push(chunk: string): void;
     reset(input?: string): void;
     set(input: string): void;
@@ -131,6 +133,9 @@ export type EngineEvent = {
 } | {
     type: "failed";
     error: Error;
+} | {
+    type: "document";
+    event: DocumentEvent;
 };
 
 // @public

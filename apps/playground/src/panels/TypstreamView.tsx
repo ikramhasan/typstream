@@ -7,7 +7,7 @@
 import type { CompileTarget } from "@typstream/core";
 import type { HealOptions } from "@typstream/heal";
 import { htmlCompat, htmlCompatCss } from "@typstream/html-compat";
-import { type RenderedInfo, Typstream, type TypstreamInfo } from "@typstream/react";
+import { type RenderedEvent, Typstream, type TypstreamInfo } from "@typstream/react";
 import { useCallback, useRef, useState } from "react";
 import { sharedEngine } from "../engine";
 import { MATH_FONT } from "../fonts";
@@ -30,7 +30,7 @@ interface Props {
 const COMPAT_PLUGINS = [htmlCompat];
 const COMPAT_STYLES = [htmlCompatCss];
 
-const describe = (info: RenderedInfo) =>
+const describe = (info: RenderedEvent) =>
   info.target === "html"
     ? `typstream: ${info.blocks ?? 0} blocks, ${ms(info.renderMs)}`
     : `typstream: ${info.pages ?? 0} pages, ${ms(info.renderMs)}`;
@@ -40,7 +40,7 @@ export const TypstreamView = ({ typstream, docKey, input, final, target, compat,
   const scroller = useRef<HTMLDivElement>(null);
   const followRef = useRef(follow);
   followRef.current = follow;
-  const onRendered = useCallback((info: RenderedInfo) => {
+  const onRendered = useCallback((info: RenderedEvent) => {
     setReport(describe(info));
     const el = scroller.current;
     if (followRef.current && el) el.scrollTop = el.scrollHeight;

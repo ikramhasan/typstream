@@ -111,7 +111,9 @@ const percentile = (xs: number[], p: number) => {
   return sorted[Math.min(sorted.length - 1, Math.floor((p / 100) * sorted.length))] ?? Number.NaN;
 };
 
-const trouble = (events: EngineEvent[]) => events.filter((e) => e.type !== "ready" && e.type !== "log");
+/** What went wrong with the workers (documents' own events are reported with every compile). */
+const trouble = (events: EngineEvent[]) =>
+  events.filter((e) => e.type !== "ready" && e.type !== "log" && e.type !== "document");
 
 describe(`streaming in ${browser}`, { timeout: 120_000 }, () => {
   // Documents every token-sized prefix of which heals to a compiling source

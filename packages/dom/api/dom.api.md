@@ -5,17 +5,18 @@
 ```ts
 
 import { CompileTarget } from '@typstream/core';
-import { CompileTimings } from '@typstream/core';
 import { Diagnostic } from '@typstream/core';
 import { DocumentOptions } from '@typstream/engine';
 import { DocumentState } from '@typstream/engine';
 import { DocumentStatus } from '@typstream/engine';
 import { Engine } from '@typstream/engine';
 import { EngineDocument } from '@typstream/engine';
+import { FallbackEvent } from '@typstream/core';
 import { FileDelta } from '@typstream/core';
 import { PagedArtifact } from '@typstream/core';
-import { Revision } from '@typstream/core';
+import { RenderedEvent } from '@typstream/core';
 import { TypstreamPlugin } from '@typstream/core';
+import { WatchdogEvent } from '@typstream/core';
 
 // @public
 export interface AnimateOptions {
@@ -147,19 +148,6 @@ export interface PagedViewOptions {
 // @public
 export const registerMathFont: (url: string | URL, doc?: Document) => Promise<void>;
 
-// @beta
-export interface RenderedInfo {
-    blocks?: number;
-    final: boolean;
-    pages?: number;
-    patches: number;
-    renderMs: number;
-    rev: Revision | null;
-    // (undocumented)
-    target: CompileTarget;
-    timings: CompileTimings | null;
-}
-
 // @public
 export const standaloneHtml: (html: string, options?: StandaloneHtmlOptions) => string;
 
@@ -184,9 +172,10 @@ export interface TypstreamOptions {
     lazy?: boolean;
     linkTarget?: string | null;
     onDiagnostics?: (diagnostics: Diagnostic[], state: DocumentState) => void;
-    // Warning: (ae-incompatible-release-tags) The symbol "onRendered" is marked as @public, but its signature references "RenderedInfo" which is marked as @beta
-    onRendered?: (info: RenderedInfo) => void;
+    onFallback?: (event: FallbackEvent) => void;
+    onRendered?: (event: RenderedEvent) => void;
     onStatusChange?: (status: DocumentStatus, state: DocumentState) => void;
+    onWatchdog?: (event: WatchdogEvent) => void;
     pageHeight?: "a4" | "auto";
     plugins?: readonly TypstreamPlugin[];
     preamble?: string;

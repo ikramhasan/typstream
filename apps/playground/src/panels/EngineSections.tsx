@@ -30,6 +30,13 @@ const describeEvent = (event: EngineEvent): string => {
       return `${event.level}: ${event.message}`;
     case "failed":
       return `failed: ${event.error.message}`;
+    case "document": {
+      const e = event.event;
+      if (e.type === "fallback")
+        return `${e.uri} fallback: level ${e.level} at rev ${e.rev} (${e.consecutive} in a row)`;
+      if (e.type === "watchdog") return `${e.uri} ${e.reason}: rev ${e.rev}, ${e.strikes} strike(s)`;
+      return `${e.uri} ${e.type}: rev ${e.rev}`;
+    }
   }
 };
 

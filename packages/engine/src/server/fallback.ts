@@ -159,6 +159,8 @@ export interface RecoverRun {
 
 /** A recovered artifact's provenance. */
 export interface Recovered {
+  /** `CompileFallback.level`. */
+  level: 2 | 3 | 4;
   /** The successful attempt's diagnostics, the isolated errors, and skipped ranges; document coordinates. */
   diagnostics: Diagnostic[];
   /** Blocks and skipped ranges shown as error blocks, ascending. */
@@ -270,6 +272,7 @@ export const recover = async (run: RecoverRun): Promise<Recovered | null> => {
             .filter((d) => isError(d) && d.span && d.span.from >= plainFrom)
             .map((d): Diagnostic => ({ ...d, severity: "info", source: "stable-prefix" }));
     return {
+      level: plainFrom === null ? 3 : 2,
       diagnostics: [...a.diagnostics, ...blocks.flatMap((b) => b.diagnostics), ...skip.map(skipDiagnostic), ...tail],
       isolated: isolatedRanges(),
       plainFrom,
@@ -332,7 +335,7 @@ export const recover = async (run: RecoverRun): Promise<Recovered | null> => {
       const whole: Isolated = { from: 0, to: text.length, diagnostics: (errors ?? []).filter(isError) };
       isolated.set(0, whole);
       const a = await attempt(text.length, "keep");
-      if (a.ok) return { ...done(a, null, 0), isolated: [{ from: 0, to: text.length }], memo: null };
+      if (a.ok) return { ...done(a, null, 0), level: 4, isolated: [{ from: 0, to: text.length }], memo: null };
     }
   }
   return null;

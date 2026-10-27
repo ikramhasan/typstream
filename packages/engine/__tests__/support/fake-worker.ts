@@ -6,9 +6,13 @@
 //   ERROR  → an error diagnostic on the marker, status "error", no artifact
 //   LOOP   → never finishes (only the watchdog gets the client out)
 //   CRASH  → the worker fails outside the protocol (an `error` event)
+//   FIX    → a fixer (`fake-fixer`) makes it compile: reported in `fixes`
+//   BROKEN → an error, unless the client asked to isolate blocks: then the
+//            marker is shown as an error block (fallback level 3)
 //
 // A compile's `fallback.skip` ranges are replaced with `[skipped:<reason>]`
-// first, as the server shows them as error blocks without compiling them.
+// first, as the server shows them as error blocks without compiling them
+// (fallback level 3).
 //
 // Paged artifacts have one page per paragraph (split on blank lines) and send
 // only changed pages, diffing against the previous paged artifact. Exports
@@ -176,15 +180,15 @@ export class FakeWorker implements EngineConnection {
     return !this.terminated;
   }
 
-  private errors(text: string): Diagnostic[] {
-    const at = text.indexOf("ERROR");
+  private errors(text: string, marker = "ERROR"): Diagnostic[] {
+    const at = text.indexOf(marker);
     return at < 0
       ? []
       : [
           {
             severity: "error",
-            span: { from: at, to: at + 5 },
-            message: "unknown variable: ERROR",
+            span: { from: at, to: at + marker.length },
+            message: `unknown variable: ${marker}`,
             hints: [],
             trace: [],
           },
@@ -222,9 +226,16 @@ export class FakeWorker implements EngineConnection {
     if (!(await this.work(text))) return new Promise(() => {});
     this.running--;
     this.compiles++;
-    const diagnostics = this.errors(text);
+    const errors = this.errors(text);
+    const broken = this.errors(text, "BROKEN");
+    const fixed = text.includes("FIX");
+    const isolated = p.fallback?.isolate ? broken.flatMap((d) => (d.span ? [d.span] : [])) : [];
+    const ok = errors.length === 0 && isolated.length === broken.length;
+    const diagnostics = [...errors, ...broken];
+    // As a streaming compile reports what fixers fixed.
+    if (fixed)
+      diagnostics.push({ severity: "info", span: null, message: "unknown variable: FIX", hints: [], trace: [] });
     this.post({ method: "document/diagnostics", params: { uri: p.uri, rev: p.rev, target: p.target, diagnostics } });
-    const ok = diagnostics.length === 0;
     if (ok && p.target === "html") {
       this.post({
         method: "document/artifact",
@@ -254,6 +265,15 @@ export class FakeWorker implements EngineConnection {
       status: ok ? "ok" : "error",
       timings: { totalMs: this.options.compileMs?.(text) ?? 10 },
     };
+    const skipped = (p.fallback?.skip ?? []).map(({ from, to }) => ({ from, to }));
+    if (ok && (isolated.length > 0 || skipped.length > 0)) {
+      result.fallback = {
+        level: 3,
+        isolated: [...skipped, ...isolated].sort((a, b) => a.from - b.from),
+        plainFrom: null,
+      };
+    }
+    if (ok && fixed) result.fixes = [{ fixer: "fake-fixer", message: "unknown variable: FIX" }];
     const memoryBytes = this.options.memoryBytes?.(this.compiles);
     if (memoryBytes !== undefined) result.memoryBytes = memoryBytes;
     this.respond({ id, result });

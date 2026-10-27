@@ -35,6 +35,8 @@ export const sharedEngine = (): Engine => {
     initialize: { packages: [...UNIVERSE_PACKAGES] },
   });
   engine.onEvent((event) => {
+    // Every compile reports; the inspector lists only what went wrong.
+    if (event.type === "document" && event.event.type !== "fallback" && event.event.type !== "watchdog") return;
     log =
       event.type === "ready"
         ? { ...log, info: event.info }

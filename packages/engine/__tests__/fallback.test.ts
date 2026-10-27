@@ -109,7 +109,7 @@ describe("block isolation", { timeout: 30_000 }, () => {
     expect(out.result.status).toBe("ok");
     // The first compile, then the whole text with block 5 isolated.
     expect([out.checks, out.compiles]).toEqual([Math.ceil(Math.log2(8)), 2]);
-    expect(out.result.fallback).toEqual({ isolated: [block(text, 5)], plainFrom: null });
+    expect(out.result.fallback).toEqual({ level: 3, isolated: [block(text, 5)], plainFrom: null });
     expect(out.html).toContain("Paragraph 4.");
     expect(out.html).toContain("Paragraph 6.");
     expect(out.html).toContain("This part couldn’t be displayed.");
@@ -168,13 +168,23 @@ describe("block isolation", { timeout: 30_000 }, () => {
     expect(out.html).not.toContain("typstream-pending-ref");
   });
 
+  it("reports the fixes of the compile it publishes, around isolated blocks", async () => {
+    const { compile } = await serverWith();
+    const text = "See @nowhere.\n\n#nope\n\nMore.\n";
+    const out = await compile(text);
+    expect(out.result.fallback).toEqual({ level: 3, isolated: [block(text, 1)], plainFrom: null });
+    expect(out.result.fixes).toEqual([
+      { fixer: "pending-ref", message: "label `<nowhere>` does not exist in the document" },
+    ]);
+  });
+
   it("shows the whole document as source when nothing else compiles", async () => {
     const { compile } = await serverWith();
     // A reference built at runtime: no prefix can be blamed and no fixer sees it.
     const text = '#let k = "x"\n\nSee #ref(label(k)).';
     const out = await compile(text);
     expect(out.result.status).toBe("ok");
-    expect(out.result.fallback?.isolated).toEqual([{ from: 0, to: text.length }]);
+    expect(out.result.fallback).toEqual({ level: 4, isolated: [{ from: 0, to: text.length }], plainFrom: null });
     expect(errorBlocks(out.html)).toEqual([text]);
     expect(out.diagnostics.map((d) => d.message)).toEqual(["label `<x>` does not exist in the document"]);
   });
@@ -264,7 +274,7 @@ describe("streaming", { timeout: 30_000 }, () => {
     expect(kept.result.status).toBe("error");
     const out = await compile(text, { mode: "streaming", settled, fallback: { isolate: true, stablePrefix: true } });
     expect(out.result.status).toBe("ok");
-    expect(out.result.fallback).toEqual({ isolated: [], plainFrom: settled });
+    expect(out.result.fallback).toEqual({ level: 2, isolated: [], plainFrom: settled });
     expect(out.html).toContain("Done.");
     expect(out.html).toContain(
       '<div class="typstream-pending-text" style="opacity: 0.55; white-space: pre-wrap">Now #text()<br>and more</div>',

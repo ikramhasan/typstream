@@ -1,6 +1,7 @@
 // Smoke test (PLAN §10.4: example apps build and run): builds the app, starts it,
 // asks for a worksheet in Chromium and checks that the answer streams into
-// <Typstream>, finishes, and never had an error frame. Without ANTHROPIC_API_KEY
+// <Typstream>, finishes, never had an error frame, and that its telemetry
+// reached the example's sink. Without ANTHROPIC_API_KEY
 // the server replays a recorded worksheet, so this runs offline.
 
 import { spawn } from "node:child_process";
@@ -15,7 +16,13 @@ const run = (args) =>
 
 await run(["build"]);
 const server = spawn("pnpm", ["exec", "next", "start", "-p", String(PORT)], { stdio: ["ignore", "pipe", "inherit"] });
-await new Promise((resolve) => server.stdout.on("data", (d) => String(d).includes("Ready") && resolve()));
+let log = "";
+await new Promise((resolve) =>
+  server.stdout.on("data", (d) => {
+    log += String(d);
+    if (log.includes("Ready")) resolve();
+  }),
+);
 
 const browser = await chromium.launch();
 try {
@@ -35,6 +42,11 @@ try {
   if (!process.env.ANTHROPIC_API_KEY && !text.includes("Pythagorean triples"))
     throw new Error(`unexpected render: ${text}`);
   if (errors.length) throw new Error(`console errors:\n${errors.join("\n")}`);
+  // The telemetry hooks (app/telemetry.tsx) reached the example's sink.
+  const reached = () => /\[telemetry\] rendered \S+ rev \d+ \(final\)/.test(log);
+  const deadline = Date.now() + 10_000;
+  while (!reached() && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 200));
+  if (!reached()) throw new Error(`no telemetry reached /api/telemetry:\n${log}`);
   if (process.argv.includes("--screenshot")) await page.screenshot({ path: "smoke.png", fullPage: true });
   console.log(`ok: streamed and finished with no error frames (${text.length} characters rendered)`);
 } finally {

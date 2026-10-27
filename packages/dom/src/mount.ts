@@ -10,13 +10,16 @@
 // and only the visible ones are opened and compiled.
 
 import type {
+  CompiledEvent,
   CompileTarget,
-  CompileTimings,
   Diagnostic,
+  DocumentEvent,
+  FallbackEvent,
   FileDelta,
   PackageSpec,
-  Revision,
+  RenderedEvent,
   TypstreamPlugin,
+  WatchdogEvent,
 } from "@typstream/core";
 import type { DocumentOptions, DocumentState, DocumentStatus, Engine, EngineDocument } from "@typstream/engine";
 import { type StandaloneHtmlOptions, standaloneHtml } from "./export/standalone";
@@ -85,30 +88,20 @@ export interface TypstreamOptions {
   onStatusChange?: (status: DocumentStatus, state: DocumentState) => void;
   /** A compile finished with new diagnostics (in input coordinates). */
   onDiagnostics?: (diagnostics: Diagnostic[], state: DocumentState) => void;
-  /** An artifact was handed to the renderer. */
-  onRendered?: (info: RenderedInfo) => void;
-}
-
-/**
- * What {@link TypstreamOptions.onRendered} reports, for telemetry (PLAN §8.6).
- * @beta
- */
-export interface RenderedInfo {
-  target: CompileTarget;
-  /** Revision the artifact was compiled from. */
-  rev: Revision | null;
-  /** The document was complete. */
-  final: boolean;
-  /** The worker's timings of the compile that produced the artifact. */
-  timings: CompileTimings | null;
-  /** Main-thread time handing it to the renderer, ms (paged: offscreen pages draw later). */
-  renderMs: number;
-  /** HTML: top-level blocks shown. */
-  blocks?: number;
-  /** Paged: page count. */
-  pages?: number;
-  /** Heal patches in the compiled source. */
-  patches: number;
+  /**
+   * An artifact was handed to the renderer: what its compile cost and took
+   * (heal patches, fixers, fallback level) and what drawing it cost. For
+   * telemetry (PLAN §8.6); the library sends nothing itself.
+   */
+  onRendered?: (event: RenderedEvent) => void;
+  /**
+   * A compile's output wasn't the document as it is: the last good render
+   * stayed, the tail showed as plain text, or blocks showed as error boxes.
+   * The event holds the input and healed source, to collect as a test case.
+   */
+  onFallback?: (event: FallbackEvent) => void;
+  /** A compile ran past the watchdog's budget or crashed the worker. */
+  onWatchdog?: (event: WatchdogEvent) => void;
 }
 
 /** A document mounted by {@link mountTypstream}. @public */
@@ -287,9 +280,10 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
   let paged: { view: PagedView; key: unknown[] } | null = null;
   let shown: { artifact: unknown; caret: boolean } | null = null;
 
-  // What the callbacks were last told.
+  // What the callbacks were last told, and the latest compile that published an artifact.
   let lastStatus: DocumentStatus | null = null;
   let lastDiagnostics: Diagnostic[] | null = null;
+  let lastOk: CompiledEvent | null = null;
 
   const streaming = () => (opts.stream ? streamOpen : (opts.isStreaming ?? false));
 
@@ -340,12 +334,17 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
     return view;
   };
 
+  /** What to tell `onRendered`: the report of the compile that made the artifact (which came before its state). */
+  const rendered = (state: DocumentState, renderMs: number, blocks?: number): RenderedEvent | null => {
+    if (!lastOk || lastOk.rev !== state.artifactRev) return null;
+    const { type, status, ...report } = lastOk;
+    return { ...report, type: "rendered", renderMs, ...(blocks !== undefined ? { blocks } : {}) };
+  };
+
   /** Shows the state's artifact if the renderer doesn't have it yet. Renderers follow the artifact's target. */
   const render = (state: DocumentState) => {
     const { artifact } = state;
     if (!artifact) return;
-    const timings = state.lastCompile?.rev === state.artifactRev ? (state.lastCompile?.timings ?? null) : null;
-    const info = { rev: state.artifactRev, final: state.final, timings, patches: state.heal.patches.length };
     if (artifact.target === "html") {
       dropPaged();
       const renderer = htmlRenderer();
@@ -353,7 +352,8 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
       if (shown?.artifact === artifact && shown.caret === caret) return;
       shown = { artifact, caret };
       const result = renderer.update(artifact.html, { animate: !!opts.animated && !state.final, caret });
-      opts.onRendered?.({ target: "html", ...info, renderMs: result.ms, blocks: result.blocks });
+      const event = opts.onRendered && rendered(state, result.ms, result.blocks);
+      if (event) opts.onRendered?.(event);
     } else {
       dropHtml();
       const view = pagedView();
@@ -361,7 +361,8 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
       shown = { artifact, caret: false };
       const start = performance.now();
       view.render(artifact);
-      opts.onRendered?.({ target: "paged", ...info, renderMs: performance.now() - start, pages: artifact.pageCount });
+      const event = opts.onRendered && rendered(state, performance.now() - start);
+      if (event) opts.onRendered?.({ ...event, pages: artifact.pageCount });
     }
   };
 
@@ -376,6 +377,12 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
       if (state.lastCompile) opts.onDiagnostics?.(state.diagnostics, state);
     }
     notify();
+  };
+
+  const onEvent = (event: DocumentEvent) => {
+    if (event.type === "compiled" && event.status === "ok") lastOk = event;
+    else if (event.type === "fallback") opts.onFallback?.(event);
+    else if (event.type === "watchdog") opts.onWatchdog?.(event);
   };
 
   // --- the document ---
@@ -466,7 +473,13 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
       fedFinal = false;
       fedFiles = files;
       lastDiagnostics = null;
-      unsubscribe = doc.subscribe(onState);
+      lastOk = null;
+      const stopState = doc.subscribe(onState);
+      const stopEvents = doc.onEvent(onEvent);
+      unsubscribe = () => {
+        stopState();
+        stopEvents();
+      };
     } else {
       doc.setTarget(target);
       doc.setInputs(inputs);

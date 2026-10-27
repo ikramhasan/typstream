@@ -4,13 +4,19 @@
 
 ```ts
 
+import { AppliedFix } from '@typstream/react';
+import { CompiledEvent } from '@typstream/react';
+import { CompileReport } from '@typstream/react';
 import { createEngine } from '@typstream/engine';
 import { createHealer } from '@typstream/heal';
+import { DocumentEvent } from '@typstream/react';
 import { DocumentState } from '@typstream/react';
 import { DocumentStatus } from '@typstream/react';
 import { Engine } from '@typstream/react';
 import { EngineOptions } from '@typstream/engine';
 import { engineWorker } from '@typstream/engine';
+import { FallbackEvent } from '@typstream/react';
+import { FallbackLevel } from '@typstream/react';
 import { heal } from '@typstream/heal';
 import { Healer } from '@typstream/heal';
 import { HealOptions } from '@typstream/heal';
@@ -18,7 +24,8 @@ import { HealResult } from '@typstream/heal';
 import { htmlCompat } from '@typstream/html-compat';
 import { htmlCompatCss } from '@typstream/html-compat';
 import * as react from 'react';
-import { RenderedInfo } from '@typstream/react';
+import { RenderedEvent } from '@typstream/react';
+import { TelemetryHooks } from '@typstream/react';
 import { TypstreamDefaults } from '@typstream/react';
 import { TypstreamHandle } from '@typstream/react';
 import { TypstreamInfo } from '@typstream/react';
@@ -29,10 +36,19 @@ import { universe } from '@typstream/universe';
 import { UNIVERSE_PACKAGES } from '@typstream/universe';
 import { UniversePackage } from '@typstream/universe';
 import { useTypstream } from '@typstream/react';
+import { WatchdogEvent } from '@typstream/react';
+
+export { AppliedFix }
+
+export { CompiledEvent }
+
+export { CompileReport }
 
 export { createEngine }
 
 export { createHealer }
+
+export { DocumentEvent }
 
 export { DocumentState }
 
@@ -43,6 +59,10 @@ export { Engine }
 export { EngineOptions }
 
 export { engineWorker }
+
+export { FallbackEvent }
+
+export { FallbackLevel }
 
 export { heal }
 
@@ -56,7 +76,9 @@ export { htmlCompat }
 
 export { htmlCompatCss }
 
-export { RenderedInfo }
+export { RenderedEvent }
+
+export { TelemetryHooks }
 
 // @public
 export const Typstream: (input: TypstreamProps) => react.JSX.Element;
@@ -84,6 +106,8 @@ export { UNIVERSE_PACKAGES }
 export { UniversePackage }
 
 export { useTypstream }
+
+export { WatchdogEvent }
 
 // (No @packageDocumentation comment for this package)
 

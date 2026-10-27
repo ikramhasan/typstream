@@ -3,11 +3,13 @@
 // parts, and each part renders as a <Typstream>. It heals every prefix so it
 // compiles, keeps the last good render while one doesn't, and finishes the
 // document (strict compile, no caret) once the answer is complete. All answers
-// share one engine worker; only visible or streaming ones compile.
+// share one engine worker; only visible or streaming ones compile. <Telemetry>
+// wires typstream's events to the console and an analytics sink.
 
 import { useChat } from "@ai-sdk/react";
 import { useState } from "react";
 import { Typstream, useTypstream } from "typstream";
+import { Telemetry } from "./telemetry";
 
 type Target = "html" | "paged";
 
@@ -47,46 +49,48 @@ export default function Page() {
   const last = messages[messages.length - 1];
 
   return (
-    <main>
-      <h1>typstream × AI SDK</h1>
-      <label>
-        Render as{" "}
-        <select value={target} onChange={(e) => setTarget(e.target.value as Target)}>
-          <option value="html">HTML</option>
-          <option value="paged">pages</option>
-        </select>
-      </label>
-      {messages.map((message) =>
-        message.parts.map((part, i) =>
-          part.type !== "text" ? null : message.role === "user" ? (
-            // biome-ignore lint/suspicious/noArrayIndexKey: a message's parts never reorder.
-            <p key={`${message.id}-${i}`} className="user">
-              {part.text}
-            </p>
-          ) : (
-            <Answer
+    <Telemetry>
+      <main>
+        <h1>typstream × AI SDK</h1>
+        <label>
+          Render as{" "}
+          <select value={target} onChange={(e) => setTarget(e.target.value as Target)}>
+            <option value="html">HTML</option>
+            <option value="paged">pages</option>
+          </select>
+        </label>
+        {messages.map((message) =>
+          message.parts.map((part, i) =>
+            part.type !== "text" ? null : message.role === "user" ? (
               // biome-ignore lint/suspicious/noArrayIndexKey: a message's parts never reorder.
-              key={`${message.id}-${i}`}
-              text={part.text}
-              streaming={status === "streaming" && message.id === last?.id}
-              target={target}
-            />
+              <p key={`${message.id}-${i}`} className="user">
+                {part.text}
+              </p>
+            ) : (
+              <Answer
+                // biome-ignore lint/suspicious/noArrayIndexKey: a message's parts never reorder.
+                key={`${message.id}-${i}`}
+                text={part.text}
+                streaming={status === "streaming" && message.id === last?.id}
+                target={target}
+              />
+            ),
           ),
-        ),
-      )}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!input.trim() || status === "streaming" || status === "submitted") return;
-          void sendMessage({ text: input });
-          setInput("");
-        }}
-      >
-        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask for a worksheet…" />
-        <button type="submit" disabled={status === "streaming" || status === "submitted"}>
-          Send
-        </button>
-      </form>
-    </main>
+        )}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!input.trim() || status === "streaming" || status === "submitted") return;
+            void sendMessage({ text: input });
+            setInput("");
+          }}
+        >
+          <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask for a worksheet…" />
+          <button type="submit" disabled={status === "streaming" || status === "submitted"}>
+            Send
+          </button>
+        </form>
+      </main>
+    </Telemetry>
   );
 }

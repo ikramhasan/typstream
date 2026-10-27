@@ -11,6 +11,7 @@
 // being typed. Two generic fixers handle those, rather than one per message.
 
 import {
+  type AppliedFix,
   type CompileMode,
   type Diagnostic,
   type DiagnosticFixer,
@@ -309,6 +310,8 @@ export interface FixOutcome {
   rounds: number;
   /** What to report, in the client's text coordinates (see `DiagnosticsNotification`). */
   diagnostics: Diagnostic[];
+  /** When `ok`: the errors fixed, in the order fixed. */
+  fixes: AppliedFix[];
 }
 
 /** Fixes and recompiles until the text compiles, no fix applies, or rounds or time run out. */
@@ -320,6 +323,7 @@ export const runFixers = async (run: FixRun): Promise<FixOutcome> => {
   const maps: SourceMap[] = [];
   const toOriginal = (pos: number, assoc: 1 | -1 = 1) => maps.reduceRight((p, map) => map.toOriginal(p, assoc), pos);
   const fixed: Diagnostic[] = [];
+  const applied: AppliedFix[] = [];
   let rounds = 0;
   while (rounds < maxRounds && diagnostics.some(isError) && performance.now() < run.deadline) {
     const errors = diagnostics.filter(isError);
@@ -328,12 +332,13 @@ export const runFixers = async (run: FixRun): Promise<FixOutcome> => {
     for (const error of errors) {
       const fix = await fixError(fixers, error, ctx);
       // An error nothing fixes fails the recompile too.
-      if (!fix) return { ok: false, rounds, diagnostics: run.diagnostics };
+      if (!fix) return { ok: false, rounds, diagnostics: run.diagnostics, fixes: [] };
       fixes.push(fix);
     }
     for (const { fixer, error } of fixes) {
       const d = mapDiagnostic(error, toOriginal);
       fixed.push(mode === "final" ? d : { ...d, severity: "info", source: fixer.name });
+      applied.push({ fixer: fixer.name, message: error.message });
     }
     const next = applyEdits(
       text,
@@ -346,6 +351,11 @@ export const runFixers = async (run: FixRun): Promise<FixOutcome> => {
     diagnostics = await run.compile(text, toOriginal);
     rounds++;
   }
-  if (diagnostics.some(isError)) return { ok: false, rounds, diagnostics: run.diagnostics };
-  return { ok: true, rounds, diagnostics: [...diagnostics.map((d) => mapDiagnostic(d, toOriginal)), ...fixed] };
+  if (diagnostics.some(isError)) return { ok: false, rounds, diagnostics: run.diagnostics, fixes: [] };
+  return {
+    ok: true,
+    rounds,
+    diagnostics: [...diagnostics.map((d) => mapDiagnostic(d, toOriginal)), ...fixed],
+    fixes: applied,
+  };
 };

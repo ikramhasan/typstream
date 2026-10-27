@@ -292,10 +292,27 @@ export interface SkippedRange extends Range {
  * @public
  */
 export interface CompileFallback {
+  /**
+   * Which step of the ladder made it: `2` the settled text with the tail as
+   * plain text (blocks of the settled text may be isolated too), `3` blocks
+   * isolated, `4` the whole document as one error block (final mode).
+   */
+  level: 2 | 3 | 4;
   /** Blocks shown as error boxes, ascending: blocks that failed, and `skip`ped ranges. */
   isolated: Range[];
   /** Streaming: the unsettled text from here on was shown as plain text (`stablePrefix`), or `null`. */
   plainFrom: number | null;
+}
+
+/**
+ * An error a diagnostic fixer (Layer 3, PLAN §5.5) fixed to make a compile's
+ * output, for telemetry ("fixer hits by error", PLAN §12). @public
+ */
+export interface AppliedFix {
+  /** The fixer's `name`. */
+  fixer: string;
+  /** The error's message, as Typst reported it. */
+  message: string;
 }
 
 /** Wall-clock milliseconds measured in the worker. @public */
@@ -322,6 +339,8 @@ export interface CompileResult extends DocumentParams {
   memoryBytes?: number;
   /** Set when the artifact came from the fallback (`CompileParams.fallback`) rather than the text as it is. */
   fallback?: CompileFallback;
+  /** The errors fixers fixed to make the artifact, in the order fixed. Absent when none were. */
+  fixes?: AppliedFix[];
 }
 
 /** Compiled HTML. @public */
