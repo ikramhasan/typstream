@@ -72,6 +72,7 @@ pnpm check-types
 pnpm check             # Biome lint + format check (pnpm fix to apply)
 pnpm check:layers      # package layering (dependency-cruiser) + package.json deps + changesets fixed group
 pnpm check:api         # public API must match packages/*/api/*.api.md; pnpm api:update to accept a change
+pnpm check:api-docs    # every @public/@beta export and member has TSDoc, and each export is on its website reference page
 pnpm check:packages    # publint + @arethetypeswrong/cli on the built packages
 pnpm changeset         # describe a change to a published package
 pnpm corpus:validate   # native `typst` 0.15.1 compile of every corpus entry (needs typst on PATH or TYPST=)
@@ -194,7 +195,7 @@ Spikes (reference only):
 - Property tests build documents from **complete** constructs (`__tests__/support/generators.ts`) and derive truncation from the streaming cut. Every bug fix adds a row to `constructs.test.ts` or a case to the generators.
 - Healing invariants must keep holding (PLAN.md §5.4): healed prefixes parse; settled text is untouched; healing is idempotent; valid documents come back unchanged; incremental, chunked and edited results equal stateless healing.
 - Performance budgets in PLAN.md §1 and §11.5–11.6 are enforced by scripts. Don't regress them silently.
-- **Public API is reviewed through the API reports** (`packages/*/api/*.api.md`). Exports without a release tag are `@public`. Tag unstable ones `@beta`, and things exported only for other typstream packages or for heal's own plumbing `@internal`. Commit the updated report with any API change.
+- **Public API is reviewed through the API reports** (`packages/*/api/*.api.md`). Exports without a release tag are `@public`. Tag unstable ones `@beta`, and things exported only for other typstream packages or for heal's own plumbing `@internal`. Commit the updated report with any API change. Everything not `@internal` needs a TSDoc summary (api-extractor's rule: at least 10 characters), its members included, and each export a mention in code on `apps/website/content/docs/reference/<package>.mdx` (a code span or an `<auto-type-table>`); `pnpm check:api-docs` checks both from the reports.
 
 ## Gotchas
 

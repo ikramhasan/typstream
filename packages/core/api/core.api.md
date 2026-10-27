@@ -13,18 +13,16 @@ export interface AppliedFix {
 // @public
 export const applyEdit: (text: string, edit: TextEdit) => string;
 
-// @public (undocumented)
+// @public
 export type Artifact = HtmlArtifact | PagedArtifact;
 
 // @public
 export interface ArtifactNotification extends DocumentParams {
-    // (undocumented)
     artifact: Artifact;
 }
 
 // @public
 export interface CancelParams {
-    // (undocumented)
     id: RequestId;
 }
 
@@ -37,7 +35,7 @@ export interface ClientCapabilities {
 // @public
 export type ClientMessage = Request_2 | ClientNotification;
 
-// @public (undocumented)
+// @public
 export type ClientNotification<M extends ClientNotificationMethod = ClientNotificationMethod> = {
     [K in M]: {
         method: K;
@@ -47,11 +45,10 @@ export type ClientNotification<M extends ClientNotificationMethod = ClientNotifi
 
 // @public
 export interface ClientNotificationMap {
-    // (undocumented)
     "$/cancel": CancelParams;
 }
 
-// @public (undocumented)
+// @public
 export type ClientNotificationMethod = keyof ClientNotificationMap;
 
 // @public
@@ -60,7 +57,6 @@ export const compareDiagnostics: (a: Diagnostic, b: Diagnostic) => number;
 // @public
 export interface CompiledEvent extends DocumentEventBase, CompileReport {
     status: "ok" | "error";
-    // (undocumented)
     type: "compiled";
 }
 
@@ -82,7 +78,6 @@ export interface CompileParams extends DocumentParams {
     inputs?: Record<string, string>;
     mode?: CompileMode;
     settled?: number;
-    // (undocumented)
     target: CompileTarget;
 }
 
@@ -98,23 +93,20 @@ export interface CompileReport {
     patchReasons: Record<string, number>;
     sourceLength: number;
     timings: CompileTimings;
-    // (undocumented)
     warnings: number;
 }
 
-// @public (undocumented)
+// @public
 export interface CompileResult extends DocumentParams {
     fallback?: CompileFallback;
     fixes?: AppliedFix[];
     memoryBytes?: number;
     status: "ok" | "error";
-    // (undocumented)
     target: CompileTarget;
-    // (undocumented)
     timings: CompileTimings;
 }
 
-// @public (undocumented)
+// @public
 export type CompileTarget = "html" | "paged";
 
 // @public
@@ -140,9 +132,7 @@ export interface Diagnostic {
         span: Range | null;
     };
     hints: string[];
-    // (undocumented)
     message: string;
-    // (undocumented)
     severity: DiagnosticSeverity;
     source?: string;
     span: Range | null;
@@ -160,9 +150,7 @@ export interface DiagnosticFixer {
 
 // @public
 export interface DiagnosticsEvent extends DocumentEventBase {
-    // (undocumented)
     diagnostics: Diagnostic[];
-    // (undocumented)
     type: "diagnostics";
 }
 
@@ -171,9 +159,7 @@ export type DiagnosticSeverity = "error" | "warning" | "info";
 
 // @public
 export interface DiagnosticsNotification extends DocumentParams {
-    // (undocumented)
     diagnostics: Diagnostic[];
-    // (undocumented)
     target: CompileTarget;
 }
 
@@ -186,7 +172,6 @@ export interface DocumentCloseParams extends DocumentParams {
 
 // @public
 export interface DocumentEditParams extends DocumentParams {
-    // (undocumented)
     edits: TextEdit[];
 }
 
@@ -197,9 +182,7 @@ export type DocumentEvent = CompiledEvent | FallbackEvent | WatchdogEvent | Diag
 export interface DocumentEventBase {
     mode: CompileMode;
     rev: Revision;
-    // (undocumented)
     target: CompileTarget;
-    // (undocumented)
     uri: DocumentUri;
 }
 
@@ -213,21 +196,17 @@ export interface DocumentOpenParams extends DocumentParams {
     // @beta
     packages?: PackageSpec[];
     preamble?: string;
-    // (undocumented)
     text: string;
 }
 
 // @public
 export interface DocumentParams {
-    // (undocumented)
     rev: Revision;
-    // (undocumented)
     uri: DocumentUri;
 }
 
 // @public
 export interface DocumentSetFilesParams extends DocumentParams {
-    // (undocumented)
     files: FileDelta;
 }
 
@@ -236,17 +215,11 @@ export type DocumentUri = string;
 
 // @beta
 export interface EditorFacet {
-    // (undocumented)
     [key: string]: unknown;
-    // (undocumented)
     commands?: unknown[];
-    // (undocumented)
     nodes?: unknown[];
-    // (undocumented)
     shortcuts?: unknown[];
-    // (undocumented)
     slashItems?: unknown[];
-    // (undocumented)
     toolbar?: unknown[];
 }
 
@@ -270,20 +243,17 @@ export type ErrorCode =
 /** A bug or crash in the engine. */
 | "internal";
 
-// @public (undocumented)
+// @public
 export interface ErrorResponse {
-    // (undocumented)
     error: ResponseError;
-    // (undocumented)
     id: RequestId;
 }
 
-// @public (undocumented)
+// @public
 export type ExportFormat = "pdf" | "html";
 
 // @public
 export interface ExportParams extends DocumentParams {
-    // (undocumented)
     inputs?: Record<string, string>;
 }
 
@@ -303,11 +273,9 @@ export interface FallbackEvent extends DocumentEventBase {
     diagnostics: Diagnostic[];
     input: string;
     isolated: Range[];
-    // (undocumented)
     level: Exclude<FallbackLevel, 0>;
     plainFrom: number | null;
     source: string;
-    // (undocumented)
     type: "fallback";
 }
 
@@ -384,26 +352,20 @@ export const formatDiagnostic: (d: Diagnostic, text?: string) => string;
 
 // @public
 export interface FunctionDoc {
-    // (undocumented)
     description: string;
-    // (undocumented)
     example?: string;
-    // (undocumented)
     name: string;
     signature: string;
 }
 
-// @public (undocumented)
+// @public
 export const hasErrors: (ds: readonly Diagnostic[]) => boolean;
 
 // @public
 export interface HealHandler {
-    // (undocumented)
     name: string;
-    // (undocumented)
     phase: "settled" | "output";
     priority?: number;
-    // (undocumented)
     run(ctx: HealHandlerContext): TextEdit[];
 }
 
@@ -413,14 +375,12 @@ export interface HealHandlerContext {
     from: number;
     modeAt(pos: number): SyntaxMode;
     text: string;
-    // (undocumented)
     to: number;
 }
 
 // @public
 export interface HtmlArtifact {
     html: string;
-    // (undocumented)
     target: "html";
 }
 
@@ -428,33 +388,26 @@ export interface HtmlArtifact {
 export interface InitializeOptions {
     fixerModules?: string[];
     fontCatalogues?: FontCatalogue[];
-    // (undocumented)
     fonts?: FontSource[];
-    // (undocumented)
     packages?: PackageSpec[];
 }
 
-// @public (undocumented)
+// @public
 export interface InitializeParams {
-    // (undocumented)
     capabilities: ClientCapabilities;
-    // (undocumented)
     clientInfo?: {
         name: string;
         version?: string;
     };
-    // @beta (undocumented)
+    // @beta
     options?: InitializeOptions;
     protocolVersion: number;
 }
 
 // @public
 export interface InitializeResult {
-    // (undocumented)
     capabilities: ServerCapabilities;
-    // (undocumented)
     protocolVersion: number;
-    // (undocumented)
     serverInfo: {
         name: string;
         version?: string;
@@ -462,13 +415,13 @@ export interface InitializeResult {
     };
 }
 
-// @public (undocumented)
+// @public
 export const isClientNotification: (m: ClientMessage) => m is ClientNotification;
 
-// @public (undocumented)
+// @public
 export const isError: (d: Diagnostic) => boolean;
 
-// @public (undocumented)
+// @public
 export const isErrorResponse: (m: Response_2) => m is ErrorResponse;
 
 // @internal
@@ -476,9 +429,7 @@ export const isHighSurrogate: (code: number) => boolean;
 
 // @beta
 export interface IslandSpec {
-    // (undocumented)
     [key: string]: unknown;
-    // (undocumented)
     description?: string;
     display?: "inline" | "block";
 }
@@ -486,13 +437,13 @@ export interface IslandSpec {
 // @internal (undocumented)
 export const isLowSurrogate: (code: number) => boolean;
 
-// @public (undocumented)
+// @public
 export const isRequest: (m: ClientMessage) => m is Request_2;
 
-// @public (undocumented)
+// @public
 export const isResponse: (m: ServerMessage) => m is Response_2;
 
-// @public (undocumented)
+// @public
 export const isServerNotification: (m: ServerMessage) => m is ServerNotification;
 
 // @public
@@ -515,9 +466,7 @@ export interface LoadedFontFamily {
 
 // @public
 export interface LogParams {
-    // (undocumented)
     level: "debug" | "info" | "warn" | "error";
-    // (undocumented)
     message: string;
 }
 
@@ -533,7 +482,6 @@ export const normalizeDiagnostics: (ds: readonly Diagnostic[]) => Diagnostic[];
 // @beta
 export interface PackageSpec {
     integrity?: string;
-    // (undocumented)
     name: string;
     namespace: string;
     url?: string;
@@ -542,22 +490,16 @@ export interface PackageSpec {
 
 // @public
 export interface PagedArtifact {
-    // (undocumented)
     base: Revision | null;
-    // (undocumented)
     pageCount: number;
     pages: PageUpdate[];
-    // (undocumented)
     target: "paged";
 }
 
 // @beta
 export interface PagePoint {
-    // (undocumented)
     page: number;
-    // (undocumented)
     x: number;
-    // (undocumented)
     y: number;
 }
 
@@ -565,14 +507,12 @@ export interface PagePoint {
 export interface PageUpdate {
     dir?: "ltr" | "rtl";
     hash: string;
-    // (undocumented)
     height: number;
     index: number;
     lang?: string;
     structure?: TextNode[];
     svg: string;
     text?: TextRun[];
-    // (undocumented)
     width: number;
 }
 
@@ -581,10 +521,8 @@ export type ParamsOf<M extends RequestMethod> = RequestMap[M]["params"];
 
 // @public
 export interface Patch {
-    // (undocumented)
     original: Range;
     reason: string;
-    // (undocumented)
     result: Range;
 }
 
@@ -595,7 +533,6 @@ export type PositionMapper = (pos: number, assoc: 1 | -1) => number;
 export interface PromptExample {
     output: string;
     request?: string;
-    // (undocumented)
     title?: string;
 }
 
@@ -605,21 +542,15 @@ export const PROTOCOL_VERSION = 1;
 // @public
 export class ProtocolError extends Error {
     constructor(code: ErrorCode, message: string, data?: unknown);
-    // (undocumented)
     readonly code: ErrorCode;
-    // (undocumented)
     readonly data: unknown;
-    // (undocumented)
     static from(e: ResponseError): ProtocolError;
-    // (undocumented)
     toJSON(): ResponseError;
 }
 
 // @public
 export interface Range {
-    // (undocumented)
     from: number;
-    // (undocumented)
     to: number;
 }
 
@@ -627,7 +558,6 @@ export interface Range {
 export interface RenderedEvent extends DocumentEventBase, CompileReport {
     blocks?: number;
     renderMs: number;
-    // (undocumented)
     type: "rendered";
 }
 
@@ -646,52 +576,44 @@ export type RequestId = number;
 
 // @public
 export interface RequestMap {
-    // (undocumented)
     "document/close": {
         params: DocumentCloseParams;
         result: null;
     };
-    // (undocumented)
     "document/edit": {
         params: DocumentEditParams;
         result: null;
     };
-    // (undocumented)
     "document/open": {
         params: DocumentOpenParams;
         result: null;
     };
-    // (undocumented)
     "document/setFiles": {
         params: DocumentSetFilesParams;
         result: null;
     };
-    // (undocumented)
     "export/html": {
         params: ExportParams;
         result: ExportResult<string>;
     };
-    // (undocumented)
     "export/pdf": {
         params: ExportParams;
         result: ExportResult<Uint8Array>;
     };
-    // @beta (undocumented)
+    // @beta
     "resolve/location": {
         params: ResolveLocationParams;
         result: ResolveLocationResult;
     };
-    // @beta (undocumented)
+    // @beta
     "resolve/span": {
         params: ResolveSpanParams;
         result: ResolveSpanResult;
     };
-    // (undocumented)
     compile: {
         params: CompileParams;
         result: CompileResult;
     };
-    // (undocumented)
     initialize: {
         params: InitializeParams;
         result: InitializeResult;
@@ -702,16 +624,15 @@ export interface RequestMap {
     };
 }
 
-// @public (undocumented)
+// @public
 export type RequestMethod = keyof RequestMap;
 
 // @beta
 export interface ResolveLocationParams extends DocumentParams {
-    // (undocumented)
     offset: number;
 }
 
-// @beta (undocumented)
+// @beta
 export interface ResolveLocationResult extends DocumentParams {
     locations: PagePoint[];
 }
@@ -721,11 +642,10 @@ export const resolvePlugins: <P extends TypstreamPlugin>(plugins: readonly P[]) 
 
 // @beta
 export interface ResolveSpanParams extends DocumentParams {
-    // (undocumented)
     point: PagePoint;
 }
 
-// @beta (undocumented)
+// @beta
 export interface ResolveSpanResult extends DocumentParams {
     span: Range | null;
 }
@@ -736,11 +656,8 @@ export { Response_2 as Response }
 
 // @public
 export interface ResponseError {
-    // (undocumented)
     code: ErrorCode;
-    // (undocumented)
     data?: unknown;
-    // (undocumented)
     message: string;
 }
 
@@ -755,9 +672,7 @@ export const serializeMessage: (message: unknown) => string;
 
 // @public
 export interface ServerCapabilities {
-    // (undocumented)
     experimental?: Record<string, unknown>;
-    // (undocumented)
     exports: ExportFormat[];
     // @beta
     fontCatalogues?: boolean;
@@ -766,14 +681,13 @@ export interface ServerCapabilities {
     resolveLocation?: boolean;
     // @beta
     resolveSpan?: boolean;
-    // (undocumented)
     targets: CompileTarget[];
 }
 
 // @public
 export type ServerMessage = Response_2 | ServerNotification;
 
-// @public (undocumented)
+// @public
 export type ServerNotification<M extends ServerNotificationMethod = ServerNotificationMethod> = {
     [K in M]: {
         method: K;
@@ -783,17 +697,14 @@ export type ServerNotification<M extends ServerNotificationMethod = ServerNotifi
 
 // @public
 export interface ServerNotificationMap {
-    // (undocumented)
     "$/log": LogParams;
-    // (undocumented)
     "document/artifact": ArtifactNotification;
-    // (undocumented)
     "document/diagnostics": DiagnosticsNotification;
-    // @beta (undocumented)
+    // @beta
     "fonts/loaded": FontsLoadedParams;
 }
 
-// @public (undocumented)
+// @public
 export type ServerNotificationMethod = keyof ServerNotificationMap;
 
 // @public
@@ -804,13 +715,12 @@ export interface SkippedRange extends Range {
 // @public
 export class SourceMap {
     constructor(patches: readonly Patch[]);
-    // (undocumented)
     readonly patches: readonly Patch[];
     toOriginal(pos: number, assoc?: 1 | -1): number;
     toResult(pos: number): number;
 }
 
-// @public (undocumented)
+// @public
 export type SuccessResponse<M extends RequestMethod = RequestMethod> = {
     [K in M]: {
         id: RequestId;
@@ -823,24 +733,18 @@ export type SyntaxMode = "markup" | "math" | "code" | "raw" | "comment";
 
 // @public
 export interface TemplateSpec {
-    // (undocumented)
     description?: string;
     inputs?: Record<string, string>;
     name: string;
     preamble: string;
-    // (undocumented)
     title?: string;
 }
 
 // @public
 export interface TextEdit {
-    // (undocumented)
     from: number;
-    // (undocumented)
     insert: string;
-    // (undocumented)
     origin?: EditOrigin;
-    // (undocumented)
     to: number;
 }
 
@@ -858,21 +762,15 @@ export interface TextRun {
     dir?: "ltr" | "rtl";
     lang?: string;
     matrix?: [number, number, number, number];
-    // (undocumented)
     size: number;
-    // (undocumented)
     text: string;
-    // (undocumented)
     width: number;
-    // (undocumented)
     x: number;
-    // (undocumented)
     y: number;
 }
 
 // @public
 export interface TraceItem {
-    // (undocumented)
     message: string;
     span: Range | null;
 }
@@ -915,13 +813,11 @@ export interface TypstreamPlugin {
     };
     stylesheets?: string[];
     templates?: TemplateSpec[];
-    // (undocumented)
     version?: string;
 }
 
-// @public (undocumented)
+// @public
 export interface VersionMismatchData {
-    // (undocumented)
     supported: number[];
 }
 
@@ -929,12 +825,10 @@ export interface VersionMismatchData {
 export interface WatchdogEvent extends DocumentEventBase {
     budgetMs: number;
     live: boolean;
-    // (undocumented)
     reason: "timeout" | "crash";
     searching: boolean;
     sourceLength: number;
     strikes: number;
-    // (undocumented)
     type: "watchdog";
 }
 

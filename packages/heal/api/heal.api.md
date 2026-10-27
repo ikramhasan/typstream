@@ -12,32 +12,28 @@ import { TextEdit } from '@typstream/core';
 
 // @public
 export interface Checkpoint {
-    // (undocumented)
     nesting: number;
-    // (undocumented)
     offset: number;
 }
 
 // @public
 export const createHealer: (options?: HealOptions) => Healer;
 
-// @public (undocumented)
+// @public
 export const DEFAULT_LINT: Readonly<Record<LintRuleId, LintSeverity>>;
 
-// @public (undocumented)
+// @public
 export type FrameKind = "content" | "code-block" | "args" | "params" | "parens" | "math" | "math-args" | "math-delimited" | "strong" | "emph" | "string" | "raw" | "term" | "text-bracket";
 
 // @public
 export const heal: (input: string, opts?: HealOptions) => HealResult;
 
-// @public (undocumented)
+// @public
 export interface Healer {
     applyEdit(edit: TextEdit): HealResult;
     finish(): HealResult;
-    // (undocumented)
     readonly input: string;
     push(chunk: string): HealResult;
-    // (undocumented)
     reset(input?: string): void;
     result(): HealResult;
     set(input: string): HealResult;
@@ -48,22 +44,19 @@ export { HealHandler }
 
 export { HealHandlerContext }
 
-// @public (undocumented)
+// @public
 export interface HealOptions {
     dropIncompleteRules?: boolean;
     final?: boolean;
-    // (undocumented)
     handlers?: HealHandler[];
-    // (undocumented)
     lint?: Partial<Record<LintRuleId, LintSeverity | boolean>>;
     streamingRange?: Range | null;
     unwrapFences?: "auto" | "never";
 }
 
-// @public (undocumented)
+// @public
 export interface HealResult {
     errors: SyntaxIssue[];
-    // (undocumented)
     findings: LintFinding[];
     map: {
         toSource(inputPos: number): number;
@@ -99,62 +92,53 @@ export type LintEvent = {
     at: number;
 };
 
-// @public (undocumented)
+// @public
 export interface LintFinding {
     changes: TextChange[];
-    // (undocumented)
     end: number;
-    // (undocumented)
     message: string;
-    // (undocumented)
     rule: LintRuleId | string;
-    // (undocumented)
     severity: "fix" | "warn";
-    // (undocumented)
     start: number;
 }
 
-// @public (undocumented)
+// @public
 export type LintRuleId = "markdown-heading" | "markdown-bold" | "markdown-link" | "email-at" | "bare-hash" | "stray-closer" | "unclosed-delim" | "unclosed-block-comment" | "currency-dollar" | "math-lone-script";
 
 // @public
 export type LintSeverity = "fix" | "warn" | "off";
 
-// @public (undocumented)
+// @public
 export type Mode = "markup" | "math" | "code";
 
 // @public
 export interface ModeSpan {
-    // (undocumented)
     at: number;
-    // (undocumented)
     mode: Mode | "raw" | "comment";
 }
 
-// @public (undocumented)
+// @public
 export const normalize: (raw: string, opts?: NormalizeOptions) => Normalized;
 
-// @public (undocumented)
+// @public
 export interface Normalized {
     patches: Patch[];
-    // (undocumented)
     text: string;
 }
 
-// @public (undocumented)
+// @public
 export interface NormalizeOptions {
     streaming?: boolean;
     unwrapFences?: "auto" | "never";
 }
 
-// @public (undocumented)
+// @public
 export interface OpenFrame {
-    // (undocumented)
     frame: FrameKind;
     open: number;
 }
 
-// @public (undocumented)
+// @public
 export interface Recognition {
     checkpoints: Checkpoint[];
     errors: SyntaxIssue[];
@@ -172,14 +156,14 @@ export interface Recognition {
 // @public
 export const recognize: (text: string, from?: Checkpoint, opts?: RecognizeOptions) => Recognition;
 
-// @public (undocumented)
+// @public
 export interface RecognizeOptions {
     dropIncompleteRules?: boolean;
     // @internal
     stopAt?: (cp: Checkpoint) => boolean;
 }
 
-// @public (undocumented)
+// @public
 export type Requirement = {
     type: "close";
     text: string;
@@ -193,23 +177,17 @@ export type Requirement = {
     soft?: boolean;
 };
 
-// @public (undocumented)
+// @public
 export interface SyntaxIssue {
-    // (undocumented)
     end: number;
-    // (undocumented)
     message: string;
-    // (undocumented)
     start: number;
 }
 
-// @public (undocumented)
+// @public
 export interface TextChange {
-    // (undocumented)
     from: number;
-    // (undocumented)
     insert: string;
-    // (undocumented)
     to: number;
 }
 

@@ -13,6 +13,10 @@
 import { isAlphabetic, isWhitespace } from "./chars";
 import { isKeyword, isTrivia, type Kind, Lexer, type Mode, type Token } from "./lexer";
 
+/**
+ * The kind of construct a delimiter opened, e.g. `content` for a `[…]` block, `args` for a call's arguments,
+ * `text-bracket` for a `[` in markup that opens no block. Close requirements and `HealResult.openFrames` carry it.
+ */
 export type FrameKind =
   | "content"
   | "code-block"
@@ -29,6 +33,11 @@ export type FrameKind =
   | "term"
   | "text-bracket";
 
+/**
+ * What the end of a recognized text needs to parse without errors: `close` appends `text` to close the
+ * construct opened at `open`; `cut` drops the text from `at`, a construct that can't be completed yet
+ * (`reason` says why). Offsets are into the recognized text.
+ */
 export type Requirement =
   | {
       type: "close";
@@ -49,15 +58,21 @@ export type Requirement =
       soft?: boolean;
     };
 
+/** A syntax error appending text can't fix: recognized text's offsets, or the input's in `HealResult.errors`. */
 export interface SyntaxIssue {
+  /** Start of the erroneous text (UTF-16 offset). */
   start: number;
+  /** End of the erroneous text, exclusive. */
   end: number;
+  /** What is wrong, e.g. `unclosed delimiter`. */
   message: string;
 }
 
 /** A root-level position where the parser can resume. */
 export interface Checkpoint {
+  /** Start of the first token on a root-level line (or of the text), in the recognized text. */
   offset: number;
+  /** Text brackets (`[` in markup that opens no block) still open here: resuming needs them to match a `]`. */
   nesting: number;
 }
 
@@ -92,10 +107,13 @@ export const effectiveRequirements = (reqs: readonly Requirement[]): Requirement
 
 /** Lexical context starting at `at`, until the next span. */
 export interface ModeSpan {
+  /** Offset in the recognized text where this span starts. */
   at: number;
+  /** Mode of the tokens from `at` on; lint rules leave `raw` and `comment` text alone. */
   mode: Mode | "raw" | "comment";
 }
 
+/** What {@link recognize} records about a text: what its end needs, settled errors, and where to resume. */
 export interface Recognition {
   /** Root checkpoints, ascending. */
   checkpoints: Checkpoint[];
@@ -117,6 +135,7 @@ export interface Recognition {
   stoppedAt?: number;
 }
 
+/** Options for {@link recognize}. */
 export interface RecognizeOptions {
   /** Turn any requirement inside a set/show/import/include statement into a cut of the whole statement. */
   dropIncompleteRules?: boolean;

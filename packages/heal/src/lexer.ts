@@ -20,6 +20,7 @@ import {
   isWhitespace,
 } from "./chars";
 
+/** Typst's lexical modes: which grammar a token is read with. {@link ModeSpan} adds raw blocks and comments. */
 export type Mode = "markup" | "math" | "code";
 
 export type Kind =
