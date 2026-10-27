@@ -194,7 +194,7 @@ fonts are downloaded the first time a document uses them; see [Fonts and languag
 ## Export the student's and teacher's PDFs
 
 Exports compile the document again in final mode with the inputs you give, so one document makes both copies. In
-React, the document is on `useTypstream()`:
+React, the exports are on `useTypstream()`:
 
 ```tsx
 "use client";
@@ -214,17 +214,16 @@ const save = (pdf: Uint8Array, name: string) => {
 export function Quiz({ source, isStreaming }: { source: string; isStreaming: boolean }) {
   const t = useTypstream();
   const exportCopy = async (teacher: boolean) => {
-    if (!t.document) return;
-    const pdf = await t.document.exportPdf({ inputs: teacher ? { [SHOW_ANSWERS_INPUT]: "true" } : {} });
+    const pdf = await t.exportPdf({ inputs: { [SHOW_ANSWERS_INPUT]: teacher ? "true" : "false" } });
     save(pdf, teacher ? "quiz-teacher.pdf" : "quiz.pdf");
   };
   return (
     <>
       <Typstream ref={t.ref} source={source} isStreaming={isStreaming} plugins={[edu]} />
-      <button type="button" disabled={!t.document || isStreaming} onClick={() => exportCopy(false)}>
+      <button type="button" disabled={!t.handle || isStreaming} onClick={() => exportCopy(false)}>
         Student PDF
       </button>
-      <button type="button" disabled={!t.document || isStreaming} onClick={() => exportCopy(true)}>
+      <button type="button" disabled={!t.handle || isStreaming} onClick={() => exportCopy(true)}>
         Teacher PDF
       </button>
     </>
@@ -232,8 +231,8 @@ export function Quiz({ source, isStreaming }: { source: string; isStreaming: boo
 }
 ```
 
-Pass `inputs` explicitly on both exports. Without it an export uses the document's current inputs: if the preview is
-showing answers, so would the "student" PDF.
+Set `showAnswers` on both exports. An export's `inputs` go over the component's `inputs` prop: if the preview is
+showing answers, a "student" PDF without `"false"` would too.
 
 On the server, `@typstream/node` renders the same document. Give it edu's files and preamble:
 

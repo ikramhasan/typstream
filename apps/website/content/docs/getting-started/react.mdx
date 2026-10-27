@@ -169,7 +169,8 @@ function Answer({ text, streaming }: { text: string; streaming: boolean }) {
 | `diagnostics` | Typst's errors and warnings from the latest compile, with offsets into `source` (UTF-16, as JavaScript strings index). |
 | `openFrames` | Constructs still open at the end of the text, innermost first. |
 | `healedSource` | The healed text the engine compiled. |
-| `document` | The engine document, once it has opened, for exports such as `document.exportPdf()`. |
+| `exportPdf()`, `exportHtml()`, `exportSource()` | The document as a PDF (bytes), a standalone HTML file or its Typst source, at the document's own page size. See [Exports](/docs/guides/exports). |
+| `document` | The engine document, once it has opened. |
 | `state` | The whole `DocumentState`, `null` until the document opens. |
 
 `"stale"` while streaming is normal: a prefix that doesn't compile yet keeps the previous render on screen. It is not an error to show the user. To react to status changes without a hook, pass `onStatusChange={(status, state) => …}`.
