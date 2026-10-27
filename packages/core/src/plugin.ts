@@ -20,6 +20,7 @@ export interface HealHandlerContext {
   text: string;
   /** Range the handler may change (`settled`: newly settled text; `output`: everything). */
   from: number;
+  /** End of that range (exclusive). */
   to: number;
   /** The document is complete (no tail repair runs). */
   final: boolean;
@@ -35,10 +36,19 @@ export interface HealHandlerContext {
  * @public
  */
 export interface HealHandler {
+  /**
+   * Identifies the handler. A `settled` handler's edits are reported as lint
+   * findings with this as their rule (patch reason `lint:<name>`).
+   */
   name: string;
-  /** Lower runs first. Built-in lint rules run at 50. */
+  /** Lower runs first; the default is 100. The built-in lint rules run before every handler. */
   priority?: number;
+  /**
+   * When it runs: `settled` on newly settled normalized text, like the lint
+   * rules; `output` on the whole healed source, after tail repair.
+   */
   phase: "settled" | "output";
+  /** The handler's edits to `ctx.text` (see above), or `[]` when it has none. */
   run(ctx: HealHandlerContext): TextEdit[];
 }
 
@@ -198,6 +208,7 @@ export interface LoadedFontFamily {
 export interface PackageSpec {
   /** `preview` for Typst Universe packages. */
   namespace: string;
+  /** The package's name, e.g. `cetz`. */
   name: string;
   /** `major.minor.patch`. */
   version: string;
@@ -216,7 +227,9 @@ export interface PackageSpec {
 export interface TemplateSpec {
   /** Unique among templates, e.g. `"worksheet"`. */
   name: string;
+  /** Human-readable name, e.g. for a template picker: `"Worksheet"`. */
   title?: string;
+  /** One line on what the template sets up, e.g. for a template picker. */
   description?: string;
   /** Typst evaluated before the document. */
   preamble: string;
@@ -226,15 +239,19 @@ export interface TemplateSpec {
 
 /** One Typst function in the prompt catalogue, generated from the package's doc comments. @public */
 export interface FunctionDoc {
+  /** The function's name as documents call it, e.g. `question`. */
   name: string;
   /** E.g. `question(points: int, body: content) -> content`. */
   signature: string;
+  /** What the function does and how to call it: its doc comment's prose. */
   description: string;
+  /** Typst that calls the function, from the doc comment's `example` block. */
   example?: string;
 }
 
 /** A few-shot example for the system prompt. @public */
 export interface PromptExample {
+  /** A label for the example (edu uses its file name). Not part of the prompt. */
   title?: string;
   /** What the user asked for. */
   request?: string;
@@ -249,9 +266,11 @@ export interface PromptExample {
  * @beta
  */
 export interface IslandSpec {
+  /** What the island shows or lets the reader do, for people and tools reading the plugin. */
   description?: string;
   /** The island flows with text (`inline`) or stands as a block. Default `block`. */
   display?: "inline" | "block";
+  /** Further fields, until the islands work (#28) settles the shape. */
   [key: string]: unknown;
 }
 
@@ -262,11 +281,17 @@ export interface IslandSpec {
  * @beta
  */
 export interface EditorFacet {
+  /** Custom blocks the editor can show and edit (edu will add `question`, `mcq`, `answer`). */
   nodes?: unknown[];
+  /** Editing commands the plugin adds. */
   commands?: unknown[];
+  /** Toolbar entries the plugin adds. */
   toolbar?: unknown[];
+  /** Keyboard shortcuts the plugin adds. */
   shortcuts?: unknown[];
+  /** Entries the plugin adds to the editor's slash menu. */
   slashItems?: unknown[];
+  /** Further facets the editor may define. */
   [key: string]: unknown;
 }
 
@@ -282,6 +307,7 @@ export interface EditorFacet {
 export interface TypstreamPlugin {
   /** Unique, namespaced for third parties: `"edu"`, `"acme/chemistry"`. */
   key: string;
+  /** The plugin's version, e.g. its Typst package's. Informational: nothing in typstream reads it. */
   version?: string;
   /** Keys of plugins that must be loaded too, before this one. */
   dependencies?: string[];

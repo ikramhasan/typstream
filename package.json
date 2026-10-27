@@ -13,6 +13,7 @@
     "check:layers": "node tools/repo/check-layers.mjs",
     "check:api": "turbo run check:api",
     "api:update": "turbo run api:update",
+    "check:api-docs": "node tools/repo/check-api-docs.mjs",
     "check:packages": "turbo run check:package",
     "changeset": "changeset",
     "oracle": "tools/typst-syntax-oracle/build.sh",
