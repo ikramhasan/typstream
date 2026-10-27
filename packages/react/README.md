@@ -10,7 +10,7 @@ import { Typstream } from "@typstream/react";
 
 ## `<Typstream>`
 
-The document is `source`, its whole text so far (streamdown-style), or `stream`, an `AsyncIterable<string>` of chunks (create it once, e.g. in `useMemo`: a new stream starts the document over).
+The document is `source`, its whole text so far (streamdown-style), or `stream`, an `AsyncIterable<string>` of chunks (create it once, e.g. in `useMemo`: a new stream starts the document over). Instances given the same stream share one reader, so StrictMode's remount loses no chunk.
 
 | Prop | Default | |
 |---|---|---|
