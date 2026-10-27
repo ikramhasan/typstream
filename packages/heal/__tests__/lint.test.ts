@@ -1,7 +1,7 @@
 // Lint rules run on settled text (or the whole document in final mode).
 
 import { describe, expect, it } from "vitest";
-import { heal } from "../src";
+import { createHealer, heal } from "../src";
 import { syntaxErrors } from "./support/oracle";
 
 const final = (input: string) => heal(input, { final: true });
@@ -53,6 +53,20 @@ describe("scope", () => {
   it("doesn't touch the unsettled tail while streaming", () => {
     expect(heal("# Heading").source).not.toBe("= Heading");
     expect(heal("# Heading\n\nnext para").source).toBe("= Heading\n\nnext para");
+  });
+
+  // Streamed and incremental linting resume at a line's first token, after its indentation
+  // (nightly property campaign, seed 1843101255): the heading must still be found from there.
+  it("an indented heading is linted the same streamed, edited and in one go", () => {
+    const doc = "Para one.\n # H tail\n\nnext para\n";
+    const expected = "Para one.\n = H tail\n\nnext para\n";
+    expect(heal(doc).source).toBe(expected);
+    const streamed = createHealer();
+    for (const ch of doc) streamed.push(ch);
+    expect(streamed.result().source).toBe(expected);
+    const edited = createHealer();
+    edited.set("Para one.\n# H tail\n\nnext para\n");
+    expect(edited.applyEdit({ from: 10, to: 10, insert: " " }).source).toBe(expected);
   });
 
   it("rules can be switched off", () => {

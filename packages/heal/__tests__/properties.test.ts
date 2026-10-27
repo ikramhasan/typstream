@@ -266,7 +266,7 @@ describe("incremental healer", () => {
       at: fc.nat(),
       del: fc.nat({ max: 12 }),
       insert: fc.oneof(
-        fc.constantFrom("", "**b** ", "# H\n", "a ] b", "me@x.com ", "\n\n", "*", "[", "x"),
+        fc.constantFrom("", "**b** ", "# H\n", " # H\n", "a ] b", "me@x.com ", "\n\n", "*", "[", "x"),
         fc.string({ maxLength: 6 }),
       ),
     });
