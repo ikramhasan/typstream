@@ -29,6 +29,16 @@ import { FIT_WIDTH_PREAMBLE, fitWidthInputs } from "./paged/mount";
 import { createPagedView, type PagedView } from "./paged/view";
 import { type StreamText, subscribeStream } from "./stream";
 
+/** Options of a {@link MountedTypstream}'s exports. @public */
+export interface TypstreamExportOptions {
+  /**
+   * `sys.inputs` for this export only, over the template's and the mount's
+   * `inputs`: a teacher's copy (`{ showAnswers: "true" }`) of a preview that
+   * shows the student's.
+   */
+  inputs?: Record<string, string>;
+}
+
 /** Options of {@link mountTypstream}. @public */
 export interface TypstreamOptions {
   /** Compiles the document. Documents on one engine share its worker and compile one at a time. */
@@ -144,18 +154,19 @@ export interface MountedTypstream {
   update(options: TypstreamOptions): void;
   /**
    * Exports the document as PDF (#18), from the engine that compiles the
-   * preview. Its inputs are the template's and `inputs`, without fit-width's
-   * page size, so it prints at the document's own size. Opens a document that
-   * hasn't opened yet (see `lazy`). Rejects with the engine's `ExportError`.
+   * preview. Its inputs are the template's, `inputs` and `options.inputs`,
+   * without fit-width's page size, so it prints at the document's own size.
+   * Opens a document that hasn't opened yet (see `lazy`). Rejects with the
+   * engine's `ExportError`.
    */
-  exportPdf(): Promise<Uint8Array>;
+  exportPdf(options?: TypstreamExportOptions): Promise<Uint8Array>;
   /**
    * Exports the document as an HTML file that opens on its own
    * ({@link standaloneHtml}), with the mount's plugins, `stylesheets` and `theme`;
    * `options` add to or override them (a `mathFont`, a `title`). Otherwise as
-   * {@link MountedTypstream.exportPdf}.
+   * {@link MountedTypstream.exportPdf}, `options.inputs` included.
    */
-  exportHtml(options?: StandaloneHtmlOptions): Promise<string>;
+  exportHtml(options?: StandaloneHtmlOptions & TypstreamExportOptions): Promise<string>;
   /** The source the exports compile (the healed input); opens the document if needed. */
   exportSource(): string;
   /** Disposes the document and removes what was rendered. The engine stays (it isn't ours). */
@@ -418,8 +429,12 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
 
   const fitWidth = () => opts.target === "paged" && opts.layout === "fit-width";
 
-  /** The document's inputs without fit-width's page size: what exports compile with. */
-  const exportInputs = (): Record<string, string> => ({ ...templateOf(opts)?.inputs, ...opts.inputs });
+  /** The document's inputs without fit-width's page size: what exports compile with, plus an export's own. */
+  const exportInputs = (extra?: Record<string, string>): Record<string, string> => ({
+    ...templateOf(opts)?.inputs,
+    ...opts.inputs,
+    ...extra,
+  });
 
   const measure = () => {
     const width = element.clientWidth;
@@ -560,10 +575,10 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
     update(next) {
       if (!destroyed) apply(next);
     },
-    exportPdf: async () => exportDoc().exportPdf({ inputs: exportInputs() }),
-    async exportHtml(options = {}) {
+    exportPdf: async (options) => exportDoc().exportPdf({ inputs: exportInputs(options?.inputs) }),
+    async exportHtml({ inputs, ...options } = {}) {
       const exported = exportDoc();
-      const html = await exported.exportHtml({ inputs: exportInputs() });
+      const html = await exported.exportHtml({ inputs: exportInputs(inputs) });
       return standaloneHtml(html, {
         ...(opts.theme ? { theme: opts.theme } : {}),
         ...options,

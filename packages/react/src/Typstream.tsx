@@ -4,7 +4,14 @@
 // StrictMode-safe: the second mount opens a fresh document), and every render
 // passes the latest props to `update()`, which acts only on what changed.
 
-import { type MountedTypstream, mountTypstream, registerMathFont, type TypstreamOptions } from "@typstream/dom";
+import {
+  type MountedTypstream,
+  mountTypstream,
+  registerMathFont,
+  type StandaloneHtmlOptions,
+  type TypstreamExportOptions,
+  type TypstreamOptions,
+} from "@typstream/dom";
 import type { DocumentState, EngineDocument } from "@typstream/engine";
 import { type CSSProperties, type Ref, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { mergeDefaults, type TypstreamDefaults, useTypstreamDefaults } from "./context";
@@ -43,15 +50,46 @@ export interface TypstreamHandle {
   getState(): DocumentState | null;
   /** Calls `listener` whenever `getState()` or `document` changes. */
   subscribe(listener: () => void): () => void;
+  /**
+   * Exports the document as PDF (#18), compiled by the engine that renders the
+   * preview. It compiles with the template's inputs, the `inputs` prop and
+   * `options.inputs` (a teacher's copy: `{ showAnswers: "true" }`), but not a
+   * `layout="fit-width"` preview's page size, so it prints at the document's
+   * own size. Opens a lazy document that hasn't opened yet. Rejects with the
+   * engine's `ExportError`, or an `Error` when the component isn't mounted.
+   */
+  exportPdf(options?: TypstreamExportOptions): Promise<Uint8Array>;
+  /**
+   * Exports the document as an HTML file that opens on its own (see
+   * `standaloneHtml` in `@typstream/dom`), with the component's plugins,
+   * `stylesheets` and `theme`. `options` add to or override them (a `mathFont`,
+   * a `title`). Otherwise as {@link TypstreamHandle.exportPdf}, `options.inputs`
+   * included.
+   */
+  exportHtml(options?: StandaloneHtmlOptions & TypstreamExportOptions): Promise<string>;
+  /**
+   * The source the exports compile: the healed input, as a `.typ` file would
+   * hold it. Opens a lazy document that hasn't opened yet. Throws when the
+   * component isn't mounted.
+   */
+  exportSource(): string;
 }
 
-/** A handle whose mount can come and go (StrictMode mounts twice). */
-const createHandle = () => {
+/**
+ * A handle whose mount can come and go (StrictMode mounts twice). Exports go to
+ * the current mount's, which leave out fit-width's page size (`document`'s don't).
+ * @internal
+ */
+export const createHandle = () => {
   let mounted: MountedTypstream | null = null;
   let stop = () => {};
   const listeners = new Set<() => void>();
   const notify = () => {
     for (const listener of listeners) listener();
+  };
+  const mount = () => {
+    if (!mounted) throw new Error("<Typstream> isn't mounted");
+    return mounted;
   };
   const handle: TypstreamHandle = {
     get element() {
@@ -65,6 +103,9 @@ const createHandle = () => {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
+    exportPdf: async (options) => mount().exportPdf(options),
+    exportHtml: async (options) => mount().exportHtml(options),
+    exportSource: () => mount().exportSource(),
   };
   const attach = (next: MountedTypstream | null) => {
     stop();
