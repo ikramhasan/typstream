@@ -92,6 +92,20 @@
 /// ```
 #let learning-objectives(body) = callout(kind: "tip", title: context _word("objectives"), body)
 
+// A table cell's body, hyphenated if one of its words is wider than the column. Typst breaks a
+// line only at a space unless it may hyphenate, and hyphenation is off in ragged text, so a word
+// such as "Counterargument" in a narrow column would run into the next one. Cells whose words fit
+// keep their line breaks: hyphenating every cell would split words that fit on the next line.
+#let _fit-words(body) = layout(size => {
+  // The widest word: the body with every space a line break.
+  let widest = measure({
+    show regex("\s+"): linebreak()
+    show [ ].func(): linebreak()
+    body
+  }).width
+  if widest > size.width { text(hyphenate: true, body) } else { body }
+})
+
 /// A grading rubric: one row per criterion, one column per level. Give each criterion as
 /// `(name, description for the first level, the next level, …)`.
 ///
@@ -131,8 +145,8 @@
       inset: 6pt,
       stroke: 0.5pt + _rule,
       fill: (x, y) => if y == 0 { luma(235) } else if x == 0 { luma(248) },
-      table.header(strong(_word("criteria")), ..range(n).map(i => strong(head(i)))),
-      ..criteria.map(c => (strong(c.at(0, default: [])), ..cells(c))).flatten(),
+      table.header(..(strong(_word("criteria")), ..range(n).map(i => strong(head(i)))).map(_fit-words)),
+      ..criteria.map(c => (strong(c.at(0, default: [])), ..cells(c)).map(_fit-words)).flatten(),
     )
   }
 }
