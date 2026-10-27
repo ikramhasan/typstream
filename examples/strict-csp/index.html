@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>typstream under a strict CSP</title>
+    <script type="module" src="/src/main.ts"></script>
+  </head>
+  <body>
+    <main>
+      <h1>typstream under a strict Content-Security-Policy</h1>
+      <p>The same worksheet in both targets. Nothing on this page is inline, and nothing loads from elsewhere.</p>
+      <section>
+        <h2>HTML</h2>
+        <div id="html" data-status="loading"></div>
+      </section>
+      <section>
+        <h2>Pages</h2>
+        <div id="paged" data-status="loading"></div>
+      </section>
+    </main>
+  </body>
+</html>

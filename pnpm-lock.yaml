@@ -300,6 +300,31 @@ importers:
         specifier: workspace:*
         version: link:../../packages/node
 
+  examples/strict-csp:
+    dependencies:
+      '@typstream/dom':
+        specifier: workspace:*
+        version: link:../../packages/dom
+      '@typstream/engine':
+        specifier: workspace:*
+        version: link:../../packages/engine
+      '@typstream/engine-wasm':
+        specifier: workspace:*
+        version: link:../../packages/engine-wasm
+      '@typstream/html-compat':
+        specifier: workspace:*
+        version: link:../../packages/html-compat
+      '@typstream/universe':
+        specifier: workspace:*
+        version: link:../../packages/universe
+    devDependencies:
+      playwright:
+        specifier: ^1.64.1
+        version: 1.64.1
+      vite:
+        specifier: ^8.3.5
+        version: 8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(yaml@2.9.1)
+
   packages/core: {}
 
   packages/dom:

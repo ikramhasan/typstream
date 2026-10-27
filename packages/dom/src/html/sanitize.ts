@@ -11,6 +11,12 @@
 // when re-parsed) can't happen.
 //
 // It also handles the SVG Typst writes for `html.frame` (and for paged output).
+//
+// Inline styles never reach the parser as `style` attributes: under a strict
+// Content-Security-Policy (`style-src` without 'unsafe-inline'), Chromium and
+// Firefox refuse those, even in an inert template, and report each one. The
+// renderer renames them (`hideStyles`) and the sanitizer applies them through
+// the CSSOM (`style.cssText`), which no policy restricts (#29, docs/security.md).
 
 import type { TypstreamPlugin } from "@typstream/core";
 
@@ -101,6 +107,33 @@ const IMAGE = /^(?:data:image\/(?:png|jpe?g|gif|webp|avif|bmp|svg\+xml)[;,]|blob
 /** CSS that might load something or escape the document's box. */
 const RISKY_CSS = /url|image|element|expression|binding|behavior|fixed|\\/i;
 const LOADING_CSS = /url\(|image\(|image-set\(|element\(|expression\(|-moz-binding|behavior/i;
+
+/** What `hideStyles` renames `style` attributes to; the sanitizer applies and removes it. */
+const STYLE_ATTR = "data-typstream-style";
+
+/**
+ * An attribute in a start tag, with its value if it has one: double-quoted, as
+ * Typst writes them all. Neither may contain `<`, so a match never runs past the
+ * next tag and hostile raw text (`<a x="<a x="…`) costs linear time.
+ */
+const ATTRIBUTE = /(\s+)([^\s"'<>/=]+)(="[^"<]*")?/g;
+const START_TAG = /<[a-zA-Z][^\s/<>]*(?:\s+[^\s"'<>/=]+(?:="[^"<]*")?)*\s*\/?>/g;
+
+/**
+ * Renames the `style` attributes in markup's start tags, so parsing it doesn't
+ * apply them (see the header). Typst's serializer escapes `<` in text and `"`
+ * in attribute values, so start tags are found exactly, except one with `<` in
+ * an attribute value, whose style a strict policy then refuses. Anything else
+ * that looks like a tag is in raw text (`script`, `style`), which the sanitizer
+ * removes.
+ * @internal
+ */
+export const hideStyles = (html: string): string =>
+  html.replace(START_TAG, (tag) =>
+    tag.replace(ATTRIBUTE, (all, space: string, name: string, value = "") =>
+      name.toLowerCase() === "style" ? `${space}${STYLE_ATTR}${value}` : all,
+    ),
+  );
 
 /** Sanitizer settings. @public */
 export interface SanitizeOptions {
@@ -212,6 +245,12 @@ export const createSanitizer = (options: SanitizeOptions): Sanitizer => {
   };
 
   const cleanAttributes = (el: Element): void => {
+    // Through the CSSOM, which a CSP doesn't restrict; the attribute it writes is what cleanStyle checks.
+    const css = el.getAttribute(STYLE_ATTR);
+    if (css !== null) {
+      el.removeAttribute(STYLE_ATTR);
+      (el as Element & ElementCSSInlineStyle).style.cssText = css;
+    }
     for (const { name: qualified, value } of Array.from(el.attributes)) {
       // HTML attribute names are lowercase already; SVG's are case-sensitive (viewBox).
       const attr = el.namespaceURI === SVG_NS ? qualified : qualified.toLowerCase();
