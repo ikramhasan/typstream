@@ -5,4 +5,4 @@
 "@typstream/node": patch
 ---
 
-Every `@public` and `@beta` export and member has TSDoc (#33): the protocol and plugin types in core, heal's results, options and recognizer types, and `@typstream/node`'s options and results, so editors show what each one means. `HealHandler.priority`'s comment said the built-in lint rules run at 50; they run before every handler, and a handler's default priority is 100.
+Every `@public` and `@beta` export and member has TSDoc (#33): the protocol and plugin types in core, heal's results, options and recognizer types, and `@typstream/node`'s options and results, so editors show what each one means. `HealHandler.priority`'s comment said the built-in lint rules run at 50; they run before every handler, and a handler's default priority is 100. heal's `Mode` and `ModeSpan` are now `@internal`: they were reachable only through the internal `Recognition.modes` (handlers see core's `SyntaxMode`).

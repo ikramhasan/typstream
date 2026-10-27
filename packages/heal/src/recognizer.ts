@@ -105,7 +105,7 @@ export const effectiveRequirements = (reqs: readonly Requirement[]): Requirement
   return out.reverse();
 };
 
-/** Lexical context starting at `at`, until the next span. */
+/** Lexical context starting at `at`, until the next span. @internal Engine fixers read `Recognition.modes`. */
 export interface ModeSpan {
   /** Offset in the recognized text where this span starts. */
   at: number;

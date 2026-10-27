@@ -108,10 +108,10 @@ export type LintRuleId = "markdown-heading" | "markdown-bold" | "markdown-link" 
 // @public
 export type LintSeverity = "fix" | "warn" | "off";
 
-// @public
+// @internal
 export type Mode = "markup" | "math" | "code";
 
-// @public
+// @internal
 export interface ModeSpan {
     at: number;
     mode: Mode | "raw" | "comment";
