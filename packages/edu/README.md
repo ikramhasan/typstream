@@ -54,8 +54,10 @@ Every function works in the paged and the HTML target, and in English, Arabic an
 import { buildSystemPrompt, edu } from "@typstream/edu";
 import { universe } from "@typstream/universe";
 
-const system = buildSystemPrompt([edu, universe]); // ~5.5K tokens
+const system = buildSystemPrompt([edu, universe]); // 19,024 characters, ~8.4K tokens
 ```
+
+Measured on kit-v4, the current prompt: in `tools/llm-corpus`'s runs ([#24](https://github.com/ikramhasan/typstream/issues/24)) the API counted it as 8,354 tokens of cached input, for Claude Haiku and Sonnet alike. Every rule, catalogue entry and example adds to it: `prompt.test.ts` fails once edu's part (17,549 characters) grows past 18,500, so update this figure with the bound.
 
 The catalogue (`eduCatalogue`) is generated from the doc comments, so it can't drift from the functions; the hand-written rules (`eduPromptRules`, `typstPromptRules`) are checked against it: every edu function they call exists and takes the arguments they name. The rules come from measuring real models with and without them (`tools/llm-corpus`, [#24](https://github.com/ikramhasan/typstream/issues/24)). Each rule targets an error class those runs produced, so change them by re-measuring.
 
