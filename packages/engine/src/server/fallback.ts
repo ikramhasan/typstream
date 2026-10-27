@@ -24,6 +24,14 @@
 // References to labels are the one thing that flows backwards: a prefix that
 // cites a label defined later fails. Probes ignore those errors; the compile of
 // the whole text runs the fixers, whose `pending-ref` handles them.
+//
+// Level 1, the last good render, is mostly the client's: a failed compile
+// publishes nothing. The server adds one case (#65): a streaming compile that
+// succeeds but shows less of the tail than the last artifact did (`showsLess`)
+// publishes nothing either. Heal and tail cut keep a text compiling by cutting
+// what is still being typed, and a cut can take what already rendered with it:
+// `..xs.map(x => (a, b` fails as an array of arrays until its `.flatten()`
+// arrives, and tail cut drops the whole spread, rows that rendered included.
 
 import {
   type CompileMode,
@@ -108,7 +116,34 @@ export interface Attempt {
   ok: boolean;
   /** In the document's coordinates. */
   diagnostics: Diagnostic[];
+  /** The text compiled last (the variant, or the fixers' text of it) and its positions in the document. */
+  compiled: Variant;
 }
+
+/** What healing closes a construct with, and whitespace: text that shows nothing of its own. */
+const CLOSERS = /^[\s)\]}"$*_`:\u200b]*$/;
+
+/**
+ * Level 1 (#65): whether a compile of `text` shows less of the unsettled tail
+ * than the last artifact's compile of `shown` did. Past where the two texts
+ * part, `shown` has more than closers, and they part at or after `settled`
+ * (text positions map to the client's with `toOriginal`). A stream only
+ * appends, so the text `shown` had there is still in the client's, cut by heal
+ * or the fixers this time, or shown as plain text (the stable prefix); it
+ * usually comes back within a few tokens. Before `settled` the client's text
+ * changed (an edit), or a settled reference resolved: that shows.
+ */
+export const showsLess = (
+  shown: string,
+  text: string,
+  toOriginal: (pos: number) => number,
+  settled: number,
+): boolean => {
+  const max = Math.min(shown.length, text.length);
+  let at = 0;
+  while (at < max && shown.charCodeAt(at) === text.charCodeAt(at)) at++;
+  return toOriginal(at) >= settled && !CLOSERS.test(shown.slice(at));
+};
 
 /**
  * What a document's earlier recoveries learnt: a prefix of its text that

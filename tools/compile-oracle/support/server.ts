@@ -105,7 +105,9 @@ export class OracleServer {
   /**
    * Compiles `text` as the client would: while streaming with heal's stable
    * offset as `settled`; in final mode all of it settled. `fallback` as the
-   * client sends it (Layer 4); without it, Layer 3 only.
+   * client sends it (Layer 4); without it, Layer 3 only. With it the document
+   * is opened afresh: what Layer 4 makes of the text alone, not the last good
+   * render it may keep instead (level 1, #65), which depends on what came before.
    */
   async compile(
     text: string,
@@ -114,11 +116,16 @@ export class OracleServer {
     options: { mode?: CompileMode; fallback?: FallbackParams } = {},
   ): Promise<ServerCompile> {
     this.rev++;
-    await this.request("document/edit", {
-      uri: "doc",
-      rev: this.rev,
-      edits: [{ from: 0, to: this.text.length, insert: text }],
-    });
+    if (options.fallback) {
+      await this.request("document/close", { uri: "doc" });
+      await this.request("document/open", { uri: "doc", rev: this.rev, text });
+    } else {
+      await this.request("document/edit", {
+        uri: "doc",
+        rev: this.rev,
+        edits: [{ from: 0, to: this.text.length, insert: text }],
+      });
+    }
     this.text = text;
     this.counter.compiles = 0;
     this.counter.checks = 0;

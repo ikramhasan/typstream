@@ -25,7 +25,7 @@ export const createHealer: (options?: HealOptions) => Healer;
 export const DEFAULT_LINT: Readonly<Record<LintRuleId, LintSeverity>>;
 
 // @public (undocumented)
-export type FrameKind = "content" | "code-block" | "args" | "params" | "parens" | "math" | "math-args" | "strong" | "emph" | "string" | "raw" | "term" | "text-bracket";
+export type FrameKind = "content" | "code-block" | "args" | "params" | "parens" | "math" | "math-args" | "math-delimited" | "strong" | "emph" | "string" | "raw" | "term" | "text-bracket";
 
 // @public
 export const heal: (input: string, opts?: HealOptions) => HealResult;

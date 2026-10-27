@@ -32,13 +32,17 @@ machine was busy: the document is compared once more.
 caught up, while MutationObservers record what the renderers remove and add.
 
 - Paged: pages are never removed while the document grows; a page is redrawn only when its SVG changed, and an SVG
-  is never taken out without the next going in (no blank page); a page before the last two never returns to an SVG
-  it showed before. The last pages are where the stream is: the fixers may cut a call being typed back to its start
-  (#20, #65), hiding it until it compiles again, and what is typed at the top of a page can move back to the page before.
-- HTML: a block whose markup didn't change is never re-created. Blocks carry the source offset of the anchor before
-  them; the blocks sharing one are a group, settled once the next group starts before heal's stable offset. A
-  settled group never disappears and changes only where later text may change it: ids Typst writes once a reference
-  targets an element, references and citations (a `pending-ref` placeholder until its target arrives), and outlines.
+  is never taken out without the next going in (no blank page); no page returns to an SVG it showed before, the last
+  page included: when heal or the fixers cut what rendered from the text being typed, the engine keeps its last
+  render (#65). The exception is a page that isn't the last and lost what moved to a page added since (a heading moves
+  to the next page with what follows it).
+- HTML: a block whose markup didn't change is never re-created (a node added and removed between two steps was an
+  artifact in between, not a re-creation). Blocks carry the source offset of the anchor before them; the blocks
+  sharing one are a group, settled once the next group starts before heal's stable offset. A settled group never
+  disappears and changes only where later text may change it: ids Typst writes once a reference targets an element,
+  references and citations (a `pending-ref` placeholder until its target arrives), and outlines.
+- Both report, per document, the steps whose render shows less than the step before (HTML: less text, whitespace
+  aside; paged: a page back to an earlier SVG). Passing tests' logs show with `--reporter=verbose`.
 
 **Accessibility** (`a11y.test.ts`). Every edu document, finished: axe-core with WCAG 2.2 A/AA and best practices
 (page-level rules off: a document is part of a page), HTML in the light and the dark theme, plus:

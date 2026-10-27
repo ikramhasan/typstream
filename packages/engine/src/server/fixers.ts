@@ -312,6 +312,9 @@ export interface FixOutcome {
   diagnostics: Diagnostic[];
   /** When `ok`: the errors fixed, in the order fixed. */
   fixes: AppliedFix[];
+  /** The text the last round compiled (the client's when no round ran), and its positions in the client's text. */
+  text: string;
+  toOriginal(pos: number, assoc?: 1 | -1): number;
 }
 
 /** Fixes and recompiles until the text compiles, no fix applies, or rounds or time run out. */
@@ -332,7 +335,7 @@ export const runFixers = async (run: FixRun): Promise<FixOutcome> => {
     for (const error of errors) {
       const fix = await fixError(fixers, error, ctx);
       // An error nothing fixes fails the recompile too.
-      if (!fix) return { ok: false, rounds, diagnostics: run.diagnostics, fixes: [] };
+      if (!fix) return { ok: false, rounds, diagnostics: run.diagnostics, fixes: [], text, toOriginal };
       fixes.push(fix);
     }
     for (const { fixer, error } of fixes) {
@@ -351,11 +354,14 @@ export const runFixers = async (run: FixRun): Promise<FixOutcome> => {
     diagnostics = await run.compile(text, toOriginal);
     rounds++;
   }
-  if (diagnostics.some(isError)) return { ok: false, rounds, diagnostics: run.diagnostics, fixes: [] };
+  if (diagnostics.some(isError))
+    return { ok: false, rounds, diagnostics: run.diagnostics, fixes: [], text, toOriginal };
   return {
     ok: true,
     rounds,
     diagnostics: [...diagnostics.map((d) => mapDiagnostic(d, toOriginal)), ...fixed],
     fixes: applied,
+    text,
+    toOriginal,
   };
 };

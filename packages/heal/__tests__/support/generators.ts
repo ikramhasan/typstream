@@ -15,6 +15,7 @@ export const INLINE_ATOMS = [
   "$x^2 + y_1$",
   "$frac(a, b)$",
   "$sqrt(x) / 2$",
+  "$sqrt(1/n sum (x_i - {y})^2)$",
   "$a_(i j)^2$",
   "$[0, 1)$",
   "$f(x) = x'$",

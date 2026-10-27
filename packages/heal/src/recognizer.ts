@@ -21,6 +21,7 @@ export type FrameKind =
   | "parens"
   | "math"
   | "math-args"
+  | "math-delimited"
   | "strong"
   | "emph"
   | "string"
@@ -297,6 +298,8 @@ class Parser {
   nlMode = CONTINUE;
   token: PTok;
   depth = 0;
+  /** Math argument lists open in the innermost equation. */
+  mathArgsOpen = 0;
 
   readonly reqs: Requirement[] = [];
   readonly errors: SyntaxIssue[] = [];
@@ -764,11 +767,15 @@ class Parser {
   equation(): void {
     const m = this.token.start;
     const display = isWhitespace(this.text[m + 1]);
+    // An equation in an argument (`$sqrt(#box[$(x$`) closes its own groups.
+    const outerArgs = this.mathArgsOpen;
+    this.mathArgsOpen = 0;
     this.enterModes("math", CONTINUE, () => {
       this.eat();
       this.math(EQUATION_STOP);
       this.expectClosingDelimiter(m, "Dollar", "math", display);
     });
+    this.mathArgsOpen = outerArgs;
     this.events.push({ type: "equation", start: m, end: this.token.prevEnd });
   }
 
@@ -890,25 +897,36 @@ class Parser {
   }
 
   mathDelimited(): void {
+    const m = this.token.start;
     this.eat();
     this.mathExprs(DELIMITED_STOP);
     if (this.at("RightBrace") || this.at("RightParen")) this.eat();
+    // An unclosed group is fine in math (math_delimited in parser.rs), except in a call's arguments,
+    // whose `)` it would take: `$sqrt((x` needs `))`, not `)`.
+    else if (this.mathArgsOpen > 0 && this.atRealEnd()) {
+      this.require({ type: "close", text: this.text[m] === "{" ? "}" : ")", open: m, frame: "math-delimited" });
+    }
   }
 
   mathArgs(): void {
     const m = this.token.start;
     const seen = new Set<string>();
     this.eat();
-    while (!this.atSet(MATH_ARGS_STOP)) {
-      this.mathArg(seen);
-      const k = this.current();
-      if (k === "End" || k === "Dollar" || k === "RightParen") {
-        // done
-      } else if (k === "Semicolon" || k === "Comma") {
-        this.eat();
-      } else {
-        this.expected("comma or semicolon");
+    this.mathArgsOpen++;
+    try {
+      while (!this.atSet(MATH_ARGS_STOP)) {
+        this.mathArg(seen);
+        const k = this.current();
+        if (k === "End" || k === "Dollar" || k === "RightParen") {
+          // done
+        } else if (k === "Semicolon" || k === "Comma") {
+          this.eat();
+        } else {
+          this.expected("comma or semicolon");
+        }
       }
+    } finally {
+      this.mathArgsOpen--;
     }
     this.expectClosingDelimiter(m, "RightParen", "math-args");
   }
