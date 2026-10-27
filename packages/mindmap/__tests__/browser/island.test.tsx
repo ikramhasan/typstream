@@ -69,6 +69,8 @@ describe(`the mind map island in ${server.browser}`, () => {
     const [a, b] = [host.getBoundingClientRect(), marker.getBoundingClientRect()];
     expect([a.left, a.top, a.width, a.height]).toEqual([b.left, b.top, b.width, b.height]);
     expect(b.height).toBeGreaterThan(40);
+    // No attribution link in a teacher's document.
+    expect(container.querySelector(".react-flow__attribution")).toBeNull();
     // The text after the map is below it, not under it.
     const after = [...container.querySelectorAll("p")].find((p) => p.textContent?.includes("After the map"));
     expect(after?.getBoundingClientRect().top).toBeGreaterThanOrEqual(b.bottom - 1);

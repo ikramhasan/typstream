@@ -251,6 +251,9 @@ const MindMapView = ({ data, isIncomplete, file }: IslandProps<MindMapData>) => 
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           colorMode="light"
+          // No "React Flow" link in every map of a teacher's document (maintainer's call). MIT allows it; the
+          // React Flow team asks commercial users who hide it to support the project (reactflow.dev/pro).
+          proOptions={{ hideAttribution: true }}
           fitView
           fitViewOptions={{ padding: 0.05 }}
           minZoom={0.1}
