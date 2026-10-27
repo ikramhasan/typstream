@@ -41,8 +41,6 @@ const ALLOWED: Partial<Record<ErrorClass, string>> = {
   "missing-argument": DEEP,
   "type-mismatch": DEEP,
   "invalid-value": DEEP,
-  unlocated:
-    "#72: no position in the document to cut at (a CeTZ panic); last-good render, then the stable prefix (#21)",
   // `syntax` only for heal's KNOWN_HEAL_BUGS (checked below); heal's corpus test fails on any other.
   syntax: "KNOWN_HEAL_BUGS in packages/heal/__tests__/support/known-bugs.ts",
 };

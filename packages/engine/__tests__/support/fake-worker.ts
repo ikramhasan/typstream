@@ -6,6 +6,7 @@
 //   ERROR  → an error diagnostic on the marker, status "error", no artifact
 //   LOOP   → never finishes (only the watchdog gets the client out)
 //   CRASH  → the worker fails outside the protocol (an `error` event)
+//   DROP   → the connection drops (a `lost` event, as a closed WebSocket)
 //   FIX    → a fixer (`fake-fixer`) makes it compile: reported in `fixes`
 //   BROKEN → an error, unless the client asked to isolate blocks: then the
 //            marker is shown as an error block (fallback level 3)
@@ -168,11 +169,21 @@ export class FakeWorker implements EngineConnection {
     }
   }
 
-  /** Runs a compile or export of `text`: false if it never finishes (LOOP, CRASH). */
+  /** The connection drops now, as a WebSocket that closes. */
+  drop(): void {
+    this.events.lost(new Error("connection lost"));
+  }
+
+  /** Runs a compile or export of `text`: false if it never finishes (LOOP, CRASH, DROP). */
   private async work(text: string): Promise<boolean> {
     if (text.includes("CRASH")) {
       await sleep(1);
       this.events.error(new Error("worker crashed"));
+      return false;
+    }
+    if (text.includes("DROP")) {
+      await sleep(1);
+      this.drop();
       return false;
     }
     if (text.includes("LOOP")) return false;

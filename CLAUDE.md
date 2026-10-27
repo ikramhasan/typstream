@@ -82,8 +82,8 @@ In `packages/engine-wasm` (Rust build, ~3 min cold):
 In `packages/engine`:
 - `pnpm test`: the `node` vitest project (client against a fake worker; server and protocol conformance against engine-wasm in-process). Needs engine-wasm's `dist/`.
 - `pnpm test:browser`: the `browser` project, the real worker in Chromium, Firefox and WebKit (vitest browser mode, Playwright). `BROWSERS=chromium` runs one.
-- `pnpm size`: main thread ≤ 8.5 KB, worker JS ≤ 40 KB gzipped.
-- Two API reports: `api/engine.api.md` (main entry) and `api/engine-server.api.md` (`@typstream/engine/server`).
+- `pnpm size`: main thread ≤ 8.5 KB, worker JS ≤ 40 KB, `@typstream/engine/websocket` ≤ 1.5 KB gzipped.
+- Three API reports: `api/engine.api.md` (main entry), `api/engine-server.api.md` (`@typstream/engine/server`) and `api/engine-websocket.api.md` (`@typstream/engine/websocket`, `fromWebSocket`, the transport to a remote engine).
 
 In `packages/html-compat`:
 - Edit `typst/html-compat.typ` / `css/html-compat.css`, then `pnpm embed` to regenerate `src/assets.generated.ts` (a test checks it).

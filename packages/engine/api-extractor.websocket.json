@@ -1,0 +1,25 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/api-extractor/v7/api-extractor.schema.json",
+  "extends": "../../tools/repo/api-extractor.base.json",
+  // The `@typstream/engine/websocket` entry point: `fromWebSocket`.
+  "mainEntryPointFilePath": "<projectFolder>/dist/websocket.d.ts",
+  "apiReport": {
+    "enabled": true,
+    "reportFileName": "engine-websocket.api.md",
+    "reportFolder": "<projectFolder>/api/",
+    "reportTempFolder": "<projectFolder>/dist/api/"
+  },
+  "compiler": {
+    "overrideTsconfig": {
+      "compilerOptions": {
+        "target": "ES2022",
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
+        "lib": ["ES2022", "DOM"],
+        "strict": true,
+        "skipLibCheck": true
+      },
+      "files": ["dist/websocket.d.ts"]
+    }
+  }
+}

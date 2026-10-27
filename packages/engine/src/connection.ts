@@ -17,6 +17,7 @@ import {
   type ServerMessage,
   type ServerNotification,
 } from "@typstream/core";
+import type { WatchdogOptions } from "./document";
 
 /**
  * What the client hears from a worker it spawned.
@@ -27,6 +28,14 @@ export interface EngineEvents {
   message(message: ServerMessage): void;
   /** The worker failed outside the protocol (an uncaught error, out of memory). The client replaces it. */
   error(error: unknown): void;
+  /**
+   * The connection dropped (a WebSocket closed): not the document's doing, so
+   * unlike {@link EngineEvents.error} the compile it was running isn't a
+   * watchdog strike. The client opens a new connection and retries what was
+   * in flight there. Workers don't report this.
+   * @beta
+   */
+  lost(error: unknown): void;
 }
 
 /**
@@ -51,7 +60,27 @@ export interface EngineConnection {
  * ```
  * @public
  */
-export type SpawnEngine = (events: EngineEvents) => EngineConnection;
+export interface SpawnEngine {
+  /** Starts a fresh worker (or connection) and returns the client's handle on it. */
+  (events: EngineEvents): EngineConnection;
+  /**
+   * What suits this transport, for the options `createEngine` isn't given:
+   * `fromWebSocket` sets budgets above the server's own and no spare.
+   * @beta
+   */
+  readonly defaults?: SpawnDefaults;
+}
+
+/**
+ * Engine options a {@link SpawnEngine} suggests; `createEngine`'s own options win.
+ * @beta
+ */
+export interface SpawnDefaults {
+  /** Merged over `DEFAULT_WATCHDOG`, under `EngineOptions.watchdog`. */
+  watchdog?: Partial<WatchdogOptions>;
+  /** Used when `EngineOptions.spare` isn't given. */
+  spare?: boolean;
+}
 
 /**
  * The parts of a Web Worker {@link fromWorker} uses; a DOM `Worker` has them.
@@ -88,7 +117,7 @@ export const fromWorker =
   };
 
 /** Why a worker went away with requests unanswered. */
-export type GoneReason = "timeout" | "crash" | "recycle" | "dispose";
+export type GoneReason = "timeout" | "crash" | "recycle" | "dispose" | "disconnect";
 
 /** @internal Rejects every request pending on a worker that was terminated. */
 export class WorkerGone extends Error {
@@ -116,7 +145,7 @@ export class Connection {
   constructor(
     spawn: SpawnEngine,
     onNotification: (notification: ServerNotification) => void,
-    onError: (error: unknown) => void,
+    onError: (error: unknown, lost?: boolean) => void,
   ) {
     this.port = spawn({
       message: (m) => {
@@ -132,11 +161,19 @@ export class Connection {
       error: (e) => {
         if (this.port) onError(e);
       },
+      lost: (e) => {
+        if (this.port) onError(e, true);
+      },
     });
   }
 
   get alive(): boolean {
     return this.port !== null;
+  }
+
+  /** Requests are waiting for their answer. */
+  get busy(): boolean {
+    return this.pending.size > 0;
   }
 
   request<M extends RequestMethod>(method: M, params: ParamsOf<M>): { id: RequestId; result: Promise<ResultOf<M>> } {

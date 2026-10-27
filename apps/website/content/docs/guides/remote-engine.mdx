@@ -7,8 +7,8 @@ By default each browser runs Typst itself, in a worker: a 6.2 MB download (brotl
 
 Consider it for devices too slow or too constrained for the wasm engine, or for pages that show a document once and don't justify the download. The cost is a round trip per compile and compile time on your servers.
 
-<Callout type="warn" title="Bring your own browser client">
-  typstream doesn't ship a ready-made browser transport for this yet: the server side is built and tested over a real WebSocket, and the browser side is about 30 lines you write against `SpawnEngine` ([below](#connect-the-browser); a shipped client is [#85](https://github.com/ikramhasan/typstream/issues/85)). Switching from server previews to the local engine once its download finishes isn't built either.
+<Callout type="warn" title="Beta">
+  The browser client, `fromWebSocket`, is beta and may change before the first stable release. Switching from server previews to the local engine once its download finishes isn't built yet.
 </Callout>
 
 ## Serve the protocol
@@ -101,68 +101,42 @@ Authentication, rate limits and the number of connections per user are yours to 
 
 ## Connect the browser
 
-The engine client (`createEngine` from `@typstream/engine`) talks to whatever its `spawn` function starts. In a browser that is usually a worker (`engineWorker()`); a `SpawnEngine` over a WebSocket connects it to your server instead:
+The engine client (`createEngine` from `@typstream/engine`) talks to whatever its `spawn` function starts. In a browser that is usually a worker (`engineWorker()`); `fromWebSocket` from `@typstream/engine/websocket` connects it to your server instead:
 
-```ts title="websocket-engine.ts"
-import { deserializeMessage, type ServerMessage, serializeMessage } from "@typstream/core";
-import type { SpawnEngine } from "@typstream/engine";
-
-/** The engine at `url`, over a WebSocket. Each call opens a new connection, as each spawn must start a fresh engine. */
-export const webSocketEngine =
-  (url: string): SpawnEngine =>
-  (events) => {
-    const socket = new WebSocket(url);
-    const queued: string[] = [];
-    let closing = false;
-
-    socket.addEventListener("open", () => {
-      for (const text of queued.splice(0)) socket.send(text);
-    });
-    socket.addEventListener("message", (event) => {
-      events.message(deserializeMessage(event.data as string) as ServerMessage);
-    });
-    // A lost connection is a crashed engine to the client: it opens a new one and reopens its documents.
-    socket.addEventListener("error", (event) => events.error(event));
-    socket.addEventListener("close", (event) => {
-      if (!closing) events.error(new Error(`engine connection closed (${event.code})`));
-    });
-
-    return {
-      postMessage(message) {
-        const text = serializeMessage(message);
-        if (socket.readyState === WebSocket.OPEN) socket.send(text);
-        else queued.push(text); // messages sent before the socket opens
-      },
-      terminate() {
-        closing = true;
-        socket.close();
-      },
-    };
-  };
+```npm
+npm install @typstream/engine
 ```
 
 ```ts title="engine.ts"
 import { createEngine } from "@typstream/engine";
-import { webSocketEngine } from "./websocket-engine";
+import { fromWebSocket } from "@typstream/engine/websocket";
 
-export const engine = createEngine({
-  spawn: webSocketEngine("wss://typst.example.com/typst"),
-  // The server stops a compile at 3 s / 10 s and answers with a timeout error.
-  // Give that answer time to arrive before the client gives up on the connection.
-  watchdog: { streamingMs: 6_000, finalMs: 15_000 },
-  // One connection per page; a replacement opens when it's needed.
-  spare: false,
-});
+export const engine = createEngine({ spawn: fromWebSocket("wss://typst.example.com/typst") });
 ```
 
-Then use it like any engine: `<TypstreamProvider engine={engine}>` in React, or `mountTypstream(element, { engine, … })`. In an app rendered on the server, create the engine in the browser only, as in [Self-hosting](/docs/guides/self-hosting#a-custom-worker).
+Then use it like any engine: `<TypstreamProvider engine={engine}>` in React, or `mountTypstream(element, { engine, … })`. In an app rendered on the server, create the engine in the browser only, as in [Self-hosting](/docs/guides/self-hosting#a-custom-worker). `fromWebSocket` is its own entry point, so pages that compile in a worker don't download it.
+
+To authenticate each connection with a short-lived token, pass a function: it is called for every connection, the first and each one that replaces it, and must return the URL synchronously.
+
+```ts
+// sessionToken() returns your app's current token.
+const spawn = fromWebSocket(() => `wss://typst.example.com/typst?token=${encodeURIComponent(sessionToken())}`);
+```
 
 How the client behaves over this transport:
 
 - **Healing stays in the browser.** The client heals each chunk on the main thread and sends the server one diff right before each compile, so the server sees healed source, never half a token.
-- **The watchdog.** Past its budget, the client closes the connection and opens a new one, a new session; documents open themselves again before their next compile. Keeping the client's budgets above the server's (as above) lets the server's own timeout answer first, which costs one compile instead of the session.
-- **A server that can't be reached.** A connection that fails before the server answers `initialize` fails the engine (an engine `failed` event, every document in `error`) rather than reconnecting in a loop. A connection lost later is replaced.
+- **The watchdog.** The budgets `fromWebSocket` gives the engine, 10 s streaming and 30 s final, sit above the most the server takes with its default timeouts (about 4.5 s and 15 s, its fallback included), so the server's own timeout answers first: a `timeout` diagnostic that costs one compile. Past the client's budget (a server that stopped answering), the client closes the connection and opens a new one, a new session; documents open themselves again before their next compile. If you raise the server's `timeouts`, raise the client's `watchdog` with them.
+- **No spare connection.** In a worker the engine keeps a spare warm; over a socket that would be a second session per page, so `fromWebSocket` turns it off. Pass `spare: true` to `createEngine` to have it anyway.
+- **Dropped connections.** When a connection closes (the server restarted, a proxy timed it out), the engine emits a `disconnect` event and opens a new one; the compile or export that was running is retried there, without counting against the document. A request that keeps dropping the connection (three times in a row, such as a message over `maxPayload`) then counts as a crash, so it stops.
+- **A server that can't be reached.** Opening a connection is retried 4 times, after 0.5, 1, 2 and 4 s (`retries`, `retryDelayMs`). When every attempt fails, or a connection closes before the server answers `initialize` (it refused it), the engine fails (an engine `failed` event, every document in `error`) rather than reconnecting in a loop. Create a new engine to try again.
 - **Telemetry** works as with a worker: the [events](/docs/guides/telemetry) come from the client. `serverInfo.name` in the engine's `ready` event is `@typstream/node`.
+
+The options:
+
+<auto-type-table path="packages/engine/src/websocket.ts" name="WebSocketOptions" />
+
+The server's `$/log` warnings (ignored fonts or fixer modules) arrive as `log` events. Browsers can't send WebSocket pings, so a proxy that closes idle connections (nginx's `proxy_read_timeout` is 60 s by default) makes the client reconnect after each one: harmless, as nothing is lost, but raise the proxy's idle timeout if the reconnects bother you.
 
 ## Content-Security-Policy
 

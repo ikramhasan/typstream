@@ -1,7 +1,7 @@
 import type { CompileParams, DocumentOpenParams, HtmlArtifact, PagedArtifact } from "@typstream/core";
 import { heal } from "@typstream/heal";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fromWorker, type WorkerLike } from "../src/connection";
+import { type EngineEvents, fromWorker, type SpawnEngine, type WorkerLike } from "../src/connection";
 import { type DocumentState, ExportError } from "../src/document";
 import { createEngine, type EngineEvent, type EngineOptions } from "../src/engine";
 import { compileInterval, DEFAULT_SCHEDULE, updateEma } from "../src/schedule";
@@ -769,6 +769,120 @@ describe("exports", () => {
   });
 });
 
+describe("dropped connections", () => {
+  const noStrikes = (events: EngineEvent[]) =>
+    events.some(
+      (e) => e.type === "crash" || e.type === "watchdog" || (e.type === "document" && e.event.type === "watchdog"),
+    );
+
+  it("opens a new connection and retries the compile, without a strike", async () => {
+    const { workers, engine, events } = setup({ compileMs: () => 500 }, { spare: false });
+    const doc = engine.open({ text: "one" });
+    await tick(1000);
+    doc.set("two");
+    await tick(100);
+    workers.spawned[0]?.drop();
+    await tick(1000);
+    expect(events.filter((e) => e.type === "disconnect")).toEqual([
+      { type: "disconnect", error: new Error("connection lost") },
+    ]);
+    expect(noStrikes(events)).toBe(false);
+    expect(workers.spawned.map((w) => w.terminated)).toEqual([true, false]);
+    const opened = workers.spawned[1]?.requests("document/open").map((r) => (r.params as DocumentOpenParams).text);
+    expect(opened).toEqual(["two"]);
+    const s = doc.getState();
+    expect(s.status).toBe("idle");
+    expect(s.failure).toBeNull();
+    expect(html(s)).toBe("<p>two</p>");
+  });
+
+  it("retries an export on the new connection", async () => {
+    const { workers, engine } = setup({ compileMs: () => 500 }, { spare: false });
+    const doc = engine.open({ text: "ok" });
+    await tick(1000);
+    const pdf = doc.exportPdf();
+    await tick(100);
+    workers.spawned[0]?.drop();
+    await tick(1000);
+    expect(new TextDecoder().decode(await pdf)).toBe("%PDF ok");
+    expect(workers.spawned[1]?.requests("export/pdf")).toHaveLength(1);
+  });
+
+  it("counts a loss as a crash after three in a row with requests in flight", async () => {
+    const { workers, engine, events } = setup({}, { spare: false });
+    const doc = engine.open({ text: "ok" });
+    await tick(100);
+    // Idle connections that drop are replaced, but not counted.
+    for (let i = 0; i < 4; i++) {
+      workers.alive[0]?.drop();
+      await tick(100);
+    }
+    expect(workers.spawned).toHaveLength(5);
+    doc.set("ok DROP");
+    await tick(2000);
+    // Three retries, then a crash: a strike, and no more retries.
+    expect(workers.spawned).toHaveLength(9);
+    expect(events.filter((e) => e.type === "disconnect")).toHaveLength(8);
+    expect(doc.getState().failure?.reason).toBe("crash");
+    expect(doc.getState().live).toBe(true);
+    // An answered compile starts the count again: three retries, then a crash.
+    doc.set("fine");
+    await tick(200);
+    expect(html(doc.getState())).toBe("<p>fine</p>");
+    doc.set("fine DROP");
+    await tick(2000);
+    expect(workers.spawned).toHaveLength(13);
+    expect(doc.getState().failure?.reason).toBe("crash");
+  });
+
+  it("fails the engine when the first connection drops before initialize", async () => {
+    const workers = new FakeWorkers();
+    const engine = createEngine({
+      spawn: (events) => {
+        const w = workers.spawn(events);
+        setTimeout(() => events.lost(new Error("refused")), 10);
+        return w;
+      },
+    });
+    engine.ready.catch(() => {});
+    const doc = engine.open({ text: "x" });
+    await tick(100);
+    expect(workers.spawned).toHaveLength(1);
+    expect(doc.getState().status).toBe("error");
+    expect(doc.getState().failure?.message).toBe("refused");
+  });
+
+  it("takes the spawn's defaults, under the engine's options", async () => {
+    const workers = new FakeWorkers();
+    const spawn: SpawnEngine = Object.assign((events: EngineEvents) => workers.spawn(events), {
+      defaults: { watchdog: { streamingMs: 5000 }, spare: false },
+    });
+    const events: EngineEvent[] = [];
+    const engine = createEngine({ spawn });
+    engine.onEvent((e) => events.push(e));
+    const doc = engine.open({ text: "x" });
+    await tick(100);
+    expect(workers.alive).toHaveLength(1);
+    doc.push(" LOOP");
+    await tick(3100);
+    expect(events.some((e) => e.type === "watchdog")).toBe(false);
+    await tick(2000);
+    expect(events.find((e) => e.type === "watchdog")).toMatchObject({ budgetMs: 5000 });
+
+    const explicit = new FakeWorkers();
+    const spawn2: SpawnEngine = Object.assign((events: EngineEvents) => explicit.spawn(events), spawn);
+    const other = createEngine({ spawn: spawn2, watchdog: { streamingMs: 1000 }, spare: true });
+    const watched: EngineEvent[] = [];
+    other.onEvent((e) => watched.push(e));
+    const doc2 = other.open({ text: "x" });
+    await tick(100);
+    expect(explicit.alive).toHaveLength(2);
+    doc2.push(" LOOP");
+    await tick(1100);
+    expect(watched.find((e) => e.type === "watchdog")).toMatchObject({ budgetMs: 1000 });
+  });
+});
+
 describe("startup", () => {
   it("fails every document when the worker speaks another protocol version", async () => {
     const { engine, events } = setup({ protocolVersion: 99 });
@@ -821,7 +935,11 @@ describe("fromWorker", () => {
       },
     };
     const got: unknown[] = [];
-    const conn = fromWorker(() => worker)({ message: (m) => got.push(m), error: (e) => got.push(["error", e]) });
+    const conn = fromWorker(() => worker)({
+      message: (m) => got.push(m),
+      error: (e) => got.push(["error", e]),
+      lost: (e) => got.push(["lost", e]),
+    });
     listeners.message?.({ data: { method: "$/log", params: { level: "info", message: "hi" } } });
     listeners.error?.("boom");
     listeners.messageerror?.("bad");

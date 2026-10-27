@@ -158,6 +158,7 @@ Both `onEvent` calls return a function that removes the listener. Besides `docum
 | `ready` | `info` | A worker finished starting (the first one, and every replacement). `info.serverInfo.typstVersion` is `0.15.1`. |
 | `watchdog` | `uri`, `rev`, `budgetMs` | A compile or export ran past its budget; the worker was terminated. |
 | `crash` | `error` | A worker failed outside the protocol. |
+| `disconnect` | `error` | The connection to a [remote engine](/docs/guides/remote-engine) dropped; a new one opens. |
 | `recycle` | `memoryBytes` | A worker was replaced because it used too much memory (256 MiB by default). |
 | `log` | `level`, `message` | A log message from the worker, such as a plugin's fixer module that failed to load. |
 | `failed` | `error` | The engine can't run; every document is in `error`. |

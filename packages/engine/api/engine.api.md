@@ -130,6 +130,9 @@ export type EngineEvent = {
     type: "crash";
     error: unknown;
 } | {
+    type: "disconnect";
+    error: unknown;
+} | {
     type: "recycle";
     memoryBytes: number;
 } | {
@@ -147,6 +150,8 @@ export type EngineEvent = {
 // @public
 export interface EngineEvents {
     error(error: unknown): void;
+    // @beta
+    lost(error: unknown): void;
     message(message: ServerMessage): void;
 }
 
@@ -202,8 +207,18 @@ export interface ScheduleOptions {
     staleMs: number;
 }
 
+// @beta
+export interface SpawnDefaults {
+    spare?: boolean;
+    watchdog?: Partial<WatchdogOptions>;
+}
+
 // @public
-export type SpawnEngine = (events: EngineEvents) => EngineConnection;
+export interface SpawnEngine {
+    (events: EngineEvents): EngineConnection;
+    // @beta
+    readonly defaults?: SpawnDefaults;
+}
 
 // @public
 export interface WatchdogOptions {

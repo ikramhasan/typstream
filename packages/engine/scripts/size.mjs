@@ -3,6 +3,8 @@
 //   is left out; @typstream/core's helpers are inlined.
 // - the worker's JS: the server, core's helpers and engine-wasm's glue. The
 //   wasm and the fonts are separate files with their own budgets.
+// - `@typstream/engine/websocket`: what an app adds to the main thread to
+//   compile on a server (core's wire format included), not in the first budget.
 import { gzipSync } from "node:zlib";
 import { build } from "esbuild";
 
@@ -32,5 +34,6 @@ const MAIN_THREAD = 8.5 * 1024;
 const ok = [
   await measure("@typstream/engine (main thread)", "src/index.ts", MAIN_THREAD, ["@typstream/heal"]),
   await measure("@typstream/engine (worker JS, excl. wasm and fonts)", "src/worker.ts", 40 * 1024, []),
+  await measure("@typstream/engine/websocket", "src/websocket.ts", 1.5 * 1024, []),
 ];
 process.exitCode = ok.every(Boolean) ? 0 : 1;
