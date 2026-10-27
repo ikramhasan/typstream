@@ -4,6 +4,11 @@ description: >
   depends on. dist/ is cached on the crate's inputs, so a warm run skips Rust entirely; build.sh then sees
   dist/ is up to date and turbo's build of the package does nothing. A cold run also restores target/.
 
+outputs:
+  cache-hit:
+    description: "'true' when dist/ came from the cache: nothing was built and Rust wasn't set up."
+    value: ${{ steps.dist.outputs.cache-hit }}
+
 runs:
   using: composite
   steps:
@@ -11,7 +16,9 @@ runs:
       uses: actions/cache@v6
       with:
         path: packages/engine-wasm/dist
-        key: engine-wasm-dist-${{ runner.os }}-${{ hashFiles('packages/engine-wasm/Cargo.lock', 'packages/engine-wasm/Cargo.toml', 'packages/engine-wasm/src/**', 'packages/engine-wasm/build.sh') }}
+        # The inputs build.sh hashes into dist/.inputs: a key that missed one would restore a stale dist/,
+        # which build.sh would then try to rebuild without Rust.
+        key: engine-wasm-dist-${{ runner.os }}-${{ hashFiles('packages/engine-wasm/Cargo.lock', 'packages/engine-wasm/Cargo.toml', 'packages/engine-wasm/src/**', 'packages/engine-wasm/build.sh', 'packages/engine-wasm/scripts/fonts.mjs') }}
 
     # Typst 0.15.1 needs Rust ≥ 1.92 (CLAUDE.md).
     - if: steps.dist.outputs.cache-hit != 'true'

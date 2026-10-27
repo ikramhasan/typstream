@@ -94,8 +94,8 @@ const add = (ctx: Ctx, rule: LintRuleId, start: number, end: number, message: st
 const inRange = (ctx: Ctx, pos: number): boolean => pos >= ctx.from && pos < ctx.to;
 const markupAt = (ctx: Ctx, pos: number): boolean => modeAt(ctx.modes, pos) === "markup";
 
-const regexRule = (ctx: Ctx, re: RegExp, f: (m: RegExpExecArray) => void): void => {
-  re.lastIndex = ctx.from;
+const regexRule = (ctx: Ctx, re: RegExp, f: (m: RegExpExecArray) => void, start = ctx.from): void => {
+  re.lastIndex = start;
   for (let m = re.exec(ctx.text); m !== null && m.index < ctx.to; m = re.exec(ctx.text)) {
     if (m.index + m[0].length <= ctx.to) f(m);
   }
@@ -190,16 +190,25 @@ export const lint = (
     },
   };
 
+  // A heading belongs to the range holding its `#`. Root checkpoints, where incremental
+  // and streamed linting resume, sit at a line's first token, after its indentation:
+  // search from the line start, or `^` can't match there and bare-hash escapes the `#`.
   const headings = new Set<number>();
-  regexRule(ctx, MD_HEADING, (m) => {
-    const hash = m.index + (m[1] as string).length;
-    const hashes = m[2] as string;
-    if (!markupAt(ctx, hash)) return;
-    headings.add(hash);
-    add(ctx, "markdown-heading", hash, hash + hashes.length, "Markdown heading; Typst uses `=`", [
-      { from: hash, to: hash + hashes.length, insert: "=".repeat(hashes.length) },
-    ]);
-  });
+  const lineStart = text.lastIndexOf("\n", from - 1) + 1;
+  regexRule(
+    ctx,
+    MD_HEADING,
+    (m) => {
+      const hash = m.index + (m[1] as string).length;
+      const hashes = m[2] as string;
+      if (hash < from || !markupAt(ctx, hash)) return;
+      headings.add(hash);
+      add(ctx, "markdown-heading", hash, hash + hashes.length, "Markdown heading; Typst uses `=`", [
+        { from: hash, to: hash + hashes.length, insert: "=".repeat(hashes.length) },
+      ]);
+    },
+    lineStart,
+  );
   regexRule(ctx, MD_BOLD, (m) => {
     const end = m.index + m[0].length;
     if (!markupAt(ctx, m.index) || !markupAt(ctx, end - 1)) return;

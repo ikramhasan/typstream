@@ -77,7 +77,7 @@ pnpm corpus:validate   # native `typst` 0.15.1 compile of every corpus entry (ne
 In `packages/engine-wasm` (Rust build, ~3 min cold):
 - `pnpm build`: `build.sh` → `dist/` (glue, `.d.ts`, `wasm-opt -Oz` wasm, base fonts from typst-assets, and the lazily loaded script fonts, downloaded from notofonts at a pinned commit and SHA-256 checked, with their `FontInfo` registry written by `scripts/fonts.mjs`). It skips the build when `dist/` came from the same inputs (`FORCE=1` rebuilds). The root `pnpm test` / `pnpm check-types` (turbo) build it first; run inside the package, `pnpm test` uses the existing `dist/`.
 - `pnpm size`: wasm budget, 6.3 MB brotli (HTML, SVG and PDF in one build since #18).
-- It isn't a tsup package: `dist/` is wasm-bindgen's output, and its API report reads `dist/engine.d.ts`, whose types are written in `src/lib.rs`. Only the `Engine (wasm)` CI job runs its own checks; the other jobs pass `--filter=!@typstream/engine-wasm`, but `@typstream/engine` depends on it, so turbo still builds it there: they restore `dist/` with `.github/actions/engine-wasm` (cached on the crate's inputs), and `build.sh` then has nothing to do.
+- It isn't a tsup package: `dist/` is wasm-bindgen's output, and its API report reads `dist/engine.d.ts`, whose types are written in `src/lib.rs`. Only CI's `Engine (wasm, html-compat, edu)` job runs its own checks; the other jobs pass `--filter=!@typstream/engine-wasm`, but `@typstream/engine` depends on it, so turbo still builds it there. Every job restores `dist/` with `.github/actions/engine-wasm` (cached on the inputs `build.sh` hashes; it builds with Rust on a miss), and `build.sh` then has nothing to do.
 
 In `packages/engine`:
 - `pnpm test`: the `node` vitest project (client against a fake worker; server and protocol conformance against engine-wasm in-process). Needs engine-wasm's `dist/`.
@@ -87,7 +87,7 @@ In `packages/engine`:
 
 In `packages/html-compat`:
 - Edit `typst/html-compat.typ` / `css/html-compat.css`, then `pnpm embed` to regenerate `src/assets.generated.ts` (a test checks it).
-- Its tests compile with engine-wasm (a `testDeps` entry in `tools/repo/layers.mjs`) and compare with native `typst` + pdf.js, so they run in CI's `Engine (wasm)` job, not the general test job.
+- Its tests compile with engine-wasm (a `testDeps` entry in `tools/repo/layers.mjs`) and compare with native `typst` + pdf.js, so they run in CI's `Engine (wasm, html-compat, edu)` job, not the general test job.
 
 In `packages/universe`:
 - `vendor/` holds the `.tar.gz` files exactly as packages.typst.org serves them (committed). `integrity` is the SHA-256 of the *uncompressed* tar, because servers often send `.gz` with `Content-Encoding: gzip`.
@@ -96,7 +96,7 @@ In `packages/universe`:
 
 In `packages/edu`:
 - Edit `typst/*.typ`, `css/edu.css` or `examples/*.typ`, then `pnpm embed` to regenerate `src/assets.generated.ts` (the files, CSS, the prompt catalogue from the `///` doc comments of the names `lib.typ` imports, and the examples; a test checks it). Every public function needs a doc comment with an `example` block.
-- Answers must produce no output unless `sys.inputs.showAnswers` is `"true"`; every parameter needs a default and must accept what a stream cut leaves (`(2` is the number 2, `5em` arrives as `5`). Its tests compile with engine-wasm and native `typst`, so they run in CI's `Engine (wasm)` job; the compile oracle streams `examples/`.
+- Answers must produce no output unless `sys.inputs.showAnswers` is `"true"`; every parameter needs a default and must accept what a stream cut leaves (`(2` is the number 2, `5em` arrives as `5`). Its tests compile with engine-wasm and native `typst`, so they run in CI's `Engine (wasm, html-compat, edu)` job; the compile oracle streams `examples/`.
 
 In `packages/dom`:
 - `pnpm test`: node tests (the HTML block splitter, paged helpers). `pnpm test:browser`: the renderers in Chromium, Firefox and WebKit, fed by the real engine worker with html-compat and corpus documents (needs engine-wasm's `dist/`). `BROWSERS=chromium` runs one.
@@ -108,9 +108,9 @@ In `packages/react`:
 - `pnpm size`: ≤ 16.5 KB gzipped including `@typstream/dom` (React and the engine external).
 - Its bundle starts with `"use client"` (tsup banner), as does `typstream`'s, for Next.js's App Router.
 
-In `examples/strict-csp`: `pnpm test` builds the page, serves it with the policy in `csp.mjs` and fails on any CSP violation or console error in Chromium, Firefox and WebKit (`BROWSERS=` picks some). Build the packages first (`pnpm turbo run build --filter=@typstream/example-strict-csp^...`). CI runs it in the browsers job. Hostile documents go in `corpus/adversarial/hostile-*.typ` (category `hostile-…`); the engine's and the browser suites' `security.test.ts` run them all.
+In `examples/strict-csp`: `pnpm test` builds the page, serves it with the policy in `csp.mjs` and fails on any CSP violation or console error in Chromium, Firefox and WebKit (`BROWSERS=` picks some). Build the packages first (`pnpm turbo run build --filter=@typstream/example-strict-csp^...`). CI runs it in each browser's `Engine (<browser>)` job. Hostile documents go in `corpus/adversarial/hostile-*.typ` (category `hostile-…`); the engine's and the browser suites' `security.test.ts` run them all.
 
-In `examples/nextjs-ai-sdk`: `pnpm test` builds the app (Turbopack) and streams one answer into `<Typstream>` in Chromium, failing on any error frame. Without `ANTHROPIC_API_KEY` the route replays a recorded worksheet; build the packages first (`pnpm turbo run build --filter=typstream...`). CI runs it in the browsers job.
+In `examples/nextjs-ai-sdk`: `pnpm test` builds the app (Turbopack) and streams one answer into `<Typstream>` in Chromium, failing on any error frame. Without `ANTHROPIC_API_KEY` the route replays a recorded worksheet; build the packages first (`pnpm turbo run build --filter=typstream...`). CI runs it in the `Engine (chromium)` job.
 
 In `packages/heal`:
 - `pnpm test:long`: 20,000-run property campaign (minutes).
@@ -128,7 +128,7 @@ rates and classes, `node src/promote.mjs <label>` copies recordings into `corpus
 
 Compile oracle (`tools/compile-oracle`, needs the built engine): `pnpm turbo run test --filter=@typstream/compile-oracle`; `pnpm --filter @typstream/compile-oracle report` for the full measurement (minutes).
 
-CI (`.github/workflows/ci.yml`) runs the same commands on every PR, building the oracle through `.github/actions/oracle` and engine-wasm through `.github/actions/engine-wasm` (both cached on the crate's inputs), plus the engine's browser tests. `nightly.yml` runs `test:long` and heal's `pnpm mutate` (score in the job summary, HTML report as an artifact).
+CI (`.github/workflows/ci.yml`) runs the same commands on every PR, building the oracle through `.github/actions/oracle` and engine-wasm through `.github/actions/engine-wasm` (both cached on the crate's inputs), plus the browser tests and the visual suite, one job per browser, inside Playwright's Docker image (`node tools/repo/playwright-docker.mjs <command>`; no `playwright install --with-deps`, whose Ubuntu mirror has stalled jobs for 10+ minutes). **A PR's CI should finish in about 5 minutes**: split a job that outgrows that across parallel jobs (heal's every-prefix corpus suite is four test files, `corpus-prefixes-<n>.test.ts`, so vitest runs them on separate workers), and move what can't be split to `nightly.yml`. Nightly runs `test:long`, heal's `pnpm mutate` (score in the job summary, HTML report as an artifact) and the corpus-wide browser suites; `gh workflow run nightly.yml --ref <branch> -f only=browser-suites` (or `heal-properties`, `heal-mutation`) runs one group on a branch.
 
 Adding a package: copy `packages/core` and rename. Its `tsconfig.json`, `tsup.config.ts` and `api-extractor.json` only extend the shared configs (`tsconfig.base.json`, `tools/repo/`), and `@typstream/*` resolves to `packages/*/src` through a wildcard path. Then add its row to `tools/repo/layers.mjs`, and add it to the `fixed` group in `.changeset/config.json` if the row says `fixed`. Delete the copied `api/core.api.md` but keep `api/` (api-extractor won't create it), then `pnpm api:update` writes the new package's report.
 
@@ -137,7 +137,7 @@ In `tools/browser-suites` (PLAN.md §11.4, #19; details in its README):
   (replays with MutationObservers: settled HTML blocks and pages stay) and accessibility (axe-core, both targets, light and
   dark) through `mountTypstream` on the real worker, in Chromium, Firefox and WebKit. `BROWSERS=chromium` runs one. Needs
   engine-wasm's `dist/`. The adversarial set's equivalence runs in Chromium only (engine and watchdog, ~10 min); the
-  other browsers take ~5–8 min. CI runs one job per browser.
+  other browsers take ~5–8 min (WebKit ~45 min on CI). Too slow for PRs: the nightly workflow runs one job per browser.
 - `pnpm test:visual`: screenshots against `__tests__/__screenshots__/<browser>/`, run inside Playwright's Docker image
   (`scripts/visual.mjs`; needs Docker) so baselines don't depend on the machine. `pnpm visual:update` accepts changes;
   commit the PNGs it writes (stored as palette PNGs). Engine, renderer, html-compat or CSS changes that alter output need
