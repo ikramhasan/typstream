@@ -5,5 +5,5 @@
 
 export * from "./export";
 export * from "./html";
-export { type MountedTypstream, mountTypstream, type RenderedInfo, type TypstreamOptions } from "./mount";
+export { type MountedTypstream, mountTypstream, type TypstreamOptions } from "./mount";
 export * from "./paged";

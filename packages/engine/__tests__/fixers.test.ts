@@ -249,6 +249,7 @@ describe("fix loop", { timeout: 30_000 }, () => {
       expect.objectContaining({ severity: "info", source: "tail-cut", message: "missing argument: body" }),
     ]);
     expect(at(text, out.diagnostics[0] as Diagnostic)).toBe("text()");
+    expect(out.result.fixes).toEqual([{ fixer: "tail-cut", message: "missing argument: body" }]);
   });
 
   it("cuts nothing the client didn't say is unsettled", async () => {
@@ -256,6 +257,7 @@ describe("fix loop", { timeout: 30_000 }, () => {
     const out = await compile("Intro.\n\n#text()");
     expect(out.result.status).toBe("error");
     expect(out.compiles).toBe(1);
+    expect(out.result.fixes).toBeUndefined();
     expect(out.diagnostics).toEqual([expect.objectContaining({ severity: "error", source: "typst" })]);
   });
 
@@ -277,6 +279,10 @@ describe("fix loop", { timeout: 30_000 }, () => {
       ["info", "pending-ref", "@ipcc2021"],
       ["info", "pending-ref", "@nasa"],
     ]);
+    expect(out.result.fixes).toEqual([
+      { fixer: "pending-ref", message: "label `<ipcc2021>` does not exist in the document" },
+      { fixer: "pending-ref", message: "label `<nasa>` does not exist in the document" },
+    ]);
   });
 
   it("keeps a final document's missing labels as errors next to the placeholder", async () => {
@@ -285,6 +291,7 @@ describe("fix loop", { timeout: 30_000 }, () => {
     const out = await compile(text, { mode: "final" });
     expect(out.result.status).toBe("ok");
     expect(out.diagnostics.map((d) => [d.severity, d.source, at(text, d)])).toEqual([["error", "typst", "@fig-a"]]);
+    expect(out.result.fixes?.map((f) => f.fixer)).toEqual(["pending-ref"]);
   });
 
   it("draws the placeholder in paged output too", async () => {
@@ -312,6 +319,11 @@ describe("fix loop", { timeout: 30_000 }, () => {
       "expected relative length, found integer",
       "missing argument: body",
     ]);
+    // In the order fixed: one per round.
+    expect(out.result.fixes?.map((f) => f.message)).toEqual([
+      "expected relative length, found integer",
+      "missing argument: body",
+    ]);
   });
 
   it("gives up after two rounds and reports the first compile's errors", async () => {
@@ -326,7 +338,11 @@ describe("fix loop", { timeout: 30_000 }, () => {
     const two = await compile("#let n0 = [zero]\n#n2", { mode: "final" });
     expect([two.result.status, two.compiles, two.html.includes("zero")]).toEqual(["ok", 3, true]);
     const three = await compile("#let n0 = [zero]\n#n3", { mode: "final" });
-    expect([three.result.status, three.compiles]).toEqual(["error", 3]);
+    expect(two.result.fixes?.map((f) => [f.fixer, f.message])).toEqual([
+      ["countdown", "unknown variable: n2"],
+      ["countdown", "unknown variable: n1"],
+    ]);
+    expect([three.result.status, three.compiles, three.result.fixes]).toEqual(["error", 3, undefined]);
     expect(three.diagnostics).toEqual([
       expect.objectContaining({ severity: "error", message: "unknown variable: n3" }),
     ]);

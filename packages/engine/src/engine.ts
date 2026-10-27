@@ -4,6 +4,7 @@
 // a threshold (recycling). A pre-warmed spare makes a replacement immediate.
 
 import {
+  type DocumentEvent,
   type DocumentUri,
   type ExportParams,
   type ExportResult,
@@ -65,6 +66,8 @@ export interface EngineOptions {
  * - `recycle`: a worker was replaced because it used too much memory.
  * - `log`: a `$/log` message from the worker.
  * - `failed`: the engine can't run; every document is in `error`.
+ * - `document`: an event of one of the engine's documents (see
+ *   `EngineDocument.onEvent`), so one listener can collect them all.
  * @public
  */
 export type EngineEvent =
@@ -73,7 +76,8 @@ export type EngineEvent =
   | { type: "crash"; error: unknown }
   | { type: "recycle"; memoryBytes: number }
   | { type: "log"; level: "debug" | "info" | "warn" | "error"; message: string }
-  | { type: "failed"; error: Error };
+  | { type: "failed"; error: Error }
+  | { type: "document"; event: DocumentEvent };
 
 /**
  * The main-thread engine client. Create one per page (or per app) and open a
@@ -206,6 +210,10 @@ class EngineImpl implements Engine, DocumentHost {
 
   close(uri: DocumentUri, rev: Revision): void {
     if (!this.disposed) this.active.conn.send("document/close", { uri, rev });
+  }
+
+  report(event: DocumentEvent): void {
+    if (this.listeners.size > 0) this.emit({ type: "document", event });
   }
 
   release(doc: DocumentImpl, inFlight: RequestId | null): void {

@@ -38,4 +38,20 @@ describe("mergeDefaults", () => {
     expect(merged.plugins).toBe(plugins);
     expect(merged.inputs).toBe(inputs);
   });
+
+  it("calls both the provider's and the instance's telemetry hooks, the provider's first", () => {
+    const calls: string[] = [];
+    const outer = mergeDefaults({ onFallback: () => calls.push("app") }, { onWatchdog: () => calls.push("section") });
+    const merged = mergeDefaults(outer, { onFallback: () => calls.push("instance") });
+    merged.onFallback?.({} as never);
+    merged.onWatchdog?.({} as never);
+    expect(calls).toEqual(["app", "instance", "section"]);
+    expect(merged.onRendered).toBeUndefined();
+  });
+
+  it("keeps a hook as it is when only one level has it", () => {
+    const onRendered = () => {};
+    expect(mergeDefaults({ onRendered }, {}).onRendered).toBe(onRendered);
+    expect(mergeDefaults({}, { onRendered }).onRendered).toBe(onRendered);
+  });
 });

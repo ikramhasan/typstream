@@ -22,6 +22,7 @@ view.update({ ...options, source: text, isStreaming: false }); // finish: strict
 - **Lazy.** The document opens when the element comes within a screen of the viewport, or as soon as it streams (`lazy: false` opens it right away). Offscreen, finished documents apply changes when they scroll back.
 - **Renderers follow the artifact's target**, so after `target` changes the old output stays until the first artifact of the new one.
 - `getState()` / `subscribe()` read the document's state, `destroy()` disposes it and removes what was rendered (the engine is the caller's).
+- **Callbacks.** `onStatusChange`, `onDiagnostics`, and the telemetry hooks (PLAN §8.6): `onRendered` with each artifact drawn (its compile's report, see `@typstream/engine`'s README, plus `renderMs` and `blocks` or `pages`), `onFallback` and `onWatchdog` with the document's events.
 
 ## Paged (SVG pages)
 

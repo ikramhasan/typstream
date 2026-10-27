@@ -5,14 +5,18 @@
 
 import {
   type Artifact,
+  type CompiledEvent,
+  type CompileMode,
   type CompileParams,
   type CompileResult,
   type CompileTarget,
   type Diagnostic,
+  type DocumentEvent,
   type DocumentUri,
   diffEdit,
   type ExportFormat,
   type ExportResult,
+  type FallbackLevel,
   type FallbackParams,
   type FileDelta,
   isError,
@@ -187,6 +191,12 @@ export interface EngineDocument {
   /** Calls `listener` with every new state; returns the unsubscribe function. */
   subscribe(listener: (state: DocumentState) => void): () => void;
   /**
+   * Calls `listener` with every `DocumentEvent` (`@typstream/core`), for logging and
+   * telemetry (PLAN §8.6); returns the unsubscribe function. A compile's
+   * events fire before the state it leads to is published.
+   */
+  onEvent(listener: (event: DocumentEvent) => void): () => void;
+  /**
    * Stops scheduling, cancels the compile in flight (its output is dropped)
    * and closes the document in the worker.
    */
@@ -261,6 +271,8 @@ export interface DocumentHost {
   enqueue(doc: DocumentImpl): void;
   /** Sends `document/close` to the active worker. */
   close(uri: DocumentUri, rev: Revision): void;
+  /** A document's event, for the engine's listeners. */
+  report(event: DocumentEvent): void;
   /** Forgets a disposed document, cancelling its compile in flight and its queued exports. */
   release(doc: DocumentImpl, inFlight: RequestId | null): void;
   /** Queues an export, or rejects it right away if the engine can't run. */
@@ -280,6 +292,8 @@ export interface ExportJob {
 export interface Synced {
   rev: Revision;
   heal: HealResult;
+  /** The input `heal` healed. */
+  input: string;
 }
 
 /** @internal A compile the engine is about to send. */
@@ -294,6 +308,13 @@ export type CompileOutcome = { result: CompileResult } | { error: unknown };
 // Answers meaning the worker's copy of the document isn't what the client
 // thinks it is: open it afresh before the next compile.
 const DESYNC = new Set(["document-not-open", "document-already-open", "stale-revision", "content-modified"]);
+
+/** Patches counted by reason. */
+const patchReasons = (heal: HealResult): Record<string, number> => {
+  const counts: Record<string, number> = {};
+  for (const p of heal.patches) counts[p.reason] = (counts[p.reason] ?? 0) + 1;
+  return counts;
+};
 
 const sameInputs = (a: Record<string, string> | undefined, b: Record<string, string> | undefined): boolean => {
   const ka = Object.keys(a ?? {});
@@ -335,6 +356,14 @@ export class DocumentImpl implements EngineDocument {
   private lastStart = Number.NEGATIVE_INFINITY;
   private stableAtLastCompile = 0;
   private ema: number | null = null;
+  /** Main-thread healing since the last compile started, ms. */
+  private healMs = 0;
+  /** The compile in flight: its mode, budget and healing time (for its events). */
+  private job: { mode: CompileMode; budgetMs: number; healMs: number } | null = null;
+  /** Diagnostics arrived for the compile in flight. */
+  private reported = false;
+  /** Compiles in a row whose output wasn't the text as it is. */
+  private fallbacks = 0;
 
   private final = false;
   private live = true;
@@ -352,6 +381,7 @@ export class DocumentImpl implements EngineDocument {
   private lastCompile: CompileResult | null = null;
   private state: DocumentState;
   private readonly listeners = new Set<(state: DocumentState) => void>();
+  private readonly eventListeners = new Set<(event: DocumentEvent) => void>();
   private disposed = false;
 
   constructor(uri: DocumentUri, host: DocumentHost, schedule: ScheduleOptions, options: DocumentOptions) {
@@ -359,7 +389,7 @@ export class DocumentImpl implements EngineDocument {
     this.host = host;
     this.schedule = schedule;
     this.healer = createHealer({ ...options.heal, final: false });
-    this.healed = options.text ? this.healer.set(options.text) : this.healer.result();
+    this.healed = options.text ? this.heal(() => this.healer.set(options.text as string)) : this.healer.result();
     this.target = options.target ?? "html";
     this.inputs = options.inputs;
     this.preamble = options.preamble;
@@ -374,15 +404,15 @@ export class DocumentImpl implements EngineDocument {
   // input
 
   push(chunk: string): void {
-    if (!this.disposed) this.changed(this.healer.push(chunk));
+    if (!this.disposed) this.changed(this.heal(() => this.healer.push(chunk)));
   }
 
   set(input: string): void {
-    if (!this.disposed) this.changed(this.healer.set(input));
+    if (!this.disposed) this.changed(this.heal(() => this.healer.set(input)));
   }
 
   applyEdit(edit: TextEdit): void {
-    if (!this.disposed) this.changed(this.healer.applyEdit(edit));
+    if (!this.disposed) this.changed(this.heal(() => this.healer.applyEdit(edit)));
   }
 
   finish(): void {
@@ -390,13 +420,14 @@ export class DocumentImpl implements EngineDocument {
     this.final = true;
     this.urgent = true;
     this.needsCompile = true;
-    this.changed(this.healer.finish());
+    this.changed(this.heal(() => this.healer.finish()));
   }
 
   reset(input = ""): void {
     if (this.disposed) return;
-    this.healer.reset(input);
+    this.heal(() => this.healer.reset(input));
     this.final = false;
+    this.fallbacks = 0;
     this.live = true;
     this.strikes = 0;
     this.staleSince = null;
@@ -461,13 +492,29 @@ export class DocumentImpl implements EngineDocument {
     return () => this.listeners.delete(listener);
   }
 
+  onEvent(listener: (event: DocumentEvent) => void): () => void {
+    this.eventListeners.add(listener);
+    return () => this.eventListeners.delete(listener);
+  }
+
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
     this.clearTimer();
     this.listeners.clear();
+    this.eventListeners.clear();
     this.host.release(this, this.inFlight);
     if (this.openedIn === this.host.generation) this.host.close(this.uri, this.rev);
+  }
+
+  /** Runs a healer call, timing it for the next compile's events. */
+  private heal<T>(run: () => T): T {
+    const start = performance.now();
+    try {
+      return run();
+    } finally {
+      this.healMs += performance.now() - start;
+    }
   }
 
   private changed(healed: HealResult): void {
@@ -552,6 +599,9 @@ export class DocumentImpl implements EngineDocument {
       this.probing = true;
       budgetMs = watchdog.probeMs;
     }
+    this.job = { mode: params.mode as CompileMode, budgetMs, healMs: this.healMs };
+    this.healMs = 0;
+    this.reported = false;
     this.emit();
     return { params, budgetMs };
   }
@@ -601,7 +651,7 @@ export class DocumentImpl implements EngineDocument {
       }
     }
     this.sentSource = source;
-    this.sent = { rev: this.rev, heal };
+    this.sent = { rev: this.rev, heal, input: this.healer.input };
     return this.sent;
   }
 
@@ -668,6 +718,9 @@ export class DocumentImpl implements EngineDocument {
       if (n.params.target !== this.target) return;
       const toInput = (pos: number, assoc: 1 | -1) => heal.map.toInput(pos, assoc);
       this.diagnostics = normalizeDiagnostics(n.params.diagnostics.map((d) => mapDiagnostic(d, toInput)));
+      // A compile's diagnostics are reported with its other events, in `settle`.
+      if (this.compiling) this.reported = true;
+      else this.report(this.diagnosticsEvent(rev, this.final ? "final" : "streaming"));
     } else {
       const { artifact } = n.params;
       if (artifact.target !== this.target) return;
@@ -695,9 +748,11 @@ export class DocumentImpl implements EngineDocument {
   /** The compile `prepare` described is over. */
   settle(outcome: CompileOutcome): void {
     const probing = this.probing;
+    const job = this.job;
     this.compiling = false;
     this.probing = false;
     this.inFlight = null;
+    this.job = null;
     if (this.disposed) return;
     if ("result" in outcome) {
       const r = outcome.result;
@@ -722,16 +777,37 @@ export class DocumentImpl implements EngineDocument {
             };
       if (r.status === "ok" && r.fallback?.plainFrom == null) this.staleSince = null;
       else if (r.status !== "ok" && !this.final) this.staleSince ??= this.host.clock.now();
+      if (job) this.reportCompile(r, job);
     } else {
       const e = outcome.error;
       if (e instanceof WorkerGone && (e.reason === "timeout" || e.reason === "crash")) {
         if (!this.final) this.staleSince ??= this.host.clock.now();
-        if (this.searchHang(e.reason)) {
+        const searching = this.searchHang(e.reason);
+        if (searching) {
           this.needsCompile = true;
           this.urgent = true;
         } else this.strike(e.reason);
-      } else if (e instanceof WorkerGone) this.needsCompile = true;
-      else if (!(e instanceof ProtocolError && e.code === "request-cancelled")) {
+        if (job && this.sent) {
+          const { rev, heal } = this.sent;
+          this.report({
+            type: "watchdog",
+            uri: this.uri,
+            rev,
+            target: this.target,
+            mode: job.mode,
+            reason: e.reason,
+            budgetMs: job.budgetMs,
+            strikes: this.strikes,
+            live: this.live,
+            searching,
+            sourceLength: heal.source.length,
+          });
+        }
+      } else if (e instanceof WorkerGone) {
+        // Recycled or replaced under it: the retry reports the healing that led to it.
+        this.needsCompile = true;
+        if (job) this.healMs += job.healMs;
+      } else if (!(e instanceof ProtocolError && e.code === "request-cancelled")) {
         this.failure = { reason: "engine", message: e instanceof Error ? e.message : String(e) };
         if (e instanceof ProtocolError && DESYNC.has(e.code)) this.desync();
       }
@@ -777,6 +853,63 @@ export class DocumentImpl implements EngineDocument {
   private desync(): void {
     if (this.openedIn === this.host.generation) this.host.close(this.uri, this.rev);
     this.openedIn = -1;
+  }
+
+  // -------------------------------------------------------------------------
+  // events
+
+  private report(event: DocumentEvent): void {
+    for (const listener of this.eventListeners) listener(event);
+    this.host.report(event);
+  }
+
+  private diagnosticsEvent(rev: Revision, mode: CompileMode): DocumentEvent {
+    return { type: "diagnostics", uri: this.uri, rev, target: this.target, mode, diagnostics: this.diagnostics };
+  }
+
+  /** A compile's events: its diagnostics, what it cost and made, and the fallback if it fell back. */
+  private reportCompile(r: CompileResult, job: { mode: CompileMode; healMs: number }): void {
+    if (!this.sent || r.rev !== this.sent.rev) return;
+    const { rev, heal, input } = this.sent;
+    const { mode } = job;
+    const base = { uri: this.uri, rev, target: this.target, mode };
+    if (this.reported) this.report(this.diagnosticsEvent(rev, mode));
+    const level: FallbackLevel = r.status === "ok" ? (r.fallback?.level ?? 0) : 1;
+    const compiled: CompiledEvent = {
+      type: "compiled",
+      ...base,
+      status: r.status,
+      timings: r.timings,
+      compileMs: r.timings.compileMs ?? 0,
+      healMs: job.healMs,
+      patches: heal.patches.length,
+      patchReasons: patchReasons(heal),
+      fixersApplied: r.fixes ?? [],
+      fallbackLevel: level,
+      errors: this.diagnostics.filter(isError).length,
+      warnings: this.diagnostics.filter((d) => d.severity === "warning").length,
+      sourceLength: heal.source.length,
+    };
+    if (r.status === "ok" && this.artifact?.target === "paged" && this.artifactRev === rev) {
+      compiled.pages = this.artifact.pageCount;
+    }
+    this.report(compiled);
+    if (level === 0) {
+      this.fallbacks = 0;
+      return;
+    }
+    this.fallbacks++;
+    this.report({
+      type: "fallback",
+      ...base,
+      level,
+      isolated: r.fallback?.isolated ?? [],
+      plainFrom: r.fallback?.plainFrom ?? null,
+      consecutive: this.fallbacks,
+      diagnostics: this.diagnostics,
+      input,
+      source: heal.source,
+    });
   }
 
   /** The engine can't run (it failed to start, or a replacement worker did). */

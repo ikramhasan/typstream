@@ -6,6 +6,7 @@ import type { TypstreamOptions } from "@typstream/dom";
 import type { Engine } from "@typstream/engine";
 import { createContext, type ReactNode, useContext, useEffect } from "react";
 import { acquireEngine, releaseEngine } from "./engine";
+import { mergeHooks, type TelemetryHooks } from "./telemetry";
 
 /**
  * Settings that make sense for every document of an app. Everything except
@@ -15,25 +16,26 @@ import { acquireEngine, releaseEngine } from "./engine";
  */
 export interface TypstreamDefaults
   extends Pick<
-    TypstreamOptions,
-    | "target"
-    | "layout"
-    | "pageHeight"
-    | "preamble"
-    | "template"
-    | "inputs"
-    | "files"
-    | "heal"
-    | "schedule"
-    | "plugins"
-    | "stylesheets"
-    | "animated"
-    | "caret"
-    | "theme"
-    | "linkTarget"
-    | "textLayer"
-    | "lazy"
-  > {
+      TypstreamOptions,
+      | "target"
+      | "layout"
+      | "pageHeight"
+      | "preamble"
+      | "template"
+      | "inputs"
+      | "files"
+      | "heal"
+      | "schedule"
+      | "plugins"
+      | "stylesheets"
+      | "animated"
+      | "caret"
+      | "theme"
+      | "linkTarget"
+      | "textLayer"
+      | "lazy"
+    >,
+    TelemetryHooks {
   /**
    * The engine every `<Typstream>` below compiles with, unless it is given its
    * own. Default: one engine worker for the page, shared by all instances.
@@ -106,5 +108,6 @@ export const mergeDefaults = <T extends TypstreamDefaults>(
     ...(stylesheets ? { stylesheets: [...new Set(stylesheets)] } : {}),
     ...(inputs ? { inputs } : {}),
     ...(files ? { files } : {}),
+    ...mergeHooks(outer, inner),
   };
 };

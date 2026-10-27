@@ -82,6 +82,19 @@ What still fails after the fixers is never a blank screen (PLAN §5.6). The clie
 
 `state.lastCompile.fallback` says what was isolated (`isolated` ranges) or shown as plain text (`plainFrom`). Isolated blocks' errors stay in `diagnostics`.
 
+## Events (telemetry)
+
+The library sends nothing anywhere (PLAN §8.6); it reports, and the app decides what to collect. `doc.onEvent(listener)` hears one document; `engine.onEvent` hears the workers and, as `{ type: "document", event }`, every document's events too. The shapes are `@typstream/core`'s (`telemetry.ts`). Per compile, in this order, before the state it leads to is published:
+
+| Event | When | Fields (besides `uri`, `rev`, `target`, `mode`) |
+|---|---|---|
+| `diagnostics` | the worker reported (with every compile, and when it recompiles on its own) | `diagnostics`, in input coordinates |
+| `compiled` | a compile finished (not the probes of a hang search) | `status`, `timings`, `compileMs`, `healMs` (main-thread healing since the previous compile), `patches` and `patchReasons` (heal's patches by reason), `fixersApplied` (`{ fixer, message }`, from `CompileResult.fixes`), `fallbackLevel`, `errors`, `warnings`, `pages`, `sourceLength` |
+| `fallback` | the output isn't the text as it is: level 1 (last good kept), 2 (stable prefix), 3 (error blocks), 4 (whole document as source) | `level`, `isolated`, `plainFrom`, `consecutive` (in a row), `diagnostics`, and `input` and `source`: what to replay as a corpus case |
+| `watchdog` | a compile ran past its budget or crashed the worker | `reason`, `budgetMs`, `strikes`, `live`, `searching` (final mode: looking for the block that hangs) |
+
+The worker says which fixers made a compile's output (`CompileResult.fixes`) and which rung of the ladder (`CompileResult.fallback.level`); the client adds the healing. `@typstream/dom`'s `mountTypstream` (and so `<Typstream>`) turns `compiled` into `onRendered`, with what drawing cost.
+
 ## Typst packages
 
 Documents may `#import "@preview/…"` packages from an allowlist (PLAN §6.4). The allowlist is the `packages` of `initialize` (engine-wide: `createEngine({ initialize: { packages } })`) plus those of each document (`engine.open({ packages })`, which `mountTypstream` fills from plugins' `engine.packages`). `@typstream/universe` vendors the packages typstream allows by default, and `typstream`'s `<Typstream>` adds them.

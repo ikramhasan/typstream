@@ -4,17 +4,32 @@
 
 ```ts
 
+import { AppliedFix } from '@typstream/core';
+import { CompiledEvent } from '@typstream/core';
+import { CompileReport } from '@typstream/core';
 import { CSSProperties } from 'react';
 import { Diagnostic } from '@typstream/core';
+import { DocumentEvent } from '@typstream/core';
 import { DocumentState } from '@typstream/engine';
 import { DocumentStatus } from '@typstream/engine';
 import { Engine } from '@typstream/engine';
 import { EngineDocument } from '@typstream/engine';
+import { FallbackEvent } from '@typstream/core';
+import { FallbackLevel } from '@typstream/core';
 import * as react from 'react';
 import { ReactNode } from 'react';
 import { Ref } from 'react';
-import { RenderedInfo } from '@typstream/dom';
+import { RenderedEvent } from '@typstream/core';
 import { TypstreamOptions } from '@typstream/dom';
+import { WatchdogEvent } from '@typstream/core';
+
+export { AppliedFix }
+
+export { CompiledEvent }
+
+export { CompileReport }
+
+export { DocumentEvent }
 
 export { DocumentState }
 
@@ -22,13 +37,20 @@ export { DocumentStatus }
 
 export { Engine }
 
-export { RenderedInfo }
+export { FallbackEvent }
+
+export { FallbackLevel }
+
+export { RenderedEvent }
+
+// @public
+export type TelemetryHooks = Pick<TypstreamOptions, "onRendered" | "onFallback" | "onWatchdog" | "onDiagnostics">;
 
 // @public
 export const Typstream: (input: TypstreamProps) => react.JSX.Element;
 
 // @public
-export interface TypstreamDefaults extends Pick<TypstreamOptions, "target" | "layout" | "pageHeight" | "preamble" | "template" | "inputs" | "files" | "heal" | "schedule" | "plugins" | "stylesheets" | "animated" | "caret" | "theme" | "linkTarget" | "textLayer" | "lazy"> {
+export interface TypstreamDefaults extends Pick<TypstreamOptions, "target" | "layout" | "pageHeight" | "preamble" | "template" | "inputs" | "files" | "heal" | "schedule" | "plugins" | "stylesheets" | "animated" | "caret" | "theme" | "linkTarget" | "textLayer" | "lazy">, TelemetryHooks {
     engine?: Engine;
     mathFont?: string | URL;
 }
@@ -54,7 +76,7 @@ export interface TypstreamInfo {
 }
 
 // @public
-export interface TypstreamProps extends TypstreamDefaults, Pick<TypstreamOptions, "source" | "stream" | "isStreaming" | "onStatusChange" | "onDiagnostics" | "onRendered"> {
+export interface TypstreamProps extends TypstreamDefaults, Pick<TypstreamOptions, "source" | "stream" | "isStreaming" | "onStatusChange"> {
     className?: string;
     id?: string;
     ref?: Ref<TypstreamHandle>;
@@ -71,6 +93,8 @@ export interface TypstreamProviderProps extends TypstreamDefaults {
 
 // @public
 export const useTypstream: () => TypstreamInfo;
+
+export { WatchdogEvent }
 
 // (No @packageDocumentation comment for this package)
 

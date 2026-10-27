@@ -5,7 +5,7 @@
 // cleanup (documents on unmount, the shared worker after its last user).
 
 import { cleanup, render, waitFor } from "@testing-library/react";
-import type { Diagnostic } from "@typstream/core";
+import type { Diagnostic, FallbackEvent, RenderedEvent } from "@typstream/core";
 import type { DocumentStatus, Engine, EngineDocument } from "@typstream/engine";
 import { htmlCompat, htmlCompatCss } from "@typstream/html-compat";
 import { createRef, StrictMode } from "react";
@@ -136,6 +136,22 @@ describe(`<Typstream> in ${browser}`, () => {
     // html-compat keeps the grid's content (plain HTML export drops it).
     expect(root?.textContent).toContain("left");
     expect(root?.textContent).toContain("right");
+  }, 60_000);
+
+  it("calls the provider's telemetry hooks and the instance's", async () => {
+    const app: RenderedEvent[] = [];
+    const own: RenderedEvent[] = [];
+    const fallbacks: FallbackEvent[] = [];
+    const source = "= Quiz\n\nGood.\n\n#nope\n";
+    render(
+      <TypstreamProvider engine={engine} onRendered={(e) => app.push(e)} onFallback={(e) => fallbacks.push(e)}>
+        <Typstream source={source} onRendered={(e) => own.push(e)} />
+      </TypstreamProvider>,
+    );
+    await waitFor(() => expect(fallbacks).toHaveLength(1), LONG);
+    await waitFor(() => expect(own.at(-1)?.fallbackLevel).toBe(3), LONG);
+    expect(app).toEqual(own);
+    expect(fallbacks[0]).toMatchObject({ level: 3, mode: "final", source });
   }, 60_000);
 
   it("reports status, healed source and open frames through useTypstream()", async () => {

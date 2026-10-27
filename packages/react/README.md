@@ -31,14 +31,15 @@ The document is `source`, its whole text so far (streamdown-style), or `stream`,
 | `lazy` | `true` | Open and compile only near the viewport, or while streaming. |
 | `engine` | shared | An `Engine` from `createEngine()`. Default: one engine worker for the page, shared by every instance. |
 | `mathFont` | | URL of New Computer Modern Math, registered as a web font for MathML. |
-| `onStatusChange`, `onDiagnostics`, `onRendered` | | `idle` / `compiling` / `stale` / `error` / `done`; diagnostics in `source` coordinates; render telemetry (`@beta`). |
+| `onStatusChange`, `onDiagnostics` | | `idle` / `compiling` / `stale` / `error` / `done`; diagnostics in `source` coordinates. |
+| `onRendered`, `onFallback`, `onWatchdog` | | Telemetry (PLAN §8.6), `@typstream/core`'s event shapes: a render with its compile's timings, heal time and patches, fixes and fallback level; output that fell back (with the input and healed source); a compile the watchdog stopped. |
 | `className`, `style`, `id`, `ref` | | The host element; `ref` receives a `TypstreamHandle`. |
 
 Not yet: `fallback` (block isolation, PLAN §5.6, beyond the last good render the engine keeps), `islands` (#28), and `engine={{ adapter, fonts, packages }}` options (#11, #25): pass an `Engine` you created instead.
 
 ## `TypstreamProvider`
 
-App-wide settings for every `<Typstream>` below it: the same props except the document and callbacks. Lists (`plugins`, `stylesheets`) add up, records (`inputs`, `files`) merge, and anything else an instance sets wins. Without an `engine`, the provider keeps the page's shared engine alive while it is mounted, so the worker survives answers coming and going.
+App-wide settings for every `<Typstream>` below it: the same props except the document and `onStatusChange`. Lists (`plugins`, `stylesheets`) add up, records (`inputs`, `files`) merge, telemetry hooks (`onRendered`, `onFallback`, `onWatchdog`, `onDiagnostics`) are all called, outer ones first, and anything else an instance sets wins. One provider can wire every document to an analytics sink (`examples/nextjs-ai-sdk/app/telemetry.tsx`). Without an `engine`, the provider keeps the page's shared engine alive while it is mounted, so the worker survives answers coming and going.
 
 ```tsx
 <TypstreamProvider plugins={[edu]} theme="dark" heal={{ lint: { "currency-dollar": "warn" } }}>

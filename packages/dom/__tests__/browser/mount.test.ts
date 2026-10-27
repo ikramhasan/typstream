@@ -1,10 +1,11 @@
 /// <reference lib="dom" />
 // mountTypstream without a framework, in each browser, on the real engine
 // worker: options applied with update(), files changed in place, a failing
-// stream, exports, and destroy(). @typstream/react's browser tests cover the rest
+// stream, exports, telemetry hooks, and destroy(). @typstream/react's browser tests cover the rest
 // through <Typstream>.
 
-import type { DocumentState, Engine } from "@typstream/engine";
+import type { FallbackEvent, RenderedEvent, WatchdogEvent } from "@typstream/core";
+import { createEngine, type DocumentState, type Engine, fromWorker } from "@typstream/engine";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { server } from "vitest/browser";
 import { type MountedTypstream, mountTypstream, type TypstreamOptions } from "../../src/mount";
@@ -164,4 +165,93 @@ describe(`mountTypstream in ${browser}`, () => {
       el.remove();
     }
   });
+
+  it("reports renders with their compile's report, and fallbacks with the source to replay", async () => {
+    const el = host();
+    const rendered: RenderedEvent[] = [];
+    const fallbacks: FallbackEvent[] = [];
+    const options = (source: string, isStreaming: boolean, target: "html" | "paged" = "html"): TypstreamOptions => ({
+      engine,
+      source,
+      isStreaming,
+      target,
+      lazy: false,
+      onRendered: (e) => rendered.push(e),
+      onFallback: (e) => fallbacks.push(e),
+    });
+    // A citation before its bibliography: Layer 3's pending-ref makes it compile.
+    const view = mountTypstream(el, options("See @ipcc2021 and more", true));
+    const first = await until(view, (s) => !!s.artifact && s.status === "idle");
+    expect(rendered.at(-1)).toMatchObject({
+      type: "rendered",
+      uri: view.document?.uri,
+      rev: first.artifactRev,
+      target: "html",
+      mode: "streaming",
+      fixersApplied: [{ fixer: "pending-ref", message: "label `<ipcc2021>` does not exist in the document" }],
+      fallbackLevel: 0,
+      blocks: 1,
+    });
+    const report = rendered.at(-1) as RenderedEvent;
+    expect(report.compileMs).toBeGreaterThan(0);
+    expect(report.timings.totalMs).toBeGreaterThanOrEqual(report.compileMs);
+    expect(report.healMs).toBeGreaterThanOrEqual(0);
+    expect(report.renderMs).toBeGreaterThanOrEqual(0);
+    expect(fallbacks).toEqual([]);
+
+    // Finished with a block that can't compile: it shows as an error box (level 3).
+    const source = "= Quiz\n\nGood.\n\n#nope\n\nMore.\n";
+    view.update(options(source, false));
+    const done = await until(view, settled);
+    expect(done.status).toBe("done");
+    expect(fallbacks.at(-1)).toMatchObject({ level: 3, mode: "final", input: source, source, consecutive: 1 });
+    const box = fallbacks.at(-1)?.isolated[0];
+    expect(box && source.slice(box.from, box.to)).toContain("#nope");
+    expect(rendered.at(-1)).toMatchObject({ mode: "final", rev: done.artifactRev, fallbackLevel: 3, errors: 1 });
+
+    // Paged: the page count.
+    view.update(options("= One\n\nText.", false, "paged"));
+    await until(view, (s) => s.artifact?.target === "paged" && settled(s));
+    expect(rendered.at(-1)).toMatchObject({ target: "paged", pages: 1, fallbackLevel: 0 });
+    view.destroy();
+    el.remove();
+  });
+
+  it("reports a compile the watchdog stopped", async () => {
+    const strict = createEngine({
+      spawn: fromWorker(
+        () => new Worker(new URL("../../../engine/src/worker.ts", import.meta.url), { type: "module" }),
+      ),
+      spare: false,
+      watchdog: { streamingMs: 1000 },
+    });
+    const el = host();
+    const stops: WatchdogEvent[] = [];
+    try {
+      const source = "Before.\n#let a = range(100000000).map(x => x)\nAfter.";
+      const view = mountTypstream(el, {
+        engine: strict,
+        source,
+        isStreaming: true,
+        lazy: false,
+        onWatchdog: (e) => stops.push(e),
+      });
+      await until(view, (s) => s.failure !== null);
+      // A timeout, or the worker running out of memory first.
+      expect(stops).toEqual([
+        expect.objectContaining({
+          uri: view.document?.uri,
+          mode: "streaming",
+          strikes: 1,
+          live: true,
+          searching: false,
+        }),
+      ]);
+      expect(["timeout", "crash"]).toContain(stops[0]?.reason);
+      view.destroy();
+    } finally {
+      strict.dispose();
+      el.remove();
+    }
+  }, 60_000);
 });

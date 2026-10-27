@@ -5,6 +5,7 @@
 // `$/cancel` drops one that hasn't started.
 
 import {
+  type AppliedFix,
   applyEdit,
   type ClientCapabilities,
   type ClientMessage,
@@ -604,6 +605,8 @@ class Server implements EngineServer {
       let full = params.fullPages === true || !this.client.pagedDiff || doc.pagedBase === null;
       // The last compile, whose output is published, and the time spent in Typst.
       let r: Compiled | null = null;
+      // What the fixers fixed in the last attempt, whose compile is `r`.
+      let fixes: AppliedFix[] = [];
       let compileMs: number | undefined;
       let fixMs: number | undefined;
       const count = (ms: number | undefined) => {
@@ -628,6 +631,7 @@ class Server implements EngineServer {
         else this.sync(doc, params.inputs, anchors);
         let { diagnostics } = await compile();
         let ok = !diagnostics.some(isError);
+        fixes = [];
         if (!ok && this.fixers.length > 0) {
           const fixStart = performance.now();
           const outcome = await runFixers({
@@ -642,7 +646,7 @@ class Server implements EngineServer {
               return (await compile()).diagnostics;
             },
           });
-          ({ ok, diagnostics } = outcome);
+          ({ ok, diagnostics, fixes } = outcome);
           if (outcome.rounds > 0) fixMs = (fixMs ?? 0) + performance.now() - fixStart;
         }
         return { ok, diagnostics: variant ? toDocument(diagnostics, variant) : diagnostics };
@@ -693,7 +697,7 @@ class Server implements EngineServer {
         fallbackMs = performance.now() - start;
         if (rec) {
           outcome = { ok: true, diagnostics: rec.diagnostics };
-          recovered = { isolated: rec.isolated, plainFrom: rec.plainFrom };
+          recovered = { level: rec.level, isolated: rec.isolated, plainFrom: rec.plainFrom };
           doc.memo = rec.memo;
         } else if (skip.length > 0 && last) {
           outcome = last;
@@ -732,6 +736,7 @@ class Server implements EngineServer {
       if (fixMs !== undefined) result.timings.fixMs = fixMs;
       if (fallbackMs !== undefined) result.timings.fallbackMs = fallbackMs;
       if (ok && recovered) result.fallback = recovered;
+      if (ok && fixes.length > 0) result.fixes = fixes;
       const memoryBytes = this.adapter.memoryBytes?.();
       if (memoryBytes !== undefined) result.memoryBytes = memoryBytes;
       return result;

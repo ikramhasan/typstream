@@ -5,6 +5,12 @@
 ```ts
 
 // @public
+export interface AppliedFix {
+    fixer: string;
+    message: string;
+}
+
+// @public
 export const applyEdit: (text: string, edit: TextEdit) => string;
 
 // @public (undocumented)
@@ -52,8 +58,16 @@ export type ClientNotificationMethod = keyof ClientNotificationMap;
 export const compareDiagnostics: (a: Diagnostic, b: Diagnostic) => number;
 
 // @public
+export interface CompiledEvent extends DocumentEventBase, CompileReport {
+    status: "ok" | "error";
+    // (undocumented)
+    type: "compiled";
+}
+
+// @public
 export interface CompileFallback {
     isolated: Range[];
+    level: 2 | 3 | 4;
     plainFrom: number | null;
 }
 
@@ -72,9 +86,26 @@ export interface CompileParams extends DocumentParams {
     target: CompileTarget;
 }
 
+// @public
+export interface CompileReport {
+    compileMs: number;
+    errors: number;
+    fallbackLevel: FallbackLevel;
+    fixersApplied: AppliedFix[];
+    healMs: number;
+    pages?: number;
+    patches: number;
+    patchReasons: Record<string, number>;
+    sourceLength: number;
+    timings: CompileTimings;
+    // (undocumented)
+    warnings: number;
+}
+
 // @public (undocumented)
 export interface CompileResult extends DocumentParams {
     fallback?: CompileFallback;
+    fixes?: AppliedFix[];
     memoryBytes?: number;
     status: "ok" | "error";
     // (undocumented)
@@ -128,6 +159,14 @@ export interface DiagnosticFixer {
 }
 
 // @public
+export interface DiagnosticsEvent extends DocumentEventBase {
+    // (undocumented)
+    diagnostics: Diagnostic[];
+    // (undocumented)
+    type: "diagnostics";
+}
+
+// @public
 export type DiagnosticSeverity = "error" | "warning" | "info";
 
 // @public
@@ -149,6 +188,19 @@ export interface DocumentCloseParams extends DocumentParams {
 export interface DocumentEditParams extends DocumentParams {
     // (undocumented)
     edits: TextEdit[];
+}
+
+// @public
+export type DocumentEvent = CompiledEvent | FallbackEvent | WatchdogEvent | DiagnosticsEvent;
+
+// @public
+export interface DocumentEventBase {
+    mode: CompileMode;
+    rev: Revision;
+    // (undocumented)
+    target: CompileTarget;
+    // (undocumented)
+    uri: DocumentUri;
 }
 
 // @public
@@ -240,6 +292,23 @@ export type ExportResult<Data> = DocumentParams & {
 } | {
     status: "error";
 });
+
+// @public
+export interface FallbackEvent extends DocumentEventBase {
+    consecutive: number;
+    diagnostics: Diagnostic[];
+    input: string;
+    isolated: Range[];
+    // (undocumented)
+    level: Exclude<FallbackLevel, 0>;
+    plainFrom: number | null;
+    source: string;
+    // (undocumented)
+    type: "fallback";
+}
+
+// @public
+export type FallbackLevel = 0 | 1 | 2 | 3 | 4;
 
 // @public
 export interface FallbackParams {
@@ -508,6 +577,14 @@ export interface Range {
 }
 
 // @public
+export interface RenderedEvent extends DocumentEventBase, CompileReport {
+    blocks?: number;
+    renderMs: number;
+    // (undocumented)
+    type: "rendered";
+}
+
+// @public
 type Request_2<M extends RequestMethod = RequestMethod> = {
     [K in M]: {
         id: RequestId;
@@ -772,6 +849,19 @@ export interface TypstreamPlugin {
 export interface VersionMismatchData {
     // (undocumented)
     supported: number[];
+}
+
+// @public
+export interface WatchdogEvent extends DocumentEventBase {
+    budgetMs: number;
+    live: boolean;
+    // (undocumented)
+    reason: "timeout" | "crash";
+    searching: boolean;
+    sourceLength: number;
+    strikes: number;
+    // (undocumented)
+    type: "watchdog";
 }
 
 // (No @packageDocumentation comment for this package)

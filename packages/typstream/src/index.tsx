@@ -62,15 +62,23 @@ export { createEngine, type EngineOptions, engineWorker } from "@typstream/engin
 export { createHealer, type Healer, type HealOptions, type HealResult, heal } from "@typstream/heal";
 export { htmlCompat, htmlCompatCss } from "@typstream/html-compat";
 export {
+  type AppliedFix,
+  type CompiledEvent,
+  type CompileReport,
+  type DocumentEvent,
   type DocumentState,
   type DocumentStatus,
   type Engine,
-  type RenderedInfo,
+  type FallbackEvent,
+  type FallbackLevel,
+  type RenderedEvent,
+  type TelemetryHooks,
   type TypstreamDefaults,
   type TypstreamHandle,
   type TypstreamInfo,
   TypstreamProvider,
   type TypstreamProviderProps,
   useTypstream,
+  type WatchdogEvent,
 } from "@typstream/react";
 export { UNIVERSE_PACKAGES, type UniversePackage, universe } from "@typstream/universe";
