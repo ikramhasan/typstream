@@ -34,17 +34,19 @@ type DocumentMethod = Exclude<RequestMethod, ProtocolMethod>;
 
 // True if a function hides anywhere in T. Messages are structured-cloned, which
 // throws on functions; the methods of arrays and Uint8Array are fine.
-type HasFunction<T> = T extends (...args: never[]) => unknown
-  ? true
-  : T extends Uint8Array
-    ? false
-    : T extends readonly (infer E)[]
-      ? HasFunction<E>
-      : T extends object
-        ? { [K in keyof T]-?: HasFunction<T[K]> }[keyof T] extends false
-          ? false
-          : true
-        : false;
+type HasFunction<T, Depth extends unknown[] = []> = Depth["length"] extends 12
+  ? false // Recursive types (a page's `TextNode` tree) end here.
+  : T extends (...args: never[]) => unknown
+    ? true
+    : T extends Uint8Array
+      ? false
+      : T extends readonly (infer E)[]
+        ? HasFunction<E, [...Depth, 0]>
+        : T extends object
+          ? { [K in keyof T]-?: HasFunction<T[K], [...Depth, 0]> }[keyof T] extends false
+            ? false
+            : true
+          : false;
 
 describe("protocol types", () => {
   it("lists exactly the v1 methods", () => {

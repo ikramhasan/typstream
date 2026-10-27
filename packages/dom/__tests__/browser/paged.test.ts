@@ -333,6 +333,51 @@ describe(`paged renderer in ${browser}`, () => {
     expect((pageEls(narrow)[0] as HTMLElement).getBoundingClientRect().width).toBeCloseTo(200, 0);
   }, 120_000);
 
+  it("gives the text layer the document's structure, language and direction", async () => {
+    const artifact = await compile(`#set text(lang: "ar")
+#title[Quiz]
+= Section
+- first
+- second
+#table(columns: 2, table.header([A], [B]), [1], [])`);
+    const view = createPagedView(container(500));
+    cleanups.push(() => view.destroy());
+    view.render(artifact);
+    view.flush();
+    const layer = textOf(pageEls(view)[0] as HTMLElement) as HTMLElement;
+    // Latin text in an Arabic document: the layer is right to left, the runs left to right.
+    expect([layer.lang, layer.dir]).toEqual(["ar", "rtl"]);
+    expect(layer.querySelectorAll('span[dir="ltr"]:not([role])').length).toBeGreaterThan(0);
+    const headings = [...layer.querySelectorAll('[role="heading"]')].map((h) => [
+      h.getAttribute("aria-level"),
+      h.textContent,
+    ]);
+    expect(headings).toEqual([
+      ["1", "Quiz"],
+      ["2", "Section"],
+    ]);
+    const roles = (el: Element): unknown[] =>
+      [...el.children].flatMap((c) => (c.getAttribute("role") ? [[c.getAttribute("role"), ...roles(c)]] : []));
+    const [list, table] = [...layer.querySelectorAll('[role="list"], [role="table"]')] as Element[];
+    expect(roles(list as Element)).toEqual([["listitem"], ["listitem"]]);
+    expect(roles(table as Element)).toEqual([
+      ["row", ["columnheader"], ["columnheader"]],
+      ["row", ["cell"], ["cell"]],
+    ]);
+    // Offscreen pages skip their SVG but not their text layer: skipped content leaves the accessibility tree.
+    const page = pageEls(view)[0] as HTMLElement;
+    expect(getComputedStyle(page.firstElementChild as Element).contentVisibility).toBe("auto");
+    expect(getComputedStyle(page).contentVisibility).toBe("visible");
+    // Runs are positioned against the layer, wrapped or not; the wrappers take no space.
+    for (const wrapper of layer.querySelectorAll("[role]")) expect(getComputedStyle(wrapper).position).toBe("static");
+    // The wrappers don't change what copying gives.
+    const copied = selectedText(layer);
+    view.render({ ...artifact, pages: artifact.pages.map((p) => ({ ...p, hash: `${p.hash}-flat`, structure: [] })) });
+    view.flush();
+    expect(layer.querySelector("[role]")).toBeNull();
+    expect(selectedText(layer)).toBe(copied);
+  }, 120_000);
+
   it("removes pages when the document gets shorter", async () => {
     const engine = newEngine();
     const doc = engine.open({ target: "paged", text: pages(4) });

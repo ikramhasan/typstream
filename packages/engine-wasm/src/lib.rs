@@ -14,6 +14,8 @@ mod world;
 
 use typst::diag::{SourceDiagnostic, Warned};
 use typst::foundations::{Dict, Str, Value};
+use typst::layout::Dir;
+use typst::model::Document;
 use wasm_bindgen::prelude::*;
 
 use crate::js::{perf_now, set};
@@ -54,15 +56,51 @@ export type HtmlResult = CompileResult & { html?: string };
  * the SVG. Points, from the page's top left. `(x, y)` is the start of the
  * baseline; `width` is the run's advance and `size` its font size. `matrix`
  * (`[a, b, c, d]` of an SVG matrix, translation in `x`/`y`) is set only when
- * the text is rotated, skewed or scaled.
+ * the text is rotated, skewed or scaled. `lang` and `dir` are set only when
+ * they differ from the page's; `dir` is the direction the run was shaped in,
+ * unset for a run of one character without a strong direction.
  */
-export type TextRun = { text: string; x: number; y: number; size: number; width: number; matrix?: [number, number, number, number] };
+export type TextRun = {
+  text: string;
+  x: number;
+  y: number;
+  size: number;
+  width: number;
+  matrix?: [number, number, number, number];
+  lang?: string;
+  dir?: "ltr" | "rtl";
+};
+/**
+ * A structure element around text runs: `[from, to)` indexes the page's runs
+ * (empty for an empty cell). `role` is an ARIA role; headings have their
+ * `aria-level` (Typst's level + 1, as typst-html's `<h2>` for `=`; the
+ * document's title is 1). Rows group a table's cells by row.
+ */
+export type TextNode = {
+  role: "heading" | "list" | "listitem" | "table" | "row" | "cell" | "columnheader";
+  level?: number;
+  from: number;
+  to: number;
+  children?: TextNode[];
+};
 /**
  * One exported page. `hash` (32 hex digits) identifies the page's content: equal
  * hashes mean identical pages. `width` and `height` are in Typst points. `text`
- * lists the page's text runs in document order.
+ * lists the page's text runs as Typst laid them out, `structure` the elements
+ * around them. `lang` is the document's language as typst-html writes it
+ * (`ar`, `zh-CN`) and `dir` its direction.
  */
-export type ChangedPage = { index: number; hash: string; width: number; height: number; svg: string; text: TextRun[] };
+export type ChangedPage = {
+  index: number;
+  hash: string;
+  width: number;
+  height: number;
+  svg: string;
+  text: TextRun[];
+  structure: TextNode[];
+  lang: string;
+  dir: "ltr" | "rtl";
+};
 /**
  * `changed` holds only the pages whose content changed since the last successful
  * call (all of them after `reset_pages`); indices refer to the new document.
@@ -253,6 +291,10 @@ impl Engine {
             Ok(doc) => {
                 let t1 = perf_now();
                 let options = typst_svg::SvgOptions::default();
+                let locale = doc.info().locale.unwrap_or_default();
+                let lang = locale.rfc_3066();
+                let dir = locale.lang.dir();
+                let mut open = text::OpenElements::new();
                 let changed = js_sys::Array::new();
                 let mut hashes = Vec::with_capacity(doc.pages().len());
                 for (index, page) in doc.pages().iter().enumerate() {
@@ -264,7 +306,12 @@ impl Engine {
                         set(&entry, "width", page.frame.width().to_pt());
                         set(&entry, "height", page.frame.height().to_pt());
                         set(&entry, "svg", typst_svg::svg(page, &options));
-                        set(&entry, "text", text::text_runs(page));
+                        let begun = open.at(doc.pages(), index);
+                        let text = text::page_text(page, begun, &lang, dir);
+                        set(&entry, "text", text.runs);
+                        set(&entry, "structure", text.structure);
+                        set(&entry, "lang", lang.as_str());
+                        set(&entry, "dir", if dir == Dir::RTL { "rtl" } else { "ltr" });
                         changed.push(&entry);
                     }
                     hashes.push(hash);

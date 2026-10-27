@@ -519,10 +519,13 @@ export interface PagePoint {
 
 // @public
 export interface PageUpdate {
+    dir?: "ltr" | "rtl";
     hash: string;
     // (undocumented)
     height: number;
     index: number;
+    lang?: string;
+    structure?: TextNode[];
     svg: string;
     text?: TextRun[];
     // (undocumented)
@@ -791,7 +794,18 @@ export interface TextEdit {
 }
 
 // @public
+export interface TextNode {
+    children?: TextNode[];
+    from: number;
+    level?: number;
+    role: "heading" | "list" | "listitem" | "table" | "row" | "cell" | "columnheader";
+    to: number;
+}
+
+// @public
 export interface TextRun {
+    dir?: "ltr" | "rtl";
+    lang?: string;
     matrix?: [number, number, number, number];
     // (undocumented)
     size: number;

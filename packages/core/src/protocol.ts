@@ -353,7 +353,8 @@ export interface HtmlArtifact {
 /**
  * A run of text drawn on a page, for a selectable text layer (the SVG draws
  * glyphs as paths). In points from the page's top left: `(x, y)` is the start
- * of the baseline, `width` the run's advance, `size` its font size.
+ * of the baseline (its left end, whatever the direction), `width` the run's
+ * advance, `size` its font size.
  * @public
  */
 export interface TextRun {
@@ -364,6 +365,28 @@ export interface TextRun {
   width: number;
   /** `[a, b, c, d]` of an SVG `matrix()` (translation is `x`/`y`); only for rotated, skewed or scaled text. */
   matrix?: [number, number, number, number];
+  /** The run's language (`en`, `zh-CN`), only when it differs from the page's. */
+  lang?: string;
+  /** The direction the run was set in, only when it differs from the page's (and is known). */
+  dir?: "ltr" | "rtl";
+}
+
+/**
+ * A structure element around some of a page's text runs: a heading, a list or
+ * its item, a table, a row or a cell.
+ * @public
+ */
+export interface TextNode {
+  /** The ARIA role a text layer gives it. */
+  role: "heading" | "list" | "listitem" | "table" | "row" | "cell" | "columnheader";
+  /** A heading's `aria-level`: the document's title is 1 and a Typst heading of level n is n + 1, as in the HTML target. */
+  level?: number;
+  /** Its runs are the page's `text[from..to)` (none for an empty cell). */
+  from: number;
+  /** End of its runs (exclusive). */
+  to: number;
+  /** The elements inside it, in order. */
+  children?: TextNode[];
 }
 
 /** One rendered page of a paged artifact. Sizes in Typst points. @public */
@@ -376,8 +399,17 @@ export interface PageUpdate {
   height: number;
   /** Untrusted SVG markup: the renderer sanitizes it. */
   svg: string;
-  /** The page's text runs in document order. Optional: other engines may not provide them. */
+  /**
+   * The page's text runs in reading (logical) order. Optional: other engines
+   * may not provide them, nor the structure, language and direction.
+   */
   text?: TextRun[];
+  /** Headings, lists and tables around the runs, outermost first. */
+  structure?: TextNode[];
+  /** The document's language (`en`, `ar`, `zh-CN`). */
+  lang?: string;
+  /** The document's direction. */
+  dir?: "ltr" | "rtl";
 }
 
 /**

@@ -12,7 +12,11 @@
 //   keeps the app's CSS off the SVG.
 // - Glyph defs are not shared across pages. They are 29% of the bytes, but the
 //   time goes to style and layout of the <use>s, which sharing doesn't remove.
-// - Pages have `content-visibility: auto`, so the browser skips offscreen pages.
+// - Page SVGs have `content-visibility: auto`, so the browser skips offscreen
+//   ones. Their text layers don't (#63): skipped content leaves the
+//   accessibility tree (Chromium kept 2 of a 6-page report's 16 headings), and
+//   screen readers must reach every page's headings. A layer is cheap next to
+//   its SVG, and `contain: strict` keeps its relayout to itself.
 
 import type { PagedArtifact, PageUpdate } from "@typstream/core";
 import { sanitizeLinks } from "./links";
@@ -68,7 +72,7 @@ export interface PagedView {
 }
 
 interface Slot {
-  /** `.typstream-page`: sized from the page, `content-visibility: auto`. */
+  /** `.typstream-page`: sized from the page. */
   el: HTMLElement;
   /** Shadow root holding the page SVG. */
   svg: ShadowRoot;
@@ -87,7 +91,8 @@ interface Slot {
 const CSS = `
 .typstream-paged { display: flex; flex-direction: column; align-items: center; gap: 16px; }
 .typstream-paged[data-layout="fit-width"] { align-items: stretch; gap: 0; }
-.typstream-page { position: relative; max-width: 100%; container-type: inline-size; content-visibility: auto; background: white; }
+.typstream-page { position: relative; max-width: 100%; container-type: inline-size; background: white; }
+.typstream-page > :first-child { position: absolute; inset: 0; content-visibility: auto; }
 ${TEXT_LAYER_CSS}`;
 
 const SHEET = Symbol.for("typstream.paged.css");
@@ -108,9 +113,12 @@ const ensureStyles = (doc: Document) => {
   }
 };
 
-/** Text runs of two versions of a page are the same. */
-const sameRuns = (a: PageUpdate["text"], b: PageUpdate["text"]): boolean =>
-  a === b || (a?.length === b?.length && JSON.stringify(a) === JSON.stringify(b));
+/** Two versions of a page have the same text layer: runs, structure, language and direction. */
+const sameText = (a: PageUpdate, b: PageUpdate): boolean =>
+  a.lang === b.lang &&
+  a.dir === b.dir &&
+  (a.text === b.text || (a.text?.length === b.text?.length && JSON.stringify(a.text) === JSON.stringify(b.text))) &&
+  JSON.stringify(a.structure) === JSON.stringify(b.structure);
 
 /** CSS px per point. */
 const PX_PER_PT = 4 / 3;
@@ -157,8 +165,6 @@ export const createPagedView = (container: HTMLElement, options: PagedViewOption
     const style = slot.el.style;
     style.aspectRatio = `${page.width} / ${page.height}`;
     style.width = layout === "fit-width" ? "100%" : `${page.width * PX_PER_PT}px`;
-    // What an offscreen (skipped) page measures; `auto` remembers its last real size.
-    style.containIntrinsicSize = `auto ${page.width * PX_PER_PT}px auto ${page.height * PX_PER_PT}px`;
   };
 
   // The batch being drawn, for onDraw.
@@ -198,7 +204,7 @@ export const createPagedView = (container: HTMLElement, options: PagedViewOption
       slot.text.className = "typstream-text-layer";
       slot.el.append(slot.text);
     }
-    fillTextLayer(slot.text, page.text ?? [], page.width);
+    fillTextLayer(slot.text, page);
     slot.texted = page.hash;
   };
 
@@ -294,9 +300,12 @@ export const createPagedView = (container: HTMLElement, options: PagedViewOption
         // The same page under a new hash: Typst's frame hashes include source spans,
         // which change when text before them is reparsed. Keep what's on screen.
         if (slot.drawn === slot.want.hash && slot.want.svg === page.svg) {
-          if (slot.texted === slot.want.hash && sameRuns(slot.want.text, page.text)) slot.texted = page.hash;
+          const sameLayer = slot.texted === slot.want.hash && sameText(slot.want, page);
+          if (sameLayer) slot.texted = page.hash;
           slot.drawn = page.hash;
           slot.want = page;
+          // Its text layer can still differ (structure or language without a visible change).
+          if (!sameLayer && wantText) dirty.add(slot);
           continue;
         }
         if (slot.want.width !== page.width || slot.want.height !== page.height || slot.drawn === null) size(slot, page);

@@ -70,4 +70,4 @@ React refs don't announce when they're set, so the hook hands out a callback ref
 
 - `pnpm test`: configuration merging and the shared engine's lifetime, in Node.
 - `pnpm test:browser`: `<Typstream>` with React Testing Library against the real engine worker in Chromium, Firefox and WebKit (`BROWSERS=chromium` runs one).
-- `pnpm size`: ≤ 15.5 KB gzipped with `@typstream/dom` (React and the engine external).
+- `pnpm size`: ≤ 16 KB gzipped with `@typstream/dom` (React and the engine external).

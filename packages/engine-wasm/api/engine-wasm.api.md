@@ -9,7 +9,17 @@ function __wbg_init (module_or_path?: { module_or_path: InitInput | Promise<Init
 export default __wbg_init;
 
 // @public
-export type ChangedPage = { index: number; hash: string; width: number; height: number; svg: string; text: TextRun[] };
+export type ChangedPage = {
+    index: number;
+    hash: string;
+    width: number;
+    height: number;
+    svg: string;
+    text: TextRun[];
+    structure: TextNode[];
+    lang: string;
+    dir: "ltr" | "rtl";
+};
 
 // @public
 export type CheckResult = CompileResult & { pageCount?: number };
@@ -130,7 +140,25 @@ export type SvgChangedResult = CompileResult & {
 export type SyncInitInput = BufferSource | WebAssembly.Module;
 
 // @public
-export type TextRun = { text: string; x: number; y: number; size: number; width: number; matrix?: [number, number, number, number] };
+export type TextNode = {
+    role: "heading" | "list" | "listitem" | "table" | "row" | "cell" | "columnheader";
+    level?: number;
+    from: number;
+    to: number;
+    children?: TextNode[];
+};
+
+// @public
+export type TextRun = {
+    text: string;
+    x: number;
+    y: number;
+    size: number;
+    width: number;
+    matrix?: [number, number, number, number];
+    lang?: string;
+    dir?: "ltr" | "rtl";
+};
 
 // @public
 export type TraceItem = { message: string; span: Range_2 | null };
