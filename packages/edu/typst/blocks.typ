@@ -170,6 +170,10 @@
       columns: fields.map(f => (auto, width(f))).flatten(),
       // Tight between a label and its line, wider between fields.
       column-gutter: range(fields.len() * 2 - 1).map(i => if calc.even(i) { 0.4em } else { 1.2em }),
+      // A line's cell holds no text, so at the top it would sit level with the middle of its label. At the
+      // bottom, it meets the label's baseline (where a text line's frame ends) and its stroke falls 0.25em
+      // below, as a blank's does in a sentence.
+      align: bottom,
       ..fields
         .map(f => (
           [#_field-label(f):],
