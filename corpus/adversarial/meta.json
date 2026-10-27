@@ -64,9 +64,9 @@
   "hostile-import-unlisted": {
     "category": "hostile-package",
     "expect": "error",
-    "expectedErrors": ["@preview/typstream-hostile-not-a-package:0.0.1"],
+    "expectedErrors": ["typstream-hostile-not-a-package"],
     "tags": ["sandbox", "packages", "network"],
-    "notes": "Natively typst asks packages.typst.org (package not found); the engine fetches nothing that isn't allowed."
+    "notes": "Natively typst can't get it: the validator runs it without network (failed to download), and the registry wouldn't have it (package not found). The engine fetches nothing that isn't allowed."
   },
   "hostile-layout-nonconvergent": {
     "category": "hostile-runaway",
