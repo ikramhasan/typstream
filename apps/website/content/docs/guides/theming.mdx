@@ -176,7 +176,7 @@ far behind the text.
 <auto-type-table path="packages/dom/src/html/animate.ts" name="AnimateOptions" />
 
 Your own keyframes need a `typstream-` prefix: `animation: "pop"` plays `@keyframes typstream-pop`, which you add
-with `stylesheets` ([#83](https://github.com/ikramhasan/typstream/issues/83) tracks documenting or dropping the prefix):
+with `stylesheets`. Keyframes named just `pop` aren't used:
 
 ```tsx
 const pop = `@keyframes typstream-pop {
