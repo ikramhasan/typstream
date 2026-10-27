@@ -283,7 +283,9 @@ describe(`mountTypstream in ${browser}`, () => {
       blocks: 1,
     });
     const report = rendered.at(-1) as RenderedEvent;
-    expect(report.compileMs).toBeGreaterThan(0);
+    // A number, but possibly 0: browsers coarsen `performance.now()` where the page isn't cross-origin isolated, and
+    // this one-line document can compile within one tick (Firefox reported 0).
+    expect(report.compileMs).toBeGreaterThanOrEqual(0);
     expect(report.timings.totalMs).toBeGreaterThanOrEqual(report.compileMs);
     expect(report.healMs).toBeGreaterThanOrEqual(0);
     expect(report.renderMs).toBeGreaterThanOrEqual(0);

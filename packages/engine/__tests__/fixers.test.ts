@@ -19,7 +19,7 @@ import { PROTOCOL_VERSION } from "@typstream/core";
 import { loadCorpus } from "@typstream/corpus";
 import { heal } from "@typstream/heal";
 import { UNIVERSE_PACKAGES } from "@typstream/universe";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { EngineAdapter } from "../src/server/adapter";
 import { DEFAULT_FIXERS, fixersOf, orderFixers, packageStub, pendingRef, tailCut } from "../src/server/fixers";
 import { RUNTIME_PATH, typstString } from "../src/server/runtime";
@@ -439,7 +439,28 @@ describe("fix loop", { timeout: 30_000 }, () => {
       heal(`#import "@preview/cetz:0.5.3"\n\n${source.slice(canvas, source.indexOf(end, canvas) + end.length)}`);
     // The vendored tarballs, read from disk (Node's fetch can't read file: URLs).
     const fetch = async (url: string) => new Response(readFileSync(fileURLToPath(url)));
-    const cetz = () => serverWith({ packages: { fetch, cache: false }, allow: [...UNIVERSE_PACKAGES] });
+    /**
+     * Runs `f` with `performance.now()` stopped, so no budget runs out however slow the machine: these tests are about
+     * what the fixers cut, not how fast. The streaming fix budget (`FIX_BUDGET_MS`, 1 s) counts from the request,
+     * package loading included, and a slow CI machine spent all of it on CeTZ: no fix round started. (The server is
+     * in-process: it reads this clock.)
+     */
+    const unhurried = async <T>(f: () => Promise<T>): Promise<T> => {
+      const now = vi.spyOn(performance, "now").mockReturnValue(performance.now());
+      try {
+        return await f();
+      } finally {
+        now.mockRestore();
+      }
+    };
+    /** A server with CeTZ loaded and evaluated once: on a stopped clock, loading packages waits for them to arrive. */
+    const cetz = async () => {
+      const server = await serverWith({ packages: { fetch, cache: false }, allow: [...UNIVERSE_PACKAGES] });
+      const empty = prefix("import cetz.draw: *");
+      const out = await unhurried(() => server.compile(empty.source, { settled: empty.stableOffset, target: "paged" }));
+      expect(out.result.status).toBe("ok");
+      return server;
+    };
 
     /** Paths the canvas draws: the page's, less those of the canvas with no elements yet. */
     const drawn = async (compile: Awaited<ReturnType<typeof cetz>>["compile"], out: { artifact: unknown }) => {
@@ -455,7 +476,7 @@ describe("fix loop", { timeout: 30_000 }, () => {
       const tail = healed.source.slice(healed.stableOffset);
       // The whole canvas is unsettled: Layer 4's stable prefix would drop it.
       expect(tail.startsWith("#cetz.canvas(") && tail.endsWith("line((0, 0), (6))})")).toBe(true);
-      const out = await compile(healed.source, { settled: healed.stableOffset, target: "paged" });
+      const out = await unhurried(() => compile(healed.source, { settled: healed.stableOffset, target: "paged" }));
       expect([out.result.status, out.compiles]).toEqual(["ok", 3]);
       // The panic has nothing in the document to point at; the line left with one point does.
       expect(out.diagnostics.map((d) => [d.severity, d.source, d.message, at(healed.source, d)])).toEqual([
@@ -468,7 +489,7 @@ describe("fix loop", { timeout: 30_000 }, () => {
     it("keeps the arguments that arrived", async () => {
       const { compile } = await cetz();
       const healed = prefix("line((0, 0), (6, 0), (3, ");
-      const out = await compile(healed.source, { settled: healed.stableOffset, target: "paged" });
+      const out = await unhurried(() => compile(healed.source, { settled: healed.stableOffset, target: "paged" }));
       expect([out.result.status, out.compiles]).toEqual(["ok", 2]);
       expect(out.result.fixes).toEqual([
         { fixer: "tail-cut", message: "panicked with: Failed to resolve coordinate system: (3,)" },
