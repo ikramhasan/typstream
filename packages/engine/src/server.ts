@@ -1,7 +1,8 @@
 // @typstream/engine/server: the worker half (PLAN §6.1). The engine server
 // speaks the protocol from @typstream/core and compiles with an EngineAdapter;
 // engine-wasm is the default. Failed compiles go through the Layer 3 fixers
-// (PLAN §5.5); Typst packages come from an allowlist (§6.4). The default worker
+// (PLAN §5.5); Typst packages come from an allowlist, and families documents name
+// from font catalogues (§6.4). The default worker
 // script (worker.ts) is `serve(engineWasm({ fonts: baseFonts, lazyFonts: scriptFonts }))`; write your
 // own worker with these exports to load the wasm or fonts from elsewhere.
 
@@ -26,6 +27,7 @@ export {
   TYPST_VERSION,
 } from "./server/engine-wasm";
 export { DEFAULT_FIXERS, missingImage, packageStub, pendingRef, tailCut } from "./server/fixers";
+export { DEFAULT_FONT_FAMILY_BYTES, type FontCatalogueOptions } from "./server/fonts";
 export type { PackageOptions } from "./server/packages";
 export { RUNTIME_PATH } from "./server/runtime";
 export { inProcess, serve, type WorkerScope } from "./server/serve";

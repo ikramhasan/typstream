@@ -9,8 +9,10 @@ const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
 // not redrawn, lone wrappers) added 0.3 KB to a bundle that was at 14.9; 15.5 KB until the paged text
 // layer's structure, language and direction (#63) added 0.5 KB to 15.3; 16 KB until #29 applied Typst's inline
 // styles through the CSSOM, for strict CSPs (0.15 KB), when it was 11 bytes under; 16.5 KB until #95's wide
-// blocks (0.45 KB, most of it paid for by CSS strings without comments) left it 30 bytes over.
-const BUDGET = 16.6 * 1024;
+// blocks (0.45 KB, most of it paid for by CSS strings without comments) left it 30 bytes over; 16.6 KB until
+// font catalogues' web fonts (registering them, the mount's listener, standalone exports' @font-face rules,
+// 0.55 KB) made it 17.1 KB.
+const BUDGET = 17.2 * 1024;
 
 const result = await build({
   entryPoints: ["src/index.ts"],

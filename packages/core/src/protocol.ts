@@ -10,7 +10,7 @@
 
 import type { Diagnostic } from "./diagnostic";
 import type { Range, TextEdit } from "./index";
-import type { DiagnosticFixer, FontSource, PackageSpec } from "./plugin";
+import type { DiagnosticFixer, FontCatalogue, FontSource, LoadedFontFamily, PackageSpec } from "./plugin";
 
 /**
  * Bumped only for breaking changes. Additive changes (new methods, new optional
@@ -88,6 +88,8 @@ export interface ServerCapabilities {
   resolveSpan?: boolean;
   /** `resolve/location` is implemented. @beta */
   resolveLocation?: boolean;
+  /** Families named in documents load from font catalogues (`fontCatalogues`), announced by `fonts/loaded`. @beta */
+  fontCatalogues?: boolean;
   experimental?: Record<string, unknown>;
 }
 
@@ -106,6 +108,11 @@ export interface InitializeOptions {
    * fails `initialize`.
    */
   fixerModules?: string[];
+  /**
+   * Font libraries every document loads families it names from (PLAN §6.4;
+   * plugins' `engine.fontCatalogues`). Each family loads once, for the worker.
+   */
+  fontCatalogues?: FontCatalogue[];
 }
 
 /** @public */
@@ -176,6 +183,12 @@ export interface DocumentOpenParams extends DocumentParams {
    * @beta
    */
   fixerModules?: string[];
+  /**
+   * Font catalogues this document loads families from, in addition to
+   * `initialize`'s. The fonts they load are the worker's, as every font is.
+   * @beta
+   */
+  fontCatalogues?: FontCatalogue[];
 }
 
 /**
@@ -539,6 +552,14 @@ export interface ArtifactNotification extends DocumentParams {
   artifact: Artifact;
 }
 
+/**
+ * A family the server loaded from a font catalogue, for every document from
+ * now on. HTML renderers show it with the same files as web fonts (Typst's HTML
+ * export leaves fonts to the browser). Sent once per family and worker.
+ * @beta
+ */
+export type FontsLoadedParams = LoadedFontFamily;
+
 /** Engine messages for debugging; never user-facing. @public */
 export interface LogParams {
   level: "debug" | "info" | "warn" | "error";
@@ -579,6 +600,8 @@ export interface ClientNotificationMap {
 export interface ServerNotificationMap {
   "document/diagnostics": DiagnosticsNotification;
   "document/artifact": ArtifactNotification;
+  /** @beta */
+  "fonts/loaded": FontsLoadedParams;
   "$/log": LogParams;
 }
 

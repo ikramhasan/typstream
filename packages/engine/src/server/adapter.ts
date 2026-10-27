@@ -45,6 +45,13 @@ export interface EngineAdapter {
   init(options: InitializeOptions): Promise<void>;
   /** A fresh compiler state for one document. */
   open(): AdapterDocument;
+  /**
+   * Loads font files (URLs to fetch, or bytes) while the server runs, for
+   * every document's next compile: the families documents name that a font
+   * catalogue has (PLAN §6.4). Rejects if a file can't be loaded. Without it,
+   * the server loads nothing from font catalogues.
+   */
+  addFonts?(fonts: readonly (string | URL | Uint8Array)[]): Promise<void>;
   /** Memory the compiler holds after a compile, for recycling (PLAN §6.3). */
   memoryBytes?(): number;
 }

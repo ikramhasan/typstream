@@ -13,6 +13,7 @@ import { Engine } from '@typstream/engine';
 import { EngineDocument } from '@typstream/engine';
 import { FallbackEvent } from '@typstream/core';
 import { FileDelta } from '@typstream/core';
+import { LoadedFontFamily } from '@typstream/core';
 import { PagedArtifact } from '@typstream/core';
 import { RenderedEvent } from '@typstream/core';
 import { TypstreamPlugin } from '@typstream/core';
@@ -145,6 +146,9 @@ export interface PagedViewOptions {
     textLayer?: boolean;
 }
 
+// @beta
+export const registerLoadedFont: (font: LoadedFontFamily, root: Node) => Promise<void>;
+
 // @public
 export const registerMathFont: (url: string | URL, doc?: Document) => Promise<void>;
 
@@ -153,6 +157,8 @@ export const standaloneHtml: (html: string, options?: StandaloneHtmlOptions) => 
 
 // @public
 export interface StandaloneHtmlOptions {
+    // @beta
+    fonts?: readonly LoadedFontFamily[];
     mathFont?: Uint8Array | string | URL;
     plugins?: readonly TypstreamPlugin[];
     stylesheets?: readonly string[];

@@ -1,0 +1,113 @@
+---
+title: "@typstream/google-fonts"
+description: Any family of the Google Fonts library in typstream documents, by name, as a plugin; a font catalogue the engine loads families from when a document names them, in both render targets.
+icon: Package
+---
+
+`@typstream/google-fonts` lets documents use any family of the [Google Fonts](https://fonts.google.com) library by
+name: `#set text(font: "Lora")`. It is a plugin. It gives the engine a **font catalogue**, an index of the library's
+families and their files, which the engine downloads a family from the first time a document names it, and compiles
+the document again with it. Its preamble keeps the fonts in the HTML target, and its prompt rules tell the model it
+may use them.
+
+## When to use it
+
+Add it when the documents you show should look the way their author (or a model) chose: a handwriting font for a
+worksheet's notes, a serif for a reading passage. Leave it out if readers' browsers mustn't contact a third-party
+server, unless you [mirror the files](/docs/guides/fonts-and-languages#limits).
+
+## Install
+
+```npm
+npm install @typstream/google-fonts
+```
+
+## Example
+
+```tsx
+import { googleFonts } from "@typstream/google-fonts";
+import { Typstream } from "typstream";
+
+<Typstream source={text} plugins={[googleFonts]} />;
+```
+
+```ts
+import { buildSystemPrompt, edu } from "@typstream/edu";
+import { googleFonts } from "@typstream/google-fonts";
+
+// The model learns it may use any Google Fonts family.
+const system = buildSystemPrompt([edu, googleFonts]);
+```
+
+How the catalogue works, what it costs and its limits: [Fonts and languages](/docs/guides/fonts-and-languages#any-google-fonts-family).
+
+## The catalogue
+
+`catalogue.json` lists every family of [github.com/google/fonts](https://github.com/google/fonts) at one commit: its
+name, and its font files with their style, weight (a range for variable fonts) and size. Files over 20 MB, which
+jsDelivr doesn't serve, are left out, and with them eight CJK and emoji families. `node scripts/catalogue.mjs` (in the
+package's repository) writes it again from the commit it names, or from another one.
+
+The engine loads a family whole when its files are 1 MB or less together. A larger static family loads its regular and
+bold of each style, and a variable font covers every weight. A family over the catalogue's `maxBytes` (5 MB by
+default) isn't loaded.
+
+## API
+
+| Export | What it is |
+| --- | --- |
+| [`googleFonts`](#googlefonts) | The plugin, with its defaults. |
+| [`createGoogleFonts`](#creategooglefonts) | The plugin with another size limit or index. |
+| [`GOOGLE_FONTS_INDEX`](#google_fonts_index) | The URL of the package's `catalogue.json`. |
+| [`googleFontsPreamble`](#googlefontspreamble) | The Typst that keeps fonts in the HTML target. |
+
+### googleFonts
+
+```ts
+const googleFonts: TypstreamPlugin;
+```
+
+The plugin, with key `"google-fonts"`:
+
+- `engine.fontCatalogues`: the catalogue, `{ index: GOOGLE_FONTS_INDEX }`.
+- `engine.preamble`: [`googleFontsPreamble`](#googlefontspreamble).
+- `sanitize.allowAttrs`: `{ span: ["data-typstream-font"] }`, the attribute the preamble writes.
+- `prompt.rules`: any Google Fonts family by its exact name, with examples, and the families to use for Arial or
+  Helvetica (Arimo), Times New Roman (Tinos), Calibri (Carlito), Cambria (Caladea), Courier New (Cousine) and Comic Sans
+  MS (Comic Neue).
+
+### createGoogleFonts
+
+```ts
+function createGoogleFonts(options?: GoogleFontsOptions): TypstreamPlugin;
+
+interface GoogleFontsOptions {
+  /** The most a family may download, in bytes. Default 5 MB. */
+  maxBytes?: number;
+  /** URL of the index to use instead of the package's. */
+  index?: string;
+}
+```
+
+The plugin with another limit, or another index: a copy of `catalogue.json` whose `base` points at your own mirror of
+the files, so that readers' browsers download nothing from jsDelivr.
+
+### GOOGLE_FONTS_INDEX
+
+```ts
+const GOOGLE_FONTS_INDEX: string;
+```
+
+The URL of `catalogue.json`, next to the package's JavaScript: bundlers emit it as an asset, so the engine fetches the
+index from your origin. The font files come from `cdn.jsdelivr.net`.
+
+### googleFontsPreamble
+
+```ts
+const googleFontsPreamble: string;
+```
+
+Typst's HTML export drops fonts. In the HTML target, this marks text whose font isn't the document's own with that
+font's family, lowercased: `<span data-typstream-font="lora">`. The renderer shows the families the engine loaded in
+those spans. Equations (MathML keeps its math font) and frames (Typst draws them) aren't marked, and the paged target
+is left as it is. Use it in your own plugin's preamble to show your own font catalogue's families in the HTML target.

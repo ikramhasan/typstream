@@ -21,7 +21,8 @@ export interface WorkerScope {
  * Runs the engine server in this worker: answers the client's messages with
  * `adapter`. A worker script is one call. `options.fixers` replaces the
  * built-in diagnostic fixers ({@link DEFAULT_FIXERS}); `options.packages`
- * configures Typst packages (by default the client's allowlist is used).
+ * configures Typst packages and `options.fontCatalogues` font catalogues (by
+ * default the client's allowlist and catalogues are used).
  *
  * @example
  * ```ts
@@ -34,7 +35,7 @@ export interface WorkerScope {
 export const serve = (
   adapter: EngineAdapter,
   scope?: WorkerScope,
-  options: Pick<ServerOptions, "fixers" | "packages"> = {},
+  options: Pick<ServerOptions, "fixers" | "packages" | "fontCatalogues"> = {},
 ): EngineServer => {
   const self = scope ?? (globalThis as unknown as WorkerScope);
   const server = createServer(adapter, (message) => self.postMessage(message), {
@@ -59,7 +60,10 @@ export const serve = (
  * @beta
  */
 export const inProcess =
-  (createAdapter: () => EngineAdapter, options: Pick<ServerOptions, "fixers" | "packages"> = {}): SpawnEngine =>
+  (
+    createAdapter: () => EngineAdapter,
+    options: Pick<ServerOptions, "fixers" | "packages" | "fontCatalogues"> = {},
+  ): SpawnEngine =>
   (events) => {
     let alive = true;
     const server = createServer(

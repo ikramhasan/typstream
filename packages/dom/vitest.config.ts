@@ -16,6 +16,7 @@ const alias = {
   "@typstream/html-compat": new URL("../html-compat/src/index.ts", import.meta.url).pathname,
   "@typstream/edu": new URL("../edu/src/index.ts", import.meta.url).pathname,
   "@typstream/universe": new URL("../universe/src/index.ts", import.meta.url).pathname,
+  "@typstream/google-fonts": new URL("../google-fonts/src/index.ts", import.meta.url).pathname,
   "@typstream/corpus": new URL("../../corpus/src/index.ts", import.meta.url).pathname,
 };
 
