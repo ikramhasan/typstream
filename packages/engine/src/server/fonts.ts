@@ -121,7 +121,7 @@ export const anyArrives = (waits: readonly Promise<void>[]): Promise<void> | und
 export class FontCatalogues {
   /** `initialize`'s catalogues, when the client is trusted. */
   private client: readonly FontCatalogue[] = [];
-  /** Indexes by URL: fetched, on their way, or the time a failed one may be fetched again. */
+  /** Indexes by URL (`base` absolute): fetched, on their way, or the time a failed one may be fetched again. */
   private readonly indexes = new Map<string, FontCatalogueIndex | Promise<void> | number>();
   /** Families by name: loaded, loading, or the time a failed one may be loaded again. */
   private readonly families = new Map<string, "loaded" | Promise<void> | number>();
@@ -228,13 +228,22 @@ export class FontCatalogues {
         continue;
       }
       const family = Object.hasOwn(index.families, name) ? index.families[name] : undefined;
-      if (family) return { family, catalogue, base: new URL(index.base, catalogue.index).href };
+      if (family) return { family, catalogue, base: index.base };
     }
     if (missed) throw new Error(`font catalogue ${missed} isn't available`);
     return null;
   }
 
-  /** Fetches an index into `indexes`; a failure is logged and leaves the time to try again. Never rejects. */
+  /**
+   * Fetches an index into `indexes`, its `base` made absolute; a failure is
+   * logged and leaves the time to try again. Never rejects.
+   *
+   * The base resolves against where the index came from: the response's URL,
+   * or for a response that has none (a custom `fetch`'s), the index's URL
+   * against the worker's location, as `fetch` resolved it. Bundlers emit
+   * `new URL("…", import.meta.url)` as a root-relative path (Turbopack's
+   * `/_next/static/media/…`), which `fetch` takes but `new URL` doesn't as a base.
+   */
   private async fetchIndex(url: string): Promise<void> {
     try {
       const response = await (this.options.fetch ?? fetch)(url);
@@ -243,7 +252,8 @@ export class FontCatalogues {
       if (index?.version !== 1 || typeof index.base !== "string" || typeof index.families !== "object") {
         throw new Error("not a version 1 font catalogue index");
       }
-      this.indexes.set(url, index);
+      const from = response.url || new URL(url, (globalThis as { location?: { href: string } }).location?.href).href;
+      this.indexes.set(url, { ...index, base: new URL(index.base, from).href });
     } catch (e) {
       this.indexes.set(url, Date.now() + RETRY_MS);
       this.log(`font catalogue ${url}: ${e instanceof Error ? e.message : String(e)}`);
