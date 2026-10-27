@@ -43,7 +43,10 @@ const browser = server.browser;
 let engine: Engine;
 let corpus: CorpusDocument[];
 beforeAll(async () => {
-  engine = startEngine();
+  // No live page limit (the security suite tests it): past 100 pages a stream stops compiling until it ends, so its
+  // worker keeps warm caches the one-shot side doesn't have, and a final compile near the budget (the 479-page
+  // document) times out on one side only.
+  engine = startEngine({ limits: { livePages: Number.POSITIVE_INFINITY } });
   await engine.ready;
   await warmFonts(engine);
   await loadMathFont();
