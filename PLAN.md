@@ -9,12 +9,14 @@ Status: draft v2 · 2026-10-26 · Target Typst version: **0.15.1** (pinned, see 
 
 ## Status & decisions
 
-**Where we are:** Phase 0 (engine spikes) and Phase 1 (`@typstream/heal`) are done. Phase 2 (engine) is next. Remaining work is tracked as GitHub issues; [#38](https://github.com/ikramhasan/typstream/issues/38) (pinned, label `roadmap`) lists them in order. `CLAUDE.md` explains how to work in this repo.
+**Where we are:** Phases 0–5 are done (the paged renderer, #14, still misses its 10 ms per-update target), and so is most of Phase 6: the package allowlist, plugin system, security hardening and telemetry. Left before the first public release (#4): trimming engine data (#26), and the website's remaining work (#32, #33). Render islands (#28) and the visual editor (#36) come later. Remaining work is tracked as GitHub issues; [#38](https://github.com/ikramhasan/typstream/issues/38) (pinned, label `roadmap`) lists them in order. `CLAUDE.md` explains how to work in this repo.
 
 **Decision log** (newest first). Record new decisions here in the same PR that acts on them.
 
 | Date | Decision | Why / where |
 |---|---|---|
+| 2026-10-27 | **License: MIT** (#1 Q5, maintainer), for every published package. Third-party code and data keep their own licenses and ship their notices: Typst itself, compiled into engine-wasm (Apache-2.0), the fonts (OFL) and universe's vendored packages (their own licenses). Setting `license`, adding the `LICENSE` files and bundling the notices is part of the first release (#4). | §10.4, #1, #4 |
+| 2026-10-27 | **No CodeMirror source editor** (maintainer): `@typstream/codemirror` (#35) is dropped. The only editor planned is the Plate-style visual editor (#36, `@typstream/editor-core` / `editor-react`). #36 needed #35 only for the engine's language services (completion, hover, definition through `typst-ide` in engine-wasm); if the visual editor needs them, they are part of its scope. | §4.1, §10.3, #35, #36 |
 | 2026-10-27 | **The HTML target stays inside its element** (#69). A document could cover the app around it: `html.elem` boxes positioned absolutely and sized to the viewport, `transform`, negative margins, and the page's own classes (`class: "fixed inset-0 z-50"` takes Tailwind's overlay). **Measured** on the corpus (65 documents × 360/600/960 px, Chromium) and on the hostile overlays (hits outside the element by `elementFromPoint`, Chromium, Firefox, WebKit): `contain: layout` + `isolation` stops nothing (3,649 hits, as with no containment); `contain: paint`, `clip-path: inset(0)` and `overflow: clip` + a transform all stop everything, but `contain: paint` (like `overflow-x: auto` and `contain: layout`) makes the root a formatting context, so first and last margins stop collapsing through it: 171 of 195 renders change height by 10–40 px. **Chosen:** the renderer's stylesheet gives `:where(.typstream)` `position: relative; overflow: clip; clip-path: inset(0)`: `clip-path` clips painting and hit testing of every descendant, `position: fixed` ones included, and makes a stacking context; `overflow: clip` keeps the overflow from scrolling the page; `position: relative` (html-compat's already) puts absolute boxes under the root. No layout change: all 417 visual baselines match in the three browsers. A transform would do instead of `clip-path` but fights apps that animate the root; `:where()` lets an app's own `overflow` on the root win (a scrolling root clips too). **Cost:** what reached past the element is cut off: at 600 px a gradebook table (69 px) and a chemistry equation (37 px), at 360 px 13 edu documents' tables, equations and code; and `reading-comprehension-lighthouse`'s `¶` labels, which were already drawn 35 px outside (html-compat places against the padding box, not inside a block's inset: #94). Scrolling wide blocks instead: #95. **And a class allowlist** in the sanitizer, since inside the element the page's classes would still style the document as the app (its buttons) and its scripts may hang on them: Typst's own classes (MathML's, the bibliography's), `typstream-*` (the engine's placeholders) and what plugins list in the new `sanitize.allowClasses` facet (names or `prefix-*`; html-compat `ts-*`, edu `edu-*`). Viewport units and `position: absolute` stay allowed: containment makes them harmless and nothing else would bound `relative` offsets or margins. **Size:** 0.18 KB gzipped; with #70's Trusted Types, `@typstream/dom`'s HTML renderer is 9.3 of 9.5 KB and `@typstream/react` 16.4 of 16.5 KB. | §9 "As built (#69)", security guide |
 | 2026-10-27 | **Trusted Types** (#70): typstream works under `require-trusted-types-for 'script'` with `trusted-types typstream`. Reproducing it showed three sinks, not two: before the renderers' `innerHTML` (the HTML renderer's template, the paged view's shadow root), `new Worker(url)` needs a `TrustedScriptURL`, so `engineWorker()` failed first. All three go through **one policy named `typstream`**, created on first use in `@typstream/core` (`trustedHTML`, `trustedScriptURL`, `@internal`): dom and engine both need it, and a page can create a name only once (a second `createPolicy` throws unless the CSP says `'allow-duplicates'`). It passes values through; markup only ever goes into an inert `<template>` and is cleaned before it reaches the page. The worker URL can't be wrapped where it is written, because Vite, webpack and Turbopack find the worker only in `new Worker(new URL("…", import.meta.url))`; `engineWorker()` swaps the global `Worker` for one that wraps its URL for the duration of that synchronous call. The paged view now parses each page into a template too, so links and images are filtered before insertion. If the name is taken or not listed, strings go through as before (fine without enforcement or with a default policy). Firefox and WebKit in Playwright enforce Trusted Types too; `examples/strict-csp` checks all three with the directive. Cost: HTML renderer 9.1 of 9.5 KB, paged 3.8 of 4 KB, engine main thread 8.45 of 8.5 KB gzipped. | §9 "As built (#70)", website security guide |
 | 2026-10-27 | **Math fonts aren't a text fallback for other scripts' letters** (#80). Typst falls back to the face that covers a run's first character and is most like the current font, first by the monospace and serif flags, which it reads from the panose bytes. Libertinus Serif's panose is unset, so it isn't "serif", nor is New Computer Modern Math, which covers the whole Devanagari block; Noto Serif Devanagari is. So unnamed Devanagari text (plain, bold, raw) got the math font, natively too with the same files. engine-wasm's font book (not the faces) now gives a math face only the coverage of Common, Inherited, Latin and Greek characters, so its symbols and math alphabets stay a fallback and equations, which select it by family, are unchanged. A deliberate difference from native typst, only for text whose first letter a math font alone would have covered (Devanagari; also the Arabic math alphabet and a stray kana outside equations). Rejected: flagging Libertinus or the Noto faces as serif (misstates the fonts, and still loses from DejaVu Sans Mono or an app's sans font), and dropping math faces from fallback entirely (symbols in running text would lose their glyphs). Tested against native typst with the worker's fonts: Bengali, Arabic and math byte-identical. | §6.4 "As built (#11)", `packages/engine-wasm/src/fonts.rs` |
@@ -81,7 +83,7 @@ Status: draft v2 · 2026-10-26 · Target Typst version: **0.15.1** (pinned, see 
 | 2026-10-26 | HTML is the default streaming target; paged is for print preview. *(Ranking changed: the primary surface is a document panel, so paged comes first; see the #1 row above.)* | §0, §6.5 |
 | 2026-10-26 | Built as a published toolkit, editor-ready from day one (edits, not appends; LSP-shaped worker protocol; one plugin contract). | §10 |
 
-**Open product questions** (block parts of Phases 2–5, tracked in [#1](https://github.com/ikramhasan/typstream/issues/1)): licensing, npm scope. Day-one Typst packages are answered (diagrams, chemistry, math; #25), and so are launch scripts (Arabic, Bengali; #11) and the primary surface (a document panel).
+**Open product questions** (block parts of Phases 2–5, tracked in [#1](https://github.com/ikramhasan/typstream/issues/1)): whether documents need bibliographies and code highlighting (#1 Q4, decides #26). Licensing (MIT), the npm scope (reserve `typstream` and `@typstream/*`) and day-one Typst packages are answered (diagrams, chemistry, math; #25), and so are launch scripts (Arabic, Bengali; #11) and the primary surface (a document panel).
 
 ---
 
@@ -109,7 +111,7 @@ Status: draft v2 · 2026-10-26 · Target Typst version: **0.15.1** (pinned, see 
 - Framework-agnostic core; first-class React binding.
 - Safe to run untrusted (LLM-authored) Typst in the user's browser.
 - Ship as an **open, published family of packages** with a landing page, docs and playground in this repo, usable outside our own product.
-- Architecture that a future **visual editor** (Plate-like), a **source editor** (CodeMirror) and **AI-assisted editing** can be built on without rewriting the core.
+- Architecture that a future **visual editor** (Plate-like) and **AI-assisted editing** can be built on without rewriting the core.
 
 ### Non-goals (v1)
 - Building the editor itself. v1 renders; it doesn't edit. But every core contract is designed for editing (§10.3) and has tests that exercise non-append edits.
@@ -252,7 +254,7 @@ Packages are layered; a package may only depend on layers below it (enforced by 
 | 4 · bindings | `@typstream/react` | `<Typstream>`, `useTypstream()`, islands, caret, diagnostics UI — thin layer over `dom`. | core, dom, engine, react (peer) | v1 |
 | 4 · bindings | `typstream` | Convenience meta-package (`import { Typstream } from "typstream"`), like `streamdown`. | react, engine, engine-wasm, heal, html-compat, universe | v1 |
 | 5 · integrations | `@typstream/ai` | Glue for AI SDKs (`useChat` parts → `stream`), prompt kit loader, structured "edit region" streaming, server fix-loop route helpers. | core, heal | v1.x |
-| 5 · editors | `@typstream/codemirror` | Source-mode editor: highlighting (build on / contribute to `codemirror-lang-typst`, an existing Lezer grammar for Typst 0.15), diagnostics, completion/hover via engine. | syntax, engine | future |
+| 5 · editors | `@typstream/codemirror` | Source-mode editor: highlighting (build on / contribute to `codemirror-lang-typst`, an existing Lezer grammar for Typst 0.15), diagnostics, completion/hover via engine. | syntax, engine | dropped (2026-10-27) |
 | 5 · editors | `@typstream/editor-core` / `@typstream/editor-react` | Plate-style visual editor: structured view over the CST, edits as minimal text patches. | syntax, engine, dom | future |
 | — | `apps/website` | Landing page + docs + embedded playground (§10.5). | | v1 (MVP docs) |
 | — | `apps/playground` | Dev playground: replay streams, inspect healed source & diagnostics, record corpus cases. | | v1 |
@@ -946,7 +948,7 @@ Guardrails that keep v1 honest: (1) no module in `heal`/`engine`/`dom` may assum
 - **API review**: `api-extractor` reports checked into the repo; CI fails when the public surface changes without an updated report (the reviewer sees the diff). `@public` / `@beta` / `@internal` TSDoc tags drive both the reports and the docs.
 - **Compatibility matrix**: each release declares its Typst version (engine-wasm build), supported browsers and React versions; documented on the website and asserted in CI.
 - **Quality gates for publishing**: `publint`, `@arethetypeswrong/cli`, size budgets (§11.6), example apps build & smoke test, provenance (`npm publish --provenance`), signed commits (as streamdown does).
-- **License**: decide before first publish (Apache-2.0 aligns with Typst and typst.ts; MIT is the streamdown/Plate norm). Track third-party licenses (fonts are OFL; bundle notices). If any part becomes commercial (e.g. a pro editor), keep the split at package boundaries, never inside a package.
+- **License**: **MIT** (decided 2026-10-27, #1 Q5; the streamdown/Plate norm). Track third-party licenses (Typst in engine-wasm is Apache-2.0; fonts are OFL; bundle notices). If any part becomes commercial (e.g. a pro editor), keep the split at package boundaries, never inside a package.
 
 ### 10.5 Landing page, docs & playground (`apps/website`)
 - **Stack**: Next.js + Fumadocs (MDX), same as streamdown's website; deployed with preview deployments per PR.
@@ -1081,7 +1083,7 @@ typstream/
     dom/           src/{mount,renderers/{html,svg-pages}/*,sanitize,animate,caret}.ts
     react/         src/{Typstream.tsx,provider.tsx,use-typstream.ts,islands.tsx}
     typstream/     re-exports (convenience package)
-    ai/            (v1.x)    codemirror/, editor-core/, editor-react/   (future — directories created only when work starts)
+    ai/            (v1.x)    editor-core/, editor-react/   (future — directories created only when work starts)
   apps/
     website/       Next.js + Fumadocs: landing page, docs, public playground, llms.txt
     playground/    internal dev playground (same code as public playground behind a flag) + corpus recorder
@@ -1151,7 +1153,7 @@ pnpm workspaces, turbo, tsup, vitest, biome (ultracite), changesets, Playwright,
 
 **Later — the wider toolkit (not scheduled; v1 contracts already support them)** · issues #34–#37
 - `@typstream/ai`: AI SDK integration, streaming *regions* for "rewrite this section" commands.
-- `@typstream/codemirror`: source editor with highlighting, diagnostics, completion/hover via the language service.
+- ~~`@typstream/codemirror`: source editor~~ Dropped (2026-10-27, decision log); the visual editor below is the only editor planned.
 - `@typstream/editor-core` / `editor-react`: Plate-style visual editor over the CST (markup subset rich-editable, code as atomic nodes), edu nodes via the plugin `editor` facet.
 - Collaboration adapter (Yjs), Vue/Svelte bindings over `@typstream/dom`.
 
@@ -1177,9 +1179,9 @@ pnpm workspaces, turbo, tsup, vitest, biome (ultracite), changesets, Playwright,
 
 Open questions for the product team:
 1. ~~Primary surface: chat bubbles (favor `html`) or document side-panel (favor `paged`)?~~ Answered (#1): a document panel; paged first (decision log).
-2. Which languages/scripts must be supported at launch (drives font payload)?
+2. ~~Which languages/scripts must be supported at launch (drives font payload)?~~ Answered (#1): English, Arabic, Bengali; Devanagari too (decision log).
 3. Is server-side compile acceptable as a fallback for low-end devices (cost, latency)?
-4. Which Typst packages do teachers need on day one (CeTZ for diagrams? chemistry? music notation?)
-5. Do students interact with documents (islands for quizzes), or is it teacher-only output?
-6. Licensing and open-source scope: fully open (Apache-2.0/MIT), or open core with a commercial editor later? This decides package boundaries before the first publish.
-7. Product name and npm scope availability (`typstream`, `@typstream/*`) — reserve them early.
+4. ~~Which Typst packages do teachers need on day one (CeTZ for diagrams? chemistry? music notation?)~~ Answered (#1, #25): diagrams, chemistry, math.
+5. ~~Do students interact with documents (islands for quizzes), or is it teacher-only output?~~ Answered (#1): teacher-only for now.
+6. ~~Licensing and open-source scope: fully open (Apache-2.0/MIT), or open core with a commercial editor later?~~ Answered (#1): MIT.
+7. ~~Product name and npm scope availability (`typstream`, `@typstream/*`) — reserve them early.~~ Answered (#1): reserve `typstream` and `@typstream/*`.
