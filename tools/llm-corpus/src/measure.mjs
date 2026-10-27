@@ -6,7 +6,9 @@
 // "Final mode" is what typstream compiles once the stream ends: heal's final mode (fences
 // unwrapped, lint fixes, no tail repair) and the run's preamble, then the paged target with
 // answers hidden and shown. A document with an error in either counts as failing. "Raw" compiles
-// the model's text unchanged. HTML errors are counted separately. Writes runs/<label>/measure.json.
+// the model's text unchanged. HTML errors are counted separately. "Overflow" is a layout problem,
+// not an error: a word in a table or grid cell wider than its column, which Typst lets run into the
+// next one. Writes runs/<label>/measure.json.
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
@@ -54,6 +56,33 @@ const lineAt = (source, offset) => {
   return source.slice(start, end < 0 ? undefined : end).trim().slice(0, 160);
 };
 
+// Overflow probe (the same as edu's __tests__/overflow.test.ts): every word in a table or grid is
+// measured against the width its cell gives it, unless its text may hyphenate, and the document
+// ends in a panic naming the words that don't fit. A box per word changes nothing it measures.
+const PROBE = `#let _overflow = state("overflow-probe", ())
+#let _probe(it) = {
+  show regex("[\\p{L}\\p{M}\\p{N}]+"): w => box(layout(size => {
+    if text.hyphenate != true and measure(w).width > size.width + 0.01pt { _overflow.update(o => o + (w.text,)) }
+    w
+  }))
+  it
+}
+#show table: _probe
+#show grid: _probe
+`;
+const PROBE_END = `
+#context { let o = _overflow.final(); if o.len() > 0 { panic("overflow: " + o.join(", ")) } }
+`;
+const OVERFLOW = "panicked with: overflow: ";
+
+/** The words that run out of their cells on paper, answers shown (they add cells' content). */
+const overflowing = (engine, source, preamble) => {
+  const panic = compile(engine, PROBE + source + PROBE_END, { preamble, answers: true }).find((d) =>
+    d.message.startsWith(OVERFLOW),
+  );
+  return panic ? panic.message.slice(OVERFLOW.length).split(", ") : [];
+};
+
 const errorsOf = (diagnostics) => diagnostics.filter((d) => d.severity === "error");
 
 /** One recording's measurements. */
@@ -78,6 +107,7 @@ export const measureRecording = (engine, rec) => {
     raw: raw.map((d) => d.message),
     errors: errors.map((d) => ({ message: d.message, class: classify(d.message), line: lineAt(source, d.span?.from) })),
     html: html.map((d) => d.message),
+    overflow: overflowing(engine, source, preamble),
   };
 };
 
@@ -91,8 +121,10 @@ const tally = (items) => {
 
 const summarize = (label, docs) => {
   const lines = [`### ${label}`, ""];
-  lines.push("| model | docs | final-mode errors | raw errors | HTML errors | truncated | fenced | out tokens (mean) | cost |");
-  lines.push("|---|---|---|---|---|---|---|---|---|");
+  lines.push(
+    "| model | docs | final-mode errors | raw errors | HTML errors | overflow | truncated | fenced | out tokens (mean) | cost |",
+  );
+  lines.push("|---|---|---|---|---|---|---|---|---|---|");
   const models = [...new Set(docs.map((d) => d.model))].sort();
   for (const model of [...models, "all"]) {
     const ds = model === "all" ? docs : docs.filter((d) => d.model === model);
@@ -100,7 +132,7 @@ const summarize = (label, docs) => {
     const count = (f) => ds.filter(f).length;
     const failing = count((d) => d.errors.length > 0);
     lines.push(
-      `| ${model} | ${n} | ${failing} (${pct(failing, n)}) | ${pct(count((d) => d.raw.length > 0), n)} | ${pct(count((d) => d.html.length > 0), n)} | ${count((d) => d.stopReason === "max_tokens")} | ${count((d) => d.fenced)} | ${Math.round(ds.reduce((s, d) => s + d.outputTokens, 0) / (n || 1))} | $${ds.reduce((s, d) => s + d.cost, 0).toFixed(2)} |`,
+      `| ${model} | ${n} | ${failing} (${pct(failing, n)}) | ${pct(count((d) => d.raw.length > 0), n)} | ${pct(count((d) => d.html.length > 0), n)} | ${count((d) => d.overflow.length > 0)} | ${count((d) => d.stopReason === "max_tokens")} | ${count((d) => d.fenced)} | ${Math.round(ds.reduce((s, d) => s + d.outputTokens, 0) / (n || 1))} | $${ds.reduce((s, d) => s + d.cost, 0).toFixed(2)} |`,
     );
   }
   const classes = tally(docs.flatMap((d) => [...new Set(d.errors.map((e) => e.class))]));
@@ -110,6 +142,11 @@ const summarize = (label, docs) => {
   }
   const lint = tally(docs.flatMap((d) => [...new Set(d.lint)]));
   lines.push("", `Lint rules that fired (documents): ${lint.map(([r, n]) => `${r} ${n}`).join(", ") || "none"}`);
+  const overflow = docs.filter((d) => d.overflow.length);
+  if (overflow.length) {
+    lines.push("", "Overflowing words (documents):", "");
+    for (const d of overflow) lines.push(`- ${d.model} ${d.request}: ${d.overflow.join(", ")}`);
+  }
   if (values.examples) {
     lines.push("", "Failing documents:", "");
     for (const d of docs.filter((d) => d.errors.length)) {
