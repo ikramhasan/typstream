@@ -52,6 +52,27 @@ afterAll(() => {
 /** An element's computed `font-family`, without the quotes some browsers (WebKit) leave out. */
 const family = (el: Element | undefined): string => (el ? getComputedStyle(el).fontFamily.replace(/"/g, "") : "");
 
+/**
+ * Whether an element's text is drawn in a web font of its `font-family`: as
+ * wide as in that family, and not as in a family nobody has, which falls back
+ * to the browser's default as an unmatched name does. `font-family` names a
+ * face only when the two agree on the name, which neither the computed style
+ * nor `document.fonts.check()` (true when no face has the name) tells.
+ */
+const drawnInWebFont = (el: Element): boolean => {
+  const width = (fontFamily: string) => {
+    const probe = document.createElement("span");
+    probe.textContent = el.textContent;
+    probe.style.fontFamily = fontFamily;
+    probe.style.fontSize = "40px";
+    el.parentNode?.append(probe);
+    const w = probe.getBoundingClientRect().width;
+    probe.remove();
+    return w;
+  };
+  return width(getComputedStyle(el).fontFamily) !== width('"no such font"');
+};
+
 const until = (view: MountedTypstream, done: (s: DocumentState) => boolean, ms = 30_000) =>
   new Promise<DocumentState>((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error(`timed out; status ${view.getState()?.status}`)), ms);
@@ -82,8 +103,8 @@ describe(`font catalogues in the HTML target, in ${browser}`, () => {
     await expect.poll(() => view.getState()?.diagnostics.map((d) => d.message), { timeout: 20_000 }).toEqual([]);
     const spans = [...el.querySelectorAll('[data-typstream-font="noto serif bengali"]')];
     expect(spans).toHaveLength(2);
-    await expect.poll(() => family(spans[0]), { timeout: 20_000 }).toBe("typstream Noto Serif Bengali");
-    expect(document.fonts.check('16px "typstream Noto Serif Bengali"', "আমি")).toBe(true);
+    await expect.poll(() => family(spans[0]), { timeout: 20_000 }).toBe("typstream-noto-serif-bengali");
+    expect(drawnInWebFont(spans[0] as Element)).toBe(true);
 
     const exported = await view.exportHtml();
     expect(exported).toContain(`src: url(${JSON.stringify(fontUrl.href)})`);
@@ -109,7 +130,8 @@ describe(`font catalogues in the HTML target, in ${browser}`, () => {
     };
     await registerLoadedFont(font, root);
     const [loaded, other] = [...root.querySelectorAll("span")];
-    expect(family(loaded)).toBe("typstream Noto Serif Bengali");
+    expect(family(loaded)).toBe("typstream-noto-serif-bengali");
+    expect(drawnInWebFont(loaded as Element)).toBe(true);
     expect(family(other)).toBe(family(root));
     renderer.dispose();
     host.remove();
