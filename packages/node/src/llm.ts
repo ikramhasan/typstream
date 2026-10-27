@@ -5,7 +5,7 @@ import { type Diagnostic, isError, lineColumn, normalizeDiagnostics } from "@typ
 import { normalize } from "@typstream/heal";
 import { type ValidateOptions, type ValidateResult, validate } from "./validate";
 
-/** @public */
+/** How {@link formatDiagnosticsForLLM} writes its prompt. @public */
 export interface FormatOptions {
   /** Most diagnostics to include, errors first. Default 10. */
   maxDiagnostics?: number;
@@ -122,6 +122,7 @@ export const formatDiagnosticsForLLM = (
 export interface FixRequest {
   /** The document as it stands. */
   source: string;
+  /** Its diagnostics from {@link validate}: Typst's and lint findings, sorted and deduplicated. */
   diagnostics: Diagnostic[];
   /** {@link formatDiagnosticsForLLM} of the two above. */
   prompt: string;
@@ -131,13 +132,21 @@ export interface FixRequest {
 
 /** One validated version of the document. @public */
 export interface FixAttempt {
+  /** The text validated: the original source, or a model's reply with its code fence removed. */
   source: string;
+  /** What {@link validate} reported for `source`, lint findings included. */
   diagnostics: Diagnostic[];
+  /** No errors; with `strict`, no warnings either. The loop stops at the first such attempt. */
   ok: boolean;
 }
 
-/** @public */
+/**
+ * What {@link fixLoop} repairs and how. The {@link ValidateOptions} apply to
+ * every round's validation.
+ * @public
+ */
 export interface FixLoopOptions extends ValidateOptions {
+  /** The document to validate and, if it has errors, repair. */
   source: string;
   /** Asks the model for a corrected document. A Markdown code fence (`typst` or `typ`) around the reply is removed. */
   generate(request: FixRequest): string | Promise<string>;
@@ -145,15 +154,17 @@ export interface FixLoopOptions extends ValidateOptions {
   maxRounds?: number;
   /** Also repair documents that only have warnings, until none are left. Default false: errors only. */
   strict?: boolean;
+  /** How each round's `prompt` is written; passed to {@link formatDiagnosticsForLLM}. */
   format?: FormatOptions;
 }
 
-/** @public */
+/** What {@link fixLoop} ends with: the best attempt, and every attempt it made. @public */
 export interface FixLoopResult {
   /** The best attempt is acceptable (no errors; with `strict`, no warnings either). */
   ok: boolean;
   /** The best attempt: fewest errors, then fewest warnings, then the latest. */
   source: string;
+  /** The best attempt's diagnostics, lint findings included. */
   diagnostics: Diagnostic[];
   /** Every attempt, starting with the original source. */
   attempts: FixAttempt[];

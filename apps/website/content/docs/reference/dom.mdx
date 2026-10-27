@@ -193,6 +193,19 @@ browsers can't stretch delimiters. Pass the URL of the engine's copy (from `@typ
 own. It uses the FontFace API, so no `font-src` exception for inline CSS is needed, and it does nothing if the family
 is already registered. The `typstream` package does this for you.
 
+### `registerLoadedFont` (beta)
+
+```ts
+const registerLoadedFont: (font: LoadedFontFamily, root: Node) => Promise<void>;
+```
+
+Shows a family the engine loaded from a font catalogue (an entry of `Engine.fonts`, or a `font` event) in the HTML
+target under `root`: it registers the family's files as web fonts in the root's document and adds the rule that gives
+the text the engine marked with that family its font, in the root's document or shadow root. `mountTypstream` calls
+it for HTML documents; call it yourself when you render with `createHtmlRenderer`. The files come from the HTTP
+cache, where the worker's download put them. Like `registerMathFont` it uses the FontFace API, so a strict
+Content-Security-Policy needs `connect-src` for the files but no `font-src`.
+
 ### `createPagedView`
 
 ```ts

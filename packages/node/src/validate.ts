@@ -4,7 +4,7 @@ import { type CompileTarget, type Diagnostic, hasErrors, normalizeDiagnostics } 
 import { type HealOptions, heal, type LintFinding } from "@typstream/heal";
 import { compileOnce, type DocumentOptions } from "./engine";
 
-/** @public */
+/** Options for {@link validate}: the document's, plus what to check it for. @public */
 export interface ValidateOptions extends DocumentOptions {
   /**
    * Which output to compile for. Default `paged`, what gets printed; `html`
@@ -19,7 +19,7 @@ export interface ValidateOptions extends DocumentOptions {
   lint?: boolean | HealOptions["lint"];
 }
 
-/** @public */
+/** What {@link validate} found. @public */
 export interface ValidateResult {
   /** No errors. Warnings (including lint findings) don't count. */
   ok: boolean;
@@ -102,17 +102,25 @@ export const validate = async (source: string, options: ValidateOptions = {}): P
   };
 };
 
-/** @public */
+/** What {@link render} exports: a PDF, an HTML document, or SVG pages. @public */
 export type RenderFormat = "pdf" | "html" | "svg";
 
 /** What {@link render} produces per format: PDF bytes, an HTML document, one SVG per page. @public */
 export interface RenderData {
+  /** The PDF file's bytes. */
   pdf: Uint8Array;
+  /** The HTML document Typst's HTML export writes. */
   html: string;
+  /** One SVG string per page, in page order. */
   svg: string[];
 }
 
-/** @public */
+/**
+ * What {@link render} returns: with `ok`, the exported `data`, its warnings
+ * and, for PDF and SVG, the page count; otherwise the errors that stopped the
+ * compile. `ms` is wall-clock milliseconds either way.
+ * @public
+ */
 export type RenderResult<F extends RenderFormat = RenderFormat> =
   | { ok: true; diagnostics: Diagnostic[]; data: RenderData[F]; pageCount?: number; ms: number }
   | { ok: false; diagnostics: Diagnostic[]; ms: number };

@@ -22,6 +22,12 @@ const fontFilesIn = (dir: string): string[] =>
       return FONT_FILE.test(name) ? [path] : [];
     });
 
+/**
+ * Which fonts the server engine loads, once, on its first compile: Typst's
+ * bundled set and engine-wasm's script fonts by default, plus any you add.
+ * Documents see only these; system fonts aren't searched.
+ * @public
+ */
 export interface FontOptions {
   /**
    * Load Typst's bundled fonts (Libertinus Serif, New Computer Modern, DejaVu

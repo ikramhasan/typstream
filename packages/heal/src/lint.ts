@@ -5,6 +5,7 @@
 import { isAlphanumeric } from "./chars";
 import type { LintEvent, ModeSpan, Recognition } from "./recognizer";
 
+/** Id of a built-in lint rule: the keys of {@link DEFAULT_LINT} and `HealOptions.lint`. */
 export type LintRuleId =
   | "markdown-heading"
   | "markdown-bold"
@@ -20,6 +21,7 @@ export type LintRuleId =
 /** `fix` applies the change, `warn` only reports it. */
 export type LintSeverity = "fix" | "warn" | "off";
 
+/** Each built-in lint rule's default severity; `HealOptions.lint` overrides it per rule. */
 export const DEFAULT_LINT: Readonly<Record<LintRuleId, LintSeverity>> = {
   "markdown-heading": "fix",
   "markdown-bold": "fix",
@@ -33,17 +35,30 @@ export const DEFAULT_LINT: Readonly<Record<LintRuleId, LintSeverity>> = {
   "math-lone-script": "fix",
 };
 
+/**
+ * An edit a finding applies: replace `[from, to)` with `insert`. Offsets are into the normalized text the rule
+ * ran on, which is the input unless normalization removed something before them (a leading fence or BOM).
+ */
 export interface TextChange {
+  /** Start of the replaced text (UTF-16 offset). */
   from: number;
+  /** End of the replaced text, exclusive; equal to `from` for an insertion. */
   to: number;
+  /** Text put in its place (empty for a deletion). */
   insert: string;
 }
 
+/** A mistake a lint rule (or a `settled` heal handler) found in settled text. */
 export interface LintFinding {
+  /** The lint rule's id, or the handler's `name` for a handler's edit. */
   rule: LintRuleId | string;
+  /** `fix`: its changes are applied to the healed source; `warn`: only reported. Rules set to `off` report nothing. */
   severity: "fix" | "warn";
+  /** Start of the flagged text (UTF-16 offset; input offsets in `HealResult.findings`). */
   start: number;
+  /** End of the flagged text, exclusive (same offsets as `start`). */
   end: number;
+  /** Human-readable explanation of the problem; a handler's finding repeats its name. */
   message: string;
   /** Changes this finding applies when its severity is `fix`. */
   changes: TextChange[];

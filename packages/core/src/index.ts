@@ -4,7 +4,9 @@
 
 /** A half-open range `[from, to)` in a string. */
 export interface Range {
+  /** Start offset, inclusive (UTF-16). */
   from: number;
+  /** End offset, exclusive (UTF-16); equal to `from` for an empty range. */
   to: number;
 }
 
@@ -13,9 +15,13 @@ export type EditOrigin = "stream" | "user" | "ai" | "remote";
 
 /** Replace `[from, to)` with `insert`. An append is `from = to = length`. */
 export interface TextEdit {
+  /** Start of the replaced range (UTF-16), inclusive. */
   from: number;
+  /** End of the replaced range (UTF-16), exclusive; `from` for a pure insertion. */
   to: number;
+  /** The text that replaces `[from, to)`; empty for a deletion. */
   insert: string;
+  /** Who made the edit. Informational: healing and the engine treat every edit alike. */
   origin?: EditOrigin;
 }
 
@@ -62,7 +68,9 @@ export const isLowSurrogate = (code: number): boolean => code >= 0xdc00 && code 
  * insertions an empty `original`.
  */
 export interface Patch {
+  /** The changed range in the transform's input. */
   original: Range;
+  /** The range it became in the transform's output. */
   result: Range;
   /** Machine-readable cause, e.g. `"close:]"`, `"cut:incomplete-statement"`, `"lint:email-at"`. */
   reason: string;
@@ -73,6 +81,7 @@ export interface Patch {
  * built from non-overlapping patches sorted by `original.from`.
  */
 export class SourceMap {
+  /** The patches the map was built from, sorted by `original.from` and not overlapping. */
   readonly patches: readonly Patch[];
 
   constructor(patches: readonly Patch[]) {
