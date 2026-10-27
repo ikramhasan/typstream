@@ -153,8 +153,16 @@ const pagedFlicker = async (entry: CorpusDocument) => {
 
 const SRC = "data-typstream-src";
 
-/** A block's markup without its source offset. */
-const keyOf = (el: Element) => el.outerHTML.replace(/ data-typstream-src="\d+"/g, "");
+/**
+ * A top-level block: the renderer puts a table or an equation wider than the root in a
+ * scroll box once laid out (#95), which isn't part of the document.
+ */
+const blockOf = (el: Element) =>
+  el.getAttribute("data-typstream-wide") === "1" ? (el.firstElementChild as Element) : el;
+
+/** A block's markup without its source offset, or what the renderer marks once laid out (#95). */
+const keyOf = (el: Element) =>
+  blockOf(el).outerHTML.replace(/ (?:data-typstream-src="\d+"|data-typstream-wide=""|tabindex="0")/g, "");
 
 /**
  * Settled markup with what later text may change taken out (see the top of the
@@ -180,7 +188,7 @@ interface Group {
 const groupsOf = (root: Element, stable: number): Group[] => {
   const groups: Group[] = [];
   for (const el of root.children) {
-    const src = Number(el.getAttribute(SRC) ?? Number.NaN);
+    const src = Number(blockOf(el).getAttribute(SRC) ?? Number.NaN);
     const last = groups.at(-1);
     if (last && (Number.isNaN(src) || src === last.src)) last.nodes.push(el);
     else groups.push({ src, nodes: [el], settled: false });

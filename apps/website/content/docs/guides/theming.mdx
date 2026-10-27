@@ -81,6 +81,7 @@ the renderer's root:
 | `.typstream` | The root. Typst's HTML goes inside it. It carries the document's `lang` and `dir`, and clips what the document draws to its box ([Security](/docs/guides/security#html-target)). |
 | `.typstream[data-typstream-theme]` | Set to `light` or `dark` when `theme` forces one. |
 | `[data-typstream-animate]` | A word fading in. |
+| `[data-typstream-wide]` | A box wider than the root, which scrolls sideways: code itself, or a `div` the renderer puts around a table or an equation (value `1`). Focusable (`tabindex="0"`). |
 | `.typstream-caret` | The caret, drawn by its `::after`. |
 
 Inside the root is Typst's own HTML: `h1`–`h6`, `p`, `ul`, `table`, `figure`, `math` and so on, which you can style
