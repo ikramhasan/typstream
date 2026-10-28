@@ -3,8 +3,9 @@
 #   engine.js        wasm-bindgen --target web glue (ES module; default export = async init, plus initSync)
 #   engine.d.ts      types, including the result and Diagnostic types
 #   engine_bg.wasm   release build after wasm-opt -Oz: HTML, SVG and PDF (#18 put PDF in the one build)
-#   fonts/           the base font set (PLAN §6.4), copied from typst-assets, with its license NOTICE,
-#                    and the script fonts (Noto, downloaded at a pinned commit and checked), LICENSE-Noto.txt
+#   fonts/           the base font set (PLAN §6.4) from typst-assets, its CFF fonts converted to TrueType
+#                    outlines (#118), with its license NOTICE, and the script fonts (Noto, downloaded at a
+#                    pinned commit and checked), LICENSE-Noto.txt
 #   fonts.js         `baseFonts` and `scriptFonts` (scripts/fonts.mjs): their URLs, as
 #                    `new URL("./fonts/…", import.meta.url)` for bundlers, and the script fonts' FontInfo
 #
@@ -13,7 +14,7 @@
 # rebuilds anyway.
 #
 # Needs Rust >= 1.92 with wasm32-unknown-unknown, wasm-bindgen-cli at the
-# version in Cargo.lock, and binaryen's wasm-opt.
+# version in Cargo.lock, binaryen's wasm-opt, and Python 3 (the font conversion).
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -24,7 +25,7 @@ if [ $# -gt 0 ]; then
 fi
 
 # Everything the output depends on. Cargo.lock pins the crates (and wasm-bindgen's version).
-inputs=$( { sha256sum build.sh Cargo.toml Cargo.lock scripts/fonts.mjs $(find src -type f | sort); } | sha256sum | cut -d' ' -f1)
+inputs=$( { sha256sum build.sh Cargo.toml Cargo.lock scripts/fonts.mjs scripts/otf2ttf.py $(find src -type f | sort); } | sha256sum | cut -d' ' -f1)
 if [ -z "${FORCE:-}" ] && [ -f dist/engine_bg.wasm ] && [ "$(cat dist/.inputs 2>/dev/null)" = "$inputs" ]; then
   echo "dist/ is up to date (FORCE=1 to rebuild)"
   exit 0
@@ -39,6 +40,7 @@ WASM_OPT_FEATURES=(--enable-bulk-memory --enable-nontrapping-float-to-int --enab
 need() { command -v "$1" >/dev/null || { echo "build.sh: $1 not found ($2)" >&2; exit 1; }; }
 need cargo "install Rust >= 1.92"
 need curl "to download the script fonts"
+need python3 "to convert the CFF base fonts to TrueType outlines"
 need wasm-bindgen "cargo install wasm-bindgen-cli --version <Cargo.lock's wasm-bindgen> --locked"
 need wasm-opt "install binaryen"
 
@@ -58,17 +60,65 @@ mv dist/engine_bg.opt.wasm dist/engine_bg.wasm
 # wasm-bindgen's own .d.ts for the raw module; nobody imports it.
 rm -f dist/engine_bg.wasm.d.ts
 
-# The base fonts: Typst's defaults for text, math and raw (PLAN §6.4: ≈ 2.6 MB raw, 1.45 MB brotli).
-# Taken from the typst-assets crate the build just downloaded, so they are the files native typst embeds.
-FONTS=(LibertinusSerif-Regular.otf LibertinusSerif-Bold.otf LibertinusSerif-Italic.otf NewCMMath-Regular.otf DejaVuSansMono.ttf)
+fetch() { # url sha256 out: downloads once into target/, checked by SHA-256
+  if [ ! -f "$3" ] || ! echo "$2  $3" | sha256sum -c --quiet - 2>/dev/null; then
+    mkdir -p "$(dirname "$3")"
+    curl -fsSL --retry 3 -o "$3.tmp" "$1"
+    echo "$2  $3.tmp" | sha256sum -c --quiet - || { echo "build.sh: $1 doesn't match its SHA-256" >&2; exit 1; }
+    mv "$3.tmp" "$3"
+  fi
+}
+
+# The base fonts: Typst's defaults for text, math and raw (PLAN §6.4), from the typst-assets crate the
+# build just downloaded. Word embeds only TrueType outlines, and the canvas, the PDF and the DOCX must use
+# the same files (#118), so the ones typst-assets ships with CFF outlines (Libertinus Serif, New Computer
+# Modern Math) are converted (scripts/otf2ttf.py, fontTools' pure-Python wheel at a pinned version): the
+# same fonts, laid out the same, under the same names. The conversion is reproducible, so its output is
+# pinned too; a new fontTools or typst-assets means new hashes here. `file sha256` per line.
+DEJAVU=DejaVuSansMono.ttf
+CONVERTED=(
+  "LibertinusSerif-Regular 3fef5b907611c222c8d398d26841cf7ad1e172c30cd6b04d0310b4f58f53c746"
+  "LibertinusSerif-Bold 29b465eefb4806bf1e0ef5f59ec0b02909a318a5d41bf95fd299f453482bee6c"
+  "LibertinusSerif-Italic 8a04d4879543542b6a2f3d14323d4c49111d9884d38edfaeeddf6a619c81cc12"
+  "NewCMMath-Regular be2bdfa66ab52d4dfcb0434c4358b6bc4315026d433d3091f729d90623c58935"
+)
+FONTTOOLS=fonttools-4.68.0-py3-none-any.whl
+FONTTOOLS_URL=https://files.pythonhosted.org/packages/35/74/4ea331ecc65ba05a58b1e4e8ccd604c8a15565f876dfbf93fc2a2ea2e22b/$FONTTOOLS
+FONTTOOLS_SHA256=d76f8fdcb6936f5e1045a0c9dd721a4bf11112e60d1e243bfa1d39f06a8b3104
 assets=$(cargo metadata --format-version 1 --locked | node -e '
   let s = ""; process.stdin.on("data", (d) => (s += d)).on("end", () => {
     const p = JSON.parse(s).packages.find((p) => p.name === "typst-assets");
     console.log(require("node:path").dirname(p.manifest_path));
   });')
 mkdir -p dist/fonts
-for font in "${FONTS[@]}"; do cp "$assets/files/fonts/$font" dist/fonts/; done
-cp "$assets/NOTICE" dist/fonts/NOTICE
+cp "$assets/files/fonts/$DEJAVU" dist/fonts/
+fetch "$FONTTOOLS_URL" "$FONTTOOLS_SHA256" "target/fonttools/$FONTTOOLS"
+FONTS=()
+for entry in "${CONVERTED[@]}"; do
+  read -r name sha <<< "$entry"
+  python3 -I scripts/otf2ttf.py "target/fonttools/$FONTTOOLS" "$assets/files/fonts/$name.otf" "dist/fonts/$name.ttf"
+  echo "$sha  dist/fonts/$name.ttf" | sha256sum -c --quiet - ||
+    { echo "build.sh: converted $name.ttf doesn't match its pinned SHA-256 (new fontTools or typst-assets?)" >&2; exit 1; }
+  FONTS+=("$name.ttf")
+done
+FONTS+=("$DEJAVU")
+{
+  cat "$assets/NOTICE"
+  cat <<'NOTICE'
+
+================================================================================
+Changes made by typstream
+
+LibertinusSerif-Regular.ttf, LibertinusSerif-Bold.ttf, LibertinusSerif-Italic.ttf and
+NewCMMath-Regular.ttf are modified versions of the .otf files of the same names in
+typst-assets (https://github.com/typst/typst-assets, crate typst-assets on crates.io,
+the version this engine pins): their CFF outlines were converted to TrueType outlines
+with fontTools' cu2qu (at most 1 font unit of error) and their hinting removed; every
+other table is unchanged. Each says so in its name table (name ID 10). They remain under
+the licenses above (SIL OFL 1.1 for Libertinus Serif, the GUST Font License for New
+Computer Modern Math); the unmodified originals are in typst-assets.
+NOTICE
+} > dist/fonts/NOTICE
 
 # Script fonts (#11, PLAN §6.4): registered from their FontInfo and downloaded only when a document
 # uses them. Noto (OFL), unhinted static TTFs, regular and bold, from notofonts.github.io at a pinned
@@ -84,14 +134,6 @@ SCRIPT_FONTS=(
   "Deva:NotoSerifDevanagari-Bold.ttf 0220d0e616fe2a1c77a7980a8c0ad5f44fdf5c6fed575436fda348b96dc3b916"
 )
 NOTO_LICENSE_SHA256=f2095b08bed08b23a6fe26112fcd679a2bee3f002eef077eb05d215ed1051bd8
-fetch() { # url sha256 out
-  if [ ! -f "$3" ] || ! echo "$2  $3" | sha256sum -c --quiet - 2>/dev/null; then
-    mkdir -p "$(dirname "$3")"
-    curl -fsSL --retry 3 -o "$3.tmp" "$1"
-    echo "$2  $3.tmp" | sha256sum -c --quiet - || { echo "build.sh: $1 doesn't match its SHA-256" >&2; exit 1; }
-    mv "$3.tmp" "$3"
-  fi
-}
 script_args=()
 for entry in "${SCRIPT_FONTS[@]}"; do
   read -r spec sha <<< "$entry"

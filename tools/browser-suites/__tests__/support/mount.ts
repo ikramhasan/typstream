@@ -125,7 +125,7 @@ export const warmFonts = async (engine: Engine) => {
 
 /** New Computer Modern Math for MathML, from the engine's fonts (what `typstream` registers). */
 export const loadMathFont = () =>
-  registerMathFont(new URL("../../../../packages/engine-wasm/dist/fonts/NewCMMath-Regular.otf", import.meta.url));
+  registerMathFont(new URL("../../../../packages/engine-wasm/dist/fonts/NewCMMath-Regular.ttf", import.meta.url));
 
 export type Target = "html" | "paged";
 

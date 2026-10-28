@@ -69,6 +69,8 @@ Toolchain:
 - pnpm 12.
 - For the oracle and engine: Rust ≥ 1.92 (Typst 0.15.1 needs it), the `wasm32-unknown-unknown` target, and `wasm-bindgen-cli` at **exactly** the `wasm-bindgen` version in the crate's `Cargo.lock` (currently 0.2.129).
 - `binaryen` (`wasm-opt`) for the engine.
+- Python 3 for the engine's build, which converts typst-assets' CFF base fonts to TrueType outlines (`scripts/otf2ttf.py`,
+  with fontTools' pure-Python wheel that `build.sh` downloads at a pinned version).
 - The native `typst` CLI **0.15.1** on `PATH` for engine-wasm's tests (they compare output with it).
 
 ```bash
@@ -87,7 +89,7 @@ pnpm corpus:validate   # native `typst` 0.15.1 compile of every corpus entry (ne
 ```
 
 In `packages/engine-wasm` (Rust build, ~3 min cold):
-- `pnpm build`: `build.sh` → `dist/` (glue, `.d.ts`, `wasm-opt -Oz` wasm, base fonts from typst-assets, and the lazily loaded script fonts, downloaded from notofonts at a pinned commit and SHA-256 checked, with their `FontInfo` registry written by `scripts/fonts.mjs`). It skips the build when `dist/` came from the same inputs (`FORCE=1` rebuilds). The root `pnpm test` / `pnpm check-types` (turbo) build it first; run inside the package, `pnpm test` uses the existing `dist/`.
+- `pnpm build`: `build.sh` → `dist/` (glue, `.d.ts`, `wasm-opt -Oz` wasm, base fonts from typst-assets (Libertinus Serif and New Computer Modern Math converted to TrueType outlines, output SHA-256 pinned, #118), and the lazily loaded script fonts, downloaded from notofonts at a pinned commit and SHA-256 checked, with their `FontInfo` registry written by `scripts/fonts.mjs`). It skips the build when `dist/` came from the same inputs (`FORCE=1` rebuilds). The root `pnpm test` / `pnpm check-types` (turbo) build it first; run inside the package, `pnpm test` uses the existing `dist/`.
 - `pnpm size`: wasm budget, 6.3 MB brotli (HTML, SVG and PDF in one build since #18).
 - It isn't a tsup package: `dist/` is wasm-bindgen's output, and its API report reads `dist/engine.d.ts`, whose types are written in `src/lib.rs`. Only CI's `Engine (wasm, html-compat, edu)` job runs its own checks; the other jobs pass `--filter=!@typstream/engine-wasm`, but `@typstream/engine` depends on it, so turbo still builds it there. Every job restores `dist/` with `.github/actions/engine-wasm` (cached on the inputs `build.sh` hashes; it builds with Rust on a miss), and `build.sh` then has nothing to do.
 
