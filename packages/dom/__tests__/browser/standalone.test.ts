@@ -19,7 +19,7 @@ beforeAll(async () => {
   engine = startEngine();
   await engine.ready;
   corpus = await commands.corpusEntries();
-  const font = await fetch(new URL("../../../engine-wasm/dist/fonts/NewCMMath-Regular.otf", import.meta.url));
+  const font = await fetch(new URL("../../../engine-wasm/dist/fonts/NewCMMath-Regular.ttf", import.meta.url));
   mathFont = new Uint8Array(await font.arrayBuffer());
 }, 60_000);
 afterAll(() => engine.dispose());

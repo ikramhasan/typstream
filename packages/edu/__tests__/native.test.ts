@@ -48,7 +48,9 @@ const native = (source: string, answers: boolean): { pages: number; stderr: stri
     root,
     "--package-path",
     packages,
+    // Only fontDir()'s fonts: typst's embedded copies of the same families have CFF outlines (#118).
     "--ignore-system-fonts",
+    "--ignore-embedded-fonts",
     "--font-path",
     fontDir(),
   ];
