@@ -24,6 +24,10 @@
     "api:update": "api-extractor run --local",
     "check:package": "publint --strict --pack npm && attw --pack . --profile esm-only"
   },
+  "dependencies": {
+    "@typstream/core": "workspace:*",
+    "@typstream/heal": "workspace:*"
+  },
   "devDependencies": {
     "@typstream/corpus": "workspace:*",
     "ai": "^7.0.153"
