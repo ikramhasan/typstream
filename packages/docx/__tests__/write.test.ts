@@ -135,6 +135,21 @@ describe("writeDocx", () => {
     expect(doc.xml("word/styles.xml")).toContain('w:styleId="TypstreamPlaceholder"');
   });
 
+  it("repeats the footer on a first page whose header differs, as titlePg switches both", () => {
+    const m = model([p("x")]);
+    const section = m.sections[0] as DocxModel["sections"][number];
+    section.header = [p("Running head")];
+    section.headerFirst = [];
+    section.footer = [p("Page")];
+    const { xml } = parts(m);
+    const doc = xml("word/document.xml");
+    expect(doc).toContain("<w:titlePg/>");
+    expect(doc).toContain('<w:footerReference w:type="first"');
+    const first = /<w:footerReference w:type="first" r:id="(\w+)"/.exec(doc)?.[1];
+    const target = new RegExp(`Id="${first}"[^>]*Target="([^"]+)"`).exec(xml("word/_rels/document.xml.rels"))?.[1];
+    expect(xml(`word/${target}`)).toContain(">Page<");
+  });
+
   it("numbers list paragraphs from the list's numbering, its number in the hanging indent", () => {
     const doc = parts(
       model([p("First", { list: { id: 0, label: "1." } })], {

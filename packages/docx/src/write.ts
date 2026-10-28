@@ -371,10 +371,14 @@ export const writeDocx = (model: DocxModel, fonts: readonly Uint8Array[]): Uint8
 
   // Headers and footers.
   const marginals: { kind: "header" | "footer"; type: "default" | "first"; blocks: DocxBlock[] }[] = [];
+  // A different first page (titlePg) is one switch for both: the one that doesn't differ is repeated there.
+  const titlePg = section.headerFirst !== undefined || section.footerFirst !== undefined;
+  const headerFirst = section.headerFirst ?? (titlePg ? section.header : undefined);
+  const footerFirst = section.footerFirst ?? (titlePg ? section.footer : undefined);
   if (section.header) marginals.push({ kind: "header", type: "default", blocks: section.header });
-  if (section.headerFirst) marginals.push({ kind: "header", type: "first", blocks: section.headerFirst });
+  if (headerFirst) marginals.push({ kind: "header", type: "first", blocks: headerFirst });
   if (section.footer) marginals.push({ kind: "footer", type: "default", blocks: section.footer });
-  if (section.footerFirst) marginals.push({ kind: "footer", type: "first", blocks: section.footerFirst });
+  if (footerFirst) marginals.push({ kind: "footer", type: "first", blocks: footerFirst });
   if ((section.headerFirst || section.footerFirst) && !section.header)
     marginals.push({ kind: "header", type: "default", blocks: [] });
   let refs = "";

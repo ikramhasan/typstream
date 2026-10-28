@@ -1974,7 +1974,9 @@ impl Builder {
         let mut segs = Vec::new();
         let mut fills = Vec::new();
         let mut open: Option<Location> = None;
-        let mut depth = 0usize;
+        // What lies outside every cell's tags: a row broken across pages has its cells' tags first, then their
+        // content, and nothing but content where it continues. It goes to cells by where it is, once columns are known.
+        let mut orphans: Vec<usize> = Vec::new();
         for &id in &ids[1..] {
             match &self.items[id].kind {
                 Kind::Start(elem, at) if open.is_none() => {
@@ -1985,20 +1987,19 @@ impl Builder {
                         continue;
                     }
                 }
-                Kind::End(loc) if open.as_ref() == Some(loc) && depth == 0 => {
+                Kind::End(loc) if open.as_ref() == Some(loc) => {
                     open = None;
                     continue;
                 }
-                Kind::Seg(s) if open.is_none() => segs.push(s.clone()),
-                Kind::Fill(r, c) if open.is_none() => fills.push((*r, c.clone())),
                 _ => {}
             }
             if open.is_some() {
                 if let Some(cell) = cells.last_mut() {
                     cell.1.push(id);
                 }
+            } else {
+                orphans.push(id);
             }
-            let _ = &mut depth;
         }
         if cells.is_empty() {
             return None;
@@ -2060,6 +2061,7 @@ impl Builder {
             }
         };
         let widths: Vec<f64> = (0..ncols).map(|c| starts[c + 1] - starts[c]).collect();
+        self.adopt(&mut cells, &orphans, &starts, &mut segs, &mut fills);
         // Rows: their tops, per page, from the cells that start them.
         let mut row_top: Vec<Option<(usize, f64)>> = vec![None; nrows];
         for (n, _) in &cells {
@@ -2299,6 +2301,84 @@ impl Builder {
             bottom,
             json,
         })
+    }
+
+    /// Gives what lies outside the cells' tags to the cell it is drawn in: the latest one started in its column.
+    /// Strokes and fills along cell edges are the table's (borders, backgrounds); groups spanning columns are
+    /// the rows' and the grid's frames, not content.
+    fn adopt(
+        &self,
+        cells: &mut [(Node, Vec<usize>)],
+        orphans: &[usize],
+        starts: &[f64],
+        segs: &mut Vec<Seg>,
+        fills: &mut Vec<(Rect, String)>,
+    ) {
+        let column = |x: f64| (0..starts.len() - 1).find(|&c| x >= starts[c] - 0.5 && x < starts[c + 1] - 0.5);
+        let cell_at = |page: usize, x: f64, y: f64| -> Option<usize> {
+            let c = column(x)?;
+            cells
+                .iter()
+                .enumerate()
+                .filter_map(|(k, (n, _))| match n {
+                    Node::Cell { at, page: p, x, colspan, .. }
+                        if *x <= c
+                            && c < x + colspan
+                            && (*p, at.y.to_pt()) <= (page, y + 0.5) =>
+                    {
+                        Some((k, (*p, at.y.to_pt())))
+                    }
+                    _ => None,
+                })
+                .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
+                .map(|(k, _)| k)
+        };
+        // Inside a column, not on its left edge.
+        let within = |x: f64| column(x).is_some_and(|c| x > starts[c] + 0.5);
+        let mut groups: Vec<Option<usize>> = Vec::new();
+        let mut started: HashMap<Location, usize> = HashMap::new();
+        let mut adopted: Vec<(usize, usize)> = Vec::new();
+        for &id in orphans {
+            let page = self.items[id].page;
+            let to = match &self.items[id].kind {
+                Kind::Group(r, _) => {
+                    let one = column(r.x).is_some_and(|c| r.right() <= starts[c + 1] + 0.5);
+                    let to = if one { cell_at(page, r.x, r.y) } else { None };
+                    groups.push(to);
+                    to
+                }
+                Kind::GroupEnd => groups.pop().flatten(),
+                Kind::Text(t) => cell_at(page, t.x, t.y - t.size),
+                Kind::Drawing(r) | Kind::Link(r, _) => cell_at(page, r.x, r.y),
+                Kind::Seg(s) if within(s.x0) && within(s.x1 - 0.01) => cell_at(page, s.x0, s.y0),
+                Kind::Seg(s) => {
+                    segs.push(s.clone());
+                    None
+                }
+                Kind::Fill(r, _) if within(r.x) => cell_at(page, r.x, r.y),
+                Kind::Fill(r, c) => {
+                    fills.push((*r, c.clone()));
+                    None
+                }
+                Kind::Start(elem, at) => {
+                    let to = cell_at(page, at.x.to_pt(), at.y.to_pt());
+                    if let (Some(k), Some(loc)) = (to, elem.location()) {
+                        started.insert(loc, k);
+                    }
+                    to
+                }
+                Kind::End(loc) => started.get(loc).copied(),
+            };
+            if let Some(k) = to {
+                adopted.push((k, id));
+            }
+        }
+        for (k, id) in adopted {
+            cells[k].1.push(id);
+        }
+        for (_, ids) in cells.iter_mut() {
+            ids.sort_unstable();
+        }
     }
 
     /// Spaces before blocks in a cell: the first from the cell's content top.
