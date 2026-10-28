@@ -5,7 +5,7 @@
 ```ts
 
 // @internal
-export type DocxBlock = DocxParagraph | DocxTable | DocxRule | DocxDrawing;
+export type DocxBlock = DocxParagraph | DocxTable | DocxRule | DocxDrawing | DocxColumns;
 
 // @internal
 export interface DocxBlockBase {
@@ -39,6 +39,16 @@ export interface DocxCell {
     span?: number;
     // (undocumented)
     valign?: "center" | "bottom";
+}
+
+// @internal
+export interface DocxColumns extends DocxBlockBase {
+    // (undocumented)
+    columns: DocxBlock[][];
+    // (undocumented)
+    gap: number;
+    // (undocumented)
+    type: "columns";
 }
 
 // @internal
@@ -100,10 +110,18 @@ export interface DocxParagraph extends DocxBlockBase {
     align: "start" | "center" | "end";
     // (undocumented)
     atLeast?: boolean;
+    fit?: number;
+    frame?: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    };
     heading?: number;
     indent: {
         left: number;
         firstLine: number;
+        right?: number;
     };
     lines: number;
     list?: {
@@ -127,6 +145,7 @@ export interface DocxRow {
     // (undocumented)
     cells: DocxCell[];
     header?: boolean;
+    pageBreak?: boolean;
 }
 
 // @internal

@@ -1,7 +1,8 @@
 # DOCX checks (#131)
 
 `check.mjs` exports every Latin corpus document (the edu and llm sets, without non-Latin scripts) to PDF and DOCX
-through `@typstream/node`, has a layout engine lay the DOCX out, and compares its lines and page starts with Typst's
+through `@typstream/node`, healed in final mode first as an engine exports it (lint fixes included, the layout
+profile's among them), has a layout engine lay the DOCX out, and compares its lines and page starts with Typst's
 PDF (`lines.mjs`). Documents with equations, images or drawings hold placeholders until #132 and #133, and are
 reported apart.
 
@@ -29,4 +30,9 @@ come back than the floor on the documents without placeholders (LibreOffice vers
 per-document baseline). The nightly `DOCX (ONLYOFFICE)` job reports ONLYOFFICE's numbers.
 
 Working on the model: `examples/frames.rs` in engine-wasm dumps a document's laid-out frames (items, positions,
-tags), and `examples/docx_model.rs` writes its model, fonts and Typst's PDF.
+tags), and `examples/docx_model.rs` writes its model, fonts and Typst's PDF; with `--native`, the check gets Universe's
+packages and each set's `assets/` the same way. A full native run takes about half a minute.
+
+Known differences: a word longer than its table column runs past the cell in Typst, where Word-like engines break it
+inside the cell; ONLYOFFICE gives a paragraph as short as a rule (an exact line height under about a point) more
+height than LibreOffice does, so its pages drift on documents with many ruled lines.

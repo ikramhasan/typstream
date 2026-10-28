@@ -10,7 +10,8 @@ first time a document is exported.
 
 **What it writes.** engine-wasm reads the laid-out pages into a document model (`compile_docx_model`): paragraphs
 and their runs (font, size, colour), headings, lists with Word numbering, tables and grids with Typst's column
-widths, framed blocks, page headers and footers with page-number fields, and every gap Typst made. This package
+widths and repeated header rows, framed blocks, ruled lines, columns (as Word sections), placed text (as frames at its
+page position), page headers and footers with page-number fields, page breaks, and every gap Typst made. This package
 turns it into OOXML with the [layout profile](/docs/concepts/render-targets#layout-profile)'s settings (exact line
 pitch, no hyphenation, Word 2013+ layout), embeds the fonts the runs use, obfuscated as ECMA-376 asks, and zips it.
 

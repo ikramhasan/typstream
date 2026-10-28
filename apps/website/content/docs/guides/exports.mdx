@@ -66,15 +66,17 @@ An editable Word file that lays out as the PDF does: the same lines on the same 
 laid-out pages as the PDF, and written as Word's own structure, so a teacher can edit it:
 
 - paragraphs and their runs (fonts, sizes, colours, links), headings with Word's heading styles, lists with Word's
-  numbering, tables and grids with Typst's column widths, framed boxes as one-cell tables;
-- page size and margins, headers and footers, page numbers as fields;
+  numbering, tables and grids with Typst's column widths and repeated header rows, framed boxes as one-cell tables,
+  ruled lines, `columns` as Word's columns, placed text as frames where Typst put it;
+- page size and margins, headers and footers, page numbers as fields, page breaks where Typst starts a page;
 - Typst's fonts, embedded, so Word sets the text in the faces the PDF uses;
 - the [layout profile](/docs/concepts/render-targets#layout-profile)'s settings, which make Word break lines and pages
   where Typst does: exact line pitch, ragged right, no hyphenation, rows that stay on one page.
 
 Equations, images and drawings aren't written yet: they hold their place as empty space of their size, so the text
 around them still falls where it does in the PDF. The file is checked against the PDF with LibreOffice and Microsoft's
-Open XML validator; edits made in Word don't come back to the document.
+Open XML validator; edits made in Word don't come back to the document. One thing Word can't reproduce: a word longer
+than its table column, which Typst lets run past the cell, Word breaks inside the cell.
 
 ## HTML
 
