@@ -53,6 +53,8 @@ examples/         node-validate (@typstream/node fix loop), nextjs-ai-sdk (useCh
                   strict-csp (both targets under a strict Content-Security-Policy, checked in three browsers).
 spikes/phase0     Throwaway Phase 0 experiments: browser harness (harness/) and custom Typst wasm engine (custom-engine/).
                   Port code out of here into packages/; don't import from spikes.
+spikes/docx       #118's DOCX research (Python): the same document as Typst and DOCX under the Word-compatible profile,
+                  rendered by typst, LibreOffice and ONLYOFFICE, lines and pages compared; Microsoft's validator.
 apps/website      The website (#32, #33): landing page and docs (Next.js + Fumadocs). content/docs/ holds every page as MDX,
                   the user-facing guides included (security, writing a plugin); llms.txt and a Markdown twin of each page.
 PLAN.md           Design and roadmap.
