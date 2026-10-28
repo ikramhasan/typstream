@@ -230,6 +230,9 @@ enum Kind {
     GroupEnd,
     /// Something drawn that the model can't express yet (curves, images): a placeholder of its bounding box.
     Drawing(Rect),
+    /// A box drawn without a frame of its own (Typst inlines a `rect`'s frame where it can): its fill and strokes
+    /// follow, then what is drawn in it.
+    Rect(Rect),
     Link(Rect, String),
 }
 
@@ -425,6 +428,9 @@ impl Linearizer<'_> {
                     w: size.x.to_pt(),
                     h: size.y.to_pt(),
                 };
+                if r.w >= 6.0 && r.h >= 6.0 {
+                    self.push(Kind::Rect(r));
+                }
                 if let Some(fill) = &shape.fill {
                     self.push(Kind::Fill(r, paint_hex(fill)));
                 }
@@ -1268,6 +1274,18 @@ impl Builder {
                     }
                     pending.push(id);
                 }
+                Kind::Rect(rect) if !self.beside(&pending, *rect, items[id].page) => {
+                    // A box drawn without a frame: a framed block of what is drawn in it, as a framed group is.
+                    let end = self.drawn_over(ids, i, *rect);
+                    self.flush(&mut pending, &mut out, area, heading);
+                    if let Some(b) =
+                        self.framed_items(items[id].page, &ids[i + 1..=end], *rect, area)
+                    {
+                        out.push(b);
+                    }
+                    i = end + 1;
+                    continue;
+                }
                 Kind::Drawing(rect) if !self.in_line(&pending, *rect, self.items[id].page) => {
                     self.flush(&mut pending, &mut out, area, heading);
                     let mut json = Map::new();
@@ -1350,7 +1368,9 @@ impl Builder {
             let k = match &self.items[id].kind {
                 Kind::Text(t) => column(t.x),
                 Kind::Seg(s) => column(s.x0),
-                Kind::Fill(r, _) | Kind::Drawing(r) | Kind::Link(r, _) => column(r.x),
+                Kind::Fill(r, _) | Kind::Drawing(r) | Kind::Link(r, _) | Kind::Rect(r) => {
+                    column(r.x)
+                }
                 Kind::Group(r, _) => {
                     let k = column(r.x);
                     groups.push(k);
@@ -1428,7 +1448,7 @@ impl Builder {
                     h: s.y1 - s.y0,
                 })
                 .then_some(j + 1),
-                Kind::Fill(r, _) | Kind::Drawing(r) | Kind::Link(r, _) => {
+                Kind::Fill(r, _) | Kind::Drawing(r) | Kind::Link(r, _) | Kind::Rect(r) => {
                     inside(*r).then_some(j + 1)
                 }
                 Kind::Group(r, _) => inside(*r).then(|| group_end(&self.items, ids, j + 1)),
@@ -2184,12 +2204,26 @@ impl Builder {
     /// A framed or filled block as a one-cell table.
     fn framed(&mut self, ids: &[usize], rect: Rect, area: Area) -> Option<Block> {
         let page = self.items[ids[0]].page;
+        self.framed_items(page, &ids[1..ids.len().saturating_sub(1)], rect, area)
+    }
+
+    /// A framed block from what is drawn in it: its fill and strokes first.
+    fn framed_items(
+        &mut self,
+        page: usize,
+        ids: &[usize],
+        rect: Rect,
+        area: Area,
+    ) -> Option<Block> {
         let mut segs = Vec::new();
         let mut fill = None;
         let mut inner = Vec::new();
         let mut leading = true;
-        for &id in &ids[1..ids.len().saturating_sub(1)] {
+        for &id in ids {
             match &self.items[id].kind {
+                // The box's own marker (a framed group's first shape).
+                Kind::Rect(r)
+                    if leading && (r.w - rect.w).abs() < 1.0 && (r.h - rect.h).abs() < 1.0 => {}
                 Kind::Seg(s) if leading => segs.push(s.clone()),
                 Kind::Fill(r, c) if leading && (r.w - rect.w).abs() < 1.0 => fill = Some(c.clone()),
                 _ => {
@@ -2876,6 +2910,9 @@ impl Builder {
                 Kind::GroupEnd => groups.pop().flatten(),
                 Kind::Text(t) => cell_at(page, t.x, t.y - t.size),
                 Kind::Drawing(r) | Kind::Link(r, _) => cell_at(page, r.x, r.y),
+                // A box in a cell, not a cell's background (on its column's edge, the table's).
+                Kind::Rect(r) if within(r.x) => cell_at(page, r.x, r.y),
+                Kind::Rect(_) => None,
                 Kind::Seg(s) if within(s.x0) && within(s.x1 - 0.01) => cell_at(page, s.x0, s.y0),
                 Kind::Seg(s) => {
                     segs.push(s.clone());
