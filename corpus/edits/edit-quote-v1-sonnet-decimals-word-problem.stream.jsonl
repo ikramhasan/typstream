@@ -1,0 +1,41 @@
+{"t":0,"text":"I added a third word problem about"}
+{"t":9,"text":" buying ap"}
+{"t":321,"text":"ples at the end of Part B"}
+{"t":321,"text":","}
+{"t":321,"text":" with"}
+{"t":321,"text":" a"}
+{"t":321,"text":" worked answer for"}
+{"t":321,"text":" the teacher's copy."}
+{"t":321,"text":"\n\n<edit>\n<old"}
+{"t":321,"text":">"}
+{"t":321,"text":"\n  #"}
+{"t":326,"text":"answer-space(height: "}
+{"t":363,"text":"6em, answer: [$"}
+{"t":399,"text":"4.5 times 3."}
+{"t":663,"text":"2 = 14.4$"}
+{"t":663,"text":", so the area is $14."}
+{"t":664,"text":"4 \"m\"^2$"}
+{"t":664,"text":".])\n]\n</old>"}
+{"t":664,"text":"\n<new>\n  #answ"}
+{"t":664,"text":"er-space(height: 6"}
+{"t":664,"text":"em, answer: [$4"}
+{"t":674,"text":".5 times 3.2"}
+{"t":709,"text":" = 14.4$,"}
+{"t":742,"text":" so the area is $14.4"}
+{"t":776,"text":" \"m\"^2$."}
+{"t":809,"text":"])\n]\n\n#question(points"}
+{"t":993,"text":": 3)[\n  "}
+{"t":993,"text":"Apples cost \\$1."}
+{"t":993,"text":"80 per kilogram."}
+{"t":993,"text":" Maria"}
+{"t":993,"text":" buys 2"}
+{"t":1010,"text":".5 kilograms of"}
+{"t":1043,"text":" apples. How much does she p"}
+{"t":1077,"text":"ay?\n  #answer-"}
+{"t":1111,"text":"space(height: 6em,"}
+{"t":1145,"text":" answer: [$1.80"}
+{"t":1178,"text":" times 2.5 ="}
+{"t":1211,"text":" 4.50$, so"}
+{"t":1245,"text":" Maria pays \\$4."}
+{"t":1279,"text":"50.])\n]\n</new"}
+{"t":1312,"text":">\n</edit>"}

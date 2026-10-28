@@ -811,6 +811,12 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^1.3.0
         version: 1.3.0(zod@4.6.7)
+      '@typstream/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
+      '@typstream/corpus':
+        specifier: workspace:*
+        version: link:../../corpus
       '@typstream/edu':
         specifier: workspace:*
         version: link:../../packages/edu

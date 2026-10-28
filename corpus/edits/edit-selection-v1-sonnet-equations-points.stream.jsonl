@@ -1,0 +1,14 @@
+{"t":0,"text":"#question(points: 5)"}
+{"t":32,"text":"[\n  A number is multi"}
+{"t":229,"text":"plied by 3 and then"}
+{"t":229,"text":" 8 is subtracted"}
+{"t":229,"text":". The result is the same as when"}
+{"t":229,"text":" the number is added to 10."}
+{"t":230,"text":" Write an equation and find the"}
+{"t":232,"text":" number.\n  #answer-"}
+{"t":266,"text":"space(height: 6em,"}
+{"t":299,"text":" answer: [$3 x"}
+{"t":332,"text":" - 8 = x + "}
+{"t":365,"text":"10$, so $2 x"}
+{"t":399,"text":" = 18$ and $x"}
+{"t":432,"text":" = 9$.])\n]"}

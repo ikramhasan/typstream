@@ -13,6 +13,7 @@ import { parseArgs } from "node:util";
 import Anthropic from "@anthropic-ai/sdk";
 import { REQUESTS } from "./requests.mjs";
 import { RUNS, runDir } from "./runs.mjs";
+import { recordStream } from "./stream.mjs";
 import { VARIANTS } from "./variants.mjs";
 
 const { values } = parseArgs({
@@ -50,42 +51,9 @@ writeFileSync(join(RUNS, label, "run.json"), `${JSON.stringify({ variant: values
 
 /** Streams one document and writes its recording. */
 const record = async (model, request) => {
-  const dir = runDir(label, model);
-  const base = join(dir, request.id);
+  const base = join(runDir(label, model), request.id);
   if (existsSync(`${base}.json`)) return null;
-  mkdirSync(dir, { recursive: true });
-  const started = performance.now();
-  let first;
-  const chunks = [];
-  // Defaults otherwise (adaptive thinking, the model's default effort), as an app that doesn't
-  // tune them gets. The system prompt is the same for every request of a run, so it caches.
-  const stream = client.messages.stream({
-    model,
-    max_tokens: 16000,
-    system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
-    messages: [{ role: "user", content: request.request }],
-  });
-  for await (const event of stream) {
-    if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-      const now = performance.now();
-      first ??= now;
-      chunks.push({ t: Math.round(now - first), text: event.delta.text });
-    }
-  }
-  const message = await stream.finalMessage();
-  writeFileSync(`${base}.stream.jsonl`, chunks.map((c) => `${JSON.stringify(c)}\n`).join(""));
-  const meta = {
-    model,
-    request: request.id,
-    stopReason: message.stop_reason,
-    usage: message.usage,
-    firstTextMs: first === undefined ? null : Math.round(first - started),
-    totalMs: Math.round(performance.now() - started),
-    chunks: chunks.length,
-    recordedAt: new Date().toISOString(),
-  };
-  writeFileSync(`${base}.json`, `${JSON.stringify(meta, null, 2)}\n`);
-  return meta;
+  return recordStream(client, { model, system, content: request.request, base, meta: { request: request.id } });
 };
 
 const queue = models.flatMap((model) => requests.map((request) => ({ model, request })));

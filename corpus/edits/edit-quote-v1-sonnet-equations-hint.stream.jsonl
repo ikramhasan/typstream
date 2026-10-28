@@ -1,0 +1,40 @@
+{"t":0,"text":"I added a hint to"}
+{"t":303,"text":" the last question, plac"}
+{"t":306,"text":"ed after the wor"}
+{"t":306,"text":"ked equ"}
+{"t":306,"text":"ation and"}
+{"t":306,"text":" before the answer lines. It"}
+{"t":306,"text":" re"}
+{"t":306,"text":"minds students to expand the br"}
+{"t":306,"text":"ackets first.\n\n<edit"}
+{"t":306,"text":">\n<old>"}
+{"t":328,"text":"\n  $3(x + 2"}
+{"t":363,"text":") = 18 arrow"}
+{"t":398,"text":".r 3 x + "}
+{"t":633,"text":"2 = 18 arr"}
+{"t":633,"text":"ow.r 3 x ="}
+{"t":633,"text":" 16 arrow.r"}
+{"t":633,"text":" x = 16/3$"}
+{"t":633,"text":"\n  #answer-lines("}
+{"t":633,"text":"count: 2,"}
+{"t":634,"text":"</old>\n<new>"}
+{"t":668,"text":"\n  $3(x + 2"}
+{"t":702,"text":") = 18 arrow"}
+{"t":735,"text":".r 3 x + "}
+{"t":770,"text":"2 = 18 arr"}
+{"t":803,"text":"ow.r 3 x ="}
+{"t":968,"text":" 16 arrow.r"}
+{"t":968,"text":" x = 16/3$"}
+{"t":968,"text":"\n\n  #callout(kind:"}
+{"t":968,"text":" \"tip\")"}
+{"t":968,"text":"["}
+{"t":1002,"text":"Expand the brackets first:"}
+{"t":1036,"text":" multiply the"}
+{"t":1068,"text":" number"}
+{"t":1101,"text":" outside by"}
+{"t":1134,"text":" *every* term inside the br"}
+{"t":1168,"text":"ackets.]\n  #answ"}
+{"t":1201,"text":"er-lines(count: "}
+{"t":1235,"text":"2,</new"}
+{"t":1270,"text":">\n</ed"}
+{"t":1280,"text":"it>"}

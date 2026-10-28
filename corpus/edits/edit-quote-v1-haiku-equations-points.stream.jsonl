@@ -1,0 +1,16 @@
+{"t":0,"text":"Question 12 is the \""}
+{"t":21,"text":"A number is multiplied by"}
+{"t":41,"text":" 3\" question, so I've"}
+{"t":61,"text":" chang"}
+{"t":81,"text":"ed its points"}
+{"t":102,"text":" from 4 to 5."}
+{"t":122,"text":"\n\n<edit>\n<old"}
+{"t":143,"text":">\n#question(points: "}
+{"t":164,"text":"4)["}
+{"t":184,"text":"\n  A number is multiplied"}
+{"t":204,"text":" by 3"}
+{"t":224,"text":"\n</old>\n<new>"}
+{"t":250,"text":"\n#question(points: 5)"}
+{"t":266,"text":"[\n  A number is multi"}
+{"t":286,"text":"plied by 3\n</new"}
+{"t":309,"text":">\n</edit>"}

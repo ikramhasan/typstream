@@ -1,0 +1,53 @@
+{"t":0,"text":"I added a fourth exit"}
+{"t":4,"text":" "}
+{"t":395,"text":"ticket question, wor"}
+{"t":395,"text":"th 1 point, asking"}
+{"t":395,"text":" students where"}
+{"t":395,"text":" water collects. It is"}
+{"t":395,"text":" mult"}
+{"t":395,"text":"iple cho"}
+{"t":395,"text":"ice, in"}
+{"t":395,"text":" the same"}
+{"t":395,"text":" style as the first"}
+{"t":395,"text":" question.\n\n<edit>"}
+{"t":395,"text":"\n<old>"}
+{"t":404,"text":"\n#question(points: 2)"}
+{"t":808,"text":"[\n  Explain in one"}
+{"t":808,"text":" or two sentences why the water"}
+{"t":808,"text":" cycle never runs out of"}
+{"t":808,"text":" water.\n  #answer-"}
+{"t":808,"text":"lines(count: 2,"}
+{"t":808,"text":" answer: [The water kee"}
+{"t":808,"text":"ps moving around: it eva"}
+{"t":808,"text":"porates, forms clouds"}
+{"t":808,"text":", falls as rain and coll"}
+{"t":808,"text":"ects again, so it is reused"}
+{"t":808,"text":".])\n]\n</old>"}
+{"t":819,"text":"\n<new>\n#question("}
+{"t":1226,"text":"points: 2)[\n  "}
+{"t":1226,"text":"Explain in one or two s"}
+{"t":1226,"text":"entences why the water cycle"}
+{"t":1226,"text":" never runs out of water."}
+{"t":1226,"text":"\n  #answer-lines("}
+{"t":1226,"text":"count: 2, answer:"}
+{"t":1226,"text":" [The water keeps moving"}
+{"t":1226,"text":" around: it evaporates,"}
+{"t":1226,"text":" forms clouds, falls"}
+{"t":1226,"text":" as rain and collects again,"}
+{"t":1226,"text":" so it is reused.])"}
+{"t":1226,"text":"\n]\n\n#question(points: "}
+{"t":1628,"text":"1)[\n  Where does"}
+{"t":1628,"text":" water collect after it"}
+{"t":1628,"text":" fal"}
+{"t":1628,"text":"ls from the"}
+{"t":1628,"text":" clouds?\n  #m"}
+{"t":1628,"text":"cq([In"}
+{"t":1628,"text":" r"}
+{"t":1628,"text":"ivers, lakes and o"}
+{"t":1628,"text":"ceans], [In the cl"}
+{"t":1628,"text":"ouds], [In the S"}
+{"t":1628,"text":"un], [In"}
+{"t":1628,"text":" the air as"}
+{"t":1762,"text":" water vapour], answer:"}
+{"t":1762,"text":" 1)\n]\n</new"}
+{"t":1762,"text":">\n</edit>"}

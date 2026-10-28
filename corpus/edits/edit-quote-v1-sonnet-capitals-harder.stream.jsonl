@@ -1,0 +1,30 @@
+{"t":0,"text":"Question"}
+{"t":127,"text":" 4 now asks about the"}
+{"t":133,"text":" capital of Slovenia"}
+{"t":133,"text":" instead of Spain, with"}
+{"t":152,"text":" n"}
+{"t":186,"text":"earby"}
+{"t":217,"text":" Sloven"}
+{"t":250,"text":"ian cities as the"}
+{"t":283,"text":" w"}
+{"t":319,"text":"rong options.\n\n<edit"}
+{"t":351,"text":">\n<old>"}
+{"t":383,"text":"\n#"}
+{"t":417,"text":"question(points: 1)["}
+{"t":470,"text":"\n  What is the capital of"}
+{"t":485,"text":" Spain?\n  #m"}
+{"t":519,"text":"cq([Barcelona"}
+{"t":559,"text":"], [Seville], ["}
+{"t":586,"text":"Valencia], [Madr"}
+{"t":626,"text":"id], answer: 4)"}
+{"t":655,"text":"\n]\n</old>\n<"}
+{"t":689,"text":"new>\n#question(points:"}
+{"t":721,"text":" 1)[\n  What is"}
+{"t":754,"text":" the capital of Sloven"}
+{"t":787,"text":"ia?\n  #mcq"}
+{"t":820,"text":"([Maribor], ["}
+{"t":854,"text":"Ljubljana], ["}
+{"t":888,"text":"Celje], [Koper],"}
+{"t":927,"text":" answer: 2)\n]"}
+{"t":955,"text":"\n</new>"}
+{"t":984,"text":"\n</edit>"}

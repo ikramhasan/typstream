@@ -2,7 +2,7 @@
 // that applies an answer's edits to a document as it streams, over recorded
 // model documents (corpus/llm).
 import { applyEdit, type Range } from "@typstream/core";
-import { ALL_SETS, loadCorpus, synthesizeStream } from "@typstream/corpus";
+import { ALL_SETS, loadCorpus, loadEditAnswers, synthesizeStream } from "@typstream/corpus";
 import { blockStarts } from "@typstream/heal";
 import { describe, expect, it } from "vitest";
 import {
@@ -354,6 +354,62 @@ describe("an edit session", () => {
     session.keep();
     expect(seen).toHaveLength(1);
     expect(seen[0]?.text).toBe("1.");
+  });
+});
+
+describe("recorded answers (corpus/edits)", () => {
+  const sources = new Map(loadCorpus({ sets: ALL_SETS }).map((e) => [e.name, e.source]));
+  const answers = loadEditAnswers();
+
+  /** Runs an answer through a session, chunk by chunk or at once. */
+  const run = (answer: (typeof answers)[number], chunks: readonly string[], check?: (s: EditSessionState) => void) => {
+    const base = sources.get(answer.document) as string;
+    const session = createEditSession(base);
+    let sent = "";
+    chunks.forEach((chunk, i) => {
+      sent += chunk;
+      const done = i === chunks.length - 1;
+      if (answer.selection) session.write(answer.selection, sent, done);
+      else session.update(sent, done);
+      check?.(session.getState());
+    });
+    return session;
+  };
+
+  it("has answers for every kind of request", () => {
+    expect(answers.length).toBeGreaterThan(50);
+    expect(answers.some((a) => a.selection)).toBe(true);
+    expect(answers.some((a) => a.ask)).toBe(true);
+  });
+
+  it.each(answers)("$name", (answer) => {
+    const base = sources.get(answer.document);
+    expect(base).toBeDefined();
+    const session = run(
+      answer,
+      answer.stream.map((c) => c.text),
+      (s) => {
+        if (!s.streamingRange) return;
+        // A streaming range covers whole blocks: a blank line (or the start) before it, the end
+        // of a block's text after it.
+        const { from, to } = s.streamingRange;
+        expect(from === 0 || /\n[ \t]*\n$/.test(s.text.slice(0, from)) || s.text.startsWith("=", from)).toBe(true);
+        expect(s.text.slice(to)).toMatch(/^(\s*\n[ \t]*\n|\s*$)/);
+      },
+    );
+    const s = session.getState();
+    // As the answer streamed, as if it had arrived at once.
+    const once = run(answer, [answer.stream.map((c) => c.text).join("")]).getState();
+    expect(s.text).toBe(once.text);
+    expect(s.edits).toEqual(once.edits);
+    if (answer.ask) expect(s.edits.length === 0 || s.edits.every((e) => e.status === "applied")).toBe(true);
+    else {
+      expect(s.edits.length).toBeGreaterThan(0);
+      expect(s.edits.filter((e) => e.status !== "applied")).toEqual([]);
+      expect(s.text).not.toBe(base);
+    }
+    session.undo();
+    expect(session.getState().text).toBe(base);
   });
 });
 

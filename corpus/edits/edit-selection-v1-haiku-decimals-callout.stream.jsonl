@@ -1,0 +1,45 @@
+{"t":0,"text":"#"}
+{"t":20,"text":"callout(kind: \"rem"}
+{"t":41,"text":"ember\")[\n  To multi"}
+{"t":61,"text":"ply decimals, follow these"}
+{"t":81,"text":" three"}
+{"t":102,"text":" steps:\n\n  + "}
+{"t":122,"text":"Ignore the decimal points and"}
+{"t":143,"text":" multiply the numbers as"}
+{"t":169,"text":" us"}
+{"t":188,"text":"ual.\n  + Count all"}
+{"t":205,"text":" the digits after the decimal"}
+{"t":227,"text":" points"}
+{"t":251,"text":" in both num"}
+{"t":266,"text":"bers.\n  + In"}
+{"t":292,"text":" your answer, put the decim"}
+{"t":307,"text":"al point so that it"}
+{"t":331,"text":" has that many digits after it."}
+{"t":348,"text":"\n\n  Example 1: $"}
+{"t":369,"text":"0.3 times 0."}
+{"t":389,"text":"2$. Ignore the"}
+{"t":410,"text":" points: $3 times 2"}
+{"t":430,"text":" = 6$. There are"}
+{"t":450,"text":" 2 digits after the points"}
+{"t":471,"text":" in total, so the answer is"}
+{"t":492,"text":" $0.06$.\n\n  "}
+{"t":514,"text":"Example 2: $1."}
+{"t":534,"text":"5 times 0.4$"}
+{"t":554,"text":". Ignore the points:"}
+{"t":575,"text":" $15 times 4 ="}
+{"t":595,"text":" 60$. There is"}
+{"t":615,"text":" 1 digit after the point"}
+{"t":636,"text":" in $"}
+{"t":655,"text":"1.5$ and 1"}
+{"t":677,"text":" in"}
+{"t":697,"text":" $0.4$, so "}
+{"t":716,"text":"2 in"}
+{"t":737,"text":" total."}
+{"t":757,"text":" Put the point"}
+{"t":777,"text":" "}
+{"t":797,"text":"2 dig"}
+{"t":818,"text":"its from the right"}
+{"t":839,"text":": $0.60$,"}
+{"t":859,"text":" which is the"}
+{"t":880,"text":" same as $0.6$."}
+{"t":905,"text":"\n]"}

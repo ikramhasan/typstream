@@ -1,0 +1,11 @@
+{"t":0,"text":"I"}
+{"t":20,"text":" changed the exam du"}
+{"t":41,"text":"ration from 45 to"}
+{"t":61,"text":" 60 minutes."}
+{"t":82,"text":"\n\n<edit>\n<old>"}
+{"t":103,"text":"\n  duration: [45 "}
+{"t":124,"text":"minutes],\n</old>"}
+{"t":145,"text":"\n<new>\n  duration"}
+{"t":165,"text":": [60 minutes],"}
+{"t":188,"text":"\n</new>\n</edit"}
+{"t":203,"text":">"}

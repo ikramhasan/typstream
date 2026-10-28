@@ -1,0 +1,12 @@
+{"t":0,"text":"The"}
+{"t":34,"text":" ex"}
+{"t":328,"text":"am duration is now 60 "}
+{"t":328,"text":"minutes."}
+{"t":328,"text":" Nothing else was changed."}
+{"t":328,"text":"\n\n<edit>\n<old"}
+{"t":328,"text":">"}
+{"t":328,"text":"\n  duration: [45 min"}
+{"t":328,"text":"utes],\n</old>"}
+{"t":360,"text":"\n<new>\n  duration:"}
+{"t":393,"text":" [60 minutes],"}
+{"t":426,"text":"\n</new>\n</edit>"}

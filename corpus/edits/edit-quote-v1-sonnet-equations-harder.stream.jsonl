@@ -1,0 +1,48 @@
+{"t":0,"text":"Quest"}
+{"t":308,"text":"ions 1 and 2 "}
+{"t":319,"text":"in Part A now use negative"}
+{"t":319,"text":" numbers, so students"}
+{"t":319,"text":" have to sub"}
+{"t":319,"text":"tract a"}
+{"t":319,"text":" lar"}
+{"t":319,"text":"ger number and div"}
+{"t":319,"text":"ide by a negative."}
+{"t":319,"text":" The answers are upd"}
+{"t":351,"text":"ated to"}
+{"t":389,"text":" match.\n\n<edit>"}
+{"t":417,"text":"\n<old>"}
+{"t":635,"text":"\n  Solve $x + "}
+{"t":635,"text":"7 = 15$."}
+{"t":635,"text":"\n  #answer-space(height"}
+{"t":635,"text":": 3em, answer:"}
+{"t":635,"text":" [$x = 15 -"}
+{"t":635,"text":" 7 = 8$])"}
+{"t":652,"text":"\n</old>\n<new>"}
+{"t":687,"text":"\n  Solve $x +"}
+{"t":720,"text":" 12"}
+{"t":753,"text":" = "}
+{"t":785,"text":"5$.\n  #answer"}
+{"t":821,"text":"-space(height: 3em"}
+{"t":969,"text":", answer: [$x ="}
+{"t":969,"text":" 5 - 12 ="}
+{"t":969,"text":" -7$])\n</new>"}
+{"t":969,"text":"\n</edit>\n<ed"}
+{"t":988,"text":"it>\n  "}
+{"t":1020,"text":"<"}
+{"t":1054,"text":"old>\n  Solve $"}
+{"t":1087,"text":"5 x = 40$"}
+{"t":1120,"text":".\n  #answer-space"}
+{"t":1153,"text":"(height: 3em, answ"}
+{"t":1187,"text":"er: [$x = 40"}
+{"t":1220,"text":" div 5 = 8"}
+{"t":1277,"text":"$])\n</old>\n<"}
+{"t":1287,"text":"new>\n  Solve $"}
+{"t":1320,"text":"-6 x = "}
+{"t":1353,"text":"42"}
+{"t":1393,"text":"$.\n  #answer-"}
+{"t":1421,"text":"space(height: 3em,"}
+{"t":1457,"text":" answer: [$x = "}
+{"t":1487,"text":"42 div ("}
+{"t":1527,"text":"-6) = -7$])"}
+{"t":1554,"text":"\n</new>\n</edit"}
+{"t":1582,"text":">"}

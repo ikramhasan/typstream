@@ -1,0 +1,49 @@
+{"t":0,"text":"I"}
+{"t":62,"text":" r"}
+{"t":62,"text":"ewrote the Organization row"}
+{"t":62,"text":" in simpler words"}
+{"t":81,"text":","}
+{"t":101,"text":" keeping the same four"}
+{"t":123,"text":" levels."}
+{"t":143,"text":"\n\n<edit>\n<old"}
+{"t":162,"text":">\n  (\n    ["}
+{"t":184,"text":"Organization],\n    [The intro"}
+{"t":204,"text":"duction, body and conclus"}
+{"t":224,"text":"ion are well developed. Pa"}
+{"t":244,"text":"ragraphs are focused,"}
+{"t":285,"text":" and transitions make the argument"}
+{"t":285,"text":" easy to follow.],"}
+{"t":306,"text":"\n    [The structure is clear"}
+{"t":327,"text":". Most paragraphs"}
+{"t":348,"text":" are focused, and transitions"}
+{"t":368,"text":" are generally effective.],"}
+{"t":388,"text":"\n    [The structure is une"}
+{"t":409,"text":"ven. Some paragraph"}
+{"t":430,"text":"s lack focus, and trans"}
+{"t":450,"text":"itions are few or abrup"}
+{"t":470,"text":"t.],\n    [The struct"}
+{"t":492,"text":"ure is hard to follow,"}
+{"t":532,"text":" with little paragraphing or"}
+{"t":532,"text":" logical order.],\n  "}
+{"t":552,"text":"),\n</old>\n<new"}
+{"t":573,"text":">\n  (\n    ["}
+{"t":596,"text":"Organization],\n    [The intro"}
+{"t":613,"text":"duction, body and conclus"}
+{"t":634,"text":"ion are all well built. Each"}
+{"t":655,"text":" paragraph covers one id"}
+{"t":675,"text":"ea, and transition words help the"}
+{"t":695,"text":" reader follow the argument."}
+{"t":716,"text":"],\n    [The structure is"}
+{"t":737,"text":" clear. Most paragra"}
+{"t":757,"text":"phs stay on one idea"}
+{"t":778,"text":", and transition words usually help"}
+{"t":798,"text":".],\n    [The structure"}
+{"t":818,"text":" is uneven. Some pa"}
+{"t":841,"text":"ragraphs wander off top"}
+{"t":860,"text":"ic, and there are few or s"}
+{"t":880,"text":"udden transitions.],"}
+{"t":900,"text":"\n    [The structure is hard"}
+{"t":920,"text":" to follow. There are few pa"}
+{"t":941,"text":"ragraphs and little logical"}
+{"t":961,"text":" order.],\n  ),"}
+{"t":982,"text":"\n</new>\n</edit>"}

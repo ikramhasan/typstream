@@ -1,0 +1,29 @@
+{"t":0,"text":"Question"}
+{"t":20,"text":" 1 is"}
+{"t":40,"text":" now 0.7 × "}
+{"t":61,"text":"0.3 ="}
+{"t":81,"text":" 0.21,"}
+{"t":102,"text":" and question 2 is now "}
+{"t":122,"text":"0.9 × 0."}
+{"t":143,"text":"6 = 0.54."}
+{"t":163,"text":"\n\n<edit>\n<old"}
+{"t":184,"text":">\n  $0.4 "}
+{"t":204,"text":"times 0.3 = #"}
+{"t":225,"text":"blank(answer: [$"}
+{"t":246,"text":"0.12$])$\n</"}
+{"t":266,"text":"old>\n<new>\n  "}
+{"t":287,"text":"$0.7 times 0"}
+{"t":307,"text":".3 = #blank("}
+{"t":328,"text":"answer: [$0.21"}
+{"t":348,"text":"$])$\n</new>"}
+{"t":369,"text":"\n</edit>\n<edit"}
+{"t":390,"text":">\n<old>\n  $"}
+{"t":410,"text":"0.6 times 0."}
+{"t":431,"text":"7 = #blank(answ"}
+{"t":451,"text":"er: [$0.42$"}
+{"t":471,"text":"])$\n</old>\n<"}
+{"t":492,"text":"new>\n  $0.9"}
+{"t":513,"text":" times 0.6 ="}
+{"t":533,"text":" #blank(answer: ["}
+{"t":553,"text":"$0.54$])$"}
+{"t":574,"text":"\n</new>\n</edit>"}

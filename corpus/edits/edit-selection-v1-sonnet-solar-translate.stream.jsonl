@@ -1,0 +1,9 @@
+{"t":0,"text":"#question(points: 1)"}
+{"t":220,"text":"[\n  Which planet is"}
+{"t":224,"text":" known as the"}
+{"t":224,"text":" Red Planet?\n  #"}
+{"t":224,"text":"mcq([Mars],"}
+{"t":224,"text":" [Mercury], ["}
+{"t":224,"text":"Uranus], [Venus"}
+{"t":229,"text":"], answer: 1)"}
+{"t":256,"text":"\n]"}

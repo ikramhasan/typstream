@@ -1,0 +1,27 @@
+{"t":0,"text":"I"}
+{"t":33,"text":" translated the red planet question and"}
+{"t":66,"text":" its four"}
+{"t":99,"text":" options"}
+{"t":132,"text":" into English;"}
+{"t":167,"text":" the other questions stay in"}
+{"t":200,"text":" Arabic.\n\n<edit"}
+{"t":233,"text":">\n<old>\n  "}
+{"t":267,"text":"أي كوكب ي"}
+{"t":301,"text":"ُعرف بالكو"}
+{"t":335,"text":"كب الأحمر"}
+{"t":368,"text":"؟\n  #mcq(["}
+{"t":401,"text":"المريخ], [عط"}
+{"t":435,"text":"ارد], [أورانو"}
+{"t":469,"text":"س], [الزهرة"}
+{"t":502,"text":"], answer: 1)"}
+{"t":536,"text":"\n</old>\n<new>"}
+{"t":569,"text":"\n  #text(lang: \""}
+{"t":603,"text":"en\")[\n    Which plan"}
+{"t":637,"text":"et is known as the Red"}
+{"t":670,"text":" Planet?\n    #mc"}
+{"t":704,"text":"q([Mars], ["}
+{"t":737,"text":"Mercury], [Uran"}
+{"t":771,"text":"us], [Venus], answ"}
+{"t":805,"text":"er: 1)\n  "}
+{"t":838,"text":"]\n</new>\n</ed"}
+{"t":863,"text":"it>"}

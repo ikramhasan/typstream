@@ -1,0 +1,41 @@
+{"t":0,"text":"Part A's first two"}
+{"t":21,"text":" questions now use"}
+{"t":42,"text":" negative answ"}
+{"t":65,"text":"ers: $x + 7 "}
+{"t":85,"text":"= 2$ g"}
+{"t":107,"text":"ives $x = -5$,"}
+{"t":129,"text":" and $-4x = 36"}
+{"t":150,"text":"$ gives $x = -"}
+{"t":172,"text":"9$.\n\n<edit>"}
+{"t":193,"text":"\n<old>\n  "}
+{"t":216,"text":"Solve $x + 7"}
+{"t":237,"text":" = 15$.\n  "}
+{"t":258,"text":"#answer-space(height:"}
+{"t":279,"text":" 3em, answer: ["}
+{"t":302,"text":"$x = 15 - "}
+{"t":323,"text":"7 = 8$])"}
+{"t":344,"text":"\n</old>\n<new>"}
+{"t":365,"text":"\n  Solve $x + "}
+{"t":387,"text":"7 = 2$."}
+{"t":409,"text":"\n  #answer-space(height"}
+{"t":430,"text":": 3em, answer:"}
+{"t":454,"text":" [$x = 2 -"}
+{"t":473,"text":" 7 = -5$])"}
+{"t":494,"text":"\n</new>\n</edit"}
+{"t":516,"text":">"}
+{"t":537,"text":"\n\n<edit>\n<old>"}
+{"t":560,"text":"\n  Solve $5 "}
+{"t":581,"text":"x = 40$.\n  "}
+{"t":602,"text":"#answer-space(height:"}
+{"t":624,"text":" 3em, answer: ["}
+{"t":645,"text":"$x = 40 div "}
+{"t":667,"text":"5 = 8$])"}
+{"t":688,"text":"\n</old>\n<new>"}
+{"t":709,"text":"\n  Solve $-4 "}
+{"t":731,"text":"x = 36$.\n  "}
+{"t":752,"text":"#answer-space(height:"}
+{"t":783,"text":" 3em, answer: ["}
+{"t":801,"text":"$x = 36 div ("}
+{"t":817,"text":"-4) = -9$])"}
+{"t":839,"text":"\n</new>\n</edit"}
+{"t":857,"text":">"}

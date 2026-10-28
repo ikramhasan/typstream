@@ -1,0 +1,35 @@
+{"t":0,"text":"I added a question on"}
+{"t":164,"text":" the capital of Norway right"}
+{"t":169,"text":" after the Sweden question."}
+{"t":169,"text":" It foll"}
+{"t":169,"text":"ows the same format, and"}
+{"t":169,"text":" the later questions ren"}
+{"t":205,"text":"umber automatically.\n\n<"}
+{"t":239,"text":"edit>\n<old>"}
+{"t":273,"text":"\n#question(points: 1)"}
+{"t":307,"text":"[\n  Which city is the"}
+{"t":341,"text":" capital of Sweden?"}
+{"t":374,"text":"\n  #mcq(["}
+{"t":408,"text":"Gothenburg], ["}
+{"t":515,"text":"Malmö], [Upp"}
+{"t":515,"text":"sala], [Stockhol"}
+{"t":515,"text":"m], answer: 4)"}
+{"t":542,"text":"\n]\n</old>\n<"}
+{"t":576,"text":"new>\n#question(points:"}
+{"t":609,"text":" 1)[\n  Which"}
+{"t":643,"text":" city is the capital of S"}
+{"t":676,"text":"weden?\n  #mc"}
+{"t":710,"text":"q([Gothenburg"}
+{"t":743,"text":"], [Malmö], ["}
+{"t":776,"text":"Uppsala], ["}
+{"t":810,"text":"Stockholm], answer:"}
+{"t":843,"text":" 4)\n]\n\n#question"}
+{"t":876,"text":"(points: 1)["}
+{"t":910,"text":"\n  What is the capital of"}
+{"t":943,"text":" Norway?\n  #mc"}
+{"t":978,"text":"q([Bergen], ["}
+{"t":1010,"text":"Oslo], [Tr"}
+{"t":1050,"text":"ondheim], [Stav"}
+{"t":1077,"text":"anger], answer: 2"}
+{"t":1111,"text":")\n]\n</new>"}
+{"t":1135,"text":"\n</edit>"}

@@ -1,0 +1,19 @@
+{"t":0,"text":"#callout(kind: \""}
+{"t":33,"text":"note\", title: [Data])"}
+{"t":70,"text":"[\n  Molar masses"}
+{"t":362,"text":" ($\"g/mol\""}
+{"t":362,"text":"$): H = 1, C"}
+{"t":362,"text":" = 12, N = 14"}
+{"t":362,"text":", O = 16,"}
+{"t":362,"text":" Na = 23, Mg"}
+{"t":362,"text":" = 24, S = 32"}
+{"t":362,"text":", Cl = 35."}
+{"t":362,"text":"5, Ca = 40"}
+{"t":366,"text":". \\\n  Avogad"}
+{"t":399,"text":"ro constant: $6.02"}
+{"t":432,"text":" times 10^23 \""}
+{"t":466,"text":"mol\"^(-1)"}
+{"t":499,"text":"$. Molar volume of"}
+{"t":532,"text":" a gas at STP: $"}
+{"t":566,"text":"22.4 \"L/m"}
+{"t":601,"text":"ol\"$.\n]"}

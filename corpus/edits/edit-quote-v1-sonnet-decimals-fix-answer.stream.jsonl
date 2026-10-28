@@ -1,0 +1,18 @@
+{"t":0,"text":"I"}
+{"t":319,"text":" changed the answer to"}
+{"t":327,"text":" $"}
+{"t":327,"text":"2.5 \\times 0"}
+{"t":327,"text":".4$ from"}
+{"t":327,"text":" "}
+{"t":327,"text":"1 to 1.0."}
+{"t":327,"text":"\n\n<edit>\n<old"}
+{"t":327,"text":">\n  $2.5 "}
+{"t":327,"text":"times 0.4 = #"}
+{"t":360,"text":"blank(answer: [$"}
+{"t":394,"text":"1$])$\n</old>"}
+{"t":427,"text":"\n<new>\n  $2"}
+{"t":460,"text":".5 times 0.4"}
+{"t":494,"text":" = #blank(answer"}
+{"t":527,"text":": [$1.0$])"}
+{"t":560,"text":"$\n</new>"}
+{"t":588,"text":"\n</edit>"}

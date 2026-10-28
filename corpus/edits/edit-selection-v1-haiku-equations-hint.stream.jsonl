@@ -1,0 +1,33 @@
+{"t":0,"text":"#"}
+{"t":157,"text":"question(points: 3)["}
+{"t":160,"text":"\n  Explain the mist"}
+{"t":160,"text":"ake in this solution, then sol"}
+{"t":160,"text":"ve correctly.\n\n  #"}
+{"t":160,"text":"call"}
+{"t":160,"text":"out(k"}
+{"t":160,"text":"ind: \"t"}
+{"t":178,"text":"ip\")["}
+{"t":198,"text":"Exp"}
+{"t":218,"text":"and the brackets first:"}
+{"t":239,"text":" multiply every"}
+{"t":259,"text":" term"}
+{"t":350,"text":" inside the b"}
+{"t":350,"text":"racket by the number out"}
+{"t":350,"text":"side it.]\n\n  $3"}
+{"t":350,"text":"(x + 2) = "}
+{"t":362,"text":"18 arrow.r "}
+{"t":382,"text":"3 x + 2 ="}
+{"t":403,"text":" 18 arrow.r"}
+{"t":424,"text":" 3 x = 16 "}
+{"t":444,"text":"arrow.r x = "}
+{"t":464,"text":"16/3$"}
+{"t":484,"text":"\n  #answer-lines("}
+{"t":508,"text":"count: 2, answer:"}
+{"t":652,"text":" [The 3 was not mult"}
+{"t":652,"text":"iplied by 2: $"}
+{"t":652,"text":"3(x + 2) ="}
+{"t":652,"text":" 3 x + 6$"}
+{"t":652,"text":". Correct: $3 "}
+{"t":652,"text":"x = 12$, so $"}
+{"t":652,"text":"x = 4$.])"}
+{"t":669,"text":"\n]"}

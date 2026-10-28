@@ -1,0 +1,17 @@
+{"t":0,"text":"The answ"}
+{"t":20,"text":"er to $"}
+{"t":40,"text":"2.5 times"}
+{"t":60,"text":" 0.4$ is now"}
+{"t":81,"text":" written"}
+{"t":101,"text":" as $1.0$."}
+{"t":122,"text":"\n\n<edit>\n<old>"}
+{"t":144,"text":"\n  $2.5 times"}
+{"t":163,"text":" 0.4 = #bl"}
+{"t":185,"text":"ank(answer: [$1"}
+{"t":204,"text":"$])$\n</old>"}
+{"t":225,"text":"\n<new>\n  $2."}
+{"t":245,"text":"5 times 0.4 "}
+{"t":266,"text":"= #blank(answer:"}
+{"t":288,"text":" [$1.0$])$"}
+{"t":307,"text":"\n</new>\n</edit"}
+{"t":320,"text":">"}

@@ -1,0 +1,18 @@
+{"t":0,"text":"Question 12,"}
+{"t":200,"text":" the word"}
+{"t":200,"text":" problem about a number multipl"}
+{"t":200,"text":"ied by 3,"}
+{"t":200,"text":" is now worth 5 points"}
+{"t":200,"text":"."}
+{"t":200,"text":"\n\n<edit>\n<old"}
+{"t":237,"text":">\n#question(points: "}
+{"t":268,"text":"4)[\n  A number is"}
+{"t":300,"text":" multiplied by 3 "}
+{"t":333,"text":"and then 8 is subt"}
+{"t":367,"text":"racted.\n</old>"}
+{"t":401,"text":"\n<new>\n#question(points"}
+{"t":434,"text":": 5)[\n  A"}
+{"t":467,"text":" number is multiplied by "}
+{"t":503,"text":"3 and then 8 is"}
+{"t":534,"text":" subtracted.\n</new"}
+{"t":569,"text":">\n</edit>"}

@@ -1,0 +1,31 @@
+{"t":0,"text":"#"}
+{"t":490,"text":"question(points: 5)["}
+{"t":490,"text":"\n  A number is multipl"}
+{"t":490,"text":"ied by 3 and then "}
+{"t":490,"text":"8 is subtracted."}
+{"t":490,"text":" The result is the same as when the"}
+{"t":490,"text":" number is added to 10."}
+{"t":490,"text":"\n  + Write an equation"}
+{"t":490,"text":" using"}
+{"t":490,"text":" $"}
+{"t":490,"text":"x$"}
+{"t":490,"text":" for the number"}
+{"t":490,"text":".\n  + Solve your"}
+{"t":804,"text":" equation to"}
+{"t":804,"text":" find the"}
+{"t":804,"text":" number.\n  + Check your"}
+{"t":804,"text":" answer by substituting it back"}
+{"t":804,"text":" into both"}
+{"t":804,"text":" exp"}
+{"t":804,"text":"ressions."}
+{"t":804,"text":"\n  #answer-space(height"}
+{"t":804,"text":": 6em, answer:"}
+{"t":804,"text":" [$3 x - 8"}
+{"t":804,"text":" = x + 10$,"}
+{"t":804,"text":" so $2 x = 18"}
+{"t":883,"text":"$ and $x = 9"}
+{"t":883,"text":"$. Check: $3("}
+{"t":883,"text":"9) - 8 = "}
+{"t":883,"text":"19$ and $9 +"}
+{"t":883,"text":" 10 = 19$."}
+{"t":883,"text":"])\n]"}
