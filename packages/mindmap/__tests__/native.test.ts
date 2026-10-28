@@ -34,7 +34,17 @@ for (const [path, source] of Object.entries(mindmapFiles)) {
 }
 afterAll(() => rmSync(root, { recursive: true, force: true }));
 
-const common = () => ["--root", root, "--package-path", packages, "--ignore-system-fonts", "--font-path", fontDir()];
+// Only fontDir()'s fonts: typst's embedded copies of the same families have CFF outlines (#118).
+const common = () => [
+  "--root",
+  root,
+  "--package-path",
+  packages,
+  "--ignore-system-fonts",
+  "--ignore-embedded-fonts",
+  "--font-path",
+  fontDir(),
+];
 
 const engine = newEngine();
 

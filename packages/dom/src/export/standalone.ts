@@ -80,6 +80,12 @@ const base64 = (bytes: Uint8Array): string => {
   return btoa(binary);
 };
 
+/** A font file's media type, from its first four bytes: CFF-outline OpenType says `OTTO`. */
+const fontType = (bytes: Uint8Array): string => {
+  const tag = String.fromCharCode(...bytes.subarray(0, 4));
+  return tag === "OTTO" ? "font/otf" : tag === "wOF2" ? "font/woff2" : tag === "wOFF" ? "font/woff" : "font/ttf";
+};
+
 /** A tag's attributes with `name` set to `value`, or with `value` added to it (`class`). */
 const withAttr = (attrs: string, name: string, value: string, append = false): string => {
   const existing = new RegExp(`(\\s${name}=")([^"]*)(")`, "i");
@@ -112,7 +118,7 @@ export const standaloneHtml = (html: string, options: StandaloneHtmlOptions = {}
   if (mathFont !== undefined) {
     let src: string;
     if (mathFont instanceof Uint8Array) {
-      src = `data:font/otf;base64,${base64(mathFont)}`;
+      src = `data:${fontType(mathFont)};base64,${base64(mathFont)}`;
     } else {
       const url = new URL(String(mathFont));
       fontSrc += ` ${url.origin}`;

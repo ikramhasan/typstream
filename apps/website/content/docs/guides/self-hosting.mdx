@@ -105,10 +105,10 @@ serve(
   engineWasm({
     wasm: `${CDN}/engine_bg.wasm`,
     fonts: [
-      "LibertinusSerif-Regular.otf",
-      "LibertinusSerif-Bold.otf",
-      "LibertinusSerif-Italic.otf",
-      "NewCMMath-Regular.otf",
+      "LibertinusSerif-Regular.ttf",
+      "LibertinusSerif-Bold.ttf",
+      "LibertinusSerif-Italic.ttf",
+      "NewCMMath-Regular.ttf",
       "DejaVuSansMono.ttf",
     ].map((file) => `${CDN}/fonts/${file}`),
     // `file` is each script font's name in @typstream/engine-wasm's dist/fonts/.

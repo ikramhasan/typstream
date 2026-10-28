@@ -18,7 +18,7 @@ runs:
         path: packages/engine-wasm/dist
         # The inputs build.sh hashes into dist/.inputs: a key that missed one would restore a stale dist/,
         # which build.sh would then try to rebuild without Rust.
-        key: engine-wasm-dist-${{ runner.os }}-${{ hashFiles('packages/engine-wasm/Cargo.lock', 'packages/engine-wasm/Cargo.toml', 'packages/engine-wasm/src/**', 'packages/engine-wasm/build.sh', 'packages/engine-wasm/scripts/fonts.mjs') }}
+        key: engine-wasm-dist-${{ runner.os }}-${{ hashFiles('packages/engine-wasm/Cargo.lock', 'packages/engine-wasm/Cargo.toml', 'packages/engine-wasm/src/**', 'packages/engine-wasm/build.sh', 'packages/engine-wasm/scripts/fonts.mjs', 'packages/engine-wasm/scripts/otf2ttf.py') }}
 
     # Typst 0.15.1 needs Rust ≥ 1.92 (CLAUDE.md).
     - if: steps.dist.outputs.cache-hit != 'true'

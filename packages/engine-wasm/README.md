@@ -16,7 +16,7 @@ const { ok, html, diagnostics } = engine.compile_html();
 const { pageCount, changed } = engine.compile_svg_changed(); // changed: { index, hash, width, height, svg }[]
 ```
 
-The base fonts (Libertinus Serif regular, bold and italic, New Computer Modern Math, DejaVu Sans Mono; ≈ 2.6 MB, licenses in `dist/fonts/NOTICE`) ship in `dist/fonts/`. `import { baseFonts } from "@typstream/engine-wasm/fonts"` gives their URLs, written as `new URL("./fonts/…", import.meta.url)` so bundlers emit them as assets.
+The base fonts (Libertinus Serif regular, bold and italic, New Computer Modern Math, DejaVu Sans Mono; 3.9 MB, 1.3 MB brotli, licenses in `dist/fonts/NOTICE`) ship in `dist/fonts/`, all with TrueType outlines: typst-assets ships Libertinus Serif and New Computer Modern Math with CFF outlines, which Word won't embed, so the build converts them (`scripts/otf2ttf.py`; same fonts, laid out the same, #118). `import { baseFonts } from "@typstream/engine-wasm/fonts"` gives their URLs, written as `new URL("./fonts/…", import.meta.url)` so bundlers emit them as assets.
 
 ## Lazy fonts
 

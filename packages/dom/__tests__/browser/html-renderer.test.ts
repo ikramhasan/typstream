@@ -326,7 +326,7 @@ describe("styles and theme", () => {
   });
 
   it("registers the math font", async () => {
-    await registerMathFont(new URL("../../../engine-wasm/dist/fonts/NewCMMath-Regular.otf", import.meta.url));
+    await registerMathFont(new URL("../../../engine-wasm/dist/fonts/NewCMMath-Regular.ttf", import.meta.url));
     expect(document.fonts.check('12px "New Computer Modern Math"')).toBe(true);
   });
 });
