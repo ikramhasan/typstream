@@ -1,6 +1,6 @@
 // Answer spaces and answers. Answers appear only when the input `showAnswers` is "true":
 // written into the space in the accent color, and listed by `answer-key()`.
-#import "util.typ": _accent, _answers-shown, _css, _el, _html, _length, _question, _rule, _tight
+#import "util.typ": _accent, _answers-shown, _css, _el, _half, _html, _length, _question, _rule, _tight
 #import "i18n.typ": _start-side, _word
 
 /// Records an answer for `answer-key()`, under the question it is in.
@@ -51,21 +51,30 @@
       style: "min-height: " + _css(spacing * count) + "; --edu-line: " + _css(spacing),
     )
   } else {
-    // Text set on the lines: the first baseline one spacing down, then one line per spacing.
+    // One block per line, a pitch tall with the rule at its bottom: a DOCX export writes each as an empty paragraph
+    // at exact line spacing with a bottom border (#130). Each sticks to the next, as Word's "keep with next" keeps
+    // the paragraphs together on a page when they fit.
     let pitch = spacing.to-absolute()
-    block(width: 100%, height: pitch * count + 0.3em, breakable: false, above: 0.8em, below: 0.8em, {
-      for i in range(count) {
-        place(top, dy: pitch * (i + 1) + 0.25em, line(length: 100%, stroke: 0.4pt + _rule))
-      }
+    let rule(last) = block(width: 100%, height: pitch, above: 0pt, below: 0pt, sticky: not last, stroke: (
+      bottom: 0.4pt + _rule,
+    ))
+    block(above: 0.8em, below: 0.8em, layout(size => {
+      let written = 0
       if shown {
-        // Show-set rules, which win over the engine's layout profile (#129): the lines set the pitch here.
-        set text(fill: _accent)
-        show text: set text(top-edge: 1em, bottom-edge: 0em)
-        show par: set par(leading: pitch - 1em.to-absolute(), justify: false)
-        v(pitch - 1em)
-        pad(x: 0.3em, answer)
+        // The answer at the lines' pitch, a line box per line with its baseline 0.246em above the bottom, where the
+        // rules would be. Word draws a paragraph's border under its last line only, so the answer's lines have no
+        // rules: the ones it leaves follow it. Show-set rules win over the engine's layout profile (#129).
+        let lines = {
+          set text(fill: _accent)
+          show text: set text(top-edge: pitch - 0.246em, bottom-edge: -0.246em)
+          show par: set par(leading: 0pt)
+          block(width: 100%, above: 0pt, below: 0pt, sticky: count > 0, pad(x: 0.3em, answer))
+        }
+        written = calc.ceil(measure(block(width: size.width, lines)).height / pitch - 0.001)
+        lines
       }
-    })
+      for i in range(written, count) { rule(i == count - 1) }
+    }))
   }
 }
 
@@ -92,9 +101,11 @@
       style: "min-height: " + _css(height),
     )
   } else if shown {
+    // Unbreakable, as the one-cell table a DOCX export writes for it stays on one page (#130).
     layout(size => {
       let inner = block(width: size.width, inset: 6pt, text(fill: _accent, answer))
-      block(width: 100%, height: calc.max(height.to-absolute(), measure(inner).height), stroke: stroke, inner)
+      let tall = calc.max(height.to-absolute(), measure(inner).height)
+      block(width: 100%, height: tall, stroke: stroke, breakable: false, inner)
     })
   } else {
     block(width: 100%, height: height, stroke: stroke, breakable: false)
@@ -113,9 +124,11 @@
     _el("div", "edu-answer", [#_el("span", "edu-answer-label", _word("answer") + ":") #body])
   } else {
     let side = _start-side()
+    // A DOCX export writes it as paragraphs with a border on the starting side and shading (#130). Paragraph borders
+    // have no room above or below the text, and break across pages as the paragraphs do: no inset there.
     block(
       width: 100%,
-      inset: (x: 8pt, y: 6pt),
+      inset: (x: 8pt),
       fill: _accent.lighten(92%),
       stroke: ((side): 2pt + _accent),
       text(fill: _accent)[*#_word("answer"):* #body],
@@ -156,7 +169,7 @@
       })
     } else {
       block(width: 100%, above: 0.86em, {
-        text(weight: "bold", size: 1.2em, heading-text)
+        text(weight: "bold", size: _half(1.2), heading-text)
         set text(fill: _accent)
         for item in items { block(above: 0.06em, item) }
       })
