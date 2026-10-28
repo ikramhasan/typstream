@@ -66,7 +66,7 @@ export interface DocxList {
 }
 
 /** A block in a flow: a paragraph, a table, a rule or a placeholder. @internal */
-export type DocxBlock = DocxParagraph | DocxTable | DocxRule | DocxDrawing;
+export type DocxBlock = DocxParagraph | DocxTable | DocxRule | DocxDrawing | DocxColumns;
 
 /** Fields every block has. @internal */
 export interface DocxBlockBase {
@@ -196,4 +196,14 @@ export interface DocxDrawing extends DocxBlockBase {
   math?: boolean;
   /** Room held for an equation, image or drawing (#132, #133); without it, space an empty block takes. */
   placeholder?: boolean;
+}
+
+/**
+ * Typst's `columns`: each column's blocks, side by side across the text width, `gap` points apart. Word lays them out
+ * in a section of their own, with a column break between them. @internal
+ */
+export interface DocxColumns extends DocxBlockBase {
+  type: "columns";
+  gap: number;
+  columns: DocxBlock[][];
 }

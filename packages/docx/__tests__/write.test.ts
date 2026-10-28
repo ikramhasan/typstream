@@ -150,6 +150,20 @@ describe("writeDocx", () => {
     expect(xml(`word/${target}`)).toContain(">Page<");
   });
 
+  it("writes columns as a section of their own, continuous, with a column break between them", () => {
+    const doc = parts(
+      model([p("Before"), { type: "columns", gap: 20, columns: [[p("Left")], [p("Right")]] }, p("After")]),
+    ).xml("word/document.xml");
+    const sects = doc.match(/<w:sectPr>.*?<\/w:sectPr>/g) ?? [];
+    // The text before (one column), the columns, and the rest (the body's own), all on the same page.
+    expect(sects).toHaveLength(3);
+    for (const s of sects) expect(s).toContain('<w:type w:val="continuous"/>');
+    expect(sects[1]).toContain('<w:cols w:num="2" w:space="400"/>');
+    expect(doc.indexOf("Left")).toBeLessThan(doc.indexOf('<w:br w:type="column"/>'));
+    expect(doc.indexOf('<w:br w:type="column"/>')).toBeLessThan(doc.indexOf("Right"));
+    expect(doc).not.toContain("\u0001");
+  });
+
   it("numbers list paragraphs from the list's numbering, its number in the hanging indent", () => {
     const doc = parts(
       model([p("First", { list: { id: 0, label: "1." } })], {

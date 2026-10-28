@@ -6,6 +6,7 @@ export type {
   DocxBlockBase,
   DocxBreakRun,
   DocxCell,
+  DocxColumns,
   DocxDrawing,
   DocxFont,
   DocxGapRun,

@@ -8,6 +8,7 @@ import { zipSync } from "fflate";
 import type {
   DocxBlock,
   DocxCell,
+  DocxColumns,
   DocxDrawing,
   DocxFont,
   DocxGapRun,
@@ -31,6 +32,8 @@ const XML = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
 const twips = (pt: number): number => Math.round(pt * 20);
 /** Room given back in a cell, in points (see `cell`). */
 const SLACK = 1;
+/** Marks where a section's properties go in the body, written once the headers' references are known. */
+const SECTION = "\u0001";
 /** Styles marking room held for equations and images until the export writes them (#132, #133). */
 const PLACEHOLDER = "TypstreamPlaceholder";
 const PLACEHOLDER_BLOCK = "TypstreamPlaceholderBlock";
@@ -302,18 +305,48 @@ class Writer {
         case "drawing":
           out.push(this.drawing(b));
           break;
+        case "columns":
+          out.push(this.columns(b, part));
+          break;
       }
     });
     return out.join("");
   }
 
-  section(s: DocxSection, refs: string): string {
+  /** Whether the body has columns: its sections then follow each other on the page (continuous). */
+  sectioned = false;
+
+  /**
+   * Columns as Word has them, in a section: a section break before (the text so far, one column), a column break
+   * between columns, and a section break with the columns after. Breaks are paragraphs a hundredth of a point tall.
+   * The section properties need the headers' references, written after the body: they stand in as markers here.
+   */
+  columns(c: DocxColumns, part: Part): string {
+    this.sectioned = true;
+    const tiny = '<w:rPr><w:sz w:val="2"/></w:rPr>';
+    const brk = `<w:p>${this.pPr({ line: 0.05, rPr: tiny })}<w:r>${tiny}<w:br w:type="column"/></w:r></w:p>`;
+    const end = (cols: number) =>
+      `<w:p>${this.pPr({ line: 0.05, rPr: `${tiny}${SECTION}${cols}:${c.gap}${SECTION}` })}</w:p>`;
+    // The space before goes on the first column's first block: an engine may drop an empty paragraph that ends a
+    // section, its spacing with it.
+    const [first = [], ...rest] = c.columns;
+    const lead = first.map((b, i) => (i === 0 ? { ...b, before: (b.before ?? 0) + (c.before ?? 0) } : b));
+    return (
+      `<w:p>${this.pPr({ pageBreak: c.pageBreak, line: 0.05, rPr: `${tiny}${SECTION}1:0${SECTION}` })}</w:p>` +
+      [lead, ...rest].map((col) => this.blocks(col, part)).join(brk) +
+      end(c.columns.length)
+    );
+  }
+
+  section(s: DocxSection, refs: string, cols = 1, gap = 0): string {
     const landscape = s.width > s.height ? ' w:orient="landscape"' : "";
     const m = s.margin;
     return (
-      `<w:sectPr>${refs}<w:pgSz w:w="${twips(s.width)}" w:h="${twips(s.height)}"${landscape}/>` +
+      `<w:sectPr>${refs}${this.sectioned ? '<w:type w:val="continuous"/>' : ""}` +
+      `<w:pgSz w:w="${twips(s.width)}" w:h="${twips(s.height)}"${landscape}/>` +
       `<w:pgMar w:top="${twips(m.top)}" w:right="${twips(m.right)}" w:bottom="${twips(m.bottom)}" w:left="${twips(m.left)}" ` +
       `w:header="${twips(s.headerDistance ?? m.top / 2)}" w:footer="${twips(s.footerDistance ?? m.bottom / 2)}" w:gutter="0"/>` +
+      (cols > 1 ? `<w:cols w:num="${cols}" w:space="${twips(gap)}"/>` : "") +
       (s.headerFirst || s.footerFirst ? "<w:titlePg/>" : "") +
       "</w:sectPr>"
     );
@@ -409,8 +442,12 @@ export const writeDocx = (model: DocxModel, fonts: readonly Uint8Array[]): Uint8
       if (m.kind === kind) refs += `<w:${kind}Reference w:type="${m.type}" r:id="rIdM${i + 1}"/>`;
     });
 
+  const sections = body.replace(
+    new RegExp(`${SECTION}(\\d+):([\\d.]+)${SECTION}`, "g"),
+    (_, cols: string, gap: string) => w.section(section, refs, Number(cols), Number(gap)),
+  );
   files["word/document.xml"] = enc.encode(
-    `${XML}<w:document ${NS}><w:body>${body}${w.section(section, refs)}</w:body></w:document>`,
+    `${XML}<w:document ${NS}><w:body>${sections}${w.section(section, refs)}</w:body></w:document>`,
   );
 
   // Styles: defaults for empty paragraphs, and headings for the outline (runs carry their own fonts and sizes).

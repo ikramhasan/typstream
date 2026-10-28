@@ -988,6 +988,15 @@ impl Builder {
                 _ if body => b.top - self.content_top(b.page),
                 _ => 0.0,
             };
+            // A block ending at the bottom of its page after a gap (pushed down by `v(1fr)`) gets a point less: a hair
+            // more and an engine moves it to the next page.
+            let (size, m) = self.geometry[b.end_page];
+            let at_bottom = body && b.bottom > size.y.to_pt() - m.bottom - 1.0;
+            let before = if at_bottom && before > 2.0 * SLACK {
+                before - SLACK
+            } else {
+                before
+            };
             b.json
                 .insert("before".into(), json!(round(before.max(0.0))));
             prev = Some((b.end_page, b.bottom));
@@ -997,7 +1006,6 @@ impl Builder {
 
     /// Blocks from items `ids` (indices into `self.items`, in order) flowing in `area`.
     fn flow(&mut self, ids: &[usize], area: Area, body: bool) -> Vec<Block> {
-        let _ = body;
         let mut out = Vec::new();
         // Text gathered for the paragraph being built.
         let mut pending: Vec<usize> = Vec::new();
@@ -1097,6 +1105,21 @@ impl Builder {
                     i = end + 1;
                     continue;
                 }
+                // Word has columns in sections only: across the page's text width, not in a cell or a box.
+                Kind::Group(rect, false)
+                    if body
+                        && (rect.x - area.left).abs() < 0.5
+                        && (rect.right() - area.right).abs() < 0.5
+                        && !self.beside(&pending, *rect, items[id].page)
+                        && self.columns_of(ids, i, *rect).is_some() =>
+                {
+                    self.flush(&mut pending, &mut out, area, heading);
+                    let end = group_end(&items, ids, i).min(ids.len() - 1);
+                    let cols = self.columns_of(ids, i, *rect).unwrap();
+                    out.push(self.columns(&ids[i + 1..end], *rect, &cols, items[id].page));
+                    i = end + 1;
+                    continue;
+                }
                 Kind::Group(rect, false)
                     if rect.right() < area.right - 1.0
                         && !self.beside(&pending, *rect, items[id].page) =>
@@ -1190,6 +1213,105 @@ impl Builder {
         }
         self.flush(&mut pending, &mut out, area, heading);
         out
+    }
+
+    /// The columns a group at `ids[i]` lays out (Typst's `columns`): its direct groups, as wide as each other, side by
+    /// side at its top, filling it; the first one may be inlined into the group. Their left edges.
+    fn columns_of(&self, ids: &[usize], i: usize, rect: Rect) -> Option<Vec<f64>> {
+        let end = group_end(&self.items, ids, i).min(ids.len() - 1);
+        let mut depth = 0;
+        let mut children: Vec<Rect> = Vec::new();
+        for &id in &ids[i + 1..end] {
+            match &self.items[id].kind {
+                Kind::Group(r, _) => {
+                    if depth == 0 {
+                        children.push(*r);
+                    }
+                    depth += 1;
+                }
+                Kind::GroupEnd => depth -= 1,
+                _ => {}
+            }
+        }
+        let top: Vec<Rect> = children
+            .into_iter()
+            .filter(|r| (r.y - rect.y).abs() < 0.5)
+            .collect();
+        let w = top.iter().map(|r| r.w).fold(0.0, f64::max);
+        let mut xs: Vec<f64> = top
+            .iter()
+            .filter(|r| (r.w - w).abs() < 0.5)
+            .map(|r| r.x)
+            .collect();
+        xs.dedup_by(|a, b| (*a - *b).abs() < 0.5);
+        if xs.first().is_some_and(|x| *x > rect.x + 0.5) {
+            xs.insert(0, rect.x);
+        }
+        if xs.len() < 2 || w < 10.0 {
+            return None;
+        }
+        let gap = xs[1] - xs[0] - w;
+        let even = xs.windows(2).all(|p| (p[1] - p[0] - w - gap).abs() < 0.5);
+        let fills = (xs.last().unwrap() + w - rect.right()).abs() < 1.0 && (xs[0] - rect.x).abs() < 0.5;
+        (gap >= 0.0 && even && fills).then_some(xs)
+    }
+
+    /// Typst's columns as Word's: each column's blocks, a column break between them, in a section of their own.
+    fn columns(&mut self, ids: &[usize], rect: Rect, xs: &[f64], page: usize) -> Block {
+        let w = rect.right() - xs.last().unwrap();
+        let gap = if xs.len() > 1 { xs[1] - xs[0] - w } else { 0.0 };
+        let column = |x: f64| xs.iter().rposition(|c| x >= c - 0.5).unwrap_or(0);
+        // Items go to the column they are drawn in; ends follow their starts.
+        let mut parts: Vec<Vec<usize>> = vec![Vec::new(); xs.len()];
+        let mut started: HashMap<Location, usize> = HashMap::new();
+        let mut groups: Vec<usize> = Vec::new();
+        let mut current = 0;
+        for &id in ids {
+            let k = match &self.items[id].kind {
+                Kind::Text(t) => column(t.x),
+                Kind::Seg(s) => column(s.x0),
+                Kind::Fill(r, _) | Kind::Drawing(r) | Kind::Link(r, _) => column(r.x),
+                Kind::Group(r, _) => {
+                    let k = column(r.x);
+                    groups.push(k);
+                    k
+                }
+                Kind::GroupEnd => groups.pop().unwrap_or(current),
+                Kind::Start(elem, at) => {
+                    let k = column(at.x.to_pt());
+                    if let Some(loc) = elem.location() {
+                        started.insert(loc, k);
+                    }
+                    k
+                }
+                Kind::End(loc) => started.get(loc).copied().unwrap_or(current),
+            };
+            current = k;
+            parts[k].push(id);
+        }
+        let mut cols = Vec::new();
+        let mut bottom = rect.bottom();
+        for (k, part) in parts.iter().enumerate() {
+            let area = Area {
+                left: xs[k],
+                right: xs[k] + w,
+            };
+            let blocks = self.flow(part, area, false);
+            bottom = blocks.iter().map(|b| b.bottom).fold(bottom, f64::max);
+            let blocks = self.with_gaps_from(blocks, rect.y);
+            cols.push(Json::Array(blocks.into_iter().map(|b| Json::Object(b.json)).collect()));
+        }
+        let mut json = Map::new();
+        json.insert("type".into(), json!("columns"));
+        json.insert("gap".into(), json!(round(gap)));
+        json.insert("columns".into(), Json::Array(cols));
+        Block {
+            page,
+            end_page: page,
+            top: rect.y,
+            bottom,
+            json,
+        }
     }
 
     /// Index (into `ids`) of the last item after `ids[i]` drawn inside `rect`, on its page.
