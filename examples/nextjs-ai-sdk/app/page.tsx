@@ -15,9 +15,23 @@
 // Message, Prompt Input, Suggestion): Message Scroller follows the answer while
 // you stay at the bottom and lets you scroll away from it. As pages, an answer
 // is cut off below the text being written, so that bottom is the text.
+//
+// Once there's a document, a request edits it (#34): the page sends the document
+// with it, the model answers with `<edit>`s that quote what they replace, and an
+// edit session (@typstream/ai) applies them as they stream. The answer shows the
+// document with its edits: a block being rewritten streams into place while the
+// rest stays, in HTML the text a quote matches is highlighted, then Keep or Undo.
 
 import { useChat } from "@ai-sdk/react";
-import { isStreaming, textOf } from "@typstream/ai";
+import {
+  blockStarts,
+  createEditSession,
+  type EditSession,
+  type EditSessionState,
+  editFeedback,
+  isStreaming,
+  textOf,
+} from "@typstream/ai";
 import { edu, SHOW_ANSWERS_INPUT } from "@typstream/edu";
 import { googleFonts } from "@typstream/google-fonts";
 import { mindmap } from "@typstream/mindmap";
@@ -34,8 +48,18 @@ import {
   RotateCwIcon,
   SquareIcon,
   SquarePenIcon,
+  Undo2Icon,
 } from "lucide-react";
-import { type FormEvent, type ReactNode, useCallback, useLayoutEffect, useRef, useState } from "react";
+import {
+  type FormEvent,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { type DocumentState, fetchImages, Typstream, type TypstreamInfo, useTypstream } from "typstream";
 import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import { Button } from "@/components/ui/button";
@@ -55,6 +79,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { ChatTools } from "./api/chat/images";
+import type { ChatMetadata } from "./api/chat/route";
 import { Telemetry } from "./telemetry";
 
 type Target = "html" | "paged";
@@ -79,8 +104,11 @@ const PLUGINS = [edu, googleFonts, mindmap];
  */
 const IMAGES = fetchImages({ hosts: ["thumb.wikimedia.org", "upload.wikimedia.org"] });
 
-/** Messages with the route's tools: an image search shows up as a `tool-searchImages` part. */
-type ChatMessage = UIMessage<unknown, UIDataTypes, ChatTools>;
+/**
+ * Messages with the route's tools (an image search shows up as a `tool-searchImages` part) and, on
+ * a request to edit, the document it edits.
+ */
+type ChatMessage = UIMessage<ChatMetadata, UIDataTypes, ChatTools>;
 type ImageSearchPart = Extract<ChatMessage["parts"][number], { type: "tool-searchImages" }>;
 /** edu's answers (blanks filled in, worked answers, answer keys) appear only with this input. */
 const ANSWERS = { [SHOW_ANSWERS_INPUT]: "true" };
@@ -213,6 +241,14 @@ const SUGGESTIONS: { group: string; items: Suggestion[] }[] = [
   },
 ];
 
+/** Once there's a document, requests edit it: these are changes a teacher asks for. */
+const EDIT_SUGGESTIONS: Suggestion[] = [
+  { label: "Harder", prompt: "Make the practice questions a little harder." },
+  { label: "One more question", prompt: "Add one more question at the end of the practice, in the same style." },
+  { label: "Simpler words", prompt: "Rewrite the explanations in simpler words for younger students." },
+  { label: "Fix a mistake", prompt: "Check the worked example and fix it if anything is wrong." },
+];
+
 /**
  * The document in an answer: its text after the last image search. The model is told to search
  * first and write nothing before the document, so anything it says before a search is chatter, not
@@ -221,6 +257,12 @@ const SUGGESTIONS: { group: string; items: Suggestion[] }[] = [
 const documentOf = (message: ChatMessage) => {
   const searches = message.parts.map((part, i) => (part.type === "tool-searchImages" ? i : -1));
   return textOf({ ...message, parts: message.parts.slice(Math.max(...searches) + 1) });
+};
+
+/** The document an answer edits: the one its request was sent with, if any. */
+const editOf = (messages: readonly ChatMessage[], index: number): string | undefined => {
+  const request = messages[index - 1];
+  return request?.role === "user" ? request.metadata?.document : undefined;
 };
 
 /** One image search: what it's looking for while it runs, then what it found. */
@@ -402,22 +444,71 @@ function useStreamClip(state: DocumentState | null, streaming: boolean, target: 
   return { host, clip, measure };
 }
 
+type Mark = { from: number; to: number; kind: "quoting" | "writing" | "changed" };
+
+/**
+ * Highlights the top-level blocks of an HTML render that `marks` touch. A block's elements carry its
+ * offset in the compiled source (`data-typstream-src`), mapped back to the text with heal's map.
+ * While a block streams, the render on screen is an earlier compile's than the text, so offsets
+ * after it don't match: the blocks being written are then the ones between the blocks before the
+ * streaming range and the blocks after it, counted from either end. Pages have no anchors: there
+ * the footer says what the edit is doing.
+ */
+const highlight = (
+  root: HTMLElement | null,
+  state: DocumentState | null,
+  marks: readonly Mark[],
+  text: string,
+  streamingRange: { from: number; to: number } | null,
+) => {
+  if (!root || !state) return;
+  const elements = [...root.querySelectorAll<HTMLElement>("[data-typstream-src]")];
+  const blocks = [...new Set(elements.map((element) => element.dataset.typstreamSrc as string))];
+  const offsets = blocks.map((src) => state.heal.map.toInput(Number(src)));
+  const starts = streamingRange ? blockStarts(text) : [];
+  const before = starts.filter((at) => streamingRange && at < streamingRange.from).length;
+  const after = starts.filter((at) => streamingRange && at >= streamingRange.to).length;
+  const kinds = blocks.map((_, i) => {
+    if (streamingRange) return i >= before && i < blocks.length - after ? "writing" : undefined;
+    const from = offsets[i] as number;
+    const to = offsets[i + 1] ?? Number.POSITIVE_INFINITY;
+    return marks.find((m) => (m.from < to && m.to > from) || (m.from === m.to && m.from >= from && m.from < to))?.kind;
+  });
+  for (const element of elements) {
+    const kind = kinds[blocks.indexOf(element.dataset.typstreamSrc as string)];
+    if (kind) element.dataset.edit = kind;
+    else delete element.dataset.edit;
+  }
+};
+
 type AnswerProps = {
   text: string;
   streaming: boolean;
+  /** For an edit: the part being rewritten (the rest of the document is finished). */
+  streamingRange?: { from: number; to: number } | null;
+  /** For an edit: what to highlight (HTML only). */
+  marks?: readonly Mark[];
   target: Target;
   answers: boolean;
   busy: boolean;
   onRetry: () => void;
+  /** More of the footer: an edit's Keep and Undo. */
+  children?: ReactNode;
 };
 
-const Answer = ({ text, streaming, target, answers, busy, onRetry }: AnswerProps) => {
+const Answer = ({ text, streaming, streamingRange, marks, target, answers, busy, onRetry, children }: AnswerProps) => {
   const t = useTypstream();
   // Compiles that failed while streaming. The last good render stays on screen, so a reader never
   // sees them; the smoke test checks there were none.
   const [stale, setStale] = useState(0);
   const frame = t.openFrames[0]?.frame;
-  const { host, clip, measure } = useStreamClip(t.state, streaming, target);
+  // An edit streams into the middle of the document: nothing below it to cut off.
+  const { host, clip, measure } = useStreamClip(t.state, streaming && !streamingRange, target);
+  const mark = useCallback(
+    () => highlight(t.handle?.element ?? null, t.state, marks ?? [], text, streamingRange ?? null),
+    [t, marks, text, streamingRange],
+  );
+  useLayoutEffect(mark, [mark]);
   return (
     <Message>
       <MessageContent>
@@ -441,6 +532,7 @@ const Answer = ({ text, streaming, target, answers, busy, onRetry }: AnswerProps
               ref={t.ref}
               source={text}
               isStreaming={streaming}
+              streamingRange={streamingRange}
               target={target}
               plugins={PLUGINS}
               // A mind map is interactive in the HTML target (pan, zoom, open and close branches): React Flow,
@@ -451,7 +543,10 @@ const Answer = ({ text, streaming, target, answers, busy, onRetry }: AnswerProps
               layout="fit-width"
               animated
               caret
-              onRendered={measure}
+              onRendered={() => {
+                measure();
+                mark();
+              }}
               onStatusChange={(status) => {
                 if (status === "stale" || status === "error") setStale((n) => n + 1);
               }}
@@ -470,6 +565,7 @@ const Answer = ({ text, streaming, target, answers, busy, onRetry }: AnswerProps
           <Action label="Retry" onClick={onRetry} disabled={busy}>
             <RotateCwIcon />
           </Action>
+          {children}
           <span className={streaming ? "shimmer ml-2" : "ml-2"}>
             {t.status}
             {streaming && frame ? ` · writing a ${frame}…` : ""}
@@ -478,6 +574,79 @@ const Answer = ({ text, streaming, target, answers, busy, onRetry }: AnswerProps
         </MessageFooter>
       </MessageContent>
     </Message>
+  );
+};
+
+/** What an edit session's state highlights: the text quotes match, the block being written, then what changed. */
+const marksOf = (state: EditSessionState): Mark[] =>
+  state.edits.flatMap((edit): Mark[] => {
+    if (!edit.range) return [];
+    if (edit.status === "quoting" || edit.status === "writing") return [{ ...edit.range, kind: edit.status }];
+    return edit.status === "applied" && state.phase === "review" ? [{ ...edit.range, kind: "changed" }] : [];
+  });
+
+type EditAnswerProps = Omit<AnswerProps, "text" | "streaming" | "streamingRange" | "marks" | "children"> & {
+  session: EditSession;
+  /** The model's answer so far, with its `<edit>`s. */
+  answer: string;
+  /** Whether the answer has ended (finished, stopped or failed). */
+  done: boolean;
+  /** Sends what to tell the model about the edits that didn't apply. */
+  onAskAgain: (feedback: string) => void;
+};
+
+/**
+ * An answer that edits the document: the session applies its edits as they stream, and the
+ * document shows them. A stopped answer rolls back the edit it was writing.
+ */
+const EditAnswer = ({ session, answer, done, onAskAgain, ...props }: EditAnswerProps) => {
+  const state = useSyncExternalStore(session.subscribe, session.getState, session.getState);
+  useEffect(() => session.update(answer, done), [session, answer, done]);
+  const doing = state.edits.find((edit) => edit.status === "quoting" || edit.status === "writing");
+  const feedback = state.phase === "streaming" ? null : editFeedback(state.edits);
+  const failed = state.edits.filter((edit) => edit.status === "failed").length;
+  return (
+    <>
+      {state.message && (
+        <Message>
+          <MessageContent>
+            <p className="text-sm whitespace-pre-wrap">{state.message}</p>
+          </MessageContent>
+        </Message>
+      )}
+      <Answer
+        {...props}
+        text={state.text}
+        streaming={state.streaming}
+        streamingRange={state.streamingRange}
+        marks={marksOf(state)}
+      >
+        {state.phase === "review" && (
+          <>
+            <Button size="sm" className="ml-2" onClick={() => session.keep()}>
+              <CheckIcon data-icon="inline-start" />
+              Keep
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => session.undo()}>
+              <Undo2Icon data-icon="inline-start" />
+              Undo
+            </Button>
+          </>
+        )}
+        {feedback && (
+          <Button size="sm" variant="ghost" onClick={() => onAskAgain(feedback)} disabled={props.busy}>
+            <RotateCwIcon data-icon="inline-start" />
+            {failed === 1 ? "Redo the edit that failed" : `Redo ${failed} edits that failed`}
+          </Button>
+        )}
+        {state.phase === "undone" && <span className="ml-2">Undone</span>}
+        {doing && (
+          <span className="shimmer ml-2">
+            {doing.status === "quoting" ? "Finding the text to change…" : "Rewriting…"}
+          </span>
+        )}
+      </Answer>
+    </>
   );
 };
 
@@ -516,12 +685,36 @@ export default function Page() {
   const [answers, setAnswers] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const busy = status === "submitted" || status === "streaming";
+  // One edit session per answer that edits, made the first time it shows, over the document its
+  // request was about.
+  const sessions = useRef(new Map<string, EditSession>());
+  const sessionOf = (id: string, document: string) => {
+    const session = sessions.current.get(id) ?? createEditSession(document);
+    sessions.current.set(id, session);
+    return session;
+  };
+
+  /** The document as it is now: the latest answer's, with its edits (none, once undone). */
+  const currentDocument = (): string | undefined => {
+    for (const message of [...messages].reverse()) {
+      if (message.role !== "assistant") continue;
+      const session = sessions.current.get(message.id);
+      if (session) return session.getState().text;
+      const document = documentOf(message);
+      if (document) return document;
+    }
+    return undefined;
+  };
 
   const send = (text: string) => {
     if (!text.trim() || busy) return;
-    void sendMessage({ text: text.trim() });
+    // A new request keeps what the last one changed.
+    for (const session of sessions.current.values()) if (session.getState().phase === "review") session.keep();
+    const document = currentDocument();
+    void sendMessage({ text: text.trim(), metadata: document === undefined ? undefined : { document } });
     setInput("");
   };
+  const document = currentDocument();
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -536,7 +729,15 @@ export default function Page() {
           <header className="flex items-center justify-between gap-4 px-4 py-4">
             <h1 className="font-medium">typstream × AI SDK</h1>
             {messages.length > 0 && (
-              <Button variant="ghost" size="sm" onClick={() => setMessages([])} disabled={busy}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setMessages([]);
+                  sessions.current.clear();
+                }}
+                disabled={busy}
+              >
                 <SquarePenIcon data-icon="inline-start" />
                 New chat
               </Button>
@@ -591,7 +792,7 @@ export default function Page() {
                     since the component's own `scrollbar-thin` sets the same property. */}
                 <MessageScrollerViewport className="no-scrollbar!">
                   <MessageScrollerContent aria-busy={busy} className="px-4 pb-4">
-                    {messages.map((message) => (
+                    {messages.map((message, index) => (
                       <MessageScrollerItem
                         key={message.id}
                         messageId={message.id}
@@ -613,15 +814,28 @@ export default function Page() {
                                 <ImageSearch key={i} part={part} />
                               ) : null,
                             )}
-                            {documentOf(message) && (
-                              <Answer
-                                text={documentOf(message)}
-                                streaming={isStreaming(message, chat)}
+                            {editOf(messages, index) !== undefined ? (
+                              <EditAnswer
+                                session={sessionOf(message.id, editOf(messages, index) as string)}
+                                answer={textOf(message)}
+                                done={!isStreaming(message, chat)}
                                 target={target}
                                 answers={answers}
                                 busy={busy}
                                 onRetry={() => void regenerate({ messageId: message.id })}
+                                onAskAgain={send}
                               />
+                            ) : (
+                              documentOf(message) && (
+                                <Answer
+                                  text={documentOf(message)}
+                                  streaming={isStreaming(message, chat)}
+                                  target={target}
+                                  answers={answers}
+                                  busy={busy}
+                                  onRetry={() => void regenerate({ messageId: message.id })}
+                                />
+                              )
                             )}
                           </div>
                         )}
@@ -657,10 +871,11 @@ export default function Page() {
             )}
           </div>
 
-          {/* Once the chat has started, the same suggestions in a row: each sends its request in this chat. */}
+          {/* Once the chat has started, suggestions in a row: changes to the document once there is one, the
+              same requests as before until then. Each sends its request in this chat. */}
           {messages.length > 0 && (
             <div className="no-scrollbar flex scroll-fade-x gap-2 overflow-x-auto overscroll-x-contain px-4 pt-2">
-              {SUGGESTIONS.flatMap(({ items }) => items).map((item) => (
+              {(document === undefined ? SUGGESTIONS.flatMap(({ items }) => items) : EDIT_SUGGESTIONS).map((item) => (
                 <SuggestionButton key={item.label} item={item} onSend={send} disabled={busy} className="shrink-0" />
               ))}
             </div>
@@ -678,7 +893,7 @@ export default function Page() {
                     if (!busy) formRef.current?.requestSubmit();
                   }
                 }}
-                placeholder="Ask for a worksheet…"
+                placeholder={document === undefined ? "Ask for a worksheet…" : "Ask for a change…"}
                 aria-label="Message"
                 className="min-h-14"
               />

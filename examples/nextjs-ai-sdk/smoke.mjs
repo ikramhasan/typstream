@@ -1,10 +1,12 @@
 // Smoke test (PLAN §10.4: example apps build and run): builds the app, starts it,
-// asks for a worksheet in Chromium (a suggestion, rendered as pages, then a
-// follow-up typed in the field, as HTML) and checks that each answer streams into
-// <Typstream>, finishes, never had an error frame, that the replay's mind map is
-// interactive in the HTML answer (a render island), and that telemetry reached
-// the example's sink. Without
-// ANTHROPIC_API_KEY the server replays a recorded worksheet, so this runs offline.
+// asks for a worksheet in Chromium (a suggestion, rendered as pages), then for a
+// change typed in the field, as HTML: an edit of that worksheet (#34). It checks
+// that the answer streams into <Typstream> and finishes, that the edit streams
+// into the finished document, highlighted, and can be undone, that neither ever
+// had an error frame, that the replay's mind map is interactive in the HTML answer
+// (a render island), and that telemetry reached the example's sink. Without
+// ANTHROPIC_API_KEY the server replays a recorded worksheet and an edit of it, so
+// this runs offline.
 
 import { spawn } from "node:child_process";
 import { chromium } from "playwright";
@@ -51,12 +53,30 @@ try {
   const text = await answered(0, "paged");
   if (!process.env.ANTHROPIC_API_KEY && !text.includes("Pythagorean triples"))
     throw new Error(`unexpected render: ${text}`);
-  // A second turn as HTML, typed and sent with Enter.
+  // A second turn as HTML, typed and sent with Enter: an edit of the worksheet. The edit's answer shows
+  // the worksheet at once, then the blocks it rewrites stream in, highlighted, and Keep and Undo follow.
   await page.getByRole("combobox", { name: "Render as" }).click();
   await page.getByRole("option", { name: "HTML" }).click();
-  await page.getByRole("textbox", { name: "Message" }).fill("Now add an answer key.");
+  await page.getByRole("textbox", { name: "Message" }).fill("Make the worked example use a longer ladder.");
   await page.getByRole("textbox", { name: "Message" }).press("Enter");
-  await answered(1, "html");
+  const edit = answers.nth(1);
+  await edit.locator("[data-edit]").first().waitFor({ timeout: 60_000 });
+  const undo = page.getByRole("button", { name: "Undo", exact: true });
+  await undo.waitFor({ timeout: 120_000 });
+  await edit.and(page.locator('[data-status="done"]')).waitFor({ timeout: 120_000 });
+  const stale = await edit.getAttribute("data-stale");
+  if (stale !== "0") throw new Error(`the edit: ${stale} error frames while streaming`);
+  if (!process.env.ANTHROPIC_API_KEY) {
+    const edited = await edit.locator(".typstream-host").textContent();
+    if (!edited.includes("12 m up the wall") || !edited.includes("Pythagorean triples"))
+      throw new Error(`unexpected edit: ${edited}`);
+    await undo.click();
+    await page.waitForFunction(
+      (el) => el?.textContent.includes("4 m up the wall") && !el.textContent.includes("12 m up the wall"),
+      await edit.locator(".typstream-host").elementHandle(),
+      { timeout: 30_000 },
+    );
+  }
   if (!process.env.ANTHROPIC_API_KEY) {
     // The replay's mind map, as an island: React Flow's nodes over the drawing.
     await answers.nth(1).locator("typstream-island .react-flow__node").first().waitFor({ timeout: 30_000 });
@@ -70,7 +90,7 @@ try {
   while (!reached() && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 200));
   if (!reached()) throw new Error(`no telemetry reached /api/telemetry:\n${log}`);
   if (process.argv.includes("--screenshot")) await page.screenshot({ path: "smoke.png", fullPage: true });
-  console.log(`ok: streamed two answers with no error frames (${text.length} characters in the first)`);
+  console.log(`ok: streamed an answer and an edit of it with no error frames (${text.length} characters in the first)`);
 } finally {
   await browser.close();
   server.kill();
