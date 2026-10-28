@@ -12,6 +12,7 @@ const alias = {
   "@typstream/core": new URL("../core/src/index.ts", import.meta.url).pathname,
   "@typstream/heal": new URL("../heal/src/index.ts", import.meta.url).pathname,
   "@typstream/engine": new URL("../engine/src/index.ts", import.meta.url).pathname,
+  "@typstream/docx": new URL("../docx/src/index.ts", import.meta.url).pathname,
   "@typstream/dom": new URL("../dom/src/index.ts", import.meta.url).pathname,
   "@typstream/html-compat": new URL("../html-compat/src/index.ts", import.meta.url).pathname,
 };

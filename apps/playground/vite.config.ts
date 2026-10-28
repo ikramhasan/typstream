@@ -26,7 +26,7 @@ export default defineConfig({
       { find: "@typstream/corpus/stream", replacement: `${root}corpus/src/stream.ts` },
       { find: "@typstream/mindmap/react", replacement: `${root}packages/mindmap/src/react.tsx` },
       {
-        find: /^@typstream\/(core|heal|engine|html-compat|dom|react|universe|mindmap)$/,
+        find: /^@typstream\/(core|heal|engine|docx|html-compat|dom|react|universe|mindmap)$/,
         replacement: `${root}packages/$1/src/index.ts`,
       },
     ],
