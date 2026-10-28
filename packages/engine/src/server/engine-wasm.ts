@@ -202,7 +202,8 @@ export const engineWasm = (options: EngineWasmOptions = {}): EngineAdapter => {
       // Fonts belong to the wasm instance: every document's engine sees them.
       for (const font of loaded) Engine.add_font(font);
       for (const font of lazy) lazyUrls.set(Engine.register_font(font.info), font.url);
-      if (Engine.features().includes("pdf")) exports = ["html", "pdf"];
+      const features = Engine.features();
+      exports = ["html", ...(["pdf", "docx"] as const).filter((f) => features.includes(f))];
     },
 
     async addFonts(fonts) {
@@ -254,6 +255,16 @@ export const engineWasm = (options: EngineWasmOptions = {}): EngineAdapter => {
         exportPdf() {
           const r = engine.compile_pdf();
           const result = { pdf: r.ok ? (r.pdf ?? null) : null, diagnostics: r.diagnostics, compileMs: r.ms };
+          return withPending(result, r.missingFonts);
+        },
+        exportDocxModel() {
+          const r = engine.compile_docx_model();
+          const result = {
+            model: r.ok ? (r.model ?? null) : null,
+            fonts: r.fonts ?? [],
+            diagnostics: r.diagnostics,
+            compileMs: r.ms,
+          };
           return withPending(result, r.missingFonts);
         },
         close: () => engine.free(),

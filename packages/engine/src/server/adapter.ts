@@ -92,6 +92,14 @@ export interface AdapterDocument {
   check?(options: { target: CompileTarget } & AdapterCompileOptions): MaybePromise<AdapterCompileResult>;
   /** Compiles paged output to PDF. Only when the adapter's `exports` include `"pdf"`; always `final` mode. */
   exportPdf?(options?: AdapterCompileOptions): MaybePromise<AdapterCompileResult & { pdf: Uint8Array | null }>;
+  /**
+   * Compiles paged output into a DOCX export's document model (engine-wasm's `compile_docx_model`): `model` is
+   * `@typstream/docx`'s `DocxModel` as JSON, `fonts` the data of the faces it names. The server appends
+   * {@link DOCX_MARGIN_PROBE} to `/main.typ` first and writes the file. Only when `exports` include `"docx"`.
+   */
+  exportDocxModel?(
+    options?: AdapterCompileOptions,
+  ): MaybePromise<AdapterCompileResult & { model: string | null; fonts: Uint8Array[] }>;
   /** Frees the document. */
   close(): void;
 }

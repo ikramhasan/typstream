@@ -1,19 +1,19 @@
 ---
-title: "Exports: PDF, HTML and source"
-description: Export a rendered document as a PDF, a standalone HTML file or its Typst source, in the browser or on the server, and handle export errors.
+title: "Exports: PDF, DOCX, HTML and source"
+description: Export a rendered document as a PDF, an editable Word file, a standalone HTML file or its Typst source, in the browser or on the server, and handle export errors.
 ---
 
-A document on screen can be saved three ways: as a **PDF**, as an **HTML file** that opens on its own, or as its
-**Typst source**. Exports run in the same engine that renders the preview, so the file matches what the reader sees,
+A document on screen can be saved four ways: as a **PDF**, as an editable **Word file** (DOCX), as an **HTML file**
+that opens on its own, or as its **Typst source**. Exports run in the same engine that renders the preview, so the file matches what the reader sees,
 and they don't need a second download or a server.
 
 ## Where the exports are
 
-| | PDF | HTML | Source |
-|---|---|---|---|
-| `EngineDocument` (`@typstream/engine`) | `exportPdf(options?)` | `exportHtml(options?)`: Typst's raw HTML | `exportSource()` |
-| `MountedTypstream` (`@typstream/dom`) | `exportPdf(options?)` | `exportHtml(options?)`: a standalone file | `exportSource()` |
-| React (`typstream`, `@typstream/react`) | `exportPdf(options?)` | `exportHtml(options?)`: a standalone file | `exportSource()` |
+| | PDF | DOCX (beta) | HTML | Source |
+|---|---|---|---|---|
+| `EngineDocument` (`@typstream/engine`) | `exportPdf(options?)` | `exportDocx(options?)` | `exportHtml(options?)`: Typst's raw HTML | `exportSource()` |
+| `MountedTypstream` (`@typstream/dom`) | `exportPdf(options?)` | `exportDocx(options?)` | `exportHtml(options?)`: a standalone file | `exportSource()` |
+| React (`typstream`, `@typstream/react`) | `exportPdf(options?)` | `exportDocx(options?)` | `exportHtml(options?)`: a standalone file | `exportSource()` |
 
 In React, the exports are on `useTypstream()` (`t.exportPdf()`) and on the handle `<Typstream ref>` gives you. They
 are `MountedTypstream`'s: the component mounts one. Documents open when their element comes near the viewport, or when
@@ -36,7 +36,7 @@ as a finished document) with the document's preamble and files, in the engine's 
 
 ### Inputs
 
-`exportPdf` and `exportHtml` take `{ inputs }`, `sys.inputs` for that export only. Use them when the export should
+`exportPdf`, `exportDocx` and `exportHtml` take `{ inputs }`, `sys.inputs` for that export only. Use them when the export should
 differ from the preview: a teacher's copy (`{ showAnswers: "true" }`, see
 [edu documents](/docs/guides/edu-documents#export-the-students-and-teachers-pdfs)), or a student's copy
 (`{ showAnswers: "false" }`) while the preview shows answers.
@@ -55,6 +55,26 @@ const pdf: Uint8Array = await doc.exportPdf();
 ```
 
 It is Typst's own PDF export, with selectable text and the fonts embedded.
+
+## DOCX
+
+```ts
+const docx: Uint8Array = await doc.exportDocx();
+```
+
+An editable Word file that lays out as the PDF does: the same lines on the same pages. It is read from the same
+laid-out pages as the PDF, and written as Word's own structure, so a teacher can edit it:
+
+- paragraphs and their runs (fonts, sizes, colours, links), headings with Word's heading styles, lists with Word's
+  numbering, tables and grids with Typst's column widths, framed boxes as one-cell tables;
+- page size and margins, headers and footers, page numbers as fields;
+- Typst's fonts, embedded, so Word sets the text in the faces the PDF uses;
+- the [layout profile](/docs/concepts/render-targets#layout-profile)'s settings, which make Word break lines and pages
+  where Typst does: exact line pitch, ragged right, no hyphenation, rows that stay on one page.
+
+Equations, images and drawings aren't written yet: they hold their place as empty space of their size, so the text
+around them still falls where it does in the PDF. The file is checked against the PDF with LibreOffice and Microsoft's
+Open XML validator; edits made in Word don't come back to the document.
 
 ## HTML
 
@@ -237,8 +257,8 @@ if (result.ok) await writeFile("document.pdf", result.data);
 else console.error(result.diagnostics);
 ```
 
-`render(source, format, options?)` takes `"pdf"` (bytes), `"html"` (Typst's HTML as a string) or `"svg"` (one string
-per page), and the options every compile takes: `preamble`, `files`, `inputs`, `timeoutMs` and `engine`. A result is
+`render(source, format, options?)` takes `"pdf"` (bytes), `"docx"` (bytes), `"html"` (Typst's HTML as a string) or
+`"svg"` (one string per page), and the options every compile takes: `preamble`, `files`, `inputs`, `timeoutMs` and `engine`. A result is
 `{ ok: true, data, diagnostics, pageCount?, ms }` or `{ ok: false, diagnostics, ms }`. `standaloneHtml` is a string
 transform, so it works on the server's HTML too. See [`@typstream/node`](/docs/reference/node) and
 [the server fix loop](/docs/guides/server-fix-loop).

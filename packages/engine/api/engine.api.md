@@ -112,6 +112,8 @@ export interface EngineConnection {
 export interface EngineDocument {
     applyEdit(edit: TextEdit): void;
     dispose(): void;
+    // @beta
+    exportDocx(options?: ExportOptions): Promise<Uint8Array>;
     exportHtml(options?: ExportOptions): Promise<string>;
     exportPdf(options?: ExportOptions): Promise<Uint8Array>;
     exportSource(): string;

@@ -2555,6 +2555,7 @@ version = "0.0.0"
 dependencies = [
  "comemo",
  "js-sys",
+ "rayon",
  "serde_json",
  "ttf-parser",
  "typst",

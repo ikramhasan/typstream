@@ -11,7 +11,7 @@ on:
         description: Run one group instead of all of them
         type: choice
         default: all
-        options: [all, heal-properties, heal-mutation, browser-suites]
+        options: [all, heal-properties, heal-mutation, browser-suites, docx-onlyoffice]
 
 permissions:
   contents: read
@@ -34,6 +34,25 @@ jobs:
         with: { node: "${{ env.NODE }}" }
       - run: pnpm build --filter=@typstream/heal...
       - run: pnpm --filter @typstream/heal test:long
+
+  # DOCX exports in ONLYOFFICE (#131): a second layout engine, written apart from Word and LibreOffice. Report only:
+  # it reads installed fonts, not the embedded ones, and the job summary has the numbers.
+  docx-onlyoffice:
+    name: DOCX (ONLYOFFICE)
+    if: ${{ contains(fromJSON('["", "all", "docx-onlyoffice"]'), inputs.only || '') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/engine-wasm
+      - uses: ./.github/actions/pnpm
+        with: { node: "${{ env.NODE }}" }
+      - name: Install poppler
+        timeout-minutes: 6
+        run: sudo apt-get install -y --no-install-recommends poppler-utils
+      - run: docker pull onlyoffice/documentserver
+      - run: pnpm turbo run build --filter=@typstream/docx-check^...
+      - run: node tools/docx-check/check.mjs --onlyoffice
 
   # Mutation testing of heal (PLAN.md §11.1, #6). The score goes to the job summary and the HTML
   # report is an artifact; `mutate` fails below the break threshold in stryker.config.mjs.

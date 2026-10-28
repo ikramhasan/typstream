@@ -31,10 +31,11 @@ docker pull onlyoffice/documentserver           # ~3 GB
 Needs native `typst` 0.15.1, LibreOffice, poppler (`pdftotext`, `pdftoppm`), Docker and engine-wasm's `dist/fonts`
 (read through a copy in `--out`).
 
-Microsoft's validator (`validator/`, the Open XML SDK's `OpenXmlValidator` for Microsoft 365), built in Microsoft's
+Microsoft's validator (now `tools/docx-check/validator/`, the Open XML SDK's `OpenXmlValidator` for Microsoft 365), built in Microsoft's
 SDK image and run on the .NET 9 runtime:
 
 ```bash
-docker run --rm -v "$PWD/validator:/src" -w /src mcr.microsoft.com/dotnet/sdk:9.0 dotnet publish -c Release -o out
-dotnet validator/out/validator.dll /tmp/docx-spike/*.docx
+V=../../tools/docx-check/validator
+docker run --rm -v "$PWD/$V:/src" -w /src mcr.microsoft.com/dotnet/sdk:9.0 dotnet publish -c Release -o out
+dotnet $V/out/validator.dll /tmp/docx-spike/*.docx
 ```

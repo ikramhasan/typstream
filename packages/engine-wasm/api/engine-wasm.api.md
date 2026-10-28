@@ -40,15 +40,20 @@ export type Diagnostic = {
 };
 
 // @public
+export type DocxModelResult = CompileResult & { model?: string; fonts?: Uint8Array[]; pageCount?: number };
+
+// @public
 export class Engine {
     // (undocumented)
     [Symbol.dispose](): void;
     constructor();
     static add_font(bytes: Uint8Array): number;
     check_paged(): CheckResult;
+    compile_docx_model(): DocxModelResult;
     compile_html(): HtmlResult;
     compile_pdf(): PdfResult;
     compile_svg_changed(drawings?: boolean | null): SvgChangedResult;
+    static docx_margin_probe(): string;
     static features(): string[];
     static font_info(bytes: Uint8Array): string;
     // (undocumented)
@@ -88,11 +93,15 @@ export interface InitOutput {
     // (undocumented)
     readonly engine_check_paged: (a: number) => number;
     // (undocumented)
+    readonly engine_compile_docx_model: (a: number) => number;
+    // (undocumented)
     readonly engine_compile_html: (a: number) => number;
     // (undocumented)
     readonly engine_compile_pdf: (a: number) => number;
     // (undocumented)
     readonly engine_compile_svg_changed: (a: number, b: number) => number;
+    // (undocumented)
+    readonly engine_docx_margin_probe: (a: number) => void;
     // (undocumented)
     readonly engine_features: (a: number) => void;
     // (undocumented)

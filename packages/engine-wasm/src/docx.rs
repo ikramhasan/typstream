@@ -1,0 +1,2661 @@
+//! The document model a DOCX export is written from (#131): sections, paragraphs and runs, lists, tables, with the
+//! geometry Typst laid them out with, so that a Word-like engine under the same layout profile (#129) breaks lines and
+//! pages where Typst did. `@typstream/docx` writes the OOXML.
+//!
+//! The model comes from the laid-out pages, not from the content: what Typst decided (fonts, sizes, line breaks,
+//! positions) is what the DOCX must reproduce. Structure comes from the introspection tags in the frames (as for the
+//! text layer, text.rs): paragraphs (`par`, only where a paragraph has blocks around it), headings, lists and their
+//! items (typst-layout's label and body markers), tables and grids and their cells, equations, images. Frames don't
+//! keep their structure (typst-layout inlines soft frames into their parents), so everything else is geometry:
+//!
+//! - **Lines** are text items on one baseline; **paragraphs** are the lines between a `par` tag (or a block) and the
+//!   next. Text without a `par` tag around it (a cell's, a list item's, a block's) is one paragraph.
+//! - **Gaps** between blocks are measured: the space before a block is how far it is below the one before, so
+//!   whatever spacing a document or plugin sets carries over. At the top of a page it is what's left after Typst
+//!   dropped weak spacing, as Word drops space before there.
+//! - **Tables and grids** get their columns from where their cells start (gutters go into the cells' margins), their
+//!   borders and fills from the strokes and fills drawn on the cells' edges.
+//! - **Blocks** drawn with a frame or a fill (a group whose first item is a rectangle as big as the group, or strokes on
+//!   its edges) become one-cell tables.
+//! - **Gaps inside a line** (`h()`, blanks drawn as underlined boxes) become exact-width runs.
+//! - **Equations, images and drawings** are placeholders of their size until #132 and #133, so lines and pages still
+//!   break where Typst broke them.
+//!
+//! Page margins aren't in the laid-out pages: the export appends a probe that records `page.margin`
+//! (`MARGIN_PROBE`), and `auto` margins are resolved as typst-layout does.
+
+use std::collections::{HashMap, HashSet};
+
+use serde_json::{json, Map, Value as Json};
+use typst::foundations::{Content, Label, Smart, StyleChain, Value};
+use typst::introspection::{Introspector, Location, Tag};
+use typst::layout::{
+    Abs, Alignment, Frame, FrameItem, GridCell, HAlignment, Point, Sides, Size, Transform,
+    VAlignment,
+};
+use typst::model::{Destination, HeadingElem, TableCell};
+use typst::pdf::{PdfMarkerTag, PdfMarkerTagKind};
+use typst::text::Font;
+use typst::visualize::{Color, CurveItem, FixedStroke, Geometry, Paint, Shape};
+use typst_layout::{Page, PagedDocument};
+
+/// Appended to a document before a DOCX export: records the page margins where the document ends, inside every
+/// template's show rule.
+pub const MARGIN_PROBE: &str = "\n#context [#metadata(page.margin) <typstream-docx-margin>]\n";
+
+/// The line pitch of the layout profile, in em.
+const PITCH: f64 = 1.3;
+/// The profile's text edges, in em: a line box runs from `TOP` above the baseline to `BOTTOM` below it.
+const TOP: f64 = 1.054;
+const BOTTOM: f64 = 0.246;
+
+/// The model as JSON (see `@typstream/docx`'s `DocxModel`) and the data of the fonts it names, in its order.
+pub struct Model {
+    pub json: String,
+    pub fonts: Vec<Vec<u8>>,
+}
+
+pub fn model(doc: &PagedDocument) -> Model {
+    let pages = doc.pages();
+    let margin_value = doc
+        .introspector()
+        .query_label(Label::new(typst::utils::PicoStr::intern("typstream-docx-margin")).unwrap())
+        .ok()
+        .and_then(|c| {
+            c.to_packed::<typst::introspection::MetadataElem>()
+                .map(|m| m.value.clone())
+        });
+    let mut fonts = Fonts::default();
+    let mut items = Vec::new();
+    let mut geometry = Vec::new();
+    for (i, page) in pages.iter().enumerate() {
+        let size = page.frame.size();
+        let margin = resolve_margin(margin_value.as_ref(), size);
+        geometry.push((size, margin));
+        let mut lin = Linearizer {
+            page: i,
+            items: &mut items,
+            seen_cells: HashSet::new(),
+        };
+        lin.walk(&page.frame, Transform::identity());
+    }
+    let _ = &mut fonts;
+    let mut builder = Builder {
+        items: std::rc::Rc::new(items),
+        geometry,
+        fonts,
+        lists: Vec::new(),
+    };
+    let sections = builder.sections(pages);
+    let json = json!({
+        "sections": sections,
+        "fonts": builder.fonts.json(),
+        "lists": builder.lists,
+    });
+    Model {
+        json: json.to_string(),
+        fonts: builder.fonts.data,
+    }
+}
+
+/// Margins from the probe's value, resolved against the page size; Typst's default (`auto`) otherwise.
+fn resolve_margin(value: Option<&Value>, size: Size) -> Sides<f64> {
+    let auto = (2.5 / 21.0) * size.x.min(size.y).to_pt();
+    let resolve = |v: Option<&Value>, axis: f64| -> Option<f64> {
+        match v? {
+            Value::Auto => Some(auto),
+            Value::Length(l) => Some(l.abs.to_pt() + l.em.get() * 11.0),
+            Value::Relative(r) => Some(r.abs.abs.to_pt() + r.rel.get() * axis),
+            Value::Ratio(r) => Some(r.get() * axis),
+            _ => None,
+        }
+    };
+    let (w, h) = (size.x.to_pt(), size.y.to_pt());
+    let mut sides = Sides::splat(auto);
+    match value {
+        Some(Value::Dict(dict)) => {
+            let get = |k: &str| dict.get(k).ok();
+            // Typst's order: `rest`, then `x`/`y`, then each side.
+            if let Some(v) = resolve(get("rest"), w) {
+                sides = Sides::splat(v);
+            }
+            if let Some(v) = resolve(get("x"), w) {
+                sides.left = v;
+                sides.right = v;
+            }
+            if let Some(v) = resolve(get("y"), h) {
+                sides.top = v;
+                sides.bottom = v;
+            }
+            for (k, side) in [
+                ("left", 0),
+                ("inside", 0),
+                ("top", 1),
+                ("right", 2),
+                ("outside", 2),
+                ("bottom", 3),
+            ] {
+                let axis = if side % 2 == 0 { w } else { h };
+                if let Some(v) = resolve(get(k), axis) {
+                    match side {
+                        0 => sides.left = v,
+                        1 => sides.top = v,
+                        2 => sides.right = v,
+                        _ => sides.bottom = v,
+                    }
+                }
+            }
+        }
+        Some(v) => {
+            if let Some(m) = resolve(Some(v), w) {
+                sides = Sides::splat(m);
+            }
+        }
+        None => {}
+    }
+    sides
+}
+
+// --- Linearizing: the pages' frames as one stream of items in document order ------------------------------------
+
+/// A rectangle on a page, in points.
+#[derive(Clone, Copy, Debug)]
+struct Rect {
+    x: f64,
+    y: f64,
+    w: f64,
+    h: f64,
+}
+
+impl Rect {
+    fn right(&self) -> f64 {
+        self.x + self.w
+    }
+    fn bottom(&self) -> f64 {
+        self.y + self.h
+    }
+    fn contains(&self, x: f64, y: f64) -> bool {
+        x >= self.x - 0.5
+            && x <= self.right() + 0.5
+            && y >= self.y - 0.5
+            && y <= self.bottom() + 0.5
+    }
+}
+
+/// A stroke along an axis: a line, an edge of a framed rectangle, or a thin filled rectangle (Typst draws a box's
+/// one-sided strokes as filled curves).
+#[derive(Clone, Debug)]
+struct Seg {
+    /// Horizontal: from (x0, y) to (x1, y); vertical: from (x, y0) to (x, y1), as (x0, y0, x1, y1).
+    x0: f64,
+    y0: f64,
+    x1: f64,
+    y1: f64,
+    thickness: f64,
+    color: String,
+}
+
+impl Seg {
+    fn horizontal(&self) -> bool {
+        (self.y0 - self.y1).abs() < 0.01
+    }
+}
+
+enum Kind {
+    Start(Content, Point),
+    End(Location),
+    Text(Text),
+    Seg(Seg),
+    Fill(Rect, String),
+    /// A group begins: its rectangle, and whether it is decorated (a frame or a fill on its edges).
+    Group(Rect, bool),
+    GroupEnd,
+    /// Something drawn that the model can't express yet (curves, images): a placeholder of its bounding box.
+    Drawing(Rect),
+    Link(Rect, String),
+}
+
+struct Item {
+    page: usize,
+    kind: Kind,
+}
+
+#[derive(Clone)]
+struct Text {
+    /// Start of the baseline.
+    x: f64,
+    y: f64,
+    width: f64,
+    size: f64,
+    font: Font,
+    color: String,
+    text: String,
+    /// Width of the item's first word (up to its first space): whether it would have fitted on the line before.
+    first_word: f64,
+}
+
+struct Linearizer<'a> {
+    page: usize,
+    items: &'a mut Vec<Item>,
+    /// Table cells already laid out: a repeated header's cells are skipped.
+    seen_cells: HashSet<Location>,
+}
+
+impl Linearizer<'_> {
+    fn push(&mut self, kind: Kind) {
+        self.items.push(Item {
+            page: self.page,
+            kind,
+        });
+    }
+
+    fn walk(&mut self, frame: &Frame, ts: Transform) {
+        for (pos, item) in frame.items() {
+            let ts = ts.pre_concat(Transform::translate(pos.x, pos.y));
+            let at = Point::zero().transform(ts);
+            match item {
+                FrameItem::Group(group) => {
+                    let gts = ts.pre_concat(group.transform);
+                    let size = group.frame.size();
+                    let rect = Rect {
+                        x: at.x.to_pt(),
+                        y: at.y.to_pt(),
+                        w: size.x.to_pt(),
+                        h: size.y.to_pt(),
+                    };
+                    if !gts.is_only_translate() || curvy(&group.frame) {
+                        // Rotated or drawn content (CeTZ, edu's drawings): an image later (#133). Its tags stay, so
+                        // elements around it (a cell it is in) still start and end.
+                        self.push(Kind::Drawing(rect));
+                        self.tags(&group.frame, at);
+                        continue;
+                    }
+                    self.push(Kind::Group(rect, decorated(&group.frame)));
+                    self.walk(&group.frame, gts);
+                    self.push(Kind::GroupEnd);
+                }
+                FrameItem::Text(text) => {
+                    if text.text.is_empty() {
+                        continue;
+                    }
+                    let mut first_word = 0.0;
+                    for glyph in &text.glyphs {
+                        let start = glyph.range().start;
+                        if text.text[start..].starts_with(char::is_whitespace) {
+                            break;
+                        }
+                        first_word += glyph.x_advance.at(text.size).to_pt();
+                    }
+                    self.push(Kind::Text(Text {
+                        x: at.x.to_pt(),
+                        y: at.y.to_pt(),
+                        width: text.width().to_pt(),
+                        size: text.size.to_pt(),
+                        font: text.font.font().clone(),
+                        color: paint_hex(&text.fill),
+                        text: text.text.to_string(),
+                        first_word,
+                    }))
+                }
+                FrameItem::Shape(shape, _) => self.shape(shape, at),
+                FrameItem::Image(_, size, _) => self.push(Kind::Drawing(Rect {
+                    x: at.x.to_pt(),
+                    y: at.y.to_pt(),
+                    w: size.x.to_pt(),
+                    h: size.y.to_pt(),
+                })),
+                FrameItem::Link(Destination::Url(url), size) => self.push(Kind::Link(
+                    Rect {
+                        x: at.x.to_pt(),
+                        y: at.y.to_pt(),
+                        w: size.x.to_pt(),
+                        h: size.y.to_pt(),
+                    },
+                    url.to_string(),
+                )),
+                FrameItem::Link(..) => {}
+                FrameItem::Tag(Tag::Start(elem, _)) => {
+                    if elem.is::<TableCell>() || elem.is::<GridCell>() {
+                        if let Some(loc) = elem.location() {
+                            if !self.seen_cells.insert(loc) {
+                                // A repeated header: Word repeats header rows itself.
+                                self.skip_until_end(loc);
+                                continue;
+                            }
+                        }
+                    }
+                    self.push(Kind::Start(elem.clone(), at))
+                }
+                FrameItem::Tag(Tag::End(loc, ..)) => self.push(Kind::End(*loc)),
+            }
+        }
+    }
+
+    /// The tags in a frame whose content is a drawing, placed where the drawing is.
+    fn tags(&mut self, frame: &Frame, at: Point) {
+        for (_, item) in frame.items() {
+            match item {
+                FrameItem::Group(g) => self.tags(&g.frame, at),
+                FrameItem::Tag(Tag::Start(elem, _)) => self.push(Kind::Start(elem.clone(), at)),
+                FrameItem::Tag(Tag::End(loc, ..)) => self.push(Kind::End(*loc)),
+                _ => {}
+            }
+        }
+    }
+
+    /// Not implemented as a real skip: repeated header cells are rare; their content is dropped by `Builder`.
+    fn skip_until_end(&mut self, _loc: Location) {}
+
+    fn shape(&mut self, shape: &Shape, at: Point) {
+        let (x, y) = (at.x.to_pt(), at.y.to_pt());
+        match &shape.geometry {
+            Geometry::Line(to) => {
+                if let Some(stroke) = &shape.stroke {
+                    let (dx, dy) = (to.x.to_pt(), to.y.to_pt());
+                    if dx.abs() < 0.01 || dy.abs() < 0.01 {
+                        self.push(Kind::Seg(seg(x, y, x + dx, y + dy, stroke)));
+                    } else {
+                        self.push(Kind::Drawing(Rect {
+                            x: x.min(x + dx),
+                            y: y.min(y + dy),
+                            w: dx.abs(),
+                            h: dy.abs(),
+                        }));
+                    }
+                }
+            }
+            Geometry::Rect(size) => {
+                let r = Rect {
+                    x,
+                    y,
+                    w: size.x.to_pt(),
+                    h: size.y.to_pt(),
+                };
+                if let Some(fill) = &shape.fill {
+                    self.push(Kind::Fill(r, paint_hex(fill)));
+                }
+                if let Some(stroke) = &shape.stroke {
+                    for (x0, y0, x1, y1) in [
+                        (r.x, r.y, r.right(), r.y),
+                        (r.x, r.bottom(), r.right(), r.bottom()),
+                        (r.x, r.y, r.x, r.bottom()),
+                        (r.right(), r.y, r.right(), r.bottom()),
+                    ] {
+                        self.push(Kind::Seg(seg(x0, y0, x1, y1, stroke)));
+                    }
+                }
+            }
+            Geometry::Curve(curve) => match (axis_rect(&curve.0), &shape.fill) {
+                // A thin filled rectangle is a stroke; a wider one a fill.
+                (Some(r), Some(fill)) if shape.stroke.is_none() => {
+                    let r = Rect {
+                        x: x + r.x,
+                        y: y + r.y,
+                        ..r
+                    };
+                    let color = paint_hex(fill);
+                    if r.h <= 3.0 && r.w > r.h {
+                        let mid = r.y + r.h / 2.0;
+                        self.push(Kind::Seg(Seg {
+                            x0: r.x,
+                            y0: mid,
+                            x1: r.right(),
+                            y1: mid,
+                            thickness: r.h,
+                            color,
+                        }));
+                    } else if r.w <= 3.0 && r.h > r.w {
+                        let mid = r.x + r.w / 2.0;
+                        self.push(Kind::Seg(Seg {
+                            x0: mid,
+                            y0: r.y,
+                            x1: mid,
+                            y1: r.bottom(),
+                            thickness: r.w,
+                            color,
+                        }));
+                    } else {
+                        self.push(Kind::Fill(r, color));
+                    }
+                }
+                _ => {
+                    if let Some(b) = curve_bounds(&curve.0) {
+                        self.push(Kind::Drawing(Rect {
+                            x: x + b.x,
+                            y: y + b.y,
+                            ..b
+                        }));
+                    }
+                }
+            },
+        }
+    }
+}
+
+fn seg(x0: f64, y0: f64, x1: f64, y1: f64, stroke: &FixedStroke) -> Seg {
+    Seg {
+        x0: x0.min(x1),
+        y0: y0.min(y1),
+        x1: x0.max(x1),
+        y1: y0.max(y1),
+        thickness: stroke.thickness.to_pt(),
+        color: paint_hex(&stroke.paint),
+    }
+}
+
+/// The rectangle a closed curve of axis-aligned lines draws, relative to its origin.
+fn axis_rect(items: &[CurveItem]) -> Option<Rect> {
+    let mut points = Vec::new();
+    for item in items {
+        match item {
+            CurveItem::Move(p) | CurveItem::Line(p) => points.push((p.x.to_pt(), p.y.to_pt())),
+            CurveItem::Close => {}
+            CurveItem::Cubic(..) => return None,
+        }
+    }
+    if points.len() < 4 || points.len() > 5 {
+        return None;
+    }
+    let axis = points
+        .windows(2)
+        .all(|w| (w[0].0 - w[1].0).abs() < 0.01 || (w[0].1 - w[1].1).abs() < 0.01);
+    if !axis {
+        return None;
+    }
+    let (x0, x1) = points
+        .iter()
+        .fold((f64::MAX, f64::MIN), |(a, b), p| (a.min(p.0), b.max(p.0)));
+    let (y0, y1) = points
+        .iter()
+        .fold((f64::MAX, f64::MIN), |(a, b), p| (a.min(p.1), b.max(p.1)));
+    Some(Rect {
+        x: x0,
+        y: y0,
+        w: x1 - x0,
+        h: y1 - y0,
+    })
+}
+
+fn curve_bounds(items: &[CurveItem]) -> Option<Rect> {
+    let mut b: Option<(f64, f64, f64, f64)> = None;
+    let mut add = |p: &Point| {
+        let (x, y) = (p.x.to_pt(), p.y.to_pt());
+        b = Some(match b {
+            None => (x, y, x, y),
+            Some((a, c, d, e)) => (a.min(x), c.min(y), d.max(x), e.max(y)),
+        });
+    };
+    for item in items {
+        match item {
+            CurveItem::Move(p) | CurveItem::Line(p) => add(p),
+            CurveItem::Cubic(a, c, p) => {
+                add(a);
+                add(c);
+                add(p);
+            }
+            CurveItem::Close => {}
+        }
+    }
+    b.map(|(x0, y0, x1, y1)| Rect {
+        x: x0,
+        y: y0,
+        w: x1 - x0,
+        h: y1 - y0,
+    })
+}
+
+/// Whether a frame draws something a document model can't: curves that aren't axis-aligned rectangles (a CeTZ
+/// canvas, edu's number line), outside text and equations. Equations draw fraction lines; those are their
+/// placeholders' business.
+fn curvy(frame: &Frame) -> bool {
+    let mut lines = 0;
+    let mut text = 0;
+    let mut curvy = false;
+    count(frame, &mut lines, &mut text, &mut curvy, 0);
+    curvy || (lines >= 6 && text * 2 < lines)
+}
+
+fn count(frame: &Frame, lines: &mut usize, text: &mut usize, curvy: &mut bool, equation: usize) {
+    let mut eq = equation;
+    for (_, item) in frame.items() {
+        match item {
+            FrameItem::Group(g) => count(&g.frame, lines, text, curvy, eq),
+            FrameItem::Text(_) => *text += 1,
+            FrameItem::Tag(Tag::Start(elem, _)) if elem.func().name() == "equation" => eq += 1,
+            FrameItem::Tag(Tag::End(..)) => eq = eq.saturating_sub(0),
+            FrameItem::Shape(shape, _) if eq == 0 => match &shape.geometry {
+                Geometry::Curve(c) => {
+                    if axis_rect(&c.0).is_none() {
+                        *curvy = true
+                    }
+                }
+                Geometry::Line(to) => {
+                    if to.x.to_pt().abs() > 0.01 && to.y.to_pt().abs() > 0.01 {
+                        *curvy = true
+                    } else {
+                        *lines += 1
+                    }
+                }
+                Geometry::Rect(_) => {}
+            },
+            _ => {}
+        }
+    }
+}
+
+/// A group drawn as a framed or filled block: its first items are a rectangle as big as the group, or strokes along
+/// its edges.
+fn decorated(frame: &Frame) -> bool {
+    let size = frame.size();
+    let (w, h) = (size.x.to_pt(), size.y.to_pt());
+    if w < 1.0 || h < 1.0 {
+        return false;
+    }
+    for (pos, item) in frame.items().take(5) {
+        let FrameItem::Shape(shape, _) = item else {
+            return false;
+        };
+        let (x, y) = (pos.x.to_pt(), pos.y.to_pt());
+        let full = |r: &Rect| {
+            (r.x - 0.0).abs() < 1.0
+                && (r.y - 0.0).abs() < 1.0
+                && (r.w - w).abs() < 1.0
+                && (r.h - h).abs() < 1.0
+        };
+        let edge = |r: &Rect| {
+            let r = Rect {
+                x: x + r.x,
+                y: y + r.y,
+                ..*r
+            };
+            (r.w <= 3.0 && (r.h - h).abs() < 1.0) || (r.h <= 3.0 && (r.w - w).abs() < 1.0)
+        };
+        match &shape.geometry {
+            Geometry::Rect(s) => {
+                if full(&Rect {
+                    x,
+                    y,
+                    w: s.x.to_pt(),
+                    h: s.y.to_pt(),
+                }) {
+                    return true;
+                }
+            }
+            Geometry::Curve(c) => {
+                if let Some(r) = axis_rect(&c.0) {
+                    if full(&Rect {
+                        x: x + r.x,
+                        y: y + r.y,
+                        ..r
+                    }) || edge(&r)
+                    {
+                        return true;
+                    }
+                }
+            }
+            Geometry::Line(to) => {
+                let (dx, dy) = (to.x.to_pt(), to.y.to_pt());
+                if (dx.abs() < 0.01 && (dy.abs() - h).abs() < 1.0)
+                    || (dy.abs() < 0.01 && (dx.abs() - w).abs() < 1.0)
+                {
+                    return true;
+                }
+            }
+        }
+    }
+    false
+}
+
+fn paint_hex(paint: &Paint) -> String {
+    let color = match paint {
+        Paint::Solid(c) => c.clone(),
+        Paint::Gradient(g) => g.sample_at((0.0, 0.0), (1.0, 1.0)),
+        Paint::Tiling(_) => Color::BLACK,
+    };
+    let rgb = color.to_rgb();
+    let byte = |v: f32| (v.clamp(0.0, 1.0) * 255.0).round() as u8;
+    format!(
+        "{:02X}{:02X}{:02X}",
+        byte(rgb.red),
+        byte(rgb.green),
+        byte(rgb.blue)
+    )
+}
+
+// --- Fonts --------------------------------------------------------------------------------------------------------
+
+/// The faces runs use, as Word names them: the legacy family (name ID 1) and the style it links to (bold, italic).
+#[derive(Default)]
+struct Fonts {
+    index: HashMap<u128, usize>,
+    /// Legacy family, bold, italic, and the no-break space's advance in em (what an exact-width gap is made of).
+    meta: Vec<(String, bool, bool, f64)>,
+    data: Vec<Vec<u8>>,
+}
+
+impl Fonts {
+    fn get(&mut self, font: &Font) -> usize {
+        let key = typst::utils::hash128(font);
+        if let Some(&i) = self.index.get(&key) {
+            return i;
+        }
+        let data = font.data().as_slice();
+        let (family, sub) = legacy_names(data, font.index())
+            .unwrap_or_else(|| (font.info().family.clone(), "Regular".into()));
+        let sub = sub.to_lowercase();
+        let bold = sub.contains("bold");
+        let italic = sub.contains("italic") || sub.contains("oblique");
+        let nbsp = ttf_parser::Face::parse(data, font.index())
+            .ok()
+            .and_then(|face| {
+                let gid = face
+                    .glyph_index('\u{a0}')
+                    .or_else(|| face.glyph_index(' '))?;
+                Some(face.glyph_hor_advance(gid)? as f64 / face.units_per_em() as f64)
+            })
+            .unwrap_or(0.25);
+        self.meta.push((family, bold, italic, nbsp));
+        self.data.push(data.to_vec());
+        self.index.insert(key, self.data.len() - 1);
+        self.data.len() - 1
+    }
+
+    fn json(&self) -> Json {
+        self.meta
+            .iter()
+            .map(|(name, bold, italic, nbsp)| json!({ "name": name, "bold": bold, "italic": italic, "nbsp": nbsp }))
+            .collect()
+    }
+}
+
+fn legacy_names(data: &[u8], index: u32) -> Option<(String, String)> {
+    let face = ttf_parser::Face::parse(data, index).ok()?;
+    let name = |id: u16| {
+        face.names()
+            .into_iter()
+            .filter(|n| n.name_id == id && n.is_unicode())
+            .find_map(|n| n.to_string())
+    };
+    Some((
+        name(ttf_parser::name_id::FAMILY)?,
+        name(ttf_parser::name_id::SUBFAMILY)?,
+    ))
+}
+
+// --- Building blocks from the stream ------------------------------------------------------------------------------
+
+/// An element the stream's tags open, while its items are gathered.
+#[derive(Clone)]
+enum Node {
+    Par,
+    Heading(usize),
+    List,
+    ItemLabel,
+    ItemBody,
+    Table {
+        at: Point,
+        page: usize,
+        grid: bool,
+        gutters: (Vec<f64>, Vec<f64>),
+    },
+    Cell {
+        at: Point,
+        page: usize,
+        x: usize,
+        y: usize,
+        colspan: usize,
+        rowspan: usize,
+        inset: Sides<f64>,
+        valign: &'static str,
+    },
+    Equation {
+        block: bool,
+    },
+    Opaque,
+}
+
+/// A run of a paragraph, before it is JSON.
+#[derive(Clone)]
+enum Run {
+    Text {
+        text: String,
+        font: usize,
+        size: f64,
+        color: String,
+        underline: bool,
+        link: Option<String>,
+    },
+    /// An exact-width space: a gap in a line, a blank, a placeholder.
+    Gap {
+        width: f64,
+        underline: bool,
+        font: usize,
+        size: f64,
+    },
+    Tab,
+    /// A line break Typst was told to make (`\`), not one it chose.
+    Break,
+    /// Room held for what the model can't express yet (math, images): an exact-width gap until #132, #133.
+    Placeholder {
+        width: f64,
+        font: usize,
+        size: f64,
+    },
+}
+
+struct Line {
+    page: usize,
+    baseline: f64,
+    /// Largest text size on the line: its pitch is 1.3 times it.
+    size: f64,
+    left: f64,
+    right: f64,
+    runs: Vec<Run>,
+    /// Taller than the profile's line box (math, a box): Word gets "at least".
+    tall: bool,
+    /// Width of its first word, or of whatever it starts with.
+    first_word: f64,
+    top: f64,
+    bottom: f64,
+}
+
+struct Builder {
+    items: std::rc::Rc<Vec<Item>>,
+    geometry: Vec<(Size, Sides<f64>)>,
+    fonts: Fonts,
+    lists: Vec<Json>,
+}
+
+/// A region blocks flow in: the page's content area, a cell, a framed block.
+#[derive(Clone, Copy)]
+struct Area {
+    left: f64,
+    right: f64,
+}
+
+/// A laid-out block, with where it sits, before it is JSON.
+struct Block {
+    page: usize,
+    /// The page it ends on: a table or paragraph can run over pages.
+    end_page: usize,
+    top: f64,
+    bottom: f64,
+    json: Map<String, Json>,
+}
+
+impl Builder {
+    fn content_top(&self, page: usize) -> f64 {
+        self.geometry[page].1.top
+    }
+
+    fn sections(&mut self, pages: &[Page]) -> Json {
+        let _ = pages;
+        let n = self.items.len();
+        // Split each page's items into header, body and footer by position.
+        let mut body = Vec::new();
+        let mut header: HashMap<usize, Vec<usize>> = HashMap::new();
+        let mut footer: HashMap<usize, Vec<usize>> = HashMap::new();
+        for i in 0..n {
+            let item = &self.items[i];
+            let (size, m) = self.geometry[item.page];
+            let y = match &item.kind {
+                Kind::Text(t) => Some(t.y),
+                Kind::Seg(s) => Some(s.y0),
+                _ => None,
+            };
+            match y {
+                Some(y) if y < m.top => header.entry(item.page).or_default().push(i),
+                Some(y) if y > size.y.to_pt() - m.bottom => {
+                    footer.entry(item.page).or_default().push(i)
+                }
+                _ => body.push(i),
+            }
+        }
+        let area = |g: &(Size, Sides<f64>)| Area {
+            left: g.1.left,
+            right: g.0.x.to_pt() - g.1.right,
+        };
+        let first_area = area(&self.geometry[0]);
+        let blocks = self.flow(&body, first_area, true);
+        let blocks = self.with_gaps(blocks, true);
+        let page_count = self.geometry.len();
+        let marginal = |b: &mut Builder,
+                        map: &HashMap<usize, Vec<usize>>,
+                        page: usize|
+         -> (Vec<Json>, String) {
+            let ids = map.get(&page).cloned().unwrap_or_default();
+            let blocks = b.flow(&ids, area(&b.geometry[page]), false);
+            let key = blocks
+                .iter()
+                .map(|bl| Json::Object(bl.json.clone()).to_string())
+                .collect::<String>();
+            (
+                blocks.into_iter().map(|bl| Json::Object(bl.json)).collect(),
+                key,
+            )
+        };
+        // Headers and footers: the first page's, and the rest's when they are the same on every other page (page
+        // numbers become fields).
+        let mut marginals = Map::new();
+        for (name, map) in [("header", &header), ("footer", &footer)] {
+            let pages: Vec<(Vec<Json>, String)> =
+                (0..page_count).map(|p| marginal(self, map, p)).collect();
+            let roles = field_roles(
+                &pages.iter().map(|(b, _)| b.clone()).collect::<Vec<_>>(),
+                page_count,
+            );
+            let fielded: Vec<(Vec<Json>, String)> = pages
+                .iter()
+                .map(|(blocks, _)| {
+                    let mut k = 0;
+                    let blocks: Vec<Json> = blocks
+                        .iter()
+                        .map(|b| with_fields(b, &roles, &mut k))
+                        .collect();
+                    let key = blocks.iter().map(|b| b.to_string()).collect();
+                    (blocks, key)
+                })
+                .collect();
+            let rest_same = fielded
+                .iter()
+                .skip(1)
+                .all(|(_, k)| *k == fielded.get(1).map(|f| f.1.clone()).unwrap_or_default());
+            if page_count > 1 && rest_same {
+                marginals.insert(name.into(), json!(fielded[1].0));
+                if fielded[0].1 != fielded[1].1 {
+                    marginals.insert(format!("{name}First"), json!(fielded[0].0));
+                }
+            } else {
+                marginals.insert(name.into(), json!(fielded[0].0));
+            }
+            // Where the marginal's text sits: the header's top, the footer's bottom.
+            let ys: Vec<f64> = map
+                .get(&0)
+                .or_else(|| map.get(&1))
+                .map(|ids| {
+                    ids.iter()
+                        .filter_map(|&i| match &self.items[i].kind {
+                            Kind::Text(t) => Some(if name == "header" {
+                                t.y - TOP * t.size
+                            } else {
+                                t.y + BOTTOM * t.size
+                            }),
+                            _ => None,
+                        })
+                        .collect()
+                })
+                .unwrap_or_default();
+            if !ys.is_empty() {
+                let (size, _) = self.geometry[0];
+                let v = if name == "header" {
+                    ys.iter().cloned().fold(f64::MAX, f64::min)
+                } else {
+                    size.y.to_pt() - ys.iter().cloned().fold(f64::MIN, f64::max)
+                };
+                marginals.insert(format!("{name}Distance"), json!(round(v)));
+            }
+        }
+        let (size, m) = self.geometry[0];
+        let mut section = Map::new();
+        section.insert("width".into(), json!(round(size.x.to_pt())));
+        section.insert("height".into(), json!(round(size.y.to_pt())));
+        section.insert(
+            "margin".into(),
+            json!({ "top": round(m.top), "right": round(m.right), "bottom": round(m.bottom), "left": round(m.left) }),
+        );
+        section.insert(
+            "blocks".into(),
+            Json::Array(blocks.into_iter().map(|b| Json::Object(b.json)).collect()),
+        );
+        section.extend(marginals);
+        json!([section])
+    }
+
+    /// Spaces before blocks, measured: how far each is below the one before on its page. A block that starts a page
+    /// gets what Typst left above it (Word drops space before at the top of a page), and a page break before it when
+    /// the page before had room left (a `pagebreak()`).
+    fn with_gaps(&self, mut blocks: Vec<Block>, body: bool) -> Vec<Block> {
+        let mut prev: Option<(usize, f64)> = None;
+        for b in blocks.iter_mut() {
+            let before = match prev {
+                Some((page, bottom)) if page == b.page => b.top - bottom,
+                Some((page, bottom)) if body => {
+                    let (size, m) = self.geometry[page];
+                    let room = size.y.to_pt() - m.bottom - bottom;
+                    if room > 0.3 * (size.y.to_pt() - m.top - m.bottom) {
+                        b.json.insert("pageBreak".into(), json!(true));
+                    }
+                    b.top - self.content_top(b.page)
+                }
+                _ if body => b.top - self.content_top(b.page),
+                _ => 0.0,
+            };
+            b.json
+                .insert("before".into(), json!(round(before.max(0.0))));
+            prev = Some((b.end_page, b.bottom));
+        }
+        blocks
+    }
+
+    /// Blocks from items `ids` (indices into `self.items`, in order) flowing in `area`.
+    fn flow(&mut self, ids: &[usize], area: Area, body: bool) -> Vec<Block> {
+        let _ = body;
+        let mut out = Vec::new();
+        // Text gathered for the paragraph being built.
+        let mut pending: Vec<usize> = Vec::new();
+        let mut heading: Option<usize> = None;
+        let items = self.items.clone();
+        let mut i = 0;
+        while i < ids.len() {
+            let id = ids[i];
+            match &items[id].kind {
+                Kind::Start(elem, at) => {
+                    let node = classify(elem, *at, items[id].page);
+                    match node {
+                        Node::Par => {
+                            self.flush(&mut pending, &mut out, area, heading);
+                            i += 1;
+                            continue;
+                        }
+                        Node::Heading(level) => {
+                            self.flush(&mut pending, &mut out, area, heading);
+                            heading = Some(level);
+                            let end = self.end_of(ids, i, elem);
+                            let inner: Vec<usize> = ids[i + 1..end].to_vec();
+                            pending.extend(inner);
+                            self.flush(&mut pending, &mut out, area, heading);
+                            heading = None;
+                            i = end + 1;
+                            continue;
+                        }
+                        Node::List => {
+                            self.flush(&mut pending, &mut out, area, heading);
+                            let end = self.end_of(ids, i, elem);
+                            let blocks = self.list(&ids[i + 1..end], area);
+                            out.extend(blocks);
+                            i = end + 1;
+                            continue;
+                        }
+                        Node::Table { .. } => {
+                            self.flush(&mut pending, &mut out, area, heading);
+                            let end = self.end_of(ids, i, elem);
+                            if let Some(t) = self.table(&ids[i..end], area, node) {
+                                out.push(t);
+                            }
+                            i = end + 1;
+                            continue;
+                        }
+                        Node::Equation { block: true } => {
+                            self.flush(&mut pending, &mut out, area, heading);
+                            let end = self.end_of(ids, i, elem);
+                            if let Some(b) = self.placeholder_block(&ids[i + 1..end], area) {
+                                out.push(b);
+                            }
+                            i = end + 1;
+                            continue;
+                        }
+                        _ => {}
+                    }
+                    pending.push(id);
+                }
+                Kind::Group(rect, true) => {
+                    // A framed or filled block, unless it sits in a line (an inline box): those have text beside.
+                    let end = group_end(&items, ids, i);
+                    let inline = pending.iter().any(|&p| match &self.items[p].kind {
+                        Kind::Text(t) => {
+                            self.items[p].page == self.items[id].page
+                                && t.y > rect.y
+                                && t.y - TOP * t.size < rect.bottom()
+                        }
+                        _ => false,
+                    });
+                    if inline || rect.h < 6.0 {
+                        pending.extend_from_slice(&ids[i..=end.min(ids.len() - 1)]);
+                    } else {
+                        self.flush(&mut pending, &mut out, area, heading);
+                        if let Some(b) = self.framed(&ids[i..=end.min(ids.len() - 1)], *rect, area)
+                        {
+                            // Framed blocks one under another, as wide (ruled lines): rows of one table, as Word
+                            // would merge tables that touch anyway.
+                            let joins = out.last().is_some_and(|prev: &Block| {
+                                prev.json.get("framed").is_some()
+                                    && prev.page == b.page
+                                    && (prev.bottom - b.top).abs() < 0.5
+                                    && prev.json.get("columns") == b.json.get("columns")
+                                    && prev.json.get("indent") == b.json.get("indent")
+                            });
+                            if joins {
+                                let prev = out.last_mut().unwrap();
+                                let row = b.json["rows"][0].clone();
+                                if let Some(Json::Array(rows)) = prev.json.get_mut("rows") {
+                                    rows.push(row);
+                                }
+                                prev.bottom = b.bottom;
+                            } else {
+                                out.push(b);
+                            }
+                        }
+                    }
+                    i = end + 1;
+                    continue;
+                }
+                Kind::Seg(s)
+                    if s.horizontal() && (s.x1 - s.x0) > 0.9 * (area.right - area.left) =>
+                {
+                    // A rule across the area (`line(length: 100%)`): an empty paragraph with a bottom border.
+                    let inline = pending.iter().any(|&p| matches!(&self.items[p].kind, Kind::Text(t) if (t.y - s.y0).abs() < t.size));
+                    if !inline {
+                        self.flush(&mut pending, &mut out, area, heading);
+                        let mut json = Map::new();
+                        json.insert("type".into(), json!("rule"));
+                        json.insert("thickness".into(), json!(round(s.thickness)));
+                        json.insert("color".into(), json!(s.color));
+                        json.insert("indent".into(), json!({ "left": round(s.x0 - area.left), "right": round(area.right - s.x1) }));
+                        out.push(Block {
+                            page: self.items[id].page,
+                            end_page: self.items[id].page,
+                            top: s.y0 - s.thickness / 2.0,
+                            bottom: s.y0 + s.thickness / 2.0,
+                            json,
+                        });
+                        i += 1;
+                        continue;
+                    }
+                    pending.push(id);
+                }
+                Kind::Drawing(rect) if !self.in_line(&pending, *rect, self.items[id].page) => {
+                    self.flush(&mut pending, &mut out, area, heading);
+                    let mut json = Map::new();
+                    json.insert("type".into(), json!("drawing"));
+                    json.insert("placeholder".into(), json!(true));
+                    json.insert("width".into(), json!(round(rect.w)));
+                    json.insert("height".into(), json!(round(rect.h)));
+                    json.insert("indent".into(), json!(round(rect.x - area.left)));
+                    out.push(Block {
+                        page: self.items[id].page,
+                        end_page: self.items[id].page,
+                        top: rect.y,
+                        bottom: rect.bottom(),
+                        json,
+                    });
+                }
+                _ => pending.push(id),
+            }
+            i += 1;
+        }
+        self.flush(&mut pending, &mut out, area, heading);
+        out
+    }
+
+    fn in_line(&self, pending: &[usize], rect: Rect, page: usize) -> bool {
+        pending.iter().any(|&p| match &self.items[p].kind {
+            Kind::Text(t) => {
+                self.items[p].page == page && (t.y - rect.bottom()).abs() < 2.0 * t.size
+            }
+            _ => false,
+        })
+    }
+
+    /// Index (into `ids`) of the end tag of the element started at `ids[i]`, or the last item.
+    fn end_of(&self, ids: &[usize], i: usize, elem: &Content) -> usize {
+        let Some(loc) = elem.location() else { return i };
+        for (j, &id) in ids.iter().enumerate().skip(i + 1) {
+            if let Kind::End(l) = &self.items[id].kind {
+                if *l == loc {
+                    return j;
+                }
+            }
+        }
+        ids.len() - 1
+    }
+
+    /// The paragraph in `pending`, if it has text.
+    fn flush(
+        &mut self,
+        pending: &mut Vec<usize>,
+        out: &mut Vec<Block>,
+        area: Area,
+        heading: Option<usize>,
+    ) {
+        if pending.is_empty() {
+            return;
+        }
+        let ids = std::mem::take(pending);
+        out.extend(self.paragraphs(&ids, area, heading));
+    }
+
+    /// Lines from text items, links and underline strokes.
+    fn lines(&mut self, ids: &[usize]) -> Vec<Line> {
+        let mut texts: Vec<(usize, Text)> = Vec::new();
+        let mut segs: Vec<(usize, Seg)> = Vec::new();
+        let mut links: Vec<(usize, Rect, String)> = Vec::new();
+        let mut boxes: Vec<(usize, Rect)> = Vec::new();
+        let mut equation = 0usize;
+        let mut eq_start: Option<(usize, f64)> = None;
+        for &id in ids {
+            let page = self.items[id].page;
+            match &self.items[id].kind {
+                Kind::Text(t) if equation == 0 => texts.push((page, t.clone())),
+                Kind::Text(t) if equation > 0 => {
+                    // Math: a placeholder covering the equation's items.
+                    if let Some((_, x0)) = eq_start {
+                        eq_start = Some((page, x0.min(t.x)));
+                    }
+                    boxes.push((
+                        page,
+                        Rect {
+                            x: t.x,
+                            y: t.y - t.size,
+                            w: t.width,
+                            h: t.size * 1.2,
+                        },
+                    ));
+                }
+                Kind::Start(elem, at) if elem.func().name() == "equation" => {
+                    equation += 1;
+                    eq_start = Some((page, at.x.to_pt()));
+                }
+                Kind::End(_) if equation > 0 => {
+                    // Ends are matched loosely: equations don't nest.
+                    equation = 0;
+                }
+                Kind::Seg(s) if s.horizontal() => segs.push((page, s.clone())),
+                Kind::Link(r, url) => links.push((page, *r, url.clone())),
+                Kind::Drawing(r) => boxes.push((page, *r)),
+                _ => {}
+            }
+        }
+        // Merge math pieces into placeholders per baseline-ish band.
+        let mut lines: Vec<Line> = Vec::new();
+        let mut atoms: Vec<(usize, f64, f64, f64, Option<Text>, Option<Rect>)> = Vec::new(); // page, x, w, baseline
+        for (page, t) in &texts {
+            atoms.push((*page, t.x, t.width, t.y, Some(t.clone()), None));
+        }
+        // Placeholders: attach to the line whose baseline is inside their box.
+        let mut placeholders: Vec<(usize, Rect)> = Vec::new();
+        for (page, r) in boxes {
+            if let Some(last) = placeholders.last_mut() {
+                if last.0 == page
+                    && r.x <= last.1.right() + 1.0
+                    && r.y < last.1.bottom()
+                    && r.bottom() > last.1.y
+                {
+                    let x0 = last.1.x.min(r.x);
+                    let y0 = last.1.y.min(r.y);
+                    let x1 = last.1.right().max(r.right());
+                    let y1 = last.1.bottom().max(r.bottom());
+                    last.1 = Rect {
+                        x: x0,
+                        y: y0,
+                        w: x1 - x0,
+                        h: y1 - y0,
+                    };
+                    continue;
+                }
+            }
+            placeholders.push((page, r));
+        }
+        for (page, r) in placeholders {
+            let baseline = texts
+                .iter()
+                .filter(|(p, t)| *p == page && t.y >= r.y - 1.0 && t.y <= r.bottom() + 1.0)
+                .map(|(_, t)| t.y)
+                .next()
+                .unwrap_or(r.bottom());
+            atoms.push((page, r.x, r.w, baseline, None, Some(r)));
+        }
+        // Atoms in document order by (page, baseline band, x) — text items keep their logical order within a line.
+        let mut order: Vec<usize> = (0..atoms.len()).collect();
+        order.sort_by(|&a, &b| {
+            let (pa, ya) = (atoms[a].0, atoms[a].3);
+            let (pb, yb) = (atoms[b].0, atoms[b].3);
+            pa.cmp(&pb)
+                .then(if (ya - yb).abs() < 0.6 {
+                    std::cmp::Ordering::Equal
+                } else {
+                    ya.partial_cmp(&yb).unwrap()
+                })
+                .then(atoms[a].1.partial_cmp(&atoms[b].1).unwrap())
+        });
+        for k in order {
+            let (page, x, w, baseline, text, rect) = atoms[k].clone();
+            let new_line = match lines.last() {
+                Some(l) => l.page != page || (l.baseline - baseline).abs() >= 0.6,
+                None => true,
+            };
+            if new_line {
+                let first_word = text.as_ref().map(|t| t.first_word).unwrap_or(w);
+                lines.push(Line {
+                    page,
+                    baseline,
+                    size: 0.0,
+                    left: x,
+                    right: x + w,
+                    runs: Vec::new(),
+                    tall: false,
+                    top: f64::MAX,
+                    bottom: f64::MIN,
+                    first_word,
+                });
+            }
+            let line = lines.last_mut().unwrap();
+            // A gap since the last atom: an exact-width space.
+            let gap = x - line.right;
+            let (font, size) = match &text {
+                Some(t) => (self.fonts.get(&t.font), t.size),
+                None => (last_font(&line.runs).unwrap_or(0), 11.0),
+            };
+            if !line.runs.is_empty() && gap > 0.05 {
+                let underline = underlined(&segs, page, line.right, x, baseline);
+                line.runs.push(Run::Gap {
+                    width: gap,
+                    underline,
+                    font,
+                    size,
+                });
+            }
+            match (text, rect) {
+                (Some(t), _) => {
+                    let underline = underlined(&segs, page, t.x, t.x + t.width, baseline);
+                    let link = links
+                        .iter()
+                        .find(|(p, r, _)| {
+                            *p == page && r.contains(t.x + t.width / 2.0, t.y - t.size / 3.0)
+                        })
+                        .map(|l| l.2.clone());
+                    line.size = line.size.max(t.size);
+                    line.top = line.top.min(t.y - TOP * t.size);
+                    line.bottom = line.bottom.max(t.y + BOTTOM * t.size);
+                    push_text(
+                        &mut line.runs,
+                        t.text,
+                        font,
+                        t.size,
+                        t.color,
+                        underline,
+                        link,
+                    );
+                }
+                (None, Some(r)) => {
+                    line.runs.push(Run::Placeholder {
+                        width: r.w,
+                        font,
+                        size,
+                    });
+                    if r.y < baseline - TOP * line.size.max(11.0) - 0.5
+                        || r.bottom() > baseline + BOTTOM * line.size.max(11.0) + 0.5
+                    {
+                        line.tall = true;
+                    }
+                    line.top = line.top.min(r.y);
+                    line.bottom = line.bottom.max(r.bottom());
+                }
+                _ => {}
+            }
+            line.left = line.left.min(x);
+            line.right = line.right.max(x + w);
+        }
+        // Underlines past the last atom (a blank at the end of a line).
+        for line in lines.iter_mut() {
+            if let Some((_, s)) = segs.iter().find(|(p, s)| {
+                *p == line.page
+                    && s.x1 > line.right + 0.5
+                    && s.y0 > line.baseline - 1.0
+                    && s.y0 < line.baseline + 0.6 * line.size.max(8.0)
+                    && s.x0 < line.right + 0.5
+            }) {
+                let font = last_font(&line.runs).unwrap_or(0);
+                line.runs.push(Run::Gap {
+                    width: s.x1 - line.right,
+                    underline: true,
+                    font,
+                    size: line.size.max(8.0),
+                });
+                line.right = s.x1;
+            }
+        }
+        lines.retain(|l| !l.runs.is_empty());
+        for l in lines.iter_mut() {
+            if l.size == 0.0 {
+                l.size = 11.0;
+            }
+            if l.top == f64::MAX {
+                l.top = l.baseline - TOP * l.size;
+                l.bottom = l.baseline + BOTTOM * l.size;
+            }
+        }
+        lines
+    }
+
+    /// Paragraphs from items: one, or one per run of lines Typst was told to break (`\`) when their pitches
+    /// differ, as Word's exact spacing is one pitch per paragraph; lines of one pitch get a line break.
+    fn paragraphs(&mut self, ids: &[usize], area: Area, heading: Option<usize>) -> Vec<Block> {
+        let lines = self.lines(ids);
+        if lines.len() < 2 {
+            return self
+                .paragraph_of(lines, ids, area, heading)
+                .into_iter()
+                .collect();
+        }
+        let width = area.right - area.left;
+        let mut groups: Vec<Vec<Line>> = vec![Vec::new()];
+        let mut breaks: Vec<bool> = Vec::new();
+        let n = lines.len();
+        let mut iter = lines.into_iter().peekable();
+        let mut k = 0;
+        while let Some(line) = iter.next() {
+            let forced = match iter.peek() {
+                // The next line's first word would have fitted after this one: Typst didn't choose to break.
+                Some(next) if next.page == line.page => {
+                    // Room left on the line: on its right, or on both sides when it is centered.
+                    let centered =
+                        ((line.left - area.left) - (area.right - line.right)).abs() < 1.0;
+                    let room = if centered {
+                        width - (line.right - line.left)
+                    } else {
+                        area.right - line.right
+                    };
+                    room > next.first_word + 1.0 && (line.right - line.left) < width - 1.0
+                }
+                _ => false,
+            };
+            let next_size = iter.peek().map(|n| n.size);
+            groups.last_mut().unwrap().push(line);
+            k += 1;
+            if forced && k < n {
+                let same = next_size.is_some_and(|s| {
+                    (s - groups.last().unwrap().last().unwrap().size).abs() < 0.01
+                });
+                if same {
+                    breaks.push(true);
+                } else {
+                    groups.push(Vec::new());
+                    breaks.push(false);
+                }
+            } else if k < n {
+                breaks.push(false);
+            }
+        }
+        let mut out = Vec::new();
+        let mut b = 0;
+        for mut group in groups {
+            // Lines broken on purpose within a group end with a line break.
+            let count = group.len();
+            for (j, line) in group.iter_mut().enumerate() {
+                if j + 1 < count && breaks.get(b).copied().unwrap_or(false) {
+                    line.runs.push(Run::Break);
+                }
+                b += 1;
+            }
+            out.extend(self.paragraph_of(group, ids, area, heading));
+        }
+        out
+    }
+
+    /// A paragraph from its lines.
+    fn paragraph_of(
+        &mut self,
+        mut lines: Vec<Line>,
+        ids: &[usize],
+        area: Area,
+        heading: Option<usize>,
+    ) -> Option<Block> {
+        let list: Option<Json> = None;
+        // A gap that takes what's left of a line (`h(1fr)`), so its last words end at the right edge: a tab to a
+        // right tab stop there, as Word writes it. An exact gap would fill the line to a hundredth of a point, and an
+        // engine measuring a hair wider would push the last words onto a line of their own.
+        let mut right_tab = false;
+        for line in lines.iter_mut() {
+            if (line.right - area.right).abs() > 0.6 {
+                continue;
+            }
+            if let Some(k) = line.runs.iter().rposition(
+                |r| matches!(r, Run::Gap { width, underline: false, .. } if *width >= 2.0),
+            ) {
+                let after_text = line.runs[k + 1..]
+                    .iter()
+                    .any(|r| matches!(r, Run::Text { .. }));
+                if after_text {
+                    line.runs[k] = Run::Tab;
+                    right_tab = true;
+                }
+            }
+        }
+        // A line with only blank, space-like runs can't hold a paragraph of its own unless it underlines something.
+        if lines.is_empty() {
+            // An empty paragraph that only draws strokes (a cell's blank line): one gap run.
+            let segs: Vec<(usize, Seg)> = ids
+                .iter()
+                .filter_map(|&id| match &self.items[id].kind {
+                    Kind::Seg(s) if s.horizontal() => Some((self.items[id].page, s.clone())),
+                    _ => None,
+                })
+                .collect();
+            let (page, s) = segs.first()?.clone();
+            let size = 11.0;
+            let baseline = s.y0 - BOTTOM * size;
+            lines.push(Line {
+                page,
+                baseline,
+                size,
+                left: s.x0,
+                right: s.x1,
+                runs: vec![Run::Gap {
+                    width: s.x1 - s.x0,
+                    underline: true,
+                    font: 0,
+                    size,
+                }],
+                tall: false,
+                first_word: s.x1 - s.x0,
+                top: baseline - TOP * size,
+                bottom: baseline + BOTTOM * size,
+            });
+            if self.fonts.data.is_empty() {
+                return None;
+            }
+        }
+        let first = &lines[0];
+        let width = area.right - area.left;
+        let lefts: Vec<f64> = lines.iter().map(|l| l.left - area.left).collect();
+        let rights: Vec<f64> = lines.iter().map(|l| area.right - l.right).collect();
+        let centered = !right_tab
+            && lines
+                .iter()
+                .all(|l| ((l.left - area.left) - (area.right - l.right)).abs() < 1.0)
+            && lefts[0] > 2.0;
+        let right_aligned = !right_tab
+            && !centered
+            && rights.iter().all(|r| r.abs() < 1.0)
+            && lefts.iter().all(|l| *l > 2.0);
+        let (align, indent_left, first_line) = if centered {
+            ("center", 0.0, 0.0)
+        } else if right_aligned {
+            ("end", 0.0, 0.0)
+        } else {
+            let rest = if lefts.len() > 1 {
+                lefts[1..].iter().cloned().fold(f64::MAX, f64::min)
+            } else {
+                lefts[0]
+            };
+            let indent = rest.min(lefts[0]).max(0.0);
+            ("start", indent, lefts[0] - indent)
+        };
+        let _ = width;
+        let size = lines.iter().map(|l| l.size).fold(0.0, f64::max);
+        let tall = lines.iter().any(|l| l.tall);
+        let mut runs: Vec<Json> = Vec::new();
+        for (k, line) in lines.iter().enumerate() {
+            for run in &line.runs {
+                runs.push(run_json(run));
+            }
+            // Lines join as they are: a line keeps the space it broke at.
+            let _ = k;
+        }
+        let mut json = Map::new();
+        json.insert("type".into(), json!("p"));
+        json.insert("align".into(), json!(align));
+        json.insert(
+            "indent".into(),
+            json!({ "left": round(indent_left), "firstLine": round(first_line) }),
+        );
+        json.insert("pitch".into(), json!(round(PITCH * size)));
+        if tall {
+            json.insert("atLeast".into(), json!(true));
+        }
+        if right_tab {
+            json.insert(
+                "tabs".into(),
+                json!([{ "pos": round(area.right - area.left), "align": "end" }]),
+            );
+        }
+        json.insert("lines".into(), json!(lines.len()));
+        if let Some(level) = heading {
+            json.insert("heading".into(), json!(level));
+        }
+        if let Some(list) = list {
+            json.insert("list".into(), list);
+        }
+        json.insert("runs".into(), Json::Array(runs));
+        let last = lines.last().unwrap();
+        Some(Block {
+            page: first.page,
+            end_page: last.page,
+            top: first.top.min(first.baseline - TOP * first.size),
+            bottom: last.bottom.max(last.baseline + BOTTOM * last.size),
+            json,
+        })
+    }
+
+    /// A list: one paragraph per item's first paragraph, numbered; later paragraphs and nested lists indented.
+    fn list(&mut self, ids: &[usize], area: Area) -> Vec<Block> {
+        let mut out = Vec::new();
+        let mut items: Vec<(Vec<usize>, Vec<usize>)> = Vec::new();
+        let mut depth = 0usize;
+        let mut mode = 0; // 1: label, 2: body
+        let mut stack: Vec<Location> = Vec::new();
+        for &id in ids {
+            match &self.items[id].kind {
+                Kind::Start(elem, _) if depth == 0 => {
+                    if let Some(marker) = elem.to_packed::<PdfMarkerTag>() {
+                        match marker.kind {
+                            PdfMarkerTagKind::ListItemLabel => {
+                                items.push((Vec::new(), Vec::new()));
+                                mode = 1;
+                                if let Some(l) = elem.location() {
+                                    stack.push(l);
+                                }
+                                continue;
+                            }
+                            PdfMarkerTagKind::ListItemBody | PdfMarkerTagKind::TermsItemBody => {
+                                if items.is_empty() || !items.last().unwrap().1.is_empty() {
+                                    items.push((Vec::new(), Vec::new()));
+                                }
+                                mode = 2;
+                                if let Some(l) = elem.location() {
+                                    stack.push(l);
+                                }
+                                continue;
+                            }
+                            _ => {}
+                        }
+                    }
+                    if mode == 2 {
+                        if let Some(last) = items.last_mut() {
+                            last.1.push(id);
+                        }
+                    }
+                    if matches!(classify(elem, Point::zero(), 0), Node::List) {
+                        depth += 1;
+                    }
+                }
+                Kind::End(loc) if depth == 0 && stack.last() == Some(loc) => {
+                    stack.pop();
+                    mode = 0;
+                }
+                kind => {
+                    if let Kind::End(_) = kind {
+                        // A nested list's end.
+                        if depth > 0 {
+                            if let Some(last) = items.last_mut() {
+                                last.1.push(id);
+                            }
+                            if self.ends_list(id, ids) {
+                                depth -= 1;
+                            }
+                            continue;
+                        }
+                    }
+                    match (mode, items.last_mut()) {
+                        (1, Some(item)) => item.0.push(id),
+                        (2, Some(item)) => item.1.push(id),
+                        (_, Some(item)) if depth > 0 => item.1.push(id),
+                        _ => {}
+                    }
+                }
+            }
+        }
+        if items.is_empty() {
+            return self.flow(ids, area, false);
+        }
+        // Labels: their text and where they sit.
+        let labels: Vec<(String, f64, f64)> = items
+            .iter()
+            .map(|(label, _)| {
+                let mut text = String::new();
+                let (mut x0, mut x1) = (f64::MAX, f64::MIN);
+                for &id in label {
+                    if let Kind::Text(t) = &self.items[id].kind {
+                        text.push_str(&t.text);
+                        x0 = x0.min(t.x);
+                        x1 = x1.max(t.x + t.width);
+                    }
+                }
+                (text, x0, x1)
+            })
+            .collect();
+        // The list's slot, taken before its items: a list nested in one takes the next.
+        let id = self.lists.len();
+        self.lists.push(Json::Null);
+        let numbering = numbering(&labels.iter().map(|l| l.0.clone()).collect::<Vec<_>>());
+        let lefts: Vec<f64> = labels
+            .iter()
+            .filter(|l| l.1 != f64::MAX)
+            .map(|l| l.1)
+            .collect();
+        let rights: Vec<f64> = labels
+            .iter()
+            .filter(|l| l.2 != f64::MIN)
+            .map(|l| l.2)
+            .collect();
+        let same_left = lefts.windows(2).all(|w| (w[0] - w[1]).abs() < 0.3);
+        let label_left = lefts.iter().cloned().fold(f64::MAX, f64::min);
+        let label_right = rights.iter().cloned().fold(f64::MIN, f64::max);
+        let mut body_left = f64::MAX;
+        for (k, (_, body)) in items.iter().enumerate() {
+            let flow = self.flow(body, area, false);
+            let mut first = true;
+            for mut b in flow {
+                if first && b.json.get("type") == Some(&json!("p")) {
+                    let left = area.left + b.json["indent"]["left"].as_f64().unwrap_or(0.0);
+                    body_left = body_left.min(left);
+                    b.json
+                        .insert("list".into(), json!({ "id": id, "label": labels[k].0 }));
+                    first = false;
+                }
+                out.push(b);
+            }
+        }
+        self.lists[id] = json!({
+            "format": numbering.0,
+            "text": numbering.1,
+            "start": numbering.2,
+            "align": if same_left { "start" } else { "end" },
+            "labelLeft": round(label_left - area.left),
+            "labelRight": round(label_right - area.left),
+            "bodyLeft": round(body_left - area.left),
+        });
+        out
+    }
+
+    fn ends_list(&self, id: usize, ids: &[usize]) -> bool {
+        // Whether the end tag at `id` closes a list started among `ids`.
+        let Kind::End(loc) = &self.items[id].kind else {
+            return false;
+        };
+        ids.iter().any(|&j| matches!(&self.items[j].kind, Kind::Start(e, _) if e.location() == Some(*loc) && matches!(classify(e, Point::zero(), 0), Node::List)))
+    }
+
+    /// A placeholder for something the model can't express yet (a display equation): an empty paragraph as tall.
+    fn placeholder_block(&mut self, ids: &[usize], area: Area) -> Option<Block> {
+        let mut r: Option<(usize, Rect)> = None;
+        for &id in ids {
+            let page = self.items[id].page;
+            let b = match &self.items[id].kind {
+                Kind::Text(t) => Rect {
+                    x: t.x,
+                    y: t.y - t.size,
+                    w: t.width,
+                    h: t.size * 1.25,
+                },
+                Kind::Seg(s) => Rect {
+                    x: s.x0,
+                    y: s.y0,
+                    w: s.x1 - s.x0,
+                    h: (s.y1 - s.y0).max(0.1),
+                },
+                Kind::Group(g, _) => *g,
+                _ => continue,
+            };
+            r = Some(match r {
+                None => (page, b),
+                Some((p, a)) => {
+                    let x0 = a.x.min(b.x);
+                    let y0 = a.y.min(b.y);
+                    (
+                        p,
+                        Rect {
+                            x: x0,
+                            y: y0,
+                            w: a.right().max(b.right()) - x0,
+                            h: a.bottom().max(b.bottom()) - y0,
+                        },
+                    )
+                }
+            });
+        }
+        let (page, r) = r?;
+        let mut json = Map::new();
+        json.insert("type".into(), json!("drawing"));
+        json.insert("width".into(), json!(round(r.w)));
+        json.insert("height".into(), json!(round(r.h)));
+        json.insert("indent".into(), json!(round(r.x - area.left)));
+        json.insert("math".into(), json!(true));
+        json.insert("placeholder".into(), json!(true));
+        Some(Block {
+            page,
+            end_page: page,
+            top: r.y,
+            bottom: r.bottom(),
+            json,
+        })
+    }
+
+    /// A framed or filled block as a one-cell table.
+    fn framed(&mut self, ids: &[usize], rect: Rect, area: Area) -> Option<Block> {
+        let page = self.items[ids[0]].page;
+        let mut segs = Vec::new();
+        let mut fill = None;
+        let mut inner = Vec::new();
+        let mut leading = true;
+        for &id in &ids[1..ids.len().saturating_sub(1)] {
+            match &self.items[id].kind {
+                Kind::Seg(s) if leading => segs.push(s.clone()),
+                Kind::Fill(r, c) if leading && (r.w - rect.w).abs() < 1.0 => fill = Some(c.clone()),
+                _ => {
+                    leading = false;
+                    inner.push(id);
+                }
+            }
+        }
+        let borders = sides_json(&segs, rect);
+        // The inset on the sides: where the content's leftmost text starts (blocks are drawn with even insets).
+        let inset_left = inner
+            .iter()
+            .filter_map(|&id| match &self.items[id].kind {
+                Kind::Text(t) => Some(t.x - rect.x),
+                _ => None,
+            })
+            .fold(f64::MAX, f64::min);
+        let inset_left = if inset_left == f64::MAX {
+            0.0
+        } else {
+            inset_left.max(0.0)
+        };
+        let blocks = self.flow(
+            &inner,
+            Area {
+                left: rect.x + inset_left,
+                right: rect.right() - inset_left,
+            },
+            false,
+        );
+        let first_top = blocks.first().map(|b| b.top).unwrap_or(rect.y);
+        let last_bottom = blocks.last().map(|b| b.bottom).unwrap_or(rect.bottom());
+        let thickness = |side: &str| {
+            borders
+                .get(side)
+                .and_then(|b| b.get("width"))
+                .and_then(|w| w.as_f64())
+                .unwrap_or(0.0)
+        };
+        // Engines add a table's borders to its height, where Typst draws its strokes over the inset: a one-row
+        // table's top and bottom borders count in full (between rows, a border is shared, #118's spike).
+        let inset = Sides {
+            left: (inset_left - thickness("left") / 2.0).max(0.0),
+            right: (inset_left - thickness("right") / 2.0).max(0.0),
+            top: (first_top - rect.y - thickness("top")).max(0.0),
+            bottom: (rect.bottom() - last_bottom - thickness("bottom")).max(0.0),
+        };
+        let blocks = self.with_gaps_from(blocks, first_top);
+        let mut blocks: Vec<Json> = blocks.into_iter().map(|b| Json::Object(b.json)).collect();
+        // Nothing in it (a ruled line, an empty box): its height held by an empty paragraph.
+        let mut inset = inset;
+        if blocks.is_empty() {
+            let height = (rect.h - thickness("top") / 2.0 - thickness("bottom") / 2.0).max(0.05);
+            blocks.push(json!({ "type": "drawing", "width": round(rect.w - 2.0 * inset_left), "height": round(height), "indent": 0.0, "before": 0.0 }));
+            inset.top = 0.0;
+            inset.bottom = 0.0;
+        }
+        let mut cell = Map::new();
+        cell.insert("col".into(), json!(0));
+        cell.insert("blocks".into(), Json::Array(blocks));
+        cell.insert("margins".into(), sides(inset));
+        cell.insert("borders".into(), borders);
+        if let Some(f) = fill {
+            cell.insert("fill".into(), json!(f));
+        }
+        let mut json = Map::new();
+        json.insert("type".into(), json!("table"));
+        json.insert("framed".into(), json!(true));
+        json.insert("indent".into(), json!(round(rect.x - area.left)));
+        json.insert("columns".into(), json!([round(rect.w)]));
+        json.insert(
+            "rows".into(),
+            json!([{ "cantSplit": true, "cells": [Json::Object(cell)] }]),
+        );
+        Some(Block {
+            page,
+            end_page: page,
+            top: rect.y,
+            bottom: rect.bottom(),
+            json,
+        })
+    }
+
+    /// A table or grid: columns from where cells start, rows likewise, each cell's blocks.
+    fn table(&mut self, ids: &[usize], area: Area, node: Node) -> Option<Block> {
+        let Node::Table {
+            at,
+            page,
+            grid,
+            gutters,
+        } = node
+        else {
+            return None;
+        };
+        // The grid's frame on each page it is on: the first group there at its left edge.
+        let mut frames: HashMap<usize, Rect> = HashMap::new();
+        for &id in &ids[1..] {
+            if let Kind::Group(r, _) = &self.items[id].kind {
+                if (r.x - at.x.to_pt()).abs() < 0.5 {
+                    frames.entry(self.items[id].page).or_insert(*r);
+                }
+            }
+        }
+        let frame = frames.get(&page).copied();
+        // Cells, and what is drawn outside them (strokes, fills).
+        let mut cells: Vec<(Node, Vec<usize>)> = Vec::new();
+        let mut segs = Vec::new();
+        let mut fills = Vec::new();
+        let mut open: Option<Location> = None;
+        let mut depth = 0usize;
+        for &id in &ids[1..] {
+            match &self.items[id].kind {
+                Kind::Start(elem, at) if open.is_none() => {
+                    let node = classify(elem, *at, self.items[id].page);
+                    if let Node::Cell { .. } = node {
+                        open = elem.location();
+                        cells.push((node, Vec::new()));
+                        continue;
+                    }
+                }
+                Kind::End(loc) if open.as_ref() == Some(loc) && depth == 0 => {
+                    open = None;
+                    continue;
+                }
+                Kind::Seg(s) if open.is_none() => segs.push(s.clone()),
+                Kind::Fill(r, c) if open.is_none() => fills.push((*r, c.clone())),
+                _ => {}
+            }
+            if open.is_some() {
+                if let Some(cell) = cells.last_mut() {
+                    cell.1.push(id);
+                }
+            }
+            let _ = &mut depth;
+        }
+        if cells.is_empty() {
+            return None;
+        }
+        let ncols = cells
+            .iter()
+            .map(|(n, _)| {
+                if let Node::Cell { x, colspan, .. } = n {
+                    x + colspan
+                } else {
+                    0
+                }
+            })
+            .max()
+            .unwrap_or(1);
+        let nrows = cells
+            .iter()
+            .map(|(n, _)| {
+                if let Node::Cell { y, rowspan, .. } = n {
+                    y + rowspan
+                } else {
+                    0
+                }
+            })
+            .max()
+            .unwrap_or(1);
+        let left = at.x.to_pt();
+        let right = frame.map(|f| f.right()).unwrap_or(area.right);
+        // Column starts: from cells that start in each column.
+        let mut starts: Vec<Option<f64>> = vec![None; ncols + 1];
+        for (n, _) in &cells {
+            if let Node::Cell { at, x, .. } = n {
+                starts[*x] = Some(at.x.to_pt());
+            }
+        }
+        starts[0] = Some(left);
+        starts[ncols] = Some(
+            right
+                + gutters
+                    .0
+                    .get(ncols.saturating_sub(1))
+                    .copied()
+                    .unwrap_or(0.0)
+                    * 0.0,
+        );
+        let mut starts = fill_gaps(starts);
+        // Columns run left to right: a start out of order (a cell drawn elsewhere) takes the room evenly.
+        for c in 1..starts.len() {
+            if starts[c] < starts[c - 1] + 1.0 {
+                starts[c] = starts[c - 1] + 1.0;
+            }
+        }
+        // Gutters sit between tracks: none after the last.
+        let col_gutter = |c: usize| {
+            if c + 1 < ncols {
+                gutters.0.get(c).copied().unwrap_or(0.0)
+            } else {
+                0.0
+            }
+        };
+        let widths: Vec<f64> = (0..ncols).map(|c| starts[c + 1] - starts[c]).collect();
+        // Rows: their tops, per page, from the cells that start them.
+        let mut row_top: Vec<Option<(usize, f64)>> = vec![None; nrows];
+        for (n, _) in &cells {
+            if let Node::Cell { at, y, page, .. } = n {
+                if row_top[*y].is_none() {
+                    row_top[*y] = Some((*page, at.y.to_pt()));
+                }
+            }
+        }
+        let frame_bottom = |p: usize| frames.get(&p).map(|f| f.bottom());
+        let row_gutter = |r: usize| {
+            if r + 1 < nrows {
+                gutters.1.get(r).copied().unwrap_or(0.0)
+            } else {
+                0.0
+            }
+        };
+        let row_height = |r: usize| -> f64 {
+            let Some((p, top)) = row_top[r] else {
+                return 0.0;
+            };
+            match row_top.get(r + 1).copied().flatten() {
+                Some((q, next)) if q == p => next - top - row_gutter(r),
+                _ => frame_bottom(p).map(|b| b - top).unwrap_or(0.0).max(0.0),
+            }
+        };
+        let mut rows: Vec<Vec<Json>> = vec![Vec::new(); nrows];
+        let mut first_bottom = at.y.to_pt();
+        let mut last_page = page;
+        let mut last_bottom = at.y.to_pt();
+        // Each cell's blocks and where its content sits, before the row's margins are known.
+        struct Laid {
+            x: usize,
+            y: usize,
+            colspan: usize,
+            rowspan: usize,
+            inset: Sides<f64>,
+            valign: &'static str,
+            border: Json,
+            /// Border widths on the left and right: engines draw them inside the cell, Typst over its inset.
+            side_borders: (f64, f64),
+            fill: Option<String>,
+            blocks: Vec<Block>,
+            /// The content's distance from the cell's top and bottom edges, inside the borders.
+            above: f64,
+            below: f64,
+        }
+        let mut laid: Vec<Laid> = Vec::new();
+        for (n, cell_ids) in cells.clone() {
+            let Node::Cell {
+                at: cat,
+                x,
+                y,
+                colspan,
+                rowspan,
+                inset,
+                valign,
+                page: cpage,
+            } = n
+            else {
+                continue;
+            };
+            let cx = cat.x.to_pt();
+            let cy = cat.y.to_pt();
+            let cw = starts[x + colspan] - starts[x] - col_gutter(x + colspan - 1);
+            let ch: f64 = (y..y + rowspan).map(row_height).sum::<f64>()
+                + (y..y + rowspan - 1).map(row_gutter).sum::<f64>();
+            let cell_rect = Rect {
+                x: cx,
+                y: cy,
+                w: cw,
+                h: ch,
+            };
+            let content = Area {
+                left: cx + inset.left,
+                right: cx + cw - inset.right,
+            };
+            // A stroke along the cell's top or bottom edge drawn by its content (a box with a bottom stroke, as
+            // edu's student fields) is the cell's border: the row keeps its height.
+            let mut edge_segs = Vec::new();
+            let cell_ids: Vec<usize> = cell_ids
+                .into_iter()
+                .filter(|&id| match &self.items[id].kind {
+                    Kind::Seg(s)
+                        if s.horizontal()
+                            && s.x1 - s.x0 > 0.9 * cw
+                            && ((s.y0 - (cy + ch)).abs() < 4.0 || (s.y0 - cy).abs() < 1.0) =>
+                    {
+                        let edge = if (s.y0 - cy).abs() < 1.0 { cy } else { cy + ch };
+                        edge_segs.push(Seg {
+                            y0: edge,
+                            y1: edge,
+                            ..s.clone()
+                        });
+                        false
+                    }
+                    _ => true,
+                })
+                .collect();
+            let blocks = self.flow(&cell_ids, content, false);
+            let content_top = blocks.first().map(|b| b.top).unwrap_or(cy + inset.top);
+            let content_bottom = blocks
+                .iter()
+                .filter(|b| b.page == blocks[0].page)
+                .map(|b| b.bottom)
+                .fold(content_top, f64::max);
+            let blocks = self.with_gaps_from(blocks, content_top);
+            let mut all = segs.clone();
+            all.extend(edge_segs);
+            let border = sides_json(&all, cell_rect);
+            let thickness = |side: &str| {
+                border
+                    .get(side)
+                    .and_then(|b| b.get("width"))
+                    .and_then(|w| w.as_f64())
+                    .unwrap_or(0.0)
+            };
+            let fill = fills
+                .iter()
+                .find(|(r, _)| (r.x - cx).abs() < 1.0 && (r.y - cy).abs() < 1.0)
+                .map(|f| f.1.clone());
+            // Engines add horizontal borders to the rows' heights, where Typst draws them over the inset: a border
+            // between rows is shared, half from each (#118's spike); the table's outer ones count in full.
+            let top_share = if y == 0 { 1.0 } else { 0.5 };
+            let bottom_share = if y + rowspan == nrows { 1.0 } else { 0.5 };
+            let above = (content_top - cy - thickness("top") * top_share).max(0.0);
+            let below = (cy + ch - content_bottom - thickness("bottom") * bottom_share).max(0.0);
+            if cpage == page {
+                first_bottom = first_bottom.max(cy + ch);
+            }
+            if cpage >= last_page {
+                if cpage > last_page {
+                    last_bottom = 0.0;
+                }
+                last_page = cpage;
+                last_bottom = last_bottom.max(cy + ch);
+            }
+            let side_borders = (thickness("left"), thickness("right"));
+            laid.push(Laid {
+                x,
+                y,
+                colspan,
+                rowspan,
+                inset,
+                valign,
+                border,
+                side_borders,
+                fill,
+                blocks,
+                above,
+                below,
+            });
+        }
+        // The margins above and below are the row's, the same in every cell: a row is as tall as its tallest content
+        // and its largest margins (LibreOffice takes the largest of any cell's for the whole row). They are the
+        // smallest gaps Typst left; a cell whose content sits lower gets the rest as space before it.
+        let mut row_above = vec![f64::MAX; nrows];
+        let mut row_below = vec![f64::MAX; nrows];
+        for c in &laid {
+            row_above[c.y] = row_above[c.y].min(c.above);
+            if c.rowspan == 1 {
+                row_below[c.y] = row_below[c.y].min(c.below);
+            }
+        }
+        let fix = |v: f64| if v == f64::MAX { 0.0 } else { v };
+        for c in laid {
+            let top = fix(row_above[c.y]);
+            let bottom = fix(row_below[c.y + c.rowspan - 1]);
+            let mut blocks = c.blocks;
+            if let Some(first) = blocks.first_mut() {
+                let before = first
+                    .json
+                    .get("before")
+                    .and_then(|b| b.as_f64())
+                    .unwrap_or(0.0);
+                first
+                    .json
+                    .insert("before".into(), json!(round(before + c.above - top)));
+            }
+            let mut cell = Map::new();
+            cell.insert("col".into(), json!(c.x));
+            if c.colspan > 1 {
+                cell.insert("span".into(), json!(c.colspan));
+            }
+            if c.rowspan > 1 {
+                cell.insert("rowSpan".into(), json!(c.rowspan));
+            }
+            cell.insert(
+                "margins".into(),
+                sides(Sides {
+                    left: (c.inset.left - c.side_borders.0 / 2.0).max(0.0),
+                    right: (c.inset.right - c.side_borders.1 / 2.0).max(0.0)
+                        + col_gutter(c.x + c.colspan - 1),
+                    top,
+                    bottom: bottom + row_gutter(c.y + c.rowspan - 1),
+                }),
+            );
+            cell.insert("borders".into(), c.border);
+            if let Some(f) = c.fill {
+                cell.insert("fill".into(), json!(f));
+            }
+            if c.valign != "top" {
+                cell.insert("valign".into(), json!(c.valign));
+            }
+            cell.insert(
+                "blocks".into(),
+                Json::Array(blocks.into_iter().map(|b| Json::Object(b.json)).collect()),
+            );
+            rows[c.y].push(Json::Object(cell));
+        }
+        let headers: Vec<usize> = Vec::new();
+        let rows: Vec<Json> = rows
+            .into_iter()
+            .enumerate()
+            .map(|(r, cells)| {
+                json!({
+                    "cantSplit": !grid,
+                    "header": headers.contains(&r),
+                    "cells": cells,
+                })
+            })
+            .collect();
+        let mut json = Map::new();
+        json.insert("type".into(), json!("table"));
+        json.insert("indent".into(), json!(round(left - area.left)));
+        json.insert(
+            "columns".into(),
+            json!(widths.iter().map(|w| round(*w)).collect::<Vec<_>>()),
+        );
+        json.insert("rows".into(), Json::Array(rows));
+        let bottom = frame_bottom(last_page).unwrap_or(last_bottom);
+        let _ = first_bottom;
+        Some(Block {
+            page,
+            end_page: last_page,
+            top: at.y.to_pt(),
+            bottom,
+            json,
+        })
+    }
+
+    /// Spaces before blocks in a cell: the first from the cell's content top.
+    fn with_gaps_from(&self, mut blocks: Vec<Block>, top: f64) -> Vec<Block> {
+        let mut prev: Option<(usize, f64)> = None;
+        for b in blocks.iter_mut() {
+            let before = match prev {
+                Some((p, bottom)) if p == b.page => b.top - bottom,
+                Some(_) => 0.0,
+                None => b.top - top,
+            };
+            b.json
+                .insert("before".into(), json!(round(before.max(0.0))));
+            prev = Some((b.end_page, b.bottom));
+        }
+        blocks
+    }
+}
+
+fn fill_gaps(starts: Vec<Option<f64>>) -> Vec<f64> {
+    let n = starts.len();
+    let mut out = vec![0.0; n];
+    let mut i = 0;
+    while i < n {
+        if let Some(v) = starts[i] {
+            out[i] = v;
+            i += 1;
+            continue;
+        }
+        // Spread missing starts evenly between known ones.
+        let prev = i - 1;
+        let mut next = i;
+        while starts[next].is_none() {
+            next += 1;
+        }
+        let (a, b) = (out[prev], starts[next].unwrap());
+        for k in i..next {
+            out[k] = a + (b - a) * (k - prev) as f64 / (next - prev) as f64;
+        }
+        i = next;
+    }
+    out
+}
+
+/// Index (into `ids`) of the `GroupEnd` matching the group at `ids[i]`.
+fn group_end(items: &[Item], ids: &[usize], i: usize) -> usize {
+    let mut depth = 0;
+    for (j, &id) in ids.iter().enumerate().skip(i) {
+        match items[id].kind {
+            Kind::Group(..) => depth += 1,
+            Kind::GroupEnd => {
+                depth -= 1;
+                if depth == 0 {
+                    return j;
+                }
+            }
+            _ => {}
+        }
+    }
+    ids.len() - 1
+}
+
+/// The borders on a rectangle's sides: the strokes that run along them.
+fn sides_json(segs: &[Seg], r: Rect) -> Json {
+    let mut out = Map::new();
+    for side in ["top", "right", "bottom", "left"] {
+        let found = segs.iter().find(|s| match side {
+            "top" | "bottom" => {
+                let y = if side == "top" { r.y } else { r.bottom() };
+                s.horizontal()
+                    && (s.y0 - y).abs() < 1.0
+                    && s.x0 <= r.x + r.w * 0.5
+                    && s.x1 >= r.x + r.w * 0.5
+            }
+            _ => {
+                let x = if side == "left" { r.x } else { r.right() };
+                !s.horizontal()
+                    && (s.x0 - x).abs() < 1.0
+                    && s.y0 <= r.y + r.h * 0.5
+                    && s.y1 >= r.y + r.h * 0.5
+            }
+        });
+        if let Some(s) = found {
+            out.insert(
+                side.into(),
+                json!({ "width": round(s.thickness), "color": s.color }),
+            );
+        }
+    }
+    Json::Object(out)
+}
+
+fn sides(s: Sides<f64>) -> Json {
+    json!({ "top": round(s.top), "right": round(s.right), "bottom": round(s.bottom), "left": round(s.left) })
+}
+
+fn underlined(segs: &[(usize, Seg)], page: usize, x0: f64, x1: f64, baseline: f64) -> bool {
+    let mid = (x0 + x1) / 2.0;
+    segs.iter().any(|(p, s)| {
+        *p == page
+            && s.x0 <= mid
+            && s.x1 >= mid
+            && s.y0 > baseline - 1.0
+            && s.y0 < baseline + 6.0
+            && s.thickness < 2.0
+    })
+}
+
+fn last_font(runs: &[Run]) -> Option<usize> {
+    runs.iter().rev().find_map(|r| match r {
+        Run::Text { font, .. } | Run::Gap { font, .. } | Run::Placeholder { font, .. } => {
+            Some(*font)
+        }
+        Run::Tab | Run::Break => None,
+    })
+}
+
+fn push_text(
+    runs: &mut Vec<Run>,
+    text: String,
+    font: usize,
+    size: f64,
+    color: String,
+    underline: bool,
+    link: Option<String>,
+) {
+    if let Some(Run::Text {
+        text: t,
+        font: f,
+        size: s,
+        color: c,
+        underline: u,
+        link: l,
+    }) = runs.last_mut()
+    {
+        if *f == font && (*s - size).abs() < 0.01 && *c == color && *u == underline && *l == link {
+            t.push_str(&text);
+            return;
+        }
+    }
+    runs.push(Run::Text {
+        text,
+        font,
+        size,
+        color,
+        underline,
+        link,
+    });
+}
+
+fn run_json(run: &Run) -> Json {
+    match run {
+        Run::Text {
+            text,
+            font,
+            size,
+            color,
+            underline,
+            link,
+        } => {
+            let mut m = Map::new();
+            m.insert("text".into(), json!(text));
+            m.insert("font".into(), json!(font));
+            m.insert("size".into(), json!(round(*size)));
+            if color != "000000" {
+                m.insert("color".into(), json!(color));
+            }
+            if *underline {
+                m.insert("underline".into(), json!(true));
+            }
+            if let Some(l) = link {
+                m.insert("link".into(), json!(l));
+            }
+            Json::Object(m)
+        }
+        Run::Gap {
+            width,
+            underline,
+            font,
+            size,
+        } => {
+            let mut m = Map::new();
+            m.insert("gap".into(), json!(round(*width)));
+            m.insert("font".into(), json!(font));
+            m.insert("size".into(), json!(round(*size)));
+            if *underline {
+                m.insert("underline".into(), json!(true));
+            }
+            Json::Object(m)
+        }
+        Run::Placeholder { width, font, size } => {
+            json!({ "gap": round(*width), "font": font, "size": round(*size), "placeholder": true })
+        }
+        Run::Tab => json!({ "tab": true }),
+        Run::Break => json!({ "break": true }),
+    }
+}
+
+/// A Word numbering for list labels: (format, level text, start), or a literal one when the labels follow no
+/// pattern Word has.
+fn numbering(labels: &[String]) -> (String, String, u32) {
+    let first = labels.first().map(|s| s.as_str()).unwrap_or("•");
+    let token_at = first.find(|c: char| c.is_ascii_alphanumeric());
+    let Some(at) = token_at else {
+        return ("bullet".into(), first.into(), 1);
+    };
+    let rest = &first[at..];
+    let end = rest
+        .find(|c: char| !c.is_ascii_alphanumeric())
+        .unwrap_or(rest.len());
+    let token = &rest[..end];
+    let (prefix, suffix) = (&first[..at], &rest[end..]);
+    let (format, start) = if let Ok(n) = token.parse::<u32>() {
+        ("decimal", n)
+    } else if let Some(n) = roman(token) {
+        (
+            if token.chars().all(|c| c.is_ascii_lowercase()) {
+                "lowerRoman"
+            } else {
+                "upperRoman"
+            },
+            n,
+        )
+    } else if token.len() == 1 {
+        let c = token.chars().next().unwrap();
+        (
+            if c.is_ascii_lowercase() {
+                "lowerLetter"
+            } else {
+                "upperLetter"
+            },
+            (c.to_ascii_lowercase() as u32) - ('a' as u32) + 1,
+        )
+    } else {
+        return ("none".into(), String::new(), 1);
+    };
+    // Letters that are also numerals: "i" after "h" is a letter. The first label decides; a list starting at "i" is
+    // Roman.
+    (format.into(), format!("{prefix}%1{suffix}"), start)
+}
+
+fn roman(s: &str) -> Option<u32> {
+    let up = s.to_ascii_uppercase();
+    if up.is_empty()
+        || !up.chars().all(|c| "IVXLC".contains(c))
+        || s.len() == 1 && "VXLC".contains(&up)
+    {
+        return None;
+    }
+    let value = |c| match c {
+        'I' => 1,
+        'V' => 5,
+        'X' => 10,
+        'L' => 50,
+        _ => 100,
+    };
+    let digits: Vec<u32> = up.chars().map(value).collect();
+    let mut n = 0;
+    for (i, d) in digits.iter().enumerate() {
+        if digits.get(i + 1).is_some_and(|next| next > d) {
+            n -= *d as i64;
+        } else {
+            n += *d as i64;
+        }
+    }
+    (n > 0).then_some(n as u32)
+}
+
+/// The numbers in a page's marginal text, in order.
+fn numbers(blocks: &[Json]) -> Vec<usize> {
+    let mut out = Vec::new();
+    for b in blocks {
+        for run in b
+            .get("runs")
+            .and_then(|r| r.as_array())
+            .into_iter()
+            .flatten()
+        {
+            let text = run.get("text").and_then(|t| t.as_str()).unwrap_or("");
+            let mut digits = String::new();
+            for c in text.chars().chain(std::iter::once(' ')) {
+                if c.is_ascii_digit() {
+                    digits.push(c);
+                } else if !digits.is_empty() {
+                    out.push(digits.parse().unwrap_or(0));
+                    digits.clear();
+                }
+            }
+        }
+    }
+    out
+}
+
+/// What each number in the marginals is, by its index: the page's number (`PAGE`) where some page has it and not
+/// the count, the page count (`NUMPAGES`) the other way round. "2 / 2" alone can't say which is which.
+fn field_roles(pages: &[Vec<Json>], count: usize) -> Vec<Option<&'static str>> {
+    let lists: Vec<Vec<usize>> = pages.iter().map(|p| numbers(p)).collect();
+    let len = lists.iter().map(|l| l.len()).max().unwrap_or(0);
+    (0..len)
+        .map(|k| {
+            let at = |p: usize| lists[p].get(k).copied();
+            let page = (0..pages.len()).any(|p| at(p) == Some(p + 1) && p + 1 != count);
+            let total = (0..pages.len()).any(|p| at(p) == Some(count) && p + 1 != count);
+            let all_page = (0..pages.len()).all(|p| at(p).is_none() || at(p) == Some(p + 1));
+            let all_total = (0..pages.len()).all(|p| at(p).is_none() || at(p) == Some(count));
+            if page && all_page {
+                Some("PAGE")
+            } else if total && all_total {
+                Some("NUMPAGES")
+            } else if count == 1 && all_page {
+                Some("PAGE")
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
+/// Page numbers in a header or footer as fields, by `roles` (`k` counts the numbers seen across its blocks).
+fn with_fields(block: &Json, roles: &[Option<&'static str>], k: &mut usize) -> Json {
+    let mut block = block.clone();
+    if let Some(Json::Array(runs)) = block.get_mut("runs") {
+        let mut out = Vec::new();
+        for run in runs.drain(..) {
+            let Some(text) = run.get("text").and_then(|t| t.as_str()).map(str::to_string) else {
+                out.push(run);
+                continue;
+            };
+            let mut rest = text.as_str();
+            let mut buf = String::new();
+            while !rest.is_empty() {
+                let digits: String = rest.chars().take_while(|c| c.is_ascii_digit()).collect();
+                if !digits.is_empty() {
+                    let role = roles.get(*k).copied().flatten();
+                    *k += 1;
+                    if let Some(field) = role {
+                        if !buf.is_empty() {
+                            let mut r = run.clone();
+                            r["text"] = json!(std::mem::take(&mut buf));
+                            out.push(r);
+                        }
+                        let mut r = run.clone();
+                        // The field's digits differ by page: compared without them.
+                        r["text"] = json!("0");
+                        r["field"] = json!(field);
+                        out.push(r);
+                    } else {
+                        buf.push_str(&digits);
+                    }
+                    rest = &rest[digits.len()..];
+                    continue;
+                }
+                let c = rest.chars().next().unwrap();
+                buf.push(c);
+                rest = &rest[c.len_utf8()..];
+            }
+            if !buf.is_empty() {
+                let mut r = run.clone();
+                r["text"] = json!(buf);
+                out.push(r);
+            }
+        }
+        *runs = out;
+    }
+    block
+}
+
+/// What a tag's element is to the model.
+fn classify(elem: &Content, at: Point, page: usize) -> Node {
+    let name = elem.func().name();
+    if let Some(heading) = elem.to_packed::<HeadingElem>() {
+        return Node::Heading(heading.resolve_level(StyleChain::default()).get());
+    }
+    if let Some(cell) = elem.to_packed::<TableCell>() {
+        return cell_node(
+            at,
+            page,
+            cell.x.get(StyleChain::default()),
+            cell.y.get(StyleChain::default()),
+            cell.colspan.get(StyleChain::default()).get(),
+            cell.rowspan.get(StyleChain::default()).get(),
+            cell.inset.get(StyleChain::default()),
+            cell.align.get(StyleChain::default()),
+        );
+    }
+    if let Some(cell) = elem.to_packed::<GridCell>() {
+        return cell_node(
+            at,
+            page,
+            cell.x.get(StyleChain::default()),
+            cell.y.get(StyleChain::default()),
+            cell.colspan.get(StyleChain::default()).get(),
+            cell.rowspan.get(StyleChain::default()).get(),
+            cell.inset.get(StyleChain::default()),
+            cell.align.get(StyleChain::default()),
+        );
+    }
+    match name {
+        "par" => Node::Par,
+        "list" | "enum" | "terms" => Node::List,
+        "table" | "grid" => {
+            let gutters = gutters(elem);
+            Node::Table {
+                at,
+                page,
+                grid: name == "grid",
+                gutters,
+            }
+        }
+        "equation" => Node::Equation {
+            block: elem
+                .get_by_name("block")
+                .ok()
+                .and_then(|v| v.cast::<bool>().ok())
+                .unwrap_or(false),
+        },
+        _ => Node::Opaque,
+    }
+}
+
+/// Column and row gutters of a grid or table, resolved where they are lengths (em at 11pt).
+fn gutters(elem: &Content) -> (Vec<f64>, Vec<f64>) {
+    let get = |name: &str| -> Vec<f64> {
+        let Ok(v) = elem.get_by_name(name) else {
+            return Vec::new();
+        };
+        let one = |v: &Value| match v {
+            Value::Length(l) => l.abs.to_pt() + l.em.get() * 11.0,
+            Value::Relative(r) => r.abs.abs.to_pt() + r.abs.em.get() * 11.0,
+            _ => 0.0,
+        };
+        // Typst repeats a list's last gutter for the tracks after it.
+        let list: Vec<f64> = match &v {
+            Value::Array(a) => a.iter().map(one).collect(),
+            v => vec![one(v)],
+        };
+        let last = list.last().copied().unwrap_or(0.0);
+        (0..512)
+            .map(|i| list.get(i).copied().unwrap_or(last))
+            .collect()
+    };
+    (get("column-gutter"), get("row-gutter"))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn cell_node(
+    at: Point,
+    page: usize,
+    x: Smart<usize>,
+    y: Smart<usize>,
+    colspan: usize,
+    rowspan: usize,
+    inset: Smart<Sides<Option<typst::layout::Rel<typst::layout::Length>>>>,
+    align: Smart<Alignment>,
+) -> Node {
+    let len = |r: Option<typst::layout::Rel<typst::layout::Length>>| {
+        r.map(|r| r.abs.abs.to_pt() + r.abs.em.get() * 11.0)
+            .unwrap_or(0.0)
+    };
+    let inset = match inset {
+        Smart::Custom(s) => Sides {
+            left: len(s.left),
+            top: len(s.top),
+            right: len(s.right),
+            bottom: len(s.bottom),
+        },
+        Smart::Auto => Sides::splat(0.0),
+    };
+    let valign = match align {
+        Smart::Custom(a) => match a.y() {
+            Some(VAlignment::Horizon) => "center",
+            Some(VAlignment::Bottom) => "bottom",
+            _ => "top",
+        },
+        _ => "top",
+    };
+    let _ = HAlignment::Start;
+    Node::Cell {
+        at,
+        page,
+        x: x.custom().unwrap_or(0),
+        y: y.custom().unwrap_or(0),
+        colspan,
+        rowspan,
+        inset,
+        valign,
+    }
+}
+
+fn round(v: f64) -> f64 {
+    (v * 100.0).round() / 100.0
+}
+
+#[allow(dead_code)]
+fn unused(_: &dyn Introspector, _: Abs) {}

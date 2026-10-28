@@ -6,6 +6,9 @@ importers:
   .:
     configDependencies: {}
     packageManagerDependencies:
+      '@pnpm/exe':
+        specifier: 12.9.1
+        version: 12.9.1
       pnpm:
         specifier: 12.9.1
         version: 12.9.1
@@ -89,6 +92,11 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@pnpm/exe@12.9.1':
+    resolution: {integrity: sha512-TZOVvYq8nwzmw8IR3P1GKZk87tV7vDPCT3oJlL7IhgYNZfLGov4jX0J8RJxuAXxIT3uxg/uiconrLLBv+X5KyA==}
+    engines: {node: '>=18.*'}
+    hasBin: true
+
   pnpm@12.9.1:
     resolution: {integrity: sha512-BrBV//XNINwSeB3hc87TMQzglRvy7GICEaFgRdVETVyTpmMhB2TvKaZTphBFm6A2jw50+E2AxUcjz5Wq57wNbQ==}
     engines: {node: '>=18.*'}
@@ -137,6 +145,23 @@ snapshots:
 
   '@pnpm/exe.win32-x64@12.9.1':
     optional: true
+
+  '@pnpm/exe@12.9.1':
+    optionalDependencies:
+      '@pnpm/exe.android-arm64': 12.9.1
+      '@pnpm/exe.android-x64': 12.9.1
+      '@pnpm/exe.darwin-arm64': 12.9.1
+      '@pnpm/exe.darwin-x64': 12.9.1
+      '@pnpm/exe.freebsd-x64': 12.9.1
+      '@pnpm/exe.linux-arm64': 12.9.1
+      '@pnpm/exe.linux-arm64-musl': 12.9.1
+      '@pnpm/exe.linux-ppc64': 12.9.1
+      '@pnpm/exe.linux-riscv64': 12.9.1
+      '@pnpm/exe.linux-s390x': 12.9.1
+      '@pnpm/exe.linux-x64': 12.9.1
+      '@pnpm/exe.linux-x64-musl': 12.9.1
+      '@pnpm/exe.win32-arm64': 12.9.1
+      '@pnpm/exe.win32-x64': 12.9.1
 
   pnpm@12.9.1:
     optionalDependencies:
@@ -479,6 +504,12 @@ importers:
 
   packages/core: {}
 
+  packages/docx:
+    dependencies:
+      fflate:
+        specifier: 0.8.3
+        version: 0.8.3
+
   packages/dom:
     dependencies:
       '@typstream/core':
@@ -531,6 +562,9 @@ importers:
       '@typstream/core':
         specifier: workspace:*
         version: link:../core
+      '@typstream/docx':
+        specifier: workspace:*
+        version: link:../docx
       '@typstream/engine-wasm':
         specifier: workspace:*
         version: link:../engine-wasm
@@ -547,6 +581,9 @@ importers:
       '@vitest/browser-playwright':
         specifier: 4.1.12
         version: 4.1.12(playwright@1.64.1)(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))(vitest@4.1.12)
+      fflate:
+        specifier: 0.8.3
+        version: 0.8.3
       playwright:
         specifier: ^1.64.1
         version: 1.64.1
@@ -655,6 +692,9 @@ importers:
       '@typstream/core':
         specifier: workspace:*
         version: link:../core
+      '@typstream/docx':
+        specifier: workspace:*
+        version: link:../docx
       '@typstream/engine':
         specifier: workspace:*
         version: link:../engine
@@ -671,6 +711,9 @@ importers:
       '@typstream/corpus':
         specifier: workspace:*
         version: link:../../corpus
+      fflate:
+        specifier: 0.8.3
+        version: 0.8.3
       ws:
         specifier: ^8.22.0
         version: 8.22.0
@@ -811,6 +854,21 @@ importers:
       '@typstream/universe':
         specifier: workspace:*
         version: link:../../packages/universe
+
+  tools/docx-check:
+    dependencies:
+      '@typstream/docx':
+        specifier: workspace:*
+        version: link:../../packages/docx
+      '@typstream/edu':
+        specifier: workspace:*
+        version: link:../../packages/edu
+      '@typstream/node':
+        specifier: workspace:*
+        version: link:../../packages/node
+      fflate:
+        specifier: 0.8.3
+        version: 0.8.3
 
   tools/llm-corpus:
     devDependencies:

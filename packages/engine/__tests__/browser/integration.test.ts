@@ -285,7 +285,7 @@ describe(`exports in ${browser}`, { timeout: 120_000 }, () => {
 
   it("exports a PDF with the paged preview's pages, and HTML without source anchors", async () => {
     const { engine, events } = await start();
-    expect((await engine.ready).capabilities.exports).toEqual(["html", "pdf"]);
+    expect((await engine.ready).capabilities.exports).toEqual(["html", "pdf", "docx"]);
     const doc = engine.open({ target: "paged", text: FIVE_PAGES });
     doc.finish();
     const done = await until(doc, (s) => s.status === "done");
@@ -301,6 +301,10 @@ describe(`exports in ${browser}`, { timeout: 120_000 }, () => {
     expect(html).toContain("A five page handout");
     expect(html).not.toContain("typstream-anchor");
     expect(doc.exportSource()).toBe(FIVE_PAGES);
+
+    // The worker loads the DOCX writer on this first DOCX export, a chunk of its own (#131).
+    const docx = await doc.exportDocx();
+    expect(new TextDecoder().decode(docx.subarray(0, 2))).toBe("PK");
     expect(trouble(events)).toEqual([]);
     engine.dispose();
   });

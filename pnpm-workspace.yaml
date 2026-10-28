@@ -5,6 +5,7 @@ packages:
   - "tools/compile-oracle"
   - "tools/browser-suites"
   - "tools/llm-corpus"
+  - "tools/docx-check"
   - "examples/*"
 
 allowBuilds:

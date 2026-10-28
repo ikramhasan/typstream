@@ -60,6 +60,7 @@ describe("protocol types", () => {
       | "compile"
       | "export/pdf"
       | "export/html"
+      | "export/docx"
       | "resolve/span"
       | "resolve/location"
     >();

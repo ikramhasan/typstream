@@ -42,8 +42,8 @@ export type Revision = number;
  */
 export type CompileTarget = "html" | "paged";
 
-/** What `export/pdf` and `export/html` produce; servers list theirs in their capabilities. @public */
-export type ExportFormat = "pdf" | "html";
+/** What `export/pdf`, `export/html` and `export/docx` produce; servers list theirs in their capabilities. @public */
+export type ExportFormat = "pdf" | "html" | "docx";
 
 /** Contents of a virtual file. Strings are UTF-8 text files. @public */
 export type FileContent = string | Uint8Array;
@@ -747,6 +747,11 @@ export interface RequestMap {
   "export/pdf": { params: ExportParams; result: ExportResult<Uint8Array> };
   /** The current revision as an HTML document, without anchors. Needs `html` in the server's `exports`. */
   "export/html": { params: ExportParams; result: ExportResult<string> };
+  /**
+   * The current revision as a DOCX file that lays out as the PDF does under the layout profile (#131). Needs
+   * `docx` in the server's `exports`.
+   */
+  "export/docx": { params: ExportParams; result: ExportResult<Uint8Array> };
   /** Click-to-edit: the source that made a point on a page. Needs `resolveSpan`. @beta */
   "resolve/span": { params: ResolveSpanParams; result: ResolveSpanResult };
   /** Cursor sync: where an offset was laid out on the pages. Needs `resolveLocation`. @beta */

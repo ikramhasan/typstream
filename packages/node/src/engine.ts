@@ -111,6 +111,8 @@ export interface Compiled {
 export interface CompileRequest {
   text: string;
   op: JobOp;
+  /** `text` is `/main.typ` already (the protocol server's, the layout profile and preamble in it). */
+  main?: boolean;
   preamble?: string;
   files?: ReadonlyMap<string, FileEntry>;
   inputs?: Record<string, string>;
@@ -125,7 +127,9 @@ export interface CompileRequest {
 export const compile = async (engine: NodeEngine, req: CompileRequest): Promise<Compiled> => {
   const state = states.get(engine);
   if (!state) throw new TypeError("@typstream/node: not an engine from createEngine()");
-  const assembled: Assembled = assemble(req.text, req.preamble, req.op !== "html");
+  const assembled: Assembled = req.main
+    ? { main: req.text, offset: 0, preambleAt: 0 }
+    : assemble(req.text, req.preamble, req.op !== "html");
   const timeoutMs = req.timeoutMs ?? state.timeoutMs;
   const outcome = await state.pool.run(
     {

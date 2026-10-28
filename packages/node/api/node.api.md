@@ -129,13 +129,15 @@ export const render: <F extends RenderFormat>(source: string, format: F, options
 
 // @public
 export interface RenderData {
+    // @beta
+    docx: Uint8Array;
     html: string;
     pdf: Uint8Array;
     svg: string[];
 }
 
 // @public
-export type RenderFormat = "pdf" | "html" | "svg";
+export type RenderFormat = "pdf" | "html" | "svg" | "docx";
 
 // @public
 export type RenderResult<F extends RenderFormat = RenderFormat> = {

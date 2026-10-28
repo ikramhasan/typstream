@@ -39,6 +39,8 @@ export interface TypstreamInfo {
    * mounted. See {@link TypstreamHandle.exportPdf}.
    */
   exportPdf(options?: TypstreamExportOptions): Promise<Uint8Array>;
+  /** Exports the document as an editable DOCX file. See {@link TypstreamHandle.exportDocx}. @beta */
+  exportDocx(options?: TypstreamExportOptions): Promise<Uint8Array>;
   /**
    * Exports the document as an HTML file that opens on its own, with the
    * component's plugins, `stylesheets` and `theme`; `options` add to or
@@ -78,7 +80,7 @@ export const useTypstream = (): TypstreamInfo => {
   const document = handle?.document ?? null;
   return useMemo(() => {
     // Until `ref` receives the instance, a detached handle's exports fail as an unmounted one's do.
-    const { exportPdf, exportHtml, exportSource } = handle ?? createHandle().handle;
+    const { exportPdf, exportDocx, exportHtml, exportSource } = handle ?? createHandle().handle;
     return {
       ref: setHandle,
       handle,
@@ -89,6 +91,7 @@ export const useTypstream = (): TypstreamInfo => {
       openFrames: state?.heal.openFrames ?? EMPTY,
       document,
       exportPdf,
+      exportDocx,
       exportHtml,
       exportSource,
     };

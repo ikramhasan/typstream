@@ -43,6 +43,10 @@ export interface AdapterDocument {
         fullPages: boolean;
         drawings?: boolean;
     } & AdapterCompileOptions): MaybePromise<AdapterPagedResult>;
+    exportDocxModel?(options?: AdapterCompileOptions): MaybePromise<AdapterCompileResult & {
+        model: string | null;
+        fonts: Uint8Array[];
+    }>;
     exportPdf?(options?: AdapterCompileOptions): MaybePromise<AdapterCompileResult & {
         pdf: Uint8Array | null;
     }>;
@@ -72,6 +76,9 @@ export const DEFAULT_FIXERS: readonly DiagnosticFixer[];
 
 // @beta
 export const DEFAULT_FONT_FAMILY_BYTES = 5000000;
+
+// @public
+export const DOCX_MARGIN_PROBE: string;
 
 // @public
 export interface EngineAdapter {

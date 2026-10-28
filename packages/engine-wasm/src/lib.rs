@@ -7,12 +7,17 @@
 //! ends with `comemo::evict(2)` (§6.3).
 
 mod diagnostics;
+#[doc(hidden)]
+pub mod docx;
 mod draw;
-mod fonts;
+// Public for native tools (`examples/`), not part of the wasm API.
+#[doc(hidden)]
+pub mod fonts;
 mod islands;
 mod js;
 mod text;
-mod world;
+#[doc(hidden)]
+pub mod world;
 
 use typst::diag::{SourceDiagnostic, Warned};
 use typst::foundations::{Dict, Str, Value};
@@ -141,6 +146,11 @@ export type SvgChangedResult = CompileResult & {
 };
 /** A paged compile without export (`check_paged`). */
 export type CheckResult = CompileResult & { pageCount?: number };
+/**
+ * A paged compile read into a DOCX document model (`compile_docx_model`): `model` is `@typstream/docx`'s
+ * `DocxModel` as JSON, `fonts` the data of the faces it names, in its order.
+ */
+export type DocxModelResult = CompileResult & { model?: string; fonts?: Uint8Array[]; pageCount?: number };
 "#;
 
 #[cfg(feature = "pdf")]
@@ -421,10 +431,43 @@ impl Engine {
         finish(obj, t0)
     }
 
-    /// The optional features in this build: always "html" and "svg", plus "pdf"
+    /// Compiles paged and reads the pages into the document model a DOCX export is written from (docx.rs, #131).
+    /// The source should end with `docx_margin_probe()`, which records the page margins.
+    #[wasm_bindgen(unchecked_return_type = "DocxModelResult")]
+    pub fn compile_docx_model(&mut self) -> JsValue {
+        let t0 = perf_now();
+        self.world.begin_compile();
+        let Warned { output, warnings } =
+            typst::compile::<typst_layout::PagedDocument>(&self.world);
+        let obj = match output {
+            Ok(doc) => {
+                let model = docx::model(&doc);
+                let obj = self.result(true, &[], &warnings);
+                set(&obj, "model", model.json);
+                let fonts: js_sys::Array = model
+                    .fonts
+                    .iter()
+                    .map(|data| JsValue::from(js_sys::Uint8Array::from(data.as_slice())))
+                    .collect();
+                set(&obj, "fonts", fonts);
+                set(&obj, "pageCount", doc.pages().len() as f64);
+                obj
+            }
+            Err(errors) => self.result(false, &errors, &warnings),
+        };
+        finish(obj, t0)
+    }
+
+    /// Typst source a DOCX export appends to the document: it records the page margins, which laid-out pages
+    /// don't keep, for `compile_docx_model`.
+    pub fn docx_margin_probe() -> String {
+        docx::MARGIN_PROBE.to_string()
+    }
+
+    /// The optional features in this build: always "html", "svg" and "docx" (its model), plus "pdf"
     /// when built with it.
     pub fn features() -> Vec<String> {
-        let mut features = vec!["html".to_string(), "svg".to_string()];
+        let mut features = vec!["html".to_string(), "svg".to_string(), "docx".to_string()];
         if cfg!(feature = "pdf") {
             features.push("pdf".into());
         }

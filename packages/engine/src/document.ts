@@ -252,6 +252,13 @@ export interface EngineDocument {
    */
   exportHtml(options?: ExportOptions): Promise<string>;
   /**
+   * Exports the document as an editable DOCX file that Word-like engines lay out as the PDF is (#131): paragraphs,
+   * lists and tables with Typst's fonts embedded, the layout profile's line pitch, and every gap Typst made.
+   * Equations, images and drawings hold their place as empty space for now. Otherwise as
+   * {@link EngineDocument.exportPdf}. @beta
+   */
+  exportDocx(options?: ExportOptions): Promise<Uint8Array>;
+  /**
    * The source the exports compile: the healed input (lint fixes, and tail
    * repair until `finish()`), without the preamble or files.
    */
@@ -648,6 +655,10 @@ export class DocumentImpl implements EngineDocument {
 
   exportHtml(options?: ExportOptions): Promise<string> {
     return this.export("html", options) as Promise<string>;
+  }
+
+  exportDocx(options?: ExportOptions): Promise<Uint8Array> {
+    return this.export("docx", options) as Promise<Uint8Array>;
   }
 
   exportSource(): string {

@@ -1,0 +1,23 @@
+---
+title: "@typstream/docx"
+description: The DOCX writer behind exportDocx() — OOXML from the laid-out pages, with Typst's fonts embedded.
+---
+
+`@typstream/docx` writes the DOCX files `exportDocx()` returns (on [`EngineDocument`](/docs/reference/engine),
+[`mountTypstream`](/docs/reference/dom), [`<Typstream>`](/docs/reference/react) and
+[`render(source, "docx")`](/docs/reference/node)). You don't call it yourself: the engine's server loads it the
+first time a document is exported.
+
+**What it writes.** engine-wasm reads the laid-out pages into a document model (`compile_docx_model`): paragraphs
+and their runs (font, size, colour), headings, lists with Word numbering, tables and grids with Typst's column
+widths, framed blocks, page headers and footers with page-number fields, and every gap Typst made. This package
+turns it into OOXML with the [layout profile](/docs/concepts/render-targets#layout-profile)'s settings (exact line
+pitch, no hyphenation, Word 2013+ layout), embeds the fonts the runs use, obfuscated as ECMA-376 asks, and zips it.
+
+**What isn't written yet.** Equations, images and drawings hold their place as empty space of their size (styled
+`Typstream placeholder`), so lines and pages still break where Typst broke them.
+
+**How it's checked.** `tools/docx-check` exports the Latin corpus, has LibreOffice lay each file out and compares
+its lines and page breaks with the PDF's, and runs Microsoft's Open XML validator on every file.
+
+The package's exports (`writeDocx` and the model's types) are internal: other typstream packages use them.
