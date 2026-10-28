@@ -1783,12 +1783,13 @@ impl Builder {
         let n = lines.len();
         let mut iter = lines.into_iter().peekable();
         let mut k = 0;
-        // How much wider the area would have to be for a line to take the next one's first word (a space of at
-        // least 0.2em between): room up to that is slack an engine measuring a hair wider can use.
+        // How much wider the area would have to be for a line to take the next one's first word (a line's text ends
+        // with the space before it, where there is one): room up to that is slack an engine measuring a hair wider
+        // can use.
         let mut fit = f64::MAX;
         while let Some(line) = iter.next() {
             if let Some(next) = iter.peek().filter(|n| n.page == line.page) {
-                fit = fit.min(line.right + 0.2 * line.size + next.first_word - area.right);
+                fit = fit.min(line.right + next.first_word - area.right);
             }
             let forced = match iter.peek() {
                 // The next line's first word would have fitted after this one: Typst didn't choose to break.
