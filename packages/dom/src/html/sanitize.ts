@@ -43,6 +43,9 @@ const HTML_TAGS = new Map<string, ReadonlySet<string>>([
   ["colgroup", set("span")],
   ["time", set("datetime")],
   ["details", set("open")],
+  // An island marker (PLAN §8.4): the renderer reads its attributes before sanitizing and keeps
+  // none of them; the element stays around its fallback.
+  ["typstream-island", set("")],
   ...[
     "abbr address article aside b bdi bdo blockquote br caption cite code dd del dfn div dl dt em figcaption",
     "figure footer h1 h2 h3 h4 h5 h6 header hgroup hr i ins kbd main mark nav p pre q rp rt ruby s samp",

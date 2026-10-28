@@ -114,7 +114,12 @@ describe("plugin contract", () => {
       },
       templates: [{ name: "lab-report", preamble: '#set page(paper: "a4")' }],
       prompt: { catalogue: [{ name: "ce", signature: "ce(formula: str)", description: "A formula." }], rules: [] },
-      islands: { molecule: { display: "block", propsSchema: {} } },
+      islands: {
+        molecule: {
+          description: "A molecule, rotatable.",
+          parse: (data) => (typeof data === "string" ? data : undefined),
+        },
+      },
       sanitize: { allowTags: ["typstream-island"], allowAttrs: { "*": ["data-name"] } },
       stylesheets: [".typstream .molecule { display: block }"],
       // Loosely typed until the editor exists.

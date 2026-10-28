@@ -6,11 +6,12 @@ import type { TypstreamOptions } from "@typstream/dom";
 import type { Engine } from "@typstream/engine";
 import { createContext, type ReactNode, useContext, useEffect } from "react";
 import { acquireEngine, releaseEngine } from "./engine";
+import type { IslandComponents } from "./islands";
 import { mergeHooks, type TelemetryHooks } from "./telemetry";
 
 /**
  * Settings that make sense for every document of an app. Everything except
- * `engine`, `resolveImage` and plugins' functions is serializable, so it can
+ * `engine`, `resolveImage`, `islands` and plugins' functions is serializable, so it can
  * be stored per organization or per user.
  * @public
  */
@@ -48,6 +49,13 @@ export interface TypstreamDefaults
    * `@typstream/engine-wasm/fonts`; the `typstream` package sets it for you.
    */
   mathFont?: string | URL;
+  /**
+   * Interactive components by island name (PLAN §8.4), e.g. `@typstream/mindmap/react`'s
+   * `{ mindmap: MindMapIsland }`: a marker becomes an island when a plugin
+   * declares its name and a component is given for it. Providers' and the
+   * component's merge, the inner one winning by name. @beta
+   */
+  islands?: IslandComponents;
 }
 
 const Context = createContext<TypstreamDefaults>({});
@@ -103,12 +111,14 @@ export const mergeDefaults = <T extends TypstreamDefaults>(
   const stylesheets = concat(outer.stylesheets, inner.stylesheets);
   const inputs = assign(outer.inputs, inner.inputs);
   const files = assign(outer.files, inner.files);
+  const islands = assign(outer.islands, inner.islands);
   return {
     ...(merged as TypstreamDefaults & T),
     ...(plugins ? { plugins } : {}),
     ...(stylesheets ? { stylesheets: [...new Set(stylesheets)] } : {}),
     ...(inputs ? { inputs } : {}),
     ...(files ? { files } : {}),
+    ...(islands ? { islands } : {}),
     ...mergeHooks(outer, inner),
   };
 };

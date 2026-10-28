@@ -103,9 +103,12 @@ Unset settings come from the nearest `TypstreamProvider`, then the defaults.
 
 <auto-type-table path="packages/react/src/Typstream.tsx" name="TypstreamProps" />
 
-Not available yet: a prop to turn off the engine's [fallback](/docs/concepts/fallback) (it is always on), render
-islands ([#28](https://github.com/ikramhasan/typstream/issues/28)), and engine options such as fonts or an adapter on
-the component. For those, create an engine with
+`islands` (beta) maps island names to React components (`IslandComponents`, each an `IslandComponent`): a
+[render island](/docs/guides/islands) mounts where a plugin's marker is, through a portal, so your context and
+StrictMode reach it. `@typstream/mindmap/react`'s `mindmapIslands` is one.
+
+Not available yet: a prop to turn off the engine's [fallback](/docs/concepts/fallback) (it is always on), and engine
+options such as fonts or an adapter on the component. For those, create an engine with
 [`createEngine`](/docs/reference/engine#createengine) and pass it as `engine`.
 
 ### `TypstreamHandle`
@@ -167,8 +170,8 @@ a log or analytics sink once; see [Telemetry](/docs/guides/telemetry).
 
 ### `TypstreamDefaults`
 
-The settings a provider holds, and that `TypstreamProps` extends. Everything except `engine` and plugins' functions
-is serializable, so it can be stored per organization or per user.
+The settings a provider holds, and that `TypstreamProps` extends. Everything except `engine`, `resolveImage`, `islands`
+and plugins' functions is serializable, so it can be stored per organization or per user.
 
 <auto-type-table path="packages/react/src/context.tsx" name="TypstreamDefaults" />
 

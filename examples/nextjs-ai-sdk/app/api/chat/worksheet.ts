@@ -1,6 +1,6 @@
 // What the offline replay streams: a worksheet like the ones the instructions
 // ask for, written as a model writes Typst (headings, prose, inline and display
-// math, a table, lists).
+// math, a table, lists, a mind map).
 export const WORKSHEET = `= The Pythagorean theorem
 _Grade 8 · Worksheet 4 · 30 minutes_
 
@@ -12,6 +12,19 @@ $ a^2 + b^2 = c^2 $
 
 where $c$ is the hypotenuse and $a$ and $b$ are the legs. The converse holds too: if $a^2 + b^2 = c^2$
 for the sides of a triangle, the triangle has a right angle.
+
+== At a glance
+#mindmap[
+  Pythagorean theorem
+  - Sides
+    - Legs $a$, $b$
+    - Hypotenuse $c$
+  - Uses
+    - Distances
+    - Diagonals
+  - Converse
+    - Testing right angles
+]
 
 == Worked example
 A ladder $5$ m long leans against a wall with its foot $3$ m from the wall. How high does it reach?

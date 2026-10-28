@@ -507,6 +507,38 @@ export interface PagedArtifact {
   pageCount: number;
   /** Ascending by index. */
   pages: PageUpdate[];
+  /**
+   * Every island marker of the document, in document order, whichever pages
+   * changed (PLAN §8.4). Optional: engines without introspection send none,
+   * and their islands show as their fallback. @beta
+   */
+  islands?: PagedIsland[];
+}
+
+/**
+ * An island marker in the paged target: a `metadata` labelled
+ * `<typstream-island>` (`ISLAND_MARKER`) at the top left of its block, found by
+ * the engine in the laid-out document. Positions are in points from the page's
+ * top left; they come from layout, however the page is drawn.
+ * @beta
+ */
+export interface PagedIsland {
+  /** The `name` of the marker's value. */
+  name: string;
+  /** The `data` of the marker's value, untrusted. */
+  data: unknown;
+  /** Zero-based index of the page it's on. */
+  page: number;
+  /** The block's left edge, in points from the page's left edge. */
+  x: number;
+  /** The block's top edge, in points from the page's top edge. */
+  y: number;
+  /** The `width` of the marker's value: the block's width, in points. */
+  width: number;
+  /** The `height` of the marker's value: the fallback's height, in points. */
+  height: number;
+  /** Offset of the marker's call in the text the client sent (the healed source), or `null` when it isn't in it. */
+  from: number | null;
 }
 
 /** What a successful compile publishes (`document/artifact`), by target. @public */

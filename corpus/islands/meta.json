@@ -1,0 +1,23 @@
+{
+  "mindmap-detailed-revision": {
+    "category": "mindmap",
+    "tags": ["mindmap", "island", "text-focused", "collapsed", "landscape"],
+    "plugins": ["mindmap"],
+    "notes": "A detailed (four-level) text-focused revision map with colours by theme and a collapsed branch, on a landscape page.",
+    "expectedPages": 1
+  },
+  "mindmap-photosynthesis-worksheet": {
+    "category": "mindmap",
+    "tags": ["mindmap", "island", "math", "collapsed"],
+    "plugins": ["edu", "mindmap"],
+    "notes": "A worksheet built around a mind map: edu's template and questions around it, chemical formulas in labels.",
+    "expectedPages": 1
+  },
+  "mindmap-water-cycle-arabic": {
+    "category": "mindmap",
+    "tags": ["mindmap", "island", "arabic", "rtl"],
+    "plugins": ["mindmap"],
+    "notes": "Arabic: a two-sided map, then a one-sided text-focused one, which grows to the left.",
+    "expectedPages": 1
+  }
+}

@@ -18,6 +18,7 @@ import {
   type ExportResult,
   type FallbackLevel,
   type FallbackParams,
+  type FileContent,
   type FileDelta,
   type FontCatalogue,
   isError,
@@ -220,6 +221,13 @@ export interface EngineDocument {
   setInputs(inputs: Record<string, string>): void;
   /** Writes (or, with `null`, deletes) files the document reads. */
   setFiles(files: FileDelta): void;
+  /**
+   * A file the document has, by the path its Typst names it with (`logo.png`,
+   * `./logo.png`, a URL): its own files and the images `resolveImage`
+   * resolved. `null` for anything else, plugins' files included. What islands
+   * get as `IslandProps.file` (PLAN §8.4). @beta
+   */
+  file(path: string): FileContent | null;
   /**
    * Exports the document as PDF: {@link EngineDocument.exportSource}'s source,
    * compiled in final mode with the document's preamble and files, by the
@@ -607,6 +615,12 @@ export class DocumentImpl implements EngineDocument {
     this.pendingFiles = { ...this.pendingFiles, ...files };
     this.needsCompile = true;
     this.update();
+  }
+
+  file(path: string): FileContent | null {
+    const key = fileKey(path);
+    for (const name in this.files) if (key && fileKey(name) === key) return this.files[name] ?? null;
+    return null;
   }
 
   exportPdf(options?: ExportOptions): Promise<Uint8Array> {

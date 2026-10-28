@@ -60,7 +60,7 @@ const everything = definePlugin({
   },
   templates: [{ name: "lab-report", preamble: '#set page(paper: "a5")' }],
   prompt: { catalogue: [{ name: "blank", signature: "blank() -> content", description: "A blank." }], rules: ["x"] },
-  islands: { molecule: { display: "block" } },
+  islands: { molecule: { description: "A molecule." } },
   sanitize: { allowTags: ["typstream-island"], allowAttrs: { "*": ["data-name"] } },
   stylesheets: [".typstream .blank { color: red }"],
   editor: { nodes: [{ type: "blank" }], someFutureFacet: true },

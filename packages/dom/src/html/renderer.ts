@@ -8,7 +8,8 @@
 // become `data-typstream-src` attributes, so a block resolves to its source
 // range without asking the engine (§10.2).
 
-import { type TypstreamPlugin, trustedHTML } from "@typstream/core";
+import { type FileContent, ISLAND_MARKER, type TypstreamPlugin, trustedHTML } from "@typstream/core";
+import { createIslands, type IslandRenderers, type Islands, MAX_ISLAND_DATA, type Marker } from "../islands";
 import {
   type AnimateOptions,
   AnimateTimeline,
@@ -50,6 +51,14 @@ export interface HtmlRendererOptions {
   stylesheets?: readonly string[];
   /** Inject {@link htmlRendererCss}, the plugins' stylesheets and `stylesheets`. Default true; pass false to ship them yourself. */
   injectStyles?: boolean;
+  /**
+   * Island renderers by name (PLAN §8.4): each `typstream-island` marker whose
+   * name a plugin in `plugins` declares is mounted over its fallback.
+   * @beta
+   */
+  islands?: IslandRenderers;
+  /** What islands get as `IslandProps.file`: the document's files. Default: none. @beta */
+  file?: (path: string) => FileContent | null;
 }
 
 /** Per-update options. @public */
@@ -58,6 +67,12 @@ export interface HtmlUpdateOptions {
   animate?: boolean;
   /** Show a caret after the last text (while streaming). Default false. */
   caret?: boolean;
+  /**
+   * While streaming, heal's stable offset (`stableOffset`): islands whose block
+   * starts at or after it are incomplete. Default: the document is complete.
+   * @beta
+   */
+  stable?: number | null;
 }
 
 /** What an update did. @public */
@@ -130,7 +145,7 @@ const lastElement = (nodes: readonly Node[]): Element | null => {
 // --- caret ----------------------------------------------------------------------------
 
 /** Elements the caret doesn't go into: it goes after them. */
-const CARET_STOP = new Set(["math", "svg", "pre", "img", "hr", "br", "wbr"]);
+const CARET_STOP = new Set(["math", "svg", "pre", "img", "hr", "br", "wbr", ISLAND_MARKER]);
 
 /** Where the caret goes: the deepest last element of `block` that holds text. */
 const caretParent = (block: Element): Element => {
@@ -237,6 +252,11 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
   let container: Element = root;
   let blocks: Block[] = [];
   let caret: Element | null = null;
+  const islands: Islands | null = options.islands
+    ? createIslands({ renderers: options.islands, plugins: options.plugins, target: "html", file: options.file })
+    : null;
+  /** The island markers parsed, with what their attributes said (the sanitizer drops them). */
+  const markers = new WeakMap<Element, { name: string; raw: string; data: unknown }>();
 
   /** Puts `to` in `from`'s place, in the DOM and among the blocks' nodes (a top-level table and its scroll box). */
   const swap = (from: Element, to: Element): void => {
@@ -290,6 +310,18 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
     // Under Trusted Types (#70) through typstream's policy: the template is inert, and sanitized next.
     template.innerHTML = trustedHTML(hideStyles(html));
     const content = template.content;
+    if (islands) {
+      for (const el of content.querySelectorAll(ISLAND_MARKER)) {
+        const name = el.getAttribute("name");
+        const raw = el.getAttribute("props") ?? "";
+        if (!name || raw.length > MAX_ISLAND_DATA) continue;
+        try {
+          markers.set(el, { name, raw, data: JSON.parse(raw) });
+        } catch {
+          // Not JSON: the fallback stays.
+        }
+      }
+    }
     sanitize(content);
     // Moving the cleaned nodes adopts them into the page's document.
     const fragment = doc.createDocumentFragment();
@@ -423,6 +455,7 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
       after = nodes[0] as Node;
     }
     blocks = result;
+    if (islands) syncIslands(opts.stable ?? null);
 
     if (opts.caret) {
       // After the last block's text; footnotes come after the text, not at its end.
@@ -440,6 +473,16 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
     refit();
 
     return { blocks: result.length, created: created.length, removed: removed.length, ms: view.performance.now() - t0 };
+  };
+
+  /** Mounts the islands of the markers now shown, in document order. */
+  const syncIslands = (stable: number | null): void => {
+    const found: Marker[] = [];
+    for (const el of container.querySelectorAll(ISLAND_MARKER)) {
+      const marker = markers.get(el);
+      if (marker) found.push({ ...marker, place: el as HTMLElement, from: topBlock(el)?.src ?? null });
+    }
+    islands?.sync(found, { stable });
   };
 
   const topBlock = (node: Node): Block | null => {
@@ -461,6 +504,7 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
   };
 
   const clear = (): void => {
+    islands?.sync([], { stable: null });
     caret?.remove();
     caret = null;
     for (const block of blocks) removeNodes(block);
@@ -490,6 +534,7 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
     clear,
     dispose() {
       clear();
+      islands?.destroy();
       resized.disconnect();
       setLanguage(undefined);
       root.classList.remove("typstream");

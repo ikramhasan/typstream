@@ -35,7 +35,9 @@ The document is `source`, its whole text so far (streamdown-style), or `stream`,
 | `onRendered`, `onFallback`, `onWatchdog` | | Telemetry (PLAN §8.6), `@typstream/core`'s event shapes: a render with its compile's timings, heal time and patches, fixes and fallback level; output that fell back (with the input and healed source); a compile the watchdog stopped. |
 | `className`, `style`, `id`, `ref` | | The host element; `ref` receives a `TypstreamHandle`. |
 
-Not yet: `fallback` (block isolation, PLAN §5.6, beyond the last good render the engine keeps), `islands` (#28), and `engine={{ adapter, fonts, packages }}` options (#11, #25): pass an `Engine` you created instead.
+`islands` (beta, #28) maps island names to components: a plugin's markers become interactive components rendered through portals over their Typst fallback (`@typstream/mindmap/react`'s `mindmapIslands`; PLAN §8.4).
+
+Not yet: `fallback` (block isolation, PLAN §5.6, beyond the last good render the engine keeps), and `engine={{ adapter, fonts, packages }}` options (#11, #25): pass an `Engine` you created instead.
 
 ## `TypstreamProvider`
 

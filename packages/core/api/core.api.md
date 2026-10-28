@@ -431,10 +431,22 @@ export const isErrorResponse: (m: Response_2) => m is ErrorResponse;
 export const isHighSurrogate: (code: number) => boolean;
 
 // @beta
-export interface IslandSpec {
-    [key: string]: unknown;
+export const ISLAND_MARKER = "typstream-island";
+
+// @beta
+export interface IslandProps<Data = unknown> {
+    data: Data;
+    file(path: string): FileContent | null;
+    index: number;
+    isIncomplete: boolean;
+    name: string;
+    target: CompileTarget;
+}
+
+// @beta
+export interface IslandSpec<Data = unknown> {
     description?: string;
-    display?: "inline" | "block";
+    parse?(data: unknown): Data | undefined;
 }
 
 // @internal (undocumented)
@@ -494,9 +506,23 @@ export interface PackageSpec {
 // @public
 export interface PagedArtifact {
     base: Revision | null;
+    // @beta
+    islands?: PagedIsland[];
     pageCount: number;
     pages: PageUpdate[];
     target: "paged";
+}
+
+// @beta
+export interface PagedIsland {
+    data: unknown;
+    from: number | null;
+    height: number;
+    name: string;
+    page: number;
+    width: number;
+    x: number;
+    y: number;
 }
 
 // @beta

@@ -12,7 +12,9 @@ import { DocumentStatus } from '@typstream/engine';
 import { Engine } from '@typstream/engine';
 import { EngineDocument } from '@typstream/engine';
 import { FallbackEvent } from '@typstream/core';
+import { FileContent } from '@typstream/core';
 import { FileDelta } from '@typstream/core';
+import { IslandProps } from '@typstream/core';
 import { LoadedFontFamily } from '@typstream/core';
 import { PagedArtifact } from '@typstream/core';
 import { Range as Range_2 } from '@typstream/core';
@@ -71,8 +73,12 @@ export const htmlRendererCss: string;
 // @public
 export interface HtmlRendererOptions {
     animation?: AnimateOptions;
+    // @beta
+    file?: (path: string) => FileContent | null;
     idPrefix?: string;
     injectStyles?: boolean;
+    // @beta
+    islands?: IslandRenderers;
     linkTarget?: string | null;
     plugins?: readonly TypstreamPlugin[];
     stylesheets?: readonly string[];
@@ -83,6 +89,8 @@ export interface HtmlRendererOptions {
 export interface HtmlUpdateOptions {
     animate?: boolean;
     caret?: boolean;
+    // @beta
+    stable?: number | null;
 }
 
 // @public
@@ -92,6 +100,18 @@ export interface HtmlUpdateResult {
     ms: number;
     removed: number;
 }
+
+// @beta
+export interface IslandInstance {
+    destroy(): void;
+    update(props: IslandProps): void;
+}
+
+// @beta
+export type IslandRenderer = (host: HTMLElement, props: IslandProps) => IslandInstance;
+
+// @beta
+export type IslandRenderers = Readonly<Record<string, IslandRenderer>>;
 
 // @public
 export const isSafeHref: (href: string) => boolean;
@@ -180,6 +200,8 @@ export interface TypstreamOptions {
     files?: FileDelta;
     heal?: DocumentOptions["heal"];
     inputs?: Record<string, string>;
+    // @beta
+    islands?: IslandRenderers;
     isStreaming?: boolean;
     layout?: "fixed" | "fit-width";
     lazy?: boolean;

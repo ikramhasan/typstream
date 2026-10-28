@@ -236,7 +236,7 @@ reads only the facets it understands, so new facets never break old plugins. `@t
 
 ### `TypstreamPlugin`
 
-Everything except `heal.handlers` is plain data. The `engine` facet is sent to the worker, which can't receive
+Everything except `heal.handlers` and islands' `parse` is plain data. The `engine` facet is sent to the worker, which can't receive
 functions, so worker-side code is referenced by module URL (`fixerModules`).
 
 <auto-type-table path="packages/core/src/plugin.ts" name="TypstreamPlugin" />
@@ -249,7 +249,8 @@ functions, so worker-side code is referenced by module URL (`fixerModules`).
 | `prompt` | Prompt builders (`@typstream/edu`'s `buildSystemPrompt`) | A function catalogue, rules and few-shot examples for the model. |
 | `sanitize` | The HTML renderer | Extra tags, attributes (by tag, `"*"` for every HTML element) and classes to let through. |
 | `stylesheets` | The HTML renderer, `standaloneHtml` | CSS for the HTML this plugin's Typst writes. |
-| `islands`, `editor` | Nothing yet | Reserved (beta): render islands ([#28](https://github.com/ikramhasan/typstream/issues/28)) and the visual editor. |
+| `islands` | The HTML renderer, `@typstream/react` | Render islands by name (beta): which island markers mount, and `parse`, which checks their data. See [Writing an island](/docs/guides/islands). |
+| `editor` | Nothing yet | Reserved (beta) for the visual editor. |
 
 A plugin's `engine.fonts` load only from `createEngine`'s `plugins`, since fonts belong to the worker; their other
 facets apply to the documents that list them.
@@ -377,9 +378,18 @@ with the same files. See [A catalogue of your own](/docs/guides/fonts-and-langua
 
 <auto-type-table path="packages/core/src/plugin.ts" name="LoadedFontFamily" />
 
-`IslandSpec` describes an interactive component the renderer will swap in for a Typst marker
-([#28](https://github.com/ikramhasan/typstream/issues/28)); `EditorFacet` is reserved for the visual editor. Both are
-typed loosely on purpose, and nothing reads them yet.
+`EditorFacet` is reserved for the visual editor: typed loosely on purpose, and nothing reads it yet.
+
+### Render islands (beta)
+
+A render island is an interactive component mounted over a marker a document's Typst writes around its fallback
+drawing ([Writing an island](/docs/guides/islands)). `ISLAND_MARKER` (`"typstream-island"`) names the marker: the
+element the HTML target writes, and the label of the paged target's `metadata`. A plugin declares an island with an
+`IslandSpec`; its component gets `IslandProps`.
+
+<auto-type-table path="packages/core/src/plugin.ts" name="IslandSpec" />
+
+<auto-type-table path="packages/core/src/plugin.ts" name="IslandProps" />
 
 ## Telemetry events
 
@@ -589,6 +599,13 @@ longer exist. A client whose displayed pages aren't from `base` must not apply i
 <auto-type-table path="packages/core/src/protocol.ts" name="PagedArtifact" />
 
 <auto-type-table path="packages/core/src/protocol.ts" name="PageUpdate" />
+
+#### `PagedIsland` (beta)
+
+An island marker in a paged artifact: where on its page an island goes, from layout. Every paged artifact lists them
+all, whichever pages it holds.
+
+<auto-type-table path="packages/core/src/protocol.ts" name="PagedIsland" />
 
 #### `TextRun`
 
