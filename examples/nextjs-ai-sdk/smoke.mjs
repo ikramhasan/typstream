@@ -110,7 +110,9 @@ try {
   while (!reached() && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 200));
   if (!reached()) throw new Error(`no telemetry reached /api/telemetry:\n${log}`);
   if (process.argv.includes("--screenshot")) await page.screenshot({ path: "smoke.png", fullPage: true });
-  console.log(`ok: streamed an answer, an edit of it and an edit in place with no error frames (${text.length} characters in the first)`);
+  console.log(
+    `ok: streamed an answer, an edit of it and an edit in place with no error frames (${text.length} characters in the first)`,
+  );
 } finally {
   await browser.close();
   server.kill();
