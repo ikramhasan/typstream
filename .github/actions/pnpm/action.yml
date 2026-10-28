@@ -31,9 +31,12 @@ runs:
 
     - id: store
       shell: bash
+      # Node's major version, not the exact one: runner images roll out at different times, so one run's jobs get
+      # different Node 24 releases from the tool cache (24.21.0 and 24.22.1 on 2026-10-28), and an exact key misses
+      # main's store on some of them. pnpm keys builds in the store by major version too (`linux;x64;node24`).
       run: |
         echo "path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
-        echo "prefix=pnpm-store-${RUNNER_OS}-$(node --version)-" >> "$GITHUB_OUTPUT"
+        echo "prefix=pnpm-store-${RUNNER_OS}-node$(node -p 'process.versions.node.split(".")[0]')-" >> "$GITHUB_OUTPUT"
 
     - id: cache
       uses: actions/cache/restore@v6
