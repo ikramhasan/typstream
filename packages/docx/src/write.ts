@@ -32,6 +32,8 @@ const XML = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
 const twips = (pt: number): number => Math.round(pt * 20);
 /** Room given back in a cell, in points (see `cell`). */
 const SLACK = 1;
+/** Slack stays this far under a paragraph's fit: engines measure some lines a hair narrower than Typst too. */
+const FIT_MARGIN = 0.6;
 /** Marks where a section's properties go in the body, written once the headers' references are known. */
 const SECTION = "\u0001";
 /** Styles marking room held for equations and images until the export writes them (#132, #133). */
@@ -281,7 +283,7 @@ class Writer {
     const m = c.margins;
     // No more than the cell's paragraphs' fit, or an engine would set a word Typst moved down on the line before.
     const fit = c.blocks.reduce(
-      (f, b) => (b.type === "p" && b.fit !== undefined ? Math.min(f, b.fit - 0.3) : f),
+      (f, b) => (b.type === "p" && b.fit !== undefined ? Math.min(f, b.fit - FIT_MARGIN) : f),
       SLACK,
     );
     const right = Math.max(0, m.right - Math.max(0, fit));

@@ -51,6 +51,9 @@ const BOTTOM: f64 = 0.246;
 /// Room added to a width Typst's lines exactly fill, in points: engines measure text a hair wider (the writer gives
 /// table cells as much).
 const SLACK: f64 = 1.0;
+/// Slack stays this far under a paragraph's fit (how far a next word missed a line): engines measure some lines a
+/// hair narrower than Typst too.
+const FIT_MARGIN: f64 = 0.6;
 /// A block Typst starts a page with gets a page break before it when the page before had more room left than this,
 /// in points: Typst moved it on (a heading kept with what follows, a table's header with its first row, a line that
 /// didn't quite fit) where an engine measuring a hair shorter wouldn't. A page break before a paragraph that already
@@ -1019,7 +1022,7 @@ impl Builder {
             // advance to twips) need room past it, less than any next word missed the line by. Cells have theirs in
             // their margins.
             if let Some(fit) = b.json.remove("fit").and_then(|f| f.as_f64()) {
-                let slack = (3.0 * SLACK).min(fit - 0.3);
+                let slack = (3.0 * SLACK).min(fit - FIT_MARGIN);
                 if body && slack > 0.05 {
                     let right = b.json["indent"]
                         .get("right")
