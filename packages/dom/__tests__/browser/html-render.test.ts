@@ -111,6 +111,8 @@ describe(`HTML renderer on corpus documents in ${browser}`, () => {
     for (const entry of corpus) {
       const doc = openHtml(engine, entry.files);
       const html = await compileHtml(doc, entry.source);
+      // Anchors are offsets into the source the engine compiled: the input healed, its lint fixes in.
+      const compiled = doc.getState().heal.source;
       doc.dispose();
       const renderer = mount();
       renderer.update(html);
@@ -127,7 +129,7 @@ describe(`HTML renderer on corpus documents in ${browser}`, () => {
         const words = el.textContent?.match(/\p{L}{5,}/gu) ?? [];
         if (words.length === 0) continue;
         checked++;
-        const source = entry.source.slice(range.from, range.to ?? entry.source.length);
+        const source = compiled.slice(range.from, range.to ?? compiled.length);
         if (!words.some((w) => source.includes(w))) misses.push(`${entry.name}: ${el.textContent?.slice(0, 60)}`);
       }
       unmount(renderer);
