@@ -2314,7 +2314,9 @@ impl Builder {
         // end on a later page, after this row's next cells).
         let mut nested: Vec<(Location, f64, f64)> = Vec::new();
         let within = |nested: &[(Location, f64, f64)], x: f64| {
-            nested.iter().any(|(_, x0, x1)| x >= x0 - 0.5 && x < x1 - 0.5)
+            nested
+                .iter()
+                .any(|(_, x0, x1)| x >= x0 - 0.5 && x < x1 - 0.5)
         };
         for (k, &id) in ids.iter().enumerate().skip(1) {
             match &self.items[id].kind {
@@ -2527,31 +2529,6 @@ impl Builder {
                 left: cx + inset.left,
                 right: cx + cw - inset.right,
             };
-            // A stroke along the cell's top or bottom edge drawn by its content (a box with a bottom stroke, as
-            // edu's student fields) is the cell's border: the row keeps its height.
-            // Not in a cell broken across pages: its first part ends at the page, not at an edge it draws.
-            let split = cell_ids.iter().any(|&id| self.items[id].page > cpage);
-            let mut edge_segs = Vec::new();
-            let cell_ids: Vec<usize> = cell_ids
-                .into_iter()
-                .filter(|&id| match &self.items[id].kind {
-                    Kind::Seg(s)
-                        if !split
-                            && s.horizontal()
-                            && s.x1 - s.x0 > 0.9 * cw
-                            && ((s.y0 - (cy + ch)).abs() < 4.0 || (s.y0 - cy).abs() < 1.0) =>
-                    {
-                        let edge = if (s.y0 - cy).abs() < 1.0 { cy } else { cy + ch };
-                        edge_segs.push(Seg {
-                            y0: edge,
-                            y1: edge,
-                            ..s.clone()
-                        });
-                        false
-                    }
-                    _ => true,
-                })
-                .collect();
             // Typst lets a word too long for the cell run past its inset; engines break it there. The inset on the
             // right gives way to the widest line (an outer edge can't).
             let widest = cell_ids
@@ -2601,9 +2578,7 @@ impl Builder {
                 rend
             };
             let blocks = self.with_gaps_from(blocks, content_top);
-            let mut all = segs.clone();
-            all.extend(edge_segs);
-            let border = sides_json(&all, cell_rect);
+            let border = sides_json(&segs, cell_rect);
             let thickness = |side: &str| {
                 border
                     .get(side)
@@ -2706,6 +2681,11 @@ impl Builder {
             }
         }
         let fix = |v: f64| if v == f64::MAX { 0.0 } else { v };
+        // Typst leaves out a gutter where the grid breaks across pages.
+        let gutter_below = |r: usize| match (row_end(r), row_top.get(r + 1).copied().flatten()) {
+            ((p, _), Some((q, _))) if q > p => 0.0,
+            _ => row_gutter(r),
+        };
         for c in laid {
             let top = fix(row_above[c.y]);
             let bottom = fix(row_below[c.y + c.rowspan - 1]);
@@ -2740,7 +2720,7 @@ impl Builder {
                     right: (c.inset.right - c.side_borders.1 / 2.0).max(0.0)
                         + col_gutter(c.x + c.colspan - 1),
                     top,
-                    bottom: bottom + row_gutter(c.y + c.rowspan - 1),
+                    bottom: bottom + gutter_below(c.y + c.rowspan - 1),
                 }),
             );
             cell.insert("borders".into(), c.border);
