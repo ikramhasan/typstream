@@ -23,6 +23,11 @@
 // they replace, and an edit session (@typstream/ai) applies them as they stream:
 // a block being rewritten streams into place while the rest stays, in HTML the
 // text a quote matches is highlighted, then Keep or Undo.
+//
+// A deployment has no Anthropic key of its own: when the route says so, a
+// dialog asks for the visitor's (app/api/chat/key.ts). It stays in this page's
+// memory, goes with each request, and is gone when the page closes; without
+// one, the route replays a recorded worksheet.
 
 import { useChat } from "@ai-sdk/react";
 import {
@@ -46,6 +51,7 @@ import {
   FileDownIcon,
   FileTextIcon,
   ImageIcon,
+  KeyRoundIcon,
   LoaderCircleIcon,
   PencilIcon,
   RotateCwIcon,
@@ -66,7 +72,16 @@ import {
 import { type DocumentState, fetchImages, Typstream, type TypstreamInfo, useTypstream } from "typstream";
 import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
+import { Input } from "@/components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
 import { Message, MessageContent, MessageFooter } from "@/components/ui/message";
@@ -82,6 +97,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { ChatTools } from "./api/chat/images";
+import { type ChatConfig, KEY_HEADER } from "./api/chat/key";
 import type { ChatMetadata } from "./api/chat/route";
 import { Telemetry } from "./telemetry";
 
@@ -602,8 +618,75 @@ const marksOf = (state: EditSessionState): Mark[] =>
     return edit.status === "applied" && state.phase === "review" ? [{ ...edit.range, kind: "changed" }] : [];
   });
 
-/** Where an edit made in place is sent: the chat's route, which edits the document a request carries. */
-const transport = new DefaultChatTransport<ChatMessage>({ api: "/api/chat" });
+/**
+ * The visitor's Anthropic key, when the server has none: in memory only, never stored, and sent with each
+ * request. Module state, since the chat and the edits made in place send through the same transport.
+ */
+let visitorKey = "";
+
+/**
+ * Where the chat and an edit made in place are sent: the chat's route, which edits the document a request
+ * carries. Headers are read on each request, so a key entered later goes with the next one.
+ */
+const transport = new DefaultChatTransport<ChatMessage>({
+  api: "/api/chat",
+  headers: (): Record<string, string> => (visitorKey ? { [KEY_HEADER]: visitorKey } : {}),
+});
+
+/**
+ * Asks for the visitor's Anthropic key. Use sets it for the requests that follow; Replay a sample (or no key)
+ * leaves the route replaying its recorded worksheet.
+ */
+const KeyDialog = ({
+  open,
+  onOpenChange,
+  onKey,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onKey: (key: string) => void;
+}) => {
+  const [value, setValue] = useState("");
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <form
+          className="contents"
+          onSubmit={(e) => {
+            e.preventDefault();
+            onKey(value.trim());
+            setValue("");
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle>Your Anthropic API key</DialogTitle>
+            <DialogDescription>
+              This demo asks Claude with your key. It stays in this tab's memory and goes only with your requests: it
+              isn't saved, and closing the page forgets it. Without one, a recorded worksheet replays.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            type="password"
+            autoComplete="off"
+            spellCheck={false}
+            placeholder="sk-ant-…"
+            aria-label="Anthropic API key"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+          />
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onKey("")}>
+              Replay a sample
+            </Button>
+            <Button type="submit" disabled={!value.trim()}>
+              Use key
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 const NO_SESSION = () => () => {};
 const NO_STATE = () => null;
@@ -803,11 +886,23 @@ type SuggestionButtonProps = {
 };
 
 export default function Page() {
-  const chat = useChat<ChatMessage>();
+  const chat = useChat<ChatMessage>({ transport });
   const { messages, setMessages, sendMessage, regenerate, stop, status, error } = chat;
   const [input, setInput] = useState("");
   const [target, setTarget] = useState<Target>("paged");
   const [answers, setAnswers] = useState(false);
+  // Whether to ask for a key (only when the server has none), whether the dialog is open, and whether one is set.
+  const [askForKey, setAskForKey] = useState(false);
+  const [keyDialog, setKeyDialog] = useState(false);
+  const [hasKey, setHasKey] = useState(false);
+  useEffect(() => {
+    void fetch("/api/chat")
+      .then((response) => response.json() as Promise<ChatConfig>)
+      .then(({ serverKey }) => {
+        setAskForKey(!serverKey);
+        setKeyDialog(!serverKey);
+      });
+  }, []);
   const formRef = useRef<HTMLFormElement>(null);
   const busy = status === "submitted" || status === "streaming";
   // One edit session per answer to an edit request typed in the chat, made the first time it shows,
@@ -854,6 +949,15 @@ export default function Page() {
     <Telemetry>
       <MessageScrollerProvider autoScroll>
         <main className="mx-auto flex h-dvh max-w-3xl flex-col">
+          <KeyDialog
+            open={keyDialog}
+            onOpenChange={setKeyDialog}
+            onKey={(key) => {
+              visitorKey = key;
+              setHasKey(key !== "");
+              setKeyDialog(false);
+            }}
+          />
           <header className="flex items-center justify-between gap-4 px-4 py-4">
             <h1 className="font-medium">typstream × AI SDK</h1>
             {messages.length > 0 && (
@@ -869,6 +973,12 @@ export default function Page() {
               >
                 <SquarePenIcon data-icon="inline-start" />
                 New chat
+              </Button>
+            )}
+            {askForKey && (
+              <Button variant="ghost" size="sm" onClick={() => setKeyDialog(true)}>
+                <KeyRoundIcon data-icon="inline-start" />
+                {hasKey ? "Change key" : "Add key"}
               </Button>
             )}
             <Label className="ml-auto font-normal">

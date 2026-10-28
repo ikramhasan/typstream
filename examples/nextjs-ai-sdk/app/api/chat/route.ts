@@ -1,7 +1,8 @@
-// The chat endpoint. With ANTHROPIC_API_KEY set it asks Claude for a Typst
-// document; without one it replays a worksheet token by token, so the
-// example (and its smoke test) runs offline. Either way the client sees the
-// same UI message stream.
+// The chat endpoint. With a key it asks Claude for a Typst document; without
+// one it replays a worksheet token by token, so the example (and its smoke
+// test) runs offline. Either way the client sees the same UI message stream.
+// The key is the server's ANTHROPIC_API_KEY, or else the visitor's, sent with
+// the request (./key.ts).
 //
 // Once there's a document, the page sends it with each request (in the user
 // message's metadata), and the model edits it instead of writing a new one:
@@ -9,13 +10,14 @@
 // goes in with the document as it is now (`editRequest`). The page applies the
 // answer's edits as they stream (`createEditSession`).
 
-import { anthropic } from "@ai-sdk/anthropic";
+import { createAnthropic } from "@ai-sdk/anthropic";
 import { editPrompt, editRequest, textOf } from "@typstream/ai";
 import { buildSystemPrompt, edu } from "@typstream/edu";
 import { googleFonts } from "@typstream/google-fonts";
 import { mindmap } from "@typstream/mindmap";
 import { universe } from "@typstream/universe";
 import {
+  APICallError,
   convertToModelMessages,
   createUIMessageStream,
   createUIMessageStreamResponse,
@@ -24,6 +26,7 @@ import {
   type UIMessage,
 } from "ai";
 import { IMAGE_RULES, stopWhen, tools } from "./images";
+import { type ChatConfig, KEY_HEADER } from "./key";
 import { EDIT, WORKSHEET } from "./worksheet";
 
 // Image searches come before the document, so an answer can take longer than one model call.
@@ -48,6 +51,10 @@ const INSTRUCTIONS: SystemModelMessage[] = [
 
 /** In edit mode, after the kit: the `<edit>` format and its rules (measured in tools/llm-corpus, #34). */
 const EDITING: SystemModelMessage = { role: "system", content: editPrompt() };
+
+export function GET() {
+  return Response.json({ serverKey: Boolean(process.env.ANTHROPIC_API_KEY) } satisfies ChatConfig);
+}
 
 /** What the page sends: the chat, and on a user message, the document it is about. */
 export type ChatMetadata = { document?: string };
@@ -74,7 +81,8 @@ export async function POST(request: Request) {
   const { messages }: { messages: UIMessage<ChatMetadata>[] } = await request.json();
   const last = messages[messages.length - 1];
   const document = last?.role === "user" ? last.metadata?.document : undefined;
-  if (!process.env.ANTHROPIC_API_KEY) return replay(document === undefined ? WORKSHEET : EDIT);
+  const apiKey = process.env.ANTHROPIC_API_KEY || request.headers.get(KEY_HEADER);
+  if (!apiKey) return replay(document === undefined ? WORKSHEET : EDIT);
   // Editing: the last request goes in with the document as it is now. Earlier answers stay as
   // they were written (documents, or edits); the document in the last turn is the one to quote.
   const sent =
@@ -92,11 +100,20 @@ export async function POST(request: Request) {
             : message,
         );
   const result = streamText({
-    model: anthropic(process.env.TYPSTREAM_MODEL ?? "claude-sonnet-5-5"),
+    model: createAnthropic({ apiKey })(process.env.TYPSTREAM_MODEL ?? "claude-sonnet-5-5"),
     instructions: document === undefined ? INSTRUCTIONS : [...INSTRUCTIONS, EDITING],
     messages: await convertToModelMessages(sent, { tools, ignoreIncompleteToolCalls: true }),
     tools,
     stopWhen,
   });
-  return result.toUIMessageStreamResponse();
+  return result.toUIMessageStreamResponse({
+    // Anthropic's own message for a failed call (a key without credit, a rate limit), so a visitor using their key
+    // knows what to fix; anything else stays the SDK's generic message.
+    onError: (error) =>
+      APICallError.isInstance(error)
+        ? error.statusCode === 401
+          ? "Anthropic rejected the API key."
+          : error.message
+        : "An error occurred.",
+  });
 }

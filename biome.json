@@ -13,6 +13,7 @@
       ".dependency-cruiser.mjs",
       "!**/dist",
       "!**/.next",
+      "!**/.vercel",
       "!**/.source",
       "!**/next-env.d.ts",
       "!**/node_modules",

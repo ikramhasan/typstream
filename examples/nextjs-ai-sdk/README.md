@@ -9,6 +9,8 @@ pnpm dev        # http://localhost:3000; put ANTHROPIC_API_KEY in .env.local, or
 pnpm test       # build, start, stream two answers in Chromium (pages, then HTML): no error frames
 ```
 
+It's deployed at <https://typstream-ai-sdk.vercel.app> (`.github/workflows/deploy.yml`), with no key of its own: when the server has no `ANTHROPIC_API_KEY`, the page asks for the visitor's key in a dialog. The key stays in the page's memory (never in storage), goes with each request in a header (`app/api/chat/key.ts`), and the route uses it for that request's model call only; **Replay a sample** declines and replays the worksheet below. A key the server has always wins, and then the page doesn't ask.
+
 If your shell sets `ANTHROPIC_BASE_URL` (a proxy), the route sends requests there: Next.js doesn't let `.env.local` override a variable that's already set. Start it with `env -u ANTHROPIC_BASE_URL pnpm dev`.
 
 ## The integration

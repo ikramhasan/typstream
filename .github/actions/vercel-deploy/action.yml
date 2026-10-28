@@ -1,0 +1,45 @@
+name: Vercel deploy (prebuilt)
+description: >
+  Deploys one Vercel project from the repository root: pulls its settings (root directory, framework, Node) and its
+  environment variables for the target, builds into .vercel/output on the runner (`vercel build`, which runs the app's
+  own build script), and uploads that (`vercel deploy --prebuilt`). Needs the Vercel CLI on PATH, the workspace
+  installed and the packages the app imports built.
+
+inputs:
+  project:
+    description: The Vercel project's id (prj_…).
+    required: true
+  org:
+    description: The team's id (team_…).
+    required: true
+  token:
+    description: A Vercel token with access to the team.
+    required: true
+  production:
+    description: "'true' for a production deployment (the project's domains move to it), else a preview."
+    default: "false"
+
+outputs:
+  url:
+    description: The deployment's own URL (https://<project>-<hash>-<team>.vercel.app).
+    value: ${{ steps.deploy.outputs.url }}
+
+runs:
+  using: composite
+  steps:
+    - id: deploy
+      shell: bash
+      env:
+        VERCEL_ORG_ID: ${{ inputs.org }}
+        VERCEL_PROJECT_ID: ${{ inputs.project }}
+        VERCEL_TOKEN: ${{ inputs.token }}
+        PRODUCTION: ${{ inputs.production }}
+      run: |
+        if [ "$PRODUCTION" = true ]; then target=production; prod=(--prod); else target=preview; prod=(); fi
+        # One .vercel/ per project: the previous deploy's settings and output must not leak into this one.
+        rm -rf .vercel
+        vercel pull --yes --environment="$target" --token="$VERCEL_TOKEN"
+        vercel build "${prod[@]}" --token="$VERCEL_TOKEN"
+        url=$(vercel deploy --prebuilt "${prod[@]}" --json --token="$VERCEL_TOKEN" | jq -r .deployment.url)
+        test -n "$url" && test "$url" != null
+        echo "url=$url" >> "$GITHUB_OUTPUT"
