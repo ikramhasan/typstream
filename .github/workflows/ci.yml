@@ -16,10 +16,11 @@ concurrency:
 permissions:
   contents: read
 
-# Every job's ./.github/actions/pnpm installs this Node and the pnpm pinned in package.json's packageManager,
-# then runs `pnpm install --frozen-lockfile` against a store cached once per lockfile (saved by lint, on main).
+# Every job's ./.github/actions/pnpm sets up this Node (from the runners' tool cache, not a download) and the pnpm
+# pinned in package.json's packageManager, then runs `pnpm install --frozen-lockfile` against a store cached once per
+# lockfile (saved by lint, on main).
 env:
-  NODE: node@24
+  NODE: "24"
   # engine-wasm's own checks need native typst and cargo; only the engine jobs have them. Every job restores its
   # dist/ with ./.github/actions/engine-wasm (built with Rust and binaryen on a cache miss).
   # The compile oracle (tools/compile-oracle) needs the built engine, and html-compat's, edu's and mindmap's tests compile
@@ -45,7 +46,7 @@ jobs:
       - uses: actions/checkout@v7
       # The one job that saves the pnpm store, on pushes to main: PRs restore main's.
       - uses: ./.github/actions/pnpm
-        with: { runtime: "${{ env.NODE }}", save: "${{ github.event_name == 'push' }}" }
+        with: { node: "${{ env.NODE }}", save: "${{ github.event_name == 'push' }}" }
       - run: pnpm check
       - run: pnpm check:layers
       # Reads the API reports, which the test job's check:api keeps equal to the built packages.
@@ -60,7 +61,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/engine-wasm
       - uses: ./.github/actions/pnpm
-        with: { runtime: "${{ env.NODE }}" }
+        with: { node: "${{ env.NODE }}" }
       - run: pnpm check-types $NOT_ENGINE
 
   test:
@@ -72,7 +73,7 @@ jobs:
       - uses: ./.github/actions/oracle
       - uses: ./.github/actions/engine-wasm
       - uses: ./.github/actions/pnpm
-        with: { runtime: "${{ env.NODE }}" }
+        with: { node: "${{ env.NODE }}" }
       - run: pnpm build $NOT_ENGINE
       # The public API reports (api/*.api.md) match the built packages; the engine jobs check the rest.
       - run: pnpm check:api $NOT_ENGINE
@@ -95,7 +96,7 @@ jobs:
             | tar -xJ -C "$RUNNER_TEMP"
           echo "$RUNNER_TEMP/typst-x86_64-unknown-linux-musl" >> "$GITHUB_PATH"
       - uses: ./.github/actions/pnpm
-        with: { runtime: "${{ env.NODE }}" }
+        with: { node: "${{ env.NODE }}" }
       - run: pnpm corpus:validate
 
   size:
@@ -106,7 +107,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/engine-wasm
       - uses: ./.github/actions/pnpm
-        with: { runtime: "${{ env.NODE }}" }
+        with: { node: "${{ env.NODE }}" }
       - run: pnpm size $NOT_ENGINE
 
   # Shared runners are too noisy for the strict latency budgets: report every number, fail only on a
@@ -119,7 +120,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/engine-wasm
       - uses: ./.github/actions/pnpm
-        with: { runtime: "${{ env.NODE }}" }
+        with: { node: "${{ env.NODE }}" }
       - run: pnpm build $NOT_ENGINE
       - name: node packages/heal/scripts/perf.mjs
         env:
@@ -180,7 +181,7 @@ jobs:
             | tar -xJ -C "$RUNNER_TEMP"
           echo "$RUNNER_TEMP/typst-x86_64-unknown-linux-musl" >> "$GITHUB_PATH"
       - uses: ./.github/actions/pnpm
-        with: { runtime: "${{ env.NODE }}" }
+        with: { node: "${{ env.NODE }}" }
       - run: ${{ matrix.run }}
 
   # The engine worker in real browsers (packages/engine/__tests__/browser): protocol conformance, streaming through
@@ -203,7 +204,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/engine-wasm
       - uses: ./.github/actions/pnpm
-        with: { runtime: "${{ env.NODE }}" }
+        with: { node: "${{ env.NODE }}" }
       # Inside Playwright's image (tools/repo/playwright-docker.mjs; the first step pulls it): its browsers and their
       # libraries are installed there, so no `playwright install --with-deps`, whose apt mirror has stalled these jobs
       # for 10+ minutes.
@@ -232,7 +233,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/engine-wasm
       - uses: ./.github/actions/pnpm
-        with: { runtime: "${{ env.NODE }}" }
+        with: { node: "${{ env.NODE }}" }
       - run: pnpm --filter @typstream/browser-suites test:visual
         env:
           BROWSERS: ${{ matrix.browser }}
