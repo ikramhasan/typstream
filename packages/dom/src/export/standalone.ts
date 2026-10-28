@@ -80,11 +80,8 @@ const base64 = (bytes: Uint8Array): string => {
   return btoa(binary);
 };
 
-/** A font file's media type, from its first four bytes: CFF-outline OpenType says `OTTO`. */
-const fontType = (bytes: Uint8Array): string => {
-  const tag = String.fromCharCode(...bytes.subarray(0, 4));
-  return tag === "OTTO" ? "font/otf" : tag === "wOF2" ? "font/woff2" : tag === "wOFF" ? "font/woff" : "font/ttf";
-};
+/** A font file's media type: CFF-outline OpenType starts with `OTTO`; Typst reads nothing but it and TrueType. */
+const fontType = (bytes: Uint8Array): string => (bytes[0] === 79 ? "font/otf" : "font/ttf");
 
 /** A tag's attributes with `name` set to `value`, or with `value` added to it (`class`). */
 const withAttr = (attrs: string, name: string, value: string, append = false): string => {
