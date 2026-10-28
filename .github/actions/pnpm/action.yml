@@ -1,15 +1,15 @@
 name: pnpm install
 description: >
-  pnpm/setup (pnpm from package.json's packageManager, the runtime) and `pnpm install --frozen-lockfile`,
-  with the store cached once per lockfile. pnpm/setup's own store cache saves a new ~250 MB copy from every
-  job of every run (pnpm writes to a restored store even when the lockfile matches, so its "unchanged"
-  check never holds), which filled the repository's 10 GB and evicted the caches that matter. Here the key
-  is the lockfile's hash, every job restores, and only the job given `save` saves: once per lockfile, after
-  deleting the copies for earlier lockfiles on the same branch.
+  Node from the runner's tool cache (actions/setup-node), pnpm/setup (pnpm from package.json's packageManager)
+  and `pnpm install --frozen-lockfile`, with the store cached once per lockfile. pnpm/setup's own store cache
+  saves a new ~250 MB copy from every job of every run (pnpm writes to a restored store even when the lockfile
+  matches, so its "unchanged" check never holds), which filled the repository's 10 GB and evicted the caches
+  that matter. Here the key is the lockfile's hash, every job restores, and only the job given `save` saves:
+  once per lockfile, after deleting the copies for earlier lockfiles on the same branch.
 
 inputs:
-  runtime:
-    description: Runtime to install (pnpm/setup's `runtime`, e.g. node@24)
+  node:
+    description: Node.js version (actions/setup-node's `node-version`, e.g. 24)
     required: true
   save:
     description: >
@@ -20,14 +20,23 @@ inputs:
 runs:
   using: composite
   steps:
+    # Not pnpm/setup's `runtime`: that downloads Node from nodejs.org in every job, and those downloads stalled
+    # until the job's time limit (#116). The runners' tool cache has Node 24, which setup-node uses offline.
+    - uses: actions/setup-node@v7
+      with: { node-version: "${{ inputs.node }}", package-manager-cache: false }
+
+    # pnpm's self-contained binary only; no runtime (none in devEngines, no version file to pick one up from).
     - uses: pnpm/setup@v3
-      with: { runtime: "${{ inputs.runtime }}", install: false }
+      with: { install: false, node-version-file: false }
 
     - id: store
       shell: bash
+      # Node's major version, not the exact one: runner images roll out at different times, so one run's jobs get
+      # different Node 24 releases from the tool cache (24.21.0 and 24.22.1 on 2026-10-28), and an exact key misses
+      # main's store on some of them. pnpm keys builds in the store by major version too (`linux;x64;node24`).
       run: |
         echo "path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
-        echo "prefix=pnpm-store-${RUNNER_OS}-$(node --version)-" >> "$GITHUB_OUTPUT"
+        echo "prefix=pnpm-store-${RUNNER_OS}-node$(node -p 'process.versions.node.split(".")[0]')-" >> "$GITHUB_OUTPUT"
 
     - id: cache
       uses: actions/cache/restore@v6
@@ -37,7 +46,7 @@ runs:
         # A new lockfile starts from the last store and downloads only what changed.
         restore-keys: ${{ steps.store.outputs.prefix }}
 
-    # --no-runtime: pnpm/setup has already installed devEngines.runtime.
+    # --no-runtime: setup-node has installed Node; pnpm mustn't download one for devEngines.runtime.
     - shell: bash
       run: pnpm install --frozen-lockfile --no-runtime
 
