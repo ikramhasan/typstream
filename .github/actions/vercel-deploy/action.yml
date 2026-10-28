@@ -42,6 +42,8 @@ runs:
         vercel build "${prod[@]}" --token="$VERCEL_TOKEN"
         # `--json` prints the deployment itself; when the CLI detects a coding agent (AI_AGENT, CLAUDECODE, …) it wraps
         # it as `{ status, deployment }`. Read either, so the step runs the same locally.
-        url=$(vercel deploy --prebuilt "${prod[@]}" --json --token="$VERCEL_TOKEN" | jq -r '.deployment.url // .url')
+        # `--archive=tgz` uploads the output as one file: file by file, a few deploys of the website's ~100 pages use up
+        # the free plan's 5,000 uploads a day (`api-upload-free`), and every deploy fails for the next 24 hours.
+        url=$(vercel deploy --prebuilt --archive=tgz "${prod[@]}" --json --token="$VERCEL_TOKEN" | jq -r '.deployment.url // .url')
         test -n "$url" && test "$url" != null
         echo "url=$url" >> "$GITHUB_OUTPUT"
