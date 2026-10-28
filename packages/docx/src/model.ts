@@ -162,6 +162,8 @@ export interface DocxRow {
   cantSplit: boolean;
   /** Repeated on every page the table runs over. */
   header?: boolean;
+  /** Starts a page: the table is split there, a page break between, its header rows repeated. */
+  pageBreak?: boolean;
   cells: DocxCell[];
 }
 

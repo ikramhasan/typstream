@@ -2827,15 +2827,29 @@ impl Builder {
             rows[c.y].push(Json::Object(cell));
         }
         let headers: Vec<usize> = header_rows.into_iter().collect();
+        // A row Typst starts a page with, the page before having room left (a row that can't split, moved on whole):
+        // a page break before it, as before a block.
+        let breaks_page = |r: usize| -> bool {
+            let (Some((p, _)), Some(prev)) = (row_top[r], r.checked_sub(1)) else {
+                return false;
+            };
+            let (q, end) = row_end(prev);
+            let (size, m) = self.geometry[q];
+            p > q && size.y.to_pt() - m.bottom - end > PAGE_ROOM
+        };
         let rows: Vec<Json> = rows
             .into_iter()
             .enumerate()
             .map(|(r, cells)| {
-                json!({
+                let mut row = json!({
                     "cantSplit": !grid,
                     "header": headers.contains(&r),
                     "cells": cells,
-                })
+                });
+                if breaks_page(r) {
+                    row["pageBreak"] = json!(true);
+                }
+                row
             })
             .collect();
         let mut json = Map::new();

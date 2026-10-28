@@ -173,6 +173,34 @@ describe("writeDocx", () => {
     expect(pPr.indexOf("framePr")).toBeLessThan(pPr.indexOf("spacing"));
   });
 
+  it("splits a table at a row that starts a page, repeating its header rows after the break", () => {
+    const cell = (text: string) => ({
+      col: 0,
+      margins: { top: 0, right: 0, bottom: 0, left: 0 },
+      borders: {},
+      blocks: [p(text)],
+    });
+    const doc = parts(
+      model([
+        {
+          type: "table",
+          indent: 0,
+          columns: [100],
+          rows: [
+            { cantSplit: true, header: true, cells: [cell("Head")] },
+            { cantSplit: true, cells: [cell("One")] },
+            { cantSplit: true, pageBreak: true, cells: [cell("Two")] },
+          ],
+        },
+      ]),
+    ).xml("word/document.xml");
+    expect(doc.match(/<w:tbl>/g)).toHaveLength(2);
+    expect(doc.match(/>Head</g)).toHaveLength(2);
+    const second = doc.slice(doc.lastIndexOf("<w:tbl>"));
+    expect(second.indexOf("Head")).toBeLessThan(second.indexOf("Two"));
+    expect(doc.slice(doc.indexOf("One"), doc.lastIndexOf("<w:tbl>"))).toContain("<w:pageBreakBefore/>");
+  });
+
   it("numbers list paragraphs from the list's numbering, its number in the hanging indent", () => {
     const doc = parts(
       model([p("First", { list: { id: 0, label: "1." } })], {

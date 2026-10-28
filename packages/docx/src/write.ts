@@ -313,7 +313,16 @@ class Writer {
           if (prev && prev.type !== "p") out.push(this.spacer(Math.max(0.05, b.before ?? 0)));
           else if (!prev && (b.before ?? 0) > 0.05) out.push(this.spacer(b.before ?? 0));
           if (b.pageBreak) out.push(this.spacer(0.05, 0, true));
-          out.push(this.table(b, part));
+          // Word breaks a page before a paragraph, not a row: a row that starts a page splits the table there.
+          const headers = b.rows.filter((r) => r.header);
+          let from = 0;
+          b.rows.forEach((row, k) => {
+            if (!row.pageBreak || k === 0) return;
+            out.push(this.table({ ...b, rows: [...(from > 0 ? headers : []), ...b.rows.slice(from, k)] }, part));
+            out.push(this.spacer(0.05, 0, true));
+            from = k;
+          });
+          out.push(this.table({ ...b, rows: [...(from > 0 ? headers : []), ...b.rows.slice(from)] }, part));
           break;
         }
         case "rule":
