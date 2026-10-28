@@ -1705,16 +1705,19 @@ impl Builder {
     fn list(&mut self, ids: &[usize], area: Area) -> Vec<Block> {
         let mut out = Vec::new();
         let mut items: Vec<(Vec<usize>, Vec<usize>)> = Vec::new();
+        // Where each item's body starts (its marker's position).
+        let mut body_x: Vec<Option<f64>> = Vec::new();
         let mut depth = 0usize;
         let mut mode = 0; // 1: label, 2: body
         let mut stack: Vec<Location> = Vec::new();
         for &id in ids {
             match &self.items[id].kind {
-                Kind::Start(elem, _) if depth == 0 => {
+                Kind::Start(elem, at) if depth == 0 => {
                     if let Some(marker) = elem.to_packed::<PdfMarkerTag>() {
                         match marker.kind {
                             PdfMarkerTagKind::ListItemLabel => {
                                 items.push((Vec::new(), Vec::new()));
+                                body_x.push(None);
                                 mode = 1;
                                 if let Some(l) = elem.location() {
                                     stack.push(l);
@@ -1724,6 +1727,10 @@ impl Builder {
                             PdfMarkerTagKind::ListItemBody | PdfMarkerTagKind::TermsItemBody => {
                                 if items.is_empty() || !items.last().unwrap().1.is_empty() {
                                     items.push((Vec::new(), Vec::new()));
+                                    body_x.push(None);
+                                }
+                                if let Some(x) = body_x.last_mut() {
+                                    *x = Some(at.x.to_pt());
                                 }
                                 mode = 2;
                                 if let Some(l) = elem.location() {
@@ -1807,9 +1814,13 @@ impl Builder {
         let label_right = rights.iter().cloned().fold(f64::MIN, f64::max);
         let mut body_left = f64::MAX;
         for (k, (_, body)) in items.iter().enumerate() {
-            let flow = self.flow(body, area, false);
+            // The body flows from where it starts, so a line as long as the room left reads as flush, not as
+            // centred in the area; its blocks are then indented by as much.
+            let left = body_x[k].filter(|x| *x > area.left && *x < area.right).unwrap_or(area.left);
+            let flow = self.flow(body, Area { left, right: area.right }, false);
             let mut first = true;
             for mut b in flow {
+                shift(&mut b.json, left - area.left);
                 if first && b.json.get("type") == Some(&json!("p")) {
                     let left = area.left + b.json["indent"]["left"].as_f64().unwrap_or(0.0);
                     body_left = body_left.min(left);
@@ -3090,6 +3101,24 @@ fn cell_node(
         rowspan,
         inset,
         valign,
+    }
+}
+
+/// A block's indent moved right by `dx` (it was laid out in an area starting `dx` further right).
+fn shift(json: &mut Map<String, Json>, dx: f64) {
+    if dx == 0.0 {
+        return;
+    }
+    match json.get_mut("indent") {
+        Some(Json::Object(ind)) => {
+            let left = ind.get("left").and_then(|l| l.as_f64()).unwrap_or(0.0);
+            ind.insert("left".into(), json!(round(left + dx)));
+        }
+        Some(v @ Json::Number(_)) => {
+            let n = v.as_f64().unwrap_or(0.0);
+            *v = json!(round(n + dx));
+        }
+        _ => {}
     }
 }
 
