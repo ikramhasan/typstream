@@ -239,6 +239,32 @@ describe(`mountTypstream in ${browser}`, () => {
     el.remove();
   });
 
+  it("fit-width shows the document's own pages at the element's width, and only scales them on resize", async () => {
+    const el = host();
+    el.style.width = "300px";
+    const view = mountTypstream(el, {
+      engine,
+      source: "= Worksheet\nSolve $x^2 = 4$.",
+      target: "paged",
+      layout: "fit-width",
+      lazy: false,
+    });
+    const shown = await until(view, (s) => s.status === "done" && s.artifact?.target === "paged");
+    // A4, as the PDF has it (#118), shown 300 px wide…
+    const page = shown.artifact?.target === "paged" ? shown.artifact.pages[0] : undefined;
+    expect(page?.width).toBeCloseTo(595.28, 1);
+    const pageEl = () => el.querySelector(".typstream-page") as HTMLElement;
+    await sleep(50);
+    expect(pageEl().getBoundingClientRect().width).toBeCloseTo(300, 0);
+    // …then 900 px wide, larger than its own size, without compiling again.
+    el.style.width = "900px";
+    await sleep(400);
+    expect(pageEl().getBoundingClientRect().width).toBeCloseTo(900, 0);
+    expect(view.getState()?.artifact).toBe(shown.artifact);
+    view.destroy();
+    el.remove();
+  });
+
   it("exports at the document's own page size, a standalone HTML file, and the source", async () => {
     const el = host();
     el.style.width = "300px";
@@ -247,7 +273,7 @@ describe(`mountTypstream in ${browser}`, () => {
       engine,
       source,
       target: "paged",
-      layout: "fit-width",
+      layout: "reflow",
       inputs: { answers: "true" },
       stylesheets: [".marker { color: red }"],
       lazy: false,

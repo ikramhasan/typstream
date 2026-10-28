@@ -1,25 +1,26 @@
 // Wires a paged view to an engine document: renders each new paged artifact,
-// asks for pages as drawings for its canvases (#14), and in the fit-width
-// layout compiles pages as wide as the container (PLAN §6.5), through
-// `sys.inputs` read by FIT_WIDTH_PREAMBLE.
+// asks for pages as drawings for its canvases (#14), and in the reflow layout
+// compiles pages as wide as the container (PLAN §6.5), through `sys.inputs`
+// read by REFLOW_PREAMBLE. The fit-width layout needs nothing here: it shows
+// the document's own pages, scaled by the view, so they are the PDF's (#118).
 
 import type { PagedArtifact } from "@typstream/core";
 import type { EngineDocument } from "@typstream/engine";
 import { createPagedView, type PagedView, type PagedViewOptions } from "./view";
 
-/** `sys.inputs` keys the fit-width preamble reads. */
+/** `sys.inputs` keys the reflow preamble reads. */
 const WIDTH = "typstream-page-width";
 const HEIGHT = "typstream-page-height";
 
 /**
  * Typst for the document's preamble (`engine.open({ preamble })`) that sets the
- * page size from `sys.inputs` in the fit-width layout, and does nothing without
+ * page size from `sys.inputs` in the reflow layout, and does nothing without
  * them. A document's own `#set page(width: …)` or `paper` comes later and wins:
- * Typst has no rule that applies after the document, so fit-width only sets the
+ * Typst has no rule that applies after the document, so reflow only sets the
  * default page.
  * @public
  */
-export const FIT_WIDTH_PREAMBLE: string = `#set page(
+export const REFLOW_PREAMBLE: string = `#set page(
   width: float(sys.inputs.at("${WIDTH}", default: "0")) * 1pt,
   height: if sys.inputs.at("${HEIGHT}", default: "auto") == "auto" { auto } else { float(sys.inputs.at("${HEIGHT}")) * 1pt },
 ) if "${WIDTH}" in sys.inputs`;
@@ -34,15 +35,15 @@ export interface MountPagedOptions extends PagedViewOptions {
    */
   renderer?: "canvas" | "svg";
   /**
-   * Page height in the fit-width layout: `"a4"` (default) keeps A4's proportions
+   * Page height in the reflow layout: `"a4"` (default) keeps A4's proportions
    * at the container's width, so long documents still have pages and only the
    * changed ones are sent; `"auto"` makes one page as tall as the content (every
    * update then redraws the whole document: for short ones).
    */
   pageHeight?: "a4" | "auto";
-  /** The document's other `sys.inputs`; fit-width adds its own to them. */
+  /** The document's other `sys.inputs`; reflow adds its own to them. */
   inputs?: Record<string, string>;
-  /** Wait this long after the container's width last changed before recompiling (ms). Default 150. */
+  /** Reflow: wait this long after the container's width last changed before recompiling (ms). Default 150. */
   resizeDebounce?: number;
 }
 
@@ -58,11 +59,11 @@ export interface MountedPaged {
 const toPt = (px: number) => Math.round(px * 1.5) / 2;
 
 /**
- * The `sys.inputs` that make the fit-width preamble lay pages out `widthPx` CSS
+ * The `sys.inputs` that make the reflow preamble lay pages out `widthPx` CSS
  * pixels wide.
  * @public
  */
-export const fitWidthInputs = (
+export const reflowInputs = (
   widthPx: number,
   pageHeight: "a4" | "auto" = "a4",
   inputs: Record<string, string> = {},
@@ -77,8 +78,8 @@ export const fitWidthInputs = (
 
 /**
  * Renders `doc` as pages in `container` and keeps them up to date. Switches the
- * document to the paged target. For `layout: "fit-width"`, open the document
- * with {@link FIT_WIDTH_PREAMBLE} in its preamble.
+ * document to the paged target. For `layout: "reflow"`, open the document
+ * with {@link REFLOW_PREAMBLE} in its preamble.
  * @public
  */
 export const mountPaged = (
@@ -97,11 +98,11 @@ export const mountPaged = (
   const unsubscribe = doc.subscribe(show);
 
   let stopResize = () => {};
-  if (options.layout === "fit-width") {
+  if (options.layout === "reflow") {
     const pageHeight = options.pageHeight ?? "a4";
     const fit = () => {
       const width = container.clientWidth;
-      if (width > 0) doc.setInputs(fitWidthInputs(width, pageHeight, options.inputs));
+      if (width > 0) doc.setInputs(reflowInputs(width, pageHeight, options.inputs));
     };
     // The first width compiles right away; later ones once resizing pauses.
     // Meanwhile the old pages scale to the new width.

@@ -1,5 +1,5 @@
 // TypstreamHandle's exports (#18): they forward to the current mount, whose
-// exports leave out fit-width's page size, and fail clearly without one.
+// exports leave out reflow's page size, and fail clearly without one.
 import type { MountedTypstream } from "@typstream/dom";
 import { describe, expect, it, vi } from "vitest";
 import { createHandle } from "../src/Typstream";

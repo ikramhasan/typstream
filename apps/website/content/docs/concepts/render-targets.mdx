@@ -93,15 +93,16 @@ The paged target shows each page as Typst lays it out: what you see is what prin
 **Layouts.**
 
 - `layout: "fixed"` (default) shows pages at their authored size, scaled down to fit the element.
-- `layout: "fit-width"` compiles pages as wide as the element, recompiling after a resize (150 ms after it stops). It sets the default page size, so a document with its own `#set page(paper: …)` keeps it. Pages keep A4 proportions by default, so a long document still updates page by page; `pageHeight: "auto"` makes one page as tall as the content, for short documents.
+- `layout: "fit-width"` shows the same pages scaled up or down to the element's width, as a PDF viewer's "fit width" does. Resizing only scales them; nothing compiles again.
+- `layout: "reflow"` lays the document out again on pages as wide as the element, recompiling after a resize (150 ms after it stops), for a narrow panel where a scaled A4 page would be too small to read. Its lines and pages then break elsewhere than in the PDF. It sets the default page size, so a document with its own `#set page(paper: …)` keeps it. Pages keep A4 proportions by default, so a long document still updates page by page; `pageHeight: "auto"` makes one page as tall as the content, for short documents.
 
-Exports print at the document's own page size, not the fit-width size.
+`fixed` and `fit-width` show exactly the PDF's pages (a test compares them pixel by pixel). Exports print at the document's own page size, not the reflow size.
 
 ## Which to pick
 
 - **A document panel, a print preview, anything that will be printed: paged.** It is exactly the PDF, page breaks and all, and it is typstream's primary surface, tested and polished first.
 - **Short answers inline in a chat: HTML.** It flows with the conversation, takes your theme and dark mode, animates words as they arrive, and costs less to compile and draw.
 
-The default `target` is still `"html"`, so set `target="paged"` for a document panel; for a panel that resizes, add `layout="fit-width"`.
+The default `target` is still `"html"`, so set `target="paged"` for a document panel; for a panel whose pages should fill its width, add `layout="fit-width"`.
 
 You can switch at any time. Switching keeps the document and its text; the old output stays until the first compile in the new target. Whatever the preview shows, `exportPdf()` and `exportHtml()` export the same source ([Exports](/docs/guides/exports)).

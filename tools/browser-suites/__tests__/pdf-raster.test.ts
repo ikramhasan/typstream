@@ -12,10 +12,11 @@
 // and may land a device pixel apart. A pixel counts as different only when
 // neither image has a matching pixel within one device pixel of it.
 //
-// Pages are shown in the `fixed` layout, at their authored size. The
-// `fit-width` layout lays the document out again at the panel's width (a page
-// as wide as the panel, FIT_WIDTH_PREAMBLE), so its lines and pages are not
-// the PDF's, by design.
+// Pages are shown in the `fit-width` layout, as apps show a document panel:
+// the document's own pages scaled to the panel's width (`fixed` shows the same
+// pages at their own size). The `reflow` layout lays the document out again
+// at the panel's width (REFLOW_PREAMBLE), so its lines and pages are not the
+// PDF's, by design, and it isn't compared.
 //
 // It runs on any machine: neither side uses system fonts, and both rasterize
 // in the browser under test, so there are no baselines.
@@ -45,8 +46,8 @@ import {
 
 const browser = server.browser;
 
-/** CSS width of the panel, wider than an A4 page: the `fixed` layout shows it at its authored size (pt × 4/3 px). */
-const WIDTH = 1200;
+/** CSS width of the panel: about an A4 page's own width (595 pt × 4/3 px). */
+const WIDTH = 800;
 
 /**
  * Device pixels per CSS pixel the canvases are painted at, as on a HiDPI
@@ -225,8 +226,7 @@ interface PageResult extends PageDiff {
 }
 
 /**
- * Mounts `source` in the document panel (paged, `fixed`: pages at their
- * authored size), then compares each page shown with the same page of the
+ * Mounts `source` in the document panel (paged, `fit-width`), then compares each page shown with the same page of the
  * mount's PDF export. `exported`, when given, replaces the source before
  * exporting (the suite's own check that a difference is caught).
  */
@@ -238,7 +238,7 @@ const comparePages = async (
 ): Promise<PageResult[]> => {
   const el = host(WIDTH);
   const entry = { source, files } as CorpusDocument;
-  const opts = appOptions(engine, entry, { target: "paged", layout: "fixed" });
+  const opts = appOptions(engine, entry, { target: "paged", layout: "fit-width" });
   const view: MountedTypstream = mountTypstream(el, opts);
   try {
     await until(view, finished);
@@ -308,12 +308,8 @@ describe(`paged preview vs PDF in ${browser}`, () => {
   });
 
   it("catches a missing full stop", async () => {
-    const [page] = await comparePages(
-      "control",
-      "#set page(width: 4cm, height: 2cm)\nHello.",
-      {},
-      "#set page(width: 4cm, height: 2cm)\nHello",
-    );
+    // An A4 page, as the corpus's, so the full stop is as large as one in their text.
+    const [page] = await comparePages("control", "Hello.", {}, "Hello");
     expect(page?.cluster).toBeGreaterThan(MAX_CLUSTER);
   });
 

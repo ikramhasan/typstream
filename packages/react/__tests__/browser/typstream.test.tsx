@@ -281,13 +281,13 @@ describe(`<Typstream> in ${browser}`, () => {
       };
     };
 
-    it("exports a PDF at the document's own page size from a fit-width preview", async () => {
+    it("exports a PDF at the document's own page size from a reflow preview", async () => {
       const r = recorder();
       const { info } = withHook({
         engine,
         source: "= Worksheet\nSolve $x^2 = 4$.",
         target: "paged",
-        layout: "fit-width",
+        layout: "reflow",
         style: { width: "300px" },
         lazy: false,
         ...r.props,
@@ -302,7 +302,7 @@ describe(`<Typstream> in ${browser}`, () => {
       expect(width).toBeCloseTo(595.28, 1);
       expect(height).toBeCloseTo(841.89, 1);
       expect(mediaBox(await (info.current?.handle as TypstreamHandle).exportPdf())).toEqual([width, height]);
-      // `document`'s own export compiles with the preview's inputs, fit-width's width included.
+      // `document`'s own export compiles with the preview's inputs, reflow's width included.
       const [previewWidth] = mediaBox(await (info.current?.document as EngineDocument).exportPdf());
       expect(previewWidth).toBeCloseTo(225, 0);
     }, 60_000);

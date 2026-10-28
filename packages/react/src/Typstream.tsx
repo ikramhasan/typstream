@@ -64,7 +64,7 @@ export interface TypstreamHandle {
    * Exports the document as PDF (#18), compiled by the engine that renders the
    * preview. It compiles with the template's inputs, the `inputs` prop and
    * `options.inputs` (a teacher's copy: `{ showAnswers: "true" }`), but not a
-   * `layout="fit-width"` preview's page size, so it prints at the document's
+   * `layout="reflow"` preview's page size, so it prints at the document's
    * own size. Opens a lazy document that hasn't opened yet. Rejects with the
    * engine's `ExportError`, or an `Error` when the component isn't mounted.
    */
@@ -87,7 +87,7 @@ export interface TypstreamHandle {
 
 /**
  * A handle whose mount can come and go (StrictMode mounts twice). Exports go to
- * the current mount's, which leave out fit-width's page size (`document`'s don't).
+ * the current mount's, which leave out reflow's page size (`document`'s don't).
  * @internal
  */
 export const createHandle = () => {

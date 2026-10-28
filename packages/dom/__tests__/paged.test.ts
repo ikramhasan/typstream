@@ -3,7 +3,7 @@
 
 import type { TextRun } from "@typstream/core";
 import { describe, expect, it } from "vitest";
-import { fitWidthInputs, isSafeHref } from "../src/paged";
+import { isSafeHref, reflowInputs } from "../src/paged";
 import { layoutRuns } from "../src/paged/text-layer";
 
 describe("isSafeHref", () => {
@@ -104,13 +104,13 @@ describe("layoutRuns", () => {
   });
 });
 
-describe("fitWidthInputs", () => {
+describe("reflowInputs", () => {
   it("converts CSS px to points, A4-proportioned by default", () => {
-    expect(fitWidthInputs(800)).toEqual({ "typstream-page-width": "600", "typstream-page-height": "848.53" });
+    expect(reflowInputs(800)).toEqual({ "typstream-page-width": "600", "typstream-page-height": "848.53" });
   });
 
   it("rounds to half a point and keeps the document's own inputs", () => {
-    expect(fitWidthInputs(401, "auto", { lang: "en" })).toEqual({
+    expect(reflowInputs(401, "auto", { lang: "en" })).toEqual({
       lang: "en",
       "typstream-page-width": "301",
       "typstream-page-height": "auto",

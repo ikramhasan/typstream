@@ -280,7 +280,7 @@ export interface EngineDocument {
 export interface ExportOptions {
   /**
    * `sys.inputs` for the export. Default: the document's. Leave out layout
-   * inputs, such as a fit-width preview's page size, to export at the
+   * inputs, such as a reflow preview's page size, to export at the
    * document's own page size.
    */
   inputs?: Record<string, string>;

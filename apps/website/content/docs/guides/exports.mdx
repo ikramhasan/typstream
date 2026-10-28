@@ -42,10 +42,10 @@ differ from the preview: a teacher's copy (`{ showAnswers: "true" }`, see
 (`{ showAnswers: "false" }`) while the preview shows answers.
 
 - **React and `MountedTypstream`** compile with the template's inputs and the `inputs` prop or option, then the
-  export's `inputs` over them. They leave out the inputs of `layout="fit-width"`, which lays pages out at the
+  export's `inputs` over them. They leave out the inputs of `layout="reflow"`, which lays pages out at the
   element's width, so the export comes out at the document's own page size.
 - **`EngineDocument`** compiles with the document's current inputs, or with exactly the export's `inputs` when you
-  give them: they replace the document's rather than adding to them. A mounted document's inputs include fit-width's
+  give them: they replace the document's rather than adding to them. A mounted document's inputs include reflow's
   page size, so in React and with `mountTypstream`, export through the component or the mount, not `document`.
 
 ## PDF

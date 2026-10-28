@@ -7,7 +7,7 @@ import type { PagedArtifact, PageFormat } from "@typstream/core";
 import { createEngine, type DocumentState, type Engine, type EngineDocument, fromWorker } from "@typstream/engine";
 import { afterEach, describe, expect, it } from "vitest";
 import { commands, server } from "vitest/browser";
-import { createPagedView, type DrawInfo, FIT_WIDTH_PREAMBLE, mountPaged, type PagedView } from "../../src";
+import { createPagedView, type DrawInfo, mountPaged, type PagedView, REFLOW_PREAMBLE } from "../../src";
 import { pages } from "../support/documents";
 
 const browser = server.browser;
@@ -508,11 +508,11 @@ Hello *world*, $x^2 + sqrt(y) = integral_0^1 f(t) dif t$ and #text(fill: rgb("#2
     await settled(mounted.view);
     expect(canvasOf(pageEls(mounted.view)[0] as HTMLElement)?.width).toBeGreaterThan(0);
   }, 120_000);
-  it("fit-width compiles pages as wide as the container and recompiles after a resize", async () => {
+  it("reflow compiles pages as wide as the container and recompiles after a resize", async () => {
     const engine = newEngine();
-    const doc = engine.open({ target: "paged", preamble: FIT_WIDTH_PREAMBLE, text: pages(2, false) });
+    const doc = engine.open({ target: "paged", preamble: REFLOW_PREAMBLE, text: pages(2, false) });
     const host = container(600);
-    const view = mountPaged(host, doc, { layout: "fit-width", resizeDebounce: 50 }).view;
+    const view = mountPaged(host, doc, { layout: "reflow", resizeDebounce: 50 }).view;
     doc.finish();
     let s = await until(doc, (st) => st.status === "done" && st.artifact?.target === "paged");
     let page = (s.artifact as PagedArtifact).pages[0];
@@ -546,6 +546,29 @@ Hello *world*, $x^2 + sqrt(y) = integral_0^1 f(t) dif t$ and #text(fill: rgb("#2
     }
     expect((pageEls(wide)[0] as HTMLElement).getBoundingClientRect().width).toBeCloseTo(400, 0);
     expect((pageEls(narrow)[0] as HTMLElement).getBoundingClientRect().width).toBeCloseTo(200, 0);
+  }, 120_000);
+
+  it("fit-width scales the authored pages up or down to the container's width", async () => {
+    const artifact = await compile(`#set page(width: 300pt, height: 200pt)\nSmall page`);
+    const wide = createPagedView(container(800), { layout: "fit-width" });
+    const narrow = createPagedView(container(200), { layout: "fit-width" });
+    cleanups.push(
+      () => wide.destroy(),
+      () => narrow.destroy(),
+    );
+    for (const view of [wide, narrow]) {
+      view.render(artifact);
+      view.flush();
+    }
+    // The same 300 × 200 pt page, at the container's width and its own proportions.
+    for (const [view, width] of [
+      [wide, 800],
+      [narrow, 200],
+    ] as const) {
+      const box = (pageEls(view)[0] as HTMLElement).getBoundingClientRect();
+      expect(box.width).toBeCloseTo(width, 0);
+      expect(box.height).toBeCloseTo((width * 200) / 300, 0);
+    }
   }, 120_000);
 
   it("gives the text layer the document's structure, language and direction", async () => {

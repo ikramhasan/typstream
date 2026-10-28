@@ -58,7 +58,7 @@ export function Answer({ text, streaming }: { text: string; streaming: boolean }
 - **Props apply in place.** Every render passes the latest props to the mount, which acts only on what changed.
   Inline objects (`inputs={{ showAnswers: "true" }}`) are compared by value, so they don't reopen the document on
   every render. Changing the engine, `preamble`, `template`, `plugins`, `heal` or `schedule`, or switching to or from the
-  fit-width layout, opens a new document, and the
+  reflow layout, opens a new document, and the
   old output stays until its first compile.
 - **The host element** is a `<div class="typstream-host">`, plus your `className`.
 
@@ -127,7 +127,7 @@ const teacher = await ref.current?.exportPdf({ inputs: { showAnswers: "true" } }
 ```
 
 The exports compile in final mode with the template's inputs, the `inputs` prop and the export's own `inputs`, but
-not the fit-width layout's page size, so a PDF comes out at the document's own size. An export opens a document that
+not the reflow layout's page size, so a PDF comes out at the document's own size. An export opens a document that
 hasn't opened yet (documents open lazily, near the viewport; `document` is `null` until then). Before the component
 mounts and after it unmounts, the exports reject (`exportSource()` throws) with "`<Typstream>` isn't mounted". Export
 errors reject with the engine's [`ExportError`](/docs/reference/engine#exporterror). See

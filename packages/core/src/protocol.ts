@@ -272,7 +272,7 @@ export type CompileMode = "streaming" | "final";
 export interface CompileParams extends DocumentParams {
   /** What to compile to: one of the server's `targets`. */
   target: CompileTarget;
-  /** `sys.inputs` for this compile (answer-key toggle, fit-width page size, theme). */
+  /** `sys.inputs` for this compile (answer-key toggle, reflow page size, theme). */
   inputs?: Record<string, string>;
   /** Default `streaming`. */
   mode?: CompileMode;

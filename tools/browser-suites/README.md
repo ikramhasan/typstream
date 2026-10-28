@@ -60,15 +60,15 @@ Violations that come from Typst's own HTML or from axe's limits are listed in `K
 and why; so is a known bug, with its issue.
 
 **Preview vs PDF** (`pdf-raster.test.ts`, [#118](https://github.com/ikramhasan/typstream/issues/118)). Every edu
-document is shown in the document panel (paged, `fixed` layout: pages at their authored size) and each page's pixels
+document is shown in the document panel (paged, `fit-width` layout: its own pages scaled to the panel) and each page's pixels
 are compared with the same page of the mount's `exportPdf()`, rasterized by pdf.js at the same size in the same
 browser: the same page count and sizes, and no cluster of more than 3 touching pixels that differ. A pixel differs
 when no pixel of the other image within one device pixel is close to it in colour, so edges antialiased a pixel apart
 don't count. Pages are painted at a device pixel ratio of 2 (at 1, pdf.js widens a 0.4 pt rule to a whole device pixel
 and the canvas doesn't); SVG pages (gradients) are rasterized by the browser. Chromium and Firefox match exactly;
 WebKit differs by a few scattered pixels. A control checks that a missing full stop (7–8 pixels) is caught. It needs
-no baselines, so it runs on any machine, and on PRs in CI's Engine (chromium) job (`test:pdf`). The `fit-width`
-layout lays pages out at the panel's width, so it can't equal the PDF and isn't compared.
+no baselines, so it runs on any machine, and on PRs in CI's Engine (chromium) job (`test:pdf`). The `reflow`
+layout lays pages out again at the panel's width, so it can't equal the PDF and isn't compared.
 
 **Security** (`security.test.ts`, #29, `apps/website/content/docs/guides/security.mdx`). Every `hostile-*` document of the adversarial set,
 streamed and finished in both targets, in all three browsers:

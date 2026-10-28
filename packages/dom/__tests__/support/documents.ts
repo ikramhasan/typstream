@@ -25,7 +25,7 @@ $plus.minus 1.414$ lie well inside the bound.
  * About `n` A4 pages of what worksheets are made of: headings, prose, inline
  * and display math, a table, a list (the same sections as @typstream/engine's
  * `FIVE_PAGES`, about 2.2 per page). Without `paper`, the page size is left to
- * the preamble (fit-width).
+ * the preamble (reflow).
  */
 export const pages = (n: number, paper = true): string =>
   `${paper ? '#set page(paper: "a4")\n' : ""}#set heading(numbering: "1.")\n= A handout\n${Array.from(

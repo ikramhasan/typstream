@@ -215,8 +215,9 @@ The essentials are the same whatever the domain:
   and a reference.
 - **Name the packages** the document may import, at their exact versions (see [Typst packages](/docs/guides/typst-packages)).
 - **Leave the page size to the viewer** if you render pages. Models set their own, often landscape for a wide table
-  such as a rubric, or US Letter, and a document's `#set page(paper: …)` takes precedence over the page the
-  `fit-width` layout sets. Typst has no rule that applies after the document, so only the prompt can prevent it.
+  such as a rubric, or US Letter, and a document's `#set page(paper: …)` takes precedence over the page your
+  preamble or template sets (and the `reflow` layout's). Typst has no rule that applies after the document, so only
+  the prompt can prevent it.
 
 You can also append `typstPromptRules` to your own prompt: it's a plain array of strings, and it holds the rules that
 moved the error rate most.
