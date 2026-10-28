@@ -196,13 +196,16 @@ class Writer {
     return `<w:p>${this.pPr({ style, pageBreak, before, line: Math.max(0.05, height), left, rPr: '<w:rPr><w:sz w:val="2"/></w:rPr>' })}</w:p>`;
   }
 
+  /**
+   * A rule: an empty paragraph exactly as tall as the stroke, shaded in its colour. Engines size a paragraph's border
+   * differently (LibreOffice draws a bottom border within an exact line, ONLYOFFICE adds it below), its shading not.
+   */
   rule(r: DocxRule): string {
-    const border = `<w:pBdr><w:bottom w:val="single" w:sz="${eighths(r.thickness)}" w:space="0" w:color="${r.color}"/></w:pBdr>`;
     return `<w:p>${this.pPr({
       pageBreak: r.pageBreak,
-      border,
+      border: `<w:shd w:val="clear" w:color="auto" w:fill="${r.color}"/>`,
       before: r.before,
-      line: 0.05,
+      line: r.thickness,
       left: r.indent.left,
       right: r.indent.right,
       rPr: '<w:rPr><w:sz w:val="2"/></w:rPr>',
