@@ -2310,30 +2310,38 @@ impl Builder {
         // What lies outside every cell's tags: a row broken across pages has its cells' tags first, then their
         // content, and nothing but content where it continues. It goes to cells by where it is, once columns are known.
         let mut orphans: Vec<usize> = Vec::new();
-        // A table nested in such content: its cells are its own, not this table's.
-        let mut nested: Vec<Location> = Vec::new();
-        for &id in &ids[1..] {
+        // A table nested in such content: cells starting across its frame are its own, not this table's (it may
+        // end on a later page, after this row's next cells).
+        let mut nested: Vec<(Location, f64, f64)> = Vec::new();
+        let within = |nested: &[(Location, f64, f64)], x: f64| {
+            nested.iter().any(|(_, x0, x1)| x >= x0 - 0.5 && x < x1 - 0.5)
+        };
+        for (k, &id) in ids.iter().enumerate().skip(1) {
             match &self.items[id].kind {
-                Kind::Start(elem, at) if open.is_none() && nested.is_empty() => {
+                Kind::Start(elem, at) if open.is_none() => {
                     let node = classify(elem, *at, self.items[id].page);
                     if let Node::Cell { .. } = node {
-                        open = elem.location();
-                        cells.push((node, Vec::new()));
-                        continue;
+                        if !within(&nested, at.x.to_pt()) {
+                            open = elem.location();
+                            cells.push((node, Vec::new()));
+                            continue;
+                        }
                     }
                     if let (Node::Table { .. }, Some(loc)) = (node, elem.location()) {
-                        nested.push(loc);
+                        // Its frame: the first group after it, where it starts.
+                        let x0 = at.x.to_pt();
+                        let x1 = ids[k + 1..]
+                            .iter()
+                            .find_map(|&j| match &self.items[j].kind {
+                                Kind::Group(r, _) if (r.x - x0).abs() < 0.5 => Some(r.right()),
+                                _ => None,
+                            })
+                            .unwrap_or(f64::MAX);
+                        nested.push((loc, x0, x1));
                     }
                 }
-                Kind::Start(elem, at) if open.is_none() => {
-                    if let (Node::Table { .. }, Some(loc)) =
-                        (classify(elem, *at, self.items[id].page), elem.location())
-                    {
-                        nested.push(loc);
-                    }
-                }
-                Kind::End(loc) if open.is_none() && nested.last() == Some(loc) => {
-                    nested.pop();
+                Kind::End(loc) if open.is_none() && nested.iter().any(|n| n.0 == *loc) => {
+                    nested.retain(|n| n.0 != *loc);
                 }
                 Kind::End(loc) if open.as_ref() == Some(loc) => {
                     open = None;
