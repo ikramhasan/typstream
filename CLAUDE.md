@@ -183,7 +183,7 @@ DOCX checks (`tools/docx-check`, README there): `node tools/docx-check/check.mjs
 compares LibreOffice's layout with the PDF; `--validate <dll>` adds Microsoft's validator (`dotnet publish
 tools/docx-check/validator -c Release -o tools/docx-check/validator/out`), `--onlyoffice` uses ONLYOFFICE in Docker,
 `--native` takes the model from engine-wasm's native example (no wasm build). CI runs it with the validator and a
-94% line floor; nightly runs ONLYOFFICE.
+99% line floor; nightly runs ONLYOFFICE.
 
 Compile oracle (`tools/compile-oracle`, needs the built engine): `pnpm turbo run test --filter=@typstream/compile-oracle`; `pnpm --filter @typstream/compile-oracle report` for the full measurement (minutes).
 

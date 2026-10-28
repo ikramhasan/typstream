@@ -116,7 +116,7 @@ jobs:
         run: sudo apt-get install -y --no-install-recommends libreoffice-writer-nogui poppler-utils
       - run: pnpm turbo run build --filter=@typstream/docx-check^...
       - run: dotnet publish tools/docx-check/validator -c Release -o tools/docx-check/validator/out
-      - run: node tools/docx-check/check.mjs --validate tools/docx-check/validator/out/validator.dll --min-lines 0.94
+      - run: node tools/docx-check/check.mjs --validate tools/docx-check/validator/out/validator.dll --min-lines 0.99
 
   size:
     name: Size

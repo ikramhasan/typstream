@@ -22,7 +22,7 @@ Word would report as unreadable content.
 
 ```bash
 dotnet publish tools/docx-check/validator -c Release -o tools/docx-check/validator/out
-node tools/docx-check/check.mjs --validate tools/docx-check/validator/out/validator.dll --min-lines 0.94
+node tools/docx-check/check.mjs --validate tools/docx-check/validator/out/validator.dll --min-lines 0.99
 ```
 
 CI's `DOCX (validator, LibreOffice)` job runs that: it fails on any validator error, and when fewer of Typst's lines
