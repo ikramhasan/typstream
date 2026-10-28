@@ -31,7 +31,7 @@ Status: `idle` → `compiling` → `idle` while streaming; `stale` after a failu
 
 ## The worker
 
-`engineWorker()` spawns the default worker: engine-wasm with the base fonts (Libertinus Serif, New Computer Modern Math, DejaVu Sans Mono). It is written as `new Worker(new URL("./worker.js", import.meta.url), { type: "module" })`, and the worker refers to the wasm and fonts the same way, so bundlers emit all of them as assets. Vite and Next.js (Turbopack or webpack) need no configuration. The wasm is about 19 MB (≈ 6 MB brotli) and the fonts 2.6 MB; serve them compressed and cacheable.
+`engineWorker()` spawns the default worker: engine-wasm with the base fonts (Libertinus Serif, New Computer Modern Math, DejaVu Sans Mono), and the rest of Typst's bundled faces and the script fonts registered lazily. It is written as `new Worker(new URL("./worker.js", import.meta.url), { type: "module" })`, and the worker refers to the wasm and fonts the same way, so bundlers emit all of them as assets. Vite and Next.js (Turbopack or webpack) need no configuration. The wasm is about 19 MB (≈ 6 MB brotli) and the fonts 2.6 MB; serve them compressed and cacheable.
 
 To load the wasm or fonts from somewhere else, write your own worker with `@typstream/engine/server`:
 

@@ -27,7 +27,7 @@ export type FontInput = string | URL | Uint8Array;
 
 /**
  * A font downloaded only when a document uses it. `info` is engine-wasm's
- * metadata for the file (`Engine.font_info`), as in `scriptFonts` from
+ * metadata for the file (`Engine.font_info`), as in `extraFonts` and `scriptFonts` from
  * `@typstream/engine-wasm/fonts`.
  * @public
  */
@@ -53,7 +53,7 @@ export interface EngineWasmOptions {
   fonts?: readonly FontInput[];
   /**
    * Fonts registered at start and downloaded the first time a document uses
-   * one, e.g. `scriptFonts` from `@typstream/engine-wasm/fonts`. URL fonts
+   * one, e.g. `extraFonts` and `scriptFonts` from `@typstream/engine-wasm/fonts`. URL fonts
    * with `info` sent with `initialize` join them.
    */
   lazyFonts?: readonly LazyFontInput[];

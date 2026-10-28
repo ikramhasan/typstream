@@ -249,7 +249,7 @@ await engine.close();
 
 Nothing starts until the first compile: then the wasm module is compiled once, fonts are loaded, and workers start as they are needed. Workers keep Typst's caches warm between calls, and idle workers don't keep the process alive, so a script exits without `close()`.
 
-The bundled fonts are Libertinus Serif, New Computer Modern and DejaVu Sans Mono, the set `typst compile --ignore-system-fonts` uses, plus the script fonts for Arabic, Bengali and Devanagari (Noto Naskh Arabic, Noto Serif Bengali, Noto Serif Devanagari). `typstFonts: false` and `scriptFonts: false` leave them out.
+The bundled fonts are Libertinus Serif, New Computer Modern and DejaVu Sans Mono, the set `typst compile --ignore-system-fonts` uses (the same files the browser engine has, so documents pick the same faces), plus the script fonts for Arabic, Bengali and Devanagari (Noto Naskh Arabic, Noto Serif Bengali, Noto Serif Devanagari). `typstFonts: false` and `scriptFonts: false` leave them out.
 
 ## Timeouts and crashes
 

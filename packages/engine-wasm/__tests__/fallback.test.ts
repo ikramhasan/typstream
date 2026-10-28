@@ -1,5 +1,6 @@
 // Font fallback for text with no font set (#80), with the worker's fonts: the
-// base set and the script fonts, nothing else. Typst picks the face that covers
+// base set, and the rest of Typst's bundled faces (#128) and the script fonts
+// registered lazily, nothing else. Typst picks the face that covers
 // a run's first character and is most like the current font. New Computer
 // Modern Math covers Devanagari and, like Libertinus Serif, isn't flagged
 // serif, so native typst sets Devanagari in the math font; engine-wasm's font
@@ -9,7 +10,7 @@ import { readFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { beforeAll, describe, expect, it } from "vitest";
-import { baseFonts, scriptFonts } from "../dist/fonts.js";
+import { baseFonts, extraFonts, scriptFonts } from "../dist/fonts.js";
 import { Engine } from "./support/engine.js";
 import { nativePdf, nativeSvgPages } from "./support/native.js";
 
@@ -45,15 +46,33 @@ const DEVANAGARI = "प्रकाश संश्लेषण";
 const BENGALI = "আলোকসংশ্লেষণ";
 const ARABIC = "التمثيل الضوئي";
 
-/** Registered script font ids by file name. */
+/** Registered lazy font ids by file name. */
 const ids = new Map<string, number>();
 
 beforeAll(() => {
   for (const url of baseFonts) Engine.add_font(readFileSync(url));
-  for (const font of scriptFonts) ids.set(font.file, Engine.register_font(font.info));
+  for (const font of [...extraFonts, ...scriptFonts]) ids.set(font.file, Engine.register_font(font.info));
 });
 
 describe("fallback for unnamed text", () => {
+  it("asks for the bundled faces the base set lacks, as native typst would pick them", () => {
+    const e = engine();
+    for (const [source, file] of [
+      // Symbols Libertinus Serif lacks: text fallback picks the math font's regular face.
+      ["sets ∀x ∈ ℝ, ℏ and 𝔸 in text", "NewCMMath-Regular.ttf"],
+      ["*_bold italic_*", "LibertinusSerif-BoldItalic.ttf"],
+      ["*`bold raw`*", "DejaVuSansMono-Bold.ttf"],
+      ["*bold $x^2$*", "NewCMMath-Bold.ttf"],
+    ] as const) {
+      e.set_source("/main.typ", source);
+      // Among others: while a face has no bytes, Typst tries the next one and asks for it too.
+      expect(e.compile_svg_changed().missingFonts, source).toContain(ids.get(file));
+    }
+    e.free();
+    // Then load them all, as the worker does once a compile asks.
+    for (const font of extraFonts) Engine.load_font(ids.get(font.file) ?? -1, readFileSync(font.url));
+  });
+
   it("asks for Noto Serif Devanagari, not the math font", () => {
     const e = engine();
     for (const [source, file] of [
@@ -92,7 +111,11 @@ describe("fallback for unnamed text", () => {
     // Native typst with the same files: the math font, without the script's shaping.
     for (const source of [DEVANAGARI, `*${DEVANAGARI}*`, `\`${DEVANAGARI}\``]) {
       const native = faces(nativePdf(source, [fontDir], only));
-      expect(native, source).toContain("NewCMMath-Regular");
+      // Regular, or Bold for bold text: native picks the math face nearest the text's weight.
+      expect(
+        native.some((face) => face.startsWith("NewCMMath-")),
+        source,
+      ).toBe(true);
       expect(
         native.some((face) => face.startsWith("NotoSerifDevanagari")),
         source,

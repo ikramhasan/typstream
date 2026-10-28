@@ -16,7 +16,9 @@ const { ok, html, diagnostics } = engine.compile_html();
 const { pageCount, changed } = engine.compile_svg_changed(); // changed: { index, hash, width, height, svg }[]
 ```
 
-The base fonts (Libertinus Serif regular, bold and italic, New Computer Modern Math, DejaVu Sans Mono; 3.9 MB, 1.3 MB brotli, licenses in `dist/fonts/NOTICE`) ship in `dist/fonts/`, all with TrueType outlines: typst-assets ships Libertinus Serif and New Computer Modern Math with CFF outlines, which Word won't embed, so the build converts them (`scripts/otf2ttf.py`; same fonts, laid out the same, #118). `import { baseFonts } from "@typstream/engine-wasm/fonts"` gives their URLs, written as `new URL("./fonts/…", import.meta.url)` so bundlers emit them as assets.
+The base fonts (Libertinus Serif regular, bold and italic, New Computer Modern Math (Book, the face Typst sets math in), DejaVu Sans Mono; 3.8 MB, 1.4 MB brotli, licenses in `dist/fonts/NOTICE`) ship in `dist/fonts/`, all with TrueType outlines: typst-assets ships Libertinus Serif and New Computer Modern Math with CFF outlines, which Word won't embed, so the build converts them (`scripts/otf2ttf.py`; same fonts, laid out the same, #118). `import { baseFonts } from "@typstream/engine-wasm/fonts"` gives their URLs, written as `new URL("./fonts/…", import.meta.url)` so bundlers emit them as assets.
+
+The rest of Typst's bundled faces (Libertinus Serif bold italic and semibold, New Computer Modern text, the math font's regular and bold, DejaVu Sans Mono bold and oblique) ship too, as `extraFonts`: registered without their bytes and downloaded the first time a document uses one, like the script fonts below. With the base fonts they are every face native `typst` embeds, so an engine that registers both picks the same faces it does (#128), and `@typstream/node` serves the same files.
 
 ## Lazy fonts
 
