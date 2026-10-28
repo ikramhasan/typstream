@@ -1,0 +1,74 @@
+# Test coverage after every push to main (tools/repo/coverage.mjs): line and branch coverage of the TypeScript
+# packages, their Node and Chromium tests together. The job summary has the table; the badges in README.md read
+# shields.io endpoint JSON from the `badges` branch, which this job force-pushes as a single commit (so it doesn't grow).
+# Not part of CI: it runs the slow suites again with instrumentation, one package at a time, and a PR doesn't need it.
+# `gh workflow run coverage.yml --ref <branch>` measures a branch without publishing.
+name: Coverage
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# A newer push to main measures newer code: cancel the older run.
+concurrency:
+  group: coverage-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE: "24"
+  # Typst is pinned everywhere (CLAUDE.md). edu's and mindmap's Node tests compare with native typst.
+  TYPST: 0.15.1
+
+jobs:
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # Pushes the badges branch.
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/oracle
+      - id: wasm
+        uses: ./.github/actions/engine-wasm
+      # @typstream/node's build and tests take Typst's fonts from the typst-assets crate (cargo metadata), as in CI's
+      # engine jobs. Set up already when the action built dist/.
+      - if: steps.wasm.outputs.cache-hit == 'true'
+        uses: dtolnay/rust-toolchain@stable
+      - if: steps.wasm.outputs.cache-hit == 'true'
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: packages/engine-wasm -> target
+          shared-key: engine-registry
+          cache-targets: false
+          save-if: false
+      - name: Install native typst
+        run: |
+          curl -fsSL "https://github.com/typst/typst/releases/download/v$TYPST/typst-x86_64-unknown-linux-musl.tar.xz" \
+            | tar -xJ -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/typst-x86_64-unknown-linux-musl" >> "$GITHUB_PATH"
+      - uses: ./.github/actions/pnpm
+        with: { node: "${{ env.NODE }}" }
+      - run: pnpm exec turbo run build --filter='./packages/*'
+      - run: node tools/repo/coverage.mjs run node
+      # Inside Playwright's image, like CI's browser jobs (its first step pulls the image).
+      - run: node tools/repo/playwright-docker.mjs node tools/repo/coverage.mjs run browser
+      - run: node tools/repo/coverage.mjs report
+      - run: cat coverage/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Publish the badges
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        working-directory: coverage/badges
+        run: |
+          cp ../summary.md .
+          git init -q -b badges
+          git add -A
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -q -m "Coverage of $GITHUB_SHA"
+          git push -fq "https://x-access-token:$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git" badges

@@ -1,0 +1,113 @@
+# Deploys the website (apps/website) and the AI SDK example (examples/nextjs-ai-sdk) to Vercel: a preview of both for
+# every pull request, production on pushes to main. Vercel's own Git deployments are off (each app's vercel.json, and
+# neither project is connected to the repository), so this workflow is the only way in.
+#
+# Both apps are built here and uploaded prebuilt (./.github/actions/vercel-deploy): they need
+# engine-wasm's dist/, which Vercel's build machines can't make (Rust), and here it comes from the same cache as CI's.
+# The example deploys first, so the website's preview links to that pull request's example (NEXT_PUBLIC_DEMO_URL);
+# production links to the example's production domain (apps/website/lib/shared.ts). The example has no Anthropic key:
+# its page asks visitors for theirs.
+#
+# Pull requests from forks get no secrets, so they get no previews either.
+name: Deploy
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  # A newer push supersedes a preview; production deploys finish in order.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  NODE: "24"
+  # ikramhasans-projects, and its two projects (`vercel project inspect <name>`). Not secrets: the token is.
+  VERCEL_ORG_ID: team_xoYtNKqRaNSk8ntLOOKS0O1Z
+  WEBSITE_PROJECT_ID: prj_m2KWLePY6V9dMAKUDQo3UC01wAGI
+  EXAMPLE_PROJECT_ID: prj_pPt0eBQ4GI0CPTsvuWi2iqWbgKZp
+  VERCEL_CLI: "65.5.0"
+  TARGET: ${{ github.event_name == 'push' && 'production' || 'preview' }}
+
+jobs:
+  deploy:
+    name: Deploy (${{ github.event_name == 'push' && 'production' || 'preview' }})
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # pull-requests: write for the comment with the preview URLs.
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/engine-wasm
+      - uses: ./.github/actions/pnpm
+        with: { node: "${{ env.NODE }}" }
+      # The packages both apps import; each app's own build runs inside `vercel build`.
+      - run: pnpm exec turbo run build --filter=@typstream/example-nextjs-ai-sdk^... --filter=@typstream/website^...
+      - run: npm install --global "vercel@$VERCEL_CLI"
+
+      - id: example
+        name: Deploy the AI SDK example
+        uses: ./.github/actions/vercel-deploy
+        with:
+          project: ${{ env.EXAMPLE_PROJECT_ID }}
+          org: ${{ env.VERCEL_ORG_ID }}
+          token: ${{ secrets.VERCEL_TOKEN }}
+          production: ${{ github.event_name == 'push' }}
+
+      - id: website
+        name: Deploy the website
+        uses: ./.github/actions/vercel-deploy
+        env:
+          # A preview links to this pull request's example; production to the example's production domain.
+          NEXT_PUBLIC_DEMO_URL: ${{ github.event_name == 'pull_request' && steps.example.outputs.url || '' }}
+        with:
+          project: ${{ env.WEBSITE_PROJECT_ID }}
+          org: ${{ env.VERCEL_ORG_ID }}
+          token: ${{ secrets.VERCEL_TOKEN }}
+          production: ${{ github.event_name == 'push' }}
+
+      - name: Summary
+        env:
+          WEBSITE: ${{ steps.website.outputs.url }}
+          EXAMPLE: ${{ steps.example.outputs.url }}
+        run: |
+          {
+            echo "### Deployed ($TARGET)"
+            echo "- Website: $WEBSITE"
+            echo "- AI SDK example: $EXAMPLE"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # One comment per pull request, updated on each push (found by its marker).
+      - if: github.event_name == 'pull_request'
+        name: Comment the preview URLs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+          WEBSITE: ${{ steps.website.outputs.url }}
+          EXAMPLE: ${{ steps.example.outputs.url }}
+        run: |
+          marker='<!-- vercel-previews -->'
+          body="$marker
+          **Vercel previews** for $SHA
+
+          | | |
+          |---|---|
+          | Website | $WEBSITE |
+          | AI SDK example | $EXAMPLE |
+
+          Previews are behind Vercel Authentication: sign in with an account on the team to open them."
+          id=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate \
+            --jq ".[] | select(.body | startswith(\"$marker\")) | .id" | head -n 1)
+          if [ -n "$id" ]; then
+            gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$id" -f body="$body" > /dev/null
+          else
+            gh api --method POST "repos/$GITHUB_REPOSITORY/issues/$PR/comments" -f body="$body" > /dev/null
+          fi

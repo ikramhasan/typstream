@@ -11,6 +11,13 @@ export const gitConfig = { user: "ikramhasan", repo: "typstream", branch: "main"
 export const githubUrl = `https://github.com/${gitConfig.user}/${gitConfig.repo}`;
 
 /**
+ * The deployed AI SDK example (examples/nextjs-ai-sdk): a chat that streams Claude's answers into
+ * `<Typstream>`, with the visitor's own key. A pull request's preview of this site links to that pull
+ * request's preview of the example (NEXT_PUBLIC_DEMO_URL, set by .github/workflows/deploy.yml).
+ */
+export const demoUrl = process.env.NEXT_PUBLIC_DEMO_URL || "https://typstream-ai-sdk.vercel.app";
+
+/**
  * The site's own origin, for absolute links in llms.txt and metadata. Unset in local builds, where
  * links stay relative to whatever served them.
  */

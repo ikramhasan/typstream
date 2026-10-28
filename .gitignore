@@ -21,3 +21,6 @@ reports/
 
 # Visual suite: actual screenshots and diffs of failed comparisons
 .vitest-attachments/
+
+# Vercel CLI: linked project settings, pulled env files and `vercel build` output (.github/workflows/deploy.yml)
+.vercel/
