@@ -173,6 +173,7 @@ class Writer {
       line: p.pitch,
       atLeast: p.atLeast,
       left,
+      right: p.indent.right,
       firstLine,
       jc,
       outline: p.heading ? Math.min(9, p.heading) - 1 : undefined,

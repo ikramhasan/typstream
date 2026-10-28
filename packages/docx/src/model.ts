@@ -80,8 +80,11 @@ export interface DocxBlockBase {
 export interface DocxParagraph extends DocxBlockBase {
   type: "p";
   align: "start" | "center" | "end";
-  /** Indents in points: `left` from the area's left; `firstLine` is the first line's offset from it (negative: hanging). */
-  indent: { left: number; firstLine: number };
+  /**
+   * Indents in points: `left` from the area's left; `firstLine` is the first line's offset from it (negative: hanging);
+   * `right` from the area's right (a padded block quote).
+   */
+  indent: { left: number; firstLine: number; right?: number };
   /** Line pitch in points: exact, or at least that with `atLeast` (lines with math or boxes). */
   pitch: number;
   atLeast?: boolean;

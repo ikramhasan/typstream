@@ -48,6 +48,9 @@ const PITCH: f64 = 1.3;
 /// The profile's text edges, in em: a line box runs from `TOP` above the baseline to `BOTTOM` below it.
 const TOP: f64 = 1.054;
 const BOTTOM: f64 = 0.246;
+/// Room added to a width Typst's lines exactly fill, in points: engines measure text a hair wider (the writer gives
+/// table cells as much).
+const SLACK: f64 = 1.0;
 
 /// The model as JSON (see `@typstream/docx`'s `DocxModel`) and the data of the fonts it names, in its order.
 pub struct Model {
@@ -1049,6 +1052,47 @@ impl Builder {
                     i = end + 1;
                     continue;
                 }
+                Kind::Group(rect, false)
+                    if rect.right() < area.right - 1.0 && !self.beside(&pending, *rect, items[id].page) =>
+                {
+                    // A block narrower than the area on its right (a padded quote): where its wrapped lines end is
+                    // its right edge, an indent for its paragraphs. A group with one line may be only as wide as its
+                    // text, and says nothing about wrapping.
+                    let end = group_end(&items, ids, i).min(ids.len() - 1);
+                    let inner = &ids[i + 1..end];
+                    let baselines: Vec<f64> = inner
+                        .iter()
+                        .filter_map(|&j| match &items[j].kind {
+                            Kind::Text(t) => Some(t.y),
+                            _ => None,
+                        })
+                        .collect();
+                    let wrapped = baselines.iter().any(|y| (y - baselines[0]).abs() > 1.0);
+                    if !wrapped {
+                        pending.push(id);
+                        i += 1;
+                        continue;
+                    }
+                    self.flush(&mut pending, &mut out, area, heading);
+                    let right = (area.right - rect.right() - SLACK).max(0.0);
+                    let mut blocks = self.flow(
+                        inner,
+                        Area {
+                            left: area.left,
+                            right: rect.right(),
+                        },
+                        body,
+                    );
+                    for b in &mut blocks {
+                        if b.json.get("type").and_then(|t| t.as_str()) == Some("p") {
+                            let had = b.json["indent"].get("right").and_then(|r| r.as_f64()).unwrap_or(0.0);
+                            b.json["indent"]["right"] = json!(round(had + right));
+                        }
+                    }
+                    out.extend(blocks);
+                    i = end + 1;
+                    continue;
+                }
                 Kind::Seg(s)
                     if s.horizontal() && (s.x1 - s.x0) > 0.9 * (area.right - area.left) =>
                 {
@@ -1154,6 +1198,14 @@ impl Builder {
             }
         }
         j
+    }
+
+    /// Whether text gathered for the paragraph shares a line with `rect` (an inline box, not a block).
+    fn beside(&self, pending: &[usize], rect: Rect, page: usize) -> bool {
+        pending.iter().any(|&p| match &self.items[p].kind {
+            Kind::Text(t) => self.items[p].page == page && t.y > rect.y && t.y - TOP * t.size < rect.bottom(),
+            _ => false,
+        })
     }
 
     fn in_line(&self, pending: &[usize], rect: Rect, page: usize) -> bool {
@@ -1821,11 +1873,25 @@ impl Builder {
         } else {
             inset_left.max(0.0)
         };
+        // On the right, ragged lines don't show the inset. Blocks mostly have even insets, but the widest line bounds
+        // it: an inset of `(left: 1em, rest: 0.6em)` leaves lines longer than the left inset allows.
+        let max_right = inner
+            .iter()
+            .filter_map(|&id| match &self.items[id].kind {
+                Kind::Text(t) => Some(t.x + t.width),
+                _ => None,
+            })
+            .fold(f64::MIN, f64::max);
+        let inset_right = if max_right == f64::MIN {
+            inset_left
+        } else {
+            inset_left.min(rect.right() - max_right).max(0.0)
+        };
         let blocks = self.flow(
             &inner,
             Area {
                 left: rect.x + inset_left,
-                right: rect.right() - inset_left,
+                right: rect.right() - inset_right,
             },
             false,
         );
@@ -1842,7 +1908,7 @@ impl Builder {
         // table's top and bottom borders count in full (between rows, a border is shared, #118's spike).
         let inset = Sides {
             left: (inset_left - thickness("left") / 2.0).max(0.0),
-            right: (inset_left - thickness("right") / 2.0).max(0.0),
+            right: (inset_right - thickness("right") / 2.0).max(0.0),
             top: (first_top - rect.y - thickness("top")).max(0.0),
             bottom: (rect.bottom() - last_bottom - thickness("bottom")).max(0.0),
         };
