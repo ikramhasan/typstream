@@ -4,11 +4,84 @@
 
 ```ts
 
+import { blockStarts } from '@typstream/heal';
+import { Range } from '@typstream/core';
+import { TextEdit } from '@typstream/core';
+
+// @public
+export const blockRange: (text: string, range: Range) => Range;
+
+export { blockStarts }
+
 // @public
 export interface ChatLike {
     messages: readonly MessageLike[];
     status: string;
 }
+
+// @public
+export const createEditSession: (text: string) => EditSession;
+
+// @public
+export type EditError = "not-found" | "ambiguous" | "overlap" | "conflict" | "malformed" | "incomplete";
+
+// @beta
+export const editFeedback: (edits: readonly EditResult[]) => string | null;
+
+// @public
+export interface EditOp {
+    done: boolean;
+    malformed?: boolean;
+    quote: string;
+    quoteDone: boolean;
+    text: string;
+}
+
+// @beta
+export const editPrompt: () => string;
+
+// @beta
+export const editPromptRules: readonly string[];
+
+// @beta
+export const editRequest: (document: string, request: string) => string;
+
+// @public
+export interface EditResult {
+    error?: EditError;
+    loose: boolean;
+    quote: string;
+    range: Range | null;
+    status: EditStatus;
+}
+
+// @public
+export interface EditSession {
+    abort(): void;
+    getState(): EditSessionState;
+    keep(): void;
+    subscribe(listener: (state: EditSessionState) => void): () => void;
+    undo(): void;
+    update(answer: string, done?: boolean): void;
+    userEdit(edit: TextEdit): void;
+    write(range: Range, replacement: string, done?: boolean): void;
+}
+
+// @public
+export interface EditSessionState {
+    edits: readonly EditResult[];
+    message: string;
+    phase: "streaming" | "review" | "kept" | "undone";
+    streaming: boolean;
+    streamingRange: Range | null;
+    text: string;
+}
+
+// @public
+export type EditStatus = "quoting" | "writing" | "applied" | "failed" | "undone";
+
+// @public
+export const findQuote: (text: string, quote: string) => QuoteMatch;
 
 // @public
 export const isStreaming: (message: MessageLike, chat: ChatLike) => boolean;
@@ -26,6 +99,24 @@ export interface MessagePartLike {
     text?: string;
     type: string;
 }
+
+// @public
+export interface ParsedAnswer {
+    edits: EditOp[];
+    message: string;
+}
+
+// @public
+export const parseEdits: (answer: string, final?: boolean) => ParsedAnswer;
+
+// @public
+export interface QuoteMatch {
+    exact: boolean;
+    ranges: Range[];
+}
+
+// @beta
+export const selectionRequest: (document: string, range: Range, instruction: string) => string;
 
 // @public
 export const textOf: (message: MessageLike) => string;

@@ -133,6 +133,14 @@ Run `npm run dev` and ask for "A one-page worksheet on the Pythagorean theorem f
 - **`"use client"`.** `useChat` already makes the page a client component. The `typstream` bundle is marked `"use client"` itself, so you can also render `<Typstream>` from a Server Component with a fixed `source`. On the server it renders an empty `<div>`; the document appears in the browser.
 - **No Next.js configuration.** The engine's worker, the wasm and the fonts are `new URL(…, import.meta.url)` assets that Turbopack and webpack emit. The example's `next.config.ts` sets only `turbopack.root`, because it lives in a pnpm monorepo whose packages are symlinked from outside the app; a standalone app doesn't need it.
 
+## Edit the document from the chat
+
+Once there's a document, the teacher's next request usually changes it ("make question 3 harder") rather than asking
+for a new one. The example sends the document with each request, the model answers with edits that quote what they
+replace, and `@typstream/ai`'s edit session applies them as they stream: the part being rewritten changes in place, the
+rest stays, and Keep or Undo follows. [Streaming edits](/docs/guides/streaming-edits) shows the route's prompt and the
+page's session.
+
 ## Show progress under each answer
 
 `useTypstream()` reads one document's state. Move the `<Typstream>` into its own component to show a status line under each answer:

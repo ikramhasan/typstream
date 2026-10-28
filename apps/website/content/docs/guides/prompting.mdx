@@ -25,6 +25,9 @@ document. Each rule in it targets an error class those runs produced. With the c
 A naive prompt that only says "write Typst, no Markdown" left about 10% of documents with errors. The remaining
 errors are one-offs, which healing, the engine's fixers and a [server fix loop](/docs/guides/server-fix-loop) handle.
 
+To have a model change a document it has written, rather than write a new one, add `@typstream/ai`'s `editPrompt()`
+after the kit: [Streaming edits](/docs/guides/streaming-edits).
+
 ## The prompt kit: `buildSystemPrompt`
 
 <Callout type="warn" title="Beta">
