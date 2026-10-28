@@ -1,6 +1,6 @@
 // Answer spaces and answers. Answers appear only when the input `showAnswers` is "true":
 // written into the space in the accent color, and listed by `answer-key()`.
-#import "util.typ": _accent, _answers-shown, _css, _el, _html, _length, _question, _rule
+#import "util.typ": _accent, _answers-shown, _css, _el, _html, _length, _question, _rule, _tight
 #import "i18n.typ": _start-side, _word
 
 /// Records an answer for `answer-key()`, under the question it is in.
@@ -24,7 +24,7 @@
   } else {
     let body = if shown { text(fill: _accent, answer) } else { none }
     let w = if shown { calc.max(width.to-absolute(), measure(body).width + 0.6em.to-absolute()) } else { width }
-    box(width: w, stroke: (bottom: 0.5pt + _rule), outset: (bottom: 0.25em), inset: (x: 0.3em), align(center, body))
+    box(width: w, stroke: (bottom: 0.5pt + _rule), outset: (bottom: 0.25em), inset: (x: 0.3em), _tight(align(center, body)))
   }
 }
 
@@ -58,8 +58,10 @@
         place(top, dy: pitch * (i + 1) + 0.25em, line(length: 100%, stroke: 0.4pt + _rule))
       }
       if shown {
-        set text(fill: _accent, top-edge: 1em, bottom-edge: 0em)
-        set par(leading: pitch - 1em.to-absolute(), justify: false)
+        // Show-set rules, which win over the engine's layout profile (#129): the lines set the pitch here.
+        set text(fill: _accent)
+        show text: set text(top-edge: 1em, bottom-edge: 0em)
+        show par: set par(leading: pitch - 1em.to-absolute(), justify: false)
         v(pitch - 1em)
         pad(x: 0.3em, answer)
       }
@@ -153,10 +155,10 @@
         for item in items { html.elem("p", item) }
       })
     } else {
-      block(width: 100%, above: 1.5em, {
+      block(width: 100%, above: 0.86em, {
         text(weight: "bold", size: 1.2em, heading-text)
         set text(fill: _accent)
-        for item in items { block(above: 0.7em, item) }
+        for item in items { block(above: 0.06em, item) }
       })
     }
   }

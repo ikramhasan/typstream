@@ -2,7 +2,7 @@
   "backtick-runs": {
     "category": "raw-delimiters",
     "notes": "Generated. Balanced raw delimiters of every length 1-40.",
-    "expectedPages": 2
+    "expectedPages": 1
   },
   "bidi-mixed": {
     "category": "bidi",
@@ -149,7 +149,7 @@
   "large-1mb": {
     "category": "large",
     "notes": "Generated. ~1,000,000 UTF-16 units of education-shaped blocks with an outline, footnotes and refs.",
-    "expectedPages": 479
+    "expectedPages": 477
   },
   "markdown-habits": {
     "category": "markdown-habits",
@@ -200,7 +200,7 @@
   "table-2000-rows": {
     "category": "large-table",
     "notes": "Generated. 2,000 rows written cell by cell.",
-    "expectedPages": 42
+    "expectedPages": 37
   },
   "truncated-output": {
     "category": "truncated",

@@ -47,6 +47,7 @@ def profile(**overrides):
         page_top_space=False,  # Word: keep space before at the top of a page (Typst drops weak spacing)
         fonts=None,  # directory with the OTF faces, for column widths
         embed=None,  # {"Regular" | "Bold" | "Italic" | "BoldItalic": font file} to embed in the DOCX
+        engine=None,  # the engine's LAYOUT_PROFILE (Typst source): it replaces the text and par settings, pitch 1.3em
     )
     p.update(overrides)
     return p
@@ -76,7 +77,8 @@ def gaps(blocks, p):
 
 
 def size_of(b, p):
-    return HEADING[b[1]] if b[0] == "h" else (p["size"], p["pitch"])
+    size, pitch = HEADING[b[1]] if b[0] == "h" else (p["size"], p["pitch"])
+    return (size, round(1.3 * size, 2)) if p["engine"] else (size, pitch)
 
 
 def text_width(p):
@@ -96,7 +98,8 @@ def _width(text, bold, italic, p):
     if face not in _ADVANCES:
         from fontTools.ttLib import TTFont
 
-        f = TTFont(p["fonts"] / f"LibertinusSerif-{face}.otf")
+        path = p["fonts"] / f"LibertinusSerif-{face}.otf"
+        f = TTFont(path if path.exists() else path.with_suffix(".ttf"))
         cmap, hmtx, upm = f.getBestCmap(), f["hmtx"].metrics, f["head"].unitsPerEm
         _ADVANCES[face] = (cmap, hmtx, upm)
     cmap, hmtx, upm = _ADVANCES[face]
@@ -154,6 +157,20 @@ def _edges(size, pitch, p):
 
 def typst(blocks, p):
     s, pitch = p["size"], p["pitch"]
+    if p["engine"]:
+        # The engine's profile sets the edges, leading, breaking and hyphenation; the gaps stay the spike's.
+        lines = [
+            f"#set page(width: 595.28pt, height: 841.89pt, margin: {p['margin']}pt)",
+            f'#set text(font: "{p["font"]}", size: {s}pt, lang: "en", '
+            f'kerning: {str(p["kerning"]).lower()}, ligatures: {str(p["ligatures"]).lower()})',
+            p["engine"].rstrip(),
+            "#set par(spacing: 0pt)",
+            "#set block(spacing: 0pt)",
+            "#show heading: set block(above: 0pt, below: 0pt)",
+            "#set heading(numbering: none)",
+        ]
+        lines += [f"#show heading.where(level: {lv}): set text(size: {hs}pt)" for lv, (hs, _) in HEADING.items()]
+        return _typst_body(blocks, p, lines)
     lines = [
         f"#set page(width: 595.28pt, height: 841.89pt, margin: {p['margin']}pt)",
         f'#set text(font: "{p["font"]}", size: {s}pt, lang: "en", hyphenate: {str(p["hyphenate"]).lower()}, '
@@ -167,6 +184,10 @@ def typst(blocks, p):
         lines.append("#set text(costs: (widow: 0%, orphan: 0%))")
     for level, (hs, hp) in HEADING.items():
         lines.append(f"#show heading.where(level: {level}): set text(size: {hs}pt, {_edges(hs, hp, p)})")
+    return _typst_body(blocks, p, lines)
+
+
+def _typst_body(blocks, p, lines):
     w = p["list_indent"]
     lines.append(f"#set enum(indent: 0pt, body-indent: 0pt, spacing: 0pt, numbering: n => box(width: {w}pt)[#n.])")
     lines.append(f"#set list(indent: 0pt, body-indent: 0pt, spacing: 0pt, marker: box(width: {w}pt)[•])")

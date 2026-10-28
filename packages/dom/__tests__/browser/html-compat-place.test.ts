@@ -143,10 +143,9 @@ interface Box {
   top: number;
 }
 
-// Typst's default text box runs from the cap height to the baseline, so a container's first line
-// starts a cap height above its baseline: Libertinus Serif's is 0.658 em (`measure[Ref].height` at
-// 11pt is 7.24pt).
-const CAP_HEIGHT = 0.658;
+// The engine's layout profile (#129) makes a text box run from 1.054em above the baseline to 0.246em
+// below it, so a container's first line starts 1.054em above its baseline.
+const TOP_EDGE = 1.054;
 const PX_TO_PT = 0.75;
 
 /** Every word on Typst's first page, from its text runs. */
@@ -162,7 +161,7 @@ const pagedBoxes = async (engine: Engine, source: string): Promise<Map<string, B
       left: run.x,
       right: run.x + run.width,
       baseline: run.y,
-      top: run.y - CAP_HEIGHT * run.size,
+      top: run.y - TOP_EDGE * run.size,
     });
   }
   return boxes;

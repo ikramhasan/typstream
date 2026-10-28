@@ -63,18 +63,20 @@
           if pages > 1 { align(center, text(size: 0.8em, [#counter(page).display() / #pages])) }
         },
       )
-      show heading: set block(above: 1.5em, below: 0.9em)
-      block(width: 100%, below: 1.2em, {
+      // Line boxes hold the room above capitals and below the baseline (the engine's layout profile, #129):
+      // these gaps keep the distances between baselines of 1.5em and 0.9em with Typst's default edges.
+      show heading: set block(above: 0.92em, below: 0.36em)
+      block(width: 100%, below: 0.56em, {
         align(center, {
-          if title != none { block(below: 0.5em, text(size: 1.6em, weight: "bold", title)) }
-          if subtitle != none { block(below: 0.5em, text(size: 1.15em, subtitle)) }
+          if title != none { block(below: 0em, text(size: 1.6em, weight: "bold", title)) }
+          if subtitle != none { block(below: 0em, text(size: 1.15em, subtitle)) }
           if meta.len() > 0 { text(fill: luma(70), meta.join([ #sym.dot.c ])) }
         })
         if details.len() > 0 {
-          block(above: 1em, grid(
+          block(above: 0.36em, grid(
             columns: (auto, 1fr, auto, 1fr),
             column-gutter: (0.5em, 1.5em, 0.5em),
-            row-gutter: 0.6em,
+            row-gutter: 0em,
             ..details.map(((k, v)) => (strong[#_word(k):], v)).flatten(),
           ))
         }

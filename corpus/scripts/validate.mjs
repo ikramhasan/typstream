@@ -9,8 +9,8 @@
 // machine. `limit` entries run under `prlimit` (util-linux); without it they're
 // skipped. --write-pages records the page counts of `ok` entries in meta.json.
 //
-// Entries written for a plugin (meta.plugins, the llm and islands sets) compile the way the engine
-// compiles them: the plugin's preamble before the source, its files as a local package. Every entry
+// Every entry compiles the way the engine compiles it: after the engine's layout profile (#129) and, for entries
+// written for a plugin (meta.plugins, the llm and islands sets), the plugin's preamble, its files as a local package. Every entry
 // gets a package directory with @typstream/edu, @typstream/mindmap and @typstream/universe's
 // vendored packages, and nothing else: an empty package cache and a dead proxy keep native typst from downloading the rest, so
 // a package outside the allowlist fails as it does in the app.
@@ -113,6 +113,11 @@ for (const tarball of readdirSync(vendor).filter((f) => f.endsWith(".tar.gz"))) 
     at += 512 + Math.ceil(size / 512) * 512;
   }
 }
+// The profile as the worker writes it, read from its source (packages/engine/src/server/profile.ts).
+const PROFILE = /export const LAYOUT_PROFILE: string = `([^`]*)`;/.exec(
+  readFileSync(join(root, "../packages/engine/src/server/profile.ts"), "utf8"),
+)?.[1];
+if (!PROFILE?.includes("#show par:")) throw new Error("corpus: can't read LAYOUT_PROFILE from the engine's profile.ts");
 const PREAMBLES = {
   edu: `#import "@typstream/edu:${eduVersion}": *\n`,
   mindmap: `#import "@typstream/mindmap:${mindmapVersion}": mindmap, topic\n`,
@@ -123,15 +128,13 @@ const run = (entry) =>
   new Promise((resolve) => {
     const limited = entry.expect === "limit";
     const pdf = join(out, `${entry.id.replace("/", "__")}.pdf`);
-    // A plugin's preamble goes before the source, so the document compiles from a copy next to
-    // the original (relative paths still resolve); spans in messages are off by the preamble line.
+    // The profile and a plugin's preamble go before the source, so the document compiles from a copy
+    // next to the original (relative paths still resolve); spans in messages are off by those lines.
     const plugins = entry.meta.plugins ?? [];
     for (const p of plugins) if (!PREAMBLES[p]) fail(entry.id, `unknown plugin "${p}"`);
-    let input = entry.path;
-    if (plugins.length) {
-      input = join(dirname(entry.path), `${entry.name}.typ.validate`);
-      writeFileSync(input, plugins.map((p) => PREAMBLES[p] ?? "").join("") + readFileSync(entry.path, "utf8"));
-    }
+    const input = join(dirname(entry.path), `${entry.name}.typ.validate`);
+    const preamble = PROFILE + plugins.map((p) => PREAMBLES[p] ?? "").join("");
+    writeFileSync(input, preamble + readFileSync(entry.path, "utf8"));
     const compile = [
       "compile",
       // `html.elem` exists only with the feature; paged output is the same either way.
@@ -164,7 +167,7 @@ const run = (entry) =>
       if (stderr.length < 100_000) stderr += d;
     });
     child.on("close", (code, signal) => {
-      if (input !== entry.path) rmSync(input, { force: true });
+      rmSync(input, { force: true });
       const ms = Date.now() - started;
       const diagnostics = [...stderr.matchAll(/^.*?: (warning|error): (.*)$/gm)].map((m) => ({
         severity: m[1],

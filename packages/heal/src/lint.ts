@@ -16,7 +16,8 @@ export type LintRuleId =
   | "unclosed-delim"
   | "unclosed-block-comment"
   | "currency-dollar"
-  | "math-lone-script";
+  | "math-lone-script"
+  | "layout-profile";
 
 /** `fix` applies the change, `warn` only reports it. */
 export type LintSeverity = "fix" | "warn" | "off";
@@ -33,6 +34,7 @@ export const DEFAULT_LINT: Readonly<Record<LintRuleId, LintSeverity>> = {
   "unclosed-block-comment": "warn",
   "currency-dollar": "warn",
   "math-lone-script": "fix",
+  "layout-profile": "fix",
 };
 
 /**
@@ -90,6 +92,17 @@ const MD_LINK = /\[([^[\]\n]+)\]\((https?:\/\/[^\s()"\\]+)\)/g;
 // with a number and a word goes on with numbers and operators (`$0.4 times 0.3 =$`, models write
 // it all the time, #24) or ends at the word (`$30 degree$`, `$2 cos(x)$`).
 const CURRENCY = /^\d[\d.,]*\s+\p{L}{2,}[\p{L}\s,.;:!?'"()-]*\s$/u;
+
+// The engine's layout profile (#129) sets these with show-set rules, which win over set rules. An element's own
+// arguments and a later show-set rule on the same element win over the profile, so they come out of documents:
+// a `par(…)` call (not a set rule) and a show-set rule on the element it sets.
+const PROFILE_KEYS: Readonly<Record<string, RegExp>> = {
+  par: /^(justify|leading|linebreaks)$/,
+  text: /^(hyphenate|top-edge|bottom-edge)$/,
+  "table.cell": /^breakable$/,
+};
+const PROFILE_CALL =
+  /(?<![\w.-]|\bset\s+)(par)\(|\bshow\s+(par|text|table)(?:\.where\([^()\n]*\))?\s*:\s*set\s+(par|text|table\.cell)\(/g;
 
 interface Ctx {
   text: string;
@@ -178,6 +191,79 @@ const eventRule = (ctx: Ctx, e: LintEvent, headings: ReadonlySet<number>): void 
   }
 };
 
+/**
+ * The top-level arguments of the call whose `(` is at `open`, as `[start, end)` ranges without the commas, and its
+ * `)`; `null` if it isn't closed before `to`. Parentheses and braces count in code, brackets in markup too (which
+ * balances them); strings, raw text and comments are skipped.
+ */
+const callArgs = (ctx: Ctx, open: number): { args: [number, number][]; close: number } | null => {
+  const args: [number, number][] = [];
+  let depth = 0;
+  let start = open + 1;
+  for (let i = start; i < ctx.to; i++) {
+    const mode = modeAt(ctx.modes, i);
+    const c = ctx.text[i] as string;
+    if (mode === "raw" || mode === "comment" || (mode !== "code" && c !== "[" && c !== "]")) continue;
+    if (ctx.text[i - 1] === "\\") continue;
+    if (mode === "code" && c === '"') {
+      for (i++; i < ctx.to && ctx.text[i] !== '"'; i++) if (ctx.text[i] === "\\") i++;
+    } else if ("([{".includes(c)) depth++;
+    else if (")]}".includes(c)) {
+      if (depth--) continue;
+      if (c !== ")") return null;
+      args.push([start, i]);
+      return { args, close: i };
+    } else if (c === "," && !depth) {
+      args.push([start, i]);
+      start = i + 1;
+    }
+  }
+  return null;
+};
+
+/** Whether `pos` is code outside a string literal (strings are code-mode tokens): quotes from its span's start. */
+const codeAt = (ctx: Ctx, pos: number): boolean => {
+  if (modeAt(ctx.modes, pos) !== "code") return false;
+  let i = 0;
+  for (const span of ctx.modes) if (span.at <= pos) i = span.at;
+  let inString = false;
+  for (; i < pos; i++) {
+    if (ctx.text[i] === '"') inString = !inString;
+    else if (inString && ctx.text[i] === "\\") i++;
+  }
+  return !inString;
+};
+
+/** Takes the arguments the layout profile sets out of the call whose `(` is at `open`. */
+const profileRule = (ctx: Ctx, element: string, at: number, open: number): void => {
+  const call = callArgs(ctx, open);
+  const keys = PROFILE_KEYS[element];
+  if (!call || !keys) return;
+  // Each argument from its first character, its name, and whether it goes.
+  const args = call.args.map(([from, to]) => {
+    const m = /^(\s*)(?:([\w-]+)\s*:)?/.exec(ctx.text.slice(from, to)) as RegExpExecArray;
+    return { from: from + (m[1] as string).length, to, name: m[2], gone: keys.test(m[2] ?? "") };
+  });
+  const changes: TextChange[] = [];
+  args.forEach((arg, i) => {
+    if (!arg.gone) return;
+    // Up to the next argument; the last one with the comma before it, unless the argument before goes too.
+    const next = args[i + 1];
+    const prev = args[i - 1];
+    changes.push({ from: !next && prev && !prev.gone ? prev.to : arg.from, to: next ? next.from : arg.to, insert: "" });
+  });
+  const names = args.filter((a) => a.gone).map((a) => `\`${a.name}\``);
+  if (names.length)
+    add(
+      ctx,
+      "layout-profile",
+      at,
+      call.close + 1,
+      `${names.join(", ")} would override the layout profile; removed`,
+      changes,
+    );
+};
+
 export interface LintOptions {
   rules?: Partial<Record<LintRuleId, LintSeverity | boolean>>;
 }
@@ -241,6 +327,11 @@ export const lint = (
     ]);
   });
   for (const e of rec.events) eventRule(ctx, e, headings);
+  regexRule(ctx, PROFILE_CALL, (m) => {
+    // A show-set rule counts only on the element it sets: `show table: set table.cell(…)`, `show par: set par(…)`.
+    const element = m[1] ?? (m[3] === (m[2] === "table" ? "table.cell" : m[2]) ? m[3] : null);
+    if (element && codeAt(ctx, m.index)) profileRule(ctx, element, m.index, m.index + m[0].length - 1);
+  });
 
   return out.sort((a, b) => a.start - b.start);
 };

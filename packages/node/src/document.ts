@@ -1,9 +1,11 @@
-// What a document is to the engine: `/main.typ` (an optional preamble, then the
-// text), files under `/`, and `sys.inputs`. Diagnostics come back to the text's
+// What a document is to the engine: `/main.typ` (for pages and PDFs the layout
+// profile, then an optional preamble, then the text), files under `/`, and
+// `sys.inputs`. Diagnostics come back to the text's
 // coordinates with `fromMain` from `@typstream/engine/server`, which the
 // protocol server uses too.
 
 import type { FileContent } from "@typstream/core";
+import { LAYOUT_PROFILE } from "@typstream/engine/server";
 import type { FileEntry } from "./pool";
 
 /**
@@ -60,12 +62,18 @@ export interface Assembled {
   main: string;
   /** Where the document text starts in `main`. */
   offset: number;
+  /** Where the preamble starts in `main`, after the layout profile. */
+  preambleAt: number;
 }
 
 /**
- * `/main.typ` for a document. The preamble goes first, so its set and show
- * rules apply to the text, then a newline so the text starts on a line of its
- * own (as `@typstream/engine`'s protocol server does).
+ * `/main.typ` for a document, as `@typstream/engine`'s protocol server writes it:
+ * for `paged` output (pages, a PDF, a check of them) the layout profile (#129)
+ * first, then the preamble, so their set and show rules apply to the text, then
+ * a newline so the text starts on a line of its own.
  */
-export const assemble = (text: string, preamble?: string): Assembled =>
-  preamble ? { main: `${preamble}\n${text}`, offset: preamble.length + 1 } : { main: text, offset: 0 };
+export const assemble = (text: string, preamble: string | undefined, paged: boolean): Assembled => {
+  const profile = paged ? LAYOUT_PROFILE : "";
+  const prefix = profile + (preamble ? `${preamble}\n` : "");
+  return { main: prefix + text, offset: prefix.length, preambleAt: profile.length };
+};

@@ -29,6 +29,7 @@ export {
 export { DEFAULT_FIXERS, hoistImport, missingImage, packageStub, pendingRef, tailCut } from "./server/fixers";
 export { DEFAULT_FONT_FAMILY_BYTES, type FontCatalogueOptions } from "./server/fonts";
 export type { PackageOptions } from "./server/packages";
+export { LAYOUT_PROFILE } from "./server/profile";
 export { RUNTIME_PATH } from "./server/runtime";
 export { inProcess, serve, type WorkerScope } from "./server/serve";
 export { createServer, type EngineServer, fromMain, PREAMBLE_PATH, type ServerOptions } from "./server/server";

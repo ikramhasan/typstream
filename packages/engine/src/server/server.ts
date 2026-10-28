@@ -64,6 +64,7 @@ import {
 } from "./fixers";
 import { anyArrives, type FontCatalogueOptions, FontCatalogues } from "./fonts";
 import { DocumentPackages, type PackageOptions, PackageStore } from "./packages";
+import { LAYOUT_PROFILE } from "./profile";
 import { RUNTIME, RUNTIME_IMPORT, RUNTIME_PATH } from "./runtime";
 
 /**
@@ -159,8 +160,10 @@ export const createServer = (
 interface Doc {
   rev: Revision;
   text: string;
-  /** The preamble and a newline, or empty: `/main.typ` is `prefix + text`. */
+  /** The preamble and a newline, or empty: `/main.typ` is `prefix + text`, after the layout profile when paged. */
   prefix: string;
+  /** `/main.typ` starts with the layout profile: it was last written for paged output or a PDF (#129). */
+  profiled: boolean;
   compiler: AdapterDocument;
   /** `text` changed since `/main.typ` was last written. */
   dirty: boolean;
@@ -224,12 +227,13 @@ const inputsKey = (inputs: Record<string, string> | undefined): string =>
   JSON.stringify(Object.entries(inputs ?? {}).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
 
 /**
- * Moves a diagnostic from `/main.typ` (preamble + document) into document
- * coordinates. Problems inside the preamble report it as their `file`, with the
- * nearest call site in the document (from the trace) as `span`, the way
- * engine-wasm reports problems in other files.
+ * Moves a diagnostic from `/main.typ` (layout profile + preamble + document) into document
+ * coordinates: the document starts at `offset`, the preamble at `preambleAt` (after the
+ * layout profile). Problems inside the preamble report it as their `file`, with the
+ * nearest call site in the document (from the trace) as `span`, the way engine-wasm
+ * reports problems in other files.
  */
-export const fromMain = (d: Diagnostic, offset: number): Diagnostic => {
+export const fromMain = (d: Diagnostic, offset: number, preambleAt = 0): Diagnostic => {
   if (offset === 0) return d;
   const inDocument = (r: Range | null): Range | null =>
     r && r.from >= offset ? { from: r.from - offset, to: r.to - offset } : null;
@@ -237,7 +241,10 @@ export const fromMain = (d: Diagnostic, offset: number): Diagnostic => {
   const span = inDocument(d.span);
   if (d.span && !span) {
     const callSite = trace.find((t) => t.span)?.span ?? null;
-    return { ...d, span: callSite, trace, file: d.file ?? { path: PREAMBLE_PATH, span: d.span } };
+    // Inside the profile itself, the preamble has no place to point at.
+    const inPreamble =
+      d.span.from >= preambleAt ? { from: d.span.from - preambleAt, to: d.span.to - preambleAt } : null;
+    return { ...d, span: callSite, trace, file: d.file ?? { path: PREAMBLE_PATH, span: inPreamble } };
   }
   return { ...d, span, trace };
 };
@@ -410,11 +417,21 @@ class Server implements EngineServer {
   }
 
   /**
-   * Brings the compiler's `/main.typ` and `sys.inputs` up to date. With
-   * `anchors`, `/main.typ` holds the document with source anchors (HTML
-   * previews only; paged output and exports never have them).
+   * What goes before the text in `/main.typ`: for pages and PDFs, the layout profile (#129) first, so plugins'
+   * preambles and the document style what it leaves to them. The HTML target has no pages to match a DOCX export's.
    */
-  private sync(doc: Doc, inputs: Record<string, string> | undefined, anchors = false): void {
+  private head(doc: Doc, paged: boolean): string {
+    doc.profiled = paged;
+    return paged ? LAYOUT_PROFILE + doc.prefix : doc.prefix;
+  }
+
+  /**
+   * Brings the compiler's `/main.typ` and `sys.inputs` up to date for `paged`
+   * output (pages or a PDF) or HTML. With `anchors`, `/main.typ` holds the
+   * document with source anchors (HTML previews only; paged output and exports
+   * never have them).
+   */
+  private sync(doc: Doc, inputs: Record<string, string> | undefined, paged: boolean, anchors = false): void {
     const key = inputsKey(inputs);
     if (key !== doc.inputs) {
       try {
@@ -425,10 +442,11 @@ class Server implements EngineServer {
       doc.inputs = key;
       doc.memo = null;
     }
-    if (doc.dirty || anchors !== (doc.anchored !== null)) {
+    if (doc.dirty || anchors !== (doc.anchored !== null) || paged !== doc.profiled) {
       doc.anchored = anchors ? doc.anchors.apply(doc.text) : null;
-      doc.compiler.setFiles({ [MAIN]: doc.prefix + (doc.anchored?.text ?? doc.text) });
-      doc.offset = doc.prefix.length;
+      const head = this.head(doc, paged);
+      doc.compiler.setFiles({ [MAIN]: head + (doc.anchored?.text ?? doc.text) });
+      doc.offset = head.length;
       doc.dirty = false;
     }
   }
@@ -438,9 +456,15 @@ class Server implements EngineServer {
    * runtime library's import. Anchors name offsets in the client's text
    * (`toOriginal`). The next `sync` writes the document's own text again.
    */
-  private writeFixed(doc: Doc, text: string, anchors: boolean, toOriginal: (pos: number) => number): void {
+  private writeFixed(
+    doc: Doc,
+    text: string,
+    paged: boolean,
+    anchors: boolean,
+    toOriginal: (pos: number) => number,
+  ): void {
     doc.anchored = anchors ? doc.fixedAnchors.apply(text, toOriginal) : null;
-    const prefix = doc.prefix + RUNTIME_IMPORT;
+    const prefix = this.head(doc, paged) + RUNTIME_IMPORT;
     doc.compiler.setFiles({ [MAIN]: prefix + (doc.anchored?.text ?? text) });
     doc.offset = prefix.length;
     doc.dirty = true;
@@ -450,7 +474,7 @@ class Server implements EngineServer {
   private diagnostics(doc: Doc, ds: Diagnostic[]): Diagnostic[] {
     const { anchored } = doc;
     return ds.map((d) => {
-      const inDocument = doc.packages.describe(fromMain(d, doc.offset));
+      const inDocument = doc.packages.describe(fromMain(d, doc.offset, doc.profiled ? LAYOUT_PROFILE.length : 0));
       return anchored ? mapDiagnostic(inDocument, (pos) => fromAnchored(anchored, pos)) : inDocument;
     });
   }
@@ -667,6 +691,7 @@ class Server implements EngineServer {
         rev,
         text,
         prefix: preamble ? `${preamble}\n` : "",
+        profiled: false,
         compiler,
         dirty: true,
         anchors: new Anchors(),
@@ -730,10 +755,11 @@ class Server implements EngineServer {
       if (!this.adapter.targets.includes(target)) this.unsupported(`the ${target} target`);
       const fallback = fallbackOf(params.fallback, doc.text.length);
       const anchors = target === "html" && params.anchors !== false;
+      const paged = target === "paged";
       // Imported packages load first, within the fix budget; any later arrival compiles again.
       const waiting = await doc.packages.prepare(doc.prefix + doc.text, received + FIX_BUDGET_MS[mode]);
       if (waiting) this.recompile(waiting.loading, params);
-      this.sync(doc, params.inputs, anchors);
+      this.sync(doc, params.inputs, paged, anchors);
       const settled =
         mode === "streaming" && params.settled !== undefined
           ? Math.max(0, Math.min(params.settled, doc.text.length))
@@ -794,8 +820,8 @@ class Server implements EngineServer {
         const base = images?.variant ?? given;
         const settledBase = images ? images.map.toResult(settledIn) : settledIn;
         const settledFromBase = images ? images.map.toResult(settledFromIn) : settledFromIn;
-        if (variant || images) this.writeFixed(doc, base.text, anchors, base.toOriginal);
-        else this.sync(doc, params.inputs, anchors);
+        if (variant || images) this.writeFixed(doc, base.text, paged, anchors, base.toOriginal);
+        else this.sync(doc, params.inputs, paged, anchors);
         let { diagnostics } = await compile();
         let ok = !diagnostics.some(isError);
         fixes = [];
@@ -811,7 +837,7 @@ class Server implements EngineServer {
             diagnostics,
             deadline: received + FIX_BUDGET_MS[mode],
             compile: async (text, toBase) => {
-              this.writeFixed(doc, text, anchors, (p) => base.toOriginal(toBase(p)));
+              this.writeFixed(doc, text, paged, anchors, (p) => base.toOriginal(toBase(p)));
               return (await compile()).diagnostics;
             },
           });
@@ -835,7 +861,7 @@ class Server implements EngineServer {
       const check = async (given: Variant): Promise<Diagnostic[]> => {
         // A missing image fails no block: it shows as a placeholder.
         const variant = placeholders(given)?.variant ?? given;
-        this.writeFixed(doc, variant.text, false, variant.toOriginal);
+        this.writeFixed(doc, variant.text, paged, false, variant.toOriginal);
         let c: { diagnostics: Diagnostic[]; compileMs?: number };
         if (doc.compiler.check) c = await doc.compiler.check({ target, mode });
         else if (target === "html") c = await doc.compiler.compileHtml({ mode });
@@ -964,7 +990,7 @@ class Server implements EngineServer {
       const doc = this.current(uri, rev);
       if (!this.adapter.exports.includes("html")) this.unsupported("HTML export");
       await doc.packages.prepare(doc.prefix + doc.text, performance.now() + FIX_BUDGET_MS.final);
-      this.sync(doc, inputs);
+      this.sync(doc, inputs, false);
       const r = await this.exportOnce(doc, () => doc.compiler.compileHtml({ mode: "final" }));
       const diagnostics = this.diagnostics(doc, r.diagnostics);
       return r.html === null
@@ -976,7 +1002,7 @@ class Server implements EngineServer {
       const doc = this.current(uri, rev);
       if (!this.adapter.exports.includes("pdf") || !doc.compiler.exportPdf) this.unsupported("PDF export");
       await doc.packages.prepare(doc.prefix + doc.text, performance.now() + FIX_BUDGET_MS.final);
-      this.sync(doc, inputs);
+      this.sync(doc, inputs, true);
       const exportPdf = doc.compiler.exportPdf.bind(doc.compiler);
       const r = await this.exportOnce(doc, () => exportPdf({ mode: "final" }));
       const diagnostics = this.diagnostics(doc, r.diagnostics);

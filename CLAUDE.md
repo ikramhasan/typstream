@@ -99,6 +99,9 @@ In `packages/engine`:
 - `pnpm test`: the `node` vitest project (client against a fake worker; server and protocol conformance against engine-wasm in-process). Needs engine-wasm's `dist/`.
 - `pnpm test:browser`: the `browser` project, the real worker in Chromium, Firefox and WebKit (vitest browser mode, Playwright). `BROWSERS=chromium` runs one.
 - `pnpm size`: main thread ≤ 9.6 KB, worker JS ≤ 40 KB, `@typstream/engine/websocket` and `@typstream/engine/images` ≤ 1.5 KB gzipped each.
+- Pages and PDFs follow the layout profile (#129): the server puts `LAYOUT_PROFILE` (`src/server/profile.ts`) before
+  every paged compile's and PDF export's preamble (constant 1.3em pitch, ragged right, no hyphenation, unbreakable
+  table rows), so a DOCX can match them; heal's `layout-profile` lint removes what would beat it. Not the HTML target.
 - Four API reports: `api/engine.api.md` (main entry), `api/engine-server.api.md` (`@typstream/engine/server`), `api/engine-websocket.api.md` (`@typstream/engine/websocket`, `fromWebSocket`, the transport to a remote engine) and `api/engine-images.api.md` (`@typstream/engine/images`, `fetchImages`).
 
 In `packages/html-compat`:
@@ -155,7 +158,7 @@ In `packages/heal`:
 - `pnpm test:long`: 20,000-run property campaign (minutes).
 - `pnpm bench`: vitest benchmarks.
 - `node scripts/perf.mjs`: asserts the latency budgets; run `pnpm build` first. `PERF_TOLERANCE=3` (what CI uses) fails only above 3× budget.
-- `pnpm size`: bundle budget, 15.5 KB gzipped.
+- `pnpm size`: bundle budget, 16.2 KB gzipped.
 - `pnpm mutate`: Stryker mutation testing of `src/` (~1.5–2 h on 6 cores). `STRYKER_INCREMENTAL=1` retests only what changed since the last run, but it reuses static mutants' (module-level constants) results whatever changed, so record scores from full runs. It fails below an 80% score; the first full run scored 80.59% (2026-10-26). It runs the suite without the corpus tests and with few, seeded property runs (`vitest.mutation.config.ts`, the `mutate` script's env). `node scripts/mutation-report.mjs --survivors` lists what survived. Equivalent mutants and known survivors are triaged on #6.
 
 LLM corpus (`tools/llm-corpus`, README there): `node src/record.mjs --variant kit --label <name>` streams the 29 requests
@@ -249,5 +252,8 @@ Spikes (reference only):
 - Paged pages are canvases by default (`mountPaged`, `mountTypstream` and `<Typstream>` ask the engine for drawings, #14).
   A test that inspects a page's SVG (its `<use>`s, `<image>`s, `<a>`s in the shadow root) passes `renderer: "svg"`, or
   opens the document without `pageFormat: "drawing"`.
+- edu's Typst assumes the engine's layout profile (#129): its gaps are smaller because line boxes hold the room above
+  capitals and below the baseline. Compiled natively without `LAYOUT_PROFILE` in front (as `corpus:validate` puts
+  it), titles overlap. edu's and html-compat's own tests compare engine-wasm with native typst without it, alike.
 - Vite rewrites only `new URL("literal", import.meta.url)` to files outside a package's root (workers, fonts): a URL
   built from a variable base 404s in browser tests.

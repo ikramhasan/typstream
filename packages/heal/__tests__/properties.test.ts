@@ -31,6 +31,7 @@ const NO_LINT = {
     "unclosed-block-comment": false,
     "currency-dollar": false,
     "math-lone-script": false,
+    "layout-profile": false,
   },
 } as const;
 
@@ -260,7 +261,8 @@ describe("incremental healer", () => {
     // An AI edit: a finished document, one top-level block deleted and written back in random
     // chunks. Lint on, with fixes on both sides of the block, so the settled text keeps its fixes.
     const lintDoc = documentArb.map(
-      (d) => `= Head\n\nSome **bold**, me@x.com and m/s$^2$.\n\n${d}\n\nMore ] text **x** here.\n\n# Tail\n\nend`,
+      (d) =>
+        `= Head\n\nSome **bold**, me@x.com and m/s$^2$.\n\n${d}\n\nMore ] text **x** here.\n\n#par(justify: true)[Ragged]\n\n# Tail\n\nend`,
     );
     fc.assert(
       fc.property(
@@ -318,13 +320,26 @@ describe("incremental healer", () => {
     // Lint findings are cached and shifted across edits (§5.2 resync); with a
     // settled handler they are recomputed instead. Both must match a fresh heal.
     const lintDoc = documentArb.map(
-      (d) => `# Head\n\nSome **bold** and me@x.com.\n\n${d}\n\nMore ] text **x** here.\n\n# Tail\n\nend`,
+      (d) =>
+        `# Head\n\nSome **bold** and me@x.com.\n\n${d}\n\n#par(leading: 1em)[x]\n\nMore ] text **x** here.\n\n# Tail\n\nend`,
     );
     const editArb = fc.record({
       at: fc.nat(),
       del: fc.nat({ max: 12 }),
       insert: fc.oneof(
-        fc.constantFrom("", "**b** ", "# H\n", " # H\n", "a ] b", "me@x.com ", "\n\n", "*", "[", "x"),
+        fc.constantFrom(
+          "",
+          "**b** ",
+          "# H\n",
+          " # H\n",
+          "a ] b",
+          "me@x.com ",
+          "\n\n",
+          "*",
+          "[",
+          "x",
+          "#par(justify: true)[p]",
+        ),
         fc.string({ maxLength: 6 }),
       ),
     });

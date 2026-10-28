@@ -62,7 +62,16 @@ VARIANTS = {
     "ttf": dict(fonts="ttf"),
     # The TrueType faces embedded, nothing installed.
     "ttf-embedded": dict(fonts="ttf", embed="ttf", installed=False),
+    # The engine's layout profile as it ships (#129, packages/engine/src/server/profile.ts): a 1.3em pitch on both
+    # sides, its show-set rules in Typst; the spike's explicit gaps stay.
+    "engine": dict(engine=True, pitch=14.3),
 }
+
+
+def engine_profile():
+    """`LAYOUT_PROFILE`, read from the engine's source."""
+    src = (ROOT / "packages/engine/src/server/profile.ts").read_text()
+    return re.search(r"export const LAYOUT_PROFILE: string = `([^`]*)`;", src).group(1)
 
 
 def sh(cmd, **kw):
@@ -251,6 +260,8 @@ def build(name, blocks, variant, opts, out):
     kern_docx_off = opts.get("kerning") == "docx-off"
     if kern_docx_off:
         opts["kerning"] = True
+    if opts.get("engine"):
+        opts["engine"] = engine_profile()
     p = writers.profile(fonts=FONTS, **opts)
     stem = f"{name}.{variant}"
     typ = out / f"{stem}.typ"
@@ -285,6 +296,9 @@ def main():
     if not FONTS.exists():
         shutil.copytree(ENGINE_FONTS, FONTS)
     TTF_FONTS = out / "fonts-ttf"
+    # Since #125 the engine's Libertinus faces are TrueType already: the copy is what the ttf variants want.
+    if not TTF_FONTS.exists() and (FONTS / "LibertinusSerif-Regular.ttf").exists():
+        TTF_FONTS = FONTS
     if not TTF_FONTS.exists():
         import otf2ttf
         TTF_FONTS.mkdir()

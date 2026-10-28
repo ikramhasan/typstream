@@ -3,8 +3,9 @@ import { gzipSync } from "node:zlib";
 import { build } from "esbuild";
 
 // 15 KB until #24's math-lone-script lint rule and currency-dollar fix (0.1 KB) and #65's closers for
-// math groups in a call's arguments (0.07 KB) took it to 15.1 KB on main.
-const BUDGET_GZ = 15.5 * 1024;
+// math groups in a call's arguments (0.07 KB) took it to 15.1 KB on main; 15.5 KB until #129's
+// layout-profile rule, which reads a call's arguments (0.7 KB), took it from 15.3 to 16.0 KB.
+const BUDGET_GZ = 16.2 * 1024;
 const result = await build({
   entryPoints: ["src/index.ts"],
   bundle: true,

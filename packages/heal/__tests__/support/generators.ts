@@ -75,7 +75,7 @@ export const BLOCK_ATOMS = [
   '#import "lib.typ": f',
   "#table(\n  columns: 3,\n  [a], [b], [c],\n)",
   "#grid(columns: (1fr, 2fr))[x][y]",
-  "#par(justify: true)[Long text with *strong*]",
+  "#par(spacing: 12pt)[Long text with *strong*]",
   "- list with *strong*\n  continued line",
   "#align(center)[#box(width: 50%)[Centered]]",
   "$ mat(1, 2; 3, 4) $",

@@ -111,7 +111,7 @@ export interface LintFinding {
 }
 
 // @public
-export type LintRuleId = "markdown-heading" | "markdown-bold" | "markdown-link" | "email-at" | "bare-hash" | "stray-closer" | "unclosed-delim" | "unclosed-block-comment" | "currency-dollar" | "math-lone-script";
+export type LintRuleId = "markdown-heading" | "markdown-bold" | "markdown-link" | "email-at" | "bare-hash" | "stray-closer" | "unclosed-delim" | "unclosed-block-comment" | "currency-dollar" | "math-lone-script" | "layout-profile";
 
 // @public
 export type LintSeverity = "fix" | "warn" | "off";
