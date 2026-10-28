@@ -27,12 +27,12 @@ export interface TypstreamInfo {
   openFrames: DocumentState["heal"]["openFrames"];
   /**
    * The engine document. For exports, prefer `exportPdf()` and friends: the
-   * document's own exports use its inputs, which include a fit-width preview's
+   * document's own exports use its inputs, which include a reflow preview's
    * page size.
    */
   document: EngineDocument | null;
   /**
-   * Exports the document as PDF, at its own page size (a fit-width preview's
+   * Exports the document as PDF, at its own page size (a reflow preview's
    * width left out), with the template's inputs, the `inputs` prop and
    * `options.inputs`. Opens a lazy document that hasn't opened yet. Rejects
    * with the engine's `ExportError`, or an `Error` when no `<Typstream>` is

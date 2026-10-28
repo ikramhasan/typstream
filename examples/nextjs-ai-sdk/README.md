@@ -51,11 +51,11 @@ Commons needs no API key. The route identifies itself with a `User-Agent`, as Wi
 ## The page
 
 - **Suggestions.** One button per thing edu can write (each template, question kind, drawing, the Universe packages, Arabic and Bengali, a font), most of them the requests the prompt kit was measured on. They show in an empty chat and in a row above the field after; **New chat** starts over.
-- **Pages or HTML.** Answers render as pages by default (`layout="fit-width"`: as wide as the chat); the header switches to HTML.
+- **Pages or HTML.** Answers render as pages by default (`layout="fit-width"`: the document's pages, scaled to the chat's width); the header switches to HTML.
 - **Show answers.** edu writes answers (filled-in blanks, worked answers, answer keys) only when the document's `showAnswers` input is `"true"`: the switch recompiles every answer as the teacher's copy.
 - **Following the answer.** Message Scroller (AI Elements' Chat) keeps the reply in view while you stay at the bottom, and stops when you scroll away. As pages, a streaming answer is cut off just below the line being written: Typst adds a whole page as soon as it starts one, and following the bottom of a blank page would leave the text above the screen.
 - **Before the first token** a "Writing…" line shows, and a failed request shows its error with a retry, so nothing is ever silent.
-- From an answer's footer: **copy** it, **export** it, or retry it, in the view's form. As pages, copy takes its Typst source and export downloads a PDF (`useTypstream().exportPdf()`, at the document's own page size: fit-width only sizes the preview). As HTML, both take the file `useTypstream().exportHtml()` makes, with edu's CSS, the theme and the fonts, which opens on its own. Exports compile in final mode with the component's `inputs`, so the answers are in them if they're shown. Stop a reply from the send button.
+- From an answer's footer: **copy** it, **export** it, or retry it, in the view's form. As pages, copy takes its Typst source and export downloads a PDF (`useTypstream().exportPdf()`, the same pages the preview shows). As HTML, both take the file `useTypstream().exportHtml()` makes, with edu's CSS, the theme and the fonts, which opens on its own. Exports compile in final mode with the component's `inputs`, so the answers are in them if they're shown. Stop a reply from the send button.
 - **Styles.** Tailwind's preflight resets headings, lists and inline SVG, which a Typst document needs as the browser draws them, so `app/globals.css` undoes it inside answers.
 
 `app/telemetry.tsx` wires typstream's events to the console and to `/api/telemetry`, which logs them (see the telemetry guide).

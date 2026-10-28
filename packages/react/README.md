@@ -17,7 +17,7 @@ The document is `source`, its whole text so far (streamdown-style), or `stream`,
 | `source` / `stream` | | The document. |
 | `isStreaming` | `false` | More `source` is coming. When it turns false the document is finished: compiled strictly (final mode), without the caret. Turning true again starts over (a regenerated answer). Ignored with `stream`, which finishes when it ends. |
 | `target` | `"html"` | `"html"` (semantic HTML + MathML) or `"paged"` (SVG pages). Switching keeps the document; the old output stays until the new target's first compile. |
-| `layout`, `pageHeight` | `"fixed"`, `"a4"` | Paged only. `"fit-width"` lays pages out as wide as the element. |
+| `layout`, `pageHeight` | `"fixed"`, `"a4"` | Paged only. `"fit-width"` scales the pages to the element's width; `"reflow"` lays them out that wide (and `pageHeight` sets their height). |
 | `preamble` | | Typst evaluated before the document, after the plugins' and the template's. |
 | `template` | | Name of a template from the plugins' `templates`: its preamble and default `inputs`. |
 | `inputs` | | `sys.inputs`, e.g. `{ showAnswers: "true" }` to recompile with answers instead of re-prompting. |

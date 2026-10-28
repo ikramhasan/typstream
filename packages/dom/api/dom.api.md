@@ -47,12 +47,6 @@ export interface DrawInfo {
 }
 
 // @public
-export const FIT_WIDTH_PREAMBLE: string;
-
-// @public
-export const fitWidthInputs: (widthPx: number, pageHeight?: "a4" | "auto", inputs?: Record<string, string>) => Record<string, string>;
-
-// @public
 export interface HtmlRenderer {
     // @beta
     blockAt(offset: number): Element | null;
@@ -160,13 +154,19 @@ export interface PagedView {
 
 // @public
 export interface PagedViewOptions {
-    layout?: "fixed" | "fit-width";
+    layout?: "fixed" | "fit-width" | "reflow";
     linkTarget?: string | null;
     // @beta
     onDraw?: (info: DrawInfo) => void;
     rootMargin?: string;
     textLayer?: boolean;
 }
+
+// @public
+export const REFLOW_PREAMBLE: string;
+
+// @public
+export const reflowInputs: (widthPx: number, pageHeight?: "a4" | "auto", inputs?: Record<string, string>) => Record<string, string>;
 
 // @beta
 export const registerLoadedFont: (font: LoadedFontFamily, root: Node) => Promise<void>;
@@ -204,7 +204,7 @@ export interface TypstreamOptions {
     // @beta
     islands?: IslandRenderers;
     isStreaming?: boolean;
-    layout?: "fixed" | "fit-width";
+    layout?: "fixed" | "fit-width" | "reflow";
     lazy?: boolean;
     linkTarget?: string | null;
     onDiagnostics?: (diagnostics: Diagnostic[], state: DocumentState) => void;

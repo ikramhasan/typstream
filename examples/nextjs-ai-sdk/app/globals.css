@@ -134,10 +134,9 @@
   }
 }
 
-/* Pages as sheets lifted off the background, as on the website's demo. fit-width stacks them with no
-   gap, so the end of one page and the top margin of the next would read as a blank stretch inside the
-   document. The paged view's own sheet is an adopted stylesheet, which comes later in the cascade, hence
-   the extra specificity. */
+/* Pages as sheets lifted off the background, as on the website's demo, further apart than the paged
+   view's own gap. Its sheet is an adopted stylesheet, which comes later in the cascade, hence the extra
+   specificity. */
 .answer .typstream-paged[data-layout] {
   gap: 24px;
 }

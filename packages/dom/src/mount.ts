@@ -29,7 +29,7 @@ import type { AnimateOptions } from "./html/animate";
 import { registerLoadedFont } from "./html/fonts";
 import { createHtmlRenderer, type HtmlRenderer } from "./html/renderer";
 import type { IslandRenderers } from "./islands";
-import { FIT_WIDTH_PREAMBLE, fitWidthInputs } from "./paged/mount";
+import { REFLOW_PREAMBLE, reflowInputs } from "./paged/mount";
 import { createPagedView, type PagedView } from "./paged/view";
 import { type StreamText, subscribeStream } from "./stream";
 
@@ -76,9 +76,15 @@ export interface TypstreamOptions {
   streamingRange?: Range | null;
   /** Default `html`. */
   target?: CompileTarget;
-  /** Paged target: pages at their own size (`fixed`, default) or as wide as the element (`fit-width`). */
-  layout?: "fixed" | "fit-width";
-  /** Paged `fit-width` layout: `a4` proportions (default) or one page as tall as the content (`auto`). */
+  /**
+   * Paged target. `fixed` (default): the document's pages at their own size,
+   * scaled down to fit the element. `fit-width`: the same pages scaled up or
+   * down to the element's width; both show the pages the PDF has. `reflow`:
+   * the document laid out again on pages as wide as the element, so lines and
+   * pages break elsewhere than in the PDF (for narrow panels).
+   */
+  layout?: "fixed" | "fit-width" | "reflow";
+  /** Paged `reflow` layout: `a4` proportions (default) or one page as tall as the content (`auto`). */
   pageHeight?: "a4" | "auto";
   /** Typst evaluated before the document, after the plugins' and the template's. */
   preamble?: string;
@@ -181,7 +187,7 @@ export interface MountedTypstream {
   /**
    * Exports the document as PDF (#18), from the engine that compiles the
    * preview. Its inputs are the template's, `inputs` and `options.inputs`,
-   * without fit-width's page size, so it prints at the document's own size.
+   * without reflow's page size, so it prints at the document's own size.
    * Opens a document that hasn't opened yet (see `lazy`). Rejects with the
    * engine's `ExportError`.
    */
@@ -220,7 +226,7 @@ const equal = (a: unknown, b: unknown): boolean => {
 
 /** Within one screen of the viewport, as the paged view draws pages. */
 const LAZY_MARGIN = "50%";
-/** Wait this long after the element's width last changed before recompiling fit-width pages (ms). */
+/** Wait this long after the element's width last changed before recompiling reflowed pages (ms). */
 const RESIZE_DEBOUNCE = 150;
 
 /** How the document is opened: a change to any of these opens a new one. */
@@ -246,8 +252,8 @@ const templateOf = (o: TypstreamOptions): TemplateSpec | undefined =>
 const openKey = (o: TypstreamOptions): OpenKey => {
   const preamble = [
     // Whatever the target, so switching targets doesn't reopen the document: without
-    // fit-width's inputs the preamble does nothing.
-    o.layout === "fit-width" ? FIT_WIDTH_PREAMBLE : undefined,
+    // reflow's inputs the preamble does nothing.
+    o.layout === "reflow" ? REFLOW_PREAMBLE : undefined,
     templateOf(o)?.preamble,
     o.preamble,
   ]
@@ -326,11 +332,11 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
   let stream: AsyncIterable<string> | null = null;
   let reading: { state: StreamText; stop: () => void } | null = null;
 
-  // Visibility (lazy) and the element's width (fit-width). An export opens the
+  // Visibility (lazy) and the element's width (reflow). An export opens the
   // document whatever its visibility (`exporting`).
   let visible = false;
   let exporting = false;
-  let fitInputs: Record<string, string> | null = null;
+  let widthInputs: Record<string, string> | null = null;
   let io: IntersectionObserver | null = null;
   let ro: ResizeObserver | null = null;
   let resizeTimer: ReturnType<typeof setTimeout> | undefined;
@@ -487,9 +493,9 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
     key = null;
   };
 
-  const fitWidth = () => opts.target === "paged" && opts.layout === "fit-width";
+  const reflow = () => opts.target === "paged" && opts.layout === "reflow";
 
-  /** The document's inputs without fit-width's page size: what exports compile with, plus an export's own. */
+  /** The document's inputs without reflow's page size: what exports compile with, plus an export's own. */
   const exportInputs = (extra?: Record<string, string>): Record<string, string> => ({
     ...templateOf(opts)?.inputs,
     ...opts.inputs,
@@ -498,15 +504,15 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
 
   const measure = () => {
     const width = element.clientWidth;
-    fitInputs = width > 0 ? fitWidthInputs(width, opts.pageHeight ?? "a4") : null;
+    widthInputs = width > 0 ? reflowInputs(width, opts.pageHeight ?? "a4") : null;
   };
 
   const observeWidth = () => {
-    if (!fitWidth()) {
+    if (!reflow()) {
       ro?.disconnect();
       ro = null;
       clearTimeout(resizeTimer);
-      fitInputs = null;
+      widthInputs = null;
       return;
     }
     if (ro) return;
@@ -548,7 +554,7 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
 
     const target = opts.target ?? "html";
     const pageFormat = opts.renderer === "svg" ? "svg" : "drawing";
-    const inputs = { ...exportInputs(), ...fitInputs };
+    const inputs = { ...exportInputs(), ...widthInputs };
     const files = opts.files ?? {};
     const text = reading ? reading.state.text : (opts.source ?? "");
     const final = !streaming();

@@ -62,7 +62,7 @@ The [vanilla JS guide](/docs/getting-started/vanilla) walks through it step by s
   stream is closed when a chunk arrives after the last mount reading it is destroyed.
 - **In place or a new document.** `target`, `inputs` and `files` change in place, and the latest `resolveImage` is
   the one called. A different `engine`, `plugins`, `preamble` or `template`, `heal` or `schedule` options, adding or
-  removing `resolveImage`, or switching to or from the fit-width layout opens a new document; the old output stays
+  removing `resolveImage`, or switching to or from the reflow layout opens a new document; the old output stays
   until its first compile.
 - **Lazy.** The document opens when the element comes within one screen of the viewport, or as soon as it streams.
   Offscreen, finished documents apply changes when they scroll back. `lazy: false` opens it right away.
@@ -99,7 +99,7 @@ What `exportPdf` and `exportHtml` take (`exportHtml` takes `StandaloneHtmlOption
 <auto-type-table path="packages/dom/src/mount.ts" name="TypstreamExportOptions" />
 
 The exports compile the document in final mode with the template's inputs, your `inputs` and the export's own
-(`exportPdf({ inputs })`, for that export only), without the fit-width page size, so they come out at the document's
+(`exportPdf({ inputs })`, for that export only), without the reflow page size, so they come out at the document's
 own size. They reject with the engine's
 [`ExportError`](/docs/reference/engine#exporterror). See [Exports](/docs/guides/exports).
 
@@ -287,9 +287,10 @@ for await (const chunk of llmStream) doc.push(chunk);
 doc.finish();
 ```
 
-With `layout: "fit-width"`, it compiles pages as wide as the container through `sys.inputs`, and recompiles after a
-resize once resizing pauses (`resizeDebounce`); meanwhile the old pages scale. Open the document with
-`FIT_WIDTH_PREAMBLE` in its preamble for that to work.
+With `layout: "fit-width"`, the document's pages are scaled to the container's width. With `layout: "reflow"`, it
+compiles pages as wide as the container through `sys.inputs`, and recompiles after a resize once resizing pauses
+(`resizeDebounce`); meanwhile the old pages scale. Open the document with `REFLOW_PREAMBLE` in its preamble for that
+to work.
 
 #### `MountPagedOptions`
 
@@ -299,33 +300,33 @@ resize once resizing pauses (`resizeDebounce`); meanwhile the old pages scale. O
 
 <auto-type-table path="packages/dom/src/paged/mount.ts" name="MountedPaged" />
 
-### `FIT_WIDTH_PREAMBLE`
+### `REFLOW_PREAMBLE`
 
 ```ts
-const FIT_WIDTH_PREAMBLE: string;
+const REFLOW_PREAMBLE: string;
 ```
 
-Typst for a document's preamble that sets the page size from `sys.inputs` in the fit-width layout, and does nothing
+Typst for a document's preamble that sets the page size from `sys.inputs` in the reflow layout, and does nothing
 without those inputs. A document's own `#set page(width: …)` or `paper` comes later and wins: Typst has no rule that
-applies after the document, so fit-width only sets the default page. `mountTypstream` adds it for you when
-`layout` is `"fit-width"`.
+applies after the document, so reflow only sets the default page. `mountTypstream` adds it for you when
+`layout` is `"reflow"`.
 
 ```ts
-const doc = engine.open({ target: "paged", preamble: FIT_WIDTH_PREAMBLE });
-mountPaged(container, doc, { layout: "fit-width" });
+const doc = engine.open({ target: "paged", preamble: REFLOW_PREAMBLE });
+mountPaged(container, doc, { layout: "reflow" });
 ```
 
-### `fitWidthInputs`
+### `reflowInputs`
 
 ```ts
-const fitWidthInputs: (
+const reflowInputs: (
   widthPx: number,
   pageHeight?: "a4" | "auto",
   inputs?: Record<string, string>,
 ) => Record<string, string>;
 ```
 
-The `sys.inputs` that make `FIT_WIDTH_PREAMBLE` lay pages out `widthPx` CSS pixels wide, added to `inputs`. With
+The `sys.inputs` that make `REFLOW_PREAMBLE` lay pages out `widthPx` CSS pixels wide, added to `inputs`. With
 `pageHeight` `"a4"` (default) pages keep A4's proportions at that width, so long documents still update page by page;
 `"auto"` makes one page as tall as the content, for short documents. Widths are rounded to half a point, so subpixel
 resizes don't recompile.
@@ -377,7 +378,7 @@ Use these to theme the output; [Theming](/docs/guides/theming) has the details.
 | `[data-typstream-src]` | A top-level block's first element; the value is its offset in the compiled source. |
 | `[data-typstream-wide]` | A box wider than the root, which scrolls sideways (`1` on a `div` the renderer put around a table or an equation). |
 | `[data-typstream-animate]` | A word fading in. |
-| `.typstream-paged` | The paged view, with `data-layout="fixed"` or `"fit-width"`. |
+| `.typstream-paged` | The paged view, with `data-layout="fixed"`, `"fit-width"` or `"reflow"`. |
 | `.typstream-page` | One page, with `data-page` (1-based). |
 | `.typstream-text-layer` | A page's invisible, selectable text. |
 

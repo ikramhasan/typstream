@@ -25,7 +25,7 @@ The browser tests run in **Chromium, Firefox and WebKit** (Playwright 1.64), for
 | Constructed stylesheets | Adding the renderers' CSS without inline styles | A `<style>` element instead, which a strict CSP refuses without `'unsafe-inline'` (Safari before 16.4). |
 | MathML | Math in the HTML target | Math doesn't render in the HTML target. The paged target draws math itself. |
 | `IntersectionObserver` | Opening documents only near the viewport | Documents open right away. |
-| `ResizeObserver` | The paged `fit-width` layout | |
+| `ResizeObserver` | The paged `fit-width` and `reflow` layouts | |
 | Cache Storage | Keeping fonts and package tarballs across sessions | They come from the HTTP cache. |
 
 Cross-origin isolation (COOP/COEP) and SharedArrayBuffer are not needed. Trusted Types (`require-trusted-types-for 'script'`) work with `trusted-types typstream` in the policy. The CSP that works is in [Security](/docs/guides/security).

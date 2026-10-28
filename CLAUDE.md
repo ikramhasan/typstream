@@ -174,9 +174,10 @@ In `tools/browser-suites` (PLAN.md §11.4, #19; details in its README):
   dark) through `mountTypstream` on the real worker, in Chromium, Firefox and WebKit. `BROWSERS=chromium` runs one. Needs
   engine-wasm's `dist/`. The adversarial set's equivalence runs in Chromium only (engine and watchdog, ~10 min); the
   other browsers take ~5–8 min (WebKit ~45 min on CI). Too slow for PRs: the nightly workflow runs one job per browser.
-- `pnpm test:pdf` (also part of `test:browser`): every edu page as the document panel paints it (`fixed` layout, device
-  pixel ratio 2) against pdf.js's raster of `exportPdf()`, in the same browser; no baselines. CI runs it on PRs in the
-  `Engine (chromium)` job. `fit-width` re-lays pages out at the panel's width, so it can't equal the PDF.
+- `pnpm test:pdf` (also part of `test:browser`): every edu page as the document panel paints it (`fit-width` layout,
+  device pixel ratio 2) against pdf.js's raster of `exportPdf()`, in the same browser; no baselines. CI runs it on PRs
+  in the `Engine (chromium)` job. The `reflow` layout lays pages out again at the panel's width, so it can't equal the
+  PDF.
 - `pnpm test:visual`: screenshots against `__tests__/__screenshots__/<browser>/`, run inside Playwright's Docker image
   (`scripts/visual.mjs`; needs Docker) so baselines don't depend on the machine. `pnpm visual:update` accepts changes;
   commit the PNGs it writes (stored as palette PNGs). Engine, renderer, html-compat or CSS changes that alter output need

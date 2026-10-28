@@ -362,7 +362,7 @@ type ExportProps = { target: Target; source: string; disabled: boolean } & Pick<
 /**
  * Downloads the answer in the view's form, compiled in final mode with the component's `inputs`, so
  * with "Show answers" on it's the teacher's copy too. As pages, a PDF (`useTypstream().exportPdf()`)
- * at the document's own page size (fit-width only sizes the preview); as HTML, the file
+ * with the pages the preview shows (fit-width only scales them); as HTML, the file
  * `exportHtml()` makes (edu's CSS, the theme and the fonts the answer uses), which opens on its own.
  */
 const Export = ({ target, exportPdf, exportHtml, source, disabled }: ExportProps) => {

@@ -37,10 +37,12 @@ import { fillTextLayer, TEXT_LAYER_CSS } from "./text-layer";
 export interface PagedViewOptions {
   /**
    * `fixed` (default): pages at their authored size, scaled down to fit the
-   * container. `fit-width`: pages fill the container's width (use it with
-   * {@link mountPaged}'s fit-width layout, which compiles pages that wide).
+   * container. `fit-width`: the same pages scaled up or down to the container's
+   * width, as a PDF viewer's "fit width" shows them. `reflow`: pages fill the
+   * container's width with no space between them (use it with
+   * {@link mountPaged}'s reflow layout, which compiles pages that wide).
    */
-  layout?: "fixed" | "fit-width";
+  layout?: "fixed" | "fit-width" | "reflow";
   /** Build the selectable text layer. Default true. */
   textLayer?: boolean;
   /** Where safe links open (`target`); `null` leaves it to the browser. Default `"_blank"`. */
@@ -105,7 +107,8 @@ interface Slot {
 
 const CSS = `
 .typstream-paged { display: flex; flex-direction: column; align-items: center; gap: 16px; }
-.typstream-paged[data-layout="fit-width"] { align-items: stretch; gap: 0; }
+.typstream-paged[data-layout="fit-width"] { align-items: stretch; }
+.typstream-paged[data-layout="reflow"] { align-items: stretch; gap: 0; }
 .typstream-page { position: relative; max-width: 100%; container-type: inline-size; background: white; }
 .typstream-page > :first-child { position: absolute; inset: 0; width: 100%; height: 100%; }
 .typstream-page > div:first-child { content-visibility: auto; }
@@ -207,7 +210,7 @@ export const createPagedView = (container: HTMLElement, options: PagedViewOption
     },
     { rootMargin: options.rootMargin ?? "50%" },
   );
-  // A page that changes size (fit-width, a narrower container) is painted again.
+  // A page that changes size (fit-width, reflow, a narrower container) is painted again.
   const ro = new ResizeObserver(() => {
     if (slots.some(needsPaint)) schedule();
   });
@@ -237,7 +240,7 @@ export const createPagedView = (container: HTMLElement, options: PagedViewOption
   const size = (slot: Slot, page: PageUpdate) => {
     const style = slot.el.style;
     style.aspectRatio = `${page.width} / ${page.height}`;
-    style.width = layout === "fit-width" ? "100%" : `${page.width * PX_PER_PT}px`;
+    style.width = layout === "fixed" ? `${page.width * PX_PER_PT}px` : "100%";
   };
 
   // The batch being drawn, for onDraw.
