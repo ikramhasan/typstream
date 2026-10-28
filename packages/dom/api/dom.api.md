@@ -142,6 +142,7 @@ export const mountPaged: (container: HTMLElement, doc: EngineDocument, options?:
 export interface MountPagedOptions extends PagedViewOptions {
     inputs?: Record<string, string>;
     pageHeight?: "a4" | "auto";
+    renderer?: "canvas" | "svg";
     resizeDebounce?: number;
 }
 
@@ -214,6 +215,7 @@ export interface TypstreamOptions {
     pageHeight?: "a4" | "auto";
     plugins?: readonly TypstreamPlugin[];
     preamble?: string;
+    renderer?: "canvas" | "svg";
     resolveImage?: DocumentOptions["resolveImage"];
     schedule?: DocumentOptions["schedule"];
     source?: string;

@@ -152,6 +152,8 @@ describe(`mountTypstream in ${browser}`, () => {
       const options = (): TypstreamOptions => ({
         engine,
         target,
+        // SVG pages, whose <image>s show which image the page has.
+        renderer: "svg",
         source: '#figure(image("https://x.org/cell.svg", width: 3cm, alt: "A cell"), caption: [A cell])',
         // A new function on every update, as an inline prop would be: the latest is called, the document stays.
         resolveImage: (path) => {

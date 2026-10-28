@@ -1,6 +1,7 @@
 // Wires a paged view to an engine document: renders each new paged artifact,
-// and in the fit-width layout compiles pages as wide as the container (PLAN
-// §6.5), through `sys.inputs` read by FIT_WIDTH_PREAMBLE.
+// asks for pages as drawings for its canvases (#14), and in the fit-width
+// layout compiles pages as wide as the container (PLAN §6.5), through
+// `sys.inputs` read by FIT_WIDTH_PREAMBLE.
 
 import type { PagedArtifact } from "@typstream/core";
 import type { EngineDocument } from "@typstream/engine";
@@ -25,6 +26,13 @@ export const FIT_WIDTH_PREAMBLE: string = `#set page(
 
 /** Options of {@link mountPaged}. @public */
 export interface MountPagedOptions extends PagedViewOptions {
+  /**
+   * `canvas` (default): pages come as drawings and are painted on canvases, a
+   * millisecond or two per streamed update where SVG pages take 12–31 ms (#14);
+   * pages the engine can't draw (gradients, tilings, colour glyphs) still come
+   * as SVG. `svg`: every page as SVG in the DOM, vector at any zoom.
+   */
+  renderer?: "canvas" | "svg";
   /**
    * Page height in the fit-width layout: `"a4"` (default) keeps A4's proportions
    * at the container's width, so long documents still have pages and only the
@@ -109,6 +117,7 @@ export const mountPaged = (
       observer.disconnect();
     };
   }
+  doc.setPageFormat(options.renderer === "svg" ? "svg" : "drawing");
   doc.setTarget("paged");
   show();
 

@@ -25,6 +25,7 @@ import {
   mapDiagnostic,
   normalizeDiagnostics,
   type PackageSpec,
+  type PageFormat,
   ProtocolError,
   type Range,
   type RequestId,
@@ -125,6 +126,12 @@ export interface DocumentOptions {
   text?: string;
   /** Default `html`. */
   target?: CompileTarget;
+  /**
+   * How paged compiles send pages: `svg` (default), or `drawing` for a canvas
+   * renderer (`@typstream/dom`'s paged view sets it). Pages the engine can't
+   * draw come as SVG either way.
+   */
+  pageFormat?: PageFormat;
   /** `sys.inputs`. */
   inputs?: Record<string, string>;
   /** Typst evaluated before the document (theme, imports); fixed for the document's lifetime. */
@@ -217,6 +224,8 @@ export interface EngineDocument {
   reset(input?: string): void;
   /** Compiles to `target` from now on. The artifact of the other target stays until the first new one. */
   setTarget(target: CompileTarget): void;
+  /** Paged compiles send pages as `format` from now on (see {@link DocumentOptions.pageFormat}); recompiles if it changed. */
+  setPageFormat(format: PageFormat): void;
   /** Replaces `sys.inputs` and recompiles if they changed. */
   setInputs(inputs: Record<string, string>): void;
   /** Writes (or, with `null`, deletes) files the document reads. */
@@ -419,6 +428,7 @@ export class DocumentImpl implements EngineDocument {
   private readonly fontCatalogues: FontCatalogue[] | undefined;
   private healed: HealResult;
   private target: CompileTarget;
+  private pageFormat: PageFormat;
   private inputs: Record<string, string> | undefined;
   private files: FileDelta;
   private pendingFiles: FileDelta | null = null;
@@ -497,6 +507,7 @@ export class DocumentImpl implements EngineDocument {
         ? this.heal(() => this.healer.set(options.text as string))
         : this.healer.result();
     this.target = options.target ?? "html";
+    this.pageFormat = options.pageFormat ?? "svg";
     this.inputs = options.inputs;
     this.preamble = options.preamble;
     this.fallback = options.fallback !== false;
@@ -595,6 +606,14 @@ export class DocumentImpl implements EngineDocument {
     this.target = target;
     this.received = [];
     this.diagnostics = [];
+    this.needsCompile = true;
+    this.update();
+  }
+
+  setPageFormat(format: PageFormat): void {
+    if (this.disposed || format === this.pageFormat) return;
+    // The worker sends every page again, in the new format (an HTML document just compiles once more).
+    this.pageFormat = format;
     this.needsCompile = true;
     this.update();
   }
@@ -763,6 +782,8 @@ export class DocumentImpl implements EngineDocument {
     }
     if (this.fullPages) params.fullPages = true;
     this.fullPages = false;
+    // Paged only; HTML compiles ignore it.
+    params.pageFormat = this.pageFormat;
     const { watchdog } = this.host;
     let budgetMs = this.final ? watchdog.finalMs : watchdog.streamingMs;
     this.probing = false;

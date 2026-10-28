@@ -415,6 +415,22 @@ describe("paged artifacts", () => {
     expect(workers.compileRequests().every((p) => !p.fullPages)).toBe(true);
   });
 
+  it("sends the page format with compiles, and compiles again when it changes", async () => {
+    const { workers, engine } = setup();
+    const doc = engine.open({ target: "paged", text: "A", pageFormat: "drawing" });
+    await tick(100);
+    doc.setPageFormat("svg");
+    await tick(100);
+    doc.setPageFormat("drawing");
+    doc.setTarget("html");
+    await tick(100);
+    expect(workers.compileRequests().map((p) => [p.target, p.pageFormat])).toEqual([
+      ["paged", "drawing"],
+      ["paged", "svg"],
+      ["html", "drawing"],
+    ]);
+  });
+
   it("asks for every page when a diff doesn't apply", async () => {
     const { workers, engine } = setup();
     const doc = engine.open({ target: "paged", text: "A\n\nB" });

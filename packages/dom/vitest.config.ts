@@ -40,7 +40,10 @@ export default defineConfig({
           browser: {
             enabled: true,
             headless: true,
-            provider: playwright(),
+            // DPR=2 runs at a device pixel ratio of 2 (the paged renderer's canvases follow it).
+            provider: playwright(
+              process.env.DPR ? { contextOptions: { deviceScaleFactor: Number(process.env.DPR) } } : undefined,
+            ),
             // BROWSERS=chromium runs one.
             instances: (process.env.BROWSERS ?? "chromium,firefox,webkit").split(",").map((browser) => ({ browser })),
             screenshotFailures: false,

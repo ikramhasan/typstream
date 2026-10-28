@@ -22,6 +22,7 @@ import { server } from "vitest/browser";
 import {
   appOptions,
   type CorpusDocument,
+  canvasOf,
   finished,
   host,
   loadCorpus,
@@ -69,15 +70,26 @@ const outcome = (s: DocumentState) => ({ status: s.status, failure: s.failure?.r
 
 /**
  * The rendered DOM, as markup. Renderers prefix ids per instance (`typstream-3-`),
- * so prefixes are normalized; paged pages keep their SVG in a shadow root. The
- * root's own attributes compare as a set: their order isn't fixed (WebKit has
- * listed `style` before `lang` for one mount and after it for another).
+ * so prefixes are normalized; paged pages keep their SVG in a shadow root, or
+ * their pixels in a canvas (as a data URL, when painted). The root's own
+ * attributes compare as a set: their order isn't fixed (WebKit has listed
+ * `style` before `lang` for one mount and after it for another).
  */
 const rendered = (el: HTMLElement): string => {
   const pages = pageEls(el);
   const root = el.firstElementChild;
+  const graphics = (p: HTMLElement) => {
+    const canvas = canvasOf(p);
+    if (!canvas) return svgOf(p)?.outerHTML ?? "";
+    return `<canvas ${canvas.width}×${canvas.height}> ${canvas.width ? canvas.toDataURL() : ""}`;
+  };
   const markup = pages.length
-    ? pages.map((p) => `${svgOf(p)?.outerHTML ?? ""}\n${textLayerOf(p)?.outerHTML ?? ""}`).join("\n")
+    ? pages
+        .map(
+          (p) =>
+            `${graphics(p)}\n${p.querySelector(".typstream-links")?.outerHTML ?? ""}\n${textLayerOf(p)?.outerHTML ?? ""}`,
+        )
+        .join("\n")
     : `${[...(root?.attributes ?? [])].map((a) => `${a.name}=${a.value}`).sort()}\n${root?.innerHTML}`;
   return markup.replace(/typstream-\d+-/g, "typstream-N-");
 };
@@ -102,7 +114,13 @@ const compare = async (entry: CorpusDocument, target: Target) => {
       compiles++;
     }
   });
+  // Over the streamed mount: page n of both is as near the viewport, so both canvases are painted or neither is.
   const oneShot = host(600);
+  Object.assign(oneShot.style, {
+    position: "absolute",
+    top: `${streamed.offsetTop}px`,
+    left: `${streamed.offsetLeft}px`,
+  });
   let b: MountedTypstream | null = null;
   try {
     await streamInto(a, opts, entry);

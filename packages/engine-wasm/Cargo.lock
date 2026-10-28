@@ -2556,6 +2556,7 @@ dependencies = [
  "comemo",
  "js-sys",
  "serde_json",
+ "ttf-parser",
  "typst",
  "typst-html",
  "typst-layout",

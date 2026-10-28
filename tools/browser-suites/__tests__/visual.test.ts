@@ -224,8 +224,11 @@ const shoot = async (shot: Shot) => {
     expect(s.status, entry.name).not.toBe("error");
     await shown(el, s.artifact);
     await document.fonts.ready;
-    // A panel follows the stream to its end.
-    if (streaming) el.scrollTop = el.scrollHeight;
+    // A panel follows the stream to its end, where canvases that came into view are painted.
+    if (streaming) {
+      el.scrollTop = el.scrollHeight;
+      await shown(el, s.artifact);
+    }
     await expect.element(page.elementLocator(el)).toMatchScreenshot(fileName(shot));
   } finally {
     view.destroy();

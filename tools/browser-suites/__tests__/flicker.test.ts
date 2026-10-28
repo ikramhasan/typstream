@@ -3,11 +3,13 @@
 // mountTypstream in steps, waiting at each step until the document has caught
 // up, while MutationObservers record what the renderers remove and add.
 //
-// Paged target:
+// Paged target, as mountTypstream renders it (canvases, SVG for pages the
+// engine can't draw):
 // - pages are never removed while the document grows;
-// - a page is redrawn only when its SVG changed, and swapped in one step (an SVG
-//   is never taken out without the next one going in: no blank page);
-// - a page never goes back to an SVG it showed before (no A→B→A), the last page
+// - a page is redrawn only when its content (SVG or drawing) changed, and
+//   swapped in one step (an SVG is never taken out without the next one going
+//   in, and a canvas on screen always has pixels: no blank page);
+// - a page never goes back to content it showed before (no A→B→A), the last page
 //   included: when heal or the fixers cut what rendered from the text being typed,
 //   the engine keeps its last render (#65). The one exception is a page that isn't
 //   the last and lost what moved to a page added since (a heading moves to the next
@@ -26,6 +28,7 @@
 //   `pending-ref` placeholder until its target streams in, #20), and outlines
 //   (`nav[role=doc-toc]`), which list headings and figures still to come.
 
+import type { PageUpdate } from "@typstream/core";
 import { type MountedTypstream, mountTypstream } from "@typstream/dom";
 import type { DocumentState, Engine } from "@typstream/engine";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -33,6 +36,7 @@ import { server } from "vitest/browser";
 import {
   appOptions,
   type CorpusDocument,
+  canvasOf,
   caughtUp,
   host,
   loadCorpus,
@@ -86,15 +90,48 @@ const replay = async (
 
 // --- paged ----------------------------------------------------------------------------
 
+/** A page's content: its SVG, or its drawing (FNV-1a over its operations, with its strings). */
+const contentOf = (page: PageUpdate | undefined): string => {
+  if (!page?.drawing) return page?.svg ?? "";
+  let h = 0x811c9dc5;
+  for (const b of page.drawing.ops) h = Math.imul(h ^ b, 0x01000193);
+  return `${page.drawing.ops.length}:${h >>> 0}:${page.drawing.strings.join("|")}`;
+};
+
+// Canvas paints, counted per canvas: the paged view clears a canvas once per paint.
+const paints = new WeakMap<HTMLCanvasElement, number>();
+const clearRect = CanvasRenderingContext2D.prototype.clearRect;
+CanvasRenderingContext2D.prototype.clearRect = function (this: CanvasRenderingContext2D, ...args) {
+  paints.set(this.canvas, (paints.get(this.canvas) ?? 0) + 1);
+  return clearRect.apply(this, args);
+};
+
+/** What shows a page now: its SVG element, or its canvas and how many times it was painted. */
+const shownOf = (page: HTMLElement) => {
+  const canvas = canvasOf(page);
+  return canvas ? `${paints.get(canvas) ?? 0}` : (svgOf(page) ?? null);
+};
+
+/**
+ * Pages that go back to what they showed before because the text itself draws less there, not
+ * because heal, the fixers or the renderer dropped anything: a step and the reason. Drawings
+ * compare what is drawn; SVG strings also differed by empty groups, which hid these.
+ */
+const BACK_IN_THE_TEXT = new Map([
+  // `..(words).map(w => box(` with the box's arguments still streaming: the words shown a step
+  // before become empty boxes, which draw what the page showed before the words.
+  ["lesson-plan-persuasive-writing", 29],
+]);
+
 const pagedFlicker = async (entry: CorpusDocument) => {
   const el = host(600);
   const opts = appOptions(engine, entry, { target: "paged", source: "", isStreaming: true });
   const view = mountTypstream(el, opts);
   const problems: string[] = [];
-  /** Per page: the SVGs it showed, in order, with the page count then. */
+  /** Per page: the content it showed, in order, with the page count then. */
   const history: { svg: string; pages: number }[][] = [];
-  /** Per page: the SVG element on screen at the last step. */
-  const nodes: (Element | null)[] = [];
+  /** Per page: what showed it at the last step. */
+  const nodes: (Element | string | null)[] = [];
   // Each page's shadow root is observed: a batch that takes an SVG out must put one in.
   const watched = new WeakSet<ShadowRoot>();
   let blank = 0;
@@ -111,8 +148,10 @@ const pagedFlicker = async (entry: CorpusDocument) => {
   };
   let pages = 0;
   let redrawn = 0;
-  /** Steps where a page went back to an SVG it showed before. */
+  /** Steps where a page went back to content it showed before. */
   const back: number[] = [];
+  /** It went back where BACK_IN_THE_TEXT says it does. */
+  let expected = false;
 
   await replay(entry, view, opts, async (s, step) => {
     const artifact = s.artifact;
@@ -123,19 +162,24 @@ const pagedFlicker = async (entry: CorpusDocument) => {
     if (artifact.pageCount < pages) problems.push(`${at}: pages went from ${pages} to ${artifact.pageCount}`);
     pages = artifact.pageCount;
     pageEls(el).forEach((page, i) => {
-      const svg = artifact.pages[i]?.svg ?? "";
+      const svg = contentOf(artifact.pages[i]);
       history[i] ??= [];
       const seen = history[i];
-      const node = svgOf(page) ?? null;
+      const node = shownOf(page);
+      const canvas = canvasOf(page);
+      if (canvas && canvas.width === 0 && page.getBoundingClientRect().top < innerHeight)
+        problems.push(`${at}: page ${i + 1}'s canvas on screen has no pixels`);
       if (seen.at(-1)?.svg === svg) {
-        if (nodes[i] && node !== nodes[i]) problems.push(`${at}: page ${i + 1} redrawn with the same SVG`);
+        if (nodes[i] && node !== nodes[i]) problems.push(`${at}: page ${i + 1} redrawn with the same content`);
       } else {
         const before = seen.filter((s) => s.svg === svg).at(-1);
         if (before) {
           if (back.at(-1) !== step) back.push(step);
           // What it had then moved to a page added since.
           const moved = i < pages - 1 && pages > before.pages;
-          if (!moved) problems.push(`${at}: page ${i + 1} of ${pages} went back to an SVG it showed before`);
+          const known = BACK_IN_THE_TEXT.get(entry.name) === step;
+          if (known) expected = true;
+          if (!moved && !known) problems.push(`${at}: page ${i + 1} of ${pages} went back to content it showed before`);
         }
         if (seen.length > 0) redrawn++;
         seen.push({ svg, pages });
@@ -144,6 +188,10 @@ const pagedFlicker = async (entry: CorpusDocument) => {
     });
   });
   if (blank > 0) problems.push(`${entry.name}: ${blank} page swaps left a page blank`);
+  if (BACK_IN_THE_TEXT.has(entry.name) && !expected)
+    problems.push(
+      `${entry.name}: no longer goes back at step ${BACK_IN_THE_TEXT.get(entry.name)}; remove it from BACK_IN_THE_TEXT`,
+    );
   view.destroy();
   el.remove();
   return { problems, redrawn, less: back };

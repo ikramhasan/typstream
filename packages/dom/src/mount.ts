@@ -125,6 +125,13 @@ export interface TypstreamOptions {
   /** Paged target: selectable text over the pages. Default true. */
   textLayer?: boolean;
   /**
+   * Paged target: `canvas` (default) paints pages the engine sends as drawings,
+   * a millisecond or two per streamed update; `svg` puts every page's SVG in
+   * the DOM (12–31 ms per update for a dense page, #14). Pages the engine
+   * can't draw are SVG either way.
+   */
+  renderer?: "canvas" | "svg";
+  /**
    * Island renderers by name (PLAN §8.4): markers whose name a plugin
    * declares are mounted over their fallback drawing. Changing the object
    * remounts every island, so keep it stable. @beta
@@ -540,6 +547,7 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
     if (lazy && !visible && !streaming() && !exporting) return;
 
     const target = opts.target ?? "html";
+    const pageFormat = opts.renderer === "svg" ? "svg" : "drawing";
     const inputs = { ...exportInputs(), ...fitInputs };
     const files = opts.files ?? {};
     const text = reading ? reading.state.text : (opts.source ?? "");
@@ -552,6 +560,7 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
       key = want;
       doc = opts.engine.open({
         target,
+        pageFormat,
         inputs,
         text,
         files,
@@ -575,6 +584,7 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
         stopEvents();
       };
     } else {
+      doc.setPageFormat(pageFormat);
       doc.setTarget(target);
       doc.setInputs(inputs);
       const delta = filesDelta(fedFiles, files);

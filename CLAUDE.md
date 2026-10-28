@@ -17,7 +17,7 @@ packages/engine   @typstream/engine: main-thread client (heal → scheduler → 
                   the worker half (`/server`: protocol server, EngineAdapter, engine-wasm adapter, Layer 3 fixers, Layer 4
                   fallback (block isolation, stable prefix) and the Typst runtime library they insert; `worker.ts`, spawned
                   by `engineWorker()`).
-packages/engine-wasm  @typstream/engine-wasm: Typst 0.15.1 as wasm (Rust crate + wasm-bindgen glue): HTML, changed-page SVG, PDF, UTF-16 diagnostics.
+packages/engine-wasm  @typstream/engine-wasm: Typst 0.15.1 as wasm (Rust crate + wasm-bindgen glue): HTML, changed pages (SVG, or drawings for canvases), PDF, UTF-16 diagnostics.
 packages/html-compat  @typstream/html-compat: Typst prelude + CSS so HTML export keeps grid, align, shapes, place, … (tests need the engine).
 packages/universe @typstream/universe: the Typst Universe packages allowed by default (CeTZ, fletcher, cetz-plot, physica, unify,
                   chemformula, alchemist), vendored tarballs + integrity, as an allowlist plugin. The engine loads packages
@@ -30,7 +30,7 @@ packages/edu      @typstream/edu: the Typst vocabulary for teachers' documents (
 packages/mindmap  @typstream/mindmap: mind maps, the first render island (#28): a Typst package drawing a map written as a
                   list, its prompt kit, the island's spec, and `./react` (React Flow, loaded lazily). Bindings layer.
 packages/dom      @typstream/dom: framework-free renderers. `src/html/`: HTML renderer (string block split, sanitizer, source
-                  anchors, word fade-in, caret, theme CSS). `src/paged/`: SVG pages (changed pages, visible first, text layer).
+                  anchors, word fade-in, caret, theme CSS). `src/paged/`: pages painted on canvases from the engine's drawings, SVG for what they can't draw (changed pages, visible first, text layer).
                   `src/mount.ts`: `mountTypstream`, a document on an engine in an element (what the bindings wrap).
                   `src/islands.ts`: render islands, components mounted over Typst markers (PLAN §8.4).
                   `src/export/`: `standaloneHtml`, a downloadable file from an HTML export (theme, CSS, CSP).
@@ -91,7 +91,7 @@ In `packages/engine-wasm` (Rust build, ~3 min cold):
 In `packages/engine`:
 - `pnpm test`: the `node` vitest project (client against a fake worker; server and protocol conformance against engine-wasm in-process). Needs engine-wasm's `dist/`.
 - `pnpm test:browser`: the `browser` project, the real worker in Chromium, Firefox and WebKit (vitest browser mode, Playwright). `BROWSERS=chromium` runs one.
-- `pnpm size`: main thread ≤ 9.5 KB, worker JS ≤ 40 KB, `@typstream/engine/websocket` and `@typstream/engine/images` ≤ 1.5 KB gzipped each.
+- `pnpm size`: main thread ≤ 9.6 KB, worker JS ≤ 40 KB, `@typstream/engine/websocket` and `@typstream/engine/images` ≤ 1.5 KB gzipped each.
 - Four API reports: `api/engine.api.md` (main entry), `api/engine-server.api.md` (`@typstream/engine/server`), `api/engine-websocket.api.md` (`@typstream/engine/websocket`, `fromWebSocket`, the transport to a remote engine) and `api/engine-images.api.md` (`@typstream/engine/images`, `fetchImages`).
 
 In `packages/html-compat`:
@@ -126,12 +126,12 @@ In `packages/mindmap`:
 
 In `packages/dom`:
 - `pnpm test`: node tests (the HTML block splitter, paged helpers). `pnpm test:browser`: the renderers in Chromium, Firefox and WebKit, fed by the real engine worker with html-compat and corpus documents (needs engine-wasm's `dist/`). `BROWSERS=chromium` runs one.
-- `pnpm size`: HTML renderer ≤ 10.7 KB gzipped (with its CSS), paged renderer ≤ 4 KB, standalone HTML export ≤ 2 KB.
+- `pnpm size`: HTML renderer ≤ 10.7 KB gzipped (with its CSS), paged renderer ≤ 5.6 KB, standalone HTML export ≤ 2 KB.
 - Its API report needs DOM types, so its `api-extractor.json` overrides the shared compiler settings.
 
 In `packages/react`:
 - `pnpm test`: Node tests (provider merging, the shared engine's lifetime). `pnpm test:browser`: `<Typstream>` with React Testing Library against the real engine worker in Chromium, Firefox and WebKit (StrictMode, lazy opening, worker cleanup). `BROWSERS=chromium` runs one. Needs engine-wasm's `dist/`.
-- `pnpm size`: ≤ 18.9 KB gzipped including `@typstream/dom` (React and the engine external).
+- `pnpm size`: ≤ 20.5 KB gzipped including `@typstream/dom` (React and the engine external).
 - Its bundle starts with `"use client"` (tsup banner), as does `typstream`'s, for Next.js's App Router.
 
 In `packages/ai`: `pnpm test` runs the helpers through AI SDK 7 itself (a devDependency): recorded `corpus/llm` streams
@@ -228,5 +228,8 @@ Spikes (reference only):
 - The shell prints a zoxide warning on every command; set `_ZO_DOCTOR=0` to silence it.
 - Visual baselines made outside Docker (plain `vitest` in `tools/browser-suites`) differ from CI's in fonts and
   antialiasing: the `visual` project only exists when `scripts/visual.mjs` runs it in the container.
+- Paged pages are canvases by default (`mountPaged`, `mountTypstream` and `<Typstream>` ask the engine for drawings, #14).
+  A test that inspects a page's SVG (its `<use>`s, `<image>`s, `<a>`s in the shadow root) passes `renderer: "svg"`, or
+  opens the document without `pageFormat: "drawing"`.
 - Vite rewrites only `new URL("literal", import.meta.url)` to files outside a package's root (workers, fonts): a URL
   built from a variable base 404s in browser tests.
