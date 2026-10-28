@@ -42,11 +42,11 @@ Every chunk the model sends goes through the same path:
 │ Layer 3 fixers         tail-cut, pending-ref, package-stub, …  │
 │ Layer 4 fallback       last good, stable prefix, error blocks  │
 └────────────────────────────────────────────────────────────────┘
-        │     HTML, or the SVG of changed pages
+        │     HTML, or the changed pages (drawings or SVG)
         ▼
 ┌─ main thread: renderer ────────────────────────────────────────┐
 │ html     sanitize → diff blocks → fade in words, caret         │
-│ paged    redraw changed pages, visible first → text layer      │
+│ paged    paint changed pages, visible first → text layer       │
 └────────────────────────────────────────────────────────────────┘
 
   watchdog (main thread): compile over budget → new worker
@@ -57,7 +57,7 @@ Every chunk the model sends goes through the same path:
 3. **Compile** (engine worker). A Web Worker runs Typst 0.15.1, compiled to WebAssembly (`@typstream/engine-wasm`). Only the change to the source crosses to the worker, and Typst's incremental compilation reuses what didn't change. See [The engine](/docs/concepts/engine).
 4. **Fix** (engine worker, Layer 3). When a compile fails, diagnostic fixers turn the errors into edits and the worker recompiles, at most twice per revision.
 5. **Fall back** (engine worker, Layer 4). What still fails is never a blank screen: the last good render stays, failing blocks become "This part couldn't be displayed" boxes, or the settled text renders with the rest as plain text. See [Fixers and fallback](/docs/concepts/fallback).
-6. **Render** (`@typstream/dom`, main thread). The artifact is either Typst's HTML, which is sanitized and split into blocks so only changed blocks touch the DOM, or SVG pages, of which only changed ones are redrawn, with an invisible text layer for selection and screen readers. See [Render targets](/docs/concepts/render-targets).
+6. **Render** (`@typstream/dom`, main thread). The artifact is either Typst's HTML, which is sanitized and split into blocks so only changed blocks touch the DOM, or pages, of which only changed ones are painted on their canvases, with an invisible text layer for selection and screen readers. See [Render targets](/docs/concepts/render-targets).
 
 A **watchdog** on the main thread times every compile. One that runs past its budget (3 s while streaming) is stopped by terminating the worker, and a spare worker that is already initialized takes over.
 
@@ -97,6 +97,6 @@ Most apps install only `typstream`. You reach for the lower packages when you ne
 <Cards>
   <Card title="Healing" href="/docs/concepts/healing">How a prefix becomes a source that parses.</Card>
   <Card title="Streaming and final mode" href="/docs/concepts/streaming">The document lifecycle and its statuses.</Card>
-  <Card title="Render targets" href="/docs/concepts/render-targets">HTML or SVG pages, and when to pick which.</Card>
+  <Card title="Render targets" href="/docs/concepts/render-targets">HTML or pages, and when to pick which.</Card>
   <Card title="The engine" href="/docs/concepts/engine">The worker, scheduling, the watchdog and limits.</Card>
 </Cards>

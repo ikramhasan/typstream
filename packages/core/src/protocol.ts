@@ -246,6 +246,12 @@ export interface DocumentCloseParams extends DocumentParams {}
 // compile
 
 /**
+ * How a paged compile's pages come: typst-svg's SVG, or drawing operations
+ * for a canvas ({@link PageDrawing}). @public
+ */
+export type PageFormat = "svg" | "drawing";
+
+/**
  * `streaming` compiles may apply streaming-only fixers and are expected to be
  * superseded; `final` compiles the finished document (PLAN §5.7). @public
  */
@@ -287,6 +293,13 @@ export interface CompileParams extends DocumentParams {
    * dropped its pages, e.g. after remounting).
    */
   fullPages?: boolean;
+  /**
+   * Paged only: how pages come. Default `svg`. With `drawing`, the server
+   * sends pages it can draw as {@link PageDrawing}s for a canvas (their `svg`
+   * empty) and the others as SVG; a server without drawings sends SVG.
+   * Changing it sends every page.
+   */
+  pageFormat?: PageFormat;
   /**
    * What the server may show when the text doesn't compile even after its
    * fixes (Layer 4, PLAN §5.6). Without it a failed compile publishes no
@@ -449,6 +462,41 @@ export interface TextNode {
   children?: TextNode[];
 }
 
+/**
+ * A link to a URL on a drawn page: the box around its area, in points from
+ * the page's top left.
+ * @beta
+ */
+export interface PageLink {
+  /** As the document wrote it. Untrusted: the renderer sanitizes it. */
+  url: string;
+  /** Left edge. */
+  x: number;
+  /** Top edge. */
+  y: number;
+  /** Across, so the link covers its text however the page is scaled. */
+  width: number;
+  /** Down, from `y`. */
+  height: number;
+}
+
+/**
+ * A page as drawing operations for a canvas, what `@typstream/dom`'s paged
+ * renderer paints (PLAN §6.5). The encoding is the one engine-wasm writes
+ * (its `src/draw.rs`) and may change between versions.
+ * @beta
+ */
+export interface PageDrawing {
+  /** The operations: little-endian 32-bit floats. */
+  ops: Uint8Array;
+  /** What the operations name by index: colours, SVG path data, image URLs. */
+  strings: string[];
+  /** Glyph outlines the operations draw, as `[key, path]`: SVG path data in font units, the same for a key on every page. */
+  glyphs: [string, string][];
+  /** Its links to URLs. */
+  links: PageLink[];
+}
+
 /** One rendered page of a paged artifact. Sizes in Typst points. @public */
 export interface PageUpdate {
   /** Zero-based page index. */
@@ -459,8 +507,10 @@ export interface PageUpdate {
   width: number;
   /** Page height, in points. */
   height: number;
-  /** Untrusted SVG markup: the renderer sanitizes it. */
+  /** Untrusted SVG markup: the renderer sanitizes it. Empty when the page comes as a `drawing`. */
   svg: string;
+  /** The page as drawing operations for a canvas, when the compile asked for them (`pageFormat`). @beta */
+  drawing?: PageDrawing;
   /**
    * The page's text runs in reading (logical) order. Optional: other engines
    * may not provide them, nor the structure, language and direction.

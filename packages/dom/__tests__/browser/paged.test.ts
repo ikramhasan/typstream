@@ -3,10 +3,10 @@
 // @typstream/engine, bundled by Vite) in Chromium, Firefox and WebKit. Run with
 // `pnpm test:browser`.
 
-import type { PagedArtifact } from "@typstream/core";
+import type { PagedArtifact, PageFormat } from "@typstream/core";
 import { createEngine, type DocumentState, type Engine, type EngineDocument, fromWorker } from "@typstream/engine";
 import { afterEach, describe, expect, it } from "vitest";
-import { server } from "vitest/browser";
+import { commands, server } from "vitest/browser";
 import { createPagedView, type DrawInfo, FIT_WIDTH_PREAMBLE, mountPaged, type PagedView } from "../../src";
 import { pages } from "../support/documents";
 
@@ -61,9 +61,13 @@ const finished = (doc: EngineDocument) =>
     return s;
   });
 
-/** A finished paged compile of `text`. */
-const compile = async (text: string): Promise<PagedArtifact> => {
-  const doc = newEngine().open({ target: "paged", text });
+/** A finished paged compile of `text`, its pages as SVG or as drawings. */
+const compile = async (
+  text: string,
+  pageFormat: PageFormat = "svg",
+  files?: Record<string, Uint8Array>,
+): Promise<PagedArtifact> => {
+  const doc = newEngine().open({ target: "paged", text, pageFormat, ...(files ? { files } : {}) });
   doc.finish();
   const s = await finished(doc);
   return s.artifact as PagedArtifact;
@@ -84,6 +88,36 @@ const settled = async (view: PagedView, ms = 60_000) => {
 
 const pageEls = (view: PagedView) => [...view.element.querySelectorAll<HTMLElement>(".typstream-page")];
 const svgOf = (page: HTMLElement) => page.firstElementChild?.shadowRoot?.firstElementChild as SVGSVGElement | null;
+const canvasOf = (page: HTMLElement) => page.querySelector("canvas");
+
+/** Share of a canvas's pixels that aren't white. */
+const ink = (canvas: HTMLCanvasElement) => {
+  const { data } = (canvas.getContext("2d") as CanvasRenderingContext2D).getImageData(
+    0,
+    0,
+    canvas.width,
+    canvas.height,
+  );
+  let n = 0;
+  for (let i = 0; i < data.length; i += 4) if ((data[i] as number) < 200) n++;
+  return n / (data.length / 4);
+};
+
+/** Pixels of `svg` drawn as an image at `width` × `height`, on white. */
+const rasterize = async (svg: string, width: number, height: number) => {
+  const img = new Image();
+  img.src = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+  await img.decode();
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
+  ctx.drawImage(img, 0, 0, width, height);
+  return ctx.getImageData(0, 0, width, height).data;
+};
+
+// Vite exposes VITE_* variables to the browser. VITE_REPORT=1 writes the streaming test's numbers to stream-*.json.
+const env = (import.meta as unknown as { env: Record<string, string | undefined> }).env;
 const textOf = (page: HTMLElement) => page.querySelector(".typstream-text-layer") as HTMLElement | null;
 
 const selectedText = (el: Element) => {
@@ -95,31 +129,41 @@ const selectedText = (el: Element) => {
 };
 
 describe(`paged renderer in ${browser}`, () => {
-  it("renders a 20-page document: every page, glyphs, a selectable and searchable text layer", async () => {
+  it("renders a 20-page document on canvases: visible pages painted, every text layer selectable and searchable", async () => {
     const engine = newEngine();
     const doc = engine.open({ target: "paged", text: pages(20) });
     doc.finish();
-    const view = mountPaged(container(700), doc).view;
+    // Shows about one page, so most pages are far from the viewport.
+    const host = container(700, 900);
+    const view = mountPaged(host, doc).view;
     const s = await finished(doc);
     await settled(view);
     const artifact = s.artifact as PagedArtifact;
     expect(artifact.pageCount).toBeGreaterThanOrEqual(18);
+    // mountPaged asks for drawings, which the engine sends instead of SVG.
+    expect(artifact.pages.every((p) => p.drawing && p.svg === "")).toBe(true);
 
     const els = pageEls(view);
     expect(els).toHaveLength(artifact.pageCount);
-    els.forEach((el, i) => {
-      const page = artifact.pages[i];
-      const svg = svgOf(el);
-      expect(svg?.querySelectorAll("use").length).toBe(page?.svg.match(/<use /g)?.length);
-      expect(svg?.getAttribute("aria-hidden")).toBe("true");
+    for (const el of els) {
+      expect(canvasOf(el)?.getAttribute("aria-hidden")).toBe("true");
       expect(textOf(el)?.childElementCount).toBeGreaterThan(0);
-    });
-    // Glyph ids resolve inside each page's shadow root: a <use> on a late page has a box.
-    const use = svgOf(els[10] as HTMLElement)?.querySelector("use") as SVGGraphicsElement;
-    expect(use.getBBox().width).toBeGreaterThan(0);
+    }
+    // The first page is painted at device pixels; pages far away hold no pixels.
+    const first = canvasOf(els[0] as HTMLElement) as HTMLCanvasElement;
+    expect(first.width).toBe(Math.round((els[0] as HTMLElement).clientWidth * devicePixelRatio));
+    expect(ink(first)).toBeGreaterThan(0.01);
+    const last = els.at(-1) as HTMLElement;
+    expect(canvasOf(last)?.width).toBe(0);
     // Pages keep A4's proportions.
     const box = (els[3] as HTMLElement).getBoundingClientRect();
     expect(box.height / box.width).toBeCloseTo(297 / 210, 2);
+
+    // Scrolled into view, the last page is painted; the first gives its pixels up (a second later).
+    last.scrollIntoView();
+    await expect.poll(() => canvasOf(last)?.width ?? 0).toBeGreaterThan(0);
+    expect(ink(canvasOf(last) as HTMLCanvasElement)).toBeGreaterThan(0.001);
+    await expect.poll(() => first.width, { timeout: 5000 }).toBe(0);
 
     // Copying a page gives its text, lines separated, words spaced.
     const text = selectedText(textOf(els[0] as HTMLElement) as HTMLElement);
@@ -132,102 +176,215 @@ describe(`paged renderer in ${browser}`, () => {
     getSelection()?.removeAllRanges();
   }, 120_000);
 
-  it("streams with only changed pages redrawn, and reports draw times and long tasks", async () => {
-    const source = pages(20);
+  it("renders SVG pages with renderer: svg", async () => {
     const engine = newEngine();
-    const doc = engine.open({ target: "paged" });
-    const draws: (DrawInfo & { end: number })[] = [];
-    const view = mountPaged(container(700, 900), doc, {
-      onDraw: (info) => draws.push({ ...info, end: performance.now() }),
-    }).view;
-    // Follow the stream at the bottom, as a chat or side panel does.
-    const scroller = view.element.parentElement as HTMLElement;
-
-    // Each page's shadow root is observed: it may change only when that page's hash does.
-    const hashes = new Map<number, string[]>();
-    const mutations = new Map<number, number>();
-    const observed = new WeakSet<Node>();
-    doc.subscribe((s) => {
-      if (s.artifact?.target !== "paged") return;
-      for (const page of s.artifact.pages) {
-        const seen = hashes.get(page.index) ?? [];
-        if (seen.at(-1) !== page.hash) seen.push(page.hash);
-        hashes.set(page.index, seen);
-      }
-    });
-    const watch = () => {
-      pageEls(view).forEach((el, i) => {
-        const root = el.firstElementChild?.shadowRoot;
-        if (!root || observed.has(root)) return;
-        observed.add(root);
-        new MutationObserver(() => mutations.set(i, (mutations.get(i) ?? 0) + 1)).observe(root, { childList: true });
-      });
-    };
-
-    // Chromium only: other browsers don't report long tasks.
-    const longTasks: PerformanceEntry[] = [];
-    const observer =
-      typeof PerformanceObserver !== "undefined" && PerformanceObserver.supportedEntryTypes?.includes("longtask")
-        ? new PerformanceObserver((list) => {
-            longTasks.push(...list.getEntries());
-          })
-        : null;
-    observer?.observe({ type: "longtask" });
-
-    // ~57,000 characters in 40-character chunks, 100 chunks a second.
-    const chunks = source.match(/[\s\S]{1,40}/g) ?? [];
-    const start = performance.now();
-    let i = 0;
-    while (i < chunks.length) {
-      await sleep(10);
-      const due = Math.min(chunks.length, Math.ceil(((performance.now() - start) / 1000) * 100));
-      for (; i < due; i++) doc.push(chunks[i] as string);
-      watch();
-      scroller.scrollTop = scroller.scrollHeight;
-    }
+    const doc = engine.open({ target: "paged", text: pages(20) });
     doc.finish();
-    const final = await finished(doc);
+    const view = mountPaged(container(700), doc, { renderer: "svg" }).view;
+    const s = await finished(doc);
     await settled(view);
-    observer?.disconnect();
-    watch();
+    const artifact = s.artifact as PagedArtifact;
+    const els = pageEls(view);
+    expect(els).toHaveLength(artifact.pageCount);
+    els.forEach((el, i) => {
+      const page = artifact.pages[i];
+      const svg = svgOf(el);
+      expect(page?.drawing).toBeUndefined();
+      expect(svg?.querySelectorAll("use").length).toBe(page?.svg.match(/<use /g)?.length);
+      expect(svg?.getAttribute("aria-hidden")).toBe("true");
+      expect(textOf(el)?.childElementCount).toBeGreaterThan(0);
+    });
+    // Glyph ids resolve inside each page's shadow root: a <use> on a late page has a box.
+    const use = svgOf(els[10] as HTMLElement)?.querySelector("use") as SVGGraphicsElement;
+    expect(use.getBBox().width).toBeGreaterThan(0);
+  }, 120_000);
 
-    const artifact = final.artifact as PagedArtifact;
-    expect(pageEls(view)).toHaveLength(artifact.pageCount);
-    // No page was redrawn more often than its content changed (the first draw of a page is a mutation too).
-    for (const [index, n] of mutations)
-      expect(n, `page ${index + 1}`).toBeLessThanOrEqual(hashes.get(index)?.length ?? 0);
-    // What's on screen is the final artifact.
-    for (const [index, el] of pageEls(view).entries())
-      expect(svgOf(el)?.querySelectorAll("use").length).toBe(artifact.pages[index]?.svg.match(/<use /g)?.length);
+  it("paints what the SVG draws: shapes, strokes, dashes, clips, transforms, images, fill rules, links", async () => {
+    // A PNG for the document: a 2×2 checkerboard, drawn pixelated and smooth.
+    const png = document.createElement("canvas");
+    png.width = png.height = 2;
+    const pctx = png.getContext("2d") as CanvasRenderingContext2D;
+    pctx.fillStyle = "#c03";
+    pctx.fillRect(0, 0, 1, 1);
+    pctx.fillRect(1, 1, 1, 1);
+    const blob = await new Promise<Blob>((r) => png.toBlob((b) => r(b as Blob)));
+    const files = { "check.png": new Uint8Array(await blob.arrayBuffer()) };
+    const text = `#set page(width: 300pt, height: 420pt, margin: 12pt, fill: rgb("#fffbe6"))
+#set text(size: 13pt)
+Hello *world*, $x^2 + sqrt(y) = integral_0^1 f(t) dif t$ and #text(fill: rgb("#2a7"))[green].
+#rect(width: 90pt, height: 26pt, radius: 4pt, fill: rgb("#3366cc80"), stroke: (paint: red, thickness: 2pt, dash: "dashed"))
+#box(width: 70pt, height: 14pt, clip: true)[#text(size: 26pt)[Clipped text]]
+#h(10pt) #box(rotate(25deg)[Rotated]) #h(16pt) #box(scale(x: 160%, y: 80%, origin: left)[Scaled])
+#circle(radius: 14pt, stroke: (paint: green, thickness: 3pt, dash: "dotted"))
+#text(stroke: 0.6pt + blue, fill: yellow, size: 26pt, weight: "bold")[Outlined]
+#polygon(fill: black, fill-rule: "even-odd", (0pt, 20pt), (40pt, 20pt), (8pt, 45pt), (20pt, 5pt), (32pt, 45pt))
+#line(length: 120pt, stroke: (thickness: 5pt, cap: "round", paint: rgb(80, 0, 120, 160)))
+#box(image("check.png", width: 30pt, scaling: "pixelated")) #box(image("check.png", width: 30pt)) #link("https://typst.app")[a link] and #link("javascript:alert(1)")[a bad one]
+#table(columns: 3, stroke: (x, y) => if y == 0 { (bottom: 1pt) }, [a], [b], [c], [1], [2], [3])`;
+    const [drawn, svg] = await Promise.all([compile(text, "drawing", files), compile(text, "svg", files)]);
+    const page = drawn.pages[0];
+    expect(drawn.pageCount).toBe(1);
+    expect(page?.drawing).toBeDefined();
+    expect(page?.svg).toBe("");
+    const view = createPagedView(container(600));
+    cleanups.push(() => view.destroy());
+    view.render(drawn);
+    await settled(view);
+    const canvas = canvasOf(pageEls(view)[0] as HTMLElement) as HTMLCanvasElement;
+    // Images paint once decoded, with the page painted again.
+    await expect.poll(() => view.pending, { timeout: 10_000 }).toBe(0);
+    await frame();
+    await frame();
+    const { width, height } = canvas;
+    const painted = (canvas.getContext("2d") as CanvasRenderingContext2D).getImageData(0, 0, width, height).data;
+    const reference = await rasterize(svg.pages[0]?.svg as string, width, height);
+    let off = 0;
+    for (let i = 0; i < painted.length; i += 4) {
+      const d = Math.max(
+        Math.abs((painted[i] as number) - (reference[i] as number)),
+        Math.abs((painted[i + 1] as number) - (reference[i + 1] as number)),
+        Math.abs((painted[i + 2] as number) - (reference[i + 2] as number)),
+      );
+      if (d > 64) off++;
+    }
+    // Antialiasing differs along edges; anything missing or misplaced would be far more.
+    expect(off / (painted.length / 4)).toBeLessThan(0.005);
 
-    const frames = draws.filter((d) => d.when === "frame");
-    const perStep = frames.map((d) => d.pages.length);
-    const ms = frames.map((d) => d.ms);
-    const report = {
-      browser,
-      pages: artifact.pageCount,
-      frameDraws: frames.length,
-      pagesPerFrameDraw: median(perStep),
-      frameDrawMs: { p50: median(ms).toFixed(1), max: Math.max(...ms).toFixed(1) },
-      idleDraws: draws.filter((d) => d.when === "idle").length,
-      // Long tasks (> 50 ms) by what drew in them: visible pages (with the style, layout and
-      // paint that follow in the same frame), idle work (offscreen pages, text layers), or neither.
-      longTasks: observer
-        ? longTasks.reduce<Record<string, number>>(
-            (by, t) => {
-              const d = draws.find((d) => d.end - d.ms >= t.startTime - 1 && d.end <= t.startTime + t.duration + 1);
-              const key = d ? d.when : "other";
-              by[key] = (by[key] ?? 0) + 1;
-              return by;
-            },
-            { total: longTasks.length },
-          )
-        : "n/a",
-    };
-    console.log(`STREAM ${JSON.stringify(report)}`);
-    // Streaming touches the last page or two.
-    expect(median(perStep)).toBeLessThanOrEqual(2);
-  }, 240_000);
+    // Links: the safe one is an <a> over its text, the other has none.
+    const links = [...(pageEls(view)[0] as HTMLElement).querySelectorAll<HTMLAnchorElement>(".typstream-links a")];
+    expect(links.map((a) => a.getAttribute("href"))).toEqual(["https://typst.app"]);
+    expect(links[0]?.target).toBe("_blank");
+    expect(links[0]?.rel).toBe("noopener noreferrer");
+    const box = links[0]?.getBoundingClientRect() as DOMRect;
+    expect(box.width).toBeGreaterThan(10);
+    const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+    expect(hit).toBe(links[0]);
+  }, 120_000);
+
+  it("draws pages it can't paint as SVG: gradients", async () => {
+    const artifact = await compile(
+      "First page.\n#pagebreak()\n#rect(width: 100pt, height: 40pt, fill: gradient.linear(red, blue))",
+      "drawing",
+    );
+    expect(artifact.pages.map((p) => !!p.drawing)).toEqual([true, false]);
+    const view = createPagedView(container(500));
+    cleanups.push(() => view.destroy());
+    view.render(artifact);
+    view.flush();
+    const [one, two] = pageEls(view) as [HTMLElement, HTMLElement];
+    expect(canvasOf(one)).not.toBeNull();
+    expect(svgOf(two)?.querySelector("linearGradient")).not.toBeNull();
+  }, 120_000);
+
+  for (const renderer of ["canvas", "svg"] as const)
+    it(`streams with only changed pages redrawn (${renderer}), and reports draw times and long tasks`, async () => {
+      const source = pages(20);
+      const engine = newEngine();
+      const doc = engine.open({ target: "paged" });
+      const draws: (DrawInfo & { end: number })[] = [];
+      const view = mountPaged(container(700, 900), doc, {
+        renderer,
+        onDraw: (info) => {
+          draws.push({ ...info, end: performance.now() });
+          if (env.VITE_DEBUG)
+            debug.push({
+              ...info,
+              widths: info.pages.map((p) => pageEls(view)[p]?.clientWidth),
+              hashes: info.pages.map((p) =>
+                doc.getState().artifact?.target === "paged"
+                  ? (doc.getState().artifact as PagedArtifact).pages[p]?.hash.slice(0, 6)
+                  : "",
+              ),
+            });
+        },
+      }).view;
+      const debug: unknown[] = [];
+      // Follow the stream at the bottom, as a chat or side panel does.
+      const scroller = view.element.parentElement as HTMLElement;
+
+      const hashes = new Map<number, string[]>();
+      doc.subscribe((s) => {
+        if (s.artifact?.target !== "paged") return;
+        for (const page of s.artifact.pages) {
+          const seen = hashes.get(page.index) ?? [];
+          if (seen.at(-1) !== page.hash) seen.push(page.hash);
+          hashes.set(page.index, seen);
+        }
+      });
+
+      // Chromium only: other browsers don't report long tasks.
+      const longTasks: PerformanceEntry[] = [];
+      const observer =
+        typeof PerformanceObserver !== "undefined" && PerformanceObserver.supportedEntryTypes?.includes("longtask")
+          ? new PerformanceObserver((list) => {
+              longTasks.push(...list.getEntries());
+            })
+          : null;
+      observer?.observe({ type: "longtask" });
+
+      // ~57,000 characters in 40-character chunks, 100 chunks a second.
+      const chunks = source.match(/[\s\S]{1,40}/g) ?? [];
+      const start = performance.now();
+      let i = 0;
+      while (i < chunks.length) {
+        await sleep(10);
+        const due = Math.min(chunks.length, Math.ceil(((performance.now() - start) / 1000) * 100));
+        for (; i < due; i++) doc.push(chunks[i] as string);
+        scroller.scrollTop = scroller.scrollHeight;
+      }
+      doc.finish();
+      const final = await finished(doc);
+      await settled(view);
+      observer?.disconnect();
+
+      const artifact = final.artifact as PagedArtifact;
+      expect(pageEls(view)).toHaveLength(artifact.pageCount);
+      // No page was drawn more often than its content changed: the stream only scrolls down,
+      // so no page comes back into view to be painted again.
+      const drawsOf = new Map<number, number>();
+      for (const d of draws) for (const p of d.pages) drawsOf.set(p, (drawsOf.get(p) ?? 0) + 1);
+      if (env.VITE_DEBUG)
+        await commands.writeFile(`./debug-${renderer}.json`, JSON.stringify({ debug, hashes: [...hashes] }));
+      for (const [index, n] of drawsOf)
+        expect(n, `page ${index + 1}`).toBeLessThanOrEqual(hashes.get(index)?.length ?? 0);
+      // What's on screen is the final artifact.
+      const last = pageEls(view).at(-1) as HTMLElement;
+      if (renderer === "svg")
+        for (const [index, el] of pageEls(view).entries())
+          expect(svgOf(el)?.querySelectorAll("use").length).toBe(artifact.pages[index]?.svg.match(/<use /g)?.length);
+      else expect(ink(canvasOf(last) as HTMLCanvasElement)).toBeGreaterThan(0.001);
+
+      const frames = draws.filter((d) => d.when === "frame");
+      const perStep = frames.map((d) => d.pages.length);
+      const ms = frames.map((d) => d.ms);
+      const report = {
+        browser,
+        renderer,
+        dpr: devicePixelRatio,
+        pages: artifact.pageCount,
+        frameDraws: frames.length,
+        pagesPerFrameDraw: median(perStep),
+        frameDrawMs: { p50: median(ms).toFixed(1), max: Math.max(...ms).toFixed(1) },
+        idleDraws: draws.filter((d) => d.when === "idle").length,
+        // Long tasks (> 50 ms) by what drew in them: visible pages (with the style, layout and
+        // paint that follow in the same frame), idle work (offscreen pages, text layers), or neither.
+        longTasks: observer
+          ? longTasks.reduce<Record<string, number>>(
+              (by, t) => {
+                const d = draws.find((d) => d.end - d.ms >= t.startTime - 1 && d.end <= t.startTime + t.duration + 1);
+                const key = d ? d.when : "other";
+                by[key] = (by[key] ?? 0) + 1;
+                return by;
+              },
+              { total: longTasks.length },
+            )
+          : "n/a",
+      };
+      console.log(`STREAM ${JSON.stringify(report)}`);
+      if (env.VITE_REPORT) await commands.writeFile(`./stream-${browser}-${renderer}.json`, JSON.stringify(report));
+      // Streaming touches the last page or two.
+      expect(median(perStep)).toBeLessThanOrEqual(2);
+    }, 240_000);
 
   it("draws visible pages first and the rest in idle time", async () => {
     const artifact = await compile(pages(20));
@@ -248,6 +405,35 @@ describe(`paged renderer in ${browser}`, () => {
     );
     // Text layers come after the SVGs they belong to, visible pages first.
     expect(draws.flatMap((d) => d.textLayers).slice(0, 2)).toEqual([0, 1]);
+  }, 120_000);
+
+  it("paints only pages near the viewport, every text layer in idle time, and every page before printing", async () => {
+    const artifact = await compile(pages(20), "drawing");
+    const draws: DrawInfo[] = [];
+    const view = createPagedView(container(500, 700), { onDraw: (info) => draws.push(info) });
+    cleanups.push(() => view.destroy());
+    view.render(artifact);
+    await settled(view);
+    expect(draws[0]).toMatchObject({ when: "frame", pages: [0, 1] });
+    // No page far from the viewport was painted, but all have text layers.
+    expect(draws.flatMap((d) => d.pages).every((p) => p < 3)).toBe(true);
+    expect(draws.flatMap((d) => d.textLayers).sort((a, b) => a - b)).toEqual(
+      Array.from({ length: artifact.pageCount }, (_, i) => i),
+    );
+    const canvases = pageEls(view).map((el) => canvasOf(el) as HTMLCanvasElement);
+    expect(canvases.filter((c) => c.width > 0).length).toBeLessThanOrEqual(3);
+
+    // Printing paints every page, at least at twice the CSS resolution; afterwards, only the visible keep theirs.
+    window.dispatchEvent(new Event("beforeprint"));
+    for (const [i, canvas] of canvases.entries())
+      expect(canvas.width, `page ${i + 1}`).toBe(
+        Math.round((pageEls(view)[i] as HTMLElement).clientWidth * Math.max(2, devicePixelRatio)),
+      );
+    expect(ink(canvases.at(-1) as HTMLCanvasElement)).toBeGreaterThan(0.001);
+    window.dispatchEvent(new Event("afterprint"));
+    expect(canvases.at(-1)?.width).toBe(0);
+    await settled(view);
+    expect(canvases[0]?.width).toBe(Math.round((pageEls(view)[0] as HTMLElement).clientWidth * devicePixelRatio));
   }, 120_000);
 
   it("draws a page that scrolls into view before the idle queue reaches it", async () => {
@@ -291,8 +477,37 @@ describe(`paged renderer in ${browser}`, () => {
     ]);
     expect(links[0]?.getAttribute("target")).toBe("_blank");
     expect(links[0]?.getAttribute("rel")).toBe("noopener noreferrer");
+
+    // On a drawn page, only the safe ones become links over the canvas.
+    const drawn = await compile(
+      `#link("https://typst.app")[safe] and #link("mailto:a@b.c")[mail] and #link("javascript:alert(1)")[bad] and #link("JAVA\tSCRIPT:alert(1)")[bad]`,
+      "drawing",
+    );
+    const canvasView = createPagedView(container(500), { linkTarget: null });
+    cleanups.push(() => canvasView.destroy());
+    canvasView.render(drawn);
+    canvasView.flush();
+    const overlay = [...(pageEls(canvasView)[0] as HTMLElement).querySelectorAll(".typstream-links a")];
+    expect(overlay.map((a) => a.getAttribute("href"))).toEqual(["https://typst.app", "mailto:a@b.c"]);
+    expect(overlay.map((a) => a.getAttribute("target"))).toEqual([null, null]);
   }, 120_000);
 
+  it("switches between SVG and drawn pages when the renderer changes", async () => {
+    const engine = newEngine();
+    const doc = engine.open({ target: "paged", text: pages(2) });
+    doc.finish();
+    let mounted = mountPaged(container(500), doc, { renderer: "svg" });
+    await finished(doc);
+    await settled(mounted.view);
+    expect(svgOf(pageEls(mounted.view)[0] as HTMLElement)).not.toBeNull();
+    mounted.destroy();
+    mounted = mountPaged(container(500), doc);
+    cleanups.push(() => mounted.destroy());
+    // Every page comes again, as a drawing.
+    await until(doc, (s) => s.artifact?.target === "paged" && s.artifact.pages.every((p) => !!p.drawing));
+    await settled(mounted.view);
+    expect(canvasOf(pageEls(mounted.view)[0] as HTMLElement)?.width).toBeGreaterThan(0);
+  }, 120_000);
   it("fit-width compiles pages as wide as the container and recompiles after a resize", async () => {
     const engine = newEngine();
     const doc = engine.open({ target: "paged", preamble: FIT_WIDTH_PREAMBLE, text: pages(2, false) });

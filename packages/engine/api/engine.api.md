@@ -20,6 +20,7 @@ import { InitializeOptions } from '@typstream/core';
 import { InitializeResult } from '@typstream/core';
 import { LoadedFontFamily } from '@typstream/core';
 import { PackageSpec } from '@typstream/core';
+import { PageFormat } from '@typstream/core';
 import { Revision } from '@typstream/core';
 import { ServerMessage } from '@typstream/core';
 import { TextEdit } from '@typstream/core';
@@ -63,6 +64,7 @@ export interface DocumentOptions {
     inputs?: Record<string, string>;
     // @beta
     packages?: PackageSpec[];
+    pageFormat?: PageFormat;
     plugins?: readonly TypstreamPlugin[];
     preamble?: string;
     resolveImage?: ImageResolver;
@@ -122,6 +124,7 @@ export interface EngineDocument {
     set(input: string): void;
     setFiles(files: FileDelta): void;
     setInputs(inputs: Record<string, string>): void;
+    setPageFormat(format: PageFormat): void;
     setTarget(target: CompileTarget): void;
     subscribe(listener: (state: DocumentState) => void): () => void;
     readonly uri: DocumentUri;

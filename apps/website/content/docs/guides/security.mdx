@@ -159,7 +159,7 @@ Not needed: `'unsafe-eval'`, `'unsafe-inline'`, cross-origin isolation (COOP/COE
 With `require-trusted-types-for 'script'`, the browser refuses strings at script sinks unless a Trusted Types policy made them. typstream has three, and sends all of them through one policy named `typstream`, created the first time one is used:
 
 - the HTML renderer's markup, parsed into an inert `<template>` (nothing runs or loads) and sanitized before it is moved into the page;
-- each page's SVG, parsed the same way, its links and images filtered before the page is inserted;
+- each SVG page, parsed the same way, its links and images filtered before the page is inserted (canvas pages parse no markup: their links are built as elements, with the same filter, and their images only load from `data:` URLs);
 - the engine worker's URL (`engineWorker()`).
 
 The policy passes values through unchanged: what makes them safe is that markup is only ever parsed inert and cleaned, and that the worker URL is the one your bundler emitted.

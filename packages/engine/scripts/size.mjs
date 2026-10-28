@@ -32,8 +32,9 @@ const measure = async (label, entry, budget, external) => {
 // 8 KB until plugins (#27) moved their facet merging here from @typstream/dom and resolved them
 // (dependencies, duplicates) once for every package: 0.7 KB, when #29's limits had left it at 7.5.
 // 8.5 KB until documents found the images they name and asked `resolveImage` for them: 0.85 KB,
-// when Trusted Types (#70) had left it at 8.45.
-const MAIN_THREAD = 9.5 * 1024;
+// when Trusted Types (#70) had left it at 8.45. 9.5 KB until canvas pages' `pageFormat` and `setPageFormat()`
+// (#14, 44 bytes) came in after render islands (#28) had left it 4 bytes under.
+const MAIN_THREAD = 9.6 * 1024;
 
 const ok = [
   await measure("@typstream/engine (main thread)", "src/index.ts", MAIN_THREAD, ["@typstream/heal"]),
