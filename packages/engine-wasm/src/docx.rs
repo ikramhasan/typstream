@@ -238,6 +238,8 @@ struct Text {
     text: String,
     /// Width of the item's first word (up to its first space): whether it would have fitted on the line before.
     first_word: f64,
+    /// Width without trailing spaces: where the ink ends.
+    inked: f64,
 }
 
 struct Linearizer<'a> {
@@ -294,10 +296,18 @@ impl Linearizer<'_> {
                         }
                         first_word += glyph.x_advance.at(text.size).to_pt();
                     }
+                    let mut trailing = 0.0;
+                    for glyph in text.glyphs.iter().rev() {
+                        if !text.text[glyph.range()].chars().all(char::is_whitespace) {
+                            break;
+                        }
+                        trailing += glyph.x_advance.at(text.size).to_pt();
+                    }
                     self.push(Kind::Text(Text {
                         x: at.x.to_pt(),
                         y: at.y.to_pt(),
                         width: text.width().to_pt(),
+                        inked: text.width().to_pt() - trailing,
                         size: text.size.to_pt(),
                         font: text.font.font().clone(),
                         color: paint_hex(&text.fill),
@@ -2279,6 +2289,19 @@ impl Builder {
                     _ => true,
                 })
                 .collect();
+            // Typst lets a word too long for the cell run past its inset; engines break it there. The inset on the
+            // right gives way to the widest line (an outer edge can't).
+            let widest = cell_ids
+                .iter()
+                .filter_map(|&id| match &self.items[id].kind {
+                    Kind::Text(t) => Some(t.x + t.inked - content.left),
+                    _ => None,
+                })
+                .fold(0.0, f64::max);
+            let mut inset = inset;
+            if widest > content.right - content.left {
+                inset.right = inset.right.min(cw - inset.left - widest - 0.5).max(0.0);
+            }
             let blocks = self.flow(&cell_ids, content, false);
             let content_top = blocks.first().map(|b| b.top).unwrap_or(cy + inset.top);
             // A cell broken across pages ends on its last page: the room left on the first is the page's, not a
@@ -2424,7 +2447,12 @@ impl Builder {
             let top = fix(row_above[c.y]);
             let bottom = fix(row_below[c.y + c.rowspan - 1]);
             let mut blocks = c.blocks;
-            if let Some(first) = blocks.first_mut() {
+            // A centred or bottom-aligned cell is placed by its alignment: an offset too would count twice.
+            if c.valign != "top" {
+                if let Some(first) = blocks.first_mut() {
+                    first.json.insert("before".into(), json!(0.0));
+                }
+            } else if let Some(first) = blocks.first_mut() {
                 let before = first
                     .json
                     .get("before")
