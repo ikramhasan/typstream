@@ -1,13 +1,15 @@
 "use client";
 // The landing page's hero: real Claude streams from corpus/llm, replayed at their recorded timing
 // into <Typstream>, the way an app would feed it. The left pane is the raw text the model has
-// written; the right is what typstream renders from it, every step.
+// written, with what heal did to its last line for this frame; the right is what typstream renders
+// from it, every step.
 
+import { ArrowCounterClockwiseIcon, BandaidsIcon, PauseIcon, PlayIcon } from "@phosphor-icons/react";
 import { edu } from "@typstream/edu";
-import { Pause, Play, RotateCcw } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type DocumentState, type RenderedEvent, Typstream, useTypstream } from "typstream";
 import { cn } from "@/lib/cn";
+import { healedSegments } from "@/lib/heal-segments";
 
 export interface Recording {
   id: string;
@@ -39,6 +41,31 @@ function streamPosition(state: DocumentState | null): { page: number; y: number;
   return null;
 }
 
+// A small Typst highlighter for the source pane: headings, `#calls`, strings, `key:` arguments (at a
+// line's start or after `(` or `,`, so prose like "Take the root: ..." stays plain) and math. Close
+// enough for a model's output; the engine, not this, decides what it means.
+const TOKEN =
+  /(#[A-Za-z_][\w-]*(?:\.[A-Za-z_][\w-]*)*)|("(?:[^"\\]|\\.)*"?)|((?<=^\s*|[(,]\s*)[A-Za-z_][\w-]*(?=: ))|(\$[^$]*\$?)/g;
+
+function highlight(line: string): ReactNode {
+  if (/^\s*=+ /.test(line)) return <span className="lp-tok-head">{line}</span>;
+  const out: ReactNode[] = [];
+  let at = 0;
+  for (const match of line.matchAll(TOKEN)) {
+    const i = match.index ?? 0;
+    if (i > at) out.push(line.slice(at, i));
+    const kind = match[1] ? "lp-tok-fn" : match[2] ? "lp-tok-str" : "lp-tok-key";
+    out.push(
+      <span key={i} className={kind}>
+        {match[0]}
+      </span>,
+    );
+    at = i + match[0].length;
+  }
+  if (at < line.length) out.push(line.slice(at));
+  return out;
+}
+
 export function LiveDemo({ recordings }: { recordings: Recording[] }) {
   const [index, setIndex] = useState(0);
   const recording = recordings[index] as Recording;
@@ -48,7 +75,7 @@ export function LiveDemo({ recordings }: { recordings: Recording[] }) {
   const [stats, setStats] = useState<{ renders: number; last?: RenderedEvent }>({ renders: 0 });
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const root = useRef<HTMLDivElement>(null);
-  const raw = useRef<HTMLPreElement>(null);
+  const raw = useRef<HTMLDivElement>(null);
   const preview = useRef<HTMLDivElement>(null);
   const started = useRef(false);
   // A new run remounts <Typstream>, so the preview starts blank instead of showing the last run's pages.
@@ -62,6 +89,7 @@ export function LiveDemo({ recordings }: { recordings: Recording[] }) {
     .join("");
   const done = count >= recording.chunks.length;
   const streaming = !done;
+  const lines = text.split("\n");
 
   // Each chunk at its recorded time after the previous one, as the API delivered it.
   useEffect(() => {
@@ -126,6 +154,14 @@ export function LiveDemo({ recordings }: { recordings: Recording[] }) {
     };
   }, []);
 
+  // What heal did to the line being written, for this frame: the healed tail with its patches marked.
+  const heal = state?.heal;
+  const healed = useMemo(() => {
+    if (!heal || !streaming || heal.source === text) return null;
+    const lineStart = text.lastIndexOf("\n", text.length - 2) + 1;
+    return healedSegments(text, heal.source, heal.patches, heal.map.toSource(lineStart));
+  }, [heal, streaming, text]);
+
   const restart = () => {
     clearTimeout(timer.current);
     setCount(0);
@@ -155,68 +191,123 @@ export function LiveDemo({ recordings }: { recordings: Recording[] }) {
   const status = done ? (t.status === "done" ? "finished" : t.status) : frame ? `writing ${frame}…` : "streaming";
 
   return (
-    <div ref={root} className="overflow-hidden rounded-2xl border bg-fd-card shadow-sm">
-      <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2">
-        <div className="flex flex-wrap gap-1" role="tablist" aria-label="Recorded streams">
-          {recordings.map((r, i) => (
-            <button
-              key={r.id}
-              type="button"
-              role="tab"
-              aria-selected={i === index}
-              onClick={() => choose(i)}
-              dir={r.dir}
-              className={cn(
-                "rounded-full px-3 py-1 text-xs transition-colors",
-                i === index
-                  ? "bg-fd-primary text-fd-primary-foreground"
-                  : "text-fd-muted-foreground hover:bg-fd-accent hover:text-fd-foreground",
-              )}
-            >
-              {r.label}
-            </button>
-          ))}
+    <div ref={root} className="flex flex-col gap-4 text-left">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="mr-4 hidden text-xs font-semibold tracking-[0.15em] text-lp-accent uppercase sm:inline">
+            Replay a real stream
+          </span>
+          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Recorded streams">
+            {recordings.map((r, i) => (
+              <button
+                key={r.id}
+                type="button"
+                role="tab"
+                aria-selected={i === index}
+                onClick={() => choose(i)}
+                dir={r.dir}
+                className={cn(
+                  "lp-focus rounded-full border px-4 py-2 text-sm leading-5 font-medium transition duration-300 ease-lp active:scale-[0.98]",
+                  i === index
+                    ? "border-lp-ink bg-lp-ink text-lp-bg"
+                    : "border-lp-line bg-lp-card text-lp-muted hover:border-lp-strong-line hover:text-lp-ink",
+                )}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
         </div>
         <button
           type="button"
           onClick={toggle}
-          className="ml-auto inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium hover:bg-fd-accent"
+          className="lp-focus inline-flex items-center gap-2 rounded-full px-2 py-2 text-sm font-medium text-lp-muted transition-colors duration-300 ease-lp hover:text-lp-ink"
         >
           {done ? (
-            <RotateCcw className="size-3.5" />
+            <ArrowCounterClockwiseIcon className="size-4" />
           ) : playing ? (
-            <Pause className="size-3.5" />
+            <PauseIcon className="size-4" />
           ) : (
-            <Play className="size-3.5" />
+            <PlayIcon className="size-4" />
           )}
           {done ? "Replay" : playing ? "Pause" : "Play"}
         </button>
       </div>
 
-      <div className="grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-        <div className="flex min-w-0 flex-col border-b bg-[oklch(0.2_0.02_255)] text-[oklch(0.9_0.01_85)] lg:border-r lg:border-b-0">
-          <div className="flex items-center justify-between gap-2 px-4 pt-3 text-[11px] uppercase tracking-wider text-[oklch(0.7_0.02_255)]">
-            <span>Model output · claude-sonnet</span>
-            <span className="font-mono normal-case tracking-normal tabular-nums">
-              {count}/{recording.chunks.length} chunks
+      <div className="grid overflow-hidden rounded-2xl bg-lp-night shadow-[0_24px_64px_rgb(20_20_18/0.12)] lg:h-160 lg:grid-cols-[minmax(0,13fr)_minmax(0,17fr)] lg:grid-rows-[minmax(0,1fr)]">
+        <div className="flex h-120 min-h-0 min-w-0 flex-col gap-4 p-6 text-lp-night-ink lg:h-auto">
+          <div className="flex items-center justify-between gap-4 font-lp-mono text-xs text-lp-night-muted">
+            <span className="inline-flex items-center gap-2">
+              <span
+                className={cn("size-2 rounded-full", streaming ? "stream-caret bg-[#10a37f]" : "bg-lp-night-muted")}
+                aria-hidden
+              />
+              claude sonnet · {streaming ? "streaming" : "finished"}
+            </span>
+            <span className="tabular-nums">
+              {count} / {recording.chunks.length} chunks
             </span>
           </div>
-          <p className="px-4 pt-2 text-xs italic text-[oklch(0.75_0.02_255)]">“{recording.request}”</p>
-          <pre
+          <p className="text-sm text-lp-night-muted">“{recording.request}”</p>
+          <div
             ref={raw}
             dir="ltr"
-            className="m-0 h-72 overflow-auto whitespace-pre-wrap break-words px-4 py-3 font-mono text-[11.5px] leading-relaxed [scrollbar-color:oklch(0.4_0.02_255)_transparent] lg:h-[30rem]"
+            className="min-h-0 flex-1 overflow-auto font-lp-mono text-sm leading-6 [scrollbar-color:#313131_transparent]"
           >
-            {text}
-            {streaming && (
-              <span className="stream-caret ml-px inline-block h-[1.1em] w-[7px] translate-y-[2px] bg-teal" />
-            )}
-          </pre>
+            {lines.map((line, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: lines are their positions.
+              <div key={i} className="flex gap-4">
+                <span className="w-6 shrink-0 text-right text-xs leading-6 text-[#57544b] tabular-nums select-none">
+                  {i + 1}
+                </span>
+                <span className="min-w-0 whitespace-pre-wrap break-words">
+                  {highlight(line)}
+                  {streaming && i === lines.length - 1 && (
+                    <span className="stream-caret ml-px inline-block h-4 w-2 translate-y-0.5 bg-lp-night-accent" />
+                  )}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-col gap-3 rounded-xl border border-lp-night-line bg-lp-night-2 p-4">
+            <span className="inline-flex items-center gap-2 text-xs font-semibold tracking-[0.12em] text-lp-night-accent uppercase">
+              <BandaidsIcon className="size-4" aria-hidden />
+              Healed before compiling
+            </span>
+            <div className="flex min-h-6 items-baseline justify-between gap-4 font-lp-mono text-sm">
+              {healed ? (
+                <span className="min-w-0 truncate whitespace-pre">
+                  {healed.segments.map((s, i) =>
+                    s.added ? (
+                      // biome-ignore lint/suspicious/noArrayIndexKey: segments are positional.
+                      <mark key={i} className="rounded bg-lp-night-accent/15 px-0.5 text-lp-night-accent">
+                        {s.text}
+                      </mark>
+                    ) : (
+                      // biome-ignore lint/suspicious/noArrayIndexKey: segments are positional.
+                      <span key={i}>{s.text.replace(/\n/g, " ↵ ")}</span>
+                    ),
+                  )}
+                </span>
+              ) : (
+                <span className="text-lp-night-muted">
+                  {streaming
+                    ? "Nothing to heal: this prefix compiles as written."
+                    : "The finished document compiles as written."}
+                </span>
+              )}
+              {healed && healed.dropped.length > 0 && (
+                <span className="shrink-0 truncate font-lp text-xs text-lp-night-muted">
+                  held back “{healed.dropped.at(-1)}”
+                </span>
+              )}
+            </div>
+          </div>
         </div>
 
-        <div className="relative min-w-0 bg-fd-muted/60">
-          <div ref={preview} className="h-[26rem] overflow-auto p-4 sm:p-6 lg:h-[34.5rem]">
-            <div className="demo-sheets mx-auto max-w-[44rem]">
+        <div className="relative h-120 min-h-0 min-w-0 bg-lp-desk lg:h-auto">
+          <div ref={preview} className="h-full overflow-auto px-6 pt-8 pb-24 sm:px-12">
+            <div className="demo-sheets mx-auto max-w-125">
               <Typstream
                 key={`${recording.id}-${run}`}
                 ref={t.ref}
@@ -230,26 +321,27 @@ export function LiveDemo({ recordings }: { recordings: Recording[] }) {
               />
             </div>
           </div>
+          <div
+            className="absolute bottom-4 left-1/2 flex max-w-[calc(100%-2rem)] -translate-x-1/2 items-center gap-4 overflow-hidden rounded-full bg-lp-night/90 px-4 py-2 font-lp-mono text-xs whitespace-nowrap text-lp-night-muted tabular-nums backdrop-blur"
+            aria-live="off"
+          >
+            <span className="inline-flex items-center gap-2 text-lp-night-ink">
+              <span
+                className={cn("size-2 rounded-full", streaming ? "stream-caret bg-[#e5c07b]" : "bg-[#10a37f]")}
+                aria-hidden
+              />
+              {status}
+            </span>
+            <span>{stats.renders} renders</span>
+            {stats.last && (
+              <>
+                <span>compile {stats.last.compileMs.toFixed(0)} ms</span>
+                <span className="hidden sm:inline">heal {stats.last.healMs.toFixed(2)} ms</span>
+                <span className="hidden sm:inline">{stats.last.patches} patches</span>
+              </>
+            )}
+          </div>
         </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t px-4 py-2 font-mono text-[11px] text-fd-muted-foreground tabular-nums">
-        <span className="inline-flex items-center gap-1.5">
-          <span
-            className={cn("size-1.5 rounded-full", streaming ? "bg-amber-500 stream-caret" : "bg-emerald-500")}
-            aria-hidden
-          />
-          {status}
-        </span>
-        <span>{stats.renders} renders</span>
-        {stats.last && (
-          <>
-            <span>compile {stats.last.compileMs.toFixed(0)} ms</span>
-            <span>heal {stats.last.healMs.toFixed(2)} ms</span>
-            <span>{stats.last.patches} patches</span>
-            {stats.last.pages ? <span>{stats.last.pages} pages</span> : null}
-          </>
-        )}
       </div>
     </div>
   );
