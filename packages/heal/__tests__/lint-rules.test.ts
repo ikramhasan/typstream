@@ -183,13 +183,15 @@ describe("pattern edges", () => {
       "#show text: set text(fill: red)",
     );
     expect(fixed("#show table: set table.cell(breakable: true)")).toBe("#show table: set table.cell()");
-    // Set rules lose to the profile anyway; a document's intent stays readable in them.
-    expect(rules("#set par(justify: true)")).not.toContain("layout-profile");
-    expect(rules("#show heading: set par(justify: true)")).not.toContain("layout-profile");
+    // Set rules on `par` reach text set without a `par` element (a tight list's items), which the profile's show
+    // rule doesn't; other set rules lose to it.
+    expect(fixed("#set par(justify: true, leading: 0.75em)")).toBe("#set par()");
+    expect(fixed("#set par(first-line-indent: 1em, leading: 1em)")).toBe("#set par(first-line-indent: 1em)");
+    expect(fixed("#show heading: set par(justify: true)")).toBe("#show heading: set par()");
     expect(rules("#show heading: set text(hyphenate: true)")).not.toContain("layout-profile");
     expect(rules("#par.with(justify: true)")).not.toContain("layout-profile");
-    // A show-set rule on another element sets nothing the profile does.
-    expect(rules("#show table: set par(justify: true)")).not.toContain("layout-profile");
+    // A show-set rule on another element sets nothing the profile does, unless it sets `par`.
+    expect(fixed("#show table: set par(justify: true)")).toBe("#show table: set par()");
     expect(rules("#show par: set table.cell(breakable: true)")).not.toContain("layout-profile");
     expect(rules("#spar(justify: true)")).not.toContain("layout-profile");
     // Markup, raw text and strings aren't calls.

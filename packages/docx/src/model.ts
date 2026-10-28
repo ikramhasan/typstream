@@ -90,6 +90,11 @@ export interface DocxParagraph extends DocxBlockBase {
   atLeast?: boolean;
   /** How many lines Typst set it on. */
   lines: number;
+  /**
+   * Placed out of the flow (Typst's `place`): a frame at this position on the page, in points from its top left
+   * corner, which takes no room.
+   */
+  frame?: { x: number; y: number; width: number; height: number };
   /** A heading's level. */
   heading?: number;
   /** Tab stops, from the area's left: a tab run moves to the next. */

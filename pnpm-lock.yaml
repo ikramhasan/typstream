@@ -863,6 +863,9 @@ importers:
       '@typstream/edu':
         specifier: workspace:*
         version: link:../../packages/edu
+      '@typstream/heal':
+        specifier: workspace:*
+        version: link:../../packages/heal
       '@typstream/node':
         specifier: workspace:*
         version: link:../../packages/node

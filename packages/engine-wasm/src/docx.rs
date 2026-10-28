@@ -30,8 +30,8 @@ use serde_json::{json, Map, Value as Json};
 use typst::foundations::{Content, Label, Smart, StyleChain, Value};
 use typst::introspection::{Introspector, Location, Tag};
 use typst::layout::{
-    Abs, Alignment, Frame, FrameItem, GridCell, HAlignment, Point, Sides, Size, Transform,
-    VAlignment,
+    Abs, Alignment, Frame, FrameItem, GridCell, HAlignment, PlaceElem, Point, Sides, Size,
+    Transform, VAlignment,
 };
 use typst::model::{Destination, HeadingElem, TableCell};
 use typst::pdf::{PdfMarkerTag, PdfMarkerTagKind};
@@ -975,6 +975,24 @@ impl Builder {
     fn with_gaps(&self, mut blocks: Vec<Block>, body: bool) -> Vec<Block> {
         let mut prev: Option<(usize, f64)> = None;
         for b in blocks.iter_mut() {
+            // A framed paragraph (placed text) is out of the flow: no room before it, none taken.
+            if b.json.contains_key("frame") {
+                b.json.insert("before".into(), json!(0.0));
+                continue;
+            }
+            // Lines that fill the text width: engines that measure a hair wider (LibreOffice rounds each glyph's
+            // advance to twips) need room past it, less than any next word missed the line by. Cells have theirs in
+            // their margins.
+            if let Some(fit) = b.json.remove("fit").and_then(|f| f.as_f64()) {
+                let slack = (3.0 * SLACK).min(fit - 0.3);
+                if body && slack > 0.05 {
+                    let right = b.json["indent"]
+                        .get("right")
+                        .and_then(|r| r.as_f64())
+                        .unwrap_or(0.0);
+                    b.json["indent"]["right"] = json!(round(right - slack));
+                }
+            }
             let before = match prev {
                 Some((page, bottom)) if page == b.page => b.top - bottom,
                 Some((page, bottom)) if body => {
@@ -1016,6 +1034,20 @@ impl Builder {
             let id = ids[i];
             match &items[id].kind {
                 Kind::Start(elem, at) => {
+                    // Text placed out of the flow (`place`, not floating): a frame at Typst's position on the page,
+                    // which takes no room. Placed drawings stay drawings; in a cell, a frame would leave the table.
+                    if body
+                        && elem
+                            .to_packed::<PlaceElem>()
+                            .is_some_and(|p| !p.float.get(StyleChain::default()))
+                    {
+                        let end = self.end_of(ids, i, elem);
+                        if let Some(frames) = self.placed(&ids[i + 1..end], area) {
+                            out.extend(frames);
+                            i = end + 1;
+                            continue;
+                        }
+                    }
                     let node = classify(elem, *at, items[id].page);
                     match node {
                         Node::Par => {
@@ -1252,7 +1284,8 @@ impl Builder {
         }
         let gap = xs[1] - xs[0] - w;
         let even = xs.windows(2).all(|p| (p[1] - p[0] - w - gap).abs() < 0.5);
-        let fills = (xs.last().unwrap() + w - rect.right()).abs() < 1.0 && (xs[0] - rect.x).abs() < 0.5;
+        let fills =
+            (xs.last().unwrap() + w - rect.right()).abs() < 1.0 && (xs[0] - rect.x).abs() < 0.5;
         (gap >= 0.0 && even && fills).then_some(xs)
     }
 
@@ -1299,7 +1332,9 @@ impl Builder {
             let blocks = self.flow(part, area, false);
             bottom = blocks.iter().map(|b| b.bottom).fold(bottom, f64::max);
             let blocks = self.with_gaps_from(blocks, rect.y);
-            cols.push(Json::Array(blocks.into_iter().map(|b| Json::Object(b.json)).collect()));
+            cols.push(Json::Array(
+                blocks.into_iter().map(|b| Json::Object(b.json)).collect(),
+            ));
         }
         let mut json = Map::new();
         json.insert("type".into(), json!("columns"));
@@ -1371,6 +1406,48 @@ impl Builder {
             }
         }
         j
+    }
+
+    /// Placed text as framed paragraphs, at the page position of its lines; `None` when it draws anything else.
+    fn placed(&mut self, ids: &[usize], area: Area) -> Option<Vec<Block>> {
+        let mut texts = Vec::new();
+        for &id in ids {
+            match &self.items[id].kind {
+                Kind::Text(t) => texts.push(t.clone()),
+                Kind::Start(..)
+                | Kind::End(_)
+                | Kind::Group(_, false)
+                | Kind::GroupEnd
+                | Kind::Link(..) => {}
+                _ => return None,
+            }
+        }
+        let x0 = texts.iter().map(|t| t.x).fold(f64::MAX, f64::min);
+        let x1 = texts.iter().map(|t| t.x + t.inked).fold(f64::MIN, f64::max);
+        let top = texts
+            .iter()
+            .map(|t| t.y - TOP * t.size)
+            .fold(f64::MAX, f64::min);
+        let bottom = texts
+            .iter()
+            .map(|t| t.y + BOTTOM * t.size)
+            .fold(f64::MIN, f64::max);
+        if texts.is_empty() {
+            return None;
+        }
+        let mut blocks = self.paragraphs(ids, area, None);
+        for b in &mut blocks {
+            b.json
+                .insert("indent".into(), json!({ "left": 0.0, "firstLine": 0.0 }));
+            b.json.insert("align".into(), json!("start"));
+            b.json.remove("tabs");
+            b.json.remove("fit");
+            b.json.insert(
+                "frame".into(),
+                json!({ "x": round(x0), "y": round(top), "width": round(x1 - x0 + 2.0 * SLACK), "height": round(bottom - top) }),
+            );
+        }
+        Some(blocks)
     }
 
     /// Whether text gathered for the paragraph shares a line with `rect` (an inline box, not a block).
@@ -1639,7 +1716,13 @@ impl Builder {
         let n = lines.len();
         let mut iter = lines.into_iter().peekable();
         let mut k = 0;
+        // How much wider the area would have to be for a line to take the next one's first word (a space of at
+        // least 0.2em between): room up to that is slack an engine measuring a hair wider can use.
+        let mut fit = f64::MAX;
         while let Some(line) = iter.next() {
+            if let Some(next) = iter.peek().filter(|n| n.page == line.page) {
+                fit = fit.min(line.right + 0.2 * line.size + next.first_word - area.right);
+            }
             let forced = match iter.peek() {
                 // The next line's first word would have fitted after this one: Typst didn't choose to break.
                 Some(next) if next.page == line.page => {
@@ -1684,6 +1767,11 @@ impl Builder {
                 b += 1;
             }
             out.extend(self.paragraph_of(group, ids, area, heading));
+        }
+        if fit < f64::MAX {
+            for b in &mut out {
+                b.json.insert("fit".into(), json!(fit));
+            }
         }
         out
     }
@@ -1938,9 +2026,18 @@ impl Builder {
         for (k, (_, body)) in items.iter().enumerate() {
             // The body flows from where it starts, so a line as long as the room left reads as flush, not as
             // centred in the area; its blocks are then indented by as much.
-            let left = body_x[k].filter(|x| *x > area.left && *x < area.right).unwrap_or(area.left);
+            let left = body_x[k]
+                .filter(|x| *x > area.left && *x < area.right)
+                .unwrap_or(area.left);
             let nested = self.lists.len();
-            let flow = self.flow(body, Area { left, right: area.right }, false);
+            let flow = self.flow(
+                body,
+                Area {
+                    left,
+                    right: area.right,
+                },
+                false,
+            );
             // Lists nested in the body were measured from its start too.
             for l in &mut self.lists[nested..] {
                 for key in ["labelLeft", "labelRight", "bodyLeft"] {
@@ -2752,6 +2849,11 @@ impl Builder {
     fn with_gaps_from(&self, mut blocks: Vec<Block>, top: f64) -> Vec<Block> {
         let mut prev: Option<(usize, f64)> = None;
         for b in blocks.iter_mut() {
+            b.json.remove("fit");
+            if b.json.contains_key("frame") {
+                b.json.insert("before".into(), json!(0.0));
+                continue;
+            }
             let before = match prev {
                 Some((p, bottom)) if p == b.page => b.top - bottom,
                 Some(_) => 0.0,
@@ -3250,6 +3352,14 @@ fn shift(json: &mut Map<String, Json>, dx: f64) {
             *v = json!(round(n + dx));
         }
         _ => {}
+    }
+    // Tab stops are measured from the area's edge too.
+    if let Some(Json::Array(tabs)) = json.get_mut("tabs") {
+        for tab in tabs {
+            if let Some(pos) = tab.get("pos").and_then(|p| p.as_f64()) {
+                tab["pos"] = json!(round(pos + dx));
+            }
+        }
     }
 }
 

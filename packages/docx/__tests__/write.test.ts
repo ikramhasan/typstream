@@ -164,6 +164,15 @@ describe("writeDocx", () => {
     expect(doc).not.toContain("\u0001");
   });
 
+  it("writes placed text as a frame at its page position, in the schema's order", () => {
+    const doc = parts(model([p("¶1", { frame: { x: 50, y: 120, width: 12, height: 10.4 } })])).xml("word/document.xml");
+    expect(doc).toContain(
+      '<w:framePr w:w="240" w:h="208" w:hRule="exact" w:wrap="through" w:hAnchor="page" w:vAnchor="page" w:x="1000" w:y="2400"/>',
+    );
+    const pPr = /<w:pPr>(.*?)<\/w:pPr>/.exec(doc)?.[1] as string;
+    expect(pPr.indexOf("framePr")).toBeLessThan(pPr.indexOf("spacing"));
+  });
+
   it("numbers list paragraphs from the list's numbering, its number in the hanging indent", () => {
     const doc = parts(
       model([p("First", { list: { id: 0, label: "1." } })], {

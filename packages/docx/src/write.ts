@@ -103,6 +103,7 @@ class Writer {
     style?: string;
     keepNext?: boolean;
     pageBreak?: boolean;
+    frame?: DocxParagraph["frame"];
     num?: number;
     border?: string;
     tabs?: { pos: number; align: "start" | "end" }[];
@@ -121,6 +122,11 @@ class Writer {
     if (o.style) x += `<w:pStyle w:val="${o.style}"/>`;
     if (o.keepNext) x += "<w:keepNext/>";
     if (o.pageBreak) x += "<w:pageBreakBefore/>";
+    // Placed text: a frame where Typst put it on the page; the text flows through it as if it weren't there.
+    if (o.frame)
+      x +=
+        `<w:framePr w:w="${twips(o.frame.width)}" w:h="${twips(o.frame.height)}" w:hRule="exact" w:wrap="through" ` +
+        `w:hAnchor="page" w:vAnchor="page" w:x="${twips(o.frame.x)}" w:y="${twips(o.frame.y)}"/>`;
     if (o.num !== undefined) x += `<w:numPr><w:ilvl w:val="0"/><w:numId w:val="${o.num}"/></w:numPr>`;
     if (o.border) x += o.border;
     if (o.tabs?.length)
@@ -169,6 +175,7 @@ class Writer {
       style: p.heading ? `Heading${Math.min(6, p.heading)}` : undefined,
       keepNext: p.heading !== undefined,
       pageBreak: p.pageBreak,
+      frame: p.frame,
       num,
       tabs: p.tabs,
       before: p.before,

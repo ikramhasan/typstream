@@ -95,14 +95,16 @@ const CURRENCY = /^\d[\d.,]*\s+\p{L}{2,}[\p{L}\s,.;:!?'"()-]*\s$/u;
 
 // The engine's layout profile (#129) sets these with show-set rules, which win over set rules. An element's own
 // arguments and a later show-set rule on the same element win over the profile, so they come out of documents:
-// a `par(…)` call (not a set rule) and a show-set rule on the element it sets.
+// a `par(…)` call and a show-set rule on the element it sets. Set rules on `par` too: Typst sets text with no
+// blocks around it (a tight list's items, a cell's, a box's) without a `par` element, which the profile's show
+// rule never reaches, so a document's `set par(leading: …)` would space those lines.
 const PROFILE_KEYS: Readonly<Record<string, RegExp>> = {
   par: /^(justify|leading|linebreaks)$/,
   text: /^(hyphenate|top-edge|bottom-edge)$/,
   "table.cell": /^breakable$/,
 };
 const PROFILE_CALL =
-  /(?<![\w.-]|\bset\s+)(par)\(|\bshow\s+(par|text|table)(?:\.where\([^()\n]*\))?\s*:\s*set\s+(par|text|table\.cell)\(/g;
+  /(?<![\w.-])(par)\(|\bshow\s+(par|text|table)(?:\.where\([^()\n]*\))?\s*:\s*set\s+(par|text|table\.cell)\(/g;
 
 interface Ctx {
   text: string;
@@ -328,8 +330,8 @@ export const lint = (
   });
   for (const e of rec.events) eventRule(ctx, e, headings);
   regexRule(ctx, PROFILE_CALL, (m) => {
-    // A show-set rule counts only on the element it sets: `show table: set table.cell(…)`, `show par: set par(…)`.
-    const element = m[1] ?? (m[3] === (m[2] === "table" ? "table.cell" : m[2]) ? m[3] : null);
+    // A show-set rule counts on the element it sets (`show table: set table.cell(…)`), and any that sets `par`.
+    const element = m[1] ?? (m[3] === "par" || m[3] === (m[2] === "table" ? "table.cell" : m[2]) ? m[3] : null);
     if (element && codeAt(ctx, m.index)) profileRule(ctx, element, m.index, m.index + m[0].length - 1);
   });
 

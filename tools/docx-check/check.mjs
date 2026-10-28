@@ -21,6 +21,7 @@ import { gunzipSync } from "node:zlib";
 import { writeDocx } from "@typstream/docx";
 import { strFromU8, unzipSync } from "fflate";
 import { EDU_VERSION, eduFiles, eduPreamble } from "@typstream/edu";
+import { heal } from "@typstream/heal";
 import { render } from "@typstream/node";
 import { compare, linesOf } from "./lines.mjs";
 
@@ -107,7 +108,8 @@ for (const doc of documents()) {
   const dir = join(out, doc.id.replace("/", "__"));
   rmSync(dir, { recursive: true, force: true });
   mkdirSync(dir, { recursive: true });
-  const text = readFileSync(doc.path, "utf8");
+  // What an engine exports: the document healed in final mode, lint fixes included (the layout profile's among them).
+  const text = heal(readFileSync(doc.path, "utf8"), { final: true }).source;
   const file = join(dir, `${basename(doc.path, ".typ")}.docx`);
   if (native) {
     const typ = join(dir, "main.typ");
