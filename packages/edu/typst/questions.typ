@@ -1,5 +1,5 @@
 // Questions: numbered questions with points, multiple choice, true/false, matching.
-#import "util.typ": _accent, _answers-shown, _config, _el, _html, _plain, _question, _rule, _tight
+#import "util.typ": _accent, _answers-shown, _config, _el, _half, _html, _plain, _question, _rule, _tight
 #import "i18n.typ": _letter, _letter-pattern, _points-text, _word
 #import "answers.typ": _record
 
@@ -35,7 +35,7 @@
         column-gutter: 0.4em,
         strong(n),
         body,
-        if pts != none { text(size: 0.85em, fill: _rule, pts) },
+        if pts != none { text(size: _half(0.85), fill: _rule, pts) },
       ))
     }
   }
@@ -52,10 +52,16 @@
   (if type(answer) == array { answer } else { (answer,) }).map(index).filter(i => i != none)
 }
 
-/// A choice marker, circled in the accent color when it is a shown answer.
-#let _marker(m, correct) = if correct {
-  box(stroke: 0.7pt + _accent, radius: 0.6em, inset: (x: 0.2em), outset: (y: 0.15em), _tight(text(fill: _accent, m)))
-} else { m }
+/// A choice marker, bold in the accent color when it is a shown answer. It was circled, which Word can't draw around
+/// a word (#130).
+#let _marker(m, correct) = if correct { text(fill: _accent, weight: "bold", m) } else { m }
+
+// The rows of a question's grid of options don't break across pages, as the rows of the table a DOCX export writes
+// for it don't (#130); a question's own grid holds whole answers and breaks.
+#let _whole-rows(body) = {
+  show grid: set grid.cell(breakable: false)
+  body
+}
 
 /// Multiple-choice options, lettered (a), (b), … in the document's language. Give each option as
 /// its own content argument, in brackets, math too: `[$x = 3$]`. `answer` is the correct option's
@@ -96,22 +102,20 @@
         })
       })
     } else {
-      block(above: 0.16em, below: 0.16em, grid(
-        columns: (1fr,) * cols,
-        column-gutter: 1em,
+      // One grid, a marker column and an option column per option in a row: a DOCX export writes it as one table
+      // (#130), without tables in its cells.
+      block(above: 0.16em, below: 0.16em, _whole-rows(grid(
+        columns: (((auto, 1fr),) * cols).flatten(),
+        column-gutter: range(2 * cols - 1).map(i => if calc.even(i) { 0.45em } else { 1em }),
         row-gutter: 0.11em,
         ..options
           .enumerate()
           .map(((i, o)) => {
             let correct = shown and (i + 1) in picks
-            grid(
-              columns: (auto, 1fr),
-              column-gutter: 0.45em,
-              _marker(numbering(pattern, i + 1), correct),
-              if correct { text(fill: _accent, o) } else { o },
-            )
-          }),
-      ))
+            (_marker(numbering(pattern, i + 1), correct), if correct { text(fill: _accent, o) } else { o })
+          })
+          .flatten(),
+      )))
     }
   }
 }
@@ -138,12 +142,12 @@
         })
       })
     } else {
-      block(above: 0.06em, below: 0.06em, grid(
+      block(above: 0.06em, below: 0.06em, _whole-rows(grid(
         columns: (1fr, auto),
         column-gutter: 1em,
         body,
         choices.map(((key, correct)) => _marker(_word(key), correct)).join(h(1em)),
-      ))
+      )))
     }
   }
 }
@@ -197,7 +201,7 @@
         _el("span", none, row.at(4))
       })
     } else {
-      block(above: 0.16em, below: 0.16em, grid(
+      block(above: 0.16em, below: 0.16em, _whole-rows(grid(
         columns: (auto, 1fr, 2.5em, auto, 1fr),
         column-gutter: 0.6em,
         row-gutter: 0.26em,
@@ -210,7 +214,7 @@
             row.at(4),
           ))
           .flatten(),
-      ))
+      )))
     }
   }
 }

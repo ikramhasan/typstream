@@ -42,7 +42,7 @@ Every function works in the paged and the HTML target, and in English, Arabic an
 | Drawings | `number-line`, `graph-paper`, `coordinate-plane` (native shapes; inline SVG with an `aria-label` in HTML) |
 | Chemistry | `ce("2H2 + O2 -> 2H2O")`: an mhchem-like subset (subscripts, coefficients, charges, states, hydrates, arrows) written as math, so HTML gets MathML |
 
-**Answers** appear only when `sys.inputs.showAnswers` is `"true"` (`SHOW_ANSWERS_INPUT`): written in place in red, the correct option circled, and listed by `answer-key()` under their question numbers. Otherwise they produce no output in either target, so a student's copy can't leak them (tested on PDF text and HTML).
+**Answers** appear only when `sys.inputs.showAnswers` is `"true"` (`SHOW_ANSWERS_INPUT`): written in place in red, the correct option in bold, and listed by `answer-key()` under their question numbers. Otherwise they produce no output in either target, so a student's copy can't leak them (tested on PDF text and HTML).
 
 **Streaming.** Every parameter has a default, and arrays and lengths cut mid-stream are accepted (`(2` heals to the number `2`, `5em` arrives as `5`), so a half-written call renders instead of failing the compile. The compile oracle streams the prompt examples at every code point: 100% of prefixes compile with the engine's Layer 3 fixers.
 

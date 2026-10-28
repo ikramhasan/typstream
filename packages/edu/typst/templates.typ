@@ -1,7 +1,7 @@
 // Document templates: page setup, a title block with student fields, page numbers. Applied as
 // the document's first line, `#show: worksheet.with(title: …)`. In HTML there are no pages, so
 // a template writes a <header> and no page rules (no "page set rule was ignored" warning).
-#import "util.typ": _array, _config, _el, _html, _rule
+#import "util.typ": _array, _config, _el, _half, _html, _rule
 #import "i18n.typ": _points-text, _word
 #import "blocks.typ": instructions as _instructions, student-info
 
@@ -54,13 +54,13 @@
         margin: (x: 2cm, top: 2cm, bottom: 2.2cm),
         header: if running-header {
           context if counter(page).get().first() > 1 {
-            set text(size: 0.8em)
+            set text(size: _half(0.8))
             [#title #h(1fr) #_word("candidate"): #box(width: 3.5cm, stroke: (bottom: 0.4pt + _rule))]
           }
         },
         footer: context {
           let pages = counter(page).final().first()
-          if pages > 1 { align(center, text(size: 0.8em, [#counter(page).display() / #pages])) }
+          if pages > 1 { align(center, text(size: _half(0.8), [#counter(page).display() / #pages])) }
         },
       )
       // Line boxes hold the room above capitals and below the baseline (the engine's layout profile, #129):
@@ -68,8 +68,8 @@
       show heading: set block(above: 0.92em, below: 0.36em)
       block(width: 100%, below: 0.56em, {
         align(center, {
-          if title != none { block(below: 0em, text(size: 1.6em, weight: "bold", title)) }
-          if subtitle != none { block(below: 0em, text(size: 1.15em, subtitle)) }
+          if title != none { block(below: 0em, text(size: _half(1.6), weight: "bold", title)) }
+          if subtitle != none { block(below: 0em, text(size: _half(1.15), subtitle)) }
           if meta.len() > 0 { text(fill: luma(70), meta.join([ #sym.dot.c ])) }
         })
         if details.len() > 0 {

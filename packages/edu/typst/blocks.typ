@@ -1,6 +1,6 @@
 // Teaching content: callouts, instructions, learning objectives, rubrics, student fields.
-#import "util.typ": _array, _el, _html, _rule, _tight
-#import "i18n.typ": _field-label, _start-side, _word, _words
+#import "util.typ": _array, _el, _half, _html, _rule
+#import "i18n.typ": _field-label, _word, _words
 
 #let _kinds = (
   note: rgb("#2563eb"),
@@ -11,34 +11,23 @@
   remember: rgb("#b45309"),
 )
 
-// A thin frame with its label set into the top edge on the starting side, like a fieldset's
-// legend: it groups without filling the page with colour, and it prints in black and white.
-#let _framed(color, label, body) = context {
-  let side = _start-side()
-  // Less than the frame's look suggests: the first line box holds 0.4em above the capitals, the last 0.25em below
-  // the baseline (the engine's layout profile, #129).
-  let inset = (x: 11pt, top: if label == none { 4.6pt } else { 6.6pt }, bottom: 6.3pt)
-  // The label's box covers the stroke in the page's colour.
-  let paper = if page.fill in (auto, none) { white } else { page.fill }
-  block(
-    width: 100%,
-    above: if label == none { 0.46em } else { 0.96em },
-    below: 0.46em,
-    inset: inset,
-    stroke: 0.8pt + color,
-    radius: 4pt,
-    {
-      if label != none {
-        let tab = box(fill: paper, inset: (x: 4pt, y: 1pt), _tight(label))
-        // Centred on the stroke: half the label's height above the frame's top edge.
-        let h = measure(tab).height
-        let (align, dx) = if side == "left" { (left, -4pt) } else { (right, 4pt) }
-        place(top + align, dx: dx, dy: -inset.top - h / 2, tab)
-      }
-      body
-    },
-  )
-}
+// A thin square frame with its title on the first line (#130). A DOCX export writes it as a one-cell table, which
+// Word can draw: square corners, a border on every side, a cell margin. The title rode on the top edge before, which
+// Word can't place. It doesn't break across pages, as the table's row doesn't. It prints in black and white.
+#let _framed(color, title, body) = block(
+  width: 100%,
+  above: 0.46em,
+  below: 0.46em,
+  // The first line box holds 0.4em above the capitals, the last 0.25em below the baseline (the engine's layout
+  // profile, #129): the inset looks even on both.
+  inset: (x: 10pt, top: 4pt, bottom: 5.5pt),
+  stroke: 0.8pt + color,
+  breakable: false,
+  {
+    if title != none { block(below: 0.4em, title) }
+    body
+  },
+)
 
 /// A highlighted box for a note, tip, warning, definition, worked example or something to
 /// remember. Its title defaults to the kind's name in the document's language.
@@ -94,10 +83,10 @@
 /// ```
 #let learning-objectives(body) = callout(kind: "tip", title: context _word("objectives"), body)
 
-// A table cell's body, hyphenated if one of its words is wider than the column. Typst breaks a
-// line only at a space unless it may hyphenate, and hyphenation is off in ragged text, so a word
-// such as "Counterargument" in a narrow column would run into the next one. Cells whose words fit
-// keep their line breaks: hyphenating every cell would split words that fit on the next line.
+// A table cell's body, in smaller text if one of its words is wider than the column. Typst breaks a line only at a
+// space, and the engine's layout profile turns hyphenation off (#129), so a word such as "Counterargument" in a narrow
+// column would run into the next one, where Word would break it mid-word. The text shrinks, in half points as Word
+// sets it, until the widest word fits; cells whose words fit keep their size.
 #let _fit-words(body) = layout(size => {
   // The widest word: the body with every space a line break.
   let widest = measure({
@@ -105,7 +94,9 @@
     show [ ].func(): linebreak()
     body
   }).width
-  if widest > size.width { text(hyphenate: true, body) } else { body }
+  if widest <= size.width { return body }
+  set text(size: calc.max(5pt, calc.floor(text.size.to-absolute() / 0.5pt * size.width / widest) * 0.5pt))
+  body
 })
 
 /// A grading rubric: one row per criterion, one column per level. Give each criterion as
@@ -141,7 +132,7 @@
       })
     })
   } else {
-    set text(size: 0.9em)
+    set text(size: _half(0.9))
     table(
       columns: (1.1fr,) + (1fr,) * n,
       inset: 6pt,

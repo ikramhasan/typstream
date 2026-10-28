@@ -27,6 +27,10 @@
   body
 }
 
+/// A text size `factor` times the current one, rounded to half a point: Word sets text in half points, so a DOCX
+/// export keeps the size and the line breaks (#130). Needs context.
+#let _half(factor) = calc.round(text.size.to-absolute() / 0.5pt * factor) * 0.5pt
+
 /// An HTML element with edu's classes (a string, an array of them, or none). In right-to-left
 /// text it gets `dir="rtl"`, so CSS grids and logical properties flip. Needs context.
 #let _el(tag, cls, body, ..attrs) = {

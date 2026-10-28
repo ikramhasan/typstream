@@ -1,6 +1,6 @@
 // Words stay inside their cells. Typst breaks a line only at a space unless it may hyphenate, and
-// hyphenation is off in ragged text, so on paper a word wider than its column runs into the next
-// one instead of wrapping. Overflow isn't an error, so a probe looks for it: every word in a table
+// hyphenation is off (the engine's layout profile, #129), so on paper a word wider than its column runs
+// into the next one instead of wrapping. Overflow isn't an error, so a probe looks for it: every word in a table
 // or grid is measured against the width its cell gives it, and the document ends in a panic that
 // names the words that don't fit (unless their text may hyphenate). tools/llm-corpus's measure
 // uses the same probe on model output.
@@ -45,16 +45,15 @@ describe("words stay inside their cells", () => {
     expect(overflowing("#table(columns: (4cm, 1fr), [Counterargument], [fits])")).toEqual([]);
   });
 
-  it("rubric: long words in narrow columns are hyphenated", () => {
+  it("rubric: a cell with a word wider than its column is set smaller (#130)", () => {
     expect(overflowing(ESSAY)).toEqual([]);
     expect(overflowing(`#set page(flipped: true)\n${ESSAY}`)).toEqual([]);
   });
 
-  it("rubric: cells whose words fit keep their line breaks", () => {
-    // Hyphenation only where a word doesn't fit: "Logical structure." isn't split as "struc-ture".
+  it("rubric: words stay whole, as Word would break one mid-word", () => {
+    // No hyphenation, which Word does its own way: the word is whole, in smaller text.
     const text = pagedText(compilePaged(engine, ESSAY));
-    expect(text).toContain("Counterargu");
-    expect(text).not.toContain("Counterargument");
+    expect(text).toContain("Counterargument");
     for (const word of ["structure.", "logical.", "Inconsistent.", "Acknowledges"]) expect(text).toContain(word);
   });
 });

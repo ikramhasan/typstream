@@ -120,7 +120,7 @@
 }
 :where(.typstream .edu-answer) {
   margin-block: 0.8em;
-  padding: 0.4em 0.7em;
+  padding: 0 0.7em;
   border-inline-start: 2px solid var(--edu-ink);
   background: color-mix(in srgb, var(--edu-ink) 8%, transparent);
   color: var(--edu-ink);
@@ -157,11 +157,10 @@
 :where(.typstream .edu-correct) {
   color: var(--edu-ink);
 }
+/* Bold, not circled: Word can't draw a circle around a word, and the pages match a DOCX export (#130). */
 :where(.typstream .edu-correct) .edu-marker,
 :where(.typstream .edu-choice.edu-correct) {
-  padding-inline: 0.2em;
-  border: 1px solid var(--edu-ink);
-  border-radius: 1em;
+  font-weight: bold;
 }
 :where(.typstream .edu-tf) {
   display: flex;
@@ -183,45 +182,23 @@
   margin-block: 0.7em;
 }
 
-/* Callouts and instructions: a thin frame with the title set into its top edge, as in the paged
-   target. The page behind is the app's, so nothing can paint over the frame to cut it: the frame
-   is drawn in pieces instead. The box's ::before draws the sides and bottom from just below the
-   top corners; the title's ::before and ::after draw the top corners and the top edge on either
-   side of the text, at the height of its middle. Logical properties mirror it in RTL. */
+/* Callouts and instructions: a thin square frame with the title on its own first line, as in the
+   paged target, where a DOCX export writes it as a one-cell table (#130). */
 :where(.typstream .edu-callout) {
   --edu-callout: var(--edu-note);
-  --edu-radius: 4px;
-  /* Its own formatting context: the title's negative margin would otherwise collapse through it. */
+  /* Its own formatting context, so its children's margins stay inside the frame. */
   display: flow-root;
-  position: relative;
-  margin-block: 1.6em 1em;
-  padding: 0 0.85em 0.65em;
-  /* html-compat places against it, inside this padding, as Typst places inside the inset. */
-  --ts-inset-top: 0pt;
-  --ts-inset-right: 0.85em;
-  --ts-inset-bottom: 0.65em;
-  --ts-inset-left: 0.85em;
-}
-:where(.typstream .edu-callout)::before {
-  content: "";
-  position: absolute;
-  inset: var(--edu-radius) 0 0;
+  margin-block: 1em;
+  padding: 0.5em 0.9em 0.6em;
   border: 1px solid var(--edu-callout);
-  border-block-start: 0;
-  border-end-start-radius: var(--edu-radius);
-  border-end-end-radius: var(--edu-radius);
-  pointer-events: none;
+  /* html-compat places against it, inside this padding, as Typst places inside the inset. */
+  --ts-inset-top: 0.5em;
+  --ts-inset-right: 0.9em;
+  --ts-inset-bottom: 0.6em;
+  --ts-inset-left: 0.9em;
 }
-/* Without a title, the frame is whole. */
-:where(.typstream .edu-callout:not(:has(> .edu-callout-title))) {
-  margin-block-start: 1em;
-  padding-block-start: 0.65em;
-  --ts-inset-top: 0.65em;
-}
-:where(.typstream .edu-callout:not(:has(> .edu-callout-title)))::before {
-  inset: 0;
-  border-block-start: 1px solid var(--edu-callout);
-  border-radius: var(--edu-radius);
+:where(.typstream .edu-callout) > :first-child {
+  margin-block-start: 0;
 }
 :where(.typstream .edu-callout) > :last-child {
   margin-block-end: 0;
@@ -230,30 +207,9 @@
   margin-block-start: 0;
 }
 :where(.typstream .edu-callout-title) {
-  display: flex;
-  gap: 0.35em;
-  margin-block: -0.7em 0.45em;
-  margin-inline: -0.85em;
-  line-height: 1.4em;
+  margin-block-end: 0.4em;
   color: var(--edu-callout);
   font-weight: bold;
-}
-:where(.typstream .edu-callout-title)::before,
-:where(.typstream .edu-callout-title)::after {
-  content: "";
-  height: var(--edu-radius);
-  margin-block-start: 0.7em;
-  border-block-start: 1px solid var(--edu-callout);
-}
-:where(.typstream .edu-callout-title)::before {
-  flex: 0 0 0.55em;
-  border-inline-start: 1px solid var(--edu-callout);
-  border-start-start-radius: var(--edu-radius);
-}
-:where(.typstream .edu-callout-title)::after {
-  flex: 1;
-  border-inline-end: 1px solid var(--edu-callout);
-  border-start-end-radius: var(--edu-radius);
 }
 :where(.typstream .edu-tip) {
   --edu-callout: var(--edu-tip);
