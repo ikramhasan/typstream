@@ -24,6 +24,7 @@ import {
   appOptions,
   type CorpusDocument,
   caughtUp,
+  EDU_DOCUMENTS as DOCUMENTS,
   finished,
   host,
   loadCorpus,
@@ -40,45 +41,6 @@ import {
 const browser = server.browser;
 /** The browser that shoots whole documents and every axis; the others shoot first screens. */
 const reference = browser === "chromium";
-
-/** The edu corpus; a test checks it against the corpus on disk (shots are listed before it loads). */
-const DOCUMENTS = [
-  "chemistry-balancing-equations",
-  "exam-algebra-final",
-  "exam-calculus-midterm",
-  "exam-history-short-answer",
-  "exam-physics-mechanics",
-  "flashcards-capitals",
-  "geometry-shapes-area",
-  "handout-cornell-notes",
-  "lab-report-pendulum",
-  "lesson-plan-persuasive-writing",
-  "lesson-plan-water-cycle",
-  "math-linear-algebra",
-  "math-statistics-probability",
-  "math-trigonometry-identities",
-  "multilingual-arabic-rtl-quiz",
-  "multilingual-bengali-math",
-  "multilingual-chinese-vocabulary",
-  "multilingual-hindi-science",
-  "multilingual-spanish-french-vocab",
-  "programming-python-loops",
-  "quiz-mcq-chemistry",
-  "quiz-mcq-geography",
-  "quiz-true-false-cells",
-  "quiz-vocabulary-matching",
-  "reading-comprehension-lighthouse",
-  "report-climate-change",
-  "rubric-argumentative-essay",
-  "rubric-science-fair",
-  "table-gradebook",
-  "table-periodic-elements",
-  "worksheet-fractions",
-  "worksheet-linear-equations",
-  "worksheet-photosynthesis",
-  "worksheet-times-tables",
-  "worksheet-verb-tenses",
-];
 
 /** Documents that cover what the corpus renders: math, tables, shapes, scripts, code, fills, a recorded stream. */
 const FEATURES = [

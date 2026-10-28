@@ -6,7 +6,8 @@ Chromium, Firefox and WebKit. Documents are mounted the way an app mounts them: 
 package's `<Typstream>` adds). Private; nothing here ships.
 
 ```bash
-pnpm --filter @typstream/browser-suites test:browser   # equivalence, flicker, accessibility (any machine)
+pnpm --filter @typstream/browser-suites test:browser   # equivalence, flicker, accessibility, preview vs PDF (any machine)
+pnpm --filter @typstream/browser-suites test:pdf       # preview vs PDF only (~25 s per browser)
 pnpm --filter @typstream/browser-suites test:visual    # screenshots against the baselines (needs Docker)
 pnpm --filter @typstream/browser-suites visual:update  # accept visual changes: rewrites the baselines that differ
 BROWSERS=chromium pnpm ...                             # one browser; extra arguments go to vitest (-t, a file)
@@ -57,6 +58,17 @@ caught up, while MutationObservers record what the renderers remove and add.
 
 Violations that come from Typst's own HTML or from axe's limits are listed in `KNOWN`, each with where it may occur
 and why; so is a known bug, with its issue.
+
+**Preview vs PDF** (`pdf-raster.test.ts`, [#118](https://github.com/ikramhasan/typstream/issues/118)). Every edu
+document is shown in the document panel (paged, `fixed` layout: pages at their authored size) and each page's pixels
+are compared with the same page of the mount's `exportPdf()`, rasterized by pdf.js at the same size in the same
+browser: the same page count and sizes, and no cluster of more than 3 touching pixels that differ. A pixel differs
+when no pixel of the other image within one device pixel is close to it in colour, so edges antialiased a pixel apart
+don't count. Pages are painted at a device pixel ratio of 2 (at 1, pdf.js widens a 0.4 pt rule to a whole device pixel
+and the canvas doesn't); SVG pages (gradients) are rasterized by the browser. Chromium and Firefox match exactly;
+WebKit differs by a few scattered pixels. A control checks that a missing full stop (7–8 pixels) is caught. It needs
+no baselines, so it runs on any machine, and on PRs in CI's Engine (chromium) job (`test:pdf`). The `fit-width`
+layout lays pages out at the panel's width, so it can't equal the PDF and isn't compared.
 
 **Security** (`security.test.ts`, #29, `apps/website/content/docs/guides/security.mdx`). Every `hostile-*` document of the adversarial set,
 streamed and finished in both targets, in all three browsers:

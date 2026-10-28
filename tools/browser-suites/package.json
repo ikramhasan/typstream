@@ -1,12 +1,13 @@
 {
   "name": "@typstream/browser-suites",
   "version": "0.0.0",
-  "description": "Browser suites over the whole corpus (PLAN.md §11.4): final-render equivalence, flicker, accessibility, and visual regression against committed baselines.",
+  "description": "Browser suites over the whole corpus (PLAN.md §11.4): final-render equivalence, flicker, accessibility, preview vs PDF, and visual regression against committed baselines.",
   "license": "UNLICENSED",
   "private": true,
   "type": "module",
   "scripts": {
     "test:browser": "vitest run --project suites",
+    "test:pdf": "vitest run --project suites __tests__/pdf-raster.test.ts",
     "test:visual": "node scripts/visual.mjs",
     "visual:update": "node scripts/visual.mjs --update",
     "check-types": "tsc -p tsconfig.json"
@@ -20,6 +21,7 @@
     "@typstream/html-compat": "workspace:*",
     "@vitest/browser-playwright": "4.1.12",
     "axe-core": "^4.14.0",
+    "pdfjs-dist": "^6.4.299",
     "playwright": "^1.64.1",
     "sharp": "^0.35.5"
   }

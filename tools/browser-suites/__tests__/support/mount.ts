@@ -33,6 +33,48 @@ declare module "vitest/browser" {
 
 export const loadCorpus = (): Promise<CorpusDocument[]> => commands.corpusEntries();
 
+/**
+ * The edu corpus by name, for suites that list a test per document: tests are
+ * listed before the corpus loads. They check it against the corpus on disk.
+ */
+export const EDU_DOCUMENTS: readonly string[] = [
+  "chemistry-balancing-equations",
+  "exam-algebra-final",
+  "exam-calculus-midterm",
+  "exam-history-short-answer",
+  "exam-physics-mechanics",
+  "flashcards-capitals",
+  "geometry-shapes-area",
+  "handout-cornell-notes",
+  "lab-report-pendulum",
+  "lesson-plan-persuasive-writing",
+  "lesson-plan-water-cycle",
+  "math-linear-algebra",
+  "math-statistics-probability",
+  "math-trigonometry-identities",
+  "multilingual-arabic-rtl-quiz",
+  "multilingual-bengali-math",
+  "multilingual-chinese-vocabulary",
+  "multilingual-hindi-science",
+  "multilingual-spanish-french-vocab",
+  "programming-python-loops",
+  "quiz-mcq-chemistry",
+  "quiz-mcq-geography",
+  "quiz-true-false-cells",
+  "quiz-vocabulary-matching",
+  "reading-comprehension-lighthouse",
+  "report-climate-change",
+  "rubric-argumentative-essay",
+  "rubric-science-fair",
+  "table-gradebook",
+  "table-periodic-elements",
+  "worksheet-fractions",
+  "worksheet-linear-equations",
+  "worksheet-photosynthesis",
+  "worksheet-times-tables",
+  "worksheet-verb-tenses",
+];
+
 // URLs are written out as `new URL("literal", import.meta.url)`: Vite rewrites only that form, to files
 // outside this package's root (and bundles the worker).
 
