@@ -40,6 +40,8 @@ runs:
         rm -rf .vercel
         vercel pull --yes --environment="$target" --token="$VERCEL_TOKEN"
         vercel build "${prod[@]}" --token="$VERCEL_TOKEN"
-        url=$(vercel deploy --prebuilt "${prod[@]}" --json --token="$VERCEL_TOKEN" | jq -r .deployment.url)
+        # `--json` prints the deployment itself; when the CLI detects a coding agent (AI_AGENT, CLAUDECODE, …) it wraps
+        # it as `{ status, deployment }`. Read either, so the step runs the same locally.
+        url=$(vercel deploy --prebuilt "${prod[@]}" --json --token="$VERCEL_TOKEN" | jq -r '.deployment.url // .url')
         test -n "$url" && test "$url" != null
         echo "url=$url" >> "$GITHUB_OUTPUT"
