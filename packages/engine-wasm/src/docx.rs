@@ -263,7 +263,8 @@ impl Linearizer<'_> {
                         w: size.x.to_pt(),
                         h: size.y.to_pt(),
                     };
-                    if !gts.is_only_translate() || curvy(&group.frame) {
+                    // A grid or table drawn with curves (rounded cards) stays a grid: its cells are found inside.
+                    if !gts.is_only_translate() || (curvy(&group.frame) && !has_cells(&group.frame)) {
                         // Rotated or drawn content (CeTZ, edu's drawings): an image later (#133). Its tags stay, so
                         // elements around it (a cell it is in) still start and end.
                         self.push(Kind::Drawing(rect));
@@ -541,6 +542,15 @@ fn count(frame: &Frame, lines: &mut usize, text: &mut usize, curvy: &mut bool, e
             _ => {}
         }
     }
+}
+
+/// Whether a frame holds table or grid cells.
+fn has_cells(frame: &Frame) -> bool {
+    frame.items().any(|(_, item)| match item {
+        FrameItem::Group(g) => has_cells(&g.frame),
+        FrameItem::Tag(Tag::Start(elem, _)) => elem.is::<TableCell>() || elem.is::<GridCell>(),
+        _ => false,
+    })
 }
 
 /// A group drawn as a framed or filled block: its first items are a rectangle as big as the group, or strokes along
@@ -1078,6 +1088,8 @@ impl Builder {
                         bottom: rect.bottom(),
                         json,
                     });
+                    // What is drawn over it (a rounded card's text) is part of the drawing.
+                    i = self.drawn_over(ids, i, *rect);
                 }
                 _ => pending.push(id),
             }
@@ -1085,6 +1097,63 @@ impl Builder {
         }
         self.flush(&mut pending, &mut out, area, heading);
         out
+    }
+
+    /// Index (into `ids`) of the last item after `ids[i]` drawn inside `rect`, on its page.
+    fn drawn_over(&self, ids: &[usize], i: usize, rect: Rect) -> usize {
+        let page = self.items[ids[i]].page;
+        let inside = |r: Rect| {
+            r.x >= rect.x - 0.5
+                && r.y >= rect.y - 0.5
+                && r.right() <= rect.right() + 0.5
+                && r.bottom() <= rect.bottom() + 0.5
+        };
+        // Elements that start inside: their ends go with them.
+        let mut opened = Vec::new();
+        let mut j = i;
+        while j + 1 < ids.len() {
+            let next = &self.items[ids[j + 1]];
+            if next.page != page {
+                break;
+            }
+            let end = match &next.kind {
+                Kind::Text(t) => inside(Rect {
+                    x: t.x,
+                    y: t.y - 0.75 * t.size,
+                    w: t.width,
+                    h: 0.75 * t.size,
+                })
+                .then_some(j + 1),
+                Kind::Seg(s) => inside(Rect {
+                    x: s.x0,
+                    y: s.y0,
+                    w: s.x1 - s.x0,
+                    h: s.y1 - s.y0,
+                })
+                .then_some(j + 1),
+                Kind::Fill(r, _) | Kind::Drawing(r) | Kind::Link(r, _) => inside(*r).then_some(j + 1),
+                Kind::Group(r, _) => inside(*r).then(|| group_end(&self.items, ids, j + 1)),
+                // A start on the drawing's right or bottom edge is something beside it (the next cell).
+                Kind::Start(elem, at) => {
+                    let (x, y) = (at.x.to_pt(), at.y.to_pt());
+                    let ok = x >= rect.x - 0.5
+                        && y >= rect.y - 0.5
+                        && x < rect.right() - 0.5
+                        && y < rect.bottom() - 0.5;
+                    if ok {
+                        opened.extend(elem.location());
+                    }
+                    ok.then_some(j + 1)
+                }
+                Kind::End(loc) => opened.contains(loc).then_some(j + 1),
+                Kind::GroupEnd => None,
+            };
+            match end {
+                Some(e) => j = e,
+                None => break,
+            }
+        }
+        j
     }
 
     fn in_line(&self, pending: &[usize], rect: Rect, page: usize) -> bool {

@@ -88,6 +88,16 @@ for (const tarball of readdirSync(vendor).filter((f) => f.endsWith(".tar.gz"))) 
   }
 }
 
+// Native compiles read them from --packages, as @preview/name/version/….
+if (native) {
+  for (const [key, data] of Object.entries(packageFiles)) {
+    const [, name, version, path] = /^@preview\/(.+?):(.+?)\/(.*)$/.exec(key);
+    const file = join(packages, "preview", name, version, path);
+    mkdirSync(dirname(file), { recursive: true });
+    writeFileSync(file, data);
+  }
+}
+
 /** Whether a DOCX holds room for equations or images (the writer's placeholder styles), which #132 and #133 fill. */
 const placeholders = (data) => strFromU8(unzipSync(data)["word/document.xml"] ?? new Uint8Array()).includes("TypstreamPlaceholder");
 
@@ -102,6 +112,10 @@ for (const doc of documents()) {
   if (native) {
     const typ = join(dir, "main.typ");
     writeFileSync(typ, profile + (doc.edu ? `#import "@typstream/edu:${eduVersion}": *\n` : "") + text);
+    for (const [name, data] of Object.entries(assetFiles(dirname(doc.path)))) {
+      mkdirSync(dirname(join(dir, name)), { recursive: true });
+      writeFileSync(join(dir, name), data);
+    }
     try {
       execFileSync(example, [typ, "--out", dir, "--fonts", fonts, "--packages", packages], { stdio: "pipe" });
     } catch (e) {

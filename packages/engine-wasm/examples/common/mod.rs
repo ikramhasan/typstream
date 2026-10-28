@@ -57,6 +57,10 @@ pub fn compile(o: &Options) -> (MemWorld, Result<PagedDocument, String>) {
     if let Some(dir) = o.packages {
         mount(&mut world, dir, dir);
     }
+    // The document's own files (a corpus set's assets/) at the root, as /assets/….
+    if let Some(dir) = o.main.parent().filter(|d| d.join("assets").is_dir()) {
+        mount_assets(&mut world, dir, &dir.join("assets"));
+    }
     let mut dict = Dict::new();
     for (k, v) in &o.inputs {
         dict.insert(Str::from(k.as_str()), Value::Str(Str::from(v.as_str())));
@@ -104,6 +108,24 @@ fn mount(world: &mut MemWorld, root: &Path, dir: &Path) {
         match String::from_utf8(bytes.clone()) {
             Ok(text) if path.extension().is_some_and(|e| e == "typ") => world.set_source(id, &text),
             _ => world.set_file(id, &bytes),
+        }
+    }
+}
+
+fn mount_assets(world: &mut MemWorld, root: &Path, dir: &Path) {
+    for entry in fs::read_dir(dir).unwrap() {
+        let path = entry.unwrap().path();
+        if path.is_dir() {
+            mount_assets(world, root, &path);
+            continue;
+        }
+        let rel = path
+            .strip_prefix(root)
+            .unwrap()
+            .to_string_lossy()
+            .to_string();
+        if let Some(id) = file_id(&format!("/{rel}")) {
+            world.set_file(id, &fs::read(&path).unwrap());
         }
     }
 }

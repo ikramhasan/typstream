@@ -15,8 +15,8 @@ fn main() {
     let out = PathBuf::from(args.remove(at + 1));
     args.remove(at);
     let (main, fonts, packages, inputs) = common::options(&args);
-    // The export compiles the document with the margin probe after it.
-    let probed = std::env::temp_dir().join(format!("docx-model-{}.typ", std::process::id()));
+    // The export compiles the document with the margin probe after it (beside it, so its assets are found).
+    let probed = main.with_extension(format!("probed-{}.typ", std::process::id()));
     fs::write(
         &probed,
         fs::read_to_string(&main).unwrap() + docx::MARGIN_PROBE,
