@@ -46,7 +46,8 @@ tools/llm-corpus  Real model output (#24): records Claude streams with edu's pro
                   promotes recordings into corpus/llm.
 tools/browser-suites  Corpus-wide browser suites (#19): final-render equivalence, flicker, accessibility (axe), preview vs PDF
                     (#118), and visual regression against baselines rendered in Playwright's Docker image.
-tools/repo        Repo tooling: package layer table (layers.mjs), layering check, shared tsup and api-extractor configs.
+tools/repo        Repo tooling: package layer table (layers.mjs), layering check, shared tsup and api-extractor configs,
+                  coverage (coverage.mjs: the README's badges).
 corpus/           @typstream/corpus (private): shared test documents (edu/, adversarial/, llm/, islands/), meta.json, stream replay.
 apps/playground   Dev playground (Vite + React): replay streams, inspect healing and the engine's raw output, record corpus cases.
 examples/         node-validate (@typstream/node fix loop), nextjs-ai-sdk (useChat → <Typstream>, Next.js App Router),
@@ -84,6 +85,7 @@ pnpm check:api-docs    # every @public/@beta export and member has TSDoc, and ea
 pnpm check:packages    # publint + @arethetypeswrong/cli on the built packages
 pnpm changeset         # describe a change to a published package
 pnpm corpus:validate   # native `typst` 0.15.1 compile of every corpus entry (needs typst on PATH or TYPST=)
+pnpm coverage          # line and branch coverage of the TypeScript packages, Node and Chromium tests (tools/repo/coverage.mjs)
 ```
 
 In `packages/engine-wasm` (Rust build, ~3 min cold):
@@ -166,7 +168,7 @@ documents; `loadEditAnswers()`).
 
 Compile oracle (`tools/compile-oracle`, needs the built engine): `pnpm turbo run test --filter=@typstream/compile-oracle`; `pnpm --filter @typstream/compile-oracle report` for the full measurement (minutes).
 
-CI (`.github/workflows/ci.yml`) runs the same commands on every PR, building the oracle through `.github/actions/oracle` and engine-wasm through `.github/actions/engine-wasm` (both cached on the crate's inputs) and installing through `.github/actions/pnpm` (the store cached once per lockfile), plus the browser tests and the visual suite, one job per browser, inside Playwright's Docker image (`node tools/repo/playwright-docker.mjs <command>`; no `playwright install --with-deps`, whose Ubuntu mirror has stalled jobs for 10+ minutes). **A PR's CI should finish in about 5 minutes**: split a job that outgrows that across parallel jobs (heal's every-prefix corpus suite is four test files, `corpus-prefixes-<n>.test.ts`, so vitest runs them on separate workers), and move what can't be split to `nightly.yml`. Nightly runs `test:long`, heal's `pnpm mutate` (score in the job summary, HTML report as an artifact) and the corpus-wide browser suites; `gh workflow run nightly.yml --ref <branch> -f only=browser-suites` (or `heal-properties`, `heal-mutation`) runs one group on a branch. The repository's caches share 10 GB, evicted least recently used first: caches are saved from `main` only (PRs read them) and keyed so a run that changes nothing saves nothing.
+CI (`.github/workflows/ci.yml`) runs the same commands on every PR, building the oracle through `.github/actions/oracle` and engine-wasm through `.github/actions/engine-wasm` (both cached on the crate's inputs) and installing through `.github/actions/pnpm` (the store cached once per lockfile), plus the browser tests and the visual suite, one job per browser, inside Playwright's Docker image (`node tools/repo/playwright-docker.mjs <command>`; no `playwright install --with-deps`, whose Ubuntu mirror has stalled jobs for 10+ minutes). **A PR's CI should finish in about 5 minutes**: split a job that outgrows that across parallel jobs (heal's every-prefix corpus suite is four test files, `corpus-prefixes-<n>.test.ts`, so vitest runs them on separate workers), and move what can't be split to `nightly.yml`. Nightly runs `test:long`, heal's `pnpm mutate` (score in the job summary, HTML report as an artifact) and the corpus-wide browser suites; `gh workflow run nightly.yml --ref <branch> -f only=browser-suites` (or `heal-properties`, `heal-mutation`) runs one group on a branch. `coverage.yml` runs after every push to main: `tools/repo/coverage.mjs` (Node tests on the runner, browser projects in Playwright's image, merged per package through vitest blob reports), the table in the job summary, and the README's badges as shields.io endpoint JSON force-pushed to the `badges` branch. The repository's caches share 10 GB, evicted least recently used first: caches are saved from `main` only (PRs read them) and keyed so a run that changes nothing saves nothing.
 
 Adding a package: copy `packages/core` and rename. Its `tsconfig.json`, `tsup.config.ts` and `api-extractor.json` only extend the shared configs (`tsconfig.base.json`, `tools/repo/`), and `@typstream/*` resolves to `packages/*/src` through a wildcard path. Then add its row to `tools/repo/layers.mjs`, and add it to the `fixed` group in `.changeset/config.json` if the row says `fixed`. Delete the copied `api/core.api.md` but keep `api/` (api-extractor won't create it), then `pnpm api:update` writes the new package's report.
 

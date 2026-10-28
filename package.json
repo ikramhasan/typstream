@@ -17,7 +17,8 @@
     "check:packages": "turbo run check:package",
     "changeset": "changeset",
     "oracle": "tools/typst-syntax-oracle/build.sh",
-    "corpus:validate": "node corpus/scripts/validate.mjs"
+    "corpus:validate": "node corpus/scripts/validate.mjs",
+    "coverage": "node tools/repo/coverage.mjs"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
