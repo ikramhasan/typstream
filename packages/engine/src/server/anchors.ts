@@ -22,7 +22,7 @@
 //   which would be the anchor.
 
 import { diffEdit } from "@typstream/core";
-import { type Checkpoint, recognize } from "@typstream/heal";
+import { anchorPoints, type Checkpoint, recognize } from "@typstream/heal";
 
 /** What anchors were inserted where, to map compiler positions back to the document. */
 export interface Anchored {
@@ -39,59 +39,6 @@ export interface Anchored {
 /** The text inserted for an anchor before the line at `offset`. */
 export const anchorText = (offset: number): string =>
   `#std.html.elem("typstream-anchor", attrs: ("data-src": "${offset}"));\n`;
-
-type Kind = "heading" | "list" | "enum" | "term" | "label" | "other";
-
-// Markers as heal's lexer reads them (lexer.ts, `markup`): `=`, `-`, `+`, `/`
-// or `1.` followed by whitespace, a comment or the end of the text.
-const MARKER = /(?:(=+)|(-)|(\+|\d{1,19}\.)|(\/))(?=\s|$|\/\/|\/\*)/y;
-
-const kindAt = (text: string, at: number): Kind => {
-  if (text.charCodeAt(at) === 0x3c /* < */) return "label";
-  MARKER.lastIndex = at;
-  const m = MARKER.exec(text);
-  if (!m) return "other";
-  return m[1] ? "heading" : m[2] ? "list" : m[3] ? "enum" : "term";
-};
-
-const isSpace = (c: number): boolean => c === 0x20 || c === 0x09 || c === 0x0a || c === 0x0d;
-
-/** Whether only whitespace with a blank line (or nothing) precedes `at`. */
-const afterBlankLine = (text: string, at: number): boolean => {
-  let newlines = 0;
-  let i = at;
-  while (i > 0 && isSpace(text.charCodeAt(i - 1))) {
-    if (text.charCodeAt(i - 1) === 0x0a) newlines++;
-    i--;
-  }
-  return i === 0 || newlines >= 2;
-};
-
-/** Offsets of the lines that get an anchor. */
-export const anchorPoints = (text: string, checkpoints: readonly Checkpoint[]): number[] => {
-  const points: number[] = [];
-  let previous: Kind | null = null;
-  for (const cp of checkpoints) {
-    if (cp.nesting !== 0) continue;
-    const kind = kindAt(text, cp.offset);
-    const item = kind === "list" || kind === "enum" || kind === "term";
-    if ((kind === "heading" || afterBlankLine(text, cp.offset)) && kind !== "label" && !(item && kind === previous)) {
-      points.push(text.lastIndexOf("\n", cp.offset - 1) + 1);
-    }
-    previous = kind;
-  }
-  return points;
-};
-
-/**
- * Starts of a text's top-level blocks (PLAN §5.6): 0, then each line an anchor
- * goes before. Block `i` runs to the start of block `i + 1`, the last one to
- * the end of the text.
- */
-export const blockStarts = (text: string, checkpoints = recognize(text).checkpoints): number[] => [
-  0,
-  ...anchorPoints(text, checkpoints).filter((at) => at > 0),
-];
 
 /**
  * Inserts anchors at `points` (line starts, ascending). `label` turns a point

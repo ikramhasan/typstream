@@ -17,5 +17,9 @@ export const generate = () =>
   ].join("\n");
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  writeFileSync(`${root}src/assets.generated.ts`, generate());
+  // Only when it changed: the build runs this while turbo may be type-checking the package, which
+  // reads the file (a rewrite truncates it first, and tsc then saw an empty file, "not a module").
+  const out = `${root}src/assets.generated.ts`;
+  const text = generate();
+  if (readFileSync(out, "utf8") !== text) writeFileSync(out, text);
 }

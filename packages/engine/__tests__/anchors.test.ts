@@ -7,10 +7,10 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type { ClientMessage, Diagnostic, ServerMessage } from "@typstream/core";
 import { type CorpusEntry, loadCorpus, streamOf } from "@typstream/corpus";
-import { createHealer, heal, recognize } from "@typstream/heal";
+import { anchorPoints, createHealer, heal, recognize } from "@typstream/heal";
 import { beforeAll, describe, expect, it } from "vitest";
 import type { AdapterDocument, EngineAdapter } from "../src/server/adapter";
-import { Anchors, anchorPoints, anchorText, fromAnchored, insertAnchors } from "../src/server/anchors";
+import { Anchors, anchorText, fromAnchored, insertAnchors } from "../src/server/anchors";
 import { createServer } from "../src/server/server";
 import { nodeEngineWasm } from "./support/engine-wasm";
 

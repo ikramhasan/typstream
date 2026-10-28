@@ -8,7 +8,7 @@
 // the server's (heal's root checkpoints, `blockStarts`).
 
 import type { SkippedRange } from "@typstream/core";
-import { blockStarts } from "./server/anchors";
+import { blockStarts } from "@typstream/heal";
 
 /** Most compiles one search runs before giving up: it costs a budget per hang. */
 export const MAX_HANG_PROBES = 16;

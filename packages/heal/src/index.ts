@@ -1,3 +1,4 @@
+export { anchorPoints, blockStarts } from "./blocks";
 export {
   createHealer,
   type Healer,

@@ -277,7 +277,7 @@ const fallbackOf = (f: FallbackParams | undefined, length: number): FallbackPara
     }
     skip.push({ from, to, reason });
   }
-  return { isolate: f.isolate === true, stablePrefix: f.stablePrefix === true, skip };
+  return { isolate: f.isolate === true, stablePrefix: f.stablePrefix === true, restart: f.restart === true, skip };
 };
 
 /** Imports a fixer module (PLAN §8.2); its default export is a fixer or an array of them. */
@@ -738,6 +738,13 @@ class Server implements EngineServer {
         mode === "streaming" && params.settled !== undefined
           ? Math.max(0, Math.min(params.settled, doc.text.length))
           : doc.text.length;
+      // A streaming range: what is being typed is [settled, settledFrom), and the text after it is settled.
+      const given = params.settledFrom;
+      const settledFrom =
+        mode === "streaming" && typeof given === "number" && Number.isInteger(given)
+          ? Math.max(settled, Math.min(given, doc.text.length))
+          : doc.text.length;
+      const ranged = settledFrom < doc.text.length;
       // Changed pages only when the client can apply them to the pages it has.
       const pageFormat = params.pageFormat ?? "svg";
       const drawings = pageFormat === "drawing";
@@ -781,11 +788,12 @@ class Server implements EngineServer {
        * Compiles the document's text, or a variant the fallback made of it,
        * and fixes it (Layer 3). Diagnostics in document coordinates.
        */
-      const attempt = async (variant: Variant | null, settledIn: number): Promise<Attempt> => {
+      const attempt = async (variant: Variant | null, settledIn: number, settledFromIn: number): Promise<Attempt> => {
         const given: Variant = variant ?? { text: doc.text, toOriginal: (p) => p };
         const images = placeholders(given);
         const base = images?.variant ?? given;
         const settledBase = images ? images.map.toResult(settledIn) : settledIn;
+        const settledFromBase = images ? images.map.toResult(settledFromIn) : settledFromIn;
         if (variant || images) this.writeFixed(doc, base.text, anchors, base.toOriginal);
         else this.sync(doc, params.inputs, anchors);
         let { diagnostics } = await compile();
@@ -797,6 +805,7 @@ class Server implements EngineServer {
           const outcome = await runFixers({
             text: base.text,
             settled: settledBase,
+            settledFrom: settledFromBase,
             mode,
             fixers: doc.fixers,
             diagnostics,
@@ -845,7 +854,7 @@ class Server implements EngineServer {
       let outcome: Attempt =
         skip.length > 0
           ? { ok: false, diagnostics: [], compiled: { text: doc.text, toOriginal: (p) => p } }
-          : await attempt(null, settled);
+          : await attempt(null, settled, settledFrom);
       let recovered: CompileFallback | undefined;
       let fallbackMs: number | undefined;
       if (!outcome.ok && fallback && (fallback.isolate || fallback.stablePrefix || skip.length > 0)) {
@@ -855,13 +864,15 @@ class Server implements EngineServer {
         const rec = await recover({
           text: doc.text,
           settled,
+          settledFrom,
           mode,
           isolate: fallback.isolate === true,
-          stablePrefix: mode === "streaming" && fallback.stablePrefix === true,
+          // The tail as plain text would take the settled text after a streaming range with it.
+          stablePrefix: mode === "streaming" && fallback.stablePrefix === true && !ranged,
           skip,
           errors: skip.length > 0 ? null : outcome.diagnostics,
-          attempt: async (variant, settledIn) => {
-            last = await attempt(variant, settledIn);
+          attempt: async (variant, settledIn, settledFromIn) => {
+            last = await attempt(variant, settledIn, settledFromIn);
             return last;
           },
           check,
@@ -890,6 +901,7 @@ class Server implements EngineServer {
         outcome.ok &&
         mode === "streaming" &&
         fallback !== null &&
+        fallback.restart !== true &&
         doc.shown?.target === target &&
         // The stable prefix replaces the tail from the start of its block, which may be settled text.
         showsLess(doc.shown.text, outcome.compiled.text, outcome.compiled.toOriginal, recovered?.plainFrom ?? settled);
