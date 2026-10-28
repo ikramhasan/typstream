@@ -2310,15 +2310,30 @@ impl Builder {
         // What lies outside every cell's tags: a row broken across pages has its cells' tags first, then their
         // content, and nothing but content where it continues. It goes to cells by where it is, once columns are known.
         let mut orphans: Vec<usize> = Vec::new();
+        // A table nested in such content: its cells are its own, not this table's.
+        let mut nested: Vec<Location> = Vec::new();
         for &id in &ids[1..] {
             match &self.items[id].kind {
-                Kind::Start(elem, at) if open.is_none() => {
+                Kind::Start(elem, at) if open.is_none() && nested.is_empty() => {
                     let node = classify(elem, *at, self.items[id].page);
                     if let Node::Cell { .. } = node {
                         open = elem.location();
                         cells.push((node, Vec::new()));
                         continue;
                     }
+                    if let (Node::Table { .. }, Some(loc)) = (node, elem.location()) {
+                        nested.push(loc);
+                    }
+                }
+                Kind::Start(elem, at) if open.is_none() => {
+                    if let (Node::Table { .. }, Some(loc)) =
+                        (classify(elem, *at, self.items[id].page), elem.location())
+                    {
+                        nested.push(loc);
+                    }
+                }
+                Kind::End(loc) if open.is_none() && nested.last() == Some(loc) => {
+                    nested.pop();
                 }
                 Kind::End(loc) if open.as_ref() == Some(loc) => {
                     open = None;
