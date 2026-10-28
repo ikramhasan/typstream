@@ -3,7 +3,7 @@
 // engine-wasm is the default. Failed compiles go through the Layer 3 fixers
 // (PLAN §5.5); Typst packages come from an allowlist, and families documents name
 // from font catalogues (§6.4). The default worker
-// script (worker.ts) is `serve(engineWasm({ fonts: baseFonts, lazyFonts: scriptFonts }))`; write your
+// script (worker.ts) is `serve(engineWasm({ fonts: baseFonts, lazyFonts: [...extraFonts, ...scriptFonts] }))`; write your
 // own worker with these exports to load the wasm or fonts from elsewhere.
 
 export type { InitInput } from "@typstream/engine-wasm";

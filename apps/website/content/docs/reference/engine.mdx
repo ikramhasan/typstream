@@ -448,7 +448,7 @@ A font: a URL to fetch, or the bytes of a font file (TTF, OTF or TTC).
 
 #### `LazyFontInput`
 
-A font downloaded only when a document uses it, as in `scriptFonts` from `@typstream/engine-wasm/fonts`.
+A font downloaded only when a document uses it, as in `extraFonts` and `scriptFonts` from `@typstream/engine-wasm/fonts`.
 
 <auto-type-table path="packages/engine/src/server/engine-wasm.ts" name="LazyFontInput" />
 
@@ -737,7 +737,7 @@ diagnostic.
 
 ## `@typstream/engine/worker`
 
-The default worker script: `serve(engineWasm({ fonts: baseFonts, lazyFonts: scriptFonts }))`, with the fonts from
+The default worker script: `serve(engineWasm({ fonts: baseFonts, lazyFonts: [...extraFonts, ...scriptFonts] }))`, with the fonts from
 `@typstream/engine-wasm/fonts`. It has no exports; importing it starts the server in the current worker.
 `engineWorker()` spawns it, so you rarely need it directly.
 

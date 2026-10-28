@@ -69,19 +69,33 @@ fetch() { # url sha256 out: downloads once into target/, checked by SHA-256
   fi
 }
 
-# The base fonts: Typst's defaults for text, math and raw (PLAN §6.4), from the typst-assets crate the
-# build just downloaded. Word embeds only TrueType outlines, and the canvas, the PDF and the DOCX must use
-# the same files (#118), so the ones typst-assets ships with CFF outlines (Libertinus Serif, New Computer
-# Modern Math) are converted (scripts/otf2ttf.py, fontTools' pure-Python wheel at a pinned version): the
-# same fonts, laid out the same, under the same names. The conversion is reproducible, so its output is
-# pinned too; a new fontTools or typst-assets means new hashes here. `file sha256` per line.
-DEJAVU=DejaVuSansMono.ttf
+# Typst's bundled fonts, all 17 faces native typst embeds (PLAN §6.4), from the typst-assets crate the build
+# just downloaded, so every engine chooses from the same faces and picks the same ones (#128): native typst,
+# @typstream/node (which copies these files) and the browser, where the five every ordinary document uses are
+# the base fonts (downloaded at startup) and the other twelve are lazy, registered by FontInfo and downloaded the
+# first time a document uses them. Word embeds only TrueType outlines, and the canvas, the PDF and the DOCX must use
+# the same files (#118), so the faces typst-assets ships with CFF outlines are converted (scripts/otf2ttf.py,
+# fontTools' pure-Python wheel at a pinned version): the same fonts, laid out the same, under the same names. The
+# conversion is reproducible, so its output is pinned too; a new fontTools or typst-assets means new hashes here.
+# `file sha256` per line.
 CONVERTED=(
   "LibertinusSerif-Regular 3fef5b907611c222c8d398d26841cf7ad1e172c30cd6b04d0310b4f58f53c746"
   "LibertinusSerif-Bold 29b465eefb4806bf1e0ef5f59ec0b02909a318a5d41bf95fd299f453482bee6c"
   "LibertinusSerif-Italic 8a04d4879543542b6a2f3d14323d4c49111d9884d38edfaeeddf6a619c81cc12"
+  "LibertinusSerif-BoldItalic 4747eaf31f366ec31074955fe23156b54cbfb3844f31a393b2d33d79ac77fb27"
+  "LibertinusSerif-Semibold 13aade5b6aedba56290f567d93e553e99856cfb58f87c9c0eabc8059f56ed8e7"
+  "LibertinusSerif-SemiboldItalic 0e70a2c6ac232a62a5d36936d197a5fbb8b62edf1ff74c675c3d6ec11b408297"
+  "NewCMMath-Book b5a2ebf704a159956d51516f5f98b9122c9e80046b89731e75a64511fe5c68a9"
   "NewCMMath-Regular be2bdfa66ab52d4dfcb0434c4358b6bc4315026d433d3091f729d90623c58935"
+  "NewCMMath-Bold 5f4aa06a4b782563661276878dbd015e1c1c10a74bb7bc5d05894e047320054d"
+  "NewCM10-Regular beaaa4d396bd78647ac0f0aed3a3076ca7d69d05ea9ff2c06e8d0547ef9b9bc7"
+  "NewCM10-Bold 6dea3e3f1a0e5ad1f79458945ee659bf9cf4c63453a4d3e217aafc718f29cbc7"
+  "NewCM10-Italic 587abd7432740704e02e38424de483e7f3acdab36d2985c5b3f90486123c8a21"
+  "NewCM10-BoldItalic 60a846b6f6216e120aaccac67285bb318994b4acd5959ffd3c25d1a02fe9fec5"
 )
+COPIED=(DejaVuSansMono.ttf DejaVuSansMono-Bold.ttf DejaVuSansMono-Oblique.ttf DejaVuSansMono-BoldOblique.ttf)
+# What ordinary documents use (#128): Typst sets math in NewCMMath-Book, whatever order fonts are registered in.
+BASE=(LibertinusSerif-Regular.ttf LibertinusSerif-Bold.ttf LibertinusSerif-Italic.ttf NewCMMath-Book.ttf DejaVuSansMono.ttf)
 FONTTOOLS=fonttools-4.68.0-py3-none-any.whl
 FONTTOOLS_URL=https://files.pythonhosted.org/packages/35/74/4ea331ecc65ba05a58b1e4e8ccd604c8a15565f876dfbf93fc2a2ea2e22b/$FONTTOOLS
 FONTTOOLS_SHA256=d76f8fdcb6936f5e1045a0c9dd721a4bf11112e60d1e243bfa1d39f06a8b3104
@@ -91,17 +105,23 @@ assets=$(cargo metadata --format-version 1 --locked | node -e '
     console.log(require("node:path").dirname(p.manifest_path));
   });')
 mkdir -p dist/fonts
-cp "$assets/files/fonts/$DEJAVU" dist/fonts/
+for font in "${COPIED[@]}"; do cp "$assets/files/fonts/$font" dist/fonts/; done
 fetch "$FONTTOOLS_URL" "$FONTTOOLS_SHA256" "target/fonttools/$FONTTOOLS"
-FONTS=()
 for entry in "${CONVERTED[@]}"; do
   read -r name sha <<< "$entry"
   python3 -I scripts/otf2ttf.py "target/fonttools/$FONTTOOLS" "$assets/files/fonts/$name.otf" "dist/fonts/$name.ttf"
   echo "$sha  dist/fonts/$name.ttf" | sha256sum -c --quiet - ||
     { echo "build.sh: converted $name.ttf doesn't match its pinned SHA-256 (new fontTools or typst-assets?)" >&2; exit 1; }
-  FONTS+=("$name.ttf")
 done
-FONTS+=("$DEJAVU")
+# Every bundled face that isn't a base font is lazy.
+EXTRA=()
+for font in $(cd dist/fonts && ls *.ttf | sort); do
+  [[ " ${BASE[*]} " == *" $font "* ]] || EXTRA+=("$font")
+done
+if [ ${#BASE[@]} -ne 5 ] || [ ${#EXTRA[@]} -ne 12 ]; then
+  echo "build.sh: expected 5 base and 12 lazy bundled faces, got ${#BASE[@]} and ${#EXTRA[@]}" >&2
+  exit 1
+fi
 {
   cat "$assets/NOTICE"
   cat <<'NOTICE'
@@ -109,14 +129,17 @@ FONTS+=("$DEJAVU")
 ================================================================================
 Changes made by typstream
 
-LibertinusSerif-Regular.ttf, LibertinusSerif-Bold.ttf, LibertinusSerif-Italic.ttf and
-NewCMMath-Regular.ttf are modified versions of the .otf files of the same names in
-typst-assets (https://github.com/typst/typst-assets, crate typst-assets on crates.io,
-the version this engine pins): their CFF outlines were converted to TrueType outlines
-with fontTools' cu2qu (at most 1 font unit of error) and their hinting removed; every
-other table is unchanged. Each says so in its name table (name ID 10). They remain under
-the licenses above (SIL OFL 1.1 for Libertinus Serif, the GUST Font License for New
-Computer Modern Math); the unmodified originals are in typst-assets.
+The LibertinusSerif-*.ttf, NewCMMath-*.ttf and NewCM10-*.ttf files are modified
+versions of the .otf files of the same names in typst-assets
+(https://github.com/typst/typst-assets, crate typst-assets on crates.io, the version
+this engine pins): their CFF outlines were converted to TrueType outlines with
+fontTools' cu2qu (at most 1 font unit of error) and their hinting removed; every other
+table is unchanged. Each says so in its name table (name ID 10). They remain under the
+licenses above (SIL OFL 1.1 for Libertinus Serif; the GUST Font License for New
+Computer Modern, but NewCM10-Regular, under the GPL 3 with the Font and Distribution
+Exceptions). The unmodified originals are in typst-assets; the conversion is
+packages/engine-wasm/scripts/otf2ttf.py in https://github.com/ikramhasan/typstream,
+which with the originals is the corresponding source of the converted files.
 NOTICE
 } > dist/fonts/NOTICE
 
@@ -145,7 +168,7 @@ for entry in "${SCRIPT_FONTS[@]}"; do
 done
 fetch "$NOTO/LICENSE" "$NOTO_LICENSE_SHA256" target/script-fonts/LICENSE
 cp target/script-fonts/LICENSE dist/fonts/LICENSE-Noto.txt
-node scripts/fonts.mjs --base "${FONTS[@]}" --script "${script_args[@]}"
+node scripts/fonts.mjs --base "${BASE[@]}" --extra "${EXTRA[@]}" --script "${script_args[@]}"
 echo "$inputs" > dist/.inputs
 
 echo "built $(pwd)/dist ($(wc -c < dist/engine_bg.wasm | tr -d ' ') bytes of wasm)"

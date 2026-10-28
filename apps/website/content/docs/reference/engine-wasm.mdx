@@ -238,10 +238,11 @@ font's URL. See [Fonts and languages](/docs/guides/fonts-and-languages).
 
 | Export | Type | What it is |
 | --- | --- | --- |
-| `baseFonts` | `URL[]` | The base set: Libertinus Serif (regular, bold, italic), New Computer Modern Math and DejaVu Sans Mono, about 2.6 MB. Add them with `Engine.add_font`. |
-| `scriptFonts` | `ScriptFont[]` | The script fonts above, to register lazily. |
+| `baseFonts` | `URL[]` | The base set: Libertinus Serif (regular, bold, italic), New Computer Modern Math (Book, the face Typst sets math in) and DejaVu Sans Mono, 3.8 MB (1.4 MB brotli). Add them with `Engine.add_font`. |
+| `extraFonts` | `LazyFont[]` | The rest of Typst's bundled faces (Libertinus Serif bold italic and semibold, New Computer Modern text, its math font's regular and bold, DejaVu Sans Mono bold and oblique), to register lazily. With `baseFonts`, every face native `typst` embeds, so an engine that registers both picks the faces it picks. All have TrueType outlines (converted from typst-assets' CFF ones). |
+| `scriptFonts` | `ScriptFont[]` | The script fonts above, to register lazily. A `ScriptFont` is a `LazyFont` with the `scripts` it is for. |
 
-| `ScriptFont` field | Type | Meaning |
+| `LazyFont` / `ScriptFont` field | Type | Meaning |
 | --- | --- | --- |
 | `url` | `URL` | Where the file is. |
 | `file` | `string` | The file's name in `dist/fonts/`, e.g. to serve the fonts from another origin. |

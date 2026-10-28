@@ -70,7 +70,8 @@ Your JavaScript bundle holds only the main-thread code (healer, scheduler, rende
 |---|---|---|
 | Worker script | ≤ 40 KB gzipped | When the engine starts: `createEngine()`, or the first `<Typstream>` or `<TypstreamProvider>` that mounts |
 | Typst wasm (`engine_bg.wasm`) | about 19 MB, ≈ 6 MB with brotli | When the engine starts |
-| Base fonts: Libertinus Serif, New Computer Modern Math, DejaVu Sans Mono | 2.6 MB | When the engine starts |
+| Base fonts: Libertinus Serif, New Computer Modern Math, DejaVu Sans Mono | 3.8 MB, 1.4 MB with brotli | When the engine starts |
+| The rest of Typst's bundled faces (bold italic, semibold, New Computer Modern, …) | 12 files, up to 0.7 MB brotli each | The first time a document uses one, per face |
 | Script fonts: Noto Naskh Arabic, Noto Serif Bengali, Noto Serif Devanagari (regular and bold) | 47–79 KB brotli each | The first time a document needs one, per face |
 | Typst packages (CeTZ, fletcher, …) | tarballs, up to a few hundred KB | The first time a document imports one |
 

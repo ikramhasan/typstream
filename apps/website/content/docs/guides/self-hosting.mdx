@@ -13,7 +13,8 @@ typstream fetches nothing from third parties. The engine worker, the Typst compi
 |---|---|---|---|
 | The worker script | small | When the engine is created (with React's default engine: when the first `<Typstream>` or `<TypstreamProvider>` mounts) | `@typstream/engine`'s `worker.js`, bundled |
 | `engine_bg.wasm`, Typst 0.15.1 | about 21 MB (6.2 MB brotli, 8.2 MB gzip) | When the worker starts | `@typstream/engine-wasm` |
-| Base fonts: Libertinus Serif (regular, bold, italic), New Computer Modern Math, DejaVu Sans Mono | 2.6 MB | When the worker starts | `@typstream/engine-wasm/fonts` |
+| Base fonts: Libertinus Serif (regular, bold, italic), New Computer Modern Math (Book), DejaVu Sans Mono | 3.8 MB (1.4 MB brotli) | When the worker starts | `@typstream/engine-wasm/fonts` |
+| The rest of Typst's bundled faces: Libertinus Serif bold italic and semibold, New Computer Modern text and math (regular, bold), DejaVu Sans Mono bold and oblique | 12 files, 3.3 MB brotli in all | The first time a document uses one, per face | `@typstream/engine-wasm/fonts` |
 | Script fonts: Noto Naskh Arabic, Noto Serif Bengali, Noto Serif Devanagari, regular and bold | 47–79 KB brotli each | The first time a document uses the script | `@typstream/engine-wasm/fonts` |
 | Typst package tarballs (CeTZ, fletcher, …) | about 740 KB in all | The first time a document imports one | `@typstream/universe` |
 | New Computer Modern Math, for MathML | 1.3 MB | When an HTML document first renders, on the main thread | `typstream` sets it from `@typstream/engine-wasm/fonts` |
@@ -44,13 +45,13 @@ To load the wasm or fonts from somewhere else, or to change what the worker does
 
 ```ts title="engine.worker.ts"
 import { engineWasm, serve } from "@typstream/engine/server";
-import { baseFonts, scriptFonts } from "@typstream/engine-wasm/fonts";
+import { baseFonts, extraFonts, scriptFonts } from "@typstream/engine-wasm/fonts";
 
 serve(
   engineWasm({
     wasm: "https://cdn.example.com/typst-0.15.1.wasm", // a URL, a Response, bytes or a compiled WebAssembly.Module
     fonts: [...baseFonts, "/fonts/Inter-Regular.otf"], // fetched when the worker starts
-    lazyFonts: scriptFonts, // registered now, downloaded when a document uses one
+    lazyFonts: [...extraFonts, ...scriptFonts], // registered now, downloaded when a document uses one
   }),
 );
 ```
@@ -97,7 +98,7 @@ The worker script itself must come from your origin: browsers don't start worker
 
 ```ts title="engine.worker.ts"
 import { engineWasm, serve } from "@typstream/engine/server";
-import { scriptFonts } from "@typstream/engine-wasm/fonts";
+import { extraFonts, scriptFonts } from "@typstream/engine-wasm/fonts";
 
 const CDN = "https://cdn.example.com/typstream/0.15.1";
 
@@ -108,11 +109,11 @@ serve(
       "LibertinusSerif-Regular.ttf",
       "LibertinusSerif-Bold.ttf",
       "LibertinusSerif-Italic.ttf",
-      "NewCMMath-Regular.ttf",
+      "NewCMMath-Book.ttf",
       "DejaVuSansMono.ttf",
     ].map((file) => `${CDN}/fonts/${file}`),
-    // `file` is each script font's name in @typstream/engine-wasm's dist/fonts/.
-    lazyFonts: scriptFonts.map((font) => ({ url: `${CDN}/fonts/${font.file}`, info: font.info })),
+    // `file` is each lazy font's name in @typstream/engine-wasm's dist/fonts/.
+    lazyFonts: [...extraFonts, ...scriptFonts].map((font) => ({ url: `${CDN}/fonts/${font.file}`, info: font.info })),
   }),
 );
 ```
