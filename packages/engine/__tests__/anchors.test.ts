@@ -11,6 +11,7 @@ import { anchorPoints, createHealer, heal, recognize } from "@typstream/heal";
 import { beforeAll, describe, expect, it } from "vitest";
 import type { AdapterDocument, EngineAdapter } from "../src/server/adapter";
 import { Anchors, anchorText, fromAnchored, insertAnchors } from "../src/server/anchors";
+import { LAYOUT_PROFILE } from "../src/server/profile";
 import { createServer } from "../src/server/server";
 import { nodeEngineWasm } from "./support/engine-wasm";
 
@@ -225,7 +226,8 @@ describe("server", () => {
     expect(compiled).toEqual([
       { kind: "html", main: `${prefix}${anchorText(0)}= A\n\n${anchorText(5)}Body\n` },
       { kind: "html", main: `${prefix}= A\n\nBody\n` },
-      { kind: "paged", main: `${prefix}= A\n\nBody\n` },
+      // Pages have the layout profile in front (#129).
+      { kind: "paged", main: `${LAYOUT_PROFILE}${prefix}= A\n\nBody\n` },
       { kind: "export", main: `${prefix}= A\n\nBody\n` },
       { kind: "html", main: `${prefix}${anchorText(0)}= A\n\n${anchorText(5)}Body\n\n${anchorText(11)}More\n` },
     ]);

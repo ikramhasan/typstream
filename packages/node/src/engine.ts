@@ -125,7 +125,7 @@ export interface CompileRequest {
 export const compile = async (engine: NodeEngine, req: CompileRequest): Promise<Compiled> => {
   const state = states.get(engine);
   if (!state) throw new TypeError("@typstream/node: not an engine from createEngine()");
-  const assembled: Assembled = assemble(req.text, req.preamble);
+  const assembled: Assembled = assemble(req.text, req.preamble, req.op !== "html");
   const timeoutMs = req.timeoutMs ?? state.timeoutMs;
   const outcome = await state.pool.run(
     {
@@ -142,7 +142,7 @@ export const compile = async (engine: NodeEngine, req: CompileRequest): Promise<
     case "done":
       return {
         ok: outcome.result.ok,
-        diagnostics: outcome.result.diagnostics.map((d) => fromMain(d, assembled.offset)),
+        diagnostics: outcome.result.diagnostics.map((d) => fromMain(d, assembled.offset, assembled.preambleAt)),
         result: outcome.result,
         ms: outcome.ms,
       };

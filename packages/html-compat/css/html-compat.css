@@ -158,11 +158,13 @@
 :where(.typstream .ts-place) {
   position: absolute;
 }
-/* Placed text with a vertical alignment: its box runs from the cap height to the baseline, Typst's
-   default text edges, not over the whole line, so it lands where paged output puts it. Only text:
-   an image or tall math in a trimmed line would stick out above it. */
+/* Placed text with a vertical alignment: its box runs from 1.054em above the baseline to 0.246em
+   below it, the text edges of the engine's layout profile (#129), not over the whole line, so it
+   lands where paged output puts it: trimmed to the cap height and the baseline, then padded out.
+   Only text: an image or tall math in a trimmed line would stick out above it. */
 :where(.typstream .ts-place-text) {
   text-box: trim-both cap alphabetic;
+  padding-block: calc(1.054em - 1cap) 0.246em;
 }
 :where(.typstream .ts-place.ts-float) {
   position: static;

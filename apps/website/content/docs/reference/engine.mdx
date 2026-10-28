@@ -628,15 +628,28 @@ const PREAMBLE_PATH = "<preamble>";
 The `Diagnostic.file.path` of problems inside a document's preamble. The preamble isn't a file the document can
 import; it is evaluated in front of it.
 
+#### `LAYOUT_PROFILE`
+
+```ts
+const LAYOUT_PROFILE: string;
+```
+
+The Typst source the server puts in front of every document and its preamble when it compiles pages or exports a PDF: the
+[layout profile](/docs/concepts/render-targets#layout-profile) (a constant line pitch, ragged right without
+hyphenation, table rows that don't split), so a DOCX export can match the pages. Put it in front of a document you
+compile with Typst yourself to get the same pages.
+
 #### `fromMain`
 
 ```ts
-const fromMain: (d: Diagnostic, offset: number) => Diagnostic;
+const fromMain: (d: Diagnostic, offset: number, preambleAt?: number) => Diagnostic;
 ```
 
-Moves a diagnostic from `/main.typ` (preamble + document) into document coordinates, where `offset` is the length of
-what precedes the document. Problems inside the preamble report it as their `file`, with the nearest call site in the
-document as `span`. For adapters and custom servers.
+Moves a diagnostic from `/main.typ` (layout profile + preamble + document) into document coordinates, where `offset`
+is the length of what precedes the document and `preambleAt` where the preamble starts (after `LAYOUT_PROFILE`, in
+paged compiles).
+Problems inside the preamble report it as their `file`, with the nearest call site in the document as `span`. For
+adapters and custom servers.
 
 ### Re-exported types
 

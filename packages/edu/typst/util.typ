@@ -19,6 +19,14 @@
 /// Whether this compile writes HTML. Needs context; inside `html.frame` it is the paged target.
 #let _html() = target() == "html"
 
+// Typst's default text edges (a line box from the cap height to the baseline) inside an inline box whose stroke or
+// fill hugs its text. The engine's layout profile (#129) makes every line box the full line pitch, which would push
+// a circle or an underline away from the text; a later show-set rule wins over the profile's.
+#let _tight(body) = {
+  show text: set text(top-edge: "cap-height", bottom-edge: "baseline")
+  body
+}
+
 /// An HTML element with edu's classes (a string, an array of them, or none). In right-to-left
 /// text it gets `dir="rtl"`, so CSS grids and logical properties flip. Needs context.
 #let _el(tag, cls, body, ..attrs) = {

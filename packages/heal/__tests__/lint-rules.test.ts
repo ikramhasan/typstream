@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import { heal } from "../src";
 import { fixChanges, type LintFinding, lint, modeAt } from "../src/lint";
 import { recognize } from "../src/recognizer";
+import { syntaxErrors } from "./support/oracle";
 
 const lintAll = (text: string, rules = {}) => lint(text, recognize(text), 0, text.length, { rules });
 const final = (input: string) => heal(input, { final: true });
@@ -159,6 +160,44 @@ describe("pattern edges", () => {
     expect(fixes('$""^2$')).toBe(false);
     // In code, `^` and `_` aren't scripts.
     expect(fixes('#let x = "$^2$"')).toBe(false);
+  });
+
+  it("layout-profile: an element's own arguments and show-set rules on it, not set rules (#129)", () => {
+    const fixed = (text: string) => {
+      const source = final(text).source;
+      expect(syntaxErrors(source)).toEqual([]);
+      return source;
+    };
+    expect(fixed("#par(justify: true)[a]")).toBe("#par()[a]");
+    expect(fixed("#par(first-line-indent: 1em, justify: true)[a]")).toBe("#par(first-line-indent: 1em)[a]");
+    expect(fixed("#par(justify: true, first-line-indent: 1em)[a]")).toBe("#par(first-line-indent: 1em)[a]");
+    expect(fixed('#par(leading: 1em, spacing: 2em, linebreaks: "optimized")[a]')).toBe("#par(spacing: 2em)[a]");
+    expect(fixed("#par(justify: true, leading: 1em)[a]")).toBe("#par()[a]");
+    expect(fixed("#par(justify: calc.max(1, 2) > 1, [a (b], leading: 1em)")).toBe("#par([a (b])");
+    expect(fixed('#{ par(leading: 1em, "x)")[y] }')).toBe('#{ par("x)")[y] }');
+    expect(fixed("#show par: set par(justify: true)")).toBe("#show par: set par()");
+    expect(fixed("#show par.where(justify: true): set par(leading: 2em)")).toBe(
+      "#show par.where(justify: true): set par()",
+    );
+    expect(fixed('#show text: set text(top-edge: "bounds", bottom-edge: "bounds", fill: red)')).toBe(
+      "#show text: set text(fill: red)",
+    );
+    expect(fixed("#show table: set table.cell(breakable: true)")).toBe("#show table: set table.cell()");
+    // Set rules lose to the profile anyway; a document's intent stays readable in them.
+    expect(rules("#set par(justify: true)")).not.toContain("layout-profile");
+    expect(rules("#show heading: set par(justify: true)")).not.toContain("layout-profile");
+    expect(rules("#show heading: set text(hyphenate: true)")).not.toContain("layout-profile");
+    expect(rules("#par.with(justify: true)")).not.toContain("layout-profile");
+    // A show-set rule on another element sets nothing the profile does.
+    expect(rules("#show table: set par(justify: true)")).not.toContain("layout-profile");
+    expect(rules("#show par: set table.cell(breakable: true)")).not.toContain("layout-profile");
+    expect(rules("#spar(justify: true)")).not.toContain("layout-profile");
+    // Markup, raw text and strings aren't calls.
+    expect(rules("Use par(justify: true) here")).not.toContain("layout-profile");
+    expect(rules("`#par(justify: true)[a]`")).not.toContain("layout-profile");
+    expect(rules('#let s = "#par(justify: true)"')).not.toContain("layout-profile");
+    // Not closed yet: nothing to take out.
+    expect(rules("#par(justify: true")).not.toContain("layout-profile");
   });
 
   it("markdown-bold needs markup at both delimiters", () => {

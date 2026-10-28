@@ -129,7 +129,7 @@ export interface FontCatalogueOptions {
 export type FontInput = string | URL | Uint8Array;
 
 // @public
-export const fromMain: (d: Diagnostic, offset: number) => Diagnostic;
+export const fromMain: (d: Diagnostic, offset: number, preambleAt?: number) => Diagnostic;
 
 // @public
 export const hoistImport: DiagnosticFixer;
@@ -138,6 +138,9 @@ export { InitInput }
 
 // @beta
 export const inProcess: (createAdapter: () => EngineAdapter, options?: Pick<ServerOptions, "fixers" | "packages" | "fontCatalogues">) => SpawnEngine;
+
+// @public
+export const LAYOUT_PROFILE: string;
 
 // @public
 export interface LazyFontInput {

@@ -1,5 +1,5 @@
 // Teaching content: callouts, instructions, learning objectives, rubrics, student fields.
-#import "util.typ": _array, _el, _html, _rule
+#import "util.typ": _array, _el, _html, _rule, _tight
 #import "i18n.typ": _field-label, _start-side, _word, _words
 
 #let _kinds = (
@@ -15,19 +15,21 @@
 // legend: it groups without filling the page with colour, and it prints in black and white.
 #let _framed(color, label, body) = context {
   let side = _start-side()
-  let inset = (x: 11pt, top: if label == none { 9pt } else { 11pt }, bottom: 9pt)
+  // Less than the frame's look suggests: the first line box holds 0.4em above the capitals, the last 0.25em below
+  // the baseline (the engine's layout profile, #129).
+  let inset = (x: 11pt, top: if label == none { 4.6pt } else { 6.6pt }, bottom: 6.3pt)
   // The label's box covers the stroke in the page's colour.
   let paper = if page.fill in (auto, none) { white } else { page.fill }
   block(
     width: 100%,
-    above: if label == none { 1.1em } else { 1.6em },
-    below: 1.1em,
+    above: if label == none { 0.46em } else { 0.96em },
+    below: 0.46em,
     inset: inset,
     stroke: 0.8pt + color,
     radius: 4pt,
     {
       if label != none {
-        let tab = box(fill: paper, inset: (x: 4pt, y: 1pt), label)
+        let tab = box(fill: paper, inset: (x: 4pt, y: 1pt), _tight(label))
         // Centred on the stroke: half the label's height above the frame's top edge.
         let h = measure(tab).height
         let (align, dx) = if side == "left" { (left, -4pt) } else { (right, 4pt) }
@@ -166,7 +168,7 @@
     })
   } else {
     let width(f) = if f == "name" { 2.2fr } else { 1fr }
-    block(above: 1em, below: 1em, grid(
+    block(above: 0.36em, below: 0.36em, grid(
       columns: fields.map(f => (auto, width(f))).flatten(),
       // Tight between a label and its line, wider between fields.
       column-gutter: range(fields.len() * 2 - 1).map(i => if calc.even(i) { 0.4em } else { 1.2em }),

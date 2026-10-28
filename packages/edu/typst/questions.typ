@@ -1,5 +1,5 @@
 // Questions: numbered questions with points, multiple choice, true/false, matching.
-#import "util.typ": _accent, _answers-shown, _config, _el, _html, _plain, _question, _rule
+#import "util.typ": _accent, _answers-shown, _config, _el, _html, _plain, _question, _rule, _tight
 #import "i18n.typ": _letter, _letter-pattern, _points-text, _word
 #import "answers.typ": _record
 
@@ -30,7 +30,7 @@
         if pts != none { _el("span", "edu-points", pts) }
       })
     } else {
-      block(width: 100%, above: 1.4em, below: 1.4em, grid(
+      block(width: 100%, above: 0.76em, below: 0.76em, grid(
         columns: (2em, 1fr, auto),
         column-gutter: 0.4em,
         strong(n),
@@ -54,7 +54,7 @@
 
 /// A choice marker, circled in the accent color when it is a shown answer.
 #let _marker(m, correct) = if correct {
-  box(stroke: 0.7pt + _accent, radius: 0.6em, inset: (x: 0.2em), outset: (y: 0.15em), text(fill: _accent, m))
+  box(stroke: 0.7pt + _accent, radius: 0.6em, inset: (x: 0.2em), outset: (y: 0.15em), _tight(text(fill: _accent, m)))
 } else { m }
 
 /// Multiple-choice options, lettered (a), (b), … in the document's language. Give each option as
@@ -96,10 +96,10 @@
         })
       })
     } else {
-      block(above: 0.8em, below: 0.8em, grid(
+      block(above: 0.16em, below: 0.16em, grid(
         columns: (1fr,) * cols,
         column-gutter: 1em,
-        row-gutter: 0.75em,
+        row-gutter: 0.11em,
         ..options
           .enumerate()
           .map(((i, o)) => {
@@ -138,7 +138,7 @@
         })
       })
     } else {
-      block(above: 0.7em, below: 0.7em, grid(
+      block(above: 0.06em, below: 0.06em, grid(
         columns: (1fr, auto),
         column-gutter: 1em,
         body,
@@ -197,15 +197,15 @@
         _el("span", none, row.at(4))
       })
     } else {
-      block(above: 0.8em, below: 0.8em, grid(
+      block(above: 0.16em, below: 0.16em, grid(
         columns: (auto, 1fr, 2.5em, auto, 1fr),
         column-gutter: 0.6em,
-        row-gutter: 0.9em,
+        row-gutter: 0.26em,
         ..rows
           .map(row => (
             row.at(0),
             row.at(1),
-            box(width: 100%, stroke: (bottom: 0.5pt + _rule), outset: (bottom: 0.25em), align(center, row.at(2))),
+            box(width: 100%, stroke: (bottom: 0.5pt + _rule), outset: (bottom: 0.25em), _tight(align(center, row.at(2)))),
             row.at(3),
             row.at(4),
           ))

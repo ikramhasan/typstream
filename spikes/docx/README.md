@@ -13,7 +13,8 @@ PLAN.md's decision log; port what's kept into a package, don't import from here.
   split. Fonts embedded on request (ECMA-376 obfuscation).
 - `run.py`: renders each document with native `typst`, LibreOffice (headless) and ONLYOFFICE (`x2t` in the
   `onlyoffice/documentserver` image), reads every line back (`pdftotext -bbox`) and reports how many of Typst's lines
-  each renderer has, in order, and whether its pages start on the same lines. Variants switch one setting at a time.
+  each renderer has, in order, and whether its pages start on the same lines. Variants switch one setting at a time;
+  `engine` uses the engine's `LAYOUT_PROFILE` as it ships (#129), read from `packages/engine/src/server/profile.ts`.
 - `otf2ttf.py`: Libertinus (CFF outlines) converted to TrueType outlines, which is what Word embeds.
 - `math_sample.py`: a paragraph with inline math and a display equation as Word equations (OMML), rendered by the
   three engines.

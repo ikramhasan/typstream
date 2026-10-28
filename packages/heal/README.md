@@ -28,7 +28,7 @@ const done = healer.finish(); // complete document: lint everything, report what
    - settled syntax errors;
    - root checkpoints to resume from after an edit.
 3. **Repair the tail.** Cut, then close. Each candidate is re-recognized before it's accepted; a closer that would merge with the last token (`\` + `*`) gets a separator, or the token is dropped.
-4. **Lint settled text**, meaning text before the stable offset, or everything in final mode. Rules: `markdown-heading`, `markdown-bold`, `markdown-link`, `email-at`, `bare-hash`, `stray-closer`, `unclosed-delim` and `math-lone-script` (`m/s$^2$` → `m/s$""^2$`) fix by default; `unclosed-block-comment` and `currency-dollar` warn by default.
+4. **Lint settled text**, meaning text before the stable offset, or everything in final mode. Rules: `markdown-heading`, `markdown-bold`, `markdown-link`, `email-at`, `bare-hash`, `stray-closer`, `unclosed-delim`, `math-lone-script` (`m/s$^2$` → `m/s$""^2$`) and `layout-profile` (`par(justify: true)[…]` → `par()[…]`: what would beat the engine's layout profile, #129) fix by default; `unclosed-block-comment` and `currency-dollar` warn by default.
 
 Text before `stableOffset` never changes meaning as more text arrives, and the healer never rewrites it except for lint fixes.
 
@@ -58,4 +58,4 @@ Text before `stableOffset` never changes meaning as more text arrives, and the h
 - The recognizer itself is checked against Typst's parser on documents, all their prefixes and random character soup.
 - `pnpm test:long` runs 20,000 property runs.
 - `pnpm bench`: vitest benchmarks. `node scripts/perf.mjs` (after `pnpm build`) asserts the latency budgets.
-- `pnpm size` checks the bundle budget (15.5 KB gzipped).
+- `pnpm size` checks the bundle budget (16.2 KB gzipped).

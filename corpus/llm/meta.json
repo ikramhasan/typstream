@@ -1103,7 +1103,7 @@
       "kit": "kit-v4",
       "request": "A grade 7 worksheet on plotting points in the coordinate plane and reading coordinates off a grid."
     },
-    "expectedPages": 2
+    "expectedPages": 3
   },
   "kit-v4-sonnet-worksheet-decimals": {
     "category": "worksheet",
@@ -1228,7 +1228,7 @@
       "kit": "naive",
       "request": "A grade 3 multiplication quiz in Bengali, 8 questions."
     },
-    "expectedPages": 2
+    "expectedPages": 1
   },
   "naive-haiku-bengali-worksheet-plants": {
     "category": "worksheet",
@@ -1481,7 +1481,7 @@
       "kit": "naive",
       "request": "A grade 9 chemistry worksheet: balance 10 chemical equations, from easy to hard, with an answer key."
     },
-    "expectedPages": 2
+    "expectedPages": 3
   },
   "naive-haiku-worksheet-coordinates": {
     "category": "worksheet",
@@ -1643,7 +1643,7 @@
       "kit": "naive",
       "request": "চতুর্থ শ্রেণির জন্য উদ্ভিদের অংশ নিয়ে একটি বিজ্ঞান কার্যপত্র লেখো।"
     },
-    "expectedPages": 2
+    "expectedPages": 3
   },
   "naive-sonnet-exam-algebra-final": {
     "category": "exam",
@@ -1748,7 +1748,7 @@
       "kit": "naive",
       "request": "A lesson plan for teaching persuasive writing to grade 8 over two 50-minute sessions."
     },
-    "expectedPages": 4
+    "expectedPages": 5
   },
   "naive-sonnet-lesson-plan-water-cycle": {
     "category": "lesson-plan",
@@ -1761,7 +1761,7 @@
       "kit": "naive",
       "request": "A 45-minute lesson plan for grade 4 on the water cycle."
     },
-    "expectedPages": 3
+    "expectedPages": 4
   },
   "naive-sonnet-quiz-cell-biology": {
     "category": "quiz",

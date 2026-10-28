@@ -98,6 +98,19 @@ The paged target shows each page as Typst lays it out: what you see is what prin
 
 `fixed` and `fit-width` show exactly the PDF's pages (a test compares them pixel by pixel). Exports print at the document's own page size, not the reflow size.
 
+### Layout profile
+
+Every page the engine lays out, on screen or in a PDF, follows typstream's layout profile: settings under which Word and other word processors break lines and pages where Typst does, so a DOCX export can match the PDF and the pages on screen. The HTML target doesn't use it. In LibreOffice, a document laid out this way breaks every line and page as Typst does.
+
+- **A constant line pitch** of 1.3 times the text size, close to Typst's default spacing.
+- **Ragged right, without hyphenation**, lines filled one at a time. Word justifies and hyphenates differently from Typst, so either would move line breaks.
+- **Table rows stay on one page.** A row taller than a page runs off it, so long text belongs in paragraphs, not in a table cell.
+- **Inline math** gets at least one line's height.
+
+The profile's rules win over a document's `#set par(justify: true)`, its `#set text(hyphenate: true)` or its `leading`. A document can still set the gaps between paragraphs and headings, its fonts and its sizes. Heal's [`layout-profile`](/docs/concepts/healing#lint-rules) lint rule takes out what would beat the profile: `par(justify: true)[…]` arguments and the document's own `show par: set par(…)` rules.
+
+Plugins can step outside the profile on purpose with an element's own arguments or a show-set rule of their own. edu's answer lines do, so that written answers sit on the ruled lines.
+
 ## Which to pick
 
 - **A document panel, a print preview, anything that will be printed: paged.** It is exactly the PDF, page breaks and all, and it is typstream's primary surface, tested and polished first.

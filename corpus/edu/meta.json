@@ -62,7 +62,7 @@
     "category": "lesson-plan",
     "tags": ["table", "columns", "terms"],
     "notes": "Contains Markdown task-list habits (- [x]) that are legal Typst and render as text.",
-    "expectedPages": 1
+    "expectedPages": 2
   },
   "math-linear-algebra": {
     "category": "math",
@@ -125,7 +125,7 @@
     "category": "quiz",
     "tags": ["mcq", "state", "counter", "answer-key"],
     "notes": "Answer key built from state at the end of the document.",
-    "expectedPages": 2,
+    "expectedPages": 3,
     "stream": {
       "source": "synthetic",
       "options": {
@@ -168,12 +168,12 @@
     "category": "table",
     "tags": ["table", "computed", "landscape", "hline"],
     "notes": "16 students x 8 assessments with weighted averages, conditional fills and a bar chart.",
-    "expectedPages": 1
+    "expectedPages": 2
   },
   "table-periodic-elements": {
     "category": "table",
     "tags": ["table", "computed", "dictionary"],
-    "expectedPages": 1
+    "expectedPages": 2
   },
   "worksheet-fractions": {
     "category": "worksheet",
@@ -200,6 +200,6 @@
   "worksheet-verb-tenses": {
     "category": "worksheet",
     "tags": ["language", "table"],
-    "expectedPages": 1
+    "expectedPages": 2
   }
 }

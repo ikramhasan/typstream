@@ -10,6 +10,7 @@ import { scriptFonts } from "@typstream/engine-wasm/fonts";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createEngine } from "../src/engine";
 import type { AdapterDocument, AdapterHtmlResult, EngineAdapter } from "../src/server/adapter";
+import { LAYOUT_PROFILE } from "../src/server/profile";
 import { inProcess } from "../src/server/serve";
 import { createServer } from "../src/server/server";
 import { nodeEngineWasm } from "./support/engine-wasm";
@@ -53,7 +54,8 @@ const fontless = () => {
       let main = "";
       return {
         setFiles(files) {
-          if (typeof files["/main.typ"] === "string") main = files["/main.typ"];
+          // The document, without the layout profile a PDF export puts in front of it.
+          if (typeof files["/main.typ"] === "string") main = files["/main.typ"].replace(LAYOUT_PROFILE, "");
         },
         setInputs() {},
         compileHtml: () => result(main),
