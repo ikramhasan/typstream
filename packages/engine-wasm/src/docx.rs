@@ -74,6 +74,9 @@ pub fn model(doc: &PagedDocument) -> Model {
     let mut fonts = Fonts::default();
     let mut items = Vec::new();
     let mut geometry = Vec::new();
+    let mut tables = Vec::new();
+    let mut seen_cells = HashMap::new();
+    let mut repeated = HashSet::new();
     for (i, page) in pages.iter().enumerate() {
         let size = page.frame.size();
         let margin = resolve_margin(margin_value.as_ref(), size);
@@ -81,7 +84,10 @@ pub fn model(doc: &PagedDocument) -> Model {
         let mut lin = Linearizer {
             page: i,
             items: &mut items,
-            seen_cells: HashSet::new(),
+            tables: &mut tables,
+            seen_cells: &mut seen_cells,
+            repeated: &mut repeated,
+            skipping: None,
         };
         lin.walk(&page.frame, Transform::identity());
     }
@@ -91,6 +97,7 @@ pub fn model(doc: &PagedDocument) -> Model {
         geometry,
         fonts,
         lists: Vec::new(),
+        repeated,
     };
     let sections = builder.sections(pages);
     let json = json!({
@@ -245,8 +252,15 @@ struct Text {
 struct Linearizer<'a> {
     page: usize,
     items: &'a mut Vec<Item>,
-    /// Table cells already laid out: a repeated header's cells are skipped.
-    seen_cells: HashSet<Location>,
+    /// Tables open, across pages (a table's end comes on its last page).
+    tables: &'a mut Vec<Location>,
+    /// Cells already laid out, by table and position: a header Typst repeats on a later page (as new cells) is
+    /// Word's to repeat (`tblHeader`).
+    seen_cells: &'a mut HashMap<(Location, usize, usize), usize>,
+    /// The rows Typst repeated, by table.
+    repeated: &'a mut HashSet<(Location, usize)>,
+    /// A repeated cell being skipped, up to its end.
+    skipping: Option<Location>,
 }
 
 impl Linearizer<'_> {
@@ -261,6 +275,16 @@ impl Linearizer<'_> {
         for (pos, item) in frame.items() {
             let ts = ts.pre_concat(Transform::translate(pos.x, pos.y));
             let at = Point::zero().transform(ts);
+            if let Some(loc) = self.skipping {
+                match item {
+                    FrameItem::Tag(Tag::End(end, ..)) if *end == loc => self.skipping = None,
+                    FrameItem::Group(group) => {
+                        self.walk(&group.frame, ts.pre_concat(group.transform))
+                    }
+                    _ => {}
+                }
+                continue;
+            }
             match item {
                 FrameItem::Group(group) => {
                     let gts = ts.pre_concat(group.transform);
@@ -333,18 +357,28 @@ impl Linearizer<'_> {
                 )),
                 FrameItem::Link(..) => {}
                 FrameItem::Tag(Tag::Start(elem, _)) => {
-                    if elem.is::<TableCell>() || elem.is::<GridCell>() {
-                        if let Some(loc) = elem.location() {
-                            if !self.seen_cells.insert(loc) {
-                                // A repeated header: Word repeats header rows itself.
-                                self.skip_until_end(loc);
-                                continue;
-                            }
+                    if matches!(elem.func().name(), "table" | "grid") {
+                        self.tables.extend(elem.location());
+                    }
+                    if let (Some(&table), Node::Cell { x, y, .. }) =
+                        (self.tables.last(), classify(elem, at, self.page))
+                    {
+                        // Only on a later page: on the same one, a table nested in a row still open shares positions.
+                        let first = *self.seen_cells.entry((table, x, y)).or_insert(self.page);
+                        if first < self.page {
+                            // A repeated header: Word repeats header rows itself.
+                            self.repeated.insert((table, y));
+                            self.skipping = elem.location();
+                            continue;
                         }
                     }
                     self.push(Kind::Start(elem.clone(), at))
                 }
-                FrameItem::Tag(Tag::End(loc, ..)) => self.push(Kind::End(*loc)),
+                FrameItem::Tag(Tag::End(loc, ..)) => {
+                    // Tables broken across pages may end out of order (a nested one after its row's table).
+                    self.tables.retain(|t| t != loc);
+                    self.push(Kind::End(*loc))
+                }
             }
         }
     }
@@ -360,9 +394,6 @@ impl Linearizer<'_> {
             }
         }
     }
-
-    /// Not implemented as a real skip: repeated header cells are rare; their content is dropped by `Builder`.
-    fn skip_until_end(&mut self, _loc: Location) {}
 
     fn shape(&mut self, shape: &Shape, at: Point) {
         let (x, y) = (at.x.to_pt(), at.y.to_pt());
@@ -791,6 +822,8 @@ struct Builder {
     geometry: Vec<(Size, Sides<f64>)>,
     fonts: Fonts,
     lists: Vec<Json>,
+    /// Header rows Typst repeated on later pages, by table.
+    repeated: HashSet<(Location, usize)>,
 }
 
 /// A region blocks flow in: the page's content area, a cell, a framed block.
@@ -2310,6 +2343,11 @@ impl Builder {
         // What lies outside every cell's tags: a row broken across pages has its cells' tags first, then their
         // content, and nothing but content where it continues. It goes to cells by where it is, once columns are known.
         let mut orphans: Vec<usize> = Vec::new();
+        let mut header_rows: HashSet<usize> = HashSet::new();
+        let table_loc = match &self.items[ids[0]].kind {
+            Kind::Start(elem, _) => elem.location(),
+            _ => None,
+        };
         // A table nested in such content: cells starting across its frame are its own, not this table's (it may
         // end on a later page, after this row's next cells).
         let mut nested: Vec<(Location, f64, f64)> = Vec::new();
@@ -2322,8 +2360,11 @@ impl Builder {
             match &self.items[id].kind {
                 Kind::Start(elem, at) if open.is_none() => {
                     let node = classify(elem, *at, self.items[id].page);
-                    if let Node::Cell { .. } = node {
+                    if let Node::Cell { y, .. } = node {
                         if !within(&nested, at.x.to_pt()) {
+                            if table_loc.is_some_and(|t| self.repeated.contains(&(t, y))) {
+                                header_rows.insert(y);
+                            }
                             open = elem.location();
                             cells.push((node, Vec::new()));
                             continue;
@@ -2736,7 +2777,7 @@ impl Builder {
             );
             rows[c.y].push(Json::Object(cell));
         }
-        let headers: Vec<usize> = Vec::new();
+        let headers: Vec<usize> = header_rows.into_iter().collect();
         let rows: Vec<Json> = rows
             .into_iter()
             .enumerate()
@@ -2758,10 +2799,13 @@ impl Builder {
         json.insert("rows".into(), Json::Array(rows));
         let bottom = frame_bottom(last_page).unwrap_or(last_bottom);
         let _ = first_bottom;
+        // It starts where its first row does: Typst moves a table whose header would end a page on to the next, its
+        // start tag left behind.
+        let (page, top) = row_top[0].unwrap_or((page, at.y.to_pt()));
         Some(Block {
             page,
-            end_page: last_page,
-            top: at.y.to_pt(),
+            end_page: last_page.max(page),
+            top,
             bottom,
             json,
         })
