@@ -2853,7 +2853,7 @@ impl Builder {
     fn with_gaps_from(&self, mut blocks: Vec<Block>, top: f64) -> Vec<Block> {
         let mut prev: Option<(usize, f64)> = None;
         for b in blocks.iter_mut() {
-            b.json.remove("fit");
+            // `fit` stays: the writer gives a cell no more slack than its paragraphs' fit.
             if b.json.contains_key("frame") {
                 b.json.insert("before".into(), json!(0.0));
                 continue;

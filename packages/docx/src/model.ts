@@ -90,6 +90,8 @@ export interface DocxParagraph extends DocxBlockBase {
   atLeast?: boolean;
   /** How many lines Typst set it on. */
   lines: number;
+  /** How far the next line's first word missed a line Typst broke, at its narrowest: more room would set it there. */
+  fit?: number;
   /**
    * Placed out of the flow (Typst's `place`): a frame at this position on the page, in points from its top left
    * corner, which takes no room.

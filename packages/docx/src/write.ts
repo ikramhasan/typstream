@@ -279,7 +279,12 @@ class Writer {
     const single = c.blocks.length > 0 && c.blocks.every((b) => b.type !== "p" || b.lines <= 1);
     if (single && c.blocks.some((b) => b.type === "p")) pr += "<w:noWrap/>";
     const m = c.margins;
-    const right = Math.max(0, m.right - SLACK);
+    // No more than the cell's paragraphs' fit, or an engine would set a word Typst moved down on the line before.
+    const fit = c.blocks.reduce(
+      (f, b) => (b.type === "p" && b.fit !== undefined ? Math.min(f, b.fit - 0.3) : f),
+      SLACK,
+    );
+    const right = Math.max(0, m.right - Math.max(0, fit));
     pr +=
       `<w:tcMar><w:top w:w="${twips(m.top)}" w:type="dxa"/><w:left w:w="${twips(m.left)}" w:type="dxa"/>` +
       `<w:bottom w:w="${twips(m.bottom)}" w:type="dxa"/><w:right w:w="${twips(right)}" w:type="dxa"/></w:tcMar>`;
