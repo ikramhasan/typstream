@@ -33,7 +33,7 @@ const twips = (pt: number): number => Math.round(pt * 20);
 /** Room given back in a cell, in points (see `cell`). */
 const SLACK = 1;
 /** Slack stays this far under a paragraph's fit: engines measure some lines a hair narrower than Typst too. */
-const FIT_MARGIN = 0.6;
+const FIT_MARGIN = 1.0;
 /** Marks where a section's properties go in the body, written once the headers' references are known. */
 const SECTION = "\u0001";
 /** Styles marking room held for equations and images until the export writes them (#132, #133). */
