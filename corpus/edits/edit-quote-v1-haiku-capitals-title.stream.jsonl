@@ -1,0 +1,18 @@
+{"t":0,"text":"<edit>\n<old>"}
+{"t":48,"text":"\n#show: quiz."}
+{"t":53,"text":"with(\n  title: [European"}
+{"t":59,"text":" Capitals],\n  sub"}
+{"t":80,"text":"ject: [Geography],"}
+{"t":100,"text":"\n  grade: [Grade"}
+{"t":121,"text":" 6],\n</old>"}
+{"t":141,"text":"\n<new>\n#show: qu"}
+{"t":162,"text":"iz.with(\n  title"}
+{"t":183,"text":": [Capitals of"}
+{"t":203,"text":" Europe],\n  subject:"}
+{"t":223,"text":" [Geography],\n  gr"}
+{"t":243,"text":"ade: [Grade 7"}
+{"t":264,"text":"],\n</new>\n</ed"}
+{"t":285,"text":"it>\n\nI changed the title"}
+{"t":305,"text":" to \"Capitals of"}
+{"t":325,"text":" Europe\" and the grade to"}
+{"t":345,"text":" Grade 7."}

@@ -1,0 +1,39 @@
+{"t":0,"text":"The molar-"}
+{"t":20,"text":"mass question now asks about N"}
+{"t":40,"text":"aOH, with options "}
+{"t":61,"text":"39"}
+{"t":80,"text":","}
+{"t":101,"text":" 40, 56 and "}
+{"t":122,"text":"63 g/mol."}
+{"t":142,"text":" The correct answer is 40"}
+{"t":163,"text":" g/mol (Na"}
+{"t":183,"text":" 23 + O 16 "}
+{"t":204,"text":"+ H 1),"}
+{"t":224,"text":" option"}
+{"t":245,"text":" 2.\n\n<edit>"}
+{"t":265,"text":"\n<old>\n#question("}
+{"t":286,"text":"points: 1)[\n  "}
+{"t":306,"text":"What is the molar mass of"}
+{"t":327,"text":" #ce(\"CaCO"}
+{"t":347,"text":"3\")?\n  #mc"}
+{"t":369,"text":"q([$68 \"g/"}
+{"t":388,"text":"mol\"$], [$84"}
+{"t":409,"text":" \"g/mol\"$"}
+{"t":429,"text":"], [$100 \"g/"}
+{"t":450,"text":"mol\"$], [$116"}
+{"t":470,"text":" \"g/mol\"$"}
+{"t":491,"text":"], answer: 3)"}
+{"t":511,"text":"\n]\n</old>\n<new"}
+{"t":532,"text":">\n#question(points: "}
+{"t":553,"text":"1)[\n  What is the"}
+{"t":573,"text":" molar mass of #ce"}
+{"t":593,"text":"(\"NaOH\")?"}
+{"t":614,"text":"\n  #mcq([$39"}
+{"t":636,"text":" \"g/mol\"$"}
+{"t":655,"text":"], [$40 \"g/"}
+{"t":675,"text":"mol\"$], [$56"}
+{"t":695,"text":" \"g/mol\"$"}
+{"t":716,"text":"], [$63 \"g/"}
+{"t":736,"text":"mol\"$], answer:"}
+{"t":757,"text":" 2)\n]\n</new"}
+{"t":778,"text":">\n</edit>"}

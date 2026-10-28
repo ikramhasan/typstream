@@ -41,6 +41,13 @@ Sets:
   compile stay as they are, as `expect: "error"` entries. `loadCorpus()` leaves
   this set out unless asked (`{ sets: ALL_SETS }`), because its documents need
   their plugins mounted: heal's corpus tests and the compile oracle load it.
+- **`edits/`**: recorded answers to edit requests (#34), not documents: what
+  Claude wrote when asked to change an `llm/` document (`<edit>` tags, or a
+  selection's new text), as it streamed. `edits.json` names each answer's
+  document and request (and a selection edit's range). `tools/llm-corpus`
+  records them (`record-edits.mjs`) and copies them here (`promote-edits.mjs`);
+  `loadEditAnswers()` loads them, and `@typstream/ai`'s tests replay them
+  through the edit session.
 - **`islands/`**: hand-written documents with render islands (#28, PLAN §8.4):
   mind maps (`@typstream/mindmap`) in a worksheet, in Arabic, and a detailed
   text-focused revision map. Opt-in like `llm/` (`meta.plugins` names the

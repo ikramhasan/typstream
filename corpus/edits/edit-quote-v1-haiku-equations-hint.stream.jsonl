@@ -1,0 +1,32 @@
+{"t":0,"text":"I"}
+{"t":20,"text":" added"}
+{"t":40,"text":" a hint line"}
+{"t":61,"text":" before the answ"}
+{"t":80,"text":"er l"}
+{"t":101,"text":"ines in the last question.\n\n<"}
+{"t":122,"text":"edit>\n<old>"}
+{"t":142,"text":"\n  #answer-lines("}
+{"t":163,"text":"count: 2, answer:"}
+{"t":184,"text":" [The 3 was not mult"}
+{"t":204,"text":"iplied by 2: $"}
+{"t":224,"text":"3(x + 2) ="}
+{"t":247,"text":" 3 x + 6$"}
+{"t":266,"text":". Correct: $3 "}
+{"t":286,"text":"x = 12$, so $"}
+{"t":306,"text":"x = 4$.])"}
+{"t":327,"text":"\n</old>\n<new>"}
+{"t":347,"text":"\n  _"}
+{"t":367,"text":"Hint:_"}
+{"t":388,"text":" Exp"}
+{"t":409,"text":"and the brackets first."}
+{"t":429,"text":"\n  #answer-lines"}
+{"t":450,"text":"(count: 2, answer"}
+{"t":470,"text":": [The 3 was not"}
+{"t":493,"text":" multiplied by 2:"}
+{"t":512,"text":" $3(x + 2)"}
+{"t":533,"text":" = 3 x + 6"}
+{"t":552,"text":"$. Correct: $3"}
+{"t":572,"text":" x = 12$, so"}
+{"t":593,"text":" $x = 4$.])"}
+{"t":613,"text":"\n</new>\n</edit"}
+{"t":624,"text":">"}

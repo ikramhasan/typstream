@@ -1,0 +1,66 @@
+{"t":0,"text":"I"}
+{"t":21,"text":" r"}
+{"t":40,"text":"ewrote the reminder box"}
+{"t":61,"text":" in"}
+{"t":82,"text":" simpler words"}
+{"t":102,"text":" and added a second example,"}
+{"t":122,"text":" $1.2 times 3"}
+{"t":142,"text":"$.\n\n<edit>"}
+{"t":163,"text":"\n<old>\n#callout("}
+{"t":183,"text":"kind: \"remember\")["}
+{"t":204,"text":"\n  To multiply decim"}
+{"t":224,"text":"als, multiply as if they"}
+{"t":248,"text":" were whole numbers."}
+{"t":503,"text":" Then count the decimal places in"}
+{"t":503,"text":" both factors and give the answer"}
+{"t":503,"text":" that many decimal places."}
+{"t":503,"text":"\n\n  Example: $0.3"}
+{"t":503,"text":" times 0.2$."}
+{"t":503,"text":" Since $3 times 2"}
+{"t":503,"text":" = 6$ and there"}
+{"t":503,"text":" are 2 decimal places"}
+{"t":503,"text":" in total, the answer is $"}
+{"t":503,"text":"0.06$.\n]"}
+{"t":503,"text":"\n</old>\n<new>"}
+{"t":503,"text":"\n#callout(kind: \""}
+{"t":663,"text":"remember\")[\n  Foll"}
+{"t":663,"text":"ow these three"}
+{"t":663,"text":" steps:\n  +"}
+{"t":663,"text":" "}
+{"t":663,"text":"Ignore the d"}
+{"t":663,"text":"ots"}
+{"t":663,"text":" and"}
+{"t":663,"text":" multiply the numbers as"}
+{"t":675,"text":" us"}
+{"t":694,"text":"ual.\n  + Count how"}
+{"t":714,"text":" many digits come"}
+{"t":735,"text":" after the dots"}
+{"t":847,"text":" in both num"}
+{"t":847,"text":"bers together"}
+{"t":847,"text":".\n  + Put the d"}
+{"t":847,"text":"ot in"}
+{"t":847,"text":" your"}
+{"t":859,"text":" answer so that it"}
+{"t":880,"text":" has that"}
+{"t":899,"text":" many digits after it"}
+{"t":919,"text":".\n\n  Example "}
+{"t":940,"text":"1: $0.3 times"}
+{"t":959,"text":" 0.2$. "}
+{"t":982,"text":"Igno"}
+{"t":1214,"text":"ring the dots, $3 "}
+{"t":1214,"text":"times 2 = 6$"}
+{"t":1214,"text":". There"}
+{"t":1214,"text":" are 2"}
+{"t":1214,"text":" digits after the dots in"}
+{"t":1214,"text":" total, so the answer is $"}
+{"t":1214,"text":"0.06$.\n\n  "}
+{"t":1214,"text":"Example 2: $1.2"}
+{"t":1214,"text":" times 3$. "}
+{"t":1214,"text":"Ignoring the dots, $"}
+{"t":1214,"text":"12 times 3 = "}
+{"t":1233,"text":"36$. There is"}
+{"t":1315,"text":" 1 digit after the d"}
+{"t":1315,"text":"ot in total, so the answer"}
+{"t":1315,"text":" is $3.6$."}
+{"t":1315,"text":"\n]\n</new>\n</ed"}
+{"t":1315,"text":"it>"}

@@ -1,0 +1,35 @@
+{"t":0,"text":"I"}
+{"t":20,"text":" added a fourth exit "}
+{"t":40,"text":"ticket question after the third,"}
+{"t":61,"text":" asking where"}
+{"t":83,"text":" water collects."}
+{"t":102,"text":"\n\n<edit>\n<old>"}
+{"t":122,"text":"\n  #answer-lines"}
+{"t":143,"text":"(count: 2, answer"}
+{"t":164,"text":": [The water keeps mo"}
+{"t":184,"text":"ving around: it evaporates"}
+{"t":205,"text":", forms clouds, fal"}
+{"t":227,"text":"ls as rain and collects again"}
+{"t":246,"text":", so it is reused.])"}
+{"t":267,"text":"\n]\n</old>\n<"}
+{"t":288,"text":"new>\n  #answer-"}
+{"t":308,"text":"lines(count: 2,"}
+{"t":328,"text":" answer: [The water kee"}
+{"t":349,"text":"ps moving around: it eva"}
+{"t":370,"text":"porates, forms clouds"}
+{"t":399,"text":", falls as rain and coll"}
+{"t":411,"text":"ects again, so it is reused"}
+{"t":432,"text":".])"}
+{"t":451,"text":"\n]\n\n#question(points: "}
+{"t":472,"text":"1)[\n  Name two"}
+{"t":493,"text":" places where water collects during"}
+{"t":513,"text":" the water cycle.\n  "}
+{"t":533,"text":"#answer-lines(count"}
+{"t":554,"text":": 1, answer: ["}
+{"t":574,"text":"Any"}
+{"t":595,"text":" two"}
+{"t":615,"text":" of:"}
+{"t":636,"text":" rivers, lakes,"}
+{"t":656,"text":" oceans, underground.])"}
+{"t":676,"text":"\n]\n</new>\n</"}
+{"t":698,"text":"edit>"}

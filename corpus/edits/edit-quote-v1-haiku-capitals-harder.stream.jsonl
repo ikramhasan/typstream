@@ -1,0 +1,28 @@
+{"t":0,"text":"I"}
+{"t":15,"text":" repl"}
+{"t":36,"text":"aced the Spain question with"}
+{"t":58,"text":" one"}
+{"t":76,"text":" about Slovenia, a"}
+{"t":97,"text":" less well-known country,"}
+{"t":117,"text":" with"}
+{"t":158,"text":" Ljubljana as the corre"}
+{"t":252,"text":"ct answer."}
+{"t":252,"text":"\n\n<edit>\n<old>"}
+{"t":252,"text":"\n#question(points: 1"}
+{"t":253,"text":")[\n  What is the cap"}
+{"t":261,"text":"ital of Spain?\n  "}
+{"t":281,"text":"#mcq([Barc"}
+{"t":302,"text":"elona], [Seville],"}
+{"t":322,"text":" [Valencia], ["}
+{"t":343,"text":"Madrid], answer: "}
+{"t":364,"text":"4)\n]\n</old>"}
+{"t":383,"text":"\n<new>\n#question("}
+{"t":410,"text":"points: 1)[\n  "}
+{"t":424,"text":"What is the capital of Sl"}
+{"t":447,"text":"ovenia?\n  #m"}
+{"t":465,"text":"cq([Zagreb"}
+{"t":488,"text":"], [Ljubljana"}
+{"t":506,"text":"], [Sarajevo"}
+{"t":528,"text":"], [Skopje], answ"}
+{"t":549,"text":"er: 2)\n]"}
+{"t":568,"text":"\n</new>\n</edit>"}

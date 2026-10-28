@@ -1,0 +1,16 @@
+{"t":0,"text":"I removed the Greece question"}
+{"t":12,"text":"."}
+{"t":192,"text":" The remaining questions ren"}
+{"t":192,"text":"umber them"}
+{"t":193,"text":"selves.\n\n<edit>"}
+{"t":193,"text":"\n<old>"}
+{"t":193,"text":"\n#question(points: 1)"}
+{"t":220,"text":"[\n  What is the capital"}
+{"t":256,"text":" of Greece?\n  #"}
+{"t":289,"text":"mcq([Athens],"}
+{"t":324,"text":" [Thessaloniki"}
+{"t":359,"text":"], [Sparta], ["}
+{"t":396,"text":"Patras], answer: "}
+{"t":438,"text":"1)\n]\n\n</old>"}
+{"t":467,"text":"\n<new>\n</new>"}
+{"t":491,"text":"\n</edit>"}

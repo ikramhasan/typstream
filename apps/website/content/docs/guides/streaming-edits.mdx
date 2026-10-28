@@ -1,0 +1,129 @@
+---
+title: Streaming edits
+description: Let a model change part of a finished document. Its edits quote the text they replace, stream into place while the rest stays, and end with Keep or Undo, with @typstream/ai's edit session.
+---
+
+Once a model has written a document, the teacher asks for changes: "make question 3 harder", "add a question about
+Norway", "the answer should be 1.0". The model shouldn't write the whole document again. It writes **edits**, and
+`@typstream/ai` applies them to the document as they stream: the part being rewritten changes in place, the rest stays
+as it was, and the teacher keeps the result or undoes it.
+
+## The format
+
+The model quotes the text it replaces and writes the new text, in tags, with a sentence for the teacher outside them:
+
+```text
+Question 3 now asks about Slovenia.
+<edit>
+<old>
+#question(points: 1)[
+  What is the capital of Spain?
+  #mcq([Barcelona], [Seville], [Valencia], [Madrid], answer: 4)
+]
+</old>
+<new>
+#question(points: 1)[
+  What is the capital of Slovenia?
+  #mcq([Maribor], [Ljubljana], [Celje], [Koper], answer: 2)
+]
+</new>
+</edit>
+```
+
+- **Quotes, not numbers.** An edit says *what* it replaces, as coding agents' `str_replace` does, not "block 3". The
+  model only has to know what the document says. It doesn't count blocks in a document it may have pieced together from
+  earlier turns. A stale quote fails to match, and the edit is reported. A stale block number would rewrite the wrong
+  part without anyone noticing.
+- **Labelled text, not a tool call.** The new text is raw Typst, as the model writes documents. In a tool call's JSON,
+  every `"` and `\` of it would be escaped, and Typst has plenty of both.
+- **Adding and deleting.** To add, the model quotes the part the addition goes after and writes it again with the new
+  part after it. To delete, it leaves `<new></new>` empty.
+- The tags stay in the chat message. The document only ever receives the edits they describe.
+
+## The prompt
+
+Add `editPrompt()` after the system prompt that teaches the document's Typst, and send the request with the document
+as it is now (`editRequest`):
+
+```ts title="app/api/chat/route.ts"
+import { editPrompt, editRequest } from "@typstream/ai";
+import { buildSystemPrompt, edu } from "@typstream/edu";
+
+const system = `${buildSystemPrompt([edu])}\n\n${editPrompt()}`;
+const user = editRequest(currentDocument, "Make question 3 harder.");
+```
+
+The rules (`editPromptRules`) were measured like the prompt kit's, on 24 edit requests over recorded documents
+(`tools/llm-corpus`): quizzes whose ten questions start alike, a rubric that is one long block, two edits in one
+request, Arabic, and three requests that don't say which part they mean. Every quote, from Sonnet and from Haiku,
+matched the document exactly, every edited document compiled, and the edits changed the parts each request meant.
+When a request didn't say which part it meant, the models asked 8 times out of 9.
+
+If your chat history can't be rewritten (some agent frameworks store it append-only), send the document as it is now in
+each request anyway, or the teacher's own edits as diffs. Quotes work either way. They only need the model to know the
+text.
+
+## The edit session
+
+Open a session per answer, over the document the model was given, and feed it the answer as it grows:
+
+```tsx
+import { createEditSession } from "@typstream/ai";
+
+const session = createEditSession(document);
+session.update(textOf(message), !isStreaming(message, chat)); // call again as the answer grows
+const state = session.getState();
+
+<Typstream source={state.text} streamingRange={state.streamingRange} isStreaming={state.streaming} />;
+```
+
+`state.text` is the document with the answer's edits so far. What happens to each edit:
+
+1. **While its quote streams**, `range` is the text the quote matches so far (once it matches one place). Highlight
+   it: that's what is about to change.
+2. **Once the quote is complete**, it must match one place: exactly, or else with whitespace evened out (models
+   re-indent). If it matches no place or several, the edit fails (`not-found`, `ambiguous`), and the others still
+   apply.
+3. **A quote of whole blocks** (a question, a paragraph, a section) streams its new text in. The blocks become a
+   [streaming range](/docs/concepts/streaming#streaming-into-part-of-a-document): only they heal as text being typed,
+   and the rest of the document stays as it was. The old text stays until the new text differs from it, so a rewrite
+   that starts the same way doesn't flash.
+4. **A quote inside a block** (a few words, one line of a question) is replaced once its new text is complete. Written
+   chunk by chunk, the rest of its block would go missing in the meantime.
+
+When the answer ends, `phase` is `review`: show **Keep** (`session.keep()`) and **Undo** (`session.undo()`). Undo puts
+the document back as the model was given it.
+
+### When something goes wrong
+
+- **The stream stops halfway** (the teacher presses stop, the network fails): `update(answer, true)` or `abort()` rolls
+  back the edit being written, so no half-written question is left. Complete edits stay.
+- **An edit fails**: `editFeedback(state.edits)` says which ones and why, as a message for the model. Send it as the
+  next request (with the document as it is now), and the model writes them again.
+- **The teacher edits the document while an answer streams**: pass the edit to `session.userEdit(edit)`. The answer's
+  edits move with it. An edit whose quote the teacher changed fails with `conflict` rather than guessing.
+
+## Selection edits
+
+When the teacher highlights text in an editor, the app already knows where the edit goes, and the model writes only the
+new text. Widen the highlight to whole blocks with `blockRange`, ask with `selectionRequest`, and feed the answer to
+`session.write(range, answer, done)`:
+
+```ts
+import { blockRange, createEditSession, selectionRequest } from "@typstream/ai";
+
+const range = blockRange(document, highlight);
+const user = selectionRequest(document, range, "make it harder");
+const session = createEditSession(document);
+session.write(range, textOf(message), !isStreaming(message, chat));
+```
+
+No quote has to match, so nothing can fail to: in the measurement, every selection edit applied and compiled.
+
+## Highlighting what changes
+
+In the HTML target, each top-level block's elements carry `data-typstream-src`, the block's offset in the compiled
+source. Map it to the text with `state.heal.map.toInput` (from `useTypstream()`) and compare it with each edit's
+`range`. The [Next.js example](https://github.com/ikramhasan/typstream/tree/main/examples/nextjs-ai-sdk) highlights
+what a quote matches, the block being written, and then what the answer changed, until Keep or Undo. Pages have no
+anchors yet. There the example says in words what the edit is doing.

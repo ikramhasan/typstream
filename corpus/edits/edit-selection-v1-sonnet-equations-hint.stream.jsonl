@@ -1,0 +1,29 @@
+{"t":0,"text":"#question(points: 3)"}
+{"t":32,"text":"[\n  Explain the m"}
+{"t":307,"text":"istake in this solution, then"}
+{"t":307,"text":" solve correctly.\n\n  "}
+{"t":307,"text":"$3(x + 2)"}
+{"t":307,"text":" = 18 arrow."}
+{"t":307,"text":"r 3 x + 2"}
+{"t":307,"text":" = 18 arrow"}
+{"t":308,"text":".r 3 x = "}
+{"t":308,"text":"16 arrow.r x"}
+{"t":333,"text":" = 16/3$"}
+{"t":365,"text":"\n\n  #callout(kind:"}
+{"t":398,"text":" \"tip\", title: ["}
+{"t":432,"text":"Hint])[\n    Exp"}
+{"t":642,"text":"and the brackets first: mult"}
+{"t":642,"text":"iply *"}
+{"t":642,"text":"every* term inside the br"}
+{"t":642,"text":"ackets by the number"}
+{"t":642,"text":" out"}
+{"t":642,"text":"side.\n  ]\n  "}
+{"t":662,"text":"#answer-lines(count"}
+{"t":696,"text":": 2, answer: ["}
+{"t":729,"text":"The 3 was not multi"}
+{"t":777,"text":"plied by 2: $3"}
+{"t":803,"text":"(x + 2) = "}
+{"t":830,"text":"3 x + 6$."}
+{"t":862,"text":" Correct: $3 x"}
+{"t":896,"text":" = 12$, so $x"}
+{"t":930,"text":" = 4$.])\n]"}

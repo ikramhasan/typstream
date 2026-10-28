@@ -36,8 +36,9 @@ packages/dom      @typstream/dom: framework-free renderers. `src/html/`: HTML re
                   `src/export/`: `standaloneHtml`, a downloadable file from an HTML export (theme, CSS, CSP).
 packages/react    @typstream/react: <Typstream>, TypstreamProvider, useTypstream(); a thin layer over mountTypstream.
 packages/typstream  typstream: the convenience package (<Typstream> with html-compat, the math font and universe's packages; re-exports).
-packages/ai       @typstream/ai: typstream with AI SDKs. Generation for now: an assistant message as a document (`textOf`,
-                  `isStreaming`, `textStream`), read structurally, so no `ai` dependency; streaming edits are designed on #34.
+packages/ai       @typstream/ai: typstream with AI SDKs. Generation: an assistant message as a document (`textOf`, `isStreaming`,
+                  `textStream`), read structurally, so no `ai` dependency. Streaming edits: `<edit>`s that quote what they
+                  replace (`parseEdits`, `findQuote`), applied as they stream by `createEditSession`, and `editPrompt()`.
 tools/typst-syntax-oracle   Typst's real parser and lexer compiled to wasm for Node; the ground truth in heal's tests.
 tools/compile-oracle        Do healed prefixes compile? heal × engine-wasm over the corpus, then the engine's fixers and fallback;
                             error classes, the prefix compile rate, and final-mode renders of every corpus document.
@@ -136,11 +137,13 @@ In `packages/react`:
 
 In `packages/ai`: `pnpm test` runs the helpers through AI SDK 7 itself (a devDependency): recorded `corpus/llm` streams
 sent as UI message streams, read back by `readUIMessageStream`, `DefaultChatTransport` and a `Chat`, including `stop()`
-and a failed stream (a text part stays `"streaming"` then; only the chat's status changes). `pnpm size`: ≤ 0.5 KB gzipped.
+and a failed stream (a text part stays `"streaming"` then; only the chat's status changes), and the edit session over
+recorded documents and the recorded edit answers in `corpus/edits`. `pnpm size`: ≤ 4.5 KB gzipped (heal and core
+external). Change the edit prompt's rules (`editPromptRules`) only with a new measured `record-edits.mjs` run.
 
 In `examples/strict-csp`: `pnpm test` builds the pages (a worksheet in both targets, and a mind map island), serves them with the policy in `csp.mjs` and fails on any CSP violation or console error in Chromium, Firefox and WebKit (`BROWSERS=` picks some). Build the packages first (`pnpm turbo run build --filter=@typstream/example-strict-csp^...`). CI runs it in each browser's `Engine (<browser>)` job. Hostile documents go in `corpus/adversarial/hostile-*.typ` (category `hostile-…`); the engine's and the browser suites' `security.test.ts` run them all.
 
-In `examples/nextjs-ai-sdk`: `pnpm test` builds the app (Turbopack) and streams two answers into `<Typstream>` in Chromium (pages, then HTML), failing on any error frame. The route prompts with edu's kit (with universe, google-fonts and mindmap) and the page renders with their plugins (mind maps as islands); the UI is shadcn/ui (AI Elements, Base UI, Tailwind 4) in `components/ui/`, added with the shadcn CLI. Without `ANTHROPIC_API_KEY` the route replays a worksheet that compiles at every prefix (a kit recording doesn't, and the test fails on any error frame); a key in `.env.local` reaches `next start` too, so run the test with `ANTHROPIC_API_KEY=` to keep it offline. Build the packages first (`pnpm turbo run build --filter=@typstream/example-nextjs-ai-sdk^...`). CI runs it in the `Engine (chromium)` job.
+In `examples/nextjs-ai-sdk`: `pnpm test` builds the app (Turbopack) and streams an answer into `<Typstream>` in Chromium (pages), then an edit of it (HTML: the edit streams into the finished document, highlighted, then Undo), then the first answer's Edit button editing that document in place, failing on any error frame. Once there's a document, a request sends it in the user message's metadata and the route adds `editPrompt()`; the page applies the answer with `createEditSession`. The route prompts with edu's kit (with universe, google-fonts and mindmap) and the page renders with their plugins (mind maps as islands); the UI is shadcn/ui (AI Elements, Base UI, Tailwind 4) in `components/ui/`, added with the shadcn CLI. Without `ANTHROPIC_API_KEY` the route replays a worksheet (or, asked to edit, two `<edit>`s of it) that compiles at every prefix (a kit recording doesn't, and the test fails on any error frame); a key in `.env.local` reaches `next start` too, so run the test with `ANTHROPIC_API_KEY=` to keep it offline. Build the packages first (`pnpm turbo run build --filter=@typstream/example-nextjs-ai-sdk^...`). CI runs it in the `Engine (chromium)` job.
 
 In `packages/heal`:
 - `pnpm test:long`: 20,000-run property campaign (minutes).
@@ -154,7 +157,10 @@ from Haiku and Sonnet (needs an Anthropic key; ~$0.85 a run), `node src/measure.
 rates and classes, `node src/promote.mjs <label>` copies recordings into `corpus/llm`, then `pnpm corpus:validate llm/
 --write-pages` (restore the other sets' `meta.json`, which it reformats, or `pnpm fix`). Change the prompt kit's rules
 (`packages/edu/src/prompt.ts`, `eduPromptRules`) only with a new measured run under a new label. `corpus/llm` is opt-in
-(`loadCorpus({ sets: ALL_SETS })`): its documents name the plugins they compile with (`meta.plugins`).
+(`loadCorpus({ sets: ALL_SETS })`): its documents name the plugins they compile with (`meta.plugins`). Edit requests
+(#34): `node src/record-edits.mjs --variant edit-quote|edit-selection --label <name>` (~$0.35 a run),
+`node src/measure-edits.mjs <label>...`, `node src/promote-edits.mjs <label>...` into `corpus/edits` (answers, not
+documents; `loadEditAnswers()`).
 
 Compile oracle (`tools/compile-oracle`, needs the built engine): `pnpm turbo run test --filter=@typstream/compile-oracle`; `pnpm --filter @typstream/compile-oracle report` for the full measurement (minutes).
 

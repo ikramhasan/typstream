@@ -10,14 +10,14 @@ export const runDir = (label, model) => join(RUNS, label, model);
 
 /**
  * @typedef {{ label: string, model: string, request: string, chunks: { t: number, text: string }[],
- *   text: string, meta: Record<string, any>, plugins: string[] }} Recording
+ *   text: string, meta: Record<string, any>, plugins: string[], edits?: "quote" | "selection" }} Recording
  */
 
 /** Every recording of a run, by model then request id. @returns {Recording[]} */
 export const loadRun = (label) => {
   const dir = join(RUNS, label);
   if (!existsSync(dir)) throw new Error(`no run ${label} in ${RUNS}`);
-  const { plugins } = JSON.parse(readFileSync(join(dir, "run.json"), "utf8"));
+  const { plugins, edits } = JSON.parse(readFileSync(join(dir, "run.json"), "utf8"));
   const out = [];
   for (const model of readdirSync(dir, { withFileTypes: true }).filter((d) => d.isDirectory())) {
     for (const file of readdirSync(join(dir, model.name))
@@ -36,6 +36,7 @@ export const loadRun = (label) => {
         text: chunks.map((c) => c.text).join(""),
         meta: JSON.parse(readFileSync(join(dir, model.name, file), "utf8")),
         plugins,
+        edits,
       });
     }
   }

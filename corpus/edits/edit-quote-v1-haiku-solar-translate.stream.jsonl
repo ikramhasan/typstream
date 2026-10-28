@@ -1,0 +1,29 @@
+{"t":0,"text":"I"}
+{"t":20,"text":" transl"}
+{"t":41,"text":"ated the red"}
+{"t":61,"text":"-planet question and its options into"}
+{"t":81,"text":" English."}
+{"t":102,"text":" The rest of the qu"}
+{"t":122,"text":"iz st"}
+{"t":142,"text":"ays in Arabic."}
+{"t":163,"text":"\n\n<edit>\n<old>"}
+{"t":183,"text":"\n#question(points: 1"}
+{"t":204,"text":")[\n  أي كو"}
+{"t":224,"text":"كب يُعرف ب"}
+{"t":245,"text":"الكوكب الأح"}
+{"t":265,"text":"مر؟\n  #m"}
+{"t":286,"text":"cq([المريخ],"}
+{"t":308,"text":" [عطارد], [أ"}
+{"t":327,"text":"ورانو"}
+{"t":347,"text":"س], [الزهر"}
+{"t":368,"text":"ة], answer: 1)"}
+{"t":388,"text":"\n]\n</old>\n<"}
+{"t":409,"text":"new>\n#question(points:"}
+{"t":429,"text":" 1)[\n  Which"}
+{"t":451,"text":" planet is known as the red plan"}
+{"t":470,"text":"et?\n  #mcq"}
+{"t":490,"text":"([Mars], [M"}
+{"t":511,"text":"ercury], [Uranus"}
+{"t":532,"text":"], [Venus], answer"}
+{"t":552,"text":": 1)\n]\n</"}
+{"t":572,"text":"new>\n</edit>"}

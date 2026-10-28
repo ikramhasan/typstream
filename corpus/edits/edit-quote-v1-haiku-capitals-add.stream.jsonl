@@ -1,0 +1,34 @@
+{"t":0,"text":"I"}
+{"t":19,"text":" added a"}
+{"t":45,"text":" Norway question after the Swe"}
+{"t":66,"text":"den one, with Oslo"}
+{"t":82,"text":" as the correct answer."}
+{"t":102,"text":"\n\n<edit>\n<old>"}
+{"t":123,"text":"\n#question(points: 1"}
+{"t":143,"text":")[\n  Which city is"}
+{"t":164,"text":" the capital of Sweden"}
+{"t":185,"text":"?\n  #mcq(["}
+{"t":205,"text":"Gothenburg], ["}
+{"t":226,"text":"Malmö], [U"}
+{"t":246,"text":"ppsala], [Stock"}
+{"t":267,"text":"holm], answer: 4"}
+{"t":287,"text":")\n]\n</old>"}
+{"t":308,"text":"\n<new>\n#question(points"}
+{"t":329,"text":": 1)[\n  "}
+{"t":349,"text":"Which city is the capital of"}
+{"t":370,"text":" Sweden?\n  #m"}
+{"t":390,"text":"cq([Gothenbur"}
+{"t":411,"text":"g], [Malmö],"}
+{"t":431,"text":" [Uppsala], ["}
+{"t":452,"text":"Stockholm], answer"}
+{"t":473,"text":": 4)\n]\n\n#"}
+{"t":492,"text":"question(points: 1)["}
+{"t":513,"text":"\n  "}
+{"t":533,"text":"Which city is the capital of"}
+{"t":554,"text":" Norway?\n  #mc"}
+{"t":574,"text":"q([Bergen], ["}
+{"t":595,"text":"Oslo], [Tr"}
+{"t":615,"text":"ondheim], [Stav"}
+{"t":637,"text":"anger], answer: 2"}
+{"t":656,"text":")\n]\n</new>"}
+{"t":677,"text":"\n</edit>"}

@@ -2,6 +2,7 @@
   "title": "Guides",
   "pages": [
     "prompting",
+    "streaming-edits",
     "edu-documents",
     "typst-packages",
     "images",

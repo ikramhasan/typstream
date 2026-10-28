@@ -35,3 +35,34 @@ pnpm corpus:validate llm/ --write-pages && pnpm fix                   # from the
 Overflow (measured later, with the probe): none in the 405 kit-v1–v4 documents, whose tables are `#rubric` or `auto` columns; 2/58 in naive, both Haiku rubrics with fixed-width columns.
 
 All 463 documents cost $5.36 (Sonnet $5.03, Haiku $0.32). The kit's prompt is ~8.4K tokens, cached across a run. Error classes and the reasoning behind each rule are on [#24](https://github.com/ikramhasan/typstream/issues/24).
+
+## Edit requests (#34)
+
+Changing a document that exists: `src/edits.mjs` holds 24 requests over 8 kit-v4 Sonnet documents in `corpus/llm`, each
+naming the blocks it should change by a piece of text in them, or saying that the model should ask.
+
+```bash
+ANTHROPIC_API_KEY=… node src/record-edits.mjs --variant edit-quote --label edit-quote-v1      # 24 requests × 2 models
+ANTHROPIC_API_KEY=… node src/record-edits.mjs --variant edit-selection --label edit-selection-v1   # the 9 with an instruction
+node src/measure-edits.mjs edit-quote-v1 edit-selection-v1 --examples
+node src/promote-edits.mjs edit-quote-v1 edit-selection-v1                                   # into corpus/edits
+```
+
+- `edit-quote`: `buildSystemPrompt([edu, universe])` plus `@typstream/ai`'s `editPrompt()`, the document and request
+  as `editRequest`; the model answers with `<edit>` tags. `edit-selection`: the kit's prompt, the first target's blocks
+  marked by `selectionRequest`; the model answers with their new text.
+- `src/measure-edits.mjs` replays each answer chunk by chunk through `createEditSession`, as an app applies it, then
+  reports edits applied and failed (and why), quotes matched only with whitespace evened out, whether the changed blocks
+  are the ones meant (exact, extra, missed; an addition may quote the block before or after it), whether the model asked
+  when it should, final-mode compile errors of the edited document, how long until the document first changed, and cost.
+- `src/promote-edits.mjs` copies answers into `corpus/edits` with an `edits.json` entry, for `@typstream/ai`'s tests.
+
+Results (2026-10-28), every edit's quote matched exactly and every edited document compiled:
+
+| run | model | answers | edits applied | failed | right blocks | asked when unclear | first change (median) | cost |
+|---|---|---|---|---|---|---|---|---|
+| edit-quote-v1 | claude-haiku-5-5 | 24 | 26 | 0 | 21/21 | 3/3 | 0.3 s | $0.01 |
+| edit-quote-v1 | claude-sonnet-5-5 | 24 | 25 | 0 | 21/21 | 3/3 | 0.8 s | $0.23 |
+| edit-quote-v1-b | claude-haiku-5-5 | 24 | 27 | 0 | 21/21 | 2/3 | 0.4 s | $0.01 |
+| edit-selection-v1 | both | 18 | 18 | 0 | 18/18 | – | 0.2 s | $0.08 |
+

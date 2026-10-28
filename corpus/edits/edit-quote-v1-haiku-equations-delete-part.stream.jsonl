@@ -1,0 +1,95 @@
+{"t":0,"text":"I"}
+{"t":20,"text":" removed Part C,"}
+{"t":40,"text":" the"}
+{"t":60,"text":" f"}
+{"t":81,"text":"ractions and word probl"}
+{"t":101,"text":"ems section, including"}
+{"t":122,"text":" its five questions."}
+{"t":142,"text":" The answ"}
+{"t":162,"text":"er key will"}
+{"t":183,"text":" no"}
+{"t":203,"text":" longer include them"}
+{"t":224,"text":".\n\n<edit>\n<"}
+{"t":244,"text":"old>\n= Part C:"}
+{"t":266,"text":" Fractions and word problems"}
+{"t":285,"text":"\n\n#question(points: 3"}
+{"t":306,"text":")[\n  Solve $"}
+{"t":327,"text":"(2 x + 1)"}
+{"t":347,"text":"/3 = (x + "}
+{"t":371,"text":"4)/2$.\n  "}
+{"t":388,"text":"#answer-space(height:"}
+{"t":409,"text":" 6em, answer: ["}
+{"t":432,"text":"Cross-multiply:"}
+{"t":450,"text":" $2(2 x + "}
+{"t":470,"text":"1) = 3(x +"}
+{"t":491,"text":" 4)$, so $4"}
+{"t":511,"text":" x + 2 = "}
+{"t":532,"text":"3 x + 12$"}
+{"t":552,"text":" and $x = 10$."}
+{"t":573,"text":"])\n]\n\n#question(points"}
+{"t":593,"text":": 3)[\n  "}
+{"t":614,"text":"Solve $x/2 -"}
+{"t":634,"text":" x/3 = 4$"}
+{"t":654,"text":".\n  #answer-space"}
+{"t":675,"text":"(height: 6em, answ"}
+{"t":696,"text":"er: [Multiply by"}
+{"t":717,"text":" 6: $3 x -"}
+{"t":737,"text":" 2 x = 24$"}
+{"t":757,"text":", so $x = 24$"}
+{"t":777,"text":".])\n]\n\n#question("}
+{"t":798,"text":"points: 4)[\n  "}
+{"t":818,"text":"A number is multiplied by"}
+{"t":839,"text":" 3 and then 8 "}
+{"t":861,"text":"is subtracted. The result"}
+{"t":880,"text":" is the same as when the number is"}
+{"t":900,"text":" added to 10. Write an"}
+{"t":921,"text":" equation and find the number."}
+{"t":941,"text":"\n  #answer-space(height"}
+{"t":962,"text":": 6em, answer:"}
+{"t":982,"text":" [$3 x - 8"}
+{"t":1003,"text":" = x + 10$,"}
+{"t":1023,"text":" so $2 x = 18"}
+{"t":1043,"text":"$ and $x = 9"}
+{"t":1064,"text":"$.])\n]\n\n#question"}
+{"t":1084,"text":"(points: 4)["}
+{"t":1105,"text":"\n  A taxi charges a"}
+{"t":1126,"text":" fixed fee of \\$"}
+{"t":1146,"text":"5 plus \\$2 "}
+{"t":1166,"text":"per kilometre. Another"}
+{"t":1187,"text":" taxi charges no fix"}
+{"t":1207,"text":"ed fee but \\$3."}
+{"t":1227,"text":"50 per kilometre."}
+{"t":1248,"text":" For what distance do both tax"}
+{"t":1269,"text":"is cost the same?\n  "}
+{"t":1289,"text":"#answer-space(height:"}
+{"t":1310,"text":" 6em, answer: ["}
+{"t":1330,"text":"$5 + 2 x"}
+{"t":1350,"text":" = 3.5 x$"}
+{"t":1371,"text":", so $5 = 1"}
+{"t":1391,"text":".5 x$ and $"}
+{"t":1412,"text":"x = 10/3 appro"}
+{"t":1432,"text":"x 3.33$ km"}
+{"t":1453,"text":".])\n]\n\n#question("}
+{"t":1473,"text":"points: 3)[\n  "}
+{"t":1493,"text":"Explain the mistake in"}
+{"t":1514,"text":" this solution, then solve corre"}
+{"t":1534,"text":"ctly.\n\n  $3("}
+{"t":1555,"text":"x + 2) = 18"}
+{"t":1575,"text":" arrow.r 3"}
+{"t":1595,"text":" x + 2 = "}
+{"t":1616,"text":"18 arrow.r "}
+{"t":1637,"text":"3 x = 16 ar"}
+{"t":1657,"text":"row.r x = 16"}
+{"t":1677,"text":"/3$\n  #answer"}
+{"t":1698,"text":"-lines(count: 2"}
+{"t":1718,"text":", answer: [The 3"}
+{"t":1739,"text":" was not multiplied by"}
+{"t":1763,"text":" 2: $3("}
+{"t":1794,"text":"x + 2) = 3"}
+{"t":1822,"text":" x + 6$."}
+{"t":1841,"text":" Correct: $3 x ="}
+{"t":1843,"text":" 12$, so $x ="}
+{"t":1862,"text":" 4$.])\n]"}
+{"t":1884,"text":"\n</old>\n<new>"}
+{"t":1902,"text":"\n</new>\n</edit"}
+{"t":1919,"text":">"}

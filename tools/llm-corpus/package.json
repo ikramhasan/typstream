@@ -8,10 +8,14 @@
   "scripts": {
     "record": "node src/record.mjs",
     "measure": "node src/measure.mjs",
-    "promote": "node src/promote.mjs"
+    "promote": "node src/promote.mjs",
+    "record:edits": "node src/record-edits.mjs",
+    "measure:edits": "node src/measure-edits.mjs"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^1.3.0",
+    "@typstream/ai": "workspace:*",
+    "@typstream/corpus": "workspace:*",
     "@typstream/edu": "workspace:*",
     "@typstream/engine-wasm": "workspace:*",
     "@typstream/heal": "workspace:*",

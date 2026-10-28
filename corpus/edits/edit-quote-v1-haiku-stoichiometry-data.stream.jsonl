@@ -1,0 +1,24 @@
+{"t":0,"text":"I"}
+{"t":19,"text":" added N"}
+{"t":40,"text":" = 14 after"}
+{"t":60,"text":" C and"}
+{"t":80,"text":" S = 32 at"}
+{"t":101,"text":" the end of the mol"}
+{"t":122,"text":"ar m"}
+{"t":142,"text":"ass list in"}
+{"t":162,"text":" the data box.\n\n<edit"}
+{"t":183,"text":">\n<old>"}
+{"t":203,"text":"\nC = 12, O = "}
+{"t":223,"text":"16\n</old>\n<new"}
+{"t":245,"text":">\nC = 12, N"}
+{"t":264,"text":" = 14, O = 16"}
+{"t":286,"text":"\n</new>\n</edit"}
+{"t":306,"text":">\n<edit>\n<"}
+{"t":326,"text":"old>\nCl = "}
+{"t":346,"text":"35.5, Ca ="}
+{"t":367,"text":" 40.\n</old>"}
+{"t":387,"text":"\n<new>\nCl ="}
+{"t":408,"text":" 35.5, Ca"}
+{"t":428,"text":" = 40, S = 32"}
+{"t":449,"text":".\n</new>\n</ed"}
+{"t":457,"text":"it>"}

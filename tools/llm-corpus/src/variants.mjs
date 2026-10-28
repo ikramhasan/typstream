@@ -3,6 +3,7 @@
 // kit as the code has it now (buildSystemPrompt over edu and universe), compiled with edu's
 // preamble. Each recorded run keeps the exact system prompt it used (runs/<label>/system.md),
 // so labels such as kit-v1 and kit-v2 stay comparable after the kit changes.
+import { editPrompt } from "@typstream/ai";
 import { buildSystemPrompt, edu } from "@typstream/edu";
 import { universe } from "@typstream/universe";
 
@@ -24,4 +25,17 @@ Reply with the Typst source only: no Markdown, no code fences, no commentary bef
 export const VARIANTS = {
   naive: () => ({ system: NAIVE, plugins: [] }),
   kit: () => ({ system: buildSystemPrompt([edu, universe]), plugins: ["edu"] }),
+};
+
+/**
+ * The prompts for edit requests (#34). Both start from the kit's prompt. `edit-quote`: the
+ * teacher asks in chat; the system prompt adds `editPrompt()`, the user turn holds the document
+ * (`editRequest`), and the model answers with `<edit>` tags. `edit-selection`: the teacher
+ * highlighted the part; the user turn marks it (`selectionRequest`), and the model answers with
+ * its new text only.
+ * @type {Record<string, () => Variant & { edits: "quote" | "selection" }>}
+ */
+export const EDIT_VARIANTS = {
+  "edit-quote": () => ({ system: `${buildSystemPrompt([edu, universe])}\n\n${editPrompt()}`, plugins: ["edu"], edits: "quote" }),
+  "edit-selection": () => ({ system: buildSystemPrompt([edu, universe]), plugins: ["edu"], edits: "selection" }),
 };

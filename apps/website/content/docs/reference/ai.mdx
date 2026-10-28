@@ -1,6 +1,6 @@
 ---
 title: "@typstream/ai"
-description: typstream with the Vercel AI SDK. An assistant message is a Typst document; textOf, isStreaming and textStream read its text and whether more is coming, from useChat or without React.
+description: typstream with the Vercel AI SDK. An assistant message is a Typst document (textOf, isStreaming, textStream), and an answer that edits one applies its edits as they stream (createEditSession, editPrompt).
 icon: Package
 ---
 
@@ -8,14 +8,13 @@ icon: Package
 assistant message is a document. The package reads two things from the message: its text, and whether more of that
 text is coming. They are what `<Typstream>` (or `mountTypstream`) takes as `source` and `isStreaming`.
 
-It reads AI SDK messages by their shape and imports nothing from `ai`, so it adds no dependency and works with AI SDK 5
-and later. It's tested against AI SDK 7.
+When the model changes a document that exists, its answer is a set of edits that quote what they replace. The package's
+edit session applies them to the document as they stream, then the teacher keeps or undoes them: see [Streaming
+edits](/docs/guides/streaming-edits).
 
-<Callout title="Streaming edits are coming">
-  Commands that rewrite one part of a document ("rewrite question 3") streaming into just that part are designed on
-  [#34](https://github.com/ikramhasan/typstream/issues/34) and not built yet. This package does generation: one answer,
-  one document.
-</Callout>
+It reads AI SDK messages by their shape and imports nothing from `ai`, so it adds no dependency and works with AI SDK 5
+and later. It's tested against AI SDK 7. The edit session needs `@typstream/heal` (for the document's blocks), which
+every app that renders has already.
 
 ## When to use it
 
@@ -90,6 +89,12 @@ mountTypstream(document.querySelector("#answer")!, {
 | [`isStreaming`](#isstreaming) | Whether more of it is coming. |
 | [`textStream`](#textstream) | A message's text as chunks, from its snapshots. |
 | [`MessageLike`, `ChatLike`](#types) | What the functions read of AI SDK messages and chats. |
+| [`createEditSession`](#createeditsession) | Applies an answer's edits to a document as they stream. |
+| [`editPrompt`, `editRequest`, `selectionRequest`](#editprompt) | The edit format for the system prompt, and the user turns of an edit request. |
+| [`editFeedback`](#editfeedback) | What to tell the model about the edits that failed. |
+| [`parseEdits`](#parseedits) | Reads an answer's `<edit>`s as far as they have arrived. |
+| [`findQuote`](#findquote) | Where a quote matches a document. |
+| [`blockRange`, `blockStarts`](#blockrange) | The top-level blocks a range touches, and where blocks start. |
 
 ### textOf
 
@@ -149,3 +154,89 @@ yourself. AI SDK 4's messages (`content`, `toolInvocations`) aren't supported.
 
 The model needs to be told to answer in Typst. `buildSystemPrompt` from `@typstream/edu` writes that prompt for
 teachers' documents; see [Prompting](/docs/guides/prompting).
+
+## Edits
+
+### createEditSession
+
+```ts
+function createEditSession(text: string): EditSession;
+```
+
+A session that applies one answer's edits to `text`, the document the model was given. Open one per answer. Feed it
+with `update(answer, done)` (the answer's text, `textOf(message)`, and whether it has ended), or for a selection edit
+`write(range, replacement, done)`. Show `getState()`'s `text`, `streamingRange` and `streaming` in `<Typstream>`, and
+when `phase` is `review`, offer `keep()` and `undo()`. `userEdit(edit)` takes the teacher's own edits while the session
+is open, and `abort()` rolls back the edit being written. [Streaming edits](/docs/guides/streaming-edits) walks
+through it.
+
+<auto-type-table path="packages/ai/src/edits/session.ts" name="EditSession" />
+
+<auto-type-table path="packages/ai/src/edits/session.ts" name="EditSessionState" />
+
+<auto-type-table path="packages/ai/src/edits/session.ts" name="EditResult" />
+
+`EditStatus` is `quoting`, `writing`, `applied`, `failed` or `undone`. `EditError` says why an edit failed:
+`not-found` (its quote matches no place), `ambiguous` (several), `overlap` (it touches what an earlier edit of the
+answer changed), `conflict` (the teacher edited that text meanwhile), `malformed` or `incomplete` (the answer ended
+first).
+
+### editPrompt
+
+```ts
+function editPrompt(): string;
+const editPromptRules: readonly string[];
+function editRequest(document: string, request: string): string;
+function selectionRequest(document: string, range: Range, instruction: string): string;
+```
+
+`editPrompt()` is the edit format and its rules (`editPromptRules`), with an example, for the end of a system prompt
+that already teaches the document's Typst, such as `buildSystemPrompt(plugins)`. `editRequest` is the user turn: the
+document as it is now, then the request. `selectionRequest` is a selection edit's user turn: the document with the part
+to rewrite marked, and the instruction; the model answers with that part's new text only. All `@beta`: the rules
+change only with a new measured run.
+
+### editFeedback
+
+```ts
+function editFeedback(edits: readonly EditResult[]): string | null;
+```
+
+What to tell the model about the edits that failed, and why, to send as the next request so it writes them again.
+`null` when every edit applied. `@beta`.
+
+### parseEdits
+
+```ts
+function parseEdits(answer: string, final?: boolean): ParsedAnswer;
+```
+
+Reads an answer as `<edit>`s and a message, as far as it has arrived: call it again with more, and the edits only
+grow. A tag cut at the end (`</ne`) is held back until `final`. Lenient where models drift: a code fence around a quote
+or new text, a missing `</edit>`. The session calls it; you need it only to read answers yourself.
+
+<auto-type-table path="packages/ai/src/edits/parse.ts" name="EditOp" />
+
+<auto-type-table path="packages/ai/src/edits/parse.ts" name="ParsedAnswer" />
+
+### findQuote
+
+```ts
+function findQuote(text: string, quote: string): QuoteMatch;
+```
+
+Where `quote` occurs in `text`: exactly, or else with every whitespace run matching any other. The quote's own leading
+and trailing whitespace is ignored. At most two ranges come back: one is a match, two an ambiguous quote.
+
+<auto-type-table path="packages/ai/src/edits/match.ts" name="QuoteMatch" />
+
+### blockRange
+
+```ts
+function blockRange(text: string, range: Range): Range;
+function blockStarts(text: string): number[];
+```
+
+`blockRange` widens a range to the top-level blocks it touches, from the first one's start to the end of the last one's
+text, without the blank line after it: what a selection edit rewrites. `blockStarts` (from `@typstream/heal`, `@beta`)
+is where each top-level block starts.

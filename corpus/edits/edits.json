@@ -1,0 +1,410 @@
+{
+  "edit-quote-v1-haiku-capitals-add": {
+    "document": "kit-v4-sonnet-quiz-european-capitals",
+    "request": "Add a question about the capital of Norway after the one about Sweden.",
+    "model": "claude-haiku-5-5"
+  },
+  "edit-quote-v1-haiku-capitals-ask": {
+    "document": "kit-v4-sonnet-quiz-european-capitals",
+    "request": "Make that question easier.",
+    "ask": true,
+    "model": "claude-haiku-5-5"
+  },
+  "edit-quote-v1-haiku-capitals-delete": {
+    "document": "kit-v4-sonnet-quiz-european-capitals",
+    "request": "Remove the question about Greece.",
+    "model": "claude-haiku-5-5"
+  },
+  "edit-quote-v1-haiku-capitals-harder": {
+    "document": "kit-v4-sonnet-quiz-european-capitals",
+    "request": "Make the question about Spain harder: ask about the capital of a less well-known country instead.",
+    "model": "claude-haiku-5-5"
+  },
+  "edit-quote-v1-haiku-capitals-title": {
+    "document": "kit-v4-sonnet-quiz-european-capitals",
+    "request": "Change the title to \"Capitals of Europe\" and the grade to Grade 7.",
+    "model": "claude-haiku-5-5"
+  },
+  "edit-quote-v1-haiku-decimals-callout": {
+    "document": "kit-v4-sonnet-worksheet-decimals",
+    "request": "Rewrite the reminder box so a grade 5 student understands it more easily, and give a second example.",
+    "model": "claude-haiku-5-5"
+  },
+  "edit-quote-v1-haiku-decimals-fix-answer": {
+    "document": "kit-v4-sonnet-worksheet-decimals",
+    "request": "The answer to 2.5 × 0.4 should be written as 1.0, not 1. Fix it.",
+    "model": "claude-haiku-5-5"
+  },
+  "edit-quote-v1-haiku-decimals-two-edits": {
+    "document": "kit-v4-sonnet-worksheet-decimals",
+    "request": "Change question 1 to 0.7 × 0.3 and question 2 to 0.9 × 0.6, with the right answers.",
+    "model": "claude-haiku-5-5"
+  },
+  "edit-quote-v1-haiku-decimals-word-problem": {
+    "document": "kit-v4-sonnet-worksheet-decimals",
+    "request": "Add a third word problem about buying fruit at the end of Part B.",
+    "model": "claude-haiku-5-5"
+  },
+  "edit-quote-v1-haiku-equations-delete-part": {
+    "document": "kit-v4-sonnet-worksheet-linear-equations",
+    "request": "Remove Part C entirely.",
+    "model": "claude-haiku-5-5"
+  },
+  "edit-quote-v1-haiku-equations-harder": {
+    "document": "kit-v4-sonnet-worksheet-linear-equations",
+    "request": "Make Part A a bit harder: use negative numbers in its first two questions.",
+    "model": "claude-haiku-5-5"
+  },
+  "edit-quote-v1-haiku-equations-hint": {
+    "document": "kit-v4-sonnet-worksheet-linear-equations",
+    "request": "In the last question, add a hint reminding students to expand the brackets first.",
+    "model": "claude-haiku-5-5"
+  },
+  "edit-quote-v1-haiku-equations-points": {
+    "document": "kit-v4-sonnet-worksheet-linear-equations",
+    "request": "Question 12 should be worth 5 points.",
+    "model": "claude-haiku-5-5"
+  },
+  "edit-quote-v1-haiku-rubric-ask": {
+    "document": "kit-v4-sonnet-rubric-argumentative-essay",
+    "request": "Fix the wording there.",
+    "ask": true,
+    "model": "claude-haiku-5-5"
+  },
+  "edit-quote-v1-haiku-rubric-criterion": {
+    "document": "kit-v4-sonnet-rubric-argumentative-essay",
+    "request": "Add a fifth criterion for use of sources and citations, and update the total.",
+    "model": "claude-haiku-5-5"
+  },
+  "edit-quote-v1-haiku-rubric-simpler": {
+    "document": "kit-v4-sonnet-rubric-argumentative-essay",
+    "request": "Rewrite the Organization row in simpler language for grade 7 students.",
+    "model": "claude-haiku-5-5"
+  },
+  "edit-quote-v1-haiku-solar-add": {
+    "document": "kit-v4-sonnet-arabic-quiz-solar-system",
+    "request": "أضف سؤالًا عن أبعد كوكب عن الشمس بعد السؤال عن أكبر كوكب.",
+    "model": "claude-haiku-5-5"
+  },
+  "edit-quote-v1-haiku-solar-translate": {
+    "document": "kit-v4-sonnet-arabic-quiz-solar-system",
+    "request": "Translate the question about the red planet into English. Keep the rest in Arabic.",
+    "model": "claude-haiku-5-5"
+  },
+  "edit-quote-v1-haiku-stoichiometry-ask": {
+    "document": "kit-v4-sonnet-exam-stoichiometry",
+    "request": "That calculation is wrong, fix it.",
+    "ask": true,
+    "model": "claude-haiku-5-5"
+  },
+  "edit-quote-v1-haiku-stoichiometry-data": {
+    "document": "kit-v4-sonnet-exam-stoichiometry",
+    "request": "Add the molar masses N = 14 and S = 32 to the data box.",
+    "model": "claude-haiku-5-5"
+  },
+  "edit-quote-v1-haiku-stoichiometry-duration": {
+    "document": "kit-v4-sonnet-exam-stoichiometry",
+    "request": "The exam is 60 minutes now.",
+    "model": "claude-haiku-5-5"
+  },
+  "edit-quote-v1-haiku-stoichiometry-replace": {
+    "document": "kit-v4-sonnet-exam-stoichiometry",
+    "request": "Replace the question about the molar mass of CaCO3 with one about the molar mass of NaOH.",
+    "model": "claude-haiku-5-5"
+  },
+  "edit-quote-v1-haiku-water-exit-question": {
+    "document": "kit-v4-sonnet-lesson-plan-water-cycle",
+    "request": "Add a fourth exit ticket question asking students where water collects.",
+    "model": "claude-haiku-5-5"
+  },
+  "edit-quote-v1-haiku-water-timing": {
+    "document": "kit-v4-sonnet-lesson-plan-water-cycle",
+    "request": "Make stage 4, the guided activity, 15 minutes, and stage 5 only 5 minutes.",
+    "model": "claude-haiku-5-5"
+  },
+  "edit-quote-v1-sonnet-capitals-add": {
+    "document": "kit-v4-sonnet-quiz-european-capitals",
+    "request": "Add a question about the capital of Norway after the one about Sweden.",
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-quote-v1-sonnet-capitals-ask": {
+    "document": "kit-v4-sonnet-quiz-european-capitals",
+    "request": "Make that question easier.",
+    "ask": true,
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-quote-v1-sonnet-capitals-delete": {
+    "document": "kit-v4-sonnet-quiz-european-capitals",
+    "request": "Remove the question about Greece.",
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-quote-v1-sonnet-capitals-harder": {
+    "document": "kit-v4-sonnet-quiz-european-capitals",
+    "request": "Make the question about Spain harder: ask about the capital of a less well-known country instead.",
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-quote-v1-sonnet-capitals-title": {
+    "document": "kit-v4-sonnet-quiz-european-capitals",
+    "request": "Change the title to \"Capitals of Europe\" and the grade to Grade 7.",
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-quote-v1-sonnet-decimals-callout": {
+    "document": "kit-v4-sonnet-worksheet-decimals",
+    "request": "Rewrite the reminder box so a grade 5 student understands it more easily, and give a second example.",
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-quote-v1-sonnet-decimals-fix-answer": {
+    "document": "kit-v4-sonnet-worksheet-decimals",
+    "request": "The answer to 2.5 × 0.4 should be written as 1.0, not 1. Fix it.",
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-quote-v1-sonnet-decimals-two-edits": {
+    "document": "kit-v4-sonnet-worksheet-decimals",
+    "request": "Change question 1 to 0.7 × 0.3 and question 2 to 0.9 × 0.6, with the right answers.",
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-quote-v1-sonnet-decimals-word-problem": {
+    "document": "kit-v4-sonnet-worksheet-decimals",
+    "request": "Add a third word problem about buying fruit at the end of Part B.",
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-quote-v1-sonnet-equations-delete-part": {
+    "document": "kit-v4-sonnet-worksheet-linear-equations",
+    "request": "Remove Part C entirely.",
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-quote-v1-sonnet-equations-harder": {
+    "document": "kit-v4-sonnet-worksheet-linear-equations",
+    "request": "Make Part A a bit harder: use negative numbers in its first two questions.",
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-quote-v1-sonnet-equations-hint": {
+    "document": "kit-v4-sonnet-worksheet-linear-equations",
+    "request": "In the last question, add a hint reminding students to expand the brackets first.",
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-quote-v1-sonnet-equations-points": {
+    "document": "kit-v4-sonnet-worksheet-linear-equations",
+    "request": "Question 12 should be worth 5 points.",
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-quote-v1-sonnet-rubric-ask": {
+    "document": "kit-v4-sonnet-rubric-argumentative-essay",
+    "request": "Fix the wording there.",
+    "ask": true,
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-quote-v1-sonnet-rubric-criterion": {
+    "document": "kit-v4-sonnet-rubric-argumentative-essay",
+    "request": "Add a fifth criterion for use of sources and citations, and update the total.",
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-quote-v1-sonnet-rubric-simpler": {
+    "document": "kit-v4-sonnet-rubric-argumentative-essay",
+    "request": "Rewrite the Organization row in simpler language for grade 7 students.",
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-quote-v1-sonnet-solar-add": {
+    "document": "kit-v4-sonnet-arabic-quiz-solar-system",
+    "request": "أضف سؤالًا عن أبعد كوكب عن الشمس بعد السؤال عن أكبر كوكب.",
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-quote-v1-sonnet-solar-translate": {
+    "document": "kit-v4-sonnet-arabic-quiz-solar-system",
+    "request": "Translate the question about the red planet into English. Keep the rest in Arabic.",
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-quote-v1-sonnet-stoichiometry-ask": {
+    "document": "kit-v4-sonnet-exam-stoichiometry",
+    "request": "That calculation is wrong, fix it.",
+    "ask": true,
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-quote-v1-sonnet-stoichiometry-data": {
+    "document": "kit-v4-sonnet-exam-stoichiometry",
+    "request": "Add the molar masses N = 14 and S = 32 to the data box.",
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-quote-v1-sonnet-stoichiometry-duration": {
+    "document": "kit-v4-sonnet-exam-stoichiometry",
+    "request": "The exam is 60 minutes now.",
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-quote-v1-sonnet-stoichiometry-replace": {
+    "document": "kit-v4-sonnet-exam-stoichiometry",
+    "request": "Replace the question about the molar mass of CaCO3 with one about the molar mass of NaOH.",
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-quote-v1-sonnet-water-exit-question": {
+    "document": "kit-v4-sonnet-lesson-plan-water-cycle",
+    "request": "Add a fourth exit ticket question asking students where water collects.",
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-quote-v1-sonnet-water-timing": {
+    "document": "kit-v4-sonnet-lesson-plan-water-cycle",
+    "request": "Make stage 4, the guided activity, 15 minutes, and stage 5 only 5 minutes.",
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-selection-v1-haiku-capitals-harder": {
+    "document": "kit-v4-sonnet-quiz-european-capitals",
+    "request": "make it harder: ask about the capital of a less well-known country instead",
+    "selection": {
+      "from": 518,
+      "to": 637
+    },
+    "model": "claude-haiku-5-5"
+  },
+  "edit-selection-v1-haiku-capitals-title": {
+    "document": "kit-v4-sonnet-quiz-european-capitals",
+    "request": "change the title to \"Capitals of Europe\" and the grade to Grade 7",
+    "selection": {
+      "from": 0,
+      "to": 163
+    },
+    "model": "claude-haiku-5-5"
+  },
+  "edit-selection-v1-haiku-decimals-callout": {
+    "document": "kit-v4-sonnet-worksheet-decimals",
+    "request": "rewrite it so a grade 5 student understands it more easily, and give a second example",
+    "selection": {
+      "from": 186,
+      "to": 485
+    },
+    "model": "claude-haiku-5-5"
+  },
+  "edit-selection-v1-haiku-decimals-fix-answer": {
+    "document": "kit-v4-sonnet-worksheet-decimals",
+    "request": "write the answer as 1.0, not 1",
+    "selection": {
+      "from": 786,
+      "to": 851
+    },
+    "model": "claude-haiku-5-5"
+  },
+  "edit-selection-v1-haiku-equations-hint": {
+    "document": "kit-v4-sonnet-worksheet-linear-equations",
+    "request": "add a hint reminding students to expand the brackets first",
+    "selection": {
+      "from": 2713,
+      "to": 2995
+    },
+    "model": "claude-haiku-5-5"
+  },
+  "edit-selection-v1-haiku-equations-points": {
+    "document": "kit-v4-sonnet-worksheet-linear-equations",
+    "request": "make it worth 5 points",
+    "selection": {
+      "from": 2151,
+      "to": 2414
+    },
+    "model": "claude-haiku-5-5"
+  },
+  "edit-selection-v1-haiku-solar-translate": {
+    "document": "kit-v4-sonnet-arabic-quiz-solar-system",
+    "request": "translate it into English",
+    "selection": {
+      "from": 448,
+      "to": 561
+    },
+    "model": "claude-haiku-5-5"
+  },
+  "edit-selection-v1-haiku-stoichiometry-data": {
+    "document": "kit-v4-sonnet-exam-stoichiometry",
+    "request": "add the molar masses N = 14 and S = 32",
+    "selection": {
+      "from": 269,
+      "to": 498
+    },
+    "model": "claude-haiku-5-5"
+  },
+  "edit-selection-v1-haiku-stoichiometry-replace": {
+    "document": "kit-v4-sonnet-exam-stoichiometry",
+    "request": "ask about the molar mass of NaOH instead",
+    "selection": {
+      "from": 717,
+      "to": 866
+    },
+    "model": "claude-haiku-5-5"
+  },
+  "edit-selection-v1-sonnet-capitals-harder": {
+    "document": "kit-v4-sonnet-quiz-european-capitals",
+    "request": "make it harder: ask about the capital of a less well-known country instead",
+    "selection": {
+      "from": 518,
+      "to": 637
+    },
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-selection-v1-sonnet-capitals-title": {
+    "document": "kit-v4-sonnet-quiz-european-capitals",
+    "request": "change the title to \"Capitals of Europe\" and the grade to Grade 7",
+    "selection": {
+      "from": 0,
+      "to": 163
+    },
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-selection-v1-sonnet-decimals-callout": {
+    "document": "kit-v4-sonnet-worksheet-decimals",
+    "request": "rewrite it so a grade 5 student understands it more easily, and give a second example",
+    "selection": {
+      "from": 186,
+      "to": 485
+    },
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-selection-v1-sonnet-decimals-fix-answer": {
+    "document": "kit-v4-sonnet-worksheet-decimals",
+    "request": "write the answer as 1.0, not 1",
+    "selection": {
+      "from": 786,
+      "to": 851
+    },
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-selection-v1-sonnet-equations-hint": {
+    "document": "kit-v4-sonnet-worksheet-linear-equations",
+    "request": "add a hint reminding students to expand the brackets first",
+    "selection": {
+      "from": 2713,
+      "to": 2995
+    },
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-selection-v1-sonnet-equations-points": {
+    "document": "kit-v4-sonnet-worksheet-linear-equations",
+    "request": "make it worth 5 points",
+    "selection": {
+      "from": 2151,
+      "to": 2414
+    },
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-selection-v1-sonnet-solar-translate": {
+    "document": "kit-v4-sonnet-arabic-quiz-solar-system",
+    "request": "translate it into English",
+    "selection": {
+      "from": 448,
+      "to": 561
+    },
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-selection-v1-sonnet-stoichiometry-data": {
+    "document": "kit-v4-sonnet-exam-stoichiometry",
+    "request": "add the molar masses N = 14 and S = 32",
+    "selection": {
+      "from": 269,
+      "to": 498
+    },
+    "model": "claude-sonnet-5-5"
+  },
+  "edit-selection-v1-sonnet-stoichiometry-replace": {
+    "document": "kit-v4-sonnet-exam-stoichiometry",
+    "request": "ask about the molar mass of NaOH instead",
+    "selection": {
+      "from": 717,
+      "to": 866
+    },
+    "model": "claude-sonnet-5-5"
+  }
+}

@@ -81,7 +81,7 @@ const source = before + written + after;
 - Keep the range block-aligned: from the start of a top-level block (heal's `blockStarts`) to the end of a block's text, leaving the blank line after it outside the range. Otherwise, while the range is written, its last line runs into the next block.
 - On the engine, that is `doc.setStreamingRange({ from, to })`, then edits into the range (`doc.applyEdit`), then `doc.finish()`. The healer does the same ([Healing](/docs/concepts/healing#streaming-into-the-middle-of-a-document)).
 
-Commands that write into a range for you ("rewrite question 3"), with undo, are planned in `@typstream/ai` ([#34](https://github.com/ikramhasan/typstream/issues/34)).
+A model's edits can write into ranges for you ("rewrite question 3"), with Keep and Undo: `@typstream/ai`'s edit session finds the text each edit quotes, sets the range, and applies the edit as it streams ([Streaming edits](/docs/guides/streaming-edits)).
 
 ## The tail never shows less than it did
 
