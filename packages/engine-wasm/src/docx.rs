@@ -51,9 +51,11 @@ const BOTTOM: f64 = 0.246;
 /// Room added to a width Typst's lines exactly fill, in points: engines measure text a hair wider (the writer gives
 /// table cells as much).
 const SLACK: f64 = 1.0;
-/// A block Typst starts a page with gets a page break before it when the page before had more room left than this
-/// share of its height: less is a page that was full, where engines break by themselves.
-const PAGE_ROOM: f64 = 0.05;
+/// A block Typst starts a page with gets a page break before it when the page before had more room left than this,
+/// in points: Typst moved it on (a heading kept with what follows, a table's header with its first row, a line that
+/// didn't quite fit) where an engine measuring a hair shorter wouldn't. A page break before a paragraph that already
+/// starts a page adds none.
+const PAGE_ROOM: f64 = 1.0;
 
 /// The model as JSON (see `@typstream/docx`'s `DocxModel`) and the data of the fonts it names, in its order.
 pub struct Model {
@@ -1031,7 +1033,7 @@ impl Builder {
                 Some((page, bottom)) if body => {
                     let (size, m) = self.geometry[page];
                     let room = size.y.to_pt() - m.bottom - bottom;
-                    if room > PAGE_ROOM * (size.y.to_pt() - m.top - m.bottom) {
+                    if room > PAGE_ROOM {
                         b.json.insert("pageBreak".into(), json!(true));
                     }
                     b.top - self.content_top(b.page)
@@ -1130,16 +1132,25 @@ impl Builder {
                     pending.push(id);
                 }
                 Kind::Group(rect, true) => {
-                    // A framed or filled block, unless it sits in a line (an inline box): those have text beside.
+                    // A framed or filled block, unless it sits in a line (an inline box): those have text beside,
+                    // before them or (a box starting a line, a checkbox) after.
                     let end = group_end(&items, ids, i);
-                    let inline = pending.iter().any(|&p| match &self.items[p].kind {
+                    let beside = |p: usize| match &self.items[p].kind {
                         Kind::Text(t) => {
                             self.items[p].page == self.items[id].page
                                 && t.y > rect.y
                                 && t.y - TOP * t.size < rect.bottom()
                         }
                         _ => false,
-                    });
+                    };
+                    let after = ids[(end + 1).min(ids.len())..]
+                        .iter()
+                        .find(|&&p| matches!(self.items[p].kind, Kind::Text(_)))
+                        .is_some_and(|&p| {
+                            beside(p)
+                                && matches!(&self.items[p].kind, Kind::Text(t) if t.x >= rect.right() - 0.5)
+                        });
+                    let inline = after || pending.iter().any(|&p| beside(p));
                     if inline || rect.h < 6.0 {
                         pending.extend_from_slice(&ids[i..=end.min(ids.len() - 1)]);
                     } else {
