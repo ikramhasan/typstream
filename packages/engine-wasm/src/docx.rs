@@ -1939,7 +1939,16 @@ impl Builder {
             // The body flows from where it starts, so a line as long as the room left reads as flush, not as
             // centred in the area; its blocks are then indented by as much.
             let left = body_x[k].filter(|x| *x > area.left && *x < area.right).unwrap_or(area.left);
+            let nested = self.lists.len();
             let flow = self.flow(body, Area { left, right: area.right }, false);
+            // Lists nested in the body were measured from its start too.
+            for l in &mut self.lists[nested..] {
+                for key in ["labelLeft", "labelRight", "bodyLeft"] {
+                    if let Some(v) = l.get(key).and_then(|v| v.as_f64()) {
+                        l[key] = json!(round(v + left - area.left));
+                    }
+                }
+            }
             let mut first = true;
             for mut b in flow {
                 shift(&mut b.json, left - area.left);
