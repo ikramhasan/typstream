@@ -2233,7 +2233,8 @@ impl Builder {
         // Nothing in it (a ruled line, an empty box): its height held by an empty paragraph.
         let mut inset = inset;
         if blocks.is_empty() {
-            let height = (rect.h - thickness("top") / 2.0 - thickness("bottom") / 2.0).max(0.05);
+            // A one-row table: engines add its outer borders in full, as above.
+            let height = (rect.h - thickness("top") - thickness("bottom")).max(0.05);
             blocks.push(json!({ "type": "drawing", "width": round(rect.w - 2.0 * inset_left), "height": round(height), "indent": 0.0, "before": 0.0 }));
             inset.top = 0.0;
             inset.bottom = 0.0;
