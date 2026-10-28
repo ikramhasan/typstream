@@ -187,7 +187,8 @@ jobs:
   # client + worker + engine-wasm, and the watchdog. Then the renderers (packages/dom/__tests__/browser) and <Typstream>
   # (packages/react/__tests__/browser) against that worker, the mind map island (packages/mindmap/__tests__/browser),
   # and examples/strict-csp: both targets and the island under a strict Content-Security-Policy, with no violation. One job per browser; Chromium's also runs examples/nextjs-ai-sdk, a
-  # production Next.js build streaming an answer into <Typstream>.
+  # production Next.js build streaming an answer into <Typstream>, and tools/browser-suites' preview vs PDF check (#118:
+  # every edu page painted in the document panel equals the PDF export's; all three browsers run it nightly).
   browsers:
     name: Engine (${{ matrix.browser }})
     runs-on: ubuntu-latest
@@ -213,6 +214,8 @@ jobs:
       - run: node tools/repo/playwright-docker.mjs pnpm exec turbo run test --filter=@typstream/example-strict-csp
       - if: matrix.browser == 'chromium'
         run: node tools/repo/playwright-docker.mjs pnpm exec turbo run test --filter=@typstream/example-nextjs-ai-sdk
+      - if: matrix.browser == 'chromium'
+        run: node tools/repo/playwright-docker.mjs pnpm --filter @typstream/browser-suites test:pdf
 
   # Visual regression (tools/browser-suites): screenshots against committed baselines, taken inside Playwright's
   # Docker image as they are locally (scripts/visual.mjs), so the runner's fonts don't matter. On a mismatch the

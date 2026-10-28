@@ -61,7 +61,7 @@ jobs:
           path: packages/heal/reports/mutation/
           retention-days: 30
 
-  # Corpus-wide browser suites (tools/browser-suites, #19): final-render equivalence, flicker and accessibility over
+  # Corpus-wide browser suites (tools/browser-suites, #19): final-render equivalence, flicker, accessibility and preview vs PDF over
   # mountTypstream on the real worker. One job per browser (Chromium also runs the adversarial set's equivalence).
   # Too slow for PRs (Chromium ~17 min, Firefox ~10, WebKit ~45); the timeout leaves room for a slow day.
   browser-suites:
