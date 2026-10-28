@@ -64,17 +64,17 @@ const PANEL_HEIGHT = 800;
 const FONTS: [string, URL, FontFaceDescriptors][] = [
   [
     "Libertinus Serif",
-    new URL("../../../packages/engine-wasm/dist/fonts/LibertinusSerif-Regular.otf", import.meta.url),
+    new URL("../../../packages/engine-wasm/dist/fonts/LibertinusSerif-Regular.ttf", import.meta.url),
     {},
   ],
   [
     "Libertinus Serif",
-    new URL("../../../packages/engine-wasm/dist/fonts/LibertinusSerif-Bold.otf", import.meta.url),
+    new URL("../../../packages/engine-wasm/dist/fonts/LibertinusSerif-Bold.ttf", import.meta.url),
     { weight: "bold" },
   ],
   [
     "Libertinus Serif",
-    new URL("../../../packages/engine-wasm/dist/fonts/LibertinusSerif-Italic.otf", import.meta.url),
+    new URL("../../../packages/engine-wasm/dist/fonts/LibertinusSerif-Italic.ttf", import.meta.url),
     { style: "italic" },
   ],
   ["DejaVu Sans Mono", new URL("../../../packages/engine-wasm/dist/fonts/DejaVuSansMono.ttf", import.meta.url), {}],

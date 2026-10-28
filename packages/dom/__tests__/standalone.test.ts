@@ -58,6 +58,10 @@ describe("standaloneHtml", () => {
   it("embeds a math font, or allows the origin of a linked one", () => {
     const embedded = standaloneHtml(TYPST, { mathFont: new Uint8Array([79, 84, 84, 79]) });
     expect(embedded).toContain('font-family: "New Computer Modern Math";\n  src: url("data:font/otf;base64,T1RUTw==")');
+    // TrueType outlines, as the engine's math font has since #118.
+    expect(standaloneHtml(TYPST, { mathFont: new Uint8Array([0, 1, 0, 0]) })).toContain(
+      'url("data:font/ttf;base64,AAEAAA==")',
+    );
     expect(csp(embedded)).toContain("font-src data:;");
     const linked = standaloneHtml(TYPST, { mathFont: "https://cdn.example.com/fonts/NewCMMath.otf" });
     expect(linked).toContain('src: url("https://cdn.example.com/fonts/NewCMMath.otf")');

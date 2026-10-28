@@ -1,17 +1,24 @@
-// Typst's bundled fonts (Libertinus Serif, New Computer Modern, DejaVu Sans
-// Mono), read from the typst-assets crate that Cargo already downloaded for the
-// engine build. Native `typst` embeds the same files, so wasm and native
+// Typst's bundled fonts (Libertinus Serif, New Computer Modern, DejaVu Sans Mono), from the
+// typst-assets crate Cargo already downloaded for the engine build, with the ones that have CFF
+// outlines swapped for the TrueType conversions dist/fonts ships (#118), so tests see the fonts users
+// get. Native `typst` gets the same directory (with --ignore-embedded-fonts), so wasm and native
 // compiles see identical fonts.
 import { execFileSync } from "node:child_process";
-import { readdirSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, symlinkSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const manifest = fileURLToPath(new URL("../../Cargo.toml", import.meta.url));
+/** engine-wasm's dist/fonts: its build converts typst-assets' CFF fonts to TrueType outlines. */
+const shipped = fileURLToPath(new URL("../../dist/fonts/", import.meta.url));
 
 let dir: string | undefined;
 
-/** The directory holding typst-assets' font files. */
+/**
+ * A directory of links to typst-assets' font files, with the CFF ones swapped for the TrueType conversions
+ * engine-wasm ships (#118): the same fonts users get, under the same names.
+ */
 export const fontDir = (): string => {
   if (dir) return dir;
   const metadata = JSON.parse(
@@ -22,7 +29,14 @@ export const fontDir = (): string => {
   ) as { packages: { name: string; manifest_path: string }[] };
   const assets = metadata.packages.find((p) => p.name === "typst-assets");
   if (!assets) throw new Error("typst-assets not found in `cargo metadata`");
-  dir = join(dirname(assets.manifest_path), "files", "fonts");
+  const source = join(dirname(assets.manifest_path), "files", "fonts");
+  const links = mkdtempSync(join(tmpdir(), "typstream-fonts-"));
+  for (const name of readdirSync(source)) {
+    const converted = join(shipped, name.replace(/\.otf$/, ".ttf"));
+    const file = name.endsWith(".otf") && existsSync(converted) ? converted : join(source, name);
+    symlinkSync(file, join(links, basename(file)));
+  }
+  dir = links;
   return dir;
 };
 
