@@ -112,13 +112,15 @@ stream points × three browsers, about 1,600 screenshots and 100 MB):
 | Shots | Browsers | Documents |
 |---|---|---|
 | Finished, paged and HTML (light), 600 px: the whole document | Chromium | the edu corpus |
-| The same, first screen (600 × 800) | Firefox, WebKit | the edu corpus |
+| Finished, HTML (light), first screen (600 × 800) | Firefox, WebKit | the edu corpus |
 | HTML in the dark theme; mid-stream frames at 50% in both targets | all three | the feature set |
 | Mid-stream frames at 25% and 75%; widths 360 and 960 px, both targets | Chromium | the feature set |
 
 The engine's output doesn't depend on the browser, so whole documents in one browser catch layout changes
 anywhere; the other browsers differ in how they render the same markup (CSS, MathML, SVG), which their first
-screens show. The feature set (`FEATURES`) covers math, tables, shapes, fills, scripts, code and a recorded
+screens show. Their finished paged documents aren't shot (#127): the preview-vs-PDF suite checks every page each
+browser paints against the PDF, pixel by pixel, and the panel around the pages is the same CSS everywhere (Chromium's
+shots cover it). Mid-stream paged frames still are, in all three: that suite checks finished documents. The feature set (`FEATURES`) covers math, tables, shapes, fills, scripts, code and a recorded
 stream. A mid-stream frame is the 800 px panel scrolled to its end, with the caret, after the stream's text up to
 that point (or the next prefix that compiles).
 

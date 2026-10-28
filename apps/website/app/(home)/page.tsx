@@ -25,7 +25,7 @@ import { GET_STARTED } from "@/components/site-nav";
 import { TaglineReveal } from "@/components/tagline-reveal";
 import { cn } from "@/lib/cn";
 import { healedSegments } from "@/lib/heal-segments";
-import { githubUrl } from "@/lib/shared";
+import { demoUrl, githubUrl } from "@/lib/shared";
 
 // Real streams from corpus/llm (claude-sonnet with the edu prompt kit), read at build time.
 const CORPUS = resolve(process.cwd(), "../../corpus/llm");
@@ -148,6 +148,19 @@ export default function HomePage() {
           <div className="mt-16">
             <LiveDemo recordings={recordings} />
           </div>
+          <p className="mt-6 text-center text-sm text-lp-muted">
+            These are recorded streams.{" "}
+            <Link
+              href={demoUrl}
+              className="lp-focus group inline-flex items-center gap-1 rounded-sm font-semibold text-lp-accent"
+            >
+              Try your own request in the AI SDK example
+              <ArrowUpRightIcon
+                className="size-4 transition-transform duration-300 ease-lp group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                aria-hidden
+              />
+            </Link>
+          </p>
         </section>
 
         <section aria-label="typstream in numbers" className="mx-auto max-w-7xl px-6 pb-24 sm:px-10">

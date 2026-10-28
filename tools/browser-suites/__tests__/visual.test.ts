@@ -5,8 +5,11 @@
 // visual:update` to accept changes), so pixels don't depend on the machine.
 //
 // What is shot (README.md has the reasons):
-// - every edu document, finished, paged and HTML (light) at 600 px: the whole
-//   document in Chromium, the first screen (600 × 800) in Firefox and WebKit;
+// - every edu document, finished, at 600 px: HTML (light) and paged in Chromium,
+//   the whole document; HTML's first screen (600 × 800) in Firefox and WebKit.
+//   Their finished pages aren't shot: pdf-raster.test.ts checks every page each
+//   browser paints against the PDF, pixel by pixel (#119, #127), and the panel
+//   around the pages is the same CSS in every browser;
 // - a feature set of documents: HTML in the dark theme, and mid-stream frames at
 //   50% of the stream in both targets, in every browser; frames at 25% and 75%,
 //   and widths 360 and 960 px, in Chromium. A mid-stream frame is the 800 px
@@ -121,7 +124,8 @@ interface Shot {
 const shotsOf = (doc: string): Shot[] => {
   const shots: Shot[] = [];
   const light = { doc, theme: "light", width: 600 } as const;
-  for (const target of ["paged", "html"] as const) shots.push({ ...light, target, panel: !reference });
+  shots.push({ ...light, target: "html", panel: !reference });
+  if (reference) shots.push({ ...light, target: "paged", panel: false });
   if (!FEATURES.includes(doc)) return shots;
   shots.push({ ...light, target: "html", theme: "dark", panel: true });
   for (const at of reference ? [0.25, 0.5, 0.75] : [0.5])

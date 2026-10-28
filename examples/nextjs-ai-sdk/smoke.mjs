@@ -36,6 +36,12 @@ try {
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
   await page.goto(`http://localhost:${PORT}/`);
+  // With no key on the server, the page asks for the visitor's: decline, and the route replays its worksheet.
+  if (!process.env.ANTHROPIC_API_KEY) {
+    await page.getByRole("dialog").waitFor({ timeout: 30_000 });
+    await page.getByRole("button", { name: "Replay a sample", exact: true }).click();
+    await page.getByRole("dialog").waitFor({ state: "hidden" });
+  }
   const answers = page.locator("article.answer");
   /** Waits for the nth answer to render (a page, or HTML's streaming caret) and finish, with no error frame; returns its text. */
   const answered = async (n, target) => {
