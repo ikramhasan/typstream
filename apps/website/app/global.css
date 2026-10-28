@@ -80,15 +80,6 @@ body {
   letter-spacing: -0.01em;
 }
 
-/* A faint baseline grid behind the landing page, like ruled paper. */
-.paper-grid {
-  background-image:
-    linear-gradient(to right, color-mix(in oklab, var(--color-fd-border) 55%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in oklab, var(--color-fd-border) 55%, transparent) 1px, transparent 1px);
-  background-size: 28px 28px;
-  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 75%);
-}
-
 @keyframes caret-blink {
   50% {
     opacity: 0;
@@ -117,4 +108,110 @@ body {
     0 1px 0 oklch(0 0 0 / 0.04),
     0 12px 32px -12px oklch(0.2 0.03 255 / 0.25),
     0 40px 80px -40px oklch(0.2 0.03 255 / 0.3);
+}
+
+/* The landing page (app/(home)): Geist on warm paper, with dark bands for the moments that matter.
+   Its own tokens, so the docs keep theirs. Backgrounds are flat; dark mode uses the near-blacks only. */
+@theme {
+  --color-lp-bg: #faf9f6;
+  --color-lp-tint: #f2f0ea;
+  --color-lp-card: #ffffff;
+  --color-lp-ink: #141412;
+  --color-lp-muted: #5f5e59;
+  --color-lp-line: #e3e0d8;
+  --color-lp-strong-line: #c9c5bb;
+  --color-lp-accent: #00727d;
+  --color-lp-accent-fg: #ffffff;
+  --color-lp-caret: #00a3b0;
+  --color-lp-desk: #efede7;
+  --color-lp-night: #131209;
+  --color-lp-night-2: #1f1f1f;
+  --color-lp-night-3: #272727;
+  --color-lp-night-line: #313131;
+  --color-lp-night-ink: #f5f4ef;
+  --color-lp-night-muted: #a3a199;
+  --color-lp-night-accent: #56d3da;
+
+  /* Weighted, decelerating: every landing page transition uses it. */
+  --ease-lp: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.dark {
+  --color-lp-bg: #131209;
+  --color-lp-tint: #181818;
+  --color-lp-card: #1f1f1f;
+  --color-lp-ink: #f5f4ef;
+  --color-lp-muted: #a3a199;
+  --color-lp-line: #313131;
+  --color-lp-strong-line: #4a4740;
+  --color-lp-accent: #56d3da;
+  --color-lp-accent-fg: #131209;
+  --color-lp-caret: #56d3da;
+  --color-lp-desk: #272727;
+  --color-lp-night: #000000;
+  --color-lp-night-2: #181818;
+}
+
+/* Inline: next/font sets --font-geist on the home layout's element, not on :root where @theme's variables live. */
+@theme inline {
+  --font-lp: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-lp-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+@utility lp-focus {
+  &:focus-visible {
+    outline: 2px solid var(--color-lp-accent);
+    outline-offset: 2px;
+  }
+}
+
+/* Headings in the hero and the last call to action: ink fading left to right, on the text only. */
+.lp-heading-gradient {
+  background-image: linear-gradient(to right, #000000, #666666);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.dark .lp-heading-gradient,
+.lp-heading-gradient.lp-on-night {
+  background-image: linear-gradient(to right, #ffffff, #9b9b9b);
+}
+
+/* Sections rise into place once, the first time they enter the viewport (components/reveal.tsx). */
+.lp-reveal {
+  transition:
+    opacity 700ms var(--ease-lp),
+    transform 700ms var(--ease-lp);
+}
+
+.lp-reveal[data-hidden] {
+  opacity: 0;
+  transform: translateY(32px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-reveal[data-hidden] {
+    transform: none;
+  }
+}
+
+/* Typst in the demo's source pane and the code card. */
+.lp-tok-fn {
+  color: #d9a3d6;
+}
+.lp-tok-str {
+  color: #a8c98a;
+}
+.lp-tok-key {
+  color: #e5c07b;
+}
+.lp-tok-head {
+  color: #56d3da;
+}
+.lp-tok-tag {
+  color: #f08d7e;
+}
+.lp-tok-name {
+  color: #7fd4e0;
 }
