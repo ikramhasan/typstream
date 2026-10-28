@@ -2,8 +2,9 @@
 // asks for a worksheet in Chromium (a suggestion, rendered as pages), then for a
 // change typed in the field, as HTML: an edit of that worksheet (#34). It checks
 // that the answer streams into <Typstream> and finishes, that the edit streams
-// into the finished document, highlighted, and can be undone, that neither ever
-// had an error frame, that the replay's mind map is interactive in the HTML answer
+// into the finished document, highlighted, and can be undone, that the first
+// answer's Edit button changes that document in place, that none ever had an
+// error frame, that the replay's mind map is interactive in the HTML answer
 // (a render island), and that telemetry reached the example's sink. Without
 // ANTHROPIC_API_KEY the server replays a recorded worksheet and an edit of it, so
 // this runs offline.
@@ -77,6 +78,25 @@ try {
       { timeout: 30_000 },
     );
   }
+  // Edit the first answer in place: its Edit button asks what to change, and that document changes,
+  // with no new answer below it. Then Keep.
+  await page.getByRole("button", { name: "Edit", exact: true }).first().click();
+  await page.getByRole("textbox", { name: "Edit instruction" }).fill("Use a longer ladder in the worked example.");
+  await page.getByRole("textbox", { name: "Edit instruction" }).press("Enter");
+  const keep = page.getByRole("button", { name: "Keep", exact: true });
+  await keep.waitFor({ timeout: 120_000 });
+  await answers.first().and(page.locator('[data-status="done"]')).waitFor({ timeout: 120_000 });
+  if ((await answers.count()) !== 2) throw new Error(`an edit in place added an answer: ${await answers.count()}`);
+  const inPlace = await answers.first().getAttribute("data-stale");
+  if (inPlace !== "0") throw new Error(`the edit in place: ${inPlace} error frames while streaming`);
+  if (!process.env.ANTHROPIC_API_KEY) {
+    await page.waitForFunction(
+      (el) => el?.textContent.includes("12 m up the wall"),
+      await answers.first().locator(".typstream-host").elementHandle(),
+      { timeout: 30_000 },
+    );
+  }
+  await keep.click();
   if (!process.env.ANTHROPIC_API_KEY) {
     // The replay's mind map, as an island: React Flow's nodes over the drawing.
     await answers.nth(1).locator("typstream-island .react-flow__node").first().waitFor({ timeout: 30_000 });
@@ -90,7 +110,7 @@ try {
   while (!reached() && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 200));
   if (!reached()) throw new Error(`no telemetry reached /api/telemetry:\n${log}`);
   if (process.argv.includes("--screenshot")) await page.screenshot({ path: "smoke.png", fullPage: true });
-  console.log(`ok: streamed an answer and an edit of it with no error frames (${text.length} characters in the first)`);
+  console.log(`ok: streamed an answer, an edit of it and an edit in place with no error frames (${text.length} characters in the first)`);
 } finally {
   await browser.close();
   server.kill();

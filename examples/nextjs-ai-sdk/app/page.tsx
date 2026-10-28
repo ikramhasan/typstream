@@ -16,11 +16,13 @@
 // you stay at the bottom and lets you scroll away from it. As pages, an answer
 // is cut off below the text being written, so that bottom is the text.
 //
-// Once there's a document, a request edits it (#34): the page sends the document
-// with it, the model answers with `<edit>`s that quote what they replace, and an
-// edit session (@typstream/ai) applies them as they stream. The answer shows the
-// document with its edits: a block being rewritten streams into place while the
-// rest stays, in HTML the text a quote matches is highlighted, then Keep or Undo.
+// Documents can be edited (#34). Each answer's Edit button asks what to change
+// and edits that document in place; once there's a document, a request typed in
+// the chat edits the latest one in a new answer. Either way the page sends the
+// document with the request, the model answers with `<edit>`s that quote what
+// they replace, and an edit session (@typstream/ai) applies them as they stream:
+// a block being rewritten streams into place while the rest stays, in HTML the
+// text a quote matches is highlighted, then Keep or Undo.
 
 import { useChat } from "@ai-sdk/react";
 import {
@@ -36,7 +38,7 @@ import { edu, SHOW_ANSWERS_INPUT } from "@typstream/edu";
 import { googleFonts } from "@typstream/google-fonts";
 import { mindmap } from "@typstream/mindmap";
 import { mindmapIslands } from "@typstream/mindmap/react";
-import type { UIDataTypes, UIMessage } from "ai";
+import { DefaultChatTransport, readUIMessageStream, type UIDataTypes, type UIMessage } from "ai";
 import {
   ArrowUpIcon,
   CheckIcon,
@@ -45,6 +47,7 @@ import {
   FileTextIcon,
   ImageIcon,
   LoaderCircleIcon,
+  PencilIcon,
   RotateCwIcon,
   SquareIcon,
   SquarePenIcon,
@@ -492,11 +495,24 @@ type AnswerProps = {
   answers: boolean;
   busy: boolean;
   onRetry: () => void;
-  /** More of the footer: an edit's Keep and Undo. */
+  /** More of the footer: Edit, and an edit's Keep and Undo. */
   children?: ReactNode;
+  /** Below the footer: what the model said about its edits, the field asking what to change. */
+  after?: ReactNode;
 };
 
-const Answer = ({ text, streaming, streamingRange, marks, target, answers, busy, onRetry, children }: AnswerProps) => {
+const Answer = ({
+  text,
+  streaming,
+  streamingRange,
+  marks,
+  target,
+  answers,
+  busy,
+  onRetry,
+  children,
+  after,
+}: AnswerProps) => {
   const t = useTypstream();
   // Compiles that failed while streaming. The last good render stays on screen, so a reader never
   // sees them; the smoke test checks there were none.
@@ -572,6 +588,7 @@ const Answer = ({ text, streaming, streamingRange, marks, target, answers, busy,
             {t.diagnostics.length ? ` · ${t.diagnostics.length} diagnostics` : ""}
           </span>
         </MessageFooter>
+        {after}
       </MessageContent>
     </Message>
   );
@@ -585,68 +602,176 @@ const marksOf = (state: EditSessionState): Mark[] =>
     return edit.status === "applied" && state.phase === "review" ? [{ ...edit.range, kind: "changed" }] : [];
   });
 
-type EditAnswerProps = Omit<AnswerProps, "text" | "streaming" | "streamingRange" | "marks" | "children"> & {
-  session: EditSession;
-  /** The model's answer so far, with its `<edit>`s. */
-  answer: string;
-  /** Whether the answer has ended (finished, stopped or failed). */
-  done: boolean;
-  /** Sends what to tell the model about the edits that didn't apply. */
-  onAskAgain: (feedback: string) => void;
+/** Where an edit made in place is sent: the chat's route, which edits the document a request carries. */
+const transport = new DefaultChatTransport<ChatMessage>({ api: "/api/chat" });
+
+const NO_SESSION = () => () => {};
+const NO_STATE = () => null;
+
+/** Asks what to change in a document: Enter applies it, Escape closes the field. */
+const EditField = ({ onSubmit, onCancel }: { onSubmit: (instruction: string) => void; onCancel: () => void }) => {
+  const [value, setValue] = useState("");
+  return (
+    <form
+      className="pt-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (value.trim()) onSubmit(value.trim());
+      }}
+    >
+      <InputGroup>
+        <InputGroupTextarea
+          // The field opens because the reader asked to type in it.
+          autoFocus
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") onCancel();
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              e.currentTarget.form?.requestSubmit();
+            }
+          }}
+          placeholder="What should change in this document?"
+          aria-label="Edit instruction"
+          className="min-h-12"
+        />
+        <InputGroupAddon align="block-end">
+          <InputGroupButton size="sm" onClick={onCancel}>
+            Cancel
+          </InputGroupButton>
+          <InputGroupButton type="submit" variant="default" size="sm" className="ml-auto" disabled={!value.trim()}>
+            Edit
+          </InputGroupButton>
+        </InputGroupAddon>
+      </InputGroup>
+    </form>
+  );
+};
+
+type DocumentAnswerProps = Omit<AnswerProps, "streamingRange" | "marks" | "children" | "after"> & {
+  /** The answer's message id: its edits made in place are kept under it. */
+  id: string;
+  /** For an answer to an edit request typed in the chat: its session, and the answer that feeds it. */
+  answer?: { session: EditSession; text: string; done: boolean };
+  /** The chat up to this answer: what an edit made in place is asked with. */
+  history: readonly ChatMessage[];
+  /** Each answer's latest edit session, by id: the page's, so a request typed next edits the latest text. */
+  latest: Map<string, EditSession>;
 };
 
 /**
- * An answer that edits the document: the session applies its edits as they stream, and the
- * document shows them. A stopped answer rolls back the edit it was writing.
+ * A document in the chat: the answer's own (`text`, streaming as the answer does), or the one an
+ * edit request's answer changed. Edit asks what to change and edits this document in place: a
+ * session over its text, fed by a request sent beside the chat. A stopped edit rolls back the
+ * part it was writing; the last edit ends with Keep or Undo.
  */
-const EditAnswer = ({ session, answer, done, onAskAgain, ...props }: EditAnswerProps) => {
-  const state = useSyncExternalStore(session.subscribe, session.getState, session.getState);
-  useEffect(() => session.update(answer, done), [session, answer, done]);
-  const doing = state.edits.find((edit) => edit.status === "quoting" || edit.status === "writing");
-  const feedback = state.phase === "streaming" ? null : editFeedback(state.edits);
-  const failed = state.edits.filter((edit) => edit.status === "failed").length;
+const DocumentAnswer = ({ id, text, streaming, answer, history, latest, ...props }: DocumentAnswerProps) => {
+  // The session that last changed this document: the answer's own, then each edit made in place.
+  const [session, setSession] = useState<EditSession | null>(() => latest.get(id) ?? answer?.session ?? null);
+  const state = useSyncExternalStore(
+    session?.subscribe ?? NO_SESSION,
+    session?.getState ?? NO_STATE,
+    session?.getState ?? NO_STATE,
+  );
+  const { session: answerSession, text: answerText, done: answerDone } = answer ?? {};
+  useEffect(() => answerSession?.update(answerText ?? "", answerDone), [answerSession, answerText, answerDone]);
+  const [asking, setAsking] = useState(false);
+  const [running, setRunning] = useState<AbortController | null>(null);
+  const [failure, setFailure] = useState<string | null>(null);
+
+  const edit = async (instruction: string) => {
+    if (state?.phase === "review") session?.keep();
+    const document = state?.text ?? text;
+    const next = createEditSession(document);
+    latest.set(id, next);
+    setSession(next);
+    setAsking(false);
+    setFailure(null);
+    const controller = new AbortController();
+    setRunning(controller);
+    let reply = "";
+    try {
+      const stream = await transport.sendMessages({
+        chatId: `edit-${id}`,
+        messages: [
+          ...history,
+          {
+            id: `${id}-edit-${Date.now()}`,
+            role: "user",
+            parts: [{ type: "text", text: instruction }],
+            metadata: { document },
+          },
+        ],
+        trigger: "submit-message",
+        messageId: undefined,
+        abortSignal: controller.signal,
+      });
+      for await (const message of readUIMessageStream<ChatMessage>({ stream })) {
+        reply = textOf(message);
+        next.update(reply);
+      }
+    } catch (error) {
+      if (!controller.signal.aborted) setFailure(error instanceof Error ? error.message : String(error));
+    }
+    // Ended, stopped or failed: an edit still being written is rolled back.
+    next.update(reply, true);
+    setRunning(null);
+  };
+
+  const writing = streaming || running !== null || state?.phase === "streaming";
+  const doing = state?.edits.find((e) => e.status === "quoting" || e.status === "writing");
+  const feedback = state && state.phase !== "streaming" ? editFeedback(state.edits) : null;
+  const failed = state?.edits.filter((e) => e.status === "failed").length ?? 0;
   return (
-    <>
-      {state.message && (
-        <Message>
-          <MessageContent>
-            <p className="text-sm whitespace-pre-wrap">{state.message}</p>
-          </MessageContent>
-        </Message>
+    <Answer
+      {...props}
+      text={state?.text ?? text}
+      streaming={state ? state.streaming : streaming}
+      streamingRange={state?.streamingRange ?? null}
+      marks={state ? marksOf(state) : undefined}
+      after={
+        <>
+          {state?.message && <p className="text-sm whitespace-pre-wrap text-muted-foreground">{state.message}</p>}
+          {failure && <p className="text-sm text-destructive">The edit failed: {failure}</p>}
+          {asking && <EditField onSubmit={(instruction) => void edit(instruction)} onCancel={() => setAsking(false)} />}
+        </>
+      }
+    >
+      <Action label="Edit" onClick={() => setAsking((open) => !open)} disabled={writing}>
+        <PencilIcon />
+      </Action>
+      {running && (
+        <Button size="sm" variant="outline" className="ml-2" onClick={() => running.abort()}>
+          <SquareIcon data-icon="inline-start" />
+          Stop
+        </Button>
       )}
-      <Answer
-        {...props}
-        text={state.text}
-        streaming={state.streaming}
-        streamingRange={state.streamingRange}
-        marks={marksOf(state)}
-      >
-        {state.phase === "review" && (
-          <>
-            <Button size="sm" className="ml-2" onClick={() => session.keep()}>
-              <CheckIcon data-icon="inline-start" />
-              Keep
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => session.undo()}>
-              <Undo2Icon data-icon="inline-start" />
-              Undo
-            </Button>
-          </>
-        )}
-        {feedback && (
-          <Button size="sm" variant="ghost" onClick={() => onAskAgain(feedback)} disabled={props.busy}>
-            <RotateCwIcon data-icon="inline-start" />
-            {failed === 1 ? "Redo the edit that failed" : `Redo ${failed} edits that failed`}
+      {state?.phase === "review" && !running && (
+        <>
+          <Button size="sm" className="ml-2" onClick={() => session?.keep()}>
+            <CheckIcon data-icon="inline-start" />
+            Keep
           </Button>
-        )}
-        {state.phase === "undone" && <span className="ml-2">Undone</span>}
-        {doing && (
-          <span className="shimmer ml-2">
-            {doing.status === "quoting" ? "Finding the text to change…" : "Rewriting…"}
-          </span>
-        )}
-      </Answer>
-    </>
+          <Button size="sm" variant="outline" onClick={() => session?.undo()}>
+            <Undo2Icon data-icon="inline-start" />
+            Undo
+          </Button>
+        </>
+      )}
+      {feedback && !running && (
+        <Button size="sm" variant="ghost" onClick={() => void edit(feedback)}>
+          <RotateCwIcon data-icon="inline-start" />
+          {failed === 1 ? "Redo the edit that failed" : `Redo ${failed} edits that failed`}
+        </Button>
+      )}
+      {state?.phase === "undone" && <span className="ml-2">Undone</span>}
+      {doing && (
+        <span className="shimmer ml-2">
+          {doing.status === "quoting" ? "Finding the text to change…" : "Rewriting…"}
+        </span>
+      )}
+    </Answer>
   );
 };
 
@@ -685,9 +810,10 @@ export default function Page() {
   const [answers, setAnswers] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const busy = status === "submitted" || status === "streaming";
-  // One edit session per answer that edits, made the first time it shows, over the document its
-  // request was about.
+  // One edit session per answer to an edit request typed in the chat, made the first time it shows,
+  // over the document its request was about; and each answer's latest edit made in place.
   const sessions = useRef(new Map<string, EditSession>());
+  const latest = useRef(new Map<string, EditSession>());
   const sessionOf = (id: string, document: string) => {
     const session = sessions.current.get(id) ?? createEditSession(document);
     sessions.current.set(id, session);
@@ -698,7 +824,7 @@ export default function Page() {
   const currentDocument = (): string | undefined => {
     for (const message of [...messages].reverse()) {
       if (message.role !== "assistant") continue;
-      const session = sessions.current.get(message.id);
+      const session = latest.current.get(message.id) ?? sessions.current.get(message.id);
       if (session) return session.getState().text;
       const document = documentOf(message);
       if (document) return document;
@@ -709,7 +835,9 @@ export default function Page() {
   const send = (text: string) => {
     if (!text.trim() || busy) return;
     // A new request keeps what the last one changed.
-    for (const session of sessions.current.values()) if (session.getState().phase === "review") session.keep();
+    for (const session of [...sessions.current.values(), ...latest.current.values()]) {
+      if (session.getState().phase === "review") session.keep();
+    }
     const document = currentDocument();
     void sendMessage({ text: text.trim(), metadata: document === undefined ? undefined : { document } });
     setInput("");
@@ -735,6 +863,7 @@ export default function Page() {
                 onClick={() => {
                   setMessages([]);
                   sessions.current.clear();
+                  latest.current.clear();
                 }}
                 disabled={busy}
               >
@@ -814,28 +943,27 @@ export default function Page() {
                                 <ImageSearch key={i} part={part} />
                               ) : null,
                             )}
-                            {editOf(messages, index) !== undefined ? (
-                              <EditAnswer
-                                session={sessionOf(message.id, editOf(messages, index) as string)}
-                                answer={textOf(message)}
-                                done={!isStreaming(message, chat)}
+                            {(editOf(messages, index) !== undefined || documentOf(message)) && (
+                              <DocumentAnswer
+                                id={message.id}
+                                text={documentOf(message)}
+                                streaming={isStreaming(message, chat)}
+                                answer={
+                                  editOf(messages, index) === undefined
+                                    ? undefined
+                                    : {
+                                        session: sessionOf(message.id, editOf(messages, index) as string),
+                                        text: textOf(message),
+                                        done: !isStreaming(message, chat),
+                                      }
+                                }
+                                history={messages.slice(0, index + 1)}
+                                latest={latest.current}
                                 target={target}
                                 answers={answers}
                                 busy={busy}
                                 onRetry={() => void regenerate({ messageId: message.id })}
-                                onAskAgain={send}
                               />
-                            ) : (
-                              documentOf(message) && (
-                                <Answer
-                                  text={documentOf(message)}
-                                  streaming={isStreaming(message, chat)}
-                                  target={target}
-                                  answers={answers}
-                                  busy={busy}
-                                  onRetry={() => void regenerate({ messageId: message.id })}
-                                />
-                              )
                             )}
                           </div>
                         )}
