@@ -51,6 +51,9 @@ const BOTTOM: f64 = 0.246;
 /// Room added to a width Typst's lines exactly fill, in points: engines measure text a hair wider (the writer gives
 /// table cells as much).
 const SLACK: f64 = 1.0;
+/// A block Typst starts a page with gets a page break before it when the page before had more room left than this
+/// share of its height: less is a page that was full, where engines break by themselves.
+const PAGE_ROOM: f64 = 0.05;
 
 /// The model as JSON (see `@typstream/docx`'s `DocxModel`) and the data of the fonts it names, in its order.
 pub struct Model {
@@ -267,7 +270,8 @@ impl Linearizer<'_> {
                         h: size.y.to_pt(),
                     };
                     // A grid or table drawn with curves (rounded cards) stays a grid: its cells are found inside.
-                    if !gts.is_only_translate() || (curvy(&group.frame) && !has_cells(&group.frame)) {
+                    if !gts.is_only_translate() || (curvy(&group.frame) && !has_cells(&group.frame))
+                    {
                         // Rotated or drawn content (CeTZ, edu's drawings): an image later (#133). Its tags stay, so
                         // elements around it (a cell it is in) still start and end.
                         self.push(Kind::Drawing(rect));
@@ -805,24 +809,55 @@ impl Builder {
         let _ = pages;
         let n = self.items.len();
         // Split each page's items into header, body and footer by position.
+        // Groups in a margin (the header's and footer's frames) go whole, and elements started there take their ends:
+        // a table broken across pages has the next page's header among its items.
         let mut body = Vec::new();
         let mut header: HashMap<usize, Vec<usize>> = HashMap::new();
         let mut footer: HashMap<usize, Vec<usize>> = HashMap::new();
-        for i in 0..n {
+        let all: Vec<usize> = (0..n).collect();
+        let mut marginal_ends: HashMap<Location, bool> = HashMap::new();
+        let mut i = 0;
+        while i < n {
             let item = &self.items[i];
             let (size, m) = self.geometry[item.page];
-            let y = match &item.kind {
-                Kind::Text(t) => Some(t.y),
-                Kind::Seg(s) => Some(s.y0),
-                _ => None,
-            };
-            match y {
-                Some(y) if y < m.top => header.entry(item.page).or_default().push(i),
-                Some(y) if y > size.y.to_pt() - m.bottom => {
-                    footer.entry(item.page).or_default().push(i)
+            let bottom_edge = size.y.to_pt() - m.bottom;
+            // `Some(true)`: the header's; `Some(false)`: the footer's.
+            let zone = |y0: f64, y1: f64| {
+                if y1 <= m.top + 0.5 {
+                    Some(true)
+                } else if y0 >= bottom_edge - 0.5 {
+                    Some(false)
+                } else {
+                    None
                 }
-                _ => body.push(i),
+            };
+            let (to, end) = match &item.kind {
+                Kind::Group(r, _) => (zone(r.y, r.bottom()), group_end(&self.items, &all, i)),
+                Kind::Text(t) => (
+                    zone(t.y, t.y).filter(|_| t.y < m.top || t.y > bottom_edge),
+                    i,
+                ),
+                Kind::Seg(s) => (
+                    zone(s.y0, s.y0).filter(|_| s.y0 < m.top || s.y0 > bottom_edge),
+                    i,
+                ),
+                Kind::Start(elem, at) => {
+                    let y = at.y.to_pt();
+                    let to = zone(y, y).filter(|_| y < m.top || y > bottom_edge);
+                    if let (Some(h), Some(loc)) = (to, elem.location()) {
+                        marginal_ends.insert(loc, h);
+                    }
+                    (to, i)
+                }
+                Kind::End(loc) => (marginal_ends.get(loc).copied(), i),
+                _ => (None, i),
+            };
+            match to {
+                Some(true) => header.entry(item.page).or_default().extend(i..=end),
+                Some(false) => footer.entry(item.page).or_default().extend(i..=end),
+                None => body.extend(i..=end),
             }
+            i = end + 1;
         }
         let area = |g: &(Size, Sides<f64>)| Area {
             left: g.1.left,
@@ -935,7 +970,7 @@ impl Builder {
                 Some((page, bottom)) if body => {
                     let (size, m) = self.geometry[page];
                     let room = size.y.to_pt() - m.bottom - bottom;
-                    if room > 0.3 * (size.y.to_pt() - m.top - m.bottom) {
+                    if room > PAGE_ROOM * (size.y.to_pt() - m.top - m.bottom) {
                         b.json.insert("pageBreak".into(), json!(true));
                     }
                     b.top - self.content_top(b.page)
@@ -1053,7 +1088,8 @@ impl Builder {
                     continue;
                 }
                 Kind::Group(rect, false)
-                    if rect.right() < area.right - 1.0 && !self.beside(&pending, *rect, items[id].page) =>
+                    if rect.right() < area.right - 1.0
+                        && !self.beside(&pending, *rect, items[id].page) =>
                 {
                     // A block narrower than the area on its right (a padded quote): where its wrapped lines end is
                     // its right edge, an indent for its paragraphs. A group with one line may be only as wide as its
@@ -1085,7 +1121,10 @@ impl Builder {
                     );
                     for b in &mut blocks {
                         if b.json.get("type").and_then(|t| t.as_str()) == Some("p") {
-                            let had = b.json["indent"].get("right").and_then(|r| r.as_f64()).unwrap_or(0.0);
+                            let had = b.json["indent"]
+                                .get("right")
+                                .and_then(|r| r.as_f64())
+                                .unwrap_or(0.0);
                             b.json["indent"]["right"] = json!(round(had + right));
                         }
                     }
@@ -1175,7 +1214,9 @@ impl Builder {
                     h: s.y1 - s.y0,
                 })
                 .then_some(j + 1),
-                Kind::Fill(r, _) | Kind::Drawing(r) | Kind::Link(r, _) => inside(*r).then_some(j + 1),
+                Kind::Fill(r, _) | Kind::Drawing(r) | Kind::Link(r, _) => {
+                    inside(*r).then_some(j + 1)
+                }
                 Kind::Group(r, _) => inside(*r).then(|| group_end(&self.items, ids, j + 1)),
                 // A start on the drawing's right or bottom edge is something beside it (the next cell).
                 Kind::Start(elem, at) => {
@@ -1203,7 +1244,9 @@ impl Builder {
     /// Whether text gathered for the paragraph shares a line with `rect` (an inline box, not a block).
     fn beside(&self, pending: &[usize], rect: Rect, page: usize) -> bool {
         pending.iter().any(|&p| match &self.items[p].kind {
-            Kind::Text(t) => self.items[p].page == page && t.y > rect.y && t.y - TOP * t.size < rect.bottom(),
+            Kind::Text(t) => {
+                self.items[p].page == page && t.y > rect.y && t.y - TOP * t.size < rect.bottom()
+            }
             _ => false,
         })
     }
@@ -1912,6 +1955,30 @@ impl Builder {
             top: (first_top - rect.y - thickness("top")).max(0.0),
             bottom: (rect.bottom() - last_bottom - thickness("bottom")).max(0.0),
         };
+        // An empty box ruled underneath only (edu's answer lines) is a ruled line: a paragraph with a bottom border,
+        // which engines split pages between, where they won't break a row holding a nested table.
+        if blocks.is_empty() && fill.is_none() {
+            if let Some(Json::Object(sides)) = Some(&borders) {
+                if sides.len() == 1 && sides.contains_key("bottom") {
+                    let t = thickness("bottom");
+                    let mut json = Map::new();
+                    json.insert("type".into(), json!("rule"));
+                    json.insert("thickness".into(), json!(round(t)));
+                    json.insert("color".into(), sides["bottom"]["color"].clone());
+                    json.insert(
+                        "indent".into(),
+                        json!({ "left": round(rect.x - area.left), "right": round((area.right - rect.right()).max(0.0)) }),
+                    );
+                    return Some(Block {
+                        page,
+                        end_page: page,
+                        top: rect.bottom() - t,
+                        bottom: rect.bottom(),
+                        json,
+                    });
+                }
+            }
+        }
         let blocks = self.with_gaps_from(blocks, first_top);
         let mut blocks: Vec<Json> = blocks.into_iter().map(|b| Json::Object(b.json)).collect();
         // Nothing in it (a ruled line, an empty box): its height held by an empty paragraph.
@@ -1959,13 +2026,29 @@ impl Builder {
         else {
             return None;
         };
-        // The grid's frame on each page it is on: the first group there at its left edge.
+        // The grid's frame on each page it is on: the innermost group at its left edge, as wide as the first there,
+        // opened before anything is drawn there (where a row continues on a page, the page's flow opens around it
+        // first; a first cell's group is narrower).
         let mut frames: HashMap<usize, Rect> = HashMap::new();
+        let mut drawn: HashSet<usize> = HashSet::new();
         for &id in &ids[1..] {
-            if let Kind::Group(r, _) = &self.items[id].kind {
-                if (r.x - at.x.to_pt()).abs() < 0.5 {
-                    frames.entry(self.items[id].page).or_insert(*r);
+            let page = self.items[id].page;
+            match &self.items[id].kind {
+                Kind::Group(r, _)
+                    if !drawn.contains(&page)
+                        && (r.x - at.x.to_pt()).abs() < 0.5
+                        && frames.get(&page).is_none_or(|f| r.w >= f.w - 0.5) =>
+                {
+                    frames.insert(page, *r);
                 }
+                Kind::Text(_)
+                | Kind::Seg(_)
+                | Kind::Fill(..)
+                | Kind::Drawing(_)
+                | Kind::Link(..) => {
+                    drawn.insert(page);
+                }
+                _ => {}
             }
         }
         let frame = frames.get(&page).copied();
@@ -2088,6 +2171,35 @@ impl Builder {
                 _ => frame_bottom(p).map(|b| b - top).unwrap_or(0.0).max(0.0),
             }
         };
+        // Where a row's last part ends: at the next row on its page, or at the bottom of the grid's frame. A row goes
+        // on to the pages after its first where the grid's frame starts above the next row (a cell broken across
+        // pages, or a block Typst moved on whole, as an answer space).
+        let row_end = |r: usize| -> (usize, f64) {
+            let Some((p, top)) = row_top[r] else {
+                return (page, at.y.to_pt());
+            };
+            let next = row_top.get(r + 1).copied().flatten();
+            if let Some((q, n)) = next {
+                if q == p {
+                    return (p, n - row_gutter(r));
+                }
+            }
+            let mut end = (p, frame_bottom(p).unwrap_or(top));
+            let last = frames.keys().copied().max().unwrap_or(p);
+            for k in p + 1..=last {
+                let Some(f) = frames.get(&k) else { break };
+                match next {
+                    Some((q, n)) if q == k => {
+                        if f.y < n - row_gutter(r) - 0.5 {
+                            end = (k, n - row_gutter(r));
+                        }
+                        break;
+                    }
+                    _ => end = (k, f.bottom()),
+                }
+            }
+            end
+        };
         let mut rows: Vec<Vec<Json>> = vec![Vec::new(); nrows];
         let mut first_bottom = at.y.to_pt();
         let mut last_page = page;
@@ -2108,6 +2220,9 @@ impl Builder {
             /// The content's distance from the cell's top and bottom edges, inside the borders.
             above: f64,
             below: f64,
+            /// Room the row goes on for past the content, a page's each, and where the content ends.
+            tail: Vec<f64>,
+            reach: (usize, f64),
         }
         let mut laid: Vec<Laid> = Vec::new();
         for (n, cell_ids) in cells.clone() {
@@ -2141,12 +2256,15 @@ impl Builder {
             };
             // A stroke along the cell's top or bottom edge drawn by its content (a box with a bottom stroke, as
             // edu's student fields) is the cell's border: the row keeps its height.
+            // Not in a cell broken across pages: its first part ends at the page, not at an edge it draws.
+            let split = cell_ids.iter().any(|&id| self.items[id].page > cpage);
             let mut edge_segs = Vec::new();
             let cell_ids: Vec<usize> = cell_ids
                 .into_iter()
                 .filter(|&id| match &self.items[id].kind {
                     Kind::Seg(s)
-                        if s.horizontal()
+                        if !split
+                            && s.horizontal()
                             && s.x1 - s.x0 > 0.9 * cw
                             && ((s.y0 - (cy + ch)).abs() < 4.0 || (s.y0 - cy).abs() < 1.0) =>
                     {
@@ -2163,11 +2281,39 @@ impl Builder {
                 .collect();
             let blocks = self.flow(&cell_ids, content, false);
             let content_top = blocks.first().map(|b| b.top).unwrap_or(cy + inset.top);
+            // A cell broken across pages ends on its last page: the room left on the first is the page's, not a
+            // margin (engines put the bottom margin under each part of a split row).
+            let end_page = blocks.iter().map(|b| b.end_page).max().unwrap_or(cpage);
             let content_bottom = blocks
                 .iter()
-                .filter(|b| b.page == blocks[0].page)
+                .filter(|b| b.end_page == end_page)
                 .map(|b| b.bottom)
-                .fold(content_top, f64::max);
+                .fold(
+                    if end_page == cpage {
+                        content_top
+                    } else {
+                        f64::MIN
+                    },
+                    f64::max,
+                );
+            let (rpage, rend) = row_end(y + rowspan - 1);
+            // Where the row goes on past the content, what is left is empty paragraphs, a page's room each, which
+            // engines break between; not a margin, which they would put under each part of the row.
+            let mut tail: Vec<f64> = Vec::new();
+            let cell_bottom = if rpage > end_page {
+                tail.push(
+                    frame_bottom(end_page).unwrap_or(content_bottom) - content_bottom - SLACK,
+                );
+                for k in end_page + 1..rpage {
+                    tail.push(frames.get(&k).map(|f| f.h).unwrap_or(0.0));
+                }
+                tail.push(rend - frames.get(&rpage).map(|f| f.y).unwrap_or(rend));
+                content_bottom
+            } else if end_page == cpage && rpage == cpage {
+                cy + ch
+            } else {
+                rend
+            };
             let blocks = self.with_gaps_from(blocks, content_top);
             let mut all = segs.clone();
             all.extend(edge_segs);
@@ -2188,16 +2334,19 @@ impl Builder {
             let top_share = if y == 0 { 1.0 } else { 0.5 };
             let bottom_share = if y + rowspan == nrows { 1.0 } else { 0.5 };
             let above = (content_top - cy - thickness("top") * top_share).max(0.0);
-            let below = (cy + ch - content_bottom - thickness("bottom") * bottom_share).max(0.0);
+            let below =
+                (cell_bottom - content_bottom - thickness("bottom") * bottom_share).max(0.0);
             if cpage == page {
                 first_bottom = first_bottom.max(cy + ch);
             }
-            if cpage >= last_page {
-                if cpage > last_page {
+            // Where the table ends: the last page a cell reaches, a split one's included.
+            let (epage, ebottom) = (rpage, rend);
+            if epage >= last_page {
+                if epage > last_page {
                     last_bottom = 0.0;
                 }
-                last_page = cpage;
-                last_bottom = last_bottom.max(cy + ch);
+                last_page = epage;
+                last_bottom = last_bottom.max(ebottom);
             }
             let side_borders = (thickness("left"), thickness("right"));
             laid.push(Laid {
@@ -2213,7 +2362,51 @@ impl Builder {
                 blocks,
                 above,
                 below,
+                tail,
+                reach: (end_page, content_bottom),
             });
+        }
+        // One cell holds a row's height where it goes on past every cell's content (as empty paragraphs, its tail):
+        // the one whose content reaches furthest. Engines won't split a row across pages where its other cells hold
+        // them too.
+        let mut holder: HashMap<usize, usize> = HashMap::new();
+        for (k, c) in laid.iter().enumerate() {
+            let last = c.y + c.rowspan - 1;
+            if laid
+                .iter()
+                .any(|o| o.y + o.rowspan - 1 == last && o.tail.is_empty())
+            {
+                continue;
+            }
+            let better = holder.get(&last).is_none_or(|&h| {
+                let r = laid[h].reach;
+                c.reach.0 > r.0 || (c.reach.0 == r.0 && c.reach.1 > r.1)
+            });
+            if better {
+                holder.insert(last, k);
+            }
+        }
+        let holders: HashSet<usize> = holder.values().copied().collect();
+        for (k, c) in laid.iter_mut().enumerate() {
+            if !holders.contains(&k) {
+                c.tail.clear();
+            }
+            let width = c.blocks.first().and_then(|b| b.json.get("width")).cloned();
+            for &h in c.tail.iter().filter(|h| **h > 0.05) {
+                let mut json = Map::new();
+                json.insert("type".into(), json!("drawing"));
+                json.insert("width".into(), width.clone().unwrap_or(json!(1.0)));
+                json.insert("height".into(), json!(round(h)));
+                json.insert("indent".into(), json!(0.0));
+                json.insert("before".into(), json!(0.0));
+                c.blocks.push(Block {
+                    page: c.reach.0,
+                    end_page: c.reach.0,
+                    top: c.reach.1,
+                    bottom: c.reach.1,
+                    json,
+                });
+            }
         }
         // The margins above and below are the row's, the same in every cell: a row is as tall as its tallest content
         // and its largest margins (LibreOffice takes the largest of any cell's for the whole row). They are the
@@ -2314,18 +2507,22 @@ impl Builder {
         segs: &mut Vec<Seg>,
         fills: &mut Vec<(Rect, String)>,
     ) {
-        let column = |x: f64| (0..starts.len() - 1).find(|&c| x >= starts[c] - 0.5 && x < starts[c + 1] - 0.5);
+        let column = |x: f64| {
+            (0..starts.len() - 1).find(|&c| x >= starts[c] - 0.5 && x < starts[c + 1] - 0.5)
+        };
         let cell_at = |page: usize, x: f64, y: f64| -> Option<usize> {
             let c = column(x)?;
             cells
                 .iter()
                 .enumerate()
                 .filter_map(|(k, (n, _))| match n {
-                    Node::Cell { at, page: p, x, colspan, .. }
-                        if *x <= c
-                            && c < x + colspan
-                            && (*p, at.y.to_pt()) <= (page, y + 0.5) =>
-                    {
+                    Node::Cell {
+                        at,
+                        page: p,
+                        x,
+                        colspan,
+                        ..
+                    } if *x <= c && c < x + colspan && (*p, at.y.to_pt()) <= (page, y + 0.5) => {
                         Some((k, (*p, at.y.to_pt())))
                     }
                     _ => None,
