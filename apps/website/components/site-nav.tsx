@@ -6,12 +6,13 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/cn";
-import { githubUrl } from "@/lib/shared";
+import { demoUrl, githubUrl } from "@/lib/shared";
 
 const LINKS = [
   { label: "Docs", href: "/docs" },
   { label: "Guides", href: "/docs/guides/prompting" },
   { label: "Examples", href: `${githubUrl}/tree/main/examples` },
+  { label: "Live demo", href: demoUrl },
   { label: "GitHub", href: githubUrl },
 ];
 
