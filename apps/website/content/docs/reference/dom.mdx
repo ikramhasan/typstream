@@ -164,6 +164,16 @@ compiled (healed) source, without the preamble; map them to the raw stream with 
 
 <auto-type-table path="packages/dom/src/html/renderer.ts" name="HtmlUpdateResult" />
 
+#### Islands (beta)
+
+With `islands` (and `file`, what islands get as `IslandProps.file`), the renderer mounts a render island over each
+`typstream-island` marker whose name a plugin declares: an `IslandRenderer` mounts into a host element positioned over
+the marker's fallback and returns an `IslandInstance` (`update`, `destroy`). `IslandRenderers` maps names to them;
+`mountTypstream` takes the same option. A marker keeps one island while its block is re-created as it streams; one
+whose block starts at or after `HtmlUpdateOptions.stable` is incomplete. See [Writing an island](/docs/guides/islands).
+
+<auto-type-table path="packages/dom/src/islands.ts" name="IslandInstance" />
+
 #### `AnimateOptions`
 
 Word fade-in settings: `animated` in `TypstreamOptions`, `animation` in `HtmlRendererOptions`. Only blocks whose HTML

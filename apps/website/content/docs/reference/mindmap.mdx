@@ -1,0 +1,204 @@
+---
+title: "@typstream/mindmap"
+description: Mind maps written as a list, drawn in plain Typst for print and PDF, and interactive in the viewer (pan, zoom, open and close branches); a plugin with its prompt kit and the first render island.
+icon: Package
+---
+
+`@typstream/mindmap` adds mind maps to typstream documents. A model writes one as a list: the centre topic, then its
+branches, nested by indentation. Typst draws it, and that drawing is what prints, what `exportPdf()` and standalone HTML
+contain, and what any renderer without the island shows. In `<Typstream>`, the interactive map mounts over the drawing:
+readers pan, zoom, and open and close branches. It is the first [render island](/docs/guides/islands).
+
+## Install
+
+```npm
+npm install @typstream/mindmap
+```
+
+## Example
+
+```tsx
+import { mindmap } from "@typstream/mindmap";
+import { mindmapIslands } from "@typstream/mindmap/react";
+import { Typstream } from "typstream";
+
+<Typstream source={text} plugins={[mindmap]} islands={mindmapIslands} />;
+```
+
+```ts
+import { buildSystemPrompt, edu } from "@typstream/edu";
+import { mindmap } from "@typstream/mindmap";
+
+// The model learns `#mindmap` and when to use it.
+const system = buildSystemPrompt([edu, mindmap]);
+```
+
+Without `islands`, documents show the drawing: the plugin alone is enough for print, PDF and non-React apps.
+
+<TypstPreview mindmap target="html" height={300}>
+
+```typst
+#mindmap[
+  Photosynthesis
+  - Inputs
+    - Sunlight
+    - Water ($H_2 O$)
+    - Carbon dioxide
+  - #topic(collapsed: true)[Where]
+    - Leaves
+    - Chloroplasts
+  - Outputs
+    - Glucose
+    - Oxygen
+]
+```
+
+</TypstPreview>
+
+## Writing a mind map
+
+The text before the list is the centre. Each `-` (or `+`) item is a node; items indented under it are its branches.
+Labels are content, so `$H_2 O$` and `*bold*` work in the drawing; the interactive map shows them as plain text, with
+math's sub- and superscripts as Unicode (H₂O).
+
+### `mindmap`
+
+```typst
+#mindmap(style: "visual", layout: "both", text-size: 1em)[centre and branches]
+```
+
+| Parameter | Default | |
+| --- | --- | --- |
+| `style` | `"visual"` | `"visual"`: a colour per main branch, and images. `"text-focused"`: neutral colours, no images, wider labels, for printing and revision. |
+| `layout` | `"both"` | `"both"`: branches on both sides of the centre, the first half on the right. `"right"`: all on one side, which grows in the text's direction (left in Arabic). For narrow columns. |
+| `text-size` | the document's | The main branches' text size; the centre is 1.25 times it and deeper levels 0.9 times. |
+
+The drawing scales down to fit the column.
+
+### `topic`
+
+Wrap a label in `#topic(...)` to set that node's options. Nodes below a coloured one take its colour unless they set
+their own.
+
+| Parameter | Default | |
+| --- | --- | --- |
+| `color` | the branch's | A Typst colour or a hex string (`"#dc2626"`): the node's border, tint, and the lines to its children. |
+| `size` | by level | Text size. |
+| `weight` | bold for the centre and main branches | `"bold"` or `"regular"`. |
+| `image` | none | An `image(...)` above the label, with `alt` as its caption. Not shown in `text-focused` maps. |
+| `collapsed` | `false` | Its branches start hidden: the interactive map opens them on a click, and the drawing shows how many there are (`+3`). |
+
+```typst
+#mindmap(style: "text-focused")[
+  #topic(size: 14pt)[Causes of World War I]
+  - #topic(color: "#2563eb")[Alliances]
+    - Triple Entente
+    - Triple Alliance
+  - #topic(color: "#dc2626")[Trigger]
+    - Assassination of Franz Ferdinand
+  - #topic(collapsed: true)[Further reading]
+    - Clark, The Sleepwalkers
+]
+```
+
+An image is a Typst `image` call, so it goes through the engine's [image handling](/docs/guides/images): nothing is
+fetched unless your `resolveImage` allows the URL, and a missing image is a placeholder. The interactive map shows the
+same bytes the drawing used (`IslandProps.file`) and never fetches a URL itself.
+
+### While it streams
+
+Every cut of a stream leaves something that compiles and draws what has arrived: `#mindmap[` draws nothing, a half-typed
+label is a node, and an option cut mid-value (`color: "#16`, `weight: "bo`) falls back to its default. In `<Typstream>`
+the interactive map mounts once and grows with the stream; it fits itself to its box until the reader moves it. Its
+`isIncomplete` is true while the map's source is still arriving.
+
+## Interactivity
+
+- **Pan** by dragging. **Zoom** with a pinch, Ctrl or ⌘ and the wheel, or the buttons (shown when the map is at least
+  140 px tall). The plain wheel scrolls the page, so a map never traps scrolling.
+- **Open and close** a branch by clicking its node, or with Enter or Space once it has focus (Tab moves through the
+  nodes). Each node's accessible name says whether it is expanded and how many nodes it hides.
+- **Read-only.** Nothing the reader does changes the document.
+
+The map lays out the way the drawing does, measuring labels in the page's font, so it looks like what prints. It paints
+its own background over the drawing (`--typstream-island-background`, default `Canvas`), and print shows the drawing.
+
+### Paged target
+
+In the HTML target the map mounts today. In the paged target the engine already reports where each map is on its page,
+and the paged view's overlay that mounts it comes with the canvas pages
+([#14](https://github.com/ikramhasan/typstream/issues/14), [#28](https://github.com/ikramhasan/typstream/issues/28));
+until then pages show the drawing.
+
+## Cost
+
+React Flow ([`@xyflow/react`](https://reactflow.dev), MIT) draws the interactive map. It is about 59 KB gzipped, loaded
+the first time a document shows a map, not before; the drawing stays visible under the island meanwhile.
+
+A map costs 9–11 ms per compile while streaming in the engine (median; 16–17 ms at p90), against under 5 ms for the same
+text as a plain list. It is drawn in plain Typst, not with CeTZ, whose first canvas costs 100–260 ms.
+
+## API
+
+| Export | What it is |
+| --- | --- |
+| [`mindmap`](#mindmap-1) | The plugin. |
+| [`MindMapIsland`](#mindmapisland), [`mindmapIslands`](#mindmapislands) | The interactive map, from `@typstream/mindmap/react`. |
+| [`parseMindMap`](#parsemindmap), [`mindmapIsland`](#mindmapisland-1) | The check of a marker's data, and the island's spec. |
+| [`MindMapData`](#mindmapdata), [`MindMapNode`](#mindmapdata) | What the marker carries. |
+| `mindmapFiles`, `mindmapPreamble`, `MINDMAP_ROOT`, `MINDMAP_VERSION` | The Typst package, mounted as `@typstream/mindmap:0.1.0`. |
+| `mindmapCatalogue`, `mindmapPromptRules`, `mindmapExamples` | The prompt kit. |
+| `MAX_NODES` | The most nodes a map's data may have (2,000); a larger map keeps its drawing. |
+
+### mindmap
+
+```ts
+const mindmap: TypstreamPlugin;
+```
+
+The plugin, with key `"mindmap"`:
+
+- `engine.files` and `engine.preamble`: the Typst package, and `#import "@typstream/mindmap:0.1.0": mindmap, topic`.
+- `prompt`: the catalogue of `mindmap` and `topic` from their doc comments, rules (when to draw a map, short labels in a
+  logical order, colours with a reason, images only on a few key nodes), and two example documents.
+- `islands.mindmap`: [`mindmapIsland`](#mindmapisland-1).
+
+### MindMapIsland
+
+```ts
+const MindMapIsland: (props: IslandProps<MindMapData>) => JSX.Element;
+```
+
+The `mindmap` island as a React component, for `<Typstream islands>` and `<TypstreamProvider islands>`. React Flow and
+the map's code load lazily, inside its own `Suspense`.
+
+### mindmapIslands
+
+```ts
+const mindmapIslands: { readonly mindmap: typeof MindMapIsland };
+```
+
+`{ mindmap: MindMapIsland }`, to pass as `islands`.
+
+### parseMindMap
+
+```ts
+function parseMindMap(data: unknown): MindMapData | undefined;
+```
+
+Checks a marker's data, which the document wrote and is untrusted: the shape the Typst side writes, colours as hex,
+sizes and label lengths in range, at most 2,000 nodes and 16 levels. Anything else is `undefined`, and the drawing stays.
+
+### mindmapIsland
+
+```ts
+const mindmapIsland: IslandSpec<MindMapData>;
+```
+
+The island's spec: its description and [`parseMindMap`](#parsemindmap).
+
+### MindMapData
+
+<auto-type-table path="packages/mindmap/src/index.ts" name="MindMapData" />
+
+<auto-type-table path="packages/mindmap/src/index.ts" name="MindMapNode" />

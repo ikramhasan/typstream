@@ -901,13 +901,27 @@ class Server implements EngineServer {
         this.post({ method: "document/artifact", params: { uri, rev, artifact: { target: "html", html: out.html } } });
         doc.pagedBase = null;
       } else if (out && "output" in out && out.output) {
-        const { pageCount, changed } = out.output;
+        const { pageCount, changed, islands } = out.output;
+        const { offset } = doc;
+        const { toOriginal } = outcome.compiled;
         this.post({
           method: "document/artifact",
           params: {
             uri,
             rev,
-            artifact: { target: "paged", base: full ? null : doc.pagedBase, pageCount, pages: changed },
+            artifact: {
+              target: "paged",
+              base: full ? null : doc.pagedBase,
+              pageCount,
+              pages: changed,
+              // An island's source, as diagnostics are: past the preamble, in the text the client sent.
+              ...(islands && {
+                islands: islands.map((i) => ({
+                  ...i,
+                  from: i.from === null || i.from < offset ? null : toOriginal(i.from - offset),
+                })),
+              }),
+            },
           },
         });
         doc.pagedBase = rev;

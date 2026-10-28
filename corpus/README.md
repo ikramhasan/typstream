@@ -41,6 +41,10 @@ Sets:
   compile stay as they are, as `expect: "error"` entries. `loadCorpus()` leaves
   this set out unless asked (`{ sets: ALL_SETS }`), because its documents need
   their plugins mounted: heal's corpus tests and the compile oracle load it.
+- **`islands/`**: hand-written documents with render islands (#28, PLAN §8.4):
+  mind maps (`@typstream/mindmap`) in a worksheet, in Arabic, and a detailed
+  text-focused revision map. Opt-in like `llm/` (`meta.plugins` names the
+  plugins they need); `pnpm corpus:validate` mounts them.
 
 ### `meta.json`
 

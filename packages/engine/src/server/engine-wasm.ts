@@ -9,8 +9,8 @@
 // result's `pending` tells the server to recompile once it has arrived. Fonts
 // from font catalogues arrive while it runs, through `addFonts` (./fonts.ts).
 
-import type { ExportFormat, FontSource } from "@typstream/core";
-import initWasm, { Engine, type InitInput } from "@typstream/engine-wasm";
+import type { ExportFormat, FontSource, PagedIsland } from "@typstream/core";
+import initWasm, { Engine, type InitInput, type IslandMarker } from "@typstream/engine-wasm";
 import type { AdapterCompileResult, AdapterDocument, EngineAdapter } from "./adapter";
 
 /**
@@ -103,6 +103,23 @@ const fetchFont = async (url: string | URL, cache: FontCache | null, fresh = fal
 };
 
 const fontInput = (font: FontSource): FontInput => (font.kind === "url" ? font.url : font.data);
+
+/**
+ * Island markers as the protocol sends them: a marker whose value isn't the shape the island
+ * contract describes (`name`, `width`, `height`; PLAN §8.4) is left out, its fallback drawn.
+ */
+const islandsOf = (markers: readonly IslandMarker[]): PagedIsland[] =>
+  markers.flatMap(({ page, x, y, value, from }) => {
+    let v: { name?: unknown; data?: unknown; width?: unknown; height?: unknown };
+    try {
+      v = JSON.parse(value);
+    } catch {
+      return [];
+    }
+    const { name, data, width, height } = v ?? {};
+    if (typeof name !== "string" || typeof width !== "number" || typeof height !== "number") return [];
+    return [{ name, data, page, x, y, width, height, from }];
+  });
 
 /**
  * The engine-wasm {@link EngineAdapter}. Targets HTML and paged (changed-page
@@ -217,7 +234,9 @@ export const engineWasm = (options: EngineWasmOptions = {}): EngineAdapter => {
           if (fullPages) engine.reset_pages();
           const r = engine.compile_svg_changed(drawings);
           const result = {
-            output: r.ok ? { pageCount: r.pageCount ?? 0, changed: r.changed ?? [] } : null,
+            output: r.ok
+              ? { pageCount: r.pageCount ?? 0, changed: r.changed ?? [], islands: islandsOf(r.islands ?? []) }
+              : null,
             diagnostics: r.diagnostics,
             compileMs: r.compileMs,
             exportMs: r.exportMs,

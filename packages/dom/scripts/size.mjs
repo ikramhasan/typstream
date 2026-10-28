@@ -25,8 +25,9 @@ const measure = async (label, entry, budget) => {
 
 const ok = [
   // 9 KB until plugins' stylesheets (#27, 24 bytes) came in after #29 and #63 had left 7 bytes; 9.5 KB until
-  // font catalogues' web fonts (`registerLoadedFont`, 0.29 KB) took it to 9.78 KB.
-  await measure("@typstream/dom (HTML renderer, incl. its CSS)", "src/html/index.ts", 9.8 * 1024),
+  // font catalogues' web fonts (`registerLoadedFont`, 0.29 KB) took it to 9.78 KB; 9.8 KB until render islands
+  // (#28: the marker's data read before sanitizing, one island per marker identity, their CSS; 0.8 KB).
+  await measure("@typstream/dom (HTML renderer, incl. its CSS)", "src/html/index.ts", 10.7 * 1024),
   // 4 KB until canvas pages (#14): the painter, the drawing's decoder, the link layer and pixel management, 1.8 KB.
   await measure("@typstream/dom (paged renderer)", "src/paged/index.ts", 5.6 * 1024),
   await measure("@typstream/dom (standalone HTML export)", "src/export/index.ts", 2 * 1024),

@@ -111,6 +111,24 @@ export const htmlRendererCss: string = `${THEME_CSS}
 :where(.typstream math[display=block]) {
   min-width: max-content;
 }
+:where(.typstream typstream-island) {
+  position: relative;
+}
+:where(.typstream typstream-island:has(> .typstream-island:not(:empty)) > svg) {
+  visibility: hidden;
+}
+:where(.typstream .typstream-island) {
+  position: absolute;
+  inset: 0;
+}
+@media print {
+  :where(.typstream .typstream-island) {
+    display: none;
+  }
+  :where(.typstream typstream-island > svg) {
+    visibility: visible;
+  }
+}
 @keyframes typstream-fadeIn {
   from {
     opacity: 0;

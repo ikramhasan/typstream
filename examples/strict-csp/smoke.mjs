@@ -1,8 +1,8 @@
 // Smoke test (#29, apps/website/content/docs/guides/security.mdx): builds the page, serves it with the strict
 // policy in csp.mjs, and opens it in Chromium, Firefox and WebKit (BROWSERS=…
 // runs some). The worksheet must finish in both targets, with its layout, math,
-// lazily loaded font and package diagram, and without a single CSP violation or
-// console error. A last check proves the policy is enforced at all: an inline
+// lazily loaded font and package diagram, and a mind map island must mount (React,
+// React Flow), without a single CSP violation or console error. A last check proves the policy is enforced at all: an inline
 // style the page adds itself is refused.
 
 import { spawn } from "node:child_process";
@@ -91,7 +91,28 @@ try {
       if (report.gridColumns !== 2) problems.push(`HTML: the grid has ${report.gridColumns} columns`);
       if (report.diagram < 1) problems.push("HTML: no diagram");
       if (report.pages < 1 || !report.pagedText.includes("Coordinates")) problems.push("paged: no page with text");
-      problems.push(...report.violations.map((v) => `CSP: ${v}`), ...errors.map((e) => `console: ${e}`));
+      problems.push(...report.violations.map((v) => `CSP: ${v}`), ...errors.splice(0).map((e) => `console: ${e}`));
+
+      // The island page (#28): React and React Flow under the same policy.
+      await page.goto(`http://localhost:${PORT}/island.html`);
+      try {
+        await page.waitForSelector('#island[data-status="done"]', { timeout: 120_000 });
+        // The centre, three branches, two leaves of the open ones; "Precipitation" closed.
+        await page.waitForFunction(() => document.querySelectorAll("#island .react-flow__node").length === 7, null, {
+          timeout: 60_000,
+        });
+        const island = await page.evaluate(() => ({
+          edges: document.querySelectorAll("#island .react-flow__edge").length,
+          fallbackHidden: document.querySelector("#island typstream-island > svg")?.getAttribute("aria-hidden"),
+          violations: window.__violations,
+        }));
+        if (island.edges !== 6) problems.push(`island: ${island.edges} edges`);
+        if (island.fallbackHidden !== "true") problems.push("island: the drawing under the map isn't hidden from AT");
+        problems.push(...island.violations.map((v) => `island CSP: ${v}`));
+      } catch (e) {
+        problems.push(`island: ${e.message.split("\n")[0]}`);
+      }
+      problems.push(...errors.splice(0).map((e) => `console: ${e}`));
 
       // The policy holds: an inline style attribute is refused, and so is a
       // string assigned to innerHTML where the browser has Trusted Types.
@@ -116,7 +137,7 @@ try {
       else if (!probe.trustedTypes) console.log(`${name} has no Trusted Types: the directive is ignored there`);
 
       if (problems.length) failures.push(`${name}:\n  ${problems.join("\n  ")}`);
-      else console.log(`ok: ${name}, both targets finished under the policy with no violations`);
+      else console.log(`ok: ${name}, both targets and the island finished under the policy with no violations`);
       if (process.argv.includes("--screenshot")) await page.screenshot({ path: `smoke-${name}.png`, fullPage: true });
     } finally {
       await browser.close();

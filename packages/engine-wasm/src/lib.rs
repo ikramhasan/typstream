@@ -9,6 +9,7 @@
 mod diagnostics;
 mod draw;
 mod fonts;
+mod islands;
 mod js;
 mod text;
 mod world;
@@ -119,13 +120,22 @@ export type ChangedPage = {
   dir: "ltr" | "rtl";
 };
 /**
+ * An island marker (PLAN §8.4): a `metadata` labelled `<typstream-island>`, at
+ * `page` (from 0), `(x, y)` in points from the page's top left. `value` is its
+ * value without `source`, as JSON; `from` is the UTF-16 offset in /main.typ of
+ * `source`, content the document wrote, or `null`.
+ */
+export type IslandMarker = { page: number; x: number; y: number; value: string; from: number | null };
+/**
  * `changed` holds only the pages whose content changed since the last successful
  * call (all of them after `reset_pages`); indices refer to the new document.
- * Pages at or past `pageCount` are gone.
+ * Pages at or past `pageCount` are gone. `islands` lists every island marker,
+ * whichever pages changed.
  */
 export type SvgChangedResult = CompileResult & {
   pageCount?: number;
   changed?: ChangedPage[];
+  islands?: IslandMarker[];
   compileMs: number;
   exportMs: number;
 };
@@ -347,6 +357,7 @@ impl Engine {
                 let obj = self.result(true, &[], &warnings);
                 set(&obj, "pageCount", doc.pages().len() as f64);
                 set(&obj, "changed", changed);
+                set(&obj, "islands", islands::islands(&self.world, &doc));
                 set(&obj, "exportMs", perf_now() - t1);
                 obj
             }

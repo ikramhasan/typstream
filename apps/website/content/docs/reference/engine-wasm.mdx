@@ -106,7 +106,7 @@ Every compile returns a `CompileResult`, extended per method:
 | --- | --- |
 | `CompileResult` | `ok: boolean`, `diagnostics: Diagnostic[]`, `ms: number` (time in the call: compile, export and cache eviction), `missingFonts: number[]` (see [Lazy fonts](#lazy-fonts)) |
 | `HtmlResult` | `CompileResult` and `html?: string`, the document when `ok` |
-| `SvgChangedResult` | `CompileResult` and `pageCount?: number`, `changed?: ChangedPage[]`, `compileMs: number`, `exportMs: number` |
+| `SvgChangedResult` | `CompileResult` and `pageCount?: number`, `changed?: ChangedPage[]`, `islands?: IslandMarker[]`, `compileMs: number`, `exportMs: number` |
 | `CheckResult` | `CompileResult` and `pageCount?: number` |
 | `PdfResult` | `CompileResult` and `pdf?: Uint8Array`, `pageCount?: number` |
 
@@ -131,6 +131,17 @@ Compare SVGs (or drawings), not hashes, to check that two separate compiles look
 
 A drawing costs less to export than SVG (a dense page: 3.5 ms against 10.7 ms, text runs included) and is about a third
 of its size.
+
+**Island markers.** `islands` lists every `metadata` labelled `<typstream-island>` in the laid-out document, whichever
+pages changed: the markers [render islands](/docs/guides/islands) are mounted over. Positions come from layout, however
+pages are drawn.
+
+| `IslandMarker` field | Type | Meaning |
+| --- | --- | --- |
+| `page` | `number` | Page index, from 0. |
+| `x`, `y` | `number` | The marker's point, in points from the page's top left. |
+| `value` | `string` | The marker's value as JSON, without its `source`. |
+| `from` | `number \| null` | UTF-16 offset in `/main.typ` of the value's `source`, content the document wrote; `null` without one. |
 
 | `TextRun` field | Type | Meaning |
 | --- | --- | --- |

@@ -11,6 +11,7 @@ import { CompileTarget } from '@typstream/core';
 import { Diagnostic } from '@typstream/core';
 import { DocumentEvent } from '@typstream/core';
 import { DocumentUri } from '@typstream/core';
+import { FileContent } from '@typstream/core';
 import { FileDelta } from '@typstream/core';
 import { FontCatalogue } from '@typstream/core';
 import { HealOptions } from '@typstream/heal';
@@ -112,6 +113,8 @@ export interface EngineDocument {
     exportHtml(options?: ExportOptions): Promise<string>;
     exportPdf(options?: ExportOptions): Promise<Uint8Array>;
     exportSource(): string;
+    // @beta
+    file(path: string): FileContent | null;
     finish(): void;
     getState(): DocumentState;
     onEvent(listener: (event: DocumentEvent) => void): () => void;

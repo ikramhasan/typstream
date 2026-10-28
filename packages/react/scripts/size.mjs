@@ -12,9 +12,10 @@ const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
 // blocks (0.45 KB, most of it paid for by CSS strings without comments) left it 30 bytes over; 16.6 KB until
 // #18's exports on the handle and useTypstream(), with per-export inputs (95 bytes), left it 63 bytes over;
 // 16.7 KB until font catalogues' web fonts (registering them, the mount's listener, standalone exports'
-// @font-face rules, 0.55 KB) made it 17.2 KB; 17.3 KB until canvas pages (#14: the painter, the drawing's
-// decoder, the link layer and pixel management, 1.6 KB) made it 18.9 KB.
-const BUDGET = 19 * 1024;
+// @font-face rules, 0.55 KB) made it 17.2 KB; 17.3 KB until render islands (#28: dom's island manager, 0.8 KB,
+// and the portals, the store and the error boundary, 0.6 KB) made it 18.6 KB; 18.7 KB until canvas pages (#14:
+// the painter, the drawing's decoder, the link layer and pixel management, 1.6 KB) made it 20.2 KB.
+const BUDGET = 20.3 * 1024;
 
 const result = await build({
   entryPoints: ["src/index.ts"],
@@ -24,7 +25,7 @@ const result = await build({
   write: false,
   platform: "neutral",
   jsx: "automatic",
-  external: ["react", "react/jsx-runtime", "@typstream/engine"],
+  external: ["react", "react-dom", "react/jsx-runtime", "@typstream/engine"],
   alias: { "@typstream/core": "../core/src/index.ts", "@typstream/dom": "../dom/src/index.ts" },
 });
 const code = result.outputFiles[0].contents;

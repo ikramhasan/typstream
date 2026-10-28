@@ -96,6 +96,17 @@ The document also stays inside its element. A document can still lay a box over 
 
 `clip-path` clips the painting and the clicks of everything inside, `position: fixed` boxes included, so nothing the document draws covers your app outside its element. `overflow: clip` keeps what it overflows with from making your page scroll. Neither changes layout (no new formatting context, so margins collapse as before). What is wider than the element, such as a table, an equation or a code block, scrolls sideways inside it instead of reaching past it: once a render is laid out, the renderer gives that box (or a `div` it puts around a table or an equation) `data-typstream-wide` and `tabindex="0"`, so the keyboard can scroll it too. Only those boxes change; a document that fits is laid out as before. What still reaches past the element is cut off, such as a focus ring on its edge or a box placed outside it. Scroll the element itself if you prefer: a rule of yours on `.typstream` wins over `:where()`, and a scrolling ancestor clips as well. If you pass `injectStyles: false`, ship these rules with the rest of `htmlRendererCss`.
 
+### Render islands
+
+A [render island](/docs/guides/islands) is your code running on data a document wrote. The renderer reads a
+`typstream-island` marker's name and JSON before sanitizing (the sanitizer keeps the element, none of its attributes)
+and mounts an island only for a name a loaded plugin declares and your app gave a component for, so a document can't
+mount a component you didn't pair with its plugin. The data goes through the plugin's `parse` first: a marker whose
+JSON is over 64 KB, doesn't parse or doesn't pass keeps its Typst fallback, as do markers past 50 per document. An
+island gets files only through `IslandProps.file`, the bytes the document already has; it fetches nothing the document
+names. Write islands to treat their data as text, never as markup or URLs to load: `@typstream/mindmap` renders labels
+through React and checks colours and sizes before they reach a style.
+
 ### Paged target
 
 Pages are typst-svg's output: glyphs as paths, images as `data:` URLs, and attribute values escaped by its XML writer. A page lives in its own shadow root, where the app's CSS can't reach it. Each page is parsed into an inert `<template>` first, and the view keeps links to `http(s)` and `mailto` only, and images with `data:` URLs only, before the page is inserted. It trusts typst-svg's serializer for the rest. The hostile documents check that on every Typst upgrade.

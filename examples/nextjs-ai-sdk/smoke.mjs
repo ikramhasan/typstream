@@ -1,7 +1,8 @@
 // Smoke test (PLAN §10.4: example apps build and run): builds the app, starts it,
 // asks for a worksheet in Chromium (a suggestion, rendered as pages, then a
 // follow-up typed in the field, as HTML) and checks that each answer streams into
-// <Typstream>, finishes, never had an error frame, and that telemetry reached
+// <Typstream>, finishes, never had an error frame, that the replay's mind map is
+// interactive in the HTML answer (a render island), and that telemetry reached
 // the example's sink. Without
 // ANTHROPIC_API_KEY the server replays a recorded worksheet, so this runs offline.
 
@@ -56,6 +57,12 @@ try {
   await page.getByRole("textbox", { name: "Message" }).fill("Now add an answer key.");
   await page.getByRole("textbox", { name: "Message" }).press("Enter");
   await answered(1, "html");
+  if (!process.env.ANTHROPIC_API_KEY) {
+    // The replay's mind map, as an island: React Flow's nodes over the drawing.
+    await answers.nth(1).locator("typstream-island .react-flow__node").first().waitFor({ timeout: 30_000 });
+    const nodes = await answers.nth(1).locator("typstream-island .react-flow__node").count();
+    if (nodes !== 9) throw new Error(`the mind map island has ${nodes} nodes, not 9`);
+  }
   if (errors.length) throw new Error(`console errors:\n${errors.join("\n")}`);
   // The telemetry hooks (app/telemetry.tsx) reached the example's sink.
   const reached = () => /\[telemetry\] rendered \S+ rev \d+ \(final\)/.test(log);

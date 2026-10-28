@@ -11,6 +11,7 @@ import type {
   ExportFormat,
   FileContent,
   InitializeOptions,
+  PagedIsland,
   PageUpdate,
 } from "@typstream/core";
 
@@ -125,6 +126,10 @@ export interface AdapterHtmlResult extends AdapterCompileResult {
 
 /** `null` when the compile failed. Pages ascending by index. @public */
 export interface AdapterPagedResult extends AdapterCompileResult {
-  /** The document's page count, and the pages to send. */
-  output: { pageCount: number; changed: PageUpdate[] } | null;
+  /**
+   * The document's page count, the pages to send, and every island marker
+   * (PLAN §8.4) with `from` in `/main.typ` coordinates (the server moves it past
+   * the preamble). Adapters without introspection leave `islands` out.
+   */
+  output: { pageCount: number; changed: PageUpdate[]; islands?: PagedIsland[] } | null;
 }
