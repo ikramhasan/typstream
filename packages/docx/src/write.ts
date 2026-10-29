@@ -105,7 +105,7 @@ class Writer {
     color?: string,
     underline?: boolean,
     spacing?: number,
-    run?: Pick<DocxTextRun, "script" | "rtl" | "lang" | "underlineColor">,
+    run?: Pick<DocxTextRun, "script" | "rtl" | "lang" | "underlineColor"> & { raise?: number },
   ): string {
     const f = this.fonts[font];
     const name = esc(f?.name ?? "Libertinus Serif");
@@ -114,6 +114,7 @@ class Writer {
     if (f?.italic) x += "<w:i/><w:iCs/>";
     if (color) x += `<w:color w:val="${color}"/>`;
     if (spacing) x += `<w:spacing w:val="${spacing}"/>`;
+    if (run?.raise) x += `<w:position w:val="${Math.round(run.raise * 2)}"/>`;
     const sz = halfPoints(size);
     x += `<w:sz w:val="${sz}"/><w:szCs w:val="${sz}"/>`;
     if (underline) x += `<w:u w:val="single"${run?.underlineColor ? ` w:color="${run.underlineColor}"` : ""}/>`;
@@ -135,6 +136,9 @@ class Writer {
     if ("tab" in r) return "<w:r><w:tab/></w:r>";
     if ("gap" in r) {
       // A picture in the line: a character as wide as its room, its bottom on the baseline unless raised (half points).
+      // Lowered, it is anchored to its line, in front of a gap as wide.
+      if (r.picture?.line !== undefined)
+        return `<w:r>${TINY}${this.picture(r.picture.index, part, { kind: "line", x: 0, y: r.picture.line })}</w:r>${this.run({ ...r, picture: undefined }, part, jc, rtl, complex)}`;
       const picture = r.picture && this.picture(r.picture.index, part, { kind: "inline" });
       if (r.picture && picture) {
         const height = this.model.pictures?.[r.picture.index]?.height ?? 0;
@@ -147,7 +151,7 @@ class Writer {
       // U+00A0, written as a character reference so it stays visible in the source. In a right-to-left paragraph, a
       // right-to-left run: engines place runs by their direction.
       const space = (n: number, spacing: number) =>
-        `<w:r>${this.rPr(r.font, r.size, undefined, r.underline, spacing, { rtl, underlineColor: r.underlineColor })}<w:t xml:space="preserve">${"&#160;".repeat(n)}</w:t></w:r>`;
+        `<w:r>${this.rPr(r.font, r.size, undefined, r.underline, spacing, { ...r, rtl })}<w:t xml:space="preserve">${"&#160;".repeat(n)}</w:t></w:r>`;
       if (!complex) return space(1, Math.max(0, twips(r.gap) - Math.round(nbsp)));
       // Among complex-script text (Arabic, Indic), as many no-break spaces as fill the gap, the last spaced by the
       // rest: ONLYOFFICE ignores character spacing there (#134), so it is off by half a space at most.
@@ -339,12 +343,15 @@ class Writer {
   /** A drawing as a paragraph holding its room, its picture anchored where the room starts. */
   private anchored(d: DocxDrawing, part: Part, lead: string): string {
     const picture = d.picture && this.picture(d.picture.index, part, { kind: "line", x: d.picture.x, y: d.picture.y });
+    // Breakable: lines a fifth of a point tall, which engines break between pages.
     return this.spacer(
-      d.height,
+      d.breakable ? 0.2 : d.height,
       d.before,
       d.pageBreak,
       d.indent,
-      lead + (picture ? `<w:r>${TINY}${picture}</w:r>` : ""),
+      lead +
+        (picture ? `<w:r>${TINY}${picture}</w:r>` : "") +
+        (d.breakable ? `<w:r>${TINY}${"<w:br/>".repeat(d.height * 5 - 1)}</w:r>` : ""),
     );
   }
 
