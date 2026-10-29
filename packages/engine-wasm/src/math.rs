@@ -348,10 +348,10 @@ impl Converter {
                     MathKind::Scripts(s) => {
                         let mut node = json!({ "t": "nary", "chr": chr, "limits": s.top.is_some() || s.bottom.is_some() });
                         if let Some(sub) = s.bottom.as_ref().or(s.bottom_right.as_ref()) {
-                            node["sub"] = Json::Array(self.nodes(sub));
+                            node["sub"] = Json::Array(self.script(sub));
                         }
                         if let Some(sup) = s.top.as_ref().or(s.top_right.as_ref()) {
-                            node["sup"] = Json::Array(self.nodes(sup));
+                            node["sup"] = Json::Array(self.script(sup));
                         }
                         node
                     }
@@ -379,22 +379,46 @@ impl Converter {
         e
     }
 
+    /// A script or limit's nodes. One that is a lone operator (an ion's charge, `x^+`) is text: LibreOffice before 26.2
+    /// reads `{+}` as an operator missing its operands, and drops the whole equation.
+    fn script(&self, item: &MathItem) -> Vec<Json> {
+        let mut nodes = self.nodes(item);
+        if let [Json::Object(r)] = nodes.as_mut_slice() {
+            let text = r.get("text").and_then(|t| t.as_str()).unwrap_or("");
+            let mut chars = text.chars();
+            let lone = match (chars.next(), chars.next()) {
+                (Some(c), None) => {
+                    !c.is_alphanumeric()
+                        && unicode_math_class::class(c)
+                            .is_some_and(|k| k != MathClass::Normal && k != MathClass::Alphabetic)
+                }
+                _ => false,
+            };
+            if r.get("t") == Some(&json!("r")) && lone {
+                r.remove("sty");
+                r.remove("scr");
+                r.insert("nor".into(), json!(true));
+            }
+        }
+        nodes
+    }
+
     fn scripts(&self, s: &typst::math::ir::ScriptsItem, out: &mut Vec<Json>) {
         let mut e = self.nodes(&s.base);
         // Limits: under, then over.
         if let Some(bottom) = &s.bottom {
-            e = vec![json!({ "t": "lim", "below": true, "e": e, "lim": self.nodes(bottom) })];
+            e = vec![json!({ "t": "lim", "below": true, "e": e, "lim": self.script(bottom) })];
         }
         if let Some(top) = &s.top {
-            e = vec![json!({ "t": "lim", "below": false, "e": e, "lim": self.nodes(top) })];
+            e = vec![json!({ "t": "lim", "below": false, "e": e, "lim": self.script(top) })];
         }
         if s.top_right.is_some() || s.bottom_right.is_some() {
             let mut node = json!({ "t": "s", "e": e });
             if let Some(sub) = &s.bottom_right {
-                node["sub"] = Json::Array(self.nodes(sub));
+                node["sub"] = Json::Array(self.script(sub));
             }
             if let Some(sup) = &s.top_right {
-                node["sup"] = Json::Array(self.nodes(sup));
+                node["sup"] = Json::Array(self.script(sup));
             }
             e = vec![node];
         }
@@ -403,13 +427,13 @@ impl Converter {
             node["sub"] = Json::Array(
                 s.bottom_left
                     .as_ref()
-                    .map(|x| self.nodes(x))
+                    .map(|x| self.script(x))
                     .unwrap_or_default(),
             );
             node["sup"] = Json::Array(
                 s.top_left
                     .as_ref()
-                    .map(|x| self.nodes(x))
+                    .map(|x| self.script(x))
                     .unwrap_or_default(),
             );
             e = vec![node];

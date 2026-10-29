@@ -48,6 +48,8 @@ several equations and pages overflow where a page has many (an inline fraction i
 than Typst's line). LibreOffice sets inline fractions at display size, spaces formulas wider, draws stretchy
 brackets in Typst's math font as bars (so brackets around one line of math are plain characters, as Typst sets them),
 draws no `cancel` stroke but a horizontal one, and reads `lim` with its limit beside it only as text (written so).
+Before 26.2 (CI's Ubuntu has 24.2), it drops a whole equation whose script is a lone operator (an ion's charge,
+`Ag^+`), so those scripts are written as text.
 ONLYOFFICE draws operators in another face than the document's math font (presumably Cambria Math, which it doesn't
 have here, so whatever face has them). Exact line spacing would keep an equation Typst's height but clips it
 (LibreOffice, and #118's spike), so lines with math are "at least".
