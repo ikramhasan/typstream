@@ -78,7 +78,9 @@ laid-out pages as the PDF, and written as Word's own structure, so a teacher can
   maps, edu's number lines, graph paper and coordinate planes (with their descriptions as alt text), and `place`d
   drawings anchored to the page. Each is Typst's own drawing as SVG, which Word 2016 and later, LibreOffice and
   ONLYOFFICE draw, with a 300 DPI PNG for older Word and other apps;
-- Typst's fonts, embedded, so Word sets the text in the faces the PDF uses;
+- Typst's fonts, embedded, so Word sets the text in the faces the PDF uses, and text in every script: Arabic and
+  Hebrew right to left (right-to-left paragraphs, with their lists and tables mirrored as Typst mirrors them),
+  Bengali and Devanagari as written, each run with its language;
 - the [layout profile](/docs/concepts/render-targets#layout-profile)'s settings, which make Word break lines and pages
   where Typst does: exact line pitch, ragged right, no hyphenation, rows that stay on one page.
 
@@ -92,7 +94,9 @@ to the document. What Word can't reproduce exactly:
 - equations: each word processor typesets math itself, so an equation can come out a little wider or taller than
   Typst's, and a line or a page break can move where a document has many of them. Typst's math font is embedded and
   named as the document's math font; whether Word uses it rather than Cambria Math is untested (no Word in the
-  checks).
+  checks);
+- numbers Word has no format for, Bengali and Eastern Arabic digits: list labels in them are text (not Word
+  numbering), and page numbers in them come out in Western digits (Devanagari ones are Word's Hindi numbers).
 
 ## HTML
 

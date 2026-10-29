@@ -21,9 +21,14 @@ pitch, no hyphenation, Word 2013+ layout), embeds the fonts the runs use, obfusc
 picture as Word does an SVG (the PNG as the picture, the SVG in Word's `svgBlip` extension) over a paragraph that
 holds its room, or anchored to the page where it was `place`d, and zips it.
 
-**How it's checked.** `tools/docx-check` exports the Latin corpus, has LibreOffice lay each file out and compares
-its lines and page breaks with the PDF's (on documents with equations, the text around them, and every equation's
-letters and digits; on documents with pictures, the text outside them and each picture's pixels), and runs
-Microsoft's Open XML validator on every file.
+**Scripts.** A run is written in logical order whatever direction Typst drew it in, with its language (`w:lang`), and
+right-to-left text as Word's right-to-left runs (`w:rtl`) in right-to-left paragraphs (`w:bidi`), whose alignment,
+indents and list numbers are measured from the right; right-to-left tables keep their columns where Typst drew them.
+Arabic dots and Indic vowel signs, which Typst draws apart from their letters, are written once.
+
+**How it's checked.** `tools/docx-check` exports the corpus, has LibreOffice lay each file out and compares its lines
+and page breaks with the PDF's (on documents with equations, the text around them, and every equation's letters and
+digits; on documents with pictures, the text outside them and each picture's pixels; on documents in other scripts,
+each line's text or where its ink starts and ends), and runs Microsoft's Open XML validator on every file.
 
 The package's exports (`writeDocx` and the model's types) are internal: other typstream packages use them.

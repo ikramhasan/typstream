@@ -111,13 +111,31 @@ export interface DocxBlockBase {
 
 /** How a section's pages are numbered: Word's format and, when it starts again, the first number. @internal */
 export interface DocxPageNumbering {
-  format: "decimal" | "lowerRoman" | "upperRoman" | "lowerLetter" | "upperLetter";
+  format:
+    | "decimal"
+    | "lowerRoman"
+    | "upperRoman"
+    | "lowerLetter"
+    | "upperLetter"
+    | "hindiNumbers"
+    | "hebrew1"
+    | "arabicAbjad"
+    | "chineseCounting"
+    | "chosung"
+    | "ganada"
+    | "aiueo"
+    | "iroha";
   start?: number;
 }
 
 /** A paragraph. @internal */
 export interface DocxParagraph extends DocxBlockBase {
   type: "p";
+  /**
+   * Right to left (Word's `bidi`): its alignment, indents and tab stops are logical, mirrored, `left` measured from
+   * the area's right.
+   */
+  rtl?: boolean;
   align: "start" | "center" | "end";
   /**
    * Indents in points: `left` from the area's left; `firstLine` is the first line's offset from it (negative: hanging);
@@ -174,6 +192,10 @@ export interface DocxTextRun {
   field?: "PAGE" | "NUMPAGES";
   /** Typst's `super` or `sub`, set with the font's own glyphs: Word's superscript or subscript. */
   script?: "superscript" | "subscript";
+  /** Shaped right to left (Arabic, Hebrew): Word's `rtl`. */
+  rtl?: boolean;
+  /** Its language as BCP 47 (`ar`, `bn`, `zh-TW`), when it isn't English. */
+  lang?: string;
 }
 
 /** An exact-width space: a gap in a line (`h()`), a blank's line, or a picture in the line. @internal */

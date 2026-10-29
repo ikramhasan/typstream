@@ -43,6 +43,90 @@ export const linesOf = (pdf, regions = []) => {
   return out;
 };
 
+/**
+ * [page, { text, x0, x1 }] for scripts whose text a PDF doesn't keep as written (#134), top to bottom; none in
+ * `regions`. Typst draws a mark (an Arabic dot, an Indic vowel sign) as an item of its own, which its PDF gives the text
+ * of the letter it sits on again, a little above or below it (as a word of no width, or inside the word); ONLYOFFICE's
+ * PDF drops Indic vowel signs. So words share a line when their boxes mostly overlap, words of no width are left out,
+ * a line's text has repeats collapsed (`collapsed`), and two lines are the same when their text or where their ink
+ * starts and ends is (`sameLine`): a line broken elsewhere has neither.
+ */
+export const scriptLinesOf = (pdf, regions = []) => {
+  const xml = execFileSync("pdftotext", ["-bbox", pdf, "-"], { encoding: "utf8", maxBuffer: 1 << 28 });
+  const out = [];
+  let n = 0;
+  for (const [, page] of xml.matchAll(PAGE)) {
+    n++;
+    const words = [];
+    for (const [, x0, y0, x1, y1, w] of page.matchAll(WORD)) {
+      const t = unescape(w).normalize("NFKC");
+      // A mark's word has no width (Typst's).
+      if (t.trim() && Number(x1) - Number(x0) > 0.01 && !pictured(regions, n, Number(x0), Number(y0), Number(x1), Number(y1)))
+        words.push([Number(y0), Number(y1), Number(x0), t]);
+    }
+    words.sort((a, b) => a[1] - b[1]);
+    const lines = [];
+    for (const [y0, y1, x, t] of words) {
+      const overlap = (l) => Math.min(l.y1, y1) - Math.max(l.y0, y0);
+      const line = lines.find((l) => overlap(l) >= 0.6 * Math.min(l.y1 - l.y0, y1 - y0));
+      if (line) line.words.push([x, t]);
+      else lines.push({ y0, y1, words: [[x, t]] });
+    }
+    lines.sort((a, b) => a.y1 - b.y1);
+    const img = grey(pdf, n);
+    for (const l of lines) {
+      const text = collapsed(l.words.sort((a, b) => a[0] - b[0]).map((w) => w[1]).join(""));
+      out.push([n, { text, ...inked(img, l) }]);
+    }
+  }
+  return out;
+};
+
+/** Pixels per point lines' ink is measured at. */
+const INK_SCALE = 2;
+
+/** Page `n` (from 1) of a PDF as grey pixels at `INK_SCALE` per point. */
+const grey = (pdf, n) => {
+  const pgm = execFileSync("pdftoppm", ["-r", String(72 * INK_SCALE), "-gray", "-f", String(n), "-l", String(n), pdf], {
+    maxBuffer: 1 << 30,
+  });
+  // P5, width height, 255, then the pixels.
+  let at = 0;
+  const fields = [];
+  while (fields.length < 4) {
+    while (pgm[at] === 0x20 || pgm[at] === 0x0a) at++;
+    const start = at;
+    while (pgm[at] !== 0x20 && pgm[at] !== 0x0a) at++;
+    fields.push(pgm.toString("latin1", start, at));
+  }
+  return { w: Number(fields[1]), h: Number(fields[2]), data: pgm.subarray(at + 1) };
+};
+
+/** Where a line's ink starts and ends, in points: in the middle of its box, which only its own glyphs reach. */
+const inked = (img, line) => {
+  const middle = (line.y1 - line.y0) * 0.3;
+  let [x0, x1] = [img.w, -1];
+  for (let y = Math.round((line.y0 + middle) * INK_SCALE); y <= Math.round((line.y1 - middle) * INK_SCALE); y++) {
+    if (y < 0 || y >= img.h) continue;
+    for (let x = 0; x < img.w; x++) {
+      if (img.data[y * img.w + x] < 128) {
+        x0 = Math.min(x0, x);
+        x1 = Math.max(x1, x);
+      }
+    }
+  }
+  return { x0: x0 / INK_SCALE, x1: (x1 + 1) / INK_SCALE };
+};
+
+/** Whether two lines of `scriptLinesOf` are the same: their text, or their ink's extent to 3 points. */
+export const sameLine = (a, b) => a.text === b.text || (Math.abs(a.x0 - b.x0) < 3 && Math.abs(a.x1 - b.x1) < 3);
+
+/**
+ * A line's text without whitespace, and with a syllable repeated right after itself once: a mark inside a word repeats
+ * its letter in Typst's PDF, and a reordered Bengali `র্` repeats its syllable in both PDFs.
+ */
+const collapsed = (text) => text.replace(/\s+/g, "").replace(/(.{1,6}?)\1+/gu, "$1");
+
 /** Faces equations are set in: Typst's, and what an engine typesets OMML with besides. */
 const MATH_FONT = /Math|OpenSymbol|Cambria/i;
 const TEXT = /<text top="([\d.-]+)" left="([\d.-]+)" width="([\d.-]+)" height="([\d.-]+)" font="(\d+)">([\s\S]*?)<\/text>/g;
@@ -133,32 +217,38 @@ export const sharedChars = (ref, got) => {
   return n;
 };
 
-/** Longest common subsequence length of two arrays of strings. */
-const lcs = (a, b) => {
+/** Longest common subsequence length of two arrays, by `equal`. */
+const lcs = (a, b, equal) => {
   let prev = new Uint32Array(b.length + 1);
   for (let i = 1; i <= a.length; i++) {
     const cur = new Uint32Array(b.length + 1);
-    for (let j = 1; j <= b.length; j++) cur[j] = a[i - 1] === b[j - 1] ? prev[j - 1] + 1 : Math.max(prev[j], cur[j - 1]);
+    for (let j = 1; j <= b.length; j++)
+      cur[j] = equal(a[i - 1], b[j - 1]) ? prev[j - 1] + 1 : Math.max(prev[j], cur[j - 1]);
     prev = cur;
   }
   return prev[b.length];
 };
 
-/** How much of `ref` (Typst's lines) `got` reproduces: lines in order, and the lines pages start with. */
+/**
+ * How much of `ref` (Typst's lines) `got` reproduces: lines in order, and the lines pages start with. Lines are text, or
+ * `scriptLinesOf`'s, compared by `sameLine`.
+ */
 export const compare = (ref, got) => {
   // Whitespace aside: which words share a line doesn't depend on it. So are a leader's dots (an outline's, a tab's in
   // Word): how many fit depends on the dots' spacing.
-  const key = (t) => t.replace(/\s+/g, "").replace(/\.{3,}/g, "…");
+  const key = (t) => (typeof t === "string" ? t.replace(/\s+/g, "").replace(/\.{3,}/g, "…") : t);
+  const equal = (x, y) => (typeof x === "string" ? x === y : sameLine(x, y));
   const a = ref.map(([, t]) => key(t));
   const b = got.map(([, t]) => key(t));
-  const same = lcs(a, b);
+  const same = lcs(a, b, equal);
   const starts = (ls, keys) => keys.filter((_, i) => i === 0 || ls[i - 1][0] !== ls[i][0]);
   const startsRef = starts(ref, a);
-  const startsGot = new Set(starts(got, b));
+  const startsGot = starts(got, b);
+  const show = (l) => (typeof l === "string" ? l : l.text);
   let first = null;
   for (let i = 0; i < Math.max(a.length, b.length); i++) {
-    if (a[i] !== b[i]) {
-      first = { typst: a.slice(i, i + 2), other: b.slice(i, i + 2) };
+    if (a[i] === undefined || b[i] === undefined || !equal(a[i], b[i])) {
+      first = { typst: a.slice(i, i + 2).map(show), other: b.slice(i, i + 2).map(show) };
       break;
     }
   }
@@ -167,7 +257,7 @@ export const compare = (ref, got) => {
     same,
     pages: [ref.at(-1)?.[0] ?? 0, got.at(-1)?.[0] ?? 0],
     pageStarts: startsRef.length,
-    pageStartsSame: startsRef.filter((t) => startsGot.has(t)).length,
+    pageStartsSame: startsRef.filter((t) => startsGot.some((u) => equal(t, u))).length,
     first,
   };
 };

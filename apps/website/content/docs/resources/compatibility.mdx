@@ -60,7 +60,7 @@ Budgets in minified and gzipped ESM. Each is checked on every change, so they ar
 | `@typstream/dom` paged renderer | ≤ 4 KB | |
 | `@typstream/dom` standalone HTML export | ≤ 2 KB | |
 | Engine worker JS | ≤ 40 KB | Loaded in the worker, not your bundle. Without the wasm and fonts. |
-| Typst wasm (`@typstream/engine-wasm`) | ≤ 6.3 MB brotli | About 19 MB uncompressed; HTML, SVG and PDF in one build. |
+| Typst wasm (`@typstream/engine-wasm`) | ≤ 6.31 MB brotli | About 19 MB uncompressed; HTML, SVG and PDF in one build. |
 
 In practice, `typstream` adds about 50 KB gzipped to a React app's main bundle (React itself excluded): the bindings, renderers, engine client and healer, plus html-compat's prelude and CSS and the package list. Plugins you add, such as edu, come on top. The wasm, the fonts and the packages are separate files, fetched by the worker when it starts or when a document needs them: see [what gets downloaded, and when](/docs/getting-started/installation#what-gets-downloaded-and-when).
 

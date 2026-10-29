@@ -358,16 +358,7 @@ impl Walker<'_> {
                     self.flush();
                 }
                 FrameItem::Text(text) => {
-                    // A mark's item repeats the text of the base it sits on (see above).
-                    let neighbor = |j: Option<usize>| match j.and_then(|j| items.get(j)) {
-                        Some((_, FrameItem::Text(other))) => {
-                            other.text.contains(text.text.as_str())
-                        }
-                        _ => false,
-                    };
-                    let mark = text.width() == Abs::zero()
-                        && (neighbor(i.checked_sub(1)) || neighbor(Some(i + 1)));
-                    if !mark {
+                    if !mark(items, i, text) {
                         self.piece(text, ts);
                     }
                 }
@@ -455,11 +446,20 @@ impl Walker<'_> {
     }
 }
 
+/// Whether the `i`th item, `text`, is a mark's: it repeats the text of the base it sits on (see above).
+pub(crate) fn mark(items: &[(Point, FrameItem)], i: usize, text: &TextItem) -> bool {
+    let neighbor = |j: Option<usize>| match j.and_then(|j| items.get(j)) {
+        Some((_, FrameItem::Text(other))) => other.text.contains(text.text.as_str()),
+        _ => false,
+    };
+    text.width() == Abs::zero() && (neighbor(i.checked_sub(1)) || neighbor(Some(i + 1)))
+}
+
 /// The direction a piece was shaped in. Typst shapes each run at one bidi
 /// level and lays its glyphs out left to right, so an RTL run's clusters go
 /// backwards through its text. A piece of one cluster says nothing that way:
 /// then its first strong character decides, and without one it has none.
-fn run_dir(text: &TextItem) -> Option<Dir> {
+pub(crate) fn run_dir(text: &TextItem) -> Option<Dir> {
     if let (Some(first), Some(last)) = (text.glyphs.first(), text.glyphs.last()) {
         if first.range.start > last.range.start {
             return Some(Dir::RTL);

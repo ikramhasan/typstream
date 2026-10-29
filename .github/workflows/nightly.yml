@@ -53,6 +53,9 @@ jobs:
       - run: docker pull onlyoffice/documentserver
       - run: pnpm turbo run build --filter=@typstream/docx-check^...
       - run: node tools/docx-check/check.mjs --onlyoffice
+      # Other scripts (#134), for the numbers: ONLYOFFICE's PDF drops Indic vowel signs, Bengali equations' digits too.
+      - run: node tools/docx-check/check.mjs --onlyoffice --scripts
+        continue-on-error: true
 
   # Mutation testing of heal (PLAN.md §11.1, #6). The score goes to the job summary and the HTML
   # report is an artifact; `mutate` fails below the break threshold in stryker.config.mjs.
