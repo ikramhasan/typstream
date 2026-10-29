@@ -32,6 +32,9 @@ export const LAYOUT_PROFILE: string = `// typstream's layout profile: what a DOC
 // A line holding only an equation is as tall as the equation, while Word gives every line of a paragraph with math
 // at least the pitch: a zero-width strut of one line box makes Typst's line that tall too.
 #show math.equation.where(block: false): it => box(height: 1.3em, baseline: 0.246em) + it
+// The rows of a display equation with line breaks are par.leading apart: Typst's default, which 0 would make touch.
+// (Not inline ones: a paragraph setting inside a line ends the paragraph there.)
+#show math.equation.where(block: true): set par(leading: 0.65em)
 // Defaults only: Typst's distances between baselines, now that line boxes hold the room above capitals and below
 // the baseline (0.64em more than Typst's default edges). Tight lists space their items by par.leading.
 #set par(leading: 0pt, spacing: 0.56em)

@@ -16,6 +16,8 @@ pub struct Options<'a> {
     pub fonts: &'a Path,
     pub packages: Option<&'a Path>,
     pub inputs: Vec<(String, String)>,
+    /// Compile as a DOCX export does: equations carry their Word math (math.rs).
+    pub docx: bool,
 }
 
 /// Options from `args`: the document, then `--fonts DIR`, `--packages DIR` and `--input k=v`.
@@ -47,12 +49,15 @@ pub fn options(
 }
 
 pub fn compile(o: &Options) -> (MemWorld, Result<PagedDocument, String>) {
-    for entry in fs::read_dir(o.fonts).unwrap() {
-        let path = entry.unwrap().path();
-        if path.extension().is_some_and(|e| e == "ttf" || e == "otf") {
-            fonts::add(&fs::read(&path).unwrap());
+    static FONTS: std::sync::Once = std::sync::Once::new();
+    FONTS.call_once(|| {
+        for entry in fs::read_dir(o.fonts).unwrap() {
+            let path = entry.unwrap().path();
+            if path.extension().is_some_and(|e| e == "ttf" || e == "otf") {
+                fonts::add(&fs::read(&path).unwrap());
+            }
         }
-    }
+    });
     let mut world = MemWorld::new();
     if let Some(dir) = o.packages {
         mount(&mut world, dir, dir);
@@ -66,17 +71,22 @@ pub fn compile(o: &Options) -> (MemWorld, Result<PagedDocument, String>) {
         dict.insert(Str::from(k.as_str()), Value::Str(Str::from(v.as_str())));
     }
     world.set_inputs(dict);
+    world.set_docx(o.docx);
     world.set_source(
         file_id(MAIN_PATH).unwrap(),
         &fs::read_to_string(o.main).unwrap(),
     );
     world.begin_compile();
-    // On this thread only: the font store is thread-local (fonts.rs), as in wasm.
-    let pool = rayon::ThreadPoolBuilder::new()
-        .num_threads(1)
-        .use_current_thread()
-        .build()
-        .unwrap();
+    // On this thread only: the font store is thread-local (fonts.rs), as in wasm. One pool for every compile: the
+    // calling thread can join only one.
+    static POOL: std::sync::OnceLock<rayon::ThreadPool> = std::sync::OnceLock::new();
+    let pool = POOL.get_or_init(|| {
+        rayon::ThreadPoolBuilder::new()
+            .num_threads(1)
+            .use_current_thread()
+            .build()
+            .unwrap()
+    });
     let out = pool.install(|| {
         typst::compile::<PagedDocument>(&world)
             .output

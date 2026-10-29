@@ -11,14 +11,17 @@ first time a document is exported.
 **What it writes.** engine-wasm reads the laid-out pages into a document model (`compile_docx_model`): paragraphs
 and their runs (font, size, colour), headings, lists with Word numbering, tables and grids with Typst's column
 widths and repeated header rows, framed blocks, ruled lines, columns (as Word sections), placed text (as frames at its
-page position), page headers and footers with page-number fields, page breaks, and every gap Typst made. This package
+page position), page headers and footers with page-number fields, page breaks, every gap Typst made, and equations
+as trees shaped after Word's math (OMML), mapped from Typst's own math layout's first step (fractions, scripts and
+limits, roots, delimiters, matrices, big operators, functions, accents, aligned lines). This package
 turns it into OOXML with the [layout profile](/docs/concepts/render-targets#layout-profile)'s settings (exact line
 pitch, no hyphenation, Word 2013+ layout), embeds the fonts the runs use, obfuscated as ECMA-376 asks, and zips it.
 
-**What isn't written yet.** Equations, images and drawings hold their place as empty space of their size (styled
+**What isn't written yet.** Images and drawings hold their place as empty space of their size (styled
 `Typstream placeholder`), so lines and pages still break where Typst broke them.
 
 **How it's checked.** `tools/docx-check` exports the Latin corpus, has LibreOffice lay each file out and compares
-its lines and page breaks with the PDF's, and runs Microsoft's Open XML validator on every file.
+its lines and page breaks with the PDF's (on documents with equations, the text around them, and every equation's
+letters and digits), and runs Microsoft's Open XML validator on every file.
 
 The package's exports (`writeDocx` and the model's types) are internal: other typstream packages use them.

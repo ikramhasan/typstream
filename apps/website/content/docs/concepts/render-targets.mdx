@@ -106,6 +106,8 @@ Every page the engine lays out, on screen or in a PDF, follows typstream's layou
 - **Ragged right, without hyphenation**, lines filled one at a time. Word justifies and hyphenates differently from Typst, so either would move line breaks.
 - **Table rows stay on one page.** A row taller than a page runs off it, so long text belongs in paragraphs, not in a table cell.
 - **Inline math** gets at least one line's height.
+- **Display equations with line breaks** keep Typst's default spacing between their lines (the text's is set by the
+  pitch).
 
 The profile's rules win over a document's `#set par(justify: true)`, its `#set text(hyphenate: true)` or its `leading`. A document can still set the gaps between paragraphs and headings, its fonts and its sizes. Heal's [`layout-profile`](/docs/concepts/healing#lint-rules) lint rule takes out what would beat the profile: `par(justify: true)[…]` arguments and the document's own `show par: set par(…)` rules.
 

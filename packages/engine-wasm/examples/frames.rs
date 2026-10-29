@@ -14,6 +14,8 @@ fn main() {
         fonts: &fonts,
         packages: packages.as_deref(),
         inputs,
+        // `DOCX=1`: as a DOCX export compiles, with the equations' markers.
+        docx: std::env::var("DOCX").is_ok(),
     };
     let doc = common::compile(&o).1.expect("compile");
     for (i, page) in doc.pages().iter().enumerate() {
@@ -65,7 +67,12 @@ fn dump(frame: &Frame, ts: Transform, depth: usize) {
                 size.x.to_pt(),
                 size.y.to_pt()
             ),
-            FrameItem::Tag(Tag::Start(elem, _)) => println!("{pad}<{} {xy}", elem.func().name()),
+            FrameItem::Tag(Tag::Start(elem, _)) => {
+                match typstream_engine_wasm::math::marked(elem) {
+                    Some(math) => println!("{pad}<math {math}"),
+                    None => println!("{pad}<{} {xy}", elem.func().name()),
+                }
+            }
             FrameItem::Tag(Tag::End(loc, ..)) => println!("{pad}</ {:?}", loc),
         }
     }

@@ -101,7 +101,8 @@ jobs:
 
   # DOCX exports (#131): every Latin corpus document exported through @typstream/node, each file checked by
   # Microsoft's Open XML validator (any error fails) and laid out by LibreOffice, whose lines must match Typst's PDF
-  # on the documents without equations or images (#132, #133) at least as often as the floor says.
+  # at least as often as the floors say: on the documents without equations or images, and on those with equations
+  # (#132), each of which must come out whole. LibreOffice reads Word's equations with its Math component.
   docx:
     name: DOCX (validator, LibreOffice)
     runs-on: ubuntu-latest
@@ -113,10 +114,10 @@ jobs:
         with: { node: "${{ env.NODE }}" }
       - name: Install LibreOffice and poppler
         timeout-minutes: 6
-        run: sudo apt-get install -y --no-install-recommends libreoffice-writer-nogui poppler-utils
+        run: sudo apt-get install -y --no-install-recommends libreoffice-writer-nogui libreoffice-math-nogui poppler-utils
       - run: pnpm turbo run build --filter=@typstream/docx-check^...
       - run: dotnet publish tools/docx-check/validator -c Release -o tools/docx-check/validator/out
-      - run: node tools/docx-check/check.mjs --validate tools/docx-check/validator/out/validator.dll --min-lines 0.99
+      - run: node tools/docx-check/check.mjs --validate tools/docx-check/validator/out/validator.dll --min-lines 0.99 --min-math-lines 0.95
 
   size:
     name: Size

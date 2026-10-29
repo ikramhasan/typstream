@@ -23,7 +23,7 @@ import { strFromU8, unzipSync } from "fflate";
 import { EDU_VERSION, eduFiles, eduPreamble } from "@typstream/edu";
 import { heal } from "@typstream/heal";
 import { render } from "@typstream/node";
-import { compare, linesOf } from "./lines.mjs";
+import { compare, linesOf, mathOf, sharedChars, textFaces, textLinesOf } from "./lines.mjs";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
 const args = process.argv.slice(2);
@@ -35,6 +35,7 @@ const option = (name) => {
 };
 const validator = option("--validate");
 const minLines = Number(option("--min-lines") ?? 0);
+const minMathLines = Number(option("--min-math-lines") ?? 0);
 const filters = () => args.filter((a) => !a.startsWith("--"));
 const out = join(tmpdir(), "typstream-docx-check");
 mkdirSync(out, { recursive: true });
@@ -99,8 +100,9 @@ if (native) {
   }
 }
 
-/** Whether a DOCX holds room for equations or images (the writer's placeholder styles), which #132 and #133 fill. */
-const placeholders = (data) => strFromU8(unzipSync(data)["word/document.xml"] ?? new Uint8Array()).includes("TypstreamPlaceholder");
+const documentXml = (data) => strFromU8(unzipSync(data)["word/document.xml"] ?? new Uint8Array());
+/** Whether a DOCX holds room for images or drawings (the writer's placeholder styles), which #133 fills. */
+const placeholders = (data) => documentXml(data).includes("TypstreamPlaceholder");
 
 const results = [];
 const docx = [];
@@ -126,8 +128,10 @@ for (const doc of documents()) {
     }
     const json = readFileSync(join(dir, "model.json"), "utf8");
     const model = JSON.parse(json);
-    // Math and images are placeholders until #132 and #133: such documents are reported apart.
+    // Images are placeholders until #133, and equations are set by each engine its own way: such documents are
+    // reported apart.
     doc.placeholders = /"placeholder":true/.test(json);
+    doc.math = /"math":\[/.test(json);
     const data = model.fonts.map((_, i) => new Uint8Array(readFileSync(join(dir, `font-${i}.ttf`))));
     writeFileSync(file, writeDocx(model, data));
     // The fonts are in the DOCX now; copies per document would fill the disk.
@@ -145,6 +149,7 @@ for (const doc of documents()) {
     writeFileSync(join(dir, "typst.pdf"), pdf.data);
     writeFileSync(file, out.data);
     doc.placeholders = placeholders(out.data);
+    doc.math = documentXml(out.data).includes("<m:oMath");
   }
   docx.push({ doc, dir, file });
 }
@@ -199,7 +204,17 @@ for (const { doc, dir, file } of docx) {
     results.push({ id: doc.id, error: "LibreOffice didn't convert it" });
     continue;
   }
-  results.push({ id: doc.id, placeholders: doc.placeholders, ...compare(linesOf(join(dir, "typst.pdf")), linesOf(pdf)) });
+  const typst = join(dir, "typst.pdf");
+  // With equations, lines are compared by their text around them, and every equation's letters and digits must be
+  // there (#132).
+  const math = doc.math ? [mathOf(typst), mathOf(pdf)] : undefined;
+  const faces = doc.math ? textFaces(typst) : undefined;
+  results.push({
+    id: doc.id,
+    placeholders: doc.placeholders,
+    math: math && { chars: math[0].length, same: sharedChars(math[0], math[1]) },
+    ...(doc.math ? compare(textLinesOf(typst), textLinesOf(pdf, faces)) : compare(linesOf(typst), linesOf(pdf))),
+  });
 }
 
 let lines = 0;
@@ -208,6 +223,7 @@ let starts = 0;
 let startsSame = 0;
 let identical = 0;
 const plain = { docs: 0, identical: 0, lines: 0, same: 0 };
+const withMath = { docs: 0, identical: 0, lines: 0, same: 0, chars: 0, charsSame: 0 };
 for (const r of results.sort((a, b) => a.id.localeCompare(b.id))) {
   if (r.error) {
     console.log(`✗ ${r.id}: ${r.error}`);
@@ -219,14 +235,20 @@ for (const r of results.sort((a, b) => a.id.localeCompare(b.id))) {
   startsSame += r.pageStartsSame;
   const ok = r.same === r.lines && r.pageStartsSame === r.pageStarts && r.pages[0] === r.pages[1];
   if (ok) identical++;
-  if (!r.placeholders) {
-    plain.docs++;
-    plain.lines += r.lines;
-    plain.same += r.same;
-    if (ok) plain.identical++;
+  const group = r.placeholders ? undefined : r.math ? withMath : plain;
+  if (group) {
+    group.docs++;
+    group.lines += r.lines;
+    group.same += r.same;
+    if (ok) group.identical++;
   }
+  if (r.math && !r.placeholders) {
+    withMath.chars += r.math.chars;
+    withMath.charsSame += r.math.same;
+  }
+  const tag = r.placeholders ? " (images)" : r.math ? ` (math ${r.math.same}/${r.math.chars})` : "";
   console.log(
-    `${ok ? "✓" : "✗"}${r.placeholders ? " (math, images)" : ""} ${r.id}: ${r.same}/${r.lines} lines, pages ${r.pages.join("/")}, starts ${r.pageStartsSame}/${r.pageStarts}` +
+    `${ok ? "✓" : "✗"}${tag} ${r.id}: ${r.same}/${r.lines} lines, pages ${r.pages.join("/")}, starts ${r.pageStartsSame}/${r.pageStarts}` +
       (ok || !r.first ? "" : `  typst ${JSON.stringify(r.first.typst)} other ${JSON.stringify(r.first.other)}`),
   );
 }
@@ -234,14 +256,22 @@ console.log(
   `\n${identical}/${results.length} identical; lines ${same}/${lines} (${((100 * same) / Math.max(1, lines)).toFixed(1)}%), page starts ${startsSame}/${starts}`,
 );
 const ratio = plain.same / Math.max(1, plain.lines);
+const mathRatio = withMath.same / Math.max(1, withMath.lines);
+const charsRatio = withMath.charsSame / Math.max(1, withMath.chars);
 const summary = [
   `${identical}/${results.length} identical; lines ${same}/${lines}, page starts ${startsSame}/${starts}`,
   `without math and images: ${plain.identical}/${plain.docs} identical; lines ${plain.same}/${plain.lines} (${(100 * ratio).toFixed(1)}%)`,
+  `with math, without images: ${withMath.identical}/${withMath.docs} identical; lines ${withMath.same}/${withMath.lines} ` +
+    `(${(100 * mathRatio).toFixed(1)}%); equations' letters and digits ${withMath.charsSame}/${withMath.chars} (${(100 * charsRatio).toFixed(1)}%)`,
 ];
 console.log(summary[1]);
+console.log(summary[2]);
 writeFileSync(join(out, "results.json"), JSON.stringify(results, null, 2));
 let failed = results.some((r) => r.error) ? "documents that didn't export" : "";
 if (ratio < minLines) failed = `line agreement ${(100 * ratio).toFixed(1)}% under ${(100 * minLines).toFixed(1)}%`;
+if (mathRatio < minMathLines)
+  failed = `line agreement with math ${(100 * mathRatio).toFixed(1)}% under ${(100 * minMathLines).toFixed(1)}%`;
+if (withMath.charsSame < withMath.chars) failed = "equations that didn't come out whole";
 if (validator) {
   const files = docx.map((d) => d.file);
   let report = "";
