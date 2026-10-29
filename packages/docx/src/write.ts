@@ -65,6 +65,8 @@ interface Part {
 
 /** A paragraph mark's run properties: a point tall, so an empty paragraph's line is all its spacing makes it. */
 const TINY = '<w:rPr><w:sz w:val="2"/></w:rPr>';
+/** Letters of complex scripts: Hebrew to Sinhala, Thai to Myanmar, Khmer (#134). */
+const COMPLEX = /[\u0590-\u0dff\u0e00-\u109f\u1780-\u17ff]/;
 
 class Writer {
   /** The face equations are set in (the document's `m:mathFont`), once one is written. */
@@ -101,7 +103,7 @@ class Writer {
     color?: string,
     underline?: boolean,
     spacing?: number,
-    script?: string,
+    run?: Pick<DocxTextRun, "script" | "rtl" | "lang">,
   ): string {
     const f = this.fonts[font];
     const name = esc(f?.name ?? "Libertinus Serif");
@@ -113,11 +115,13 @@ class Writer {
     const sz = halfPoints(size);
     x += `<w:sz w:val="${sz}"/><w:szCs w:val="${sz}"/>`;
     if (underline) x += '<w:u w:val="single"/>';
-    if (script) x += `<w:vertAlign w:val="${script}"/>`;
+    if (run?.script) x += `<w:vertAlign w:val="${run.script}"/>`;
+    if (run?.rtl) x += "<w:rtl/>";
+    if (run?.lang) x += `<w:lang w:val="${run.lang}" w:eastAsia="${run.lang}" w:bidi="${run.lang}"/>`;
     return `<w:rPr>${x}</w:rPr>`;
   }
 
-  private run(r: DocxRun, part: Part, jc = "center"): string {
+  private run(r: DocxRun, part: Part, jc = "center", rtl = false, complex = false): string {
     if ("break" in r) return "<w:r><w:br/></w:r>";
     if ("math" in r) {
       this.mathFont ??= this.fonts[r.font]?.name;
@@ -138,11 +142,18 @@ class Writer {
       }
       // A no-break space, widened to the gap by character spacing: exact to a twip, and Word underlines the spacing too.
       const nbsp = (this.fonts[r.font]?.nbsp ?? 0.25) * halfPoints(r.size) * 10;
-      const spacing = Math.max(0, twips(r.gap) - Math.round(nbsp));
-      // U+00A0, written as a character reference so it stays visible in the source.
-      return `<w:r>${this.rPr(r.font, r.size, undefined, r.underline, spacing)}<w:t xml:space="preserve">&#160;</w:t></w:r>`;
+      // U+00A0, written as a character reference so it stays visible in the source. In a right-to-left paragraph, a
+      // right-to-left run: engines place runs by their direction.
+      const space = (n: number, spacing: number) =>
+        `<w:r>${this.rPr(r.font, r.size, undefined, r.underline, spacing, { rtl })}<w:t xml:space="preserve">${"&#160;".repeat(n)}</w:t></w:r>`;
+      if (!complex) return space(1, Math.max(0, twips(r.gap) - Math.round(nbsp)));
+      // Among complex-script text (Arabic, Indic), as many no-break spaces as fill the gap, the last spaced by the
+      // rest: ONLYOFFICE ignores character spacing there (#134), so it is off by half a space at most.
+      const count = Math.max(1, Math.round(twips(r.gap) / Math.max(1, nbsp)));
+      const rest = Math.round(twips(r.gap) - count * nbsp);
+      return (count > 1 ? space(count - 1, 0) : "") + space(1, rest);
     }
-    const run = `<w:r>${this.rPr(r.font, r.size, r.color, r.underline, undefined, r.script)}<w:t xml:space="preserve">${esc(r.text)}</w:t></w:r>`;
+    const run = `<w:r>${this.rPr(r.font, r.size, r.color, r.underline, undefined, r)}<w:t xml:space="preserve">${esc(r.text)}</w:t></w:r>`;
     if (r.field) return `<w:fldSimple w:instr="${r.field}">${run}</w:fldSimple>`;
     if (r.link) {
       const id = `rIdLink${part.rels.length + 1}`;
@@ -161,6 +172,7 @@ class Writer {
     num?: number;
     border?: string;
     tabs?: DocxParagraph["tabs"];
+    bidi?: boolean;
     before?: number;
     after?: number;
     line: number;
@@ -185,6 +197,8 @@ class Writer {
     if (o.border) x += o.border;
     if (o.tabs?.length)
       x += `<w:tabs>${o.tabs.map((t) => `<w:tab w:val="${t.align === "end" ? "right" : t.align === "center" ? "center" : "left"}"${t.leader ? ` w:leader="${t.leader}"` : ""} w:pos="${twips(t.pos)}"/>`).join("")}</w:tabs>`;
+    // Right to left: `left` and `right` (alignment, indents, tabs) are the paragraph's start and end.
+    if (o.bidi) x += "<w:bidi/>";
     x += `<w:spacing w:before="${Math.max(0, twips(o.before ?? 0))}" w:after="${Math.max(0, twips(o.after ?? 0))}" w:line="${Math.max(1, twips(o.line))}" w:lineRule="${o.atLeast ? "atLeast" : "exact"}"/>`;
     const first = o.firstLine ?? 0;
     const ind = [
@@ -231,7 +245,9 @@ class Writer {
     const math = runs.find((r) => "math" in r && !r.display) as DocxMathRun | undefined;
     if (math && runs.every((r) => "math" in r || "tab" in r || "break" in r))
       runs = [...runs, { text: "\u200b", font: math.font, size: math.size }];
-    const content = lead + label + runs.map((r) => this.run(r, part, jc === "left" ? "left" : jc)).join("");
+    const complex = runs.some((r) => "text" in r && COMPLEX.test(r.text));
+    const content =
+      lead + label + runs.map((r) => this.run(r, part, jc === "left" ? "left" : jc, p.rtl, complex)).join("");
     return `<w:p>${this.pPr({
       style: p.heading ? `Heading${Math.min(6, p.heading)}` : undefined,
       keepNext: p.heading !== undefined,
@@ -239,6 +255,7 @@ class Writer {
       frame: p.frame,
       num,
       tabs: p.tabs,
+      bidi: p.rtl,
       before: p.before,
       after,
       line: p.pitch,
@@ -621,7 +638,9 @@ export const writeDocx = (
       `<w:rFonts w:ascii="${base}" w:hAnsi="${base}" w:cs="${base}" w:eastAsia="${base}"/>` +
       '<w:kern w:val="2"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:lang w:val="en-GB"/><w14:ligatures w14:val="standard"/>' +
       "</w:rPr></w:rPrDefault>" +
-      '<w:pPrDefault><w:pPr><w:widowControl/><w:spacing w:before="0" w:after="0" w:line="286" w:lineRule="exact"/></w:pPr></w:pPrDefault>' +
+      // No punctuation hanging past the margin (East Asian lines' commas, #134): Typst breaks before it.
+      '<w:pPrDefault><w:pPr><w:widowControl/><w:overflowPunct w:val="0"/>' +
+      '<w:spacing w:before="0" w:after="0" w:line="286" w:lineRule="exact"/></w:pPr></w:pPrDefault>' +
       "</w:docDefaults>" +
       '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>' +
       headings +

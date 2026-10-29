@@ -1,6 +1,6 @@
 # DOCX checks (#131)
 
-`check.mjs` exports every Latin corpus document (the edu, llm and islands sets, without non-Latin scripts) to PDF and
+`check.mjs` exports every Latin corpus document (the edu, llm and islands sets; `--scripts` for the others) to PDF and
 DOCX through `@typstream/node`, healed in final mode first as an engine exports it (lint fixes included, the layout
 profile's among them), has a layout engine lay the DOCX out, and compares its lines and page starts with Typst's
 PDF (`lines.mjs`).
@@ -26,7 +26,18 @@ node tools/docx-check/check.mjs edu/worksheet           # documents whose id con
 node tools/docx-check/check.mjs --onlyoffice            # ONLYOFFICE's x2t (Docker, onlyoffice/documentserver)
 node tools/docx-check/check.mjs --native                # engine-wasm's native example for the model, no wasm build:
                                                         #   cargo run --release --example docx_model (in engine-wasm)
+node tools/docx-check/check.mjs --scripts               # the documents in other scripts (#134)
+node tools/docx-check/check.mjs --native --scripts --fonts DIR chinese   # with fonts the engine doesn't ship (CJK)
 ```
+
+**Other scripts** (#134: Arabic, Bengali, Devanagari, Chinese): `--scripts` checks those documents instead. Their
+PDFs' text can't be compared as written: Typst draws a mark (an Arabic dot, an Indic vowel sign) as an item of its
+own, which its PDF gives the letter it sits on again, and ONLYOFFICE's PDF drops Indic vowel signs. So each line
+(`scriptLinesOf`) is its words' text with words of no width left out and repeated syllables collapsed, and where its
+ink starts and ends (poppler's raster, in the middle of the line, which only its own glyphs reach); a line is
+reproduced when either is the same (a line broken elsewhere has neither). `--fonts DIR` gives the native example and
+the layout engine other fonts: the engine ships no CJK face, so the Chinese document is tofu in both PDFs without
+one.
 
 Files and LibreOffice's PDFs go to `$TMPDIR/typstream-docx-check` (`results.json` holds each document's numbers).
 
@@ -39,7 +50,8 @@ node tools/docx-check/check.mjs --validate tools/docx-check/validator/out/valida
   --min-picture-lines 0.92 --min-pictures 0.95
 ```
 
-CI's `DOCX (validator, LibreOffice)` job runs that: it fails on any validator error, on an equation that doesn't
+and `--scripts` with its own floors (`--min-lines 0.97 --min-math-lines 0.86 --min-picture-lines 0.94 --min-pictures
+0.95`). CI's `DOCX (validator, LibreOffice)` job runs both: it fails on any validator error, on an equation that doesn't
 come out whole, when fewer of Typst's lines come back than the floors (`--min-lines` on the documents without
 equations or pictures, `--min-math-lines` on those with equations, `--min-picture-lines` on those with pictures), and
 when fewer pictures than `--min-pictures` match the PDF's pixels (LibreOffice versions differ, so these are floors,
@@ -66,6 +78,14 @@ have here, so whatever face has them). Exact line spacing would keep an equation
 Lines are compared with a leader's dots as one, since how many fit depends on their spacing. LibreOffice shades
 consecutive paragraphs with the same shading as one block, the gaps between them too, so rules one after another
 (answer lines) have a paragraph a hundredth of a point tall between them; the line comparison doesn't see colour.
+
+Scripts (#134): in a right-to-left paragraph, LibreOffice and ONLYOFFICE read alignment and indents as the start and
+end side (`jc="left"` is the right edge), but disagree on list labels: ONLYOFFICE (as presumably Word) aligns a
+`lvlJc="left"` label at the start, the right, and LibreOffice puts it past the margin by its width. ONLYOFFICE ignores
+character spacing among complex-script text (Arabic, Indic), so gaps there are no-break spaces, the last spaced by
+what is left. LibreOffice sets a Chinese line's closing comma in the line where Typst moved its last character on
+(even with `overflowPunct` off); ONLYOFFICE breaks as Typst does. Word has no numbering for Bengali or Eastern Arabic
+digits.
 
 Pictures (#133): LibreOffice (24.2 and 26.2) draws an SVG picture whose content stays inside its view box a pixel at
 96 DPI smaller than its frame (0.75 pt narrower and shorter, 0.31 pt in from its top left), so every picture's SVG has

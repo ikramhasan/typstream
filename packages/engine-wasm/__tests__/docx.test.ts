@@ -39,6 +39,63 @@ describe("compile_docx_model", () => {
     expect(runs.map((r: { text?: string }) => r.text ?? "").join("")).toContain("w0");
   });
 
+  describe("scripts (#134)", () => {
+    type Run = { text?: string; rtl?: boolean; lang?: string; gap?: number };
+    type Block = { type: string; rtl?: boolean; runs?: Run[]; list?: { id: number; label: string }; rows?: unknown[] };
+    const blocks = (source: string): Block[] => model(source).sections[0].blocks;
+    const text = (b?: Block) => (b?.runs ?? []).map((r) => r.text ?? "").join("");
+
+    it("writes Arabic in logical order, right to left, with a left-to-right word in place", () => {
+      const sentence = "لماذا تبدو الشمس أكبر؟ استخدم كلمة distance (المسافة) في إجابتك.";
+      const [title, line] = blocks(`#set text(lang: "ar")\n= اختبار قصير: الجهاز الشمسي\n\n${sentence}\n`);
+      // Its dots are items of their own in Typst's frames, each repeating its letter: they are drawn, not written.
+      expect(text(title)).toBe("اختبار قصير: الجهاز الشمسي");
+      expect(title?.rtl).toBe(true);
+      expect(text(line)).toBe(sentence);
+      expect(line?.runs?.find((r) => r.text === "distance")).not.toHaveProperty("rtl");
+      expect(
+        line?.runs?.filter((r) => /[\u0600-\u06ff]/.test(r.text ?? "")).every((r) => r.rtl && r.lang === "ar"),
+      ).toBe(true);
+    });
+
+    it("writes a left-to-right paragraph in a right-to-left document left to right", () => {
+      const note = "Teacher note (left to right): answers 1-ب، 2-ب. Jupiter is 5th.";
+      const [p] = blocks(`#set text(lang: "ar")\n#text(dir: ltr)[${note}]\n`);
+      expect(text(p)).toBe(note);
+      expect(p?.rtl).toBeUndefined();
+    });
+
+    it("writes Bengali and Devanagari once, though Typst draws vowel signs apart", () => {
+      for (const words of ["গুণের অনুশীলনী: তৃতীয় শ্রেণি", "विज्ञान कार्यपत्रक: पदार्थ की अवस्थाएँ"])
+        expect(text(blocks(`${words}\n`)[0])).toBe(words);
+    });
+
+    it("measures a right-to-left list's labels from the right", () => {
+      const out = blocks(`#set text(lang: "ar")\n- الزهرة\n- عطارد\n`);
+      expect(out.map(text)).toEqual(["الزهرة", "عطارد"]);
+      expect(out.every((b) => b.rtl && b.list?.label === "•")).toBe(true);
+      const list = model(`#set text(lang: "ar")\n- الزهرة\n`).lists[0];
+      expect(list.labelLeft).toBeCloseTo(0, 0);
+      expect(list.bodyLeft).toBeGreaterThan(list.labelRight);
+    });
+
+    it("numbers a right-to-left table's columns as drawn, left to right", () => {
+      const [table] = blocks(`#set text(lang: "ar")\n#table(columns: 3, [أ], [ب], [ج])\n`);
+      const cells = (table?.rows?.[0] as { cells: { col: number; blocks: Block[] }[] }).cells;
+      expect(cells.map((c) => [c.col, text(c.blocks[0])]).sort()).toEqual([
+        [0, "ج"],
+        [1, "ب"],
+        [2, "أ"],
+      ]);
+    });
+
+    it("writes labels Word has no numbering for as text, and Devanagari page numbers as Word's Hindi numbers", () => {
+      const out = model(`#set page(numbering: "१")\n#set enum(numbering: "১.")\n+ এক\n+ দুই\n`);
+      expect(out.lists[0].format).toBe("none");
+      expect(out.sections[0].pageNumbering).toEqual({ format: "hindiNumbers", start: 1 });
+    });
+  });
+
   it("makes a picture of a drawing, SVG and PNG, with a stroke outside its view box for LibreOffice", () => {
     engine.set_source(
       "/main.typ",

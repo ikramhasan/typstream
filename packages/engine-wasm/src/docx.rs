@@ -37,15 +37,17 @@ use serde_json::{json, Map, Value as Json};
 use typst::foundations::{Content, Label, Smart, StyleChain, Value};
 use typst::introspection::{Introspector, Location, Tag};
 use typst::layout::{
-    Abs, Alignment, Frame, FrameItem, GridCell, HAlignment, PlaceElem, Point, Sides, Size,
+    Abs, Alignment, Dir, Frame, FrameItem, GridCell, HAlignment, PlaceElem, Point, Sides, Size,
     Transform, VAlignment,
 };
 use typst::model::{Destination, HeadingElem, Numbering, TableCell};
 use typst::pdf::{PdfMarkerTag, PdfMarkerTagKind};
 use typst::syntax::Span;
-use typst::text::Font;
+use typst::text::{Font, Locale};
 use typst::visualize::{Color, CurveItem, FixedStroke, Geometry, Paint, Shape};
 use typst_layout::{Page, PagedDocument};
+
+use unicode_bidi::{bidi_class, BidiClass};
 
 use crate::picture::{self, Picture};
 
@@ -109,6 +111,7 @@ pub fn model(doc: &PagedDocument) -> Model {
             marker: None,
             scripts: Vec::new(),
             size: 11.0,
+            pieces: None,
         };
         lin.walk(&page.frame, Transform::identity());
     }
@@ -285,6 +288,23 @@ struct Text {
     /// In a `super` or `sub` Typst set with the font's own superscript or subscript glyphs (full size, on the baseline):
     /// Word's `superscript` or `subscript`.
     script: Option<&'static str>,
+    /// Shaped right to left (#134).
+    rtl: bool,
+    /// Its language, as BCP 47 (`ar`, `zh-TW`).
+    lang: String,
+}
+
+/// The text items of one shaped run being pushed (#134): Typst lays a run's pieces out left to right (one per font and
+/// vertical offset), but lines' items are otherwise in logical order, so an RTL run's pieces are pushed reversed.
+struct Pieces {
+    /// Where its first item is in `items`.
+    start: usize,
+    /// Its direction, once a piece has a strong one.
+    rtl: Option<bool>,
+    /// Where its last piece ends, its baseline (once a piece that isn't a mark has it) and text size.
+    right: f64,
+    baseline: Option<f64>,
+    size: f64,
 }
 
 struct Linearizer<'a> {
@@ -305,10 +325,15 @@ struct Linearizer<'a> {
     scripts: Vec<(Location, &'static str, f64)>,
     /// The size of the last text.
     size: f64,
+    /// The run of text items being pushed.
+    pieces: Option<Pieces>,
 }
 
 impl Linearizer<'_> {
     fn push(&mut self, kind: Kind) {
+        if !matches!(kind, Kind::Text(_)) {
+            self.pieces = None;
+        }
         self.items.push(Item {
             page: self.page,
             kind,
@@ -324,7 +349,8 @@ impl Linearizer<'_> {
     }
 
     fn walk(&mut self, frame: &Frame, ts: Transform) {
-        for (pos, item) in frame.items() {
+        let all = frame.items().as_slice();
+        for (i, (pos, item)) in all.iter().enumerate() {
             let ts = ts.pre_concat(Transform::translate(pos.x, pos.y));
             let at = Point::zero().transform(ts);
             if let Some(loc) = self.skipping {
@@ -408,15 +434,28 @@ impl Linearizer<'_> {
                     if text.text.is_empty() {
                         continue;
                     }
+                    let dir = crate::text::run_dir(text).map(|d| d == Dir::RTL);
+                    let size = text.size.to_pt();
+                    let (x, mut baseline) = (at.x.to_pt(), at.y.to_pt());
+                    // A mark's item (Arabic dots, Indic vowel signs: glyphs with a vertical offset are an item of
+                    // their own, above or below the baseline) repeats its base's text: it is drawn, but has none.
+                    // (A space trimmed at the end of a line is an item of no width too, but a space.)
+                    let mark = !text.text.chars().all(char::is_whitespace)
+                        && crate::text::mark(all, i, text);
+                    // Width of the item's first word (up to its first space), in reading order.
                     let mut first_word = 0.0;
-                    for glyph in &text.glyphs {
+                    let glyphs: Vec<_> = if dir == Some(true) {
+                        text.glyphs.iter().rev().collect()
+                    } else {
+                        text.glyphs.iter().collect()
+                    };
+                    for glyph in glyphs {
                         let start = glyph.range().start;
                         if text.text[start..].starts_with(char::is_whitespace) {
                             break;
                         }
                         first_word += glyph.x_advance.at(text.size).to_pt();
                     }
-                    let from = self.items.len();
                     let mut trailing = 0.0;
                     for glyph in text.glyphs.iter().rev() {
                         if !text.text[glyph.range()].chars().all(char::is_whitespace) {
@@ -424,29 +463,87 @@ impl Linearizer<'_> {
                         }
                         trailing += glyph.x_advance.at(text.size).to_pt();
                     }
-                    let size = text.size.to_pt();
                     // Typst synthesizes a script the font has no glyphs for: smaller, off the baseline, as it is.
                     let script = self
                         .scripts
                         .last()
                         .filter(|(_, _, before)| (before - size).abs() < 0.01)
                         .map(|(_, script, _)| *script);
-                    if self.scripts.is_empty() {
+                    if self.scripts.is_empty() && !mark {
                         self.size = size;
                     }
-                    self.push(Kind::Text(Text {
-                        x: at.x.to_pt(),
-                        y: at.y.to_pt(),
-                        width: text.width().to_pt(),
-                        inked: text.width().to_pt() - trailing,
-                        size,
-                        font: text.font.font().clone(),
-                        color: paint_hex(&text.fill),
-                        text: text.text.to_string(),
-                        first_word,
-                        script,
-                    }));
+                    let width = text.width().to_pt();
+                    // The run this piece continues: it starts where the last one ended, on its baseline.
+                    let joins = self.pieces.as_ref().is_some_and(|p| {
+                        (p.right - x).abs() < 0.01
+                            && (mark || p.baseline.is_none_or(|b| (b - baseline).abs() < 0.01))
+                            && (p.size - size).abs() < 0.01
+                            && (mark || dir.is_none() || p.rtl.is_none() || p.rtl == dir)
+                    });
+                    if !joins {
+                        self.pieces = Some(Pieces {
+                            start: self.items.len(),
+                            rtl: None,
+                            right: x,
+                            baseline: None,
+                            size,
+                        });
+                    }
+                    let mut pieces = self.pieces.take().unwrap();
+                    pieces.right = pieces.right.max(x + width);
+                    // A mark is on its base's baseline, and so are the marks a run starts with once it has one.
+                    if mark {
+                        baseline = pieces.baseline.unwrap_or(baseline);
+                    } else if pieces.baseline.is_none() {
+                        pieces.baseline = Some(baseline);
+                        for item in &mut self.items[pieces.start..] {
+                            if let Kind::Text(t) = &mut item.kind {
+                                t.y = baseline;
+                            }
+                        }
+                    }
+                    let mut rtl = pieces.rtl == Some(true);
+                    if pieces.rtl.is_none() && !mark && dir.is_some() {
+                        pieces.rtl = dir;
+                        rtl = dir == Some(true);
+                        // The pieces so far had no direction: now they read right to left.
+                        if rtl {
+                            self.items[pieces.start..].reverse();
+                            for item in &mut self.items[pieces.start..] {
+                                if let Kind::Text(t) = &mut item.kind {
+                                    t.rtl = true;
+                                }
+                            }
+                        }
+                    }
+                    let from = self.items.len();
+                    self.items.push(Item {
+                        page: self.page,
+                        kind: Kind::Text(Text {
+                            x,
+                            y: baseline,
+                            width,
+                            inked: width - trailing,
+                            size,
+                            font: text.font.font().clone(),
+                            color: paint_hex(&text.fill),
+                            text: if mark {
+                                String::new()
+                            } else {
+                                text.text.to_string()
+                            },
+                            first_word,
+                            script,
+                            rtl,
+                            lang: Locale::new(text.lang, text.region).rfc_3066().to_string(),
+                        }),
+                        drawn: None,
+                    });
                     self.drawn(from, at, item);
+                    if rtl {
+                        self.items[pieces.start..].rotate_right(1);
+                    }
+                    self.pieces = Some(pieces);
                 }
                 FrameItem::Shape(shape, _) => {
                     let from = self.items.len();
@@ -971,6 +1068,9 @@ enum Run {
         underline: bool,
         link: Option<String>,
         script: Option<&'static str>,
+        /// Right to left, and its language (#134).
+        rtl: bool,
+        lang: String,
     },
     /// An exact-width space: a gap in a line, a blank, a placeholder.
     Gap {
@@ -1026,6 +1126,8 @@ struct Line {
     first_word: f64,
     top: f64,
     bottom: f64,
+    /// Its base direction is right to left (#134).
+    rtl: bool,
 }
 
 struct Builder {
@@ -1467,6 +1569,8 @@ impl Builder {
                 }
                 Kind::Group(rect, false)
                     if rect.right() < area.right - 1.0
+                        // Centred in the area (a `place`d title), its lines are centred paragraphs of the area.
+                        && ((rect.x - area.left) - (area.right - rect.right())).abs() >= 1.0
                         && !self.beside(&pending, *rect, items[id].page) =>
                 {
                     // A block narrower than the area on its right (a padded quote): where its wrapped lines end is
@@ -1509,11 +1613,17 @@ impl Builder {
                     );
                     for b in &mut blocks {
                         if b.json.get("type").and_then(|t| t.as_str()) == Some("p") {
+                            // A right-to-left paragraph's indents are logical: the room on the right is its start's.
+                            let side = if b.json.get("rtl").is_some() {
+                                "left"
+                            } else {
+                                "right"
+                            };
                             let had = b.json["indent"]
-                                .get("right")
+                                .get(side)
                                 .and_then(|r| r.as_f64())
                                 .unwrap_or(0.0);
-                            b.json["indent"]["right"] = json!(round(had + right));
+                            b.json["indent"][side] = json!(round(had + right));
                         }
                     }
                     out.extend(blocks);
@@ -1521,9 +1631,12 @@ impl Builder {
                     continue;
                 }
                 Kind::Seg(s)
-                    if s.horizontal() && (s.x1 - s.x0) > 0.9 * (area.right - area.left) =>
+                    if s.horizontal()
+                        && ((s.x1 - s.x0) > 0.9 * (area.right - area.left)
+                            || self.after_par(ids, i)) =>
                 {
-                    // A rule across the area (`line(length: 100%)`): an empty paragraph with a bottom border.
+                    // A rule across the area (`line(length: 100%)`), or a shorter one between paragraphs (a blank
+                    // under a label): an empty paragraph with a bottom border.
                     let inline = pending.iter().any(|&p| matches!(&self.items[p].kind, Kind::Text(t) if (t.y - s.y0).abs() < t.size));
                     if !inline {
                         self.flush(&mut pending, &mut out, area, heading);
@@ -1977,8 +2090,9 @@ impl Builder {
         let mut text_ids: Vec<usize> = Vec::new();
         let mut segs: Vec<(usize, Seg)> = Vec::new();
         let mut links: Vec<(usize, Rect, String)> = Vec::new();
-        // Boxes of what is drawn: an equation's pieces (with its index in `equations`), or drawings (with the item).
-        let mut boxes: Vec<(usize, Rect, Option<usize>, Option<usize>)> = Vec::new();
+        // Boxes of what is drawn: an equation's pieces (with its index in `equations`), or drawings (with the item);
+        // and the item they come from.
+        let mut boxes: Vec<(usize, Rect, Option<usize>, Option<usize>, usize)> = Vec::new();
         let mut equations: Vec<Equation> = Vec::new();
         // The equation open, and its end tag.
         let mut equation: Option<(usize, Option<Location>)> = None;
@@ -2029,6 +2143,7 @@ impl Builder {
                         },
                         eq,
                         None,
+                        id,
                     ));
                 }
                 Kind::Start(elem, _) if elem.func().name() == "equation" && eq.is_none() => {
@@ -2061,16 +2176,17 @@ impl Builder {
                     },
                     eq,
                     None,
+                    id,
                 )),
                 Kind::Seg(s) if s.horizontal() => segs.push((page, s.clone())),
                 Kind::Link(r, url) => links.push((page, *r, url.clone())),
-                Kind::Drawing(r) => boxes.push((page, *r, eq, Some(id))),
+                Kind::Drawing(r) => boxes.push((page, *r, eq, Some(id), id)),
                 _ => {}
             }
         }
         // An equation's pieces merge into one box per baseline-ish band (two, when Typst broke it over lines).
         let mut lines: Vec<Line> = Vec::new();
-        // page, x, w, baseline, text or box, the box's equation, the drawings in the box
+        // page, x, w, baseline, text or box, the box's equation, the drawings in the box, its first item
         let mut atoms: Vec<(
             usize,
             f64,
@@ -2080,12 +2196,13 @@ impl Builder {
             Option<Rect>,
             Option<usize>,
             Vec<usize>,
+            usize,
         )> = Vec::new();
         // Boxes: attach to the line whose baseline is inside them.
-        let mut placeholders: Vec<(usize, Rect, Option<usize>, Vec<usize>)> = Vec::new();
-        for (page, r, eq, drawing) in boxes {
+        let mut placeholders: Vec<(usize, Rect, Option<usize>, Vec<usize>, usize)> = Vec::new();
+        for (page, r, eq, drawing, id) in boxes {
             // An equation's pieces (a numerator, a denominator) make one box, wherever they are.
-            let same = |p: &(usize, Rect, Option<usize>, Vec<usize>)| {
+            let same = |p: &(usize, Rect, Option<usize>, Vec<usize>, usize)| {
                 p.0 == page
                     && p.2 == eq
                     && (eq.is_some()
@@ -2114,7 +2231,7 @@ impl Builder {
                     continue;
                 }
             }
-            placeholders.push((page, r, eq, drawing.into_iter().collect()));
+            placeholders.push((page, r, eq, drawing.into_iter().collect(), id));
         }
         // Text drawn on a drawing in the line (a rounded box's words) is part of its picture.
         let mut pictured = vec![false; texts.len()];
@@ -2136,7 +2253,8 @@ impl Builder {
             p.3.sort_unstable();
         }
         for (j, (page, t)) in texts.iter().enumerate() {
-            if !pictured[j] {
+            // A mark's item has no text (its base has it).
+            if !pictured[j] && !t.text.is_empty() {
                 atoms.push((
                     *page,
                     t.x,
@@ -2146,17 +2264,18 @@ impl Builder {
                     None,
                     None,
                     Vec::new(),
+                    text_ids[j],
                 ));
             }
         }
-        for (page, r, eq, drawings) in placeholders {
+        for (page, r, eq, drawings, id) in placeholders {
             let baseline = texts
                 .iter()
                 .filter(|(p, t)| *p == page && t.y >= r.y - 1.0 && t.y <= r.bottom() + 1.0)
                 .map(|(_, t)| t.y)
                 .next()
                 .unwrap_or(r.bottom());
-            atoms.push((page, r.x, r.w, baseline, None, Some(r), eq, drawings));
+            atoms.push((page, r.x, r.w, baseline, None, Some(r), eq, drawings, id));
         }
         // Atoms in document order by (page, baseline band, x) — text items keep their logical order within a line. A
         // band starts at a baseline 0.6 pt or more below the one before's start; bands are found first, as comparing
@@ -2179,19 +2298,45 @@ impl Builder {
             }
             band[k] = n;
         }
+        // A line with right-to-left text keeps its items' order, which is logical (typst-layout sorts a line's items
+        // back for introspection; the Linearizer reversed RTL runs' pieces): by x, it would be visual (#134).
+        let mut rtl_band = vec![false; n + 1];
+        for (k, a) in atoms.iter().enumerate() {
+            if a.4.as_ref().is_some_and(|t| t.rtl) {
+                rtl_band[band[k]] = true;
+            }
+        }
         let mut order: Vec<usize> = (0..atoms.len()).collect();
         order.sort_by(|&a, &b| {
-            band[a]
-                .cmp(&band[b])
-                .then(atoms[a].1.total_cmp(&atoms[b].1))
+            band[a].cmp(&band[b]).then(if rtl_band[band[a]] {
+                atoms[a].8.cmp(&atoms[b].8)
+            } else {
+                atoms[a].1.total_cmp(&atoms[b].1)
+            })
         });
+        // The line's base direction: right to left when it reads leftwards, or holds one run that does.
+        let mut base_rtl = vec![false; n + 1];
+        for b in (1..=n).filter(|&b| rtl_band[b]) {
+            let line: Vec<usize> = order.iter().copied().filter(|&k| band[k] == b).collect();
+            if let (Some(&first), Some(&last)) = (line.first(), line.last()) {
+                base_rtl[b] = if atoms[first].1 > atoms[last].1 + 0.01 {
+                    true
+                } else if atoms[first].1 + atoms[first].2 < atoms[last].1 + 0.01 && first != last {
+                    false
+                } else {
+                    atoms[first].4.as_ref().is_some_and(|t| t.rtl)
+                };
+            }
+        }
+        let mut prev: Option<usize> = None;
         for k in order {
-            let (page, x, w, baseline, text, rect, eq, drawings) = atoms[k].clone();
+            let (page, x, w, baseline, text, rect, eq, drawings, _) = atoms[k].clone();
             let new_line = match lines.last() {
                 Some(l) => l.page != page || (l.baseline - baseline).abs() >= 0.6,
                 None => true,
             };
             if new_line {
+                prev = None;
                 let first_word = text.as_ref().map(|t| t.first_word).unwrap_or(w);
                 lines.push(Line {
                     page,
@@ -2205,17 +2350,38 @@ impl Builder {
                     top: f64::MAX,
                     bottom: f64::MIN,
                     first_word,
+                    rtl: base_rtl[band[k]],
                 });
             }
             let line = lines.last_mut().unwrap();
-            // A gap since the last atom: an exact-width space.
-            let gap = x - line.right;
+            // A gap since the last atom: an exact-width space. In logical order, the room between it and the atom
+            // before when nothing is drawn between them.
+            let (gap, from) = match prev.filter(|_| rtl_band[band[k]]) {
+                Some(p) => {
+                    let (px, pw) = (atoms[p].1, atoms[p].2);
+                    let (a, b) = if x + w <= px + 0.05 {
+                        (x + w, px)
+                    } else {
+                        (px + pw, x)
+                    };
+                    let between = atoms.iter().enumerate().any(|(j, o)| {
+                        band[j] == band[k]
+                            && j != k
+                            && j != p
+                            && o.1 + o.2 > a + 0.05
+                            && o.1 < b - 0.05
+                    });
+                    (if between { 0.0 } else { b - a }, a)
+                }
+                None => (x - line.right, line.right),
+            };
+            prev = Some(k);
             let (font, size) = match &text {
                 Some(t) => (self.fonts.get(&t.font), t.size),
                 None => (last_font(&line.runs).unwrap_or(0), 11.0),
             };
             if !line.runs.is_empty() && gap > 0.05 {
-                let underline = underlined(&segs, page, line.right, x, baseline);
+                let underline = underlined(&segs, page, from, from + gap, baseline);
                 line.runs.push(Run::Gap {
                     width: gap,
                     underline,
@@ -2235,16 +2401,14 @@ impl Builder {
                     line.size = line.size.max(t.size);
                     line.top = line.top.min(t.y - TOP * t.size);
                     line.bottom = line.bottom.max(t.y + BOTTOM * t.size);
-                    push_text(
-                        &mut line.runs,
-                        t.text,
-                        font,
-                        t.size,
-                        t.color,
-                        underline,
-                        link,
-                        t.script,
-                    );
+                    // Text with no letters of a direction (punctuation, spaces, digits) in a right-to-left line reads
+                    // right to left too, as the line around it: engines lay runs out by their direction.
+                    let neutral = !t.text.chars().any(|c| bidi_class(c) == BidiClass::L);
+                    let t = Text {
+                        rtl: t.rtl || (line.rtl && neutral),
+                        ..t
+                    };
+                    push_text(&mut line.runs, &t, font, underline, link);
                 }
                 (None, Some(r)) => {
                     match eq.map(|e| &mut equations[e]) {
@@ -2297,23 +2461,34 @@ impl Builder {
                 .find(|(p, y, _)| *p == line.page && (y - line.baseline).abs() < 0.6)
                 .map(|l| l.2);
         }
-        // Underlines past the last atom (a blank at the end of a line).
+        // Underlines past the last atom (a blank at the end of a line: on its left in right-to-left text).
         for line in lines.iter_mut() {
             if let Some((_, s)) = segs.iter().find(|(p, s)| {
                 *p == line.page
-                    && s.x1 > line.right + 0.5
                     && s.y0 > line.baseline - 1.0
                     && s.y0 < line.baseline + 0.6 * line.size.max(8.0)
-                    && s.x0 < line.right + 0.5
+                    && if line.rtl {
+                        s.x0 < line.left - 0.5 && s.x1 > line.left - 0.5
+                    } else {
+                        s.x1 > line.right + 0.5 && s.x0 < line.right + 0.5
+                    }
             }) {
                 let font = last_font(&line.runs).unwrap_or(0);
                 line.runs.push(Run::Gap {
-                    width: s.x1 - line.right,
+                    width: if line.rtl {
+                        line.left - s.x0
+                    } else {
+                        s.x1 - line.right
+                    },
                     underline: true,
                     font,
                     size: line.size.max(8.0),
                 });
-                line.right = s.x1;
+                if line.rtl {
+                    line.left = s.x0;
+                } else {
+                    line.right = s.x1;
+                }
             }
         }
         lines.retain(|l| !l.runs.is_empty());
@@ -2350,20 +2525,29 @@ impl Builder {
         // can use.
         let mut fit = f64::MAX;
         while let Some(line) = iter.next() {
+            // Room left on the line: on its right (its left in right-to-left text), or on both sides when it is
+            // centered.
+            let centered = ((line.left - area.left) - (area.right - line.right)).abs() < 1.0;
+            let room = if centered {
+                width - (line.right - line.left)
+            } else if line.rtl {
+                line.left - area.left
+            } else {
+                area.right - line.right
+            };
             if let Some(next) = iter.peek().filter(|n| n.page == line.page) {
-                fit = fit.min(line.right + next.first_word - area.right);
+                fit = fit.min(
+                    next.first_word
+                        - if centered {
+                            area.right - line.right
+                        } else {
+                            room
+                        },
+                );
             }
             let forced = match iter.peek() {
                 // The next line's first word would have fitted after this one: Typst didn't choose to break.
                 Some(next) if next.page == line.page => {
-                    // Room left on the line: on its right, or on both sides when it is centered.
-                    let centered =
-                        ((line.left - area.left) - (area.right - line.right)).abs() < 1.0;
-                    let room = if centered {
-                        width - (line.right - line.left)
-                    } else {
-                        area.right - line.right
-                    };
                     room > next.first_word + 1.0 && (line.right - line.left) < width - 1.0
                 }
                 _ => false,
@@ -2371,7 +2555,14 @@ impl Builder {
             let next_size = iter.peek().map(|n| n.size);
             groups.last_mut().unwrap().push(line);
             k += 1;
-            if forced && k < n {
+            // A line in another size is another paragraph whatever broke it: Word's exact spacing is one pitch for a
+            // paragraph.
+            let resized = next_size
+                .is_some_and(|s| (s - groups.last().unwrap().last().unwrap().size).abs() >= 0.01);
+            if resized && !forced && k < n {
+                groups.push(Vec::new());
+                breaks.push(false);
+            } else if forced && k < n {
                 let same = next_size.is_some_and(|s| {
                     (s - groups.last().unwrap().last().unwrap().size).abs() < 0.01
                 });
@@ -2415,6 +2606,17 @@ impl Builder {
         heading: Option<usize>,
     ) -> Option<Block> {
         let list: Option<Json> = None;
+        // A right-to-left paragraph (#134) is measured from the right: Word's alignment, indents and tab stops are
+        // logical in one (`bidi`).
+        let rtl = lines.first().is_some_and(|l| l.rtl);
+        if rtl {
+            for line in lines.iter_mut() {
+                (line.left, line.right) = (
+                    area.left + area.right - line.right,
+                    area.left + area.right - line.left,
+                );
+            }
+        }
         // A gap that takes what's left of a line (`h(1fr)`), so its last words end at the right edge: a tab to a
         // right tab stop there, as Word writes it. An exact gap would fill the line to a hundredth of a point, and an
         // engine measuring a hair wider would push the last words onto a line of their own.
@@ -2467,6 +2669,7 @@ impl Builder {
                 tall: false,
                 leader: None,
                 first_word: s.x1 - s.x0,
+                rtl: false,
                 top: baseline - TOP * size,
                 bottom: baseline + BOTTOM * size,
             });
@@ -2513,6 +2716,9 @@ impl Builder {
         }
         let mut json = Map::new();
         json.insert("type".into(), json!("p"));
+        if rtl {
+            json.insert("rtl".into(), json!(true));
+        }
         json.insert("align".into(), json!(align));
         json.insert(
             "indent".into(),
@@ -2544,6 +2750,16 @@ impl Builder {
             top: first.top.min(first.baseline - TOP * first.size),
             bottom: last.bottom.max(last.baseline + BOTTOM * last.size),
             json,
+        })
+    }
+
+    /// Whether `ids[i]` comes right after a paragraph's end: it is a block of its own.
+    fn after_par(&self, ids: &[usize], i: usize) -> bool {
+        let Some(Kind::End(loc)) = i.checked_sub(1).map(|k| &self.items[ids[k]].kind) else {
+            return false;
+        };
+        ids[..i].iter().rev().any(|&j| {
+            matches!(&self.items[j].kind, Kind::Start(e, _) if e.location() == Some(*loc) && e.func().name() == "par")
         })
     }
 
@@ -2645,6 +2861,23 @@ impl Builder {
         let id = self.lists.len();
         self.lists.push(Json::Null);
         let mut numbering = numbering(&labels.iter().map(|l| l.0.clone()).collect::<Vec<_>>());
+        // A right-to-left list (#134) has its labels right of its bodies: measured from the area's right, as Word's
+        // numbering is in a right-to-left paragraph, its bodies flowing in the whole area.
+        let rtl = labels
+            .iter()
+            .zip(&body_x)
+            .any(|(l, x)| x.is_some_and(|x| l.1 != f64::MAX && l.1 > x + 0.5));
+        let labels: Vec<(String, f64, f64)> = if rtl {
+            labels
+                .into_iter()
+                .map(|(t, x0, x1)| match x0 == f64::MAX {
+                    true => (t, x0, x1),
+                    false => (t, area.left + area.right - x1, area.left + area.right - x0),
+                })
+                .collect()
+        } else {
+            labels
+        };
         let lefts: Vec<f64> = labels
             .iter()
             .filter(|l| l.1 != f64::MAX)
@@ -2663,7 +2896,7 @@ impl Builder {
             // The body flows from where it starts, so a line as long as the room left reads as flush, not as
             // centred in the area; its blocks are then indented by as much.
             let left = body_x[k]
-                .filter(|x| *x > area.left && *x < area.right)
+                .filter(|x| *x > area.left && *x < area.right && !rtl)
                 .unwrap_or(area.left);
             let nested = self.lists.len();
             let flow = self.flow(
@@ -2729,16 +2962,7 @@ impl Builder {
         let (page, first) = texts.first()?.clone();
         let mut runs = Vec::new();
         for (_, t) in &texts {
-            push_text(
-                &mut runs,
-                t.text.clone(),
-                self.fonts.get(&t.font),
-                t.size,
-                t.color.clone(),
-                false,
-                None,
-                t.script,
-            );
+            push_text(&mut runs, t, self.fonts.get(&t.font), false, None);
         }
         let x0 = texts.iter().map(|(_, t)| t.x).fold(f64::MAX, f64::min);
         let x1 = texts
@@ -2884,12 +3108,12 @@ impl Builder {
                 let mut runs = Vec::new();
                 push_text(
                     &mut runs,
-                    n.text.clone(),
+                    &Text {
+                        script: None,
+                        ..n.clone()
+                    },
                     self.fonts.get(&n.font),
-                    n.size,
-                    n.color.clone(),
                     false,
-                    None,
                     None,
                 );
                 // The number's line, its baseline where Typst set it.
@@ -3276,6 +3500,39 @@ impl Builder {
             })
             .max()
             .unwrap_or(1);
+        // A right-to-left table (#134) has its first column on the right: its columns are numbered as they are drawn,
+        // left to right, and its cells' paragraphs are right to left.
+        let rtl = cells.iter().any(|(a, _)| {
+            cells.iter().any(|(b, _)| match (a, b) {
+                (
+                    Node::Cell {
+                        at: p,
+                        x: i,
+                        y: r,
+                        page: g,
+                        ..
+                    },
+                    Node::Cell {
+                        at: q,
+                        x: j,
+                        y: s,
+                        page: h,
+                        ..
+                    },
+                ) => r == s && g == h && i < j && p.x.to_pt() > q.x.to_pt() + 0.5,
+                _ => false,
+            })
+        });
+        let mut gutters = gutters;
+        if rtl {
+            for (n, _) in cells.iter_mut() {
+                if let Node::Cell { x, colspan, .. } = n {
+                    *x = ncols - *x - *colspan;
+                }
+            }
+            let between = ncols.saturating_sub(1).min(gutters.0.len());
+            gutters.0[..between].reverse();
+        }
         let left = x0;
         let right = frame.map(|f| f.right()).unwrap_or(area.right);
         // Column starts: from cells that start in each column.
@@ -3892,46 +4149,43 @@ fn last_font(runs: &[Run]) -> Option<usize> {
     })
 }
 
-#[allow(clippy::too_many_arguments)]
-fn push_text(
-    runs: &mut Vec<Run>,
-    text: String,
-    font: usize,
-    size: f64,
-    color: String,
-    underline: bool,
-    link: Option<String>,
-    script: Option<&'static str>,
-) {
+/// Appends `t`'s text in `font`, to the last run when it is set alike.
+fn push_text(runs: &mut Vec<Run>, t: &Text, font: usize, underline: bool, link: Option<String>) {
     if let Some(Run::Text {
-        text: t,
+        text,
         font: f,
-        size: s,
-        color: c,
+        size,
+        color,
         underline: u,
         link: l,
-        script: v,
+        script,
+        rtl,
+        lang,
     }) = runs.last_mut()
     {
         if *f == font
-            && (*s - size).abs() < 0.01
-            && *c == color
+            && (*size - t.size).abs() < 0.01
+            && *color == t.color
             && *u == underline
             && *l == link
-            && *v == script
+            && *script == t.script
+            && *rtl == t.rtl
+            && *lang == t.lang
         {
-            t.push_str(&text);
+            text.push_str(&t.text);
             return;
         }
     }
     runs.push(Run::Text {
-        text,
+        text: t.text.clone(),
         font,
-        size,
-        color,
+        size: t.size,
+        color: t.color.clone(),
         underline,
         link,
-        script,
+        script: t.script,
+        rtl: t.rtl,
+        lang: t.lang.clone(),
     });
 }
 
@@ -3945,6 +4199,8 @@ fn run_json(run: &Run) -> Json {
             underline,
             link,
             script,
+            rtl,
+            lang,
         } => {
             let mut m = Map::new();
             m.insert("text".into(), json!(text));
@@ -3961,6 +4217,13 @@ fn run_json(run: &Run) -> Json {
             }
             if let Some(script) = script {
                 m.insert("script".into(), json!(script));
+            }
+            if *rtl {
+                m.insert("rtl".into(), json!(true));
+            }
+            // English is the default (the writer's styles').
+            if lang != "en" {
+                m.insert("lang".into(), json!(lang));
             }
             Json::Object(m)
         }
@@ -4024,6 +4287,10 @@ fn numbering(labels: &[String]) -> (String, String, u32) {
     let first = labels.first().map(|s| s.as_str()).unwrap_or("•");
     let token_at = first.find(|c: char| c.is_ascii_alphanumeric());
     let Some(at) = token_at else {
+        // Labels that change are numbers Word has no format for (Bengali, Arabic-Indic digits, #134): text.
+        if labels.iter().any(|l| l != first) {
+            return ("none".into(), String::new(), 1);
+        }
         return ("bullet".into(), first.into(), 1);
     };
     let rest = &first[at..];
@@ -4141,6 +4408,15 @@ fn page_numbering(page: &Page) -> (&'static str, u64, String) {
         Some(N::UpperRoman) => "upperRoman",
         Some(N::LowerLatin) => "lowerLetter",
         Some(N::UpperLatin) => "upperLetter",
+        // Numerals Word has (#134); Eastern Arabic, Persian and Bengali digits it hasn't: Western ones there.
+        Some(N::Devanagari) => "hindiNumbers",
+        Some(N::Hebrew) => "hebrew1",
+        Some(N::ArabicAbjad) => "arabicAbjad",
+        Some(N::LowerSimplifiedChinese) => "chineseCounting",
+        Some(N::KoreanJamo) => "chosung",
+        Some(N::KoreanSyllable) => "ganada",
+        Some(N::KatakanaAiueo) => "aiueo",
+        Some(N::KatakanaIroha) => "iroha",
         _ => "decimal",
     };
     let label = system

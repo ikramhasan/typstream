@@ -100,7 +100,7 @@ pnpm coverage          # line and branch coverage of the TypeScript packages, No
 
 In `packages/engine-wasm` (Rust build, ~3 min cold):
 - `pnpm build`: `build.sh` → `dist/` (glue, `.d.ts`, `wasm-opt -Oz` wasm, Typst's 17 bundled faces from typst-assets, the CFF ones converted to TrueType outlines (output SHA-256 pinned, #118): 5 base fonts and 12 lazy `extraFonts`, the same files `@typstream/node` serves (#128), and the lazily loaded script fonts, downloaded from notofonts at a pinned commit and SHA-256 checked, with their `FontInfo` registry written by `scripts/fonts.mjs`). It skips the build when `dist/` came from the same inputs (`FORCE=1` rebuilds). The root `pnpm test` / `pnpm check-types` (turbo) build it first; run inside the package, `pnpm test` uses the existing `dist/`.
-- `pnpm size`: wasm budget, 6.3 MB brotli (HTML, SVG and PDF in one build since #18).
+- `pnpm size`: wasm budget, 6.31 MB brotli (HTML, SVG and PDF in one build since #18, and the DOCX model).
 - Native tools in `examples/` (`cargo run --release --example …`, the font store is thread-local, so they compile on
   the calling thread): `frames` dumps a document's laid-out frames (items, positions, tags), `docx_model` writes its
   DOCX model, fonts and PDF. Both take `--packages DIR` (laid out as `--package-path`) and `--input k=v`.
@@ -183,12 +183,13 @@ rates and classes, `node src/promote.mjs <label>` copies recordings into `corpus
 documents; `loadEditAnswers()`).
 
 DOCX checks (`tools/docx-check`, README there): `node tools/docx-check/check.mjs [filter…]` exports the Latin corpus and
-compares LibreOffice's layout with the PDF; `--validate <dll>` adds Microsoft's validator (`dotnet publish
+compares LibreOffice's layout with the PDF (`--scripts`: the Arabic, Bengali, Devanagari and Chinese documents instead,
+#134); `--validate <dll>` adds Microsoft's validator (`dotnet publish
 tools/docx-check/validator -c Release -o tools/docx-check/validator/out`), `--onlyoffice` uses ONLYOFFICE in Docker,
 `--native` takes the model from engine-wasm's native example (no wasm build). CI runs it with the validator and
 line floors (99% on documents without equations or pictures, 95% on those with equations, each of which must come out
 whole, #132, 92% on those with pictures) and a picture floor (95% of pictures within the PDF raster suite's tolerance,
-pixel by pixel, #133); nightly runs ONLYOFFICE.
+pixel by pixel, #133), and the other scripts with floors of their own; nightly runs ONLYOFFICE.
 
 Compile oracle (`tools/compile-oracle`, needs the built engine): `pnpm turbo run test --filter=@typstream/compile-oracle`; `pnpm --filter @typstream/compile-oracle report` for the full measurement (minutes).
 

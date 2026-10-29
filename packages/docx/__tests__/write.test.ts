@@ -109,6 +109,53 @@ describe("writeDocx", () => {
     expect(doc).toContain('<w:vertAlign w:val="subscript"/>');
   });
 
+  describe("scripts (#134)", () => {
+    it("writes a right-to-left paragraph as bidi, its runs rtl with their language, in CT_PPr's and CT_RPr's order", () => {
+      const para = p("", {
+        rtl: true,
+        runs: [
+          { text: "اختبار", font: 0, size: 11, rtl: true, lang: "ar" },
+          { text: " distance", font: 0, size: 11, lang: "ar" },
+        ],
+      });
+      const doc = parts(model([para])).xml("word/document.xml");
+      expect(doc).toContain("<w:bidi/><w:spacing ");
+      expect(doc).toContain(
+        '<w:rtl/><w:lang w:val="ar" w:eastAsia="ar" w:bidi="ar"/></w:rPr><w:t xml:space="preserve">اختبار<',
+      );
+      expect(doc).not.toMatch(/<w:rtl\/><w:lang [^>]*\/><\/w:rPr><w:t xml:space="preserve"> distance/);
+    });
+
+    it("fills a gap among complex-script text with no-break spaces, as ONLYOFFICE ignores character spacing there", () => {
+      const runs = (text: string) => [
+        { text, font: 0, size: 10 },
+        { gap: 30, font: 0, size: 10 },
+      ];
+      const doc = (text: string, rtl?: boolean) =>
+        parts(model([p("", { runs: runs(text), rtl })])).xml("word/document.xml");
+      // Latin: one no-break space, spaced to the gap (2.5 pt wide at 10 pt, so 27.5 pt more: 550 twips).
+      expect(doc("Name:")).toContain(
+        '<w:spacing w:val="550"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:t xml:space="preserve">&#160;<',
+      );
+      // Bengali: twelve, the last spaced by what is left (none); right to left, they read right to left too.
+      const bengali = doc("নাম:");
+      expect(bengali).toContain(`<w:t xml:space="preserve">${"&#160;".repeat(11)}</w:t>`);
+      expect(bengali).not.toContain('w:spacing w:val="550"');
+      expect(doc("الاسم:", true)).toMatch(/<w:rtl\/><\/w:rPr><w:t xml:space="preserve">(&#160;){11}</);
+    });
+
+    it("lets no punctuation hang past the margin, as Typst doesn't", () => {
+      expect(parts(model([p("x")])).xml("word/styles.xml")).toContain('<w:widowControl/><w:overflowPunct w:val="0"/>');
+    });
+
+    it("numbers pages with Word's Hindi numbers where Typst's are Devanagari", () => {
+      const m = model([p("x")]);
+      const [section] = m.sections;
+      if (section) section.pageNumbering = { format: "hindiNumbers", start: 1 };
+      expect(parts(m).xml("word/document.xml")).toContain('<w:pgNumType w:fmt="hindiNumbers" w:start="1"/>');
+    });
+  });
+
   it("keeps rules one after another apart, as LibreOffice would shade the gap between them", () => {
     const rule = { type: "rule", thickness: 0.4, color: "787878", indent: { left: 0, right: 0 } } as const;
     const doc = parts(model([{ ...rule }, { ...rule, before: 20 }])).xml("word/document.xml");

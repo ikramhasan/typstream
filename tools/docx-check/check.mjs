@@ -4,8 +4,8 @@
 // Typst's. Pictures (#133) are compared pixel by pixel on their regions, and text drawn in them, which a DOCX has as
 // outlines, is left out of the lines.
 //
-//   node check.mjs [--native] [--onlyoffice] [--validate DLL] [--min-lines RATIO] [--min-math-lines RATIO]
-//                  [--min-picture-lines RATIO] [--min-pictures RATIO] [filter...]
+//   node check.mjs [--native] [--onlyoffice] [--scripts] [--fonts DIR] [--validate DLL] [--min-lines RATIO]
+//                  [--min-math-lines RATIO] [--min-picture-lines RATIO] [--min-pictures RATIO] [filter...]
 //
 // --validate: Microsoft's Open XML validator (validator/, `dotnet publish -c Release -o out`) on every file; any
 // error fails the check. --min-lines, --min-math-lines, --min-picture-lines: fail when fewer of Typst's lines come
@@ -15,6 +15,9 @@
 //
 // --onlyoffice: lay the files out with ONLYOFFICE (`x2t` in the onlyoffice/documentserver image, Docker) instead of
 // LibreOffice: a second engine written apart from Word and LibreOffice (nightly). It reads only installed fonts.
+// --scripts: the documents in other scripts than Latin instead (#134: Arabic, Bengali, Devanagari, Chinese), their
+// lines compared by `scriptLinesOf`. --fonts: the fonts the native example and the layout engine see (default
+// engine-wasm's; a CJK face, say, which the engine doesn't ship).
 // --native: the model and PDF from engine-wasm's native example (`cargo run --release --example docx_model`), for
 // working on the model without a wasm build.
 import { execFileSync } from "node:child_process";
@@ -28,13 +31,14 @@ import { eduFiles, eduPreamble } from "@typstream/edu";
 import { heal } from "@typstream/heal";
 import { mindmapFiles, mindmapPreamble } from "@typstream/mindmap";
 import { render, renderDocxModel } from "@typstream/node";
-import { compare, linesOf, mathOf, sharedChars, textFaces, textLinesOf } from "./lines.mjs";
+import { compare, linesOf, mathOf, scriptLinesOf, sharedChars, textFaces, textLinesOf } from "./lines.mjs";
 import { compareRegions, TOLERANCE } from "./pixels.mjs";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
 const args = process.argv.slice(2);
 const native = args.includes("--native");
 const onlyoffice = args.includes("--onlyoffice");
+const scripts = args.includes("--scripts");
 const option = (name) => {
   const at = args.indexOf(name);
   return at >= 0 ? args.splice(at, 2)[1] : undefined;
@@ -47,7 +51,7 @@ const minPictures = Number(option("--min-pictures") ?? 0);
 const filters = () => args.filter((a) => !a.startsWith("--"));
 const out = join(tmpdir(), "typstream-docx-check");
 mkdirSync(out, { recursive: true });
-const fonts = join(root, "packages/engine-wasm/dist/fonts");
+const fonts = option("--fonts") ?? join(root, "packages/engine-wasm/dist/fonts");
 const example = join(root, "packages/engine-wasm/target/release/examples/docx_model");
 const profile = /export const LAYOUT_PROFILE: string = `([^`]*)`;/.exec(
   readFileSync(join(root, "packages/engine/src/server/profile.ts"), "utf8"),
@@ -68,6 +72,9 @@ const PLUGINS = {
   mindmap: { preamble: mindmapPreamble, files: mindmapFiles, native: mindmapPreamble },
 };
 
+/** Documents in other scripts than Latin (#134), which `--scripts` checks instead. */
+const SCRIPT = /arabic|bengali|chinese|hindi/;
+
 /** Latin corpus documents that compile: the edu set, the llm set's and the islands' (their plugins' preambles first). */
 const documents = () => {
   const docs = [];
@@ -75,7 +82,7 @@ const documents = () => {
     const meta = JSON.parse(readFileSync(join(root, "corpus", set, "meta.json"), "utf8"));
     for (const [name, m] of Object.entries(meta)) {
       if ((m.expect ?? "ok") !== "ok") continue;
-      if (/arabic|bengali|chinese|hindi|multilingual/.test(name)) continue;
+      if (SCRIPT.test(name) !== scripts) continue;
       const plugins = m.plugins ?? [];
       if (plugins.some((p) => !(p in PLUGINS))) continue;
       docs.push({ id: `${set}/${name}`, path: join(root, "corpus", set, `${name}.typ`), plugins });
@@ -234,9 +241,11 @@ for (const { doc, dir, file } of docx) {
     id: doc.id,
     pictures: pictures.length ? pictures : undefined,
     math: math && { chars: math[0].length, same: sharedChars(math[0], math[1]) },
-    ...(doc.math
-      ? compare(textLinesOf(typst, undefined, regions), textLinesOf(pdf, faces))
-      : compare(linesOf(typst, regions), linesOf(pdf))),
+    ...(scripts
+      ? compare(scriptLinesOf(typst, regions), scriptLinesOf(pdf))
+      : doc.math
+        ? compare(textLinesOf(typst, undefined, regions), textLinesOf(pdf, faces))
+        : compare(linesOf(typst, regions), linesOf(pdf))),
   });
 }
 
@@ -335,7 +344,8 @@ if (validator) {
   summary.push(bad.length ? `validator: errors\n\n${bad.slice(0, 40).join("\n")}` : `validator: ${files.length} files, no errors`);
 }
 if (process.env.GITHUB_STEP_SUMMARY) {
-  appendFileSync(process.env.GITHUB_STEP_SUMMARY, `## DOCX exports\n\n${summary.map((l) => `- ${l}`).join("\n")}\n`);
+  const title = scripts ? "DOCX exports, other scripts" : "DOCX exports";
+  appendFileSync(process.env.GITHUB_STEP_SUMMARY, `## ${title}\n\n${summary.map((l) => `- ${l}`).join("\n")}\n`);
 }
 if (failed) {
   console.error(`docx-check: ${failed}`);

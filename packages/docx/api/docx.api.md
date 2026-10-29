@@ -283,7 +283,7 @@ export interface DocxModel {
 // @internal
 export interface DocxPageNumbering {
     // (undocumented)
-    format: "decimal" | "lowerRoman" | "upperRoman" | "lowerLetter" | "upperLetter";
+    format: "decimal" | "lowerRoman" | "upperRoman" | "lowerLetter" | "upperLetter" | "hindiNumbers" | "hebrew1" | "arabicAbjad" | "chineseCounting" | "chosung" | "ganada" | "aiueo" | "iroha";
     // (undocumented)
     start?: number;
 }
@@ -313,6 +313,7 @@ export interface DocxParagraph extends DocxBlockBase {
         label: string;
     };
     pitch: number;
+    rtl?: boolean;
     // (undocumented)
     runs: DocxRun[];
     tabs?: {
@@ -408,7 +409,9 @@ export interface DocxTextRun {
     color?: string;
     field?: "PAGE" | "NUMPAGES";
     font: number;
+    lang?: string;
     link?: string;
+    rtl?: boolean;
     script?: "superscript" | "subscript";
     size: number;
     // (undocumented)

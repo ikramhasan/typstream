@@ -121,6 +121,10 @@ jobs:
       - run: >-
           node tools/docx-check/check.mjs --validate tools/docx-check/validator/out/validator.dll
           --min-lines 0.99 --min-math-lines 0.95 --min-picture-lines 0.92 --min-pictures 0.95
+      # Arabic, Bengali, Devanagari and Chinese documents (#134).
+      - run: >-
+          node tools/docx-check/check.mjs --scripts --validate tools/docx-check/validator/out/validator.dll
+          --min-lines 0.97 --min-math-lines 0.86 --min-picture-lines 0.94 --min-pictures 0.95
 
   size:
     name: Size
