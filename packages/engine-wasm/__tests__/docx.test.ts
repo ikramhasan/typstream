@@ -96,6 +96,106 @@ describe("compile_docx_model", () => {
     });
   });
 
+  describe("rules, borders and blanks where Typst draws them (tools/conformance's ink check)", () => {
+    type Run = { text?: string; gap?: number; underline?: boolean; raise?: number; tab?: boolean; picture?: Picture };
+    type Picture = { index: number; y: number; line?: number };
+    type Cell = { margins: Record<string, number>; borders: Record<string, unknown>; blocks: Block[] };
+    type Block = {
+      type: string;
+      before?: number;
+      runs?: Run[];
+      rows?: { pageBreak?: boolean; cells: Cell[] }[];
+      indent?: number;
+      height?: number;
+      breakable?: boolean;
+    };
+    // The layout profile's lines (packages/engine's LAYOUT_PROFILE): the line boxes the model measures from.
+    const PROFILE =
+      "#show text: set text(top-edge: 1.054em, bottom-edge: -0.246em)\n#set par(leading: 0pt, spacing: 0.56em)\n";
+    const blocks = (source: string): Block[] => model(source).sections[0].blocks;
+
+    it("raises a blank drawn on the baseline so its underline lands there, and leaves edu's at the underline", () => {
+      const [own, edu] = blocks(
+        "I #box(width: 3cm, stroke: (bottom: 0.5pt)) went.\n\nI #box(width: 3cm, height: 0.3em, baseline: 0.078em, stroke: (bottom: 0.5pt)) went.\n",
+      );
+      // Libertinus Serif's underline is 0.078em below the baseline (its post table): 0.86 pt at 11 pt.
+      expect(own?.runs?.[1]).toMatchObject({ gap: 85.04, underline: true, raise: 0.86 });
+      expect(edu?.runs?.[1]).toMatchObject({ gap: 85.04, underline: true });
+      expect(edu?.runs?.[1]).not.toHaveProperty("raise");
+    });
+
+    it("keeps a blank next to h(1fr) underlined, and the room after it a tab", () => {
+      const [line] = blocks(
+        "Name: #box(width: 4cm, stroke: (bottom: 0.5pt)) #h(1fr) Date: #box(width: 2cm, stroke: (bottom: 0.5pt))\n",
+      );
+      expect(
+        line?.runs?.map((r) => (r.tab ? "tab" : r.gap ? `gap ${r.gap}${r.underline ? " underlined" : ""}` : r.text)),
+      ).toEqual(["Name: ", "gap 113.39 underlined", "tab", "Date: ", "gap 56.69 underlined"]);
+    });
+
+    it("takes the half of a rule's stroke Typst draws in the gap after it off the next gap", () => {
+      const out = blocks(
+        `${PROFILE}#set enum(spacing: 0pt)\n${[1, 2, 3].map((i) => `+ Item ${i}. #line(length: 3cm, stroke: 2pt)\n`).join("")}+ Last.\n`,
+      );
+      const rules = out.filter((b) => b.type === "rule");
+      // Typst's line has no height, the rule is as tall as the stroke: the item after it starts half of it higher.
+      expect(rules.map((r) => r.before)).toEqual([5.16, 4.16, 4.16]);
+    });
+
+    it("gives a table's cells their borders where it goes on to another page", () => {
+      const [table] = blocks(
+        "#set page(height: 200pt)\n#v(80pt)\n#table(columns: 2, ..range(16).map(i => [Row #i]))\n",
+      );
+      const rows = table?.rows ?? [];
+      // Its strokes there start half their thickness above the top margin: they aren't the page header's.
+      expect(rows.some((r) => r.pageBreak)).toBe(true);
+      for (const row of rows)
+        for (const cell of row.cells)
+          expect(Object.keys(cell.borders).sort()).toEqual(["bottom", "left", "right", "top"]);
+    });
+
+    it("holds the room a cell's block left on a page when Typst moved the block on whole", () => {
+      const [grid] = blocks(
+        "#set page(height: 200pt)\n#v(110pt)\n#grid(columns: (1cm, 1fr), [5.], [Write about your weekend.\n  #block(breakable: false)[#for i in range(4) { block(above: 10pt, line(length: 100%)) }]])\n",
+      );
+      const cell = grid?.rows?.[0]?.cells[1]?.blocks ?? [];
+      expect(cell.map((b) => b.type)).toEqual(["p", "drawing", "rule", "rule", "rule", "rule"]);
+      expect(cell[1]).toMatchObject({ breakable: true });
+      expect(cell[1]?.height).toBeGreaterThan(20);
+    });
+
+    it("makes a picture of a box stroked on its sides, anchored to its line where Typst lowered it", () => {
+      const runs = blocks(
+        `${PROFILE}#box(width: 0.8em, height: 0.8em, stroke: 0.5pt) Claim. #box(width: 0.9em, height: 0.9em, stroke: 0.6pt, baseline: 0.2em) Two.\n`,
+      )[0]?.runs;
+      const [first, second] = (runs ?? []).filter((r) => r.picture);
+      // With its stroke's outer half; the second's top 8 pt above the baseline, 3.59 pt below the line's top.
+      expect(first).toMatchObject({ gap: 9.3, picture: { y: -9.05 } });
+      expect(first?.picture).not.toHaveProperty("line");
+      expect(second).toMatchObject({ gap: 10.5, picture: { y: -8, line: 3.59 } });
+    });
+
+    it("measures a box's insets from the boxes in it, not their text", () => {
+      const [outer] = blocks(
+        "#rect(width: 7cm, inset: 0pt)[#rect(width: 100%, height: 1cm)[#align(center + horizon)[Upper]] #rect(width: 100%, height: 1cm)[#align(center + horizon)[Lower]]]\n",
+      );
+      const cell = outer?.rows?.[0]?.cells[0];
+      expect(cell?.margins.left).toBe(0);
+      expect(cell?.blocks.map((b) => b.indent)).toEqual([0, 0]);
+    });
+
+    it("gives columns filling the page the room above them in full", () => {
+      const out = blocks(
+        `${PROFILE}#set page(columns: 2)\n#place(top + center, scope: "parent", float: true)[Title]\n== A\nText.\n#colbreak()\n== B\nText.\n`,
+      );
+      // The float's clearance, 1.5em: not a point less, as for a block pushed to its page's bottom.
+      expect(out.map((b) => [b.type, b.before])).toEqual([
+        ["p", 0],
+        ["columns", 16.5],
+      ]);
+    });
+  });
+
   it("makes a picture of a drawing, SVG and PNG, with a stroke outside its view box for LibreOffice", () => {
     engine.set_source(
       "/main.typ",

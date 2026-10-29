@@ -94,6 +94,27 @@ describe("writeDocx", () => {
     expect(doc).toContain("<w:r><w:br/></w:r>");
   });
 
+  it("raises or lowers a blank's gap by half points, so its underline lands where Typst drew the stroke (CT_RPr's order)", () => {
+    const para = p("", {
+      runs: [
+        { text: "I ", font: 0, size: 11 },
+        { gap: 60, font: 0, size: 11, underline: true, raise: 0.86 },
+        { gap: 30, font: 0, size: 11, underline: true, raise: -0.6 },
+      ],
+    });
+    const doc = parts(model([para])).xml("word/document.xml");
+    expect(doc).toContain('<w:spacing w:val="1145"/><w:position w:val="2"/><w:sz w:val="22"/>');
+    expect(doc).toContain('<w:position w:val="-1"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:u w:val="single"/>');
+  });
+
+  it("writes a breakable room as lines a fifth of a point tall, which engines break between pages", () => {
+    const doc = parts(model([{ type: "drawing", width: 1, height: 10, indent: 0, before: 0, breakable: true }])).xml(
+      "word/document.xml",
+    );
+    expect(doc).toContain('w:line="4" w:lineRule="exact"');
+    expect(doc.match(/<w:br\/>/g)).toHaveLength(49);
+  });
+
   it("writes Typst's super and sub as Word's superscript and subscript, after the underline (CT_RPr's order)", () => {
     const para = p("", {
       runs: [
@@ -359,6 +380,22 @@ describe("writeDocx", () => {
       );
       expect(doc).toContain('<wp:extent cx="254000" cy="152400"/>');
       expect(doc).not.toContain("&#160;");
+    });
+
+    it("anchors a picture Typst lowered past the baseline to its line, in front of a gap as wide", () => {
+      const doc = parts(
+        model([p("", { runs: [{ gap: 20, font: 0, size: 11, picture: { index: 1, y: -9, line: 2.6 } }] })], {
+          pictures,
+        }),
+        [FONT],
+        data(2),
+      ).xml("word/document.xml");
+      // LibreOffice ignores a negative position on a drawing in the line.
+      expect(doc).not.toContain("<wp:inline");
+      expect(doc).toMatch(
+        /<wp:positionH relativeFrom="character"><wp:posOffset>0<\/wp:posOffset><\/wp:positionH><wp:positionV relativeFrom="line"><wp:posOffset>33020<\/wp:posOffset>/,
+      );
+      expect(doc).toContain("&#160;");
     });
 
     it("anchors a placed picture to the page, in the paragraph after it or, when that is on a later page, before it", () => {

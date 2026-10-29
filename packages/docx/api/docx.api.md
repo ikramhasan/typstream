@@ -54,6 +54,7 @@ export interface DocxColumns extends DocxBlockBase {
 
 // @internal
 export interface DocxDrawing extends DocxBlockBase {
+    breakable?: boolean;
     // (undocumented)
     height: number;
     // (undocumented)
@@ -89,7 +90,9 @@ export interface DocxGapRun {
     picture?: {
         index: number;
         y: number;
+        line?: number;
     };
+    raise?: number;
     // (undocumented)
     size: number;
     // (undocumented)

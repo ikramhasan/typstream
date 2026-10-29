@@ -43,8 +43,10 @@ const ok = [
   await measure("@typstream/engine (main thread)", "src/index.ts", MAIN_THREAD, ["@typstream/heal"]),
   await measure("@typstream/engine (worker JS, excl. wasm and fonts)", "src/worker.ts", 40 * 1024, ["@typstream/docx"]),
   // 12.5 KB until #135 underlined blanks in their line's colour and kept a trailing one underlined (44 bytes over);
-  // 12.6 KB until drawings became inline pictures where they can, for Google Docs (#149, 107 bytes over).
-  await measure("@typstream/docx (loaded on a DOCX export)", "../docx/src/index.ts", 12.8 * 1024, []),
+  // 12.6 KB until drawings became inline pictures where they can, for Google Docs (#149, 107 bytes over); 12.8 KB until
+  // #118's last ink fixes raised blanks to their stroke, anchored lowered pictures to their line and made a cell's room
+  // before a moved block breakable (14 bytes over).
+  await measure("@typstream/docx (loaded on a DOCX export)", "../docx/src/index.ts", 12.9 * 1024, []),
   await measure("@typstream/engine/websocket", "src/websocket.ts", 1.5 * 1024, []),
   await measure("@typstream/engine/images", "src/images.ts", 1.5 * 1024, []),
 ];

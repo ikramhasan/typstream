@@ -973,6 +973,8 @@ struct Fonts {
     index: HashMap<u128, usize>,
     /// Legacy family, bold, italic, and the no-break space's advance in em (what an exact-width gap is made of).
     meta: Vec<(String, bool, bool, f64)>,
+    /// How far below the baseline Word-like engines centre an underline, in em: the post table's position.
+    underline: Vec<f64>,
     data: Vec<Vec<u8>>,
 }
 
@@ -988,8 +990,9 @@ impl Fonts {
         let sub = sub.to_lowercase();
         let bold = sub.contains("bold");
         let italic = sub.contains("italic") || sub.contains("oblique");
-        let nbsp = ttf_parser::Face::parse(data, font.index())
-            .ok()
+        let face = ttf_parser::Face::parse(data, font.index()).ok();
+        let nbsp = face
+            .as_ref()
             .and_then(|face| {
                 let gid = face
                     .glyph_index('\u{a0}')
@@ -997,7 +1000,14 @@ impl Fonts {
                 Some(face.glyph_hor_advance(gid)? as f64 / face.units_per_em() as f64)
             })
             .unwrap_or(0.25);
+        let underline = face
+            .as_ref()
+            .and_then(|face| {
+                Some(-(face.underline_metrics()?.position as f64) / face.units_per_em() as f64)
+            })
+            .unwrap_or(0.078);
         self.meta.push((family, bold, italic, nbsp));
+        self.underline.push(underline);
         self.data.push(data.to_vec());
         self.index.insert(key, self.data.len() - 1);
         self.data.len() - 1
@@ -1073,10 +1083,12 @@ enum Run {
         rtl: bool,
         lang: String,
     },
-    /// An exact-width space: a gap in a line, a blank, a placeholder.
+    /// An exact-width space: a gap in a line, a blank, a placeholder. `raise` (points, negative lowers) moves its
+    /// underline to where Typst drew the stroke: nothing is written on it to move with it.
     Gap {
         width: f64,
         underline: Option<String>,
+        raise: f64,
         font: usize,
         size: f64,
     },
@@ -1167,6 +1179,12 @@ impl Builder {
         self.geometry[page].1.top
     }
 
+    /// How far to raise a gap in `font` at `size` so its underline lands `depth` below the baseline, where Typst
+    /// drew a blank's stroke (a box's bottom edge sits on the baseline; Word underlines at the font's position).
+    fn raise(&self, font: usize, size: f64, depth: f64) -> f64 {
+        self.fonts.underline.get(font).copied().unwrap_or(0.078) * size - depth
+    }
+
     fn sections(&mut self, pages: &[Page]) -> Json {
         let n = self.items.len();
         // Each page's number as Typst shows it (its numbering's first numeral system: i, ii, …) and Word's format.
@@ -1201,10 +1219,12 @@ impl Builder {
                     zone(t.y, t.y).filter(|_| t.y < m.top || t.y > bottom_edge),
                     i,
                 ),
-                Kind::Seg(s) => (
-                    zone(s.y0, s.y0).filter(|_| s.y0 < m.top || s.y0 > bottom_edge),
-                    i,
-                ),
+                // All of it: a table's vertical strokes start half their thickness above the page's top margin
+                // where it goes on.
+                Kind::Seg(s) => {
+                    let (y0, y1) = (s.y0.min(s.y1), s.y0.max(s.y1));
+                    (zone(y0, y1).filter(|_| y1 < m.top || y0 > bottom_edge), i)
+                }
                 Kind::Start(elem, at) => {
                     let y = at.y.to_pt();
                     let to = zone(y, y).filter(|_| y < m.top || y > bottom_edge);
@@ -1353,6 +1373,7 @@ impl Builder {
     /// the page before had room left (a `pagebreak()`).
     fn with_gaps(&self, mut blocks: Vec<Block>, body: bool) -> Vec<Block> {
         let mut prev: Option<(usize, f64)> = None;
+        let mut owed = Owed::default();
         for b in blocks.iter_mut() {
             // A framed paragraph (placed text) or a placed picture is out of the flow: no room before it, none taken.
             if out_of_flow(b) {
@@ -1388,14 +1409,19 @@ impl Builder {
             // A block ending at the bottom of its page after a gap (pushed down by `v(1fr)`) gets a point less: a hair
             // more and an engine moves it to the next page.
             let (size, m) = self.geometry[b.end_page];
-            let at_bottom = body && b.bottom > size.y.to_pt() - m.bottom - 1.0;
+            let last = b
+                .json
+                .remove("last")
+                .and_then(|l| l.as_f64())
+                .unwrap_or(b.bottom);
+            let at_bottom = body && last > size.y.to_pt() - m.bottom - 1.0;
             let before = if at_bottom && before > 2.0 * SLACK {
                 before - SLACK
             } else {
                 before
             };
-            b.json
-                .insert("before".into(), json!(round(before.max(0.0))));
+            let before = owed.pay(b, before);
+            b.json.insert("before".into(), json!(round(before)));
             prev = Some((b.end_page, b.bottom));
         }
         // A placed picture goes in a paragraph next to it, on its page: the one after it, unless that is on a later page.
@@ -1878,14 +1904,14 @@ impl Builder {
             parts[k].push(id);
         }
         let mut cols = Vec::new();
-        let mut bottom = rect.bottom();
+        let mut last = rect.y;
         for (k, part) in parts.iter().enumerate() {
             let area = Area {
                 left: xs[k],
                 right: xs[k] + w,
             };
             let blocks = self.flow(part, area, false);
-            bottom = blocks.iter().map(|b| b.bottom).fold(bottom, f64::max);
+            last = blocks.iter().map(|b| b.bottom).fold(last, f64::max);
             let blocks = self.with_gaps_from(blocks, rect.y);
             cols.push(Json::Array(
                 blocks.into_iter().map(|b| Json::Object(b.json)).collect(),
@@ -1895,11 +1921,13 @@ impl Builder {
         json.insert("type".into(), json!("columns"));
         json.insert("gap".into(), json!(round(gap)));
         json.insert("columns".into(), Json::Array(cols));
+        // Where its text ends, for `with_gaps`: columns filling the page don't end at its bottom.
+        json.insert("last".into(), json!(last));
         Block {
             page,
             end_page: page,
             top: rect.y,
-            bottom,
+            bottom: rect.bottom().max(last),
             json,
         }
     }
@@ -2115,6 +2143,8 @@ impl Builder {
         // Boxes of what is drawn: an equation's pieces (with its index in `equations`, and their baseline), or
         // drawings (with the item); and the item they come from.
         let mut boxes: Vec<(usize, Rect, Option<usize>, Option<usize>, usize, f64)> = Vec::new();
+        let mut sides: Vec<(usize, Seg)> = Vec::new();
+        let mut rects: Vec<(usize, Rect, usize)> = Vec::new();
         let mut equations: Vec<Equation> = Vec::new();
         // The equation open, and its end tag.
         let mut equation: Option<(usize, Option<Location>)> = None;
@@ -2203,9 +2233,37 @@ impl Builder {
                     s.y0,
                 )),
                 Kind::Seg(s) if s.horizontal() => segs.push((page, s.clone())),
+                Kind::Seg(s) => sides.push((page, s.clone())),
+                Kind::Rect(r) if eq.is_none() => rects.push((page, *r, id)),
                 Kind::Link(r, url) => links.push((page, *r, url.clone())),
                 Kind::Drawing(r) => boxes.push((page, *r, eq, Some(id), id, r.bottom())),
                 _ => {}
+            }
+        }
+        // An empty box stroked on its sides (a checkbox): Word underlines, it can't draw sides. A picture of it.
+        for (page, r, id) in rects {
+            let side = |x: f64| {
+                sides.iter().find(|(p, s)| {
+                    *p == page
+                        && (s.x0 - x).abs() < 0.5
+                        && s.y0.min(s.y1) <= r.y + r.h / 2.0
+                        && s.y0.max(s.y1) >= r.y + r.h / 2.0
+                })
+            };
+            let empty = !texts.iter().any(|(p, t)| {
+                let x = t.x + t.width / 2.0;
+                *p == page && x > r.x && x < r.right() && t.y > r.y && t.y < r.bottom()
+            });
+            if let (Some((_, s)), Some(_), true) = (side(r.x), side(r.right()), empty) {
+                // With its stroke's outer half: a picture shows only what is inside it.
+                let t = s.thickness / 2.0;
+                let r = Rect {
+                    x: r.x - t,
+                    y: r.y - t,
+                    w: r.w + 2.0 * t,
+                    h: r.h + 2.0 * t,
+                };
+                boxes.push((page, r, None, Some(id), id, r.bottom()));
             }
         }
         // An equation's pieces merge into one box per line (two, when Typst broke it over lines).
@@ -2429,17 +2487,34 @@ impl Builder {
                 None => (last_font(&line.runs).unwrap_or(0), 11.0),
             };
             if !line.runs.is_empty() && gap > 0.05 {
-                let underline = underlined(&segs, page, from, from + gap, baseline);
-                line.runs.push(Run::Gap {
-                    width: gap,
-                    underline,
-                    font,
-                    size,
-                });
+                // Split where strokes under it start and end: a blank next to `h(1fr)` is two gaps, one underlined.
+                let mut cuts = vec![from, from + gap];
+                for (p, s) in &segs {
+                    if *p == page && underlines(s, baseline) {
+                        cuts.extend(
+                            [s.x0, s.x1]
+                                .into_iter()
+                                .filter(|&x| x > from + 0.5 && x < from + gap - 0.5),
+                        );
+                    }
+                }
+                cuts.sort_by(f64::total_cmp);
+                for c in cuts.windows(2).filter(|c| c[1] - c[0] > 0.05) {
+                    let under = underlined(&segs, page, c[0], c[1], baseline);
+                    let raise = under.as_ref().map_or(0.0, |u| self.raise(font, size, u.1));
+                    line.runs.push(Run::Gap {
+                        width: c[1] - c[0],
+                        underline: under.map(|u| u.0),
+                        raise,
+                        font,
+                        size,
+                    });
+                }
             }
             match (text, rect) {
                 (Some(t), _) => {
-                    let underline = underlined(&segs, page, t.x, t.x + t.width, baseline);
+                    let underline =
+                        underlined(&segs, page, t.x, t.x + t.width, baseline).map(|u| u.0);
                     let link = links
                         .iter()
                         .find(|(p, r, _)| {
@@ -2531,11 +2606,13 @@ impl Builder {
                 } else {
                     s.x1 - right
                 };
+                let (font, size) = (last_font(&line.runs).unwrap_or(0), line.size.max(8.0));
                 let gap = Run::Gap {
                     width,
                     underline: Some(s.color.clone()),
-                    font: last_font(&line.runs).unwrap_or(0),
-                    size: line.size.max(8.0),
+                    raise: self.raise(font, size, s.y0 - line.baseline),
+                    font,
+                    size,
                 };
                 if end {
                     line.runs.push(gap);
@@ -2711,7 +2788,8 @@ impl Builder {
                 .collect();
             let (page, s) = segs.first()?.clone();
             let size = 11.0;
-            let baseline = s.y0 - BOTTOM * size;
+            // The baseline where the underline of a gap in the paragraph's font lands on the stroke.
+            let baseline = s.y0 - self.raise(0, size, 0.0);
             lines.push(Line {
                 page,
                 baseline,
@@ -2721,6 +2799,7 @@ impl Builder {
                 runs: vec![Run::Gap {
                     width: s.x1 - s.x0,
                     underline: Some(s.color.clone()),
+                    raise: 0.0,
                     font: 0,
                     size,
                 }],
@@ -2767,7 +2846,26 @@ impl Builder {
         let mut runs: Vec<Json> = Vec::new();
         for (k, line) in lines.iter().enumerate() {
             for run in &line.runs {
-                runs.push(run_json(run));
+                let mut run = run_json(run);
+                // A raised or lowered run makes an "at least" line taller (an exact one keeps its height).
+                if tall {
+                    run.as_object_mut().map(|m| m.remove("raise"));
+                }
+                // A picture Typst lowered below the baseline (a box with `baseline: 20%`): LibreOffice won't lower
+                // a drawing in the line, so it is anchored to the line, its top this far below the line's (in an
+                // exact line, the baseline is `TOP` ems below it).
+                if let Some(p) = run.get_mut("picture").filter(|_| !tall) {
+                    let (index, y) = (
+                        p["index"].as_u64().unwrap_or(0) as usize,
+                        p["y"].as_f64().unwrap_or(0.0),
+                    );
+                    let height = self.picture_json[index]["height"].as_f64().unwrap_or(0.0);
+                    // (Not one whose stroke only reaches past it.)
+                    if y + height > 0.5 {
+                        p["line"] = json!(round(y + TOP * size));
+                    }
+                }
+                runs.push(run);
             }
             // Lines join as they are: a line keeps the space it broke at.
             let _ = k;
@@ -3308,13 +3406,19 @@ impl Builder {
             }
         }
         let borders = sides_json(&segs, rect);
-        // The inset on the sides: where the content's leftmost text starts (blocks are drawn with even insets).
+        // The inset on the sides: where the content's leftmost text starts (blocks are drawn with even insets), or a
+        // box in it (a nested frame's text is inset in that frame).
+        let extent = |id: usize| match &self.items[id].kind {
+            Kind::Text(t) => Some((t.x, t.x + t.width)),
+            Kind::Rect(r) | Kind::Fill(r, _) | Kind::Group(r, true) | Kind::Drawing(r) => {
+                Some((r.x, r.right()))
+            }
+            Kind::Seg(s) => Some((s.x0.min(s.x1), s.x0.max(s.x1))),
+            _ => None,
+        };
         let inset_left = inner
             .iter()
-            .filter_map(|&id| match &self.items[id].kind {
-                Kind::Text(t) => Some(t.x - rect.x),
-                _ => None,
-            })
+            .filter_map(|&id| extent(id).map(|e| e.0 - rect.x))
             .fold(f64::MAX, f64::min);
         let inset_left = if inset_left == f64::MAX {
             0.0
@@ -3325,10 +3429,7 @@ impl Builder {
         // it: an inset of `(left: 1em, rest: 0.6em)` leaves lines longer than the left inset allows.
         let max_right = inner
             .iter()
-            .filter_map(|&id| match &self.items[id].kind {
-                Kind::Text(t) => Some(t.x + t.width),
-                _ => None,
-            })
+            .filter_map(|&id| extent(id).map(|e| e.1))
             .fold(f64::MIN, f64::max);
         let inset_right = if max_right == f64::MIN {
             inset_left
@@ -3777,7 +3878,36 @@ impl Builder {
             if widest > content.right - content.left {
                 inset.right = inset.right.min(cw - inset.left - widest - 0.5).max(0.0);
             }
-            let blocks = self.flow(&cell_ids, content, false);
+            let mut blocks = self.flow(&cell_ids, content, false);
+            // A block Typst moved on to the next page whole (an answer space, kept together): the room it left on the
+            // page before as an empty paragraph that fills it to its bottom (breakable: a line goes on where the text
+            // above came out a hair lower), or engines fill that room with the block's start.
+            let mut k = 1;
+            while k < blocks.len() {
+                let prev = (blocks[k - 1].end_page, blocks[k - 1].bottom);
+                let (size, m) = self.geometry[prev.0];
+                let room = size.y.to_pt() - m.bottom - prev.1;
+                if blocks[k].page > prev.0 && room > SLACK {
+                    let mut json = Map::new();
+                    json.insert("type".into(), json!("drawing"));
+                    json.insert("width".into(), json!(1.0));
+                    json.insert("height".into(), json!(round(room)));
+                    json.insert("indent".into(), json!(0.0));
+                    json.insert("breakable".into(), json!(true));
+                    blocks.insert(
+                        k,
+                        Block {
+                            page: prev.0,
+                            end_page: prev.0,
+                            top: prev.1,
+                            bottom: prev.1 + room,
+                            json,
+                        },
+                    );
+                    k += 1;
+                }
+                k += 1;
+            }
             let content_top = blocks.first().map(|b| b.top).unwrap_or(cy + inset.top);
             // A cell broken across pages ends on its last page: the room left on the first is the page's, not a
             // margin (engines put the bottom margin under each part of a split row).
@@ -3813,7 +3943,13 @@ impl Builder {
                 rend
             };
             let blocks = self.with_gaps_from(blocks, content_top);
-            let border = sides_json(&segs, cell_rect);
+            // Its page's strokes: another page's could be where it is too.
+            let on_page: Vec<Seg> = segs
+                .iter()
+                .filter(|(p, _)| *p == cpage)
+                .map(|(_, s)| s.clone())
+                .collect();
+            let border = sides_json(&on_page, cell_rect);
             let thickness = |side: &str| {
                 border
                     .get(side)
@@ -4027,7 +4163,7 @@ impl Builder {
         cells: &mut [(Node, Vec<usize>)],
         orphans: &[usize],
         starts: &[f64],
-        segs: &mut Vec<Seg>,
+        segs: &mut Vec<(usize, Seg)>,
         fills: &mut Vec<(Rect, String)>,
     ) {
         let column = |x: f64| {
@@ -4082,7 +4218,7 @@ impl Builder {
                 Kind::Rect(_) => None,
                 Kind::Seg(s) if within(s.x0) && within(s.x1 - 0.01) => cell_at(page, s.x0, s.y0),
                 Kind::Seg(s) => {
-                    segs.push(s.clone());
+                    segs.push((page, s.clone()));
                     None
                 }
                 Kind::Fill(r, _) if within(r.x) => cell_at(page, r.x, r.y),
@@ -4116,22 +4252,56 @@ impl Builder {
     /// Spaces before blocks in a cell: the first from the cell's content top.
     fn with_gaps_from(&self, mut blocks: Vec<Block>, top: f64) -> Vec<Block> {
         let mut prev: Option<(usize, f64)> = None;
+        let mut owed = Owed::default();
         for b in blocks.iter_mut() {
             // `fit` stays: the writer gives a cell no more slack than its paragraphs' fit.
+            b.json.remove("last");
             if out_of_flow(b) {
                 b.json.insert("before".into(), json!(0.0));
                 continue;
             }
             let before = match prev {
                 Some((p, bottom)) if p == b.page => b.top - bottom,
-                Some(_) => 0.0,
+                // Where a cell goes on onto a later page, from that page's top.
+                Some(_) => (b.top - self.content_top(b.page)).max(0.0),
                 None => b.top - top,
             };
-            b.json
-                .insert("before".into(), json!(round(before.max(0.0))));
+            let before = owed.pay(b, before);
+            b.json.insert("before".into(), json!(round(before)));
             prev = Some((b.end_page, b.bottom));
         }
         blocks
+    }
+}
+
+/// Room a rule took that Typst didn't give it: a rule is a paragraph as tall as its stroke, where Typst's `line` has
+/// no height and its stroke reaches half its thickness into the gaps around it, so the gap after it measures less than
+/// nothing. A gap can't be negative: what is missing comes off the next ones on the page, or every rule in a list
+/// would push what follows down by half its thickness. (Other overlaps, a float's, stay as they were.)
+#[derive(Default)]
+struct Owed {
+    page: usize,
+    owed: f64,
+    rule: bool,
+}
+
+impl Owed {
+    /// The space before `b`, `before` measured, with what is owed taken off it.
+    fn pay(&mut self, b: &Block, before: f64) -> f64 {
+        if b.page != self.page {
+            *self = Owed {
+                page: b.page,
+                ..Owed::default()
+            };
+        }
+        let before = before - self.owed;
+        self.owed = if self.rule || self.owed > 0.0 {
+            (-before).max(0.0)
+        } else {
+            0.0
+        };
+        self.rule = b.json.get("type").and_then(|t| t.as_str()) == Some("rule");
+        before.max(0.0)
     }
 }
 
@@ -4212,25 +4382,24 @@ fn sides(s: Sides<f64>) -> Json {
     json!({ "top": round(s.top), "right": round(s.right), "bottom": round(s.bottom), "left": round(s.left) })
 }
 
-/// The colour of the stroke under `x0..x1` on the line at `baseline`, if one underlines it.
+/// The colour of the stroke under `x0..x1` on the line at `baseline`, if one underlines it, and how far below the
+/// baseline it is.
 fn underlined(
     segs: &[(usize, Seg)],
     page: usize,
     x0: f64,
     x1: f64,
     baseline: f64,
-) -> Option<String> {
+) -> Option<(String, f64)> {
     let mid = (x0 + x1) / 2.0;
     segs.iter()
-        .find(|(p, s)| {
-            *p == page
-                && s.x0 <= mid
-                && s.x1 >= mid
-                && s.y0 > baseline - 1.0
-                && s.y0 < baseline + 6.0
-                && s.thickness < 2.0
-        })
-        .map(|(_, s)| s.color.clone())
+        .find(|(p, s)| *p == page && s.x0 <= mid && s.x1 >= mid && underlines(s, baseline))
+        .map(|(_, s)| (s.color.clone(), s.y0 - baseline))
+}
+
+/// Whether `s` is drawn where it underlines the line at `baseline`.
+fn underlines(s: &Seg, baseline: f64) -> bool {
+    s.y0 > baseline - 1.0 && s.y0 < baseline + 6.0 && s.thickness < 2.0
 }
 
 /// Word's tab leader for what a `repeat` fills with, if Word has one like it.
@@ -4341,6 +4510,7 @@ fn run_json(run: &Run) -> Json {
         Run::Gap {
             width,
             underline,
+            raise,
             font,
             size,
         } => {
@@ -4352,6 +4522,10 @@ fn run_json(run: &Run) -> Json {
                 m.insert("underline".into(), json!(true));
                 if c != "000000" {
                     m.insert("underlineColor".into(), json!(c));
+                }
+                // Word moves a run in half points.
+                if (raise * 2.0).round() != 0.0 {
+                    m.insert("raise".into(), json!(round(*raise)));
                 }
             }
             Json::Object(m)

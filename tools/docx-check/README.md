@@ -42,10 +42,21 @@ one.
 
 **Rules, borders and shading** (tools/conformance's `ink.mjs`): on documents without equations laid out line for
 line, what the pages draw besides text and pictures is compared with Typst's PDF, so a lost border or an underline
-drawn off its line shows (the lines compare text only). It is reported, not a floor (`--ink` fails on any): of the 51
-such corpus documents, 37 match. The rest are documents a model wrote: blanks of their own (`box(stroke: (bottom:
-…))`, its line on the baseline, where Word can only underline at the font's underline position), and tables that go
-on to another page.
+drawn off its line shows (the lines compare text only). All 51 such Latin corpus documents match, in LibreOffice 26.2
+and 24.2, and CI's Latin run passes `--ink`, which fails on any that doesn't (#118). What it took: a model's own blank
+(`box(stroke: (bottom: …))`, its line on the baseline) is raised so Word's underline, at the font's underline position,
+lands on it; a `line` in a list is a rule as tall as its stroke where Typst's has no height, so the gap after it pays
+that back; a table's strokes on a page it goes on to start half their thickness above the top margin (not the
+header's); a block Typst moves to the next page whole in a table cell leaves a breakable room on the page before; a box
+stroked on its sides in a line (a checkbox) is a picture. `--scripts` doesn't pass `--ink`: 7 of its 9 such documents
+match, and the other two differ in text, not rules (LibreOffice mirrors an Arabic parenthesis next to a gap the other
+way; a Bengali blank of several no-break spaces comes out a few points short).
+
+LibreOffice won't lower a drawing in the line (it ignores a negative `w:position` on its run): a picture Typst lowered
+below the baseline (a checkbox with `baseline: 20%`) is anchored to its line instead, in an exact line. In an "at
+least" line (one with an equation) it sits on the baseline. Pictures among equations are where each engine's math
+spacing puts the text around them, so the edu chemistry worksheet's boxes don't match the PDF's pixels (5 of its 22
+pictures in 26.2, 7 in 24.2).
 
 Files and LibreOffice's PDFs go to `$TMPDIR/typstream-docx-check` (`results.json` holds each document's numbers).
 

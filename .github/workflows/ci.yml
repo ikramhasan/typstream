@@ -119,9 +119,11 @@ jobs:
         run: sudo apt-get install -y --no-install-recommends libreoffice-writer-nogui libreoffice-math-nogui poppler-utils
       - run: pnpm turbo run build --filter=@typstream/docx-check^...
       - run: dotnet publish tools/docx-check/validator -c Release -o tools/docx-check/validator/out
+      # --ink: every document without equations laid out as Typst's draws its rules, borders and shading where
+      # Typst does (#118).
       - run: >-
           node tools/docx-check/check.mjs --validate tools/docx-check/validator/out/validator.dll
-          --min-lines 0.99 --min-math-lines 0.95 --min-picture-lines 0.92 --min-pictures 0.95
+          --min-lines 0.99 --min-math-lines 0.95 --min-picture-lines 0.92 --min-pictures 0.95 --ink
       # Arabic, Bengali, Devanagari and Chinese documents (#134).
       - run: >-
           node tools/docx-check/check.mjs --scripts --validate tools/docx-check/validator/out/validator.dll
