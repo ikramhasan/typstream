@@ -4,8 +4,9 @@
 // Typst's. Pictures (#133) are compared pixel by pixel on their regions, and text drawn in them, which a DOCX has as
 // outlines, is left out of the lines.
 //
-//   node check.mjs [--native] [--onlyoffice] [--scripts] [--fonts DIR] [--validate DLL] [--min-lines RATIO]
-//                  [--min-math-lines RATIO] [--min-picture-lines RATIO] [--min-pictures RATIO] [--ink] [filter...]
+//   node check.mjs [--native] [--onlyoffice | --google-docs [--google-docx]] [--scripts] [--fonts DIR]
+//                  [--validate DLL] [--min-lines RATIO] [--min-math-lines RATIO] [--min-picture-lines RATIO]
+//                  [--min-pictures RATIO] [--ink] [filter...]
 //
 // --validate: Microsoft's Open XML validator (validator/, `dotnet publish -c Release -o out`) on every file; any
 // error fails the check. --min-lines, --min-math-lines, --min-picture-lines: fail when fewer of Typst's lines come
@@ -18,6 +19,12 @@
 //
 // --onlyoffice: lay the files out with ONLYOFFICE (`x2t` in the onlyoffice/documentserver image, Docker) instead of
 // LibreOffice: a second engine written apart from Word and LibreOffice (nightly). It reads only installed fonts.
+// --google-docs: lay them out with Google Docs (google-docs.mjs; local only, through the Composio CLI): each file
+// uploaded into Google Drive's `typstream-docx-check/<run>`, converted and exported as PDF, about 3 requests a
+// document. Everything local goes in `$TMPDIR/typstream-docx-check/google-docs/<run>`. Google Docs spaces lines as
+// multiples of the font's and scales pictures, so lines and pages are only reported, and pictures are checked for text
+// over them (a room that didn't hold, #149): any fails the run. --google-docx: Google's own DOCX of each too (a fourth
+// request each).
 // --scripts: the documents in other scripts than Latin instead (#134: Arabic, Bengali, Devanagari, Chinese), their
 // lines compared by `scriptLinesOf`. --fonts: the fonts the native example and the layout engine see (default
 // engine-wasm's; a CJK face, say, which the engine doesn't ship).
@@ -37,11 +44,14 @@ import { eduFiles, eduPreamble } from "@typstream/edu";
 import { heal } from "@typstream/heal";
 import { mindmapFiles, mindmapPreamble } from "@typstream/mindmap";
 import { render, renderDocxModel } from "@typstream/node";
+import { DRIVE_FOLDER, layOutWithGoogleDocs, requests, textOverPictures } from "./google-docs.mjs";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
 const args = process.argv.slice(2);
 const native = args.includes("--native");
 const onlyoffice = args.includes("--onlyoffice");
+const googleDocs = args.includes("--google-docs");
+const googleDocx = args.includes("--google-docx");
 const scripts = args.includes("--scripts");
 const option = (name) => {
   const at = args.indexOf(name);
@@ -54,7 +64,17 @@ const minPictureLines = Number(option("--min-picture-lines") ?? 0);
 const minPictures = Number(option("--min-pictures") ?? 0);
 const minInk = args.includes("--ink");
 const filters = () => args.filter((a) => !a.startsWith("--"));
-const out = join(tmpdir(), "typstream-docx-check");
+// A Google Docs run's files, its own and the exports it uploads, are kept apart from the others' and each other's,
+// named as its Drive folder is: when it ran, from which commit.
+const commit = () => {
+  try {
+    return execFileSync("git", ["rev-parse", "--short", "HEAD"], { cwd: root, encoding: "utf8" }).trim();
+  } catch {
+    return "unknown";
+  }
+};
+const run = googleDocs ? `${new Date().toISOString().slice(0, 19).replaceAll(":", "-")}-${commit()}` : undefined;
+const out = join(tmpdir(), "typstream-docx-check", ...(run ? ["google-docs", run] : []));
 mkdirSync(out, { recursive: true });
 const fonts = option("--fonts") ?? join(root, "packages/engine-wasm/dist/fonts");
 const example = join(root, "packages/engine-wasm/target/release/examples/docx_model");
@@ -181,21 +201,32 @@ for (const doc of documents()) {
   docx.push({ doc, dir, file });
 }
 
-// LibreOffice or ONLYOFFICE, seeing only the engine's fonts (and what the DOCX embeds).
-const pdfs = layOut(
-  docx.map((d) => d.file),
-  { out: join(out, "lo"), engine: onlyoffice ? "onlyoffice" : "libreoffice", fonts },
-);
-for (const [i, { doc, dir }] of docx.entries()) {
-  const pdf = pdfs[i];
+// LibreOffice, ONLYOFFICE (seeing only the engine's fonts and what the DOCX embeds) or Google Docs.
+const engine = googleDocs ? "Google Docs" : onlyoffice ? "ONLYOFFICE" : "LibreOffice";
+const laidOut = googleDocs
+  ? await layOutWithGoogleDocs(
+      docx.map((d) => d.file),
+      { out: join(out, "google"), run, docx: googleDocx, log: (line) => console.log(line) },
+    )
+  : {
+      pdfs: layOut(
+        docx.map((d) => d.file),
+        { out: join(out, "lo"), engine: onlyoffice ? "onlyoffice" : "libreoffice", fonts },
+      ),
+      errors: {},
+    };
+for (const [i, { doc, dir, file }] of docx.entries()) {
+  const pdf = laidOut.pdfs[i];
   if (!pdf) {
-    results.push({ id: doc.id, error: `${onlyoffice ? "ONLYOFFICE" : "LibreOffice"} didn't convert it` });
+    results.push({ id: doc.id, error: laidOut.errors[file] ?? `${engine} didn't convert it` });
     continue;
   }
   // With equations, lines are compared by their text around them, and every equation's letters and digits must be
   // there (#132). Text in pictures is outlines in the DOCX: Typst's is left out.
   const r = compareExport(join(dir, "typst.pdf"), pdf, doc.model, { scripts });
-  results.push({ id: doc.id, ...r, pictures: r.pictures.length ? r.pictures : undefined });
+  // Google Docs scales pictures and draws their PNGs, so they're checked for text over them instead of pixels.
+  const overlaps = googleDocs && r.pictures.length ? textOverPictures(pdf, join(out, "google", "scratch")) : undefined;
+  results.push({ id: doc.id, ...r, pictures: r.pictures.length ? r.pictures : undefined, overlaps });
 }
 
 let lines = 0;
@@ -209,6 +240,8 @@ const withPictures = { docs: 0, identical: 0, lines: 0, same: 0, pictures: 0, cl
 const chars = { all: 0, same: 0 };
 // What pages draw besides text (rules, borders, shading), on documents laid out as Typst's.
 const ink = { docs: 0, same: 0 };
+// Google Docs: documents with text over a picture.
+const overlapping = [];
 for (const r of results.sort((a, b) => a.id.localeCompare(b.id))) {
   if (r.error) {
     console.log(`✗ ${r.id}: ${r.error}`);
@@ -228,6 +261,17 @@ for (const r of results.sort((a, b) => a.id.localeCompare(b.id))) {
   if (r.math) {
     chars.all += r.math.chars;
     chars.same += r.math.same;
+  }
+  if (r.overlaps) {
+    // Google Docs: its line spacing moves lines and pages where nothing is wrong, so text over a picture decides.
+    if (r.overlaps.length) overlapping.push(r.id);
+    const words = r.overlaps.slice(0, 12).map((w) => w.word);
+    console.log(
+      `${r.overlaps.length ? "✗" : "✓"} (pictures ${r.pictures.length}) ${r.id}: ${r.overlaps.length} words over pictures` +
+        `${words.length ? ` (page ${r.overlaps[0].page + 1}: ${JSON.stringify(words.join(" "))})` : ""}; ` +
+        `${r.same}/${r.lines} lines, pages ${r.pages.join("/")}, starts ${r.pageStartsSame}/${r.pageStarts}`,
+    );
+    continue;
   }
   const close = (r.pictures ?? []).filter((p) => p.cluster <= TOLERANCE).length;
   const inked = !ok || !r.ink || r.ink.cluster <= INK_TOLERANCE;
@@ -272,6 +316,13 @@ const summary = [
   `equations' letters and digits ${chars.same}/${chars.all} (${percent(charsRatio)})`,
   `rules, borders and shading as Typst's (within ${INK_TOLERANCE} touching pixels) on ${ink.same} of the ${ink.docs} identical documents without math`,
 ];
+// Google Docs: pictures are checked for text over them, not pixel by pixel.
+const checked = results.filter((r) => r.overlaps).length;
+if (googleDocs)
+  summary[3] =
+    `with pictures: ${withPictures.identical}/${withPictures.docs} identical; lines ${withPictures.same}/${withPictures.lines} ` +
+    `(${percent(pictureRatio)}); text over pictures in ${overlapping.length} of ${checked} documents` +
+    (overlapping.length ? ` (${overlapping.join(", ")})` : "");
 for (const line of summary.slice(1)) console.log(line);
 if (withPictures.worst)
   console.log(
@@ -289,6 +340,7 @@ const picturesRatio = withPictures.close / Math.max(1, withPictures.pictures);
 if (picturesRatio < minPictures)
   failed = `pictures within the PDF's tolerance ${percent(picturesRatio)} under ${percent(minPictures)}`;
 if (minInk && ink.same < ink.docs) failed = "rules, borders or shading unlike Typst's";
+if (overlapping.length) failed = "text over pictures in Google Docs";
 if (validator) {
   const files = docx.map((d) => d.file);
   const bad = Object.values(validate(files, validator)).flat();
@@ -296,6 +348,11 @@ if (validator) {
   console.log(bad.length ? bad.join("\n") : `validator: ${files.length} files, no errors`);
   summary.push(bad.length ? `validator: errors\n\n${bad.slice(0, 40).join("\n")}` : `validator: ${files.length} files, no errors`);
 }
+if (googleDocs)
+  console.log(
+    `Google Docs: ${requests} Composio requests; files in ${out}, Drive folder ${DRIVE_FOLDER}/${run} ` +
+      `(delete ${DRIVE_FOLDER} in Drive and ${join(tmpdir(), "typstream-docx-check", "google-docs")} to clean up)`,
+  );
 if (process.env.GITHUB_STEP_SUMMARY) {
   const title = scripts ? "DOCX exports, other scripts" : "DOCX exports";
   appendFileSync(process.env.GITHUB_STEP_SUMMARY, `## ${title}\n\n${summary.map((l) => `- ${l}`).join("\n")}\n`);
