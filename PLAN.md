@@ -1112,7 +1112,7 @@ Budgets checked in CI with a report comment on PRs (like streamdown's `scripts/b
 | `@typstream/dom` paged renderer | ≤ 5.6 KB (measured 5.5 KB with #14's canvas pages; 4 KB until then, measured 3.7 KB) |
 | `@typstream/dom` standalone HTML export | ≤ 2 KB (measured 1.3 KB) |
 | `@typstream/mindmap` | plugin ≤ 10 KB (measured 9.4 KB: the Typst package and prompt kit as strings); React entry ≤ 1 KB (0.2 KB); the interactive map, loaded with the first map, ≤ 66 KB (64.8 KB: React Flow and its CSS) |
-| `@typstream/docx` (loaded on the first DOCX export, fflate included) | ≤ 12.6 KB (measured 12.54 KB with #135's underline colours and trailing blanks; 12.5 KB until then, measured 12.3 KB with #133's pictures; 11.5 KB with #132's equations, measured 10.9 KB; 10 KB until then, measured 9.8 KB) |
+| `@typstream/docx` (loaded on the first DOCX export, fflate included) | ≤ 12.8 KB (measured 12.70 KB with #149's inline drawings; 12.6 KB until then, measured 12.54 KB with #135's underline colours and trailing blanks; 12.5 KB until then, measured 12.3 KB with #133's pictures; 11.5 KB with #132's equations, measured 10.9 KB; 10 KB until then, measured 9.8 KB) |
 | Worker JS (excl. wasm) | ≤ 40 KB |
 | Compiler wasm (brotli) | ≤ 6.31 MB for `engine-wasm` (HTML+SVG+PDF, #14's page drawings, 9.9 KB, #131/#132's DOCX model and equations, #133's pictures with typst-render's rasterizer, 23 KB, and #134's scripts, 4.5 KB; measured 6.300 MB; 6.296 MB before the scripts; 6.27 MB before the pictures; 6.22 MB before the DOCX model; 6.20 MB before them, 5.85 MB without PDF, #18); 4.29 MB + PDF with trimmed data (#26); alert on +3% |
 | Renderer wasm (brotli) | ≤ 400 KB (typst.ts renderer 0.8.0-rc3 is 372 KB) |
