@@ -50,6 +50,7 @@ import {
   CopyIcon,
   FileDownIcon,
   FileTextIcon,
+  FileTypeIcon,
   ImageIcon,
   KeyRoundIcon,
   LoaderCircleIcon,
@@ -370,25 +371,34 @@ const fileName = (source: string, extension: string) => {
   return `${name || "document"}.${extension}`;
 };
 
-type ExportProps = { target: Target; source: string; disabled: boolean } & Pick<
+type ExportFormat = "pdf" | "html" | "docx";
+
+const FORMATS: Record<ExportFormat, { what: string; type: string }> = {
+  pdf: { what: "PDF", type: "application/pdf" },
+  html: { what: "HTML", type: "text/html" },
+  docx: { what: "Word (.docx)", type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" },
+};
+
+type ExportProps = { format: ExportFormat; source: string; disabled: boolean; children: ReactNode } & Pick<
   TypstreamInfo,
-  "exportPdf" | "exportHtml"
+  "exportPdf" | "exportHtml" | "exportDocx"
 >;
 
 /**
- * Downloads the answer in the view's form, compiled in final mode with the component's `inputs`, so
- * with "Show answers" on it's the teacher's copy too. As pages, a PDF (`useTypstream().exportPdf()`)
- * with the pages the preview shows (fit-width only scales them); as HTML, the file
- * `exportHtml()` makes (edu's CSS, the theme and the fonts the answer uses), which opens on its own.
+ * Downloads the answer, compiled in final mode with the component's `inputs`, so with "Show answers"
+ * on it's the teacher's copy too. A PDF (`useTypstream().exportPdf()`) has the pages the preview
+ * shows (fit-width only scales them); HTML is the file `exportHtml()` makes (edu's CSS, the theme
+ * and the fonts the answer uses), which opens on its own; a Word file (`exportDocx()`, beta) is an
+ * editable DOCX laid out as the PDF, whichever view is shown (a mind map is a picture in it).
  */
-const Export = ({ target, exportPdf, exportHtml, source, disabled }: ExportProps) => {
+const Export = ({ format, exportPdf, exportHtml, exportDocx, source, disabled, children }: ExportProps) => {
   const [state, setState] = useState<"idle" | "exporting" | "failed">("idle");
-  const what = target === "html" ? "HTML" : "PDF";
+  const { what, type } = FORMATS[format];
   const label = state === "exporting" ? "Exporting…" : state === "failed" ? "Export failed" : `Export ${what}`;
   const file = (): Promise<Blob> =>
-    target === "html"
-      ? exportHtml().then((html) => new Blob([html], { type: "text/html" }))
-      : exportPdf().then((bytes) => new Blob([bytes as BlobPart], { type: "application/pdf" }));
+    (format === "html" ? exportHtml() : format === "docx" ? exportDocx() : exportPdf()).then(
+      (content) => new Blob([content as BlobPart], { type }),
+    );
   return (
     <Action
       label={label}
@@ -398,7 +408,7 @@ const Export = ({ target, exportPdf, exportHtml, source, disabled }: ExportProps
         file()
           .then((blob) => {
             const url = URL.createObjectURL(blob);
-            const download = fileName(source, target === "html" ? "html" : "pdf");
+            const download = fileName(source, format);
             Object.assign(window.document.createElement("a"), { href: url, download }).click();
             setTimeout(() => URL.revokeObjectURL(url), 1000);
             setState("idle");
@@ -410,7 +420,7 @@ const Export = ({ target, exportPdf, exportHtml, source, disabled }: ExportProps
           });
       }}
     >
-      {state === "exporting" ? <LoaderCircleIcon className="animate-spin" /> : <FileDownIcon />}
+      {state === "exporting" ? <LoaderCircleIcon className="animate-spin" /> : children}
     </Action>
   );
 };
@@ -588,12 +598,25 @@ const Answer = ({
         <MessageFooter className="gap-1 px-0">
           <CopySource target={target} text={text} exportHtml={t.exportHtml} disabled={streaming} />
           <Export
-            target={target}
+            format={target === "html" ? "html" : "pdf"}
             exportPdf={t.exportPdf}
             exportHtml={t.exportHtml}
+            exportDocx={t.exportDocx}
             source={text}
             disabled={streaming}
-          />
+          >
+            <FileDownIcon />
+          </Export>
+          <Export
+            format="docx"
+            exportPdf={t.exportPdf}
+            exportHtml={t.exportHtml}
+            exportDocx={t.exportDocx}
+            source={text}
+            disabled={streaming}
+          >
+            <FileTypeIcon />
+          </Export>
           <Action label="Retry" onClick={onRetry} disabled={busy}>
             <RotateCwIcon />
           </Action>
