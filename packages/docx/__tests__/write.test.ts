@@ -113,6 +113,10 @@ describe("writeDocx", () => {
     );
     expect(doc).toContain('w:line="4" w:lineRule="exact"');
     expect(doc.match(/<w:br\/>/g)).toHaveLength(49);
+    // In 3 pt Arial, mark and lines: Google Docs makes each line 0.06 of Arial's (its least multiple), 0.207 pt.
+    const mark =
+      '<w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/><w:sz w:val="6"/><w:szCs w:val="6"/></w:rPr>';
+    expect(doc).toContain(`${mark}</w:pPr><w:r>${mark}<w:br/>`);
   });
 
   it("writes Typst's super and sub as Word's superscript and subscript, after the underline (CT_RPr's order)", () => {
