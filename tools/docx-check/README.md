@@ -60,6 +60,29 @@ pictures in 26.2, 7 in 24.2).
 
 Files and LibreOffice's PDFs go to `$TMPDIR/typstream-docx-check` (`results.json` holds each document's numbers).
 
+**Google Docs** (`--google-docs`, local only): each DOCX is uploaded to Google Drive through the
+[Composio CLI](https://composio.dev) (`composio` on PATH, logged in, `composio link googledrive`), converted to a
+Google Doc and exported as PDF (`google-docs.mjs`). Google Docs has no exact line heights: it spaces every line as a
+multiple of the font's, so its lines and page starts differ from Typst's where nothing is wrong, and it scales pictures
+about 1% and draws their PNGs, so they can't be compared pixel by pixel. What it checks is **text over pictures**: a
+word whose box is more than a quarter inside a picture's image in Google's PDF (a picture's own text is in its PNG),
+unless Typst's PDF has the same word at about the same place on a picture of about the same size (code over a code
+block's box is over it by design). That is how a drawing whose room didn't hold shows (#149: a CeTZ canvas over the
+questions after it; #150: boxes, code blocks). It also counts Google's images against the model's pictures, since a
+picture Google dropped has no text over it. A document with either fails the run; lines and pages are reported only.
+
+```bash
+node tools/docx-check/check.mjs --google-docs                 # the Latin corpus, about 380 Composio requests
+node tools/docx-check/check.mjs --google-docs area-perimeter  # documents whose id contains a filter, ~3 requests each
+node tools/docx-check/check.mjs --google-docs --google-docx   # also Google's own DOCX of each (a 4th request each)
+```
+
+Each run is a folder of its own, named by when it ran and the commit: `typstream-docx-check/<run>` in My Drive (the
+uploaded DOCX and its Google Doc) and `$TMPDIR/typstream-docx-check/google-docs/<run>` here (each document's DOCX,
+Typst's PDF and model, Google's PDF in `google/`, `results.json`). Nothing is deleted: remove the Drive folder
+`typstream-docx-check` and the local `google-docs` folder to clean up every run. The run prints how many Composio
+requests it made.
+
 **Microsoft's validator** (`validator/`, the Open XML SDK's `OpenXmlValidator` for Microsoft 365): any error is one
 Word would report as unreadable content.
 

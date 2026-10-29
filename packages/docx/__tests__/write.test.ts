@@ -113,6 +113,10 @@ describe("writeDocx", () => {
     );
     expect(doc).toContain('w:line="4" w:lineRule="exact"');
     expect(doc.match(/<w:br\/>/g)).toHaveLength(49);
+    // In 3 pt Arial, mark and lines: Google Docs makes each line 0.06 of Arial's (its least multiple), 0.207 pt.
+    const mark =
+      '<w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/><w:sz w:val="6"/><w:szCs w:val="6"/></w:rPr>';
+    expect(doc).toContain(`${mark}</w:pPr><w:r>${mark}<w:br/>`);
   });
 
   it("writes Typst's super and sub as Word's superscript and subscript, after the underline (CT_RPr's order)", () => {
@@ -306,6 +310,10 @@ describe("writeDocx", () => {
       // Starting left of its container (a cell's edge would clip it), from its anchor's character and line.
       const left = anchored({ indent: 0, before: 6, picture: { index: 0, x: -0.5, y: -0.5 } });
       expect(left).toContain('w:line="980" w:lineRule="exact"');
+      // Its mark and run in 10.5 pt Arial, whose single line Google Docs makes 12 pt: the room it keeps as 980/240 lines.
+      const room =
+        '<w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/><w:sz w:val="21"/><w:szCs w:val="21"/></w:rPr>';
+      expect(left).toContain(`${room}</w:pPr><w:r>${room}<w:drawing>`);
       expect(left).toMatch(
         /<wp:anchor [^>]*behindDoc="0"[^>]*><wp:simplePos x="0" y="0"\/><wp:positionH relativeFrom="character"><wp:posOffset>-6350<\/wp:posOffset><\/wp:positionH><wp:positionV relativeFrom="line"><wp:posOffset>-6350<\/wp:posOffset><\/wp:positionV><wp:extent cx="1270000" cy="635000"\/><wp:effectExtent l="0" t="0" r="0" b="0"\/><wp:wrapNone\/><wp:docPr id="1"/,
       );
@@ -439,6 +447,7 @@ describe("writeDocx", () => {
       ).xml("word/document.xml");
       expect(doc).not.toContain("<w:drawing>");
       expect(doc).toContain('w:line="1000" w:lineRule="exact"');
+      expect(doc).toContain('<w:rFonts w:ascii="Arial"');
     });
   });
 
