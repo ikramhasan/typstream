@@ -294,6 +294,43 @@ describe("writeDocx", () => {
       );
     });
 
+    it("anchors a drawing's picture that reaches past its cell's right margin, and sets one that fits as a character", () => {
+      const inCell = (column: number) =>
+        parts(
+          model(
+            [
+              {
+                type: "table",
+                indent: 0,
+                columns: [column],
+                rows: [
+                  {
+                    cantSplit: true,
+                    cells: [
+                      {
+                        col: 0,
+                        margins: { top: 0, right: 0, bottom: 0, left: 0 },
+                        borders: {},
+                        blocks: [
+                          { type: "drawing", width: 100, height: 50, indent: 0, picture: { index: 0, x: 0, y: 0 } },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+            { pictures },
+          ),
+          [FONT],
+          data(1),
+        ).xml("word/document.xml");
+      // The picture is 100 pt wide: past a 99 pt cell, in a 100 pt one.
+      expect(inCell(99)).toContain("<wp:anchor");
+      expect(inCell(99)).not.toContain("<wp:inline");
+      expect(inCell(100)).toContain("<wp:inline");
+    });
+
     it("sets a picture in a line as a character, its bottom raised to where Typst drew it", () => {
       const doc = parts(
         model(

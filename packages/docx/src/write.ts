@@ -308,7 +308,7 @@ class Writer {
    * far as it can be: Google Docs has no exact line heights (it makes them multiples of the paragraph's point-tall
    * font), so the line would hold a fraction of the room and the text after it would run under the picture.
    */
-  drawing(d: DocxDrawing, part: Part, lead = ""): string {
+  drawing(d: DocxDrawing, part: Part, lead = "", width?: number): string {
     const p = d.picture && this.model.pictures?.[d.picture.index];
     if (!d.picture || !p) return this.anchored(d, part, lead);
     const { x, y } = d.picture;
@@ -316,10 +316,12 @@ class Writer {
     // the text after it where Typst put it.
     const below = d.height - y - p.height;
     const before = (d.before ?? 0) + y + Math.min(0, below);
-    // Anchored where a character couldn't be where Typst drew it: starting left of its container (a box as wide as a
-    // cell, its stroke half outside: engines clip a character at the cell's edges), or past its room by more than
-    // the space above it (the line would be taller than the room, and the text after it lower).
-    if (d.indent + x < 0 || before < -0.01) return this.anchored(d, part, lead);
+    // Anchored where a character couldn't be where Typst drew it: starting left of its container or reaching past a
+    // cell's right margin (a box as wide as a cell, its stroke half outside: engines clip a character at a cell's
+    // edges), or past its room by more than the space above it (the line would be taller than the room, and the
+    // text after it lower). In the body, what reaches into the right margin is drawn.
+    const clipped = d.indent + x < 0 || (width !== undefined && d.indent + x + p.width > width + 0.01);
+    if (clipped || before < -0.01) return this.anchored(d, part, lead);
     const picture = this.picture(d.picture.index, part, { kind: "inline" });
     // No picture data: the room alone.
     if (!picture) return this.anchored(d, part, lead);
@@ -426,14 +428,18 @@ class Writer {
       `<w:tcMar><w:top w:w="${twips(m.top)}" w:type="dxa"/><w:left w:w="${twips(m.left)}" w:type="dxa"/>` +
       `<w:bottom w:w="${twips(m.bottom)}" w:type="dxa"/><w:right w:w="${twips(right)}" w:type="dxa"/></w:tcMar>`;
     if (c.valign) pr += `<w:vAlign w:val="${c.valign}"/>`;
-    let body = this.blocks(c.blocks, part);
+    // What the cell's paragraphs have between its margins, in points: a drawing's picture past it is anchored.
+    let body = this.blocks(c.blocks, part, width / 20 - m.left - right);
     // A cell ends with a paragraph; after a table, one that takes no room.
     if (!body.endsWith("</w:p>")) body += this.spacer(0.05);
     return `<w:tc><w:tcPr>${pr}</w:tcPr>${body}</w:tc>`;
   }
 
-  /** Blocks in order. A table has no space before: the paragraph before it gets it after, or a spacer holds it. */
-  blocks(blocks: readonly DocxBlock[], part: Part): string {
+  /**
+   * Blocks in order, in a cell `width` points wide between its margins (none in the body). A table has no space
+   * before: the paragraph before it gets it after, or a spacer holds it.
+   */
+  blocks(blocks: readonly DocxBlock[], part: Part, width?: number): string {
     const out: string[] = [];
     // Placed pictures waiting for the next paragraph or drawing to hold them.
     let lead = "";
@@ -501,7 +507,7 @@ class Writer {
           break;
         }
         case "drawing":
-          out.push(this.drawing(b, part, lead));
+          out.push(this.drawing(b, part, lead, width));
           lead = "";
           break;
         case "columns":
