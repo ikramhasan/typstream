@@ -200,9 +200,9 @@ compares LibreOffice's layout with the PDF (`--scripts`: the Arabic, Bengali, De
 #134); `--validate <dll>` adds Microsoft's validator (`dotnet publish
 tools/docx-check/validator -c Release -o tools/docx-check/validator/out`), `--onlyoffice` uses ONLYOFFICE in Docker,
 `--native` takes the model from engine-wasm's native example (no wasm build), `--google-docs` (local only, the Composio
-CLI with Google Drive) lays them out in Google Docs and fails on text over pictures (its lines and pages are only
-reported; ~3 requests a document, a Drive folder `typstream-docx-check` and `$TMPDIR/typstream-docx-check/google-docs`
-to delete afterwards). CI runs it with the validator and
+CLI with Google Drive) lays them out in Google Docs and fails on text over pictures or pictures missing (its lines
+and pages are only reported; ~3 requests a document, a Drive folder `typstream-docx-check` and
+`$TMPDIR/typstream-docx-check/google-docs` to delete afterwards). CI runs it with the validator and
 line floors (99% on documents without equations or pictures, 95% on those with equations, each of which must come out
 whole, #132, 92% on those with pictures) and a picture floor (95% of pictures within the PDF raster suite's tolerance,
 pixel by pixel, #133), and the other scripts with floors of their own; nightly runs ONLYOFFICE. It reports rules, borders

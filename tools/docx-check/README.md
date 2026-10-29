@@ -54,9 +54,11 @@ Files and LibreOffice's PDFs go to `$TMPDIR/typstream-docx-check` (`results.json
 Google Doc and exported as PDF (`google-docs.mjs`). Google Docs has no exact line heights: it spaces every line as a
 multiple of the font's, so its lines and page starts differ from Typst's where nothing is wrong, and it scales pictures
 about 1% and draws their PNGs, so they can't be compared pixel by pixel. What it checks is **text over pictures**: a
-word whose box is more than a quarter inside a picture's image in Google's PDF (a picture's own text is in its PNG).
-That is how a drawing whose room didn't hold shows (#149: a CeTZ canvas over the questions after it). A document with
-any fails the run; lines and pages are reported only.
+word whose box is more than a quarter inside a picture's image in Google's PDF (a picture's own text is in its PNG),
+unless Typst's PDF has the same word at about the same place on a picture of about the same size (code over a code
+block's box is over it by design). That is how a drawing whose room didn't hold shows (#149: a CeTZ canvas over the
+questions after it; #150: boxes, code blocks). It also counts Google's images against the model's pictures, since a
+picture Google dropped has no text over it. A document with either fails the run; lines and pages are reported only.
 
 ```bash
 node tools/docx-check/check.mjs --google-docs                 # the Latin corpus, about 380 Composio requests

@@ -112,10 +112,12 @@ const inside = (w, r) => {
 /**
  * Words of Google's PDF drawn over its pictures that Typst doesn't have over a picture: text the layout ran into a
  * picture, as a drawing's room that didn't hold leaves it (#149). Some text is over a picture by design (a code
- * block's code over its grey box), and Typst's PDF has it in the picture's region too (`pictures`, the model's), so
- * each such word, counted by its text, is left out once. Google's pictures are its images (poppler's, written into
- * `scratch` and deleted). They can't be compared with Typst's pixel by pixel there: Google scales them about 1% and
- * draws their PNGs. Each overlap is `{ page, word, box }`.
+ * block's code over its grey box), and Typst's PDF has it in the picture's region too (`pictures`, the model's): a
+ * word is left out once for each such word of Typst's with its text, at about its place on a picture of about its
+ * size. Labels drawn in a canvas are outlines in the DOCX, so Google's PDF has no text for them, and they leave out
+ * nothing elsewhere. Google's pictures are its images (poppler's, written into `scratch` and deleted). They can't be
+ * compared with Typst's pixel by pixel there: Google scales them about 1% and draws their PNGs. Returns how many
+ * images Google's PDF has (a picture Google dropped is one fewer) and each overlap, `{ page, word, box }`.
  */
 export const textOverPictures = (pdf, typst, pictures, scratch) => {
   mkdirSync(scratch, { recursive: true });
@@ -132,19 +134,33 @@ export const textOverPictures = (pdf, typst, pictures, scratch) => {
     if (!m[1]) page++;
     else images.push({ page, x0: +m[2], y0: +m[1], x1: +m[2] + +m[3], y1: +m[1] + +m[4] });
   }
-  if (!images.length) return [];
+  if (!images.length) return { images: 0, overlaps: [] };
+  // Typst's words over a picture: their text, where on the picture, and the picture's size.
   const regions = pictures.map((p) => ({ page: p.page, x0: p.x, y0: p.y, x1: p.x + p.width, y1: p.y + p.height }));
-  const expected = new Map();
-  for (const w of wordsOf(typst))
-    if (regions.some((r) => inside(w, r))) expected.set(w.word, (expected.get(w.word) ?? 0) + 1);
+  const expected = [];
+  for (const w of wordsOf(typst)) {
+    const r = regions.find((r) => inside(w, r));
+    if (r) expected.push({ word: w.word, x: w.box[0] - r.x0, y: w.box[1] - r.y0, w: r.x1 - r.x0, h: r.y1 - r.y0 });
+  }
+  // Within 2 pt and 3% of the picture's size: Google scales pictures about 1%.
+  const near = (a, b, size) => Math.abs(a - b) <= 2 + 0.03 * size;
   const overlaps = [];
   for (const w of wordsOf(pdf)) {
-    if (!images.some((im) => inside(w, im))) continue;
-    const left = expected.get(w.word) ?? 0;
-    if (left > 0) expected.set(w.word, left - 1);
+    const im = images.find((im) => inside(w, im));
+    if (!im) continue;
+    const [width, height] = [im.x1 - im.x0, im.y1 - im.y0];
+    const at = expected.findIndex(
+      (e) =>
+        e.word === w.word &&
+        near(e.w, width, width) &&
+        near(e.h, height, height) &&
+        near(e.x, w.box[0] - im.x0, width) &&
+        near(e.y, w.box[1] - im.y0, height),
+    );
+    if (at >= 0) expected.splice(at, 1);
     else overlaps.push({ ...w, box: w.box.map(Math.round) });
   }
-  return overlaps;
+  return { images: images.length, overlaps };
 };
 
 /**

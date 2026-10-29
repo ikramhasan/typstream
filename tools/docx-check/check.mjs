@@ -224,12 +224,19 @@ for (const [i, { doc, dir, file }] of docx.entries()) {
   // With equations, lines are compared by their text around them, and every equation's letters and digits must be
   // there (#132). Text in pictures is outlines in the DOCX: Typst's is left out.
   const r = compareExport(join(dir, "typst.pdf"), pdf, doc.model, { scripts });
-  // Google Docs scales pictures and draws their PNGs, so they're checked for text over them instead of pixels.
-  const overlaps =
+  // Google Docs scales pictures and draws their PNGs, so they're checked for text over them instead of pixels, and
+  // counted: a picture it dropped has no text over it.
+  const google =
     googleDocs && r.pictures.length
       ? textOverPictures(pdf, join(dir, "typst.pdf"), doc.model.pictures, join(out, "google", "scratch"))
       : undefined;
-  results.push({ id: doc.id, ...r, pictures: r.pictures.length ? r.pictures : undefined, overlaps });
+  results.push({
+    id: doc.id,
+    ...r,
+    pictures: r.pictures.length ? r.pictures : undefined,
+    overlaps: google?.overlaps,
+    missing: google && Math.max(0, doc.model.pictures.length - google.images),
+  });
 }
 
 let lines = 0;
@@ -245,6 +252,8 @@ const chars = { all: 0, same: 0 };
 const ink = { docs: 0, same: 0 };
 // Google Docs: documents with text over a picture.
 const overlapping = [];
+// Google Docs: documents with pictures missing from its PDF.
+const missing = [];
 for (const r of results.sort((a, b) => a.id.localeCompare(b.id))) {
   if (r.error) {
     console.log(`✗ ${r.id}: ${r.error}`);
@@ -268,9 +277,12 @@ for (const r of results.sort((a, b) => a.id.localeCompare(b.id))) {
   if (r.overlaps) {
     // Google Docs: its line spacing moves lines and pages where nothing is wrong, so text over a picture decides.
     if (r.overlaps.length) overlapping.push(r.id);
+    if (r.missing) missing.push(r.id);
     const words = r.overlaps.slice(0, 12).map((w) => w.word);
     console.log(
-      `${r.overlaps.length ? "✗" : "✓"} (pictures ${r.pictures.length}) ${r.id}: ${r.overlaps.length} words over pictures` +
+      `${r.overlaps.length || r.missing ? "✗" : "✓"} (pictures ${r.pictures.length}) ${r.id}: ` +
+        (r.missing ? `${r.missing} pictures missing, ` : "") +
+        `${r.overlaps.length} words over pictures` +
         `${words.length ? ` (page ${r.overlaps[0].page + 1}: ${JSON.stringify(words.join(" "))})` : ""}; ` +
         `${r.same}/${r.lines} lines, pages ${r.pages.join("/")}, starts ${r.pageStartsSame}/${r.pageStarts}`,
     );
@@ -325,7 +337,9 @@ if (googleDocs)
   summary[3] =
     `with pictures: ${withPictures.identical}/${withPictures.docs} identical; lines ${withPictures.same}/${withPictures.lines} ` +
     `(${percent(pictureRatio)}); text over pictures in ${overlapping.length} of ${checked} documents` +
-    (overlapping.length ? ` (${overlapping.join(", ")})` : "");
+    (overlapping.length ? ` (${overlapping.join(", ")})` : "") +
+    `; pictures missing in ${missing.length}` +
+    (missing.length ? ` (${missing.join(", ")})` : "");
 for (const line of summary.slice(1)) console.log(line);
 if (withPictures.worst)
   console.log(
@@ -344,6 +358,7 @@ if (picturesRatio < minPictures)
   failed = `pictures within the PDF's tolerance ${percent(picturesRatio)} under ${percent(minPictures)}`;
 if (minInk && ink.same < ink.docs) failed = "rules, borders or shading unlike Typst's";
 if (overlapping.length) failed = "text over pictures in Google Docs";
+if (missing.length) failed = "pictures missing in Google Docs";
 if (validator) {
   const files = docx.map((d) => d.file);
   const bad = Object.values(validate(files, validator)).flat();
