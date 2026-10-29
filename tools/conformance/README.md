@@ -50,5 +50,8 @@ comparisons, LibreOffice, ONLYOFFICE and the validator.
 
 - LibreOffice sets an inline fraction at display size (#132), so a line with one can push a word on: Universe's suite
   allows 80% of its lines with equations (2 of its 11 lines).
+- LibreOffice won't lower a drawing in a line (it ignores a negative `w:position` there): a picture Typst lowered below
+  the baseline, a checkbox with `baseline: 20%`, is anchored to its line, which only an exact line (no equation in it)
+  places where Typst does.
 - ONLYOFFICE (nightly, informational): ruled answer lines are taller, an underline sits about a point higher than
   LibreOffice's, and its PDF's Arabic text can't be compared as written (#134).

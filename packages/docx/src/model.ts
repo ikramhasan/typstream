@@ -210,10 +210,17 @@ export interface DocxGapRun {
   /** Hex RGB of the underline, when it isn't black. */
   underlineColor?: string;
   /**
-   * A picture in the line, as wide as the gap (#133): its index in `DocxModel.pictures`, and where its top is below
-   * the baseline (negative above it). A gap stays when the model has no picture data for it.
+   * Points to raise the gap by (negative lowers it), so its underline lands where Typst drew the blank's line: Word
+   * underlines at the font's underline position, a box's stroke sits on the baseline.
    */
-  picture?: { index: number; y: number };
+  raise?: number;
+  /**
+   * A picture in the line, as wide as the gap (#133): its index in `DocxModel.pictures`, and where its top is below
+   * the baseline (negative above it). A gap stays when the model has no picture data for it. `line`: where its top is
+   * below its line's top, for one Typst lowered past the baseline in an exact line, anchored there (LibreOffice
+   * doesn't lower a drawing in the line).
+   */
+  picture?: { index: number; y: number; line?: number };
 }
 
 /**
@@ -420,6 +427,11 @@ export interface DocxDrawing extends DocxBlockBase {
    */
   placed?: boolean;
   host?: "previous" | "next";
+  /**
+   * Room Typst left at the bottom of a page in a cell, before what it moved on to the next whole: breakable, so it
+   * fills that page to its bottom however the text above it came out, and what doesn't fit goes on.
+   */
+  breakable?: boolean;
 }
 
 /**
