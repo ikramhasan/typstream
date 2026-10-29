@@ -65,6 +65,17 @@ interface Part {
 
 /** A paragraph mark's run properties: a point tall, so an empty paragraph's line is all its spacing makes it. */
 const TINY = '<w:rPr><w:sz w:val="2"/></w:rPr>';
+/**
+ * The mark of a paragraph that holds room with an exact line (a spacer, an anchored drawing's room), and its runs'.
+ * Google Docs has no exact line heights: it keeps `w:line` as a multiple of 240 of the font's single line, which for
+ * a point-tall font held a fifth of the room, and the text after an anchored picture ran under it (#150). Its single
+ * line of Arial is 1.15 times the size (measured), 12.07 pt at 10.5 pt, so the multiple comes out the height (0.6%
+ * over). Word, LibreOffice and ONLYOFFICE take the exact line whatever the font.
+ */
+const ROOM =
+  '<w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/><w:sz w:val="21"/><w:szCs w:val="21"/></w:rPr>';
+/** Room held with `ROOM`'s font: under a point it isn't worth it, and how Google Docs takes multiples that small is unknown. */
+const roomMark = (height: number): string => (height >= 1 ? ROOM : TINY);
 /** A drawing's picture run: its bottom half a point below the baseline, so the point-tall font's descent is in it. */
 const LOWERED = '<w:rPr><w:position w:val="-1"/><w:sz w:val="2"/></w:rPr>';
 /** Letters of complex scripts: Hebrew to Sinhala, Thai to Myanmar, Khmer (#134). */
@@ -283,7 +294,7 @@ class Writer {
 
   /** A paragraph holding space: exact height, with nothing in it but `content` (anchored pictures). */
   spacer(height: number, before = 0, pageBreak = false, left = 0, content = ""): string {
-    return `<w:p>${this.pPr({ pageBreak, before, line: Math.max(0.05, height), left, rPr: TINY })}${content}</w:p>`;
+    return `<w:p>${this.pPr({ pageBreak, before, line: Math.max(0.05, height), left, rPr: roomMark(height) })}${content}</w:p>`;
   }
 
   /**
@@ -344,7 +355,7 @@ class Writer {
       d.before,
       d.pageBreak,
       d.indent,
-      lead + (picture ? `<w:r>${TINY}${picture}</w:r>` : ""),
+      lead + (picture ? `<w:r>${roomMark(d.height)}${picture}</w:r>` : ""),
     );
   }
 

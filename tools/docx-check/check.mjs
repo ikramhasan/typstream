@@ -225,7 +225,10 @@ for (const [i, { doc, dir, file }] of docx.entries()) {
   // there (#132). Text in pictures is outlines in the DOCX: Typst's is left out.
   const r = compareExport(join(dir, "typst.pdf"), pdf, doc.model, { scripts });
   // Google Docs scales pictures and draws their PNGs, so they're checked for text over them instead of pixels.
-  const overlaps = googleDocs && r.pictures.length ? textOverPictures(pdf, join(out, "google", "scratch")) : undefined;
+  const overlaps =
+    googleDocs && r.pictures.length
+      ? textOverPictures(pdf, join(dir, "typst.pdf"), doc.model.pictures, join(out, "google", "scratch"))
+      : undefined;
   results.push({ id: doc.id, ...r, pictures: r.pictures.length ? r.pictures : undefined, overlaps });
 }
 

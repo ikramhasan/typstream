@@ -87,13 +87,37 @@ const download = async (id, mimeType, file) => {
   writeFileSync(file, new Uint8Array(await body.arrayBuffer()));
 };
 
+/** A PDF's words, `{ page, word, box: [x0, y0, x1, y1] }` (page from 0, points), the word without format characters. */
+const wordsOf = (pdf) => {
+  const xhtml = execFileSync("pdftotext", ["-bbox", pdf, "-"], { encoding: "utf8", maxBuffer: 1 << 26 });
+  const words = [];
+  let page = -1;
+  for (const m of xhtml.matchAll(/<page |<word xMin="([\d.]+)" yMin="([\d.]+)" xMax="([\d.]+)" yMax="([\d.]+)">([^<]*)<\/word>/g)) {
+    if (!m[1]) page++;
+    // Google Docs adds zero-width spaces after list labels.
+    else words.push({ page, word: m[5].replace(/\p{Cf}/gu, ""), box: [+m[1], +m[2], +m[3], +m[4]] });
+  }
+  return words.filter((w) => w.word);
+};
+
+/** More than a quarter of word `w` inside `r` (`{ page, x0, y0, x1, y1 }`): a word that only touches its edge is beside it. */
+const inside = (w, r) => {
+  if (w.page !== r.page) return false;
+  const [x0, y0, x1, y1] = w.box;
+  const width = Math.max(0, Math.min(x1, r.x1) - Math.max(x0, r.x0));
+  const height = Math.max(0, Math.min(y1, r.y1) - Math.max(y0, r.y0));
+  return width * height > 0.25 * (x1 - x0) * (y1 - y0);
+};
+
 /**
- * Words of `pdf` drawn over its images: what a picture's room that didn't hold leaves (#149). Google Docs draws
- * pictures from their PNGs, their own text inside them, so a word over one is text the layout ran into it. Pictures
- * can't be compared with Typst's pixel by pixel there: Google scales them about 1% and draws from the PNG. `scratch` is
- * a folder for poppler's image files (deleted). Each overlap is `{ page, word, box }`, box in points.
+ * Words of Google's PDF drawn over its pictures that Typst doesn't have over a picture: text the layout ran into a
+ * picture, as a drawing's room that didn't hold leaves it (#149). Some text is over a picture by design (a code
+ * block's code over its grey box), and Typst's PDF has it in the picture's region too (`pictures`, the model's), so
+ * each such word, counted by its text, is left out once. Google's pictures are its images (poppler's, written into
+ * `scratch` and deleted). They can't be compared with Typst's pixel by pixel there: Google scales them about 1% and
+ * draws their PNGs. Each overlap is `{ page, word, box }`.
  */
-export const textOverPictures = (pdf, scratch) => {
+export const textOverPictures = (pdf, typst, pictures, scratch) => {
   mkdirSync(scratch, { recursive: true });
   let xml;
   try {
@@ -103,31 +127,22 @@ export const textOverPictures = (pdf, scratch) => {
     rmSync(scratch, { recursive: true, force: true });
   }
   const images = [];
-  let page = 0;
-  for (const m of xml.matchAll(/<page number="(\d+)"|<image top="([\d.-]+)" left="([\d.-]+)" width="([\d.]+)" height="([\d.]+)"/g)) {
-    if (m[1]) page = Number(m[1]);
-    else images.push({ page, x0: +m[3], y0: +m[2], x1: +m[3] + +m[4], y1: +m[2] + +m[5] });
+  let page = -1;
+  for (const m of xml.matchAll(/<page number="\d+"|<image top="([\d.-]+)" left="([\d.-]+)" width="([\d.]+)" height="([\d.]+)"/g)) {
+    if (!m[1]) page++;
+    else images.push({ page, x0: +m[2], y0: +m[1], x1: +m[2] + +m[3], y1: +m[1] + +m[4] });
   }
   if (!images.length) return [];
-  const words = execFileSync("pdftotext", ["-bbox", pdf, "-"], { encoding: "utf8", maxBuffer: 1 << 26 });
+  const regions = pictures.map((p) => ({ page: p.page, x0: p.x, y0: p.y, x1: p.x + p.width, y1: p.y + p.height }));
+  const expected = new Map();
+  for (const w of wordsOf(typst))
+    if (regions.some((r) => inside(w, r))) expected.set(w.word, (expected.get(w.word) ?? 0) + 1);
   const overlaps = [];
-  page = 0;
-  for (const m of words.matchAll(
-    /<page |<word xMin="([\d.]+)" yMin="([\d.]+)" xMax="([\d.]+)" yMax="([\d.]+)">([^<]*)<\/word>/g,
-  )) {
-    if (!m[1]) {
-      page++;
-      continue;
-    }
-    const [x0, y0, x1, y1] = [+m[1], +m[2], +m[3], +m[4]];
-    // More than a quarter of the word inside the picture: a word that only touches its edge is beside it.
-    const over = images.some((im) => {
-      if (im.page !== page) return false;
-      const w = Math.max(0, Math.min(x1, im.x1) - Math.max(x0, im.x0));
-      const h = Math.max(0, Math.min(y1, im.y1) - Math.max(y0, im.y0));
-      return w * h > 0.25 * (x1 - x0) * (y1 - y0);
-    });
-    if (over) overlaps.push({ page: page - 1, word: m[5], box: [x0, y0, x1, y1].map(Math.round) });
+  for (const w of wordsOf(pdf)) {
+    if (!images.some((im) => inside(w, im))) continue;
+    const left = expected.get(w.word) ?? 0;
+    if (left > 0) expected.set(w.word, left - 1);
+    else overlaps.push({ ...w, box: w.box.map(Math.round) });
   }
   return overlaps;
 };
