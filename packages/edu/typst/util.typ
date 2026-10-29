@@ -49,10 +49,11 @@
   "calc(" + str(l.em) + "em + " + str(calc.round(l.abs.pt(), digits: 2)) + "pt)"
 }
 
-/// A drawing as inline SVG in HTML, with its description for screen readers; as itself on paper.
+/// A drawing as inline SVG in HTML, with its description for screen readers; as itself on paper,
+/// after a marker carrying the description, which a DOCX export gives the drawing's picture.
 /// Needs context.
 #let _drawing(body, label: "", inline: false) = {
-  if not _html() { return body }
+  if not _html() { return [#metadata((alt: label))<typstream-drawing>#body] }
   let attrs = (role: "img")
   if label != "" { attrs.insert("aria-label", label) }
   _el(if inline { "span" } else { "div" }, "edu-drawing", html.frame(body), ..attrs)

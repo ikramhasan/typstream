@@ -3,7 +3,7 @@
 
 import { strFromU8, unzipSync } from "fflate";
 import { describe, expect, it } from "vitest";
-import type { DocxBlock, DocxMath, DocxMathRun, DocxModel, DocxParagraph } from "../src";
+import type { DocxBlock, DocxMath, DocxMathRun, DocxModel, DocxParagraph, DocxPictureData } from "../src";
 import { writeDocx } from "../src";
 
 const FONT = new Uint8Array(Array.from({ length: 64 }, (_, i) => i));
@@ -27,8 +27,8 @@ const model = (blocks: DocxBlock[], extra: Partial<DocxModel> = {}): DocxModel =
   ...extra,
 });
 
-const parts = (m: DocxModel, fonts: Uint8Array[] = [FONT]) => {
-  const files = unzipSync(writeDocx(m, fonts));
+const parts = (m: DocxModel, fonts: Uint8Array[] = [FONT], pictures: DocxPictureData[] = []) => {
+  const files = unzipSync(writeDocx(m, fonts, pictures));
   return { files, xml: (name: string) => strFromU8(files[name] as Uint8Array) };
 };
 
@@ -94,6 +94,21 @@ describe("writeDocx", () => {
     expect(doc).toContain("<w:r><w:br/></w:r>");
   });
 
+  it("writes Typst's super and sub as Word's superscript and subscript, after the underline (CT_RPr's order)", () => {
+    const para = p("", {
+      runs: [
+        { text: "cm", font: 0, size: 11 },
+        { text: "2", font: 0, size: 11, script: "superscript", underline: true },
+        { text: "2", font: 0, size: 11, script: "subscript" },
+      ],
+    });
+    const doc = parts(model([para])).xml("word/document.xml");
+    expect(doc).toContain(
+      '<w:u w:val="single"/><w:vertAlign w:val="superscript"/></w:rPr><w:t xml:space="preserve">2<',
+    );
+    expect(doc).toContain('<w:vertAlign w:val="subscript"/>');
+  });
+
   it("keeps rules one after another apart, as LibreOffice would shade the gap between them", () => {
     const rule = { type: "rule", thickness: 0.4, color: "787878", indent: { left: 0, right: 0 } } as const;
     const doc = parts(model([{ ...rule }, { ...rule, before: 20 }])).xml("word/document.xml");
@@ -145,16 +160,121 @@ describe("writeDocx", () => {
     expect(doc).toContain("<w:cantSplit/>");
   });
 
-  it("marks room held for images and drawings with styles of its own", () => {
-    const doc = parts(
-      model([
-        p("", { runs: [{ gap: 30, font: 0, size: 11, placeholder: true }] }),
-        { type: "drawing", width: 100, height: 50, indent: 0, placeholder: true },
-      ]),
-    );
-    expect(doc.xml("word/document.xml")).toContain('<w:rStyle w:val="TypstreamPlaceholder"/>');
-    expect(doc.xml("word/document.xml")).toContain('<w:pStyle w:val="TypstreamPlaceholderBlock"/>');
-    expect(doc.xml("word/styles.xml")).toContain('w:styleId="TypstreamPlaceholder"');
+  describe("pictures", () => {
+    const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
+    const data = (n: number): DocxPictureData[] =>
+      Array.from({ length: n }, (_, i) => ({ svg: `<svg id="${i}"/>`, png: PNG }));
+    const pictures = [
+      { width: 100, height: 50, page: 0, x: 80, y: 120 },
+      { width: 20, height: 12, page: 0, x: 200, y: 300 },
+      { width: 40, height: 40, page: 0, x: 400, y: 600 },
+    ];
+
+    it("anchors a drawing's picture where its room starts, over a paragraph as tall, with SVG and PNG", () => {
+      const { files, xml } = parts(
+        model(
+          [{ type: "drawing", width: 99, height: 49, indent: 10, before: 6, picture: { index: 0, x: -0.5, y: -0.5 } }],
+          { pictures },
+        ),
+        [FONT],
+        data(1),
+      );
+      const doc = xml("word/document.xml");
+      // The room: an exact line as tall, indented; the picture in front of the text, from its anchor's line.
+      expect(doc).toContain('w:line="980" w:lineRule="exact"');
+      expect(doc).toContain('<w:ind w:left="200"/>');
+      expect(doc).toMatch(
+        /<wp:anchor [^>]*behindDoc="0"[^>]*><wp:simplePos x="0" y="0"\/><wp:positionH relativeFrom="character"><wp:posOffset>-6350<\/wp:posOffset><\/wp:positionH><wp:positionV relativeFrom="line"><wp:posOffset>-6350<\/wp:posOffset><\/wp:positionV><wp:extent cx="1270000" cy="635000"\/><wp:effectExtent l="0" t="0" r="0" b="0"\/><wp:wrapNone\/><wp:docPr id="1"/,
+      );
+      // The PNG is the picture, the SVG its extension; both in media, with their content types.
+      const rels = xml("word/_rels/document.xml.rels");
+      const png = /<a:blip r:embed="(\w+)">/.exec(doc)?.[1];
+      const svg = /<asvg:svgBlip [^>]*r:embed="(\w+)"/.exec(doc)?.[1];
+      expect(rels).toContain(
+        `Id="${png}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/picture1.png"`,
+      );
+      expect(rels).toContain(
+        `Id="${svg}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/picture1.svg"`,
+      );
+      expect(files["word/media/picture1.png"]).toEqual(PNG);
+      expect(xml("word/media/picture1.svg")).toBe('<svg id="0"/>');
+      const types = xml("[Content_Types].xml");
+      expect(types).toContain('<Default Extension="png" ContentType="image/png"/>');
+      expect(types).toContain('<Default Extension="svg" ContentType="image/svg+xml"/>');
+    });
+
+    it("sets a picture in a line as a character, its bottom raised to where Typst drew it", () => {
+      const doc = parts(
+        model(
+          [
+            p("", {
+              runs: [
+                { text: "Tick ", font: 0, size: 11 },
+                { gap: 20, font: 0, size: 11, picture: { index: 1, y: -10 } },
+              ],
+            }),
+          ],
+          {
+            pictures,
+          },
+        ),
+        [FONT],
+        data(2),
+      ).xml("word/document.xml");
+      // Its top 10 pt above the baseline, 12 pt tall: its bottom 2 pt below, 4 half points.
+      expect(doc).toContain(
+        '<w:r><w:rPr><w:position w:val="-4"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr><w:drawing><wp:inline',
+      );
+      expect(doc).toContain('<wp:extent cx="254000" cy="152400"/>');
+      expect(doc).not.toContain("&#160;");
+    });
+
+    it("anchors a placed picture to the page, in the paragraph after it or, when that is on a later page, before it", () => {
+      const placed = (index: number, host?: "previous"): DocxBlock => ({
+        type: "drawing",
+        width: 40,
+        height: 40,
+        indent: 0,
+        placed: true,
+        host,
+        picture: { index, x: 0, y: 0 },
+      });
+      const doc = parts(
+        model([placed(2), p("After"), p("Last"), placed(0, "previous")], { pictures }),
+        [FONT],
+        data(3),
+      ).xml("word/document.xml");
+      // No paragraph of its own: it takes no room.
+      expect(doc.match(/<w:p>/g)).toHaveLength(2);
+      const [after, last] = doc.split("<w:p>").slice(1) as [string, string];
+      expect(after).toMatch(/<wp:positionH relativeFrom="page"><wp:posOffset>5080000<\/wp:posOffset>.*>After</);
+      expect(last).toMatch(/>Last<.*<wp:positionV relativeFrom="page"><wp:posOffset>1524000</);
+    });
+
+    it("gives each part its own relationships to the pictures it shows, and numbers pictures across the document", () => {
+      const m = model([{ type: "drawing", width: 100, height: 50, indent: 0, picture: { index: 0, x: 0, y: 0 } }], {
+        pictures,
+      });
+      (m.sections[0] as DocxModel["sections"][number]).header = [
+        { type: "drawing", width: 100, height: 50, indent: 0, picture: { index: 0, x: 0, y: 0 } },
+      ];
+      const { xml } = parts(m, [FONT], data(1));
+      expect(xml("word/_rels/header1.xml.rels")).toContain('Target="media/picture1.png"');
+      const ids = [...(xml("word/document.xml") + xml("word/header1.xml")).matchAll(/<wp:docPr id="(\d+)"/g)].map(
+        (m) => m[1],
+      );
+      expect(new Set(ids).size).toBe(2);
+    });
+
+    it("holds the room without a picture when the model has no data for it", () => {
+      const doc = parts(
+        model([{ type: "drawing", width: 100, height: 50, indent: 0, picture: { index: 0, x: 0, y: 0 } }], {
+          pictures,
+        }),
+      ).xml("word/document.xml");
+      expect(doc).not.toContain("<w:drawing>");
+      expect(doc).toContain('w:line="1000" w:lineRule="exact"');
+    });
   });
 
   it("repeats the footer on a first page whose header differs, as titlePg switches both", () => {

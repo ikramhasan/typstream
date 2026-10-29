@@ -38,9 +38,10 @@ export interface JobResult {
   pageCount?: number;
   html?: string;
   pdf?: Uint8Array;
-  /** `docx`: the document model as JSON, and the data of the fonts it names. */
+  /** `docx`: the document model as JSON, and the data of the fonts and pictures it names. */
   model?: string;
   fonts?: Uint8Array[];
+  pictures?: { svg: string; png: Uint8Array }[];
   /** `svg`: exported pages (engine-wasm's frame hash and size included); all of them when `full`. */
   pages?: PageUpdate[];
   full?: boolean;

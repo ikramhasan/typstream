@@ -60,6 +60,19 @@ export const compilePaged = (engine: Engine, source: string, options: CompileOpt
   return { pages: (result.changed ?? []).map((p) => ({ svg: p.svg, text: p.text })), diagnostics: result.diagnostics };
 };
 
+export interface DocxOutput {
+  /** `@typstream/docx`'s `DocxModel` (as JSON parses it), null when the document didn't compile. */
+  model: { pictures?: { alt?: string }[] } | null;
+  diagnostics: Diagnostic[];
+}
+
+/** The document model a DOCX export is written from, compiled as the engine exports (the margin probe after it). */
+export const compileDocx = (engine: Engine, source: string, options: CompileOptions = {}): DocxOutput => {
+  prepare(engine, source + Engine.docx_margin_probe(), options);
+  const result = engine.compile_docx_model();
+  return { model: result.model ? JSON.parse(result.model) : null, diagnostics: result.diagnostics };
+};
+
 /** The text of paged output, runs joined with spaces (enough to test what appears). */
 export const pagedText = (out: PagedOutput): string => out.pages.flatMap((p) => p.text.map((r) => r.text)).join(" ");
 

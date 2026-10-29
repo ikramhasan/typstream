@@ -9,17 +9,27 @@ const unescape = (s) =>
     e === "amp" ? "&" : e === "lt" ? "<" : e === "gt" ? ">" : e === "quot" ? '"' : e === "apos" ? "'" : String.fromCodePoint(Number(e.slice(1))),
   );
 
-/** [page, "words of the line"], lines by the bottom of their words' boxes, top to bottom. */
-export const linesOf = (pdf) => {
+/**
+ * Whether a box (page from 1, points) is in one of `regions` (`{ page, x, y, width, height }`, page from 0): text
+ * drawn in a picture, which a DOCX has as outlines (#133).
+ */
+const pictured = (regions, n, x0, y0, x1, y1) => {
+  const x = (x0 + x1) / 2;
+  const y = (y0 + y1) / 2;
+  return regions.some((r) => r.page === n - 1 && x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.height);
+};
+
+/** [page, "words of the line"], lines by the bottom of their words' boxes, top to bottom; none in `regions`. */
+export const linesOf = (pdf, regions = []) => {
   const xml = execFileSync("pdftotext", ["-bbox", pdf, "-"], { encoding: "utf8", maxBuffer: 1 << 28 });
   const out = [];
   let n = 0;
   for (const [, page] of xml.matchAll(PAGE)) {
     n++;
     const words = [];
-    for (const [, x0, , , y1, w] of page.matchAll(WORD)) {
+    for (const [, x0, y0, x1, y1, w] of page.matchAll(WORD)) {
       const t = unescape(w).normalize("NFKC");
-      if (t) words.push([Number(y1), Number(x0), t]);
+      if (t && !pictured(regions, n, Number(x0), Number(y0), Number(x1), Number(y1))) words.push([Number(y1), Number(x0), t]);
     }
     words.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
     const lines = [];
@@ -54,7 +64,7 @@ export const textFaces = (pdf) => new Set(pieces(pdf).filter((p) => !p[5]).map((
  * `faces`, text in any other face is math too: an engine missing the math font a character asks for falls back to
  * whatever face has it (ONLYOFFICE draws operators so).
  */
-const pieces = (pdf, faces) => {
+const pieces = (pdf, faces, regions = []) => {
   const xml = execFileSync("pdftohtml", ["-xml", "-i", "-zoom", "1", "-stdout", pdf], { encoding: "utf8", maxBuffer: 1 << 28 });
   const families = new Map();
   const out = [];
@@ -62,11 +72,13 @@ const pieces = (pdf, faces) => {
   for (const page of xml.split(/<page /).slice(1)) {
     n++;
     for (const [, id, family] of page.matchAll(FONTSPEC)) families.set(id, family);
-    for (const [, top, left, , height, font, raw] of page.matchAll(TEXT)) {
+    for (const [, top, left, width, height, font, raw] of page.matchAll(TEXT)) {
       const text = unescape(raw.replace(/<[^>]*>/g, "")).normalize("NFKC");
       const family = families.get(font) ?? "";
       const math = MATH_FONT.test(family) || (faces !== undefined && !faces.has(face(family)));
-      if (text.trim()) out.push([n, Number(top), Number(left), Number(top) + Number(height), text, math, face(family)]);
+      const [y0, x0, y1] = [Number(top), Number(left), Number(top) + Number(height)];
+      if (text.trim() && !pictured(regions, n, x0, y0, x0 + Number(width), y1))
+        out.push([n, y0, x0, y1, text, math, face(family)]);
     }
   }
   return out;
@@ -76,10 +88,10 @@ const pieces = (pdf, faces) => {
  * Lines of a PDF with equations, without them: each program sets math its own way (LibreOffice in formula objects of
  * its own spacing, every engine stacking fractions apart), so lines are compared by their text around it.
  */
-export const textLinesOf = (pdf, faces) => {
+export const textLinesOf = (pdf, faces, regions = []) => {
   const out = [];
   const byPage = new Map();
-  for (const p of pieces(pdf, faces).filter((p) => !p[5])) byPage.set(p[0], [...(byPage.get(p[0]) ?? []), p]);
+  for (const p of pieces(pdf, faces, regions).filter((p) => !p[5])) byPage.set(p[0], [...(byPage.get(p[0]) ?? []), p]);
   for (const [n, ps] of byPage) {
     // Pieces in different sizes share a line when their boxes mostly overlap (their bottoms differ with the size).
     ps.sort((a, b) => a[1] - b[1] || a[2] - b[2]);
@@ -100,8 +112,8 @@ export const textLinesOf = (pdf, faces) => {
 };
 
 /** The letters and digits of a PDF's equations, in order: whether every equation came out. */
-export const mathOf = (pdf) =>
-  pieces(pdf)
+export const mathOf = (pdf, regions = []) =>
+  pieces(pdf, undefined, regions)
     .filter((p) => p[5])
     .map((p) => p[4].replace(/[^\p{L}\p{N}]/gu, ""))
     .join("");

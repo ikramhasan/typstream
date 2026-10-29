@@ -23,8 +23,10 @@
 //! - **Equations** are Word math (#132): the DOCX compile marks each with its tree (math.rs), inline ones go in
 //!   their line, display ones in a paragraph of their own as tall as Typst set them (with a number, a borderless row
 //!   of three cells).
-//! - **Images and drawings** are placeholders of their size until #133, so lines and pages still break where Typst
-//!   broke them.
+//! - **Pictures** (#133, picture.rs) are what the model can't express otherwise: images, CeTZ canvases, mind maps,
+//!   edu's drawings, free-form boxes with rounded corners. A drawing holds its room (a paragraph as tall, an
+//!   exact-width gap in a line) so lines and pages break where Typst broke them, and its picture is drawn there; a
+//!   `place`d one is anchored to the page.
 //!
 //! Page margins aren't in the laid-out pages: the export appends a probe that records `page.margin`
 //! (`MARGIN_PROBE`), and `auto` margins are resolved as typst-layout does.
@@ -40,9 +42,12 @@ use typst::layout::{
 };
 use typst::model::{Destination, HeadingElem, Numbering, TableCell};
 use typst::pdf::{PdfMarkerTag, PdfMarkerTagKind};
+use typst::syntax::Span;
 use typst::text::Font;
 use typst::visualize::{Color, CurveItem, FixedStroke, Geometry, Paint, Shape};
 use typst_layout::{Page, PagedDocument};
+
+use crate::picture::{self, Picture};
 
 /// Appended to a document before a DOCX export: records the page margins where the document ends, inside every
 /// template's show rule.
@@ -65,10 +70,13 @@ const FIT_MARGIN: f64 = 1.0;
 /// starts a page adds none.
 const PAGE_ROOM: f64 = 1.0;
 
-/// The model as JSON (see `@typstream/docx`'s `DocxModel`) and the data of the fonts it names, in its order.
+/// The model as JSON (see `@typstream/docx`'s `DocxModel`), the data of the fonts it names and its pictures, in its
+/// order, and what free-form content its pictures hold (for `docx/fallback` warnings).
 pub struct Model {
     pub json: String,
     pub fonts: Vec<Vec<u8>>,
+    pub pictures: Vec<Picture>,
+    pub fallbacks: Vec<(Span, &'static str)>,
 }
 
 pub fn model(doc: &PagedDocument) -> Model {
@@ -99,6 +107,8 @@ pub fn model(doc: &PagedDocument) -> Model {
             repeated: &mut repeated,
             skipping: None,
             marker: None,
+            scripts: Vec::new(),
+            size: 11.0,
         };
         lin.walk(&page.frame, Transform::identity());
     }
@@ -109,16 +119,22 @@ pub fn model(doc: &PagedDocument) -> Model {
         fonts,
         lists: Vec::new(),
         repeated,
+        pictures: Vec::new(),
+        picture_json: Vec::new(),
+        fallbacks: Vec::new(),
     };
     let sections = builder.sections(pages);
     let json = json!({
         "sections": sections,
         "fonts": builder.fonts.json(),
         "lists": builder.lists,
+        "pictures": builder.picture_json,
     });
     Model {
         json: json.to_string(),
         fonts: builder.fonts.data,
+        pictures: builder.pictures,
+        fallbacks: builder.fallbacks,
     }
 }
 
@@ -247,6 +263,9 @@ enum Kind {
 struct Item {
     page: usize,
     kind: Kind,
+    /// What it draws, where on its page: a picture of it is rendered from these (#133). One of the kinds a shape
+    /// becomes (a rectangle's fill and strokes) has it.
+    drawn: Option<(Point, FrameItem)>,
 }
 
 #[derive(Clone)]
@@ -263,6 +282,9 @@ struct Text {
     first_word: f64,
     /// Width without trailing spaces: where the ink ends.
     inked: f64,
+    /// In a `super` or `sub` Typst set with the font's own superscript or subscript glyphs (full size, on the baseline):
+    /// Word's `superscript` or `subscript`.
+    script: Option<&'static str>,
 }
 
 struct Linearizer<'a> {
@@ -279,6 +301,10 @@ struct Linearizer<'a> {
     skipping: Option<Location>,
     /// The last equation marker: its end tag is dropped with it.
     marker: Option<Location>,
+    /// `super` and `sub` elements open, and the text size before each.
+    scripts: Vec<(Location, &'static str, f64)>,
+    /// The size of the last text.
+    size: f64,
 }
 
 impl Linearizer<'_> {
@@ -286,7 +312,15 @@ impl Linearizer<'_> {
         self.items.push(Item {
             page: self.page,
             kind,
+            drawn: None,
         });
+    }
+
+    /// Records what the items pushed since `from` draw: the first of them has it.
+    fn drawn(&mut self, from: usize, at: Point, item: &FrameItem) {
+        if let Some(first) = self.items.get_mut(from) {
+            first.drawn = Some((at, item.clone()));
+        }
     }
 
     fn walk(&mut self, frame: &Frame, ts: Transform) {
@@ -313,13 +347,57 @@ impl Linearizer<'_> {
                         w: size.x.to_pt(),
                         h: size.y.to_pt(),
                     };
-                    // A grid or table drawn with curves (rounded cards) stays a grid: its cells are found inside.
-                    if !gts.is_only_translate() || (curvy(&group.frame) && !has_cells(&group.frame))
+                    // A grid or table drawn with curves (rounded cards) stays a grid: its cells are found inside. So
+                    // does a block of paragraphs, lists or headings with a drawing in it: the drawing is a picture,
+                    // not the text around it.
+                    if !gts.is_only_translate()
+                        || ((curvy(&group.frame) || canvas(&group.frame))
+                            && !has_structure(&group.frame))
                     {
-                        // Rotated or drawn content (CeTZ, edu's drawings): an image later (#133). Its tags stay, so
-                        // elements around it (a cell it is in) still start and end.
+                        // Rotated or drawn content (CeTZ, edu's drawings): a picture of it. Tags of elements in it
+                        // (a label's equation) are the picture's; those of elements around it (a cell it is in, a
+                        // list a page broke) stay, so those still start and end, and the ones before anything it
+                        // draws come before it.
+                        let mut tags = Vec::new();
+                        collect_tags(&group.frame, &mut tags, &mut false);
+                        let starts: HashSet<Location> = tags
+                            .iter()
+                            .filter_map(|(_, t)| match t {
+                                Tag::Start(elem, _) => elem.location(),
+                                _ => None,
+                            })
+                            .collect();
+                        let ends: HashSet<Location> = tags
+                            .iter()
+                            .filter_map(|(_, t)| match t {
+                                Tag::End(loc, ..) => Some(*loc),
+                                _ => None,
+                            })
+                            .collect();
+                        // A drawing's description (its marker, `drawing_alt`) stays too.
+                        let markers: HashSet<Location> = tags
+                            .iter()
+                            .filter_map(|(_, t)| match t {
+                                Tag::Start(elem, _) if drawing_marker(elem) => elem.location(),
+                                _ => None,
+                            })
+                            .collect();
+                        tags.retain(|(_, t)| match t {
+                            Tag::Start(elem, _) => elem
+                                .location()
+                                .is_none_or(|l| !ends.contains(&l) || markers.contains(&l)),
+                            Tag::End(loc, ..) => !starts.contains(loc) || markers.contains(loc),
+                        });
+                        let lead = tags.iter().take_while(|(lead, _)| *lead).count();
+                        for (_, tag) in &tags[..lead] {
+                            self.tag(tag, at);
+                        }
+                        let from = self.items.len();
                         self.push(Kind::Drawing(rect));
-                        self.tags(&group.frame, at);
+                        self.drawn(from, at, item);
+                        for (_, tag) in &tags[lead..] {
+                            self.tag(tag, at);
+                        }
                         continue;
                     }
                     self.push(Kind::Group(rect, decorated(&group.frame)));
@@ -338,6 +416,7 @@ impl Linearizer<'_> {
                         }
                         first_word += glyph.x_advance.at(text.size).to_pt();
                     }
+                    let from = self.items.len();
                     let mut trailing = 0.0;
                     for glyph in text.glyphs.iter().rev() {
                         if !text.text[glyph.range()].chars().all(char::is_whitespace) {
@@ -345,25 +424,45 @@ impl Linearizer<'_> {
                         }
                         trailing += glyph.x_advance.at(text.size).to_pt();
                     }
+                    let size = text.size.to_pt();
+                    // Typst synthesizes a script the font has no glyphs for: smaller, off the baseline, as it is.
+                    let script = self
+                        .scripts
+                        .last()
+                        .filter(|(_, _, before)| (before - size).abs() < 0.01)
+                        .map(|(_, script, _)| *script);
+                    if self.scripts.is_empty() {
+                        self.size = size;
+                    }
                     self.push(Kind::Text(Text {
                         x: at.x.to_pt(),
                         y: at.y.to_pt(),
                         width: text.width().to_pt(),
                         inked: text.width().to_pt() - trailing,
-                        size: text.size.to_pt(),
+                        size,
                         font: text.font.font().clone(),
                         color: paint_hex(&text.fill),
                         text: text.text.to_string(),
                         first_word,
-                    }))
+                        script,
+                    }));
+                    self.drawn(from, at, item);
                 }
-                FrameItem::Shape(shape, _) => self.shape(shape, at),
-                FrameItem::Image(_, size, _) => self.push(Kind::Drawing(Rect {
-                    x: at.x.to_pt(),
-                    y: at.y.to_pt(),
-                    w: size.x.to_pt(),
-                    h: size.y.to_pt(),
-                })),
+                FrameItem::Shape(shape, _) => {
+                    let from = self.items.len();
+                    self.shape(shape, at);
+                    self.drawn(from, at, item);
+                }
+                FrameItem::Image(_, size, _) => {
+                    let from = self.items.len();
+                    self.push(Kind::Drawing(Rect {
+                        x: at.x.to_pt(),
+                        y: at.y.to_pt(),
+                        w: size.x.to_pt(),
+                        h: size.y.to_pt(),
+                    }));
+                    self.drawn(from, at, item);
+                }
                 FrameItem::Link(Destination::Url(url), size) => self.push(Kind::Link(
                     Rect {
                         x: at.x.to_pt(),
@@ -379,6 +478,14 @@ impl Linearizer<'_> {
                 FrameItem::Tag(Tag::Start(elem, _)) => {
                     if matches!(elem.func().name(), "table" | "grid") {
                         self.tables.extend(elem.location());
+                    }
+                    let script = match elem.func().name() {
+                        "super" => Some("superscript"),
+                        "sub" => Some("subscript"),
+                        _ => None,
+                    };
+                    if let (Some(script), Some(loc)) = (script, elem.location()) {
+                        self.scripts.push((loc, script, self.size));
                     }
                     if let (Some(&table), Node::Cell { x, y, .. }) =
                         (self.tables.last(), classify(elem, at, self.page))
@@ -397,6 +504,7 @@ impl Linearizer<'_> {
                 FrameItem::Tag(Tag::End(loc, ..)) => {
                     // Tables broken across pages may end out of order (a nested one after its row's table).
                     self.tables.retain(|t| t != loc);
+                    self.scripts.retain(|(l, ..)| l != loc);
                     self.push(Kind::End(*loc))
                 }
             }
@@ -413,17 +521,13 @@ impl Linearizer<'_> {
         true
     }
 
-    /// The tags in a frame whose content is a drawing, placed where the drawing is.
-    fn tags(&mut self, frame: &Frame, at: Point) {
-        for (_, item) in frame.items() {
-            match item {
-                FrameItem::Group(g) => self.tags(&g.frame, at),
-                FrameItem::Tag(Tag::Start(elem, _)) if self.math(elem) => {}
-                FrameItem::Tag(Tag::End(loc, ..)) if Some(*loc) == self.marker => {}
-                FrameItem::Tag(Tag::Start(elem, _)) => self.push(Kind::Start(elem.clone(), at)),
-                FrameItem::Tag(Tag::End(loc, ..)) => self.push(Kind::End(*loc)),
-                _ => {}
-            }
+    /// A tag in a frame whose content is a drawing, placed where the drawing is.
+    fn tag(&mut self, tag: &Tag, at: Point) {
+        match tag {
+            Tag::Start(elem, _) if self.math(elem) => {}
+            Tag::End(loc, ..) if Some(*loc) == self.marker => {}
+            Tag::Start(elem, _) => self.push(Kind::Start(elem.clone(), at)),
+            Tag::End(loc, ..) => self.push(Kind::End(*loc)),
         }
     }
 
@@ -512,6 +616,23 @@ impl Linearizer<'_> {
                     }
                 }
             },
+        }
+    }
+}
+
+/// Whether an element is a drawing's description: `metadata((alt: …))` labelled `<typstream-drawing>`.
+fn drawing_marker(elem: &Content) -> bool {
+    elem.label()
+        .is_some_and(|l| l.resolve().as_str() == "typstream-drawing")
+}
+
+/// The tags in a frame, in order, and whether each comes before anything the frame draws.
+fn collect_tags(frame: &Frame, out: &mut Vec<(bool, Tag)>, drawn: &mut bool) {
+    for (_, item) in frame.items() {
+        match item {
+            FrameItem::Group(g) => collect_tags(&g.frame, out, drawn),
+            FrameItem::Tag(tag) => out.push((!*drawn, tag.clone())),
+            _ => *drawn = true,
         }
     }
 }
@@ -627,11 +748,43 @@ fn count(frame: &Frame, lines: &mut usize, text: &mut usize, curvy: &mut bool, e
     }
 }
 
-/// Whether a frame holds table or grid cells.
-fn has_cells(frame: &Frame) -> bool {
+/// Whether a frame is a canvas: pieces `place`d in it (a CeTZ canvas, edu's drawings), one of them a shape. Placed text
+/// alone isn't one.
+fn canvas(frame: &Frame) -> bool {
+    let placed = frame.items().any(|(_, item)| match item {
+        FrameItem::Tag(Tag::Start(elem, _)) => elem
+            .to_packed::<PlaceElem>()
+            .is_some_and(|p| !p.float.get(StyleChain::default())),
+        _ => false,
+    });
+    placed && draws_shape(frame)
+}
+
+fn draws_shape(frame: &Frame) -> bool {
     frame.items().any(|(_, item)| match item {
-        FrameItem::Group(g) => has_cells(&g.frame),
-        FrameItem::Tag(Tag::Start(elem, _)) => elem.is::<TableCell>() || elem.is::<GridCell>(),
+        FrameItem::Shape(..) | FrameItem::Image(..) => true,
+        FrameItem::Group(g) => draws_shape(&g.frame),
+        _ => false,
+    })
+}
+
+/// Whether a frame holds what flows as text: paragraphs, headings, list items (their elements and typst-layout's body
+/// markers), table or grid cells. A drawing's labels are boxes of text, which aren't paragraphs (a block's one
+/// paragraph has no `par` either).
+fn has_structure(frame: &Frame) -> bool {
+    frame.items().any(|(_, item)| match item {
+        FrameItem::Group(g) => has_structure(&g.frame),
+        FrameItem::Tag(Tag::Start(elem, _)) => {
+            elem.is::<TableCell>()
+                || elem.is::<GridCell>()
+                || matches!(elem.func().name(), "par" | "heading" | "item")
+                || elem.to_packed::<PdfMarkerTag>().is_some_and(|m| {
+                    matches!(
+                        m.kind,
+                        PdfMarkerTagKind::ListItemBody | PdfMarkerTagKind::TermsItemBody
+                    )
+                })
+        }
         _ => false,
     })
 }
@@ -817,6 +970,7 @@ enum Run {
         color: String,
         underline: bool,
         link: Option<String>,
+        script: Option<&'static str>,
     },
     /// An exact-width space: a gap in a line, a blank, a placeholder.
     Gap {
@@ -828,11 +982,13 @@ enum Run {
     Tab,
     /// A line break Typst was told to make (`\`), not one it chose.
     Break,
-    /// Room held for what the model can't express yet (images): an exact-width gap until #133.
-    Placeholder {
+    /// A picture in the line (#133): an exact-width gap where there is none. `picture` is `{ index, y }`, `y` its
+    /// top below the baseline.
+    Picture {
         width: f64,
         font: usize,
         size: f64,
+        picture: Option<Json>,
     },
     /// An equation (math.rs): its tree, in the math font.
     Math {
@@ -879,6 +1035,11 @@ struct Builder {
     lists: Vec<Json>,
     /// Header rows Typst repeated on later pages, by table.
     repeated: HashSet<(Location, usize)>,
+    /// Pictures of what the model can't express (#133), as blocks and runs refer to them, and their JSON.
+    pictures: Vec<Picture>,
+    picture_json: Vec<Json>,
+    /// Free-form content a picture holds (a rounded box), for `docx/fallback` warnings: where, and what.
+    fallbacks: Vec<(Span, &'static str)>,
 }
 
 /// A region blocks flow in: the page's content area, a cell, a framed block.
@@ -974,10 +1135,7 @@ impl Builder {
             if format == prev_format && *number == prev + 1 {
                 continue;
             }
-            if let Some(b) = blocks
-                .iter_mut()
-                .find(|b| b.page == p && !b.json.contains_key("frame"))
-            {
+            if let Some(b) = blocks.iter_mut().find(|b| b.page == p && !out_of_flow(b)) {
                 b.json.remove("pageBreak");
                 b.json.insert(
                     "pageNumbering".into(),
@@ -1093,8 +1251,8 @@ impl Builder {
     fn with_gaps(&self, mut blocks: Vec<Block>, body: bool) -> Vec<Block> {
         let mut prev: Option<(usize, f64)> = None;
         for b in blocks.iter_mut() {
-            // A framed paragraph (placed text) is out of the flow: no room before it, none taken.
-            if b.json.contains_key("frame") {
+            // A framed paragraph (placed text) or a placed picture is out of the flow: no room before it, none taken.
+            if out_of_flow(b) {
                 b.json.insert("before".into(), json!(0.0));
                 continue;
             }
@@ -1137,6 +1295,16 @@ impl Builder {
                 .insert("before".into(), json!(round(before.max(0.0))));
             prev = Some((b.end_page, b.bottom));
         }
+        // A placed picture goes in a paragraph next to it, on its page: the one after it, unless that is on a later page.
+        for k in 0..blocks.len() {
+            if !blocks[k].json.contains_key("placed") {
+                continue;
+            }
+            let next = blocks[k + 1..].iter().find(|b| !out_of_flow(b));
+            if next.is_none_or(|n| n.page != blocks[k].page) {
+                blocks[k].json.insert("host".into(), json!("previous"));
+            }
+        }
         blocks
     }
 
@@ -1162,6 +1330,12 @@ impl Builder {
                         let end = self.end_of(ids, i, elem);
                         if let Some(frames) = self.placed(&ids[i + 1..end], area) {
                             out.extend(frames);
+                            i = end + 1;
+                            continue;
+                        }
+                        // Anything else placed is a picture anchored where Typst put it, and takes no room either.
+                        if let Some(b) = self.placed_picture(&ids[i + 1..end]) {
+                            out.push(b);
                             i = end + 1;
                             continue;
                         }
@@ -1207,7 +1381,7 @@ impl Builder {
                             let inner = &ids[i + 1..end];
                             if let Some(b) = self
                                 .display_equation(inner, area)
-                                .or_else(|| self.placeholder_block(inner, area))
+                                .or_else(|| self.equation_picture(inner, area))
                             {
                                 out.push(b);
                             }
@@ -1300,10 +1474,20 @@ impl Builder {
                     // text, and says nothing about wrapping.
                     let end = group_end(&items, ids, i).min(ids.len() - 1);
                     let inner = &ids[i + 1..end];
+                    // An equation's pieces (a fraction's numerator) aren't lines of their own.
+                    let mut equations: Vec<Option<Location>> = Vec::new();
                     let baselines: Vec<f64> = inner
                         .iter()
                         .filter_map(|&j| match &items[j].kind {
-                            Kind::Text(t) => Some(t.y),
+                            Kind::Start(elem, _) if elem.func().name() == "equation" => {
+                                equations.push(elem.location());
+                                None
+                            }
+                            Kind::End(loc) if equations.last() == Some(&Some(*loc)) => {
+                                equations.pop();
+                                None
+                            }
+                            Kind::Text(t) if equations.is_empty() => Some(t.y),
                             _ => None,
                         })
                         .collect();
@@ -1374,12 +1558,19 @@ impl Builder {
                 }
                 Kind::Drawing(rect) if !self.in_line(&pending, *rect, self.items[id].page) => {
                     self.flush(&mut pending, &mut out, area, heading);
+                    // What is drawn over it (a rounded card's text) is part of the picture.
+                    let end = self.drawn_over(ids, i, *rect);
                     let mut json = Map::new();
                     json.insert("type".into(), json!("drawing"));
-                    json.insert("placeholder".into(), json!(true));
                     json.insert("width".into(), json!(round(rect.w)));
                     json.insert("height".into(), json!(round(rect.h)));
                     json.insert("indent".into(), json!(round(rect.x - area.left)));
+                    if let Some((k, p)) = self.picture(&ids[i..=end], *rect, true) {
+                        json.insert(
+                            "picture".into(),
+                            json!({ "index": k, "x": round(p.x - rect.x), "y": round(p.y - rect.y) }),
+                        );
+                    }
                     out.push(Block {
                         page: self.items[id].page,
                         end_page: self.items[id].page,
@@ -1387,8 +1578,7 @@ impl Builder {
                         bottom: rect.bottom(),
                         json,
                     });
-                    // What is drawn over it (a rounded card's text) is part of the drawing.
-                    i = self.drawn_over(ids, i, *rect);
+                    i = end;
                 }
                 _ => pending.push(id),
             }
@@ -1396,6 +1586,81 @@ impl Builder {
         }
         self.flush(&mut pending, &mut out, area, heading);
         out
+    }
+
+    /// A picture of what items draw on the page of the first (#133), covering `room` (and with `ink` what they draw
+    /// outside it): its index in the model's pictures, and where it is on the page.
+    fn picture(&mut self, ids: &[usize], room: Rect, ink: bool) -> Option<(usize, Rect)> {
+        let page = self.items[*ids.first()?].page;
+        let drawn: Vec<(Point, FrameItem)> = ids
+            .iter()
+            .filter(|&&id| self.items[id].page == page)
+            .filter_map(|&id| self.items[id].drawn.clone())
+            .collect();
+        let p = picture::render(&drawn, (room.x, room.y, room.w, room.h), ink)?;
+        // Free-form content with text in it: Word would keep the text editable if Typst drew the box otherwise.
+        let text = ids
+            .iter()
+            .any(|&id| matches!(self.items[id].kind, Kind::Text(_)));
+        if let Some((span, what)) = drawn
+            .first()
+            .and_then(|(_, item)| picture::free_form(item))
+            .filter(|_| text || matches!(drawn[0].1, FrameItem::Group(_)))
+        {
+            if !self.fallbacks.iter().any(|(s, _)| *s == span) {
+                self.fallbacks.push((span, what));
+            }
+        }
+        let rect = Rect {
+            x: p.x,
+            y: p.y,
+            w: p.width,
+            h: p.height,
+        };
+        let mut json = json!({
+            "width": round(p.width),
+            "height": round(p.height),
+            "page": page,
+            "x": round(p.x),
+            "y": round(p.y),
+        });
+        // Its description: an image's `alt`, or the one a marker before it carries (edu's drawings).
+        let alt = drawn
+            .iter()
+            .find_map(|(_, item)| match item {
+                FrameItem::Image(image, ..) => image.alt().map(str::to_string),
+                _ => None,
+            })
+            .or_else(|| self.drawing_alt(ids[0]));
+        if let Some(alt) = alt.filter(|a| !a.is_empty()) {
+            json["alt"] = json!(alt);
+        }
+        self.picture_json.push(json);
+        self.pictures.push(p);
+        Some((self.pictures.len() - 1, rect))
+    }
+
+    /// The description a `<typstream-drawing>` marker (`metadata((alt: …))`, edu's drawings) carries for the drawing
+    /// right after it: only tags and groups opening between them.
+    fn drawing_alt(&self, id: usize) -> Option<String> {
+        for item in self.items[..id].iter().rev().take(8) {
+            match &item.kind {
+                Kind::Start(elem, _) => {
+                    let value = elem
+                        .to_packed::<typst::introspection::MetadataElem>()
+                        .map(|m| m.value.clone());
+                    if let (true, Some(Value::Dict(dict))) = (drawing_marker(elem), value) {
+                        return match dict.get("alt") {
+                            Ok(Value::Str(s)) => Some(s.to_string()),
+                            _ => None,
+                        };
+                    }
+                }
+                Kind::End(_) | Kind::Group(..) => {}
+                _ => return None,
+            }
+        }
+        None
     }
 
     /// The columns a group at `ids[i]` lays out (Typst's `columns`): its direct groups, as wide as each other, side by
@@ -1607,6 +1872,58 @@ impl Builder {
         Some(blocks)
     }
 
+    /// A picture of what a `place` draws, anchored to the page where Typst drew it.
+    fn placed_picture(&mut self, ids: &[usize]) -> Option<Block> {
+        let page = self.items[*ids.first()?].page;
+        let mut room: Option<Rect> = None;
+        for &id in ids.iter().filter(|&&id| self.items[id].page == page) {
+            let r = match &self.items[id].kind {
+                Kind::Text(t) => Rect {
+                    x: t.x,
+                    y: t.y - TOP * t.size,
+                    w: t.width,
+                    h: PITCH * t.size,
+                },
+                Kind::Seg(s) => Rect {
+                    x: s.x0,
+                    y: s.y0,
+                    w: s.x1 - s.x0,
+                    h: s.y1 - s.y0,
+                },
+                Kind::Fill(r, _) | Kind::Drawing(r) | Kind::Rect(r) | Kind::Group(r, _) => *r,
+                _ => continue,
+            };
+            room = Some(match room {
+                None => r,
+                Some(a) => {
+                    let (x0, y0) = (a.x.min(r.x), a.y.min(r.y));
+                    Rect {
+                        x: x0,
+                        y: y0,
+                        w: a.right().max(r.right()) - x0,
+                        h: a.bottom().max(r.bottom()) - y0,
+                    }
+                }
+            });
+        }
+        let room = room?;
+        let (k, p) = self.picture(ids, room, true)?;
+        let mut json = Map::new();
+        json.insert("type".into(), json!("drawing"));
+        json.insert("width".into(), json!(round(p.w)));
+        json.insert("height".into(), json!(round(p.h)));
+        json.insert("indent".into(), json!(0.0));
+        json.insert("placed".into(), json!(true));
+        json.insert("picture".into(), json!({ "index": k, "x": 0.0, "y": 0.0 }));
+        Some(Block {
+            page,
+            end_page: page,
+            top: p.y,
+            bottom: p.bottom(),
+            json,
+        })
+    }
+
     /// Whether text gathered for the paragraph shares a line with `rect` (an inline box, not a block).
     fn beside(&self, pending: &[usize], rect: Rect, page: usize) -> bool {
         pending.iter().any(|&p| match &self.items[p].kind {
@@ -1657,10 +1974,11 @@ impl Builder {
     /// Lines from text items, links and underline strokes.
     fn lines(&mut self, ids: &[usize]) -> Vec<Line> {
         let mut texts: Vec<(usize, Text)> = Vec::new();
+        let mut text_ids: Vec<usize> = Vec::new();
         let mut segs: Vec<(usize, Seg)> = Vec::new();
         let mut links: Vec<(usize, Rect, String)> = Vec::new();
-        // Boxes of what is drawn: an equation's pieces (with its index in `equations`), or drawings.
-        let mut boxes: Vec<(usize, Rect, Option<usize>)> = Vec::new();
+        // Boxes of what is drawn: an equation's pieces (with its index in `equations`), or drawings (with the item).
+        let mut boxes: Vec<(usize, Rect, Option<usize>, Option<usize>)> = Vec::new();
         let mut equations: Vec<Equation> = Vec::new();
         // The equation open, and its end tag.
         let mut equation: Option<(usize, Option<Location>)> = None;
@@ -1692,7 +2010,10 @@ impl Builder {
                 Kind::Start(elem, _) if elem.func().name() == "repeat" && eq.is_none() => {
                     repeat = Some((elem.location(), None));
                 }
-                Kind::Text(t) if eq.is_none() => texts.push((page, t.clone())),
+                Kind::Text(t) if eq.is_none() => {
+                    texts.push((page, t.clone()));
+                    text_ids.push(id);
+                }
                 Kind::Text(t) => {
                     let e = &mut equations[eq.unwrap()];
                     if e.font.is_none() {
@@ -1707,6 +2028,7 @@ impl Builder {
                             h: t.size * 1.2,
                         },
                         eq,
+                        None,
                     ));
                 }
                 Kind::Start(elem, _) if elem.func().name() == "equation" && eq.is_none() => {
@@ -1738,16 +2060,17 @@ impl Builder {
                         h: (s.y1 - s.y0).abs().max(0.1),
                     },
                     eq,
+                    None,
                 )),
                 Kind::Seg(s) if s.horizontal() => segs.push((page, s.clone())),
                 Kind::Link(r, url) => links.push((page, *r, url.clone())),
-                Kind::Drawing(r) => boxes.push((page, *r, eq)),
+                Kind::Drawing(r) => boxes.push((page, *r, eq, Some(id))),
                 _ => {}
             }
         }
         // An equation's pieces merge into one box per baseline-ish band (two, when Typst broke it over lines).
         let mut lines: Vec<Line> = Vec::new();
-        // page, x, w, baseline, text or box, the box's equation
+        // page, x, w, baseline, text or box, the box's equation, the drawings in the box
         let mut atoms: Vec<(
             usize,
             f64,
@@ -1756,15 +2079,13 @@ impl Builder {
             Option<Text>,
             Option<Rect>,
             Option<usize>,
+            Vec<usize>,
         )> = Vec::new();
-        for (page, t) in &texts {
-            atoms.push((*page, t.x, t.width, t.y, Some(t.clone()), None, None));
-        }
         // Boxes: attach to the line whose baseline is inside them.
-        let mut placeholders: Vec<(usize, Rect, Option<usize>)> = Vec::new();
-        for (page, r, eq) in boxes {
+        let mut placeholders: Vec<(usize, Rect, Option<usize>, Vec<usize>)> = Vec::new();
+        for (page, r, eq, drawing) in boxes {
             // An equation's pieces (a numerator, a denominator) make one box, wherever they are.
-            let same = |p: &(usize, Rect, Option<usize>)| {
+            let same = |p: &(usize, Rect, Option<usize>, Vec<usize>)| {
                 p.0 == page
                     && p.2 == eq
                     && (eq.is_some()
@@ -1789,35 +2110,83 @@ impl Builder {
                         w: x1 - x0,
                         h: y1 - y0,
                     };
+                    last.3.extend(drawing);
                     continue;
                 }
             }
-            placeholders.push((page, r, eq));
+            placeholders.push((page, r, eq, drawing.into_iter().collect()));
         }
-        for (page, r, eq) in placeholders {
+        // Text drawn on a drawing in the line (a rounded box's words) is part of its picture.
+        let mut pictured = vec![false; texts.len()];
+        for p in placeholders
+            .iter_mut()
+            .filter(|p| p.2.is_none() && !p.3.is_empty())
+        {
+            for (j, (page, t)) in texts.iter().enumerate() {
+                let inside = *page == p.0
+                    && t.x >= p.1.x - 0.5
+                    && t.x + t.inked <= p.1.right() + 0.5
+                    && t.y - 0.75 * t.size >= p.1.y - 0.5
+                    && t.y <= p.1.bottom() + 0.5;
+                if inside && !pictured[j] {
+                    pictured[j] = true;
+                    p.3.push(text_ids[j]);
+                }
+            }
+            p.3.sort_unstable();
+        }
+        for (j, (page, t)) in texts.iter().enumerate() {
+            if !pictured[j] {
+                atoms.push((
+                    *page,
+                    t.x,
+                    t.width,
+                    t.y,
+                    Some(t.clone()),
+                    None,
+                    None,
+                    Vec::new(),
+                ));
+            }
+        }
+        for (page, r, eq, drawings) in placeholders {
             let baseline = texts
                 .iter()
                 .filter(|(p, t)| *p == page && t.y >= r.y - 1.0 && t.y <= r.bottom() + 1.0)
                 .map(|(_, t)| t.y)
                 .next()
                 .unwrap_or(r.bottom());
-            atoms.push((page, r.x, r.w, baseline, None, Some(r), eq));
+            atoms.push((page, r.x, r.w, baseline, None, Some(r), eq, drawings));
         }
-        // Atoms in document order by (page, baseline band, x) — text items keep their logical order within a line.
+        // Atoms in document order by (page, baseline band, x) — text items keep their logical order within a line. A
+        // band starts at a baseline 0.6 pt or more below the one before's start; bands are found first, as comparing
+        // baselines with that tolerance isn't a total order (sorting by it panics).
+        let mut by_y: Vec<usize> = (0..atoms.len()).collect();
+        by_y.sort_by(|&a, &b| {
+            atoms[a]
+                .0
+                .cmp(&atoms[b].0)
+                .then(atoms[a].3.total_cmp(&atoms[b].3))
+        });
+        let mut band = vec![0usize; atoms.len()];
+        let mut start: Option<(usize, f64)> = None;
+        let mut n = 0;
+        for &k in &by_y {
+            let (page, y) = (atoms[k].0, atoms[k].3);
+            if start.is_none_or(|(p, y0)| p != page || y - y0 >= 0.6) {
+                n += 1;
+                start = Some((page, y));
+            }
+            band[k] = n;
+        }
         let mut order: Vec<usize> = (0..atoms.len()).collect();
         order.sort_by(|&a, &b| {
-            let (pa, ya) = (atoms[a].0, atoms[a].3);
-            let (pb, yb) = (atoms[b].0, atoms[b].3);
-            pa.cmp(&pb)
-                .then(if (ya - yb).abs() < 0.6 {
-                    std::cmp::Ordering::Equal
-                } else {
-                    ya.partial_cmp(&yb).unwrap()
-                })
-                .then(atoms[a].1.partial_cmp(&atoms[b].1).unwrap())
+            band[a]
+                .cmp(&band[b])
+                .then(atoms[a].1.total_cmp(&atoms[b].1))
         });
         for k in order {
-            let (page, x, w, baseline, text, rect, eq) = atoms[k].clone();
+            let (page, x, w, baseline, text, rect, eq, drawings) = atoms[k].clone();
             let new_line = match lines.last() {
                 Some(l) => l.page != page || (l.baseline - baseline).abs() >= 0.6,
                 None => true,
@@ -1874,6 +2243,7 @@ impl Builder {
                         t.color,
                         underline,
                         link,
+                        t.script,
                     );
                 }
                 (None, Some(r)) => {
@@ -1895,11 +2265,18 @@ impl Builder {
                                 display: false,
                             });
                         }
-                        _ => line.runs.push(Run::Placeholder {
-                            width: r.w,
-                            font,
-                            size,
-                        }),
+                        _ => {
+                            // A picture as big as the room Typst gave it: Word sets one in a line as a character.
+                            let picture = self
+                                .picture(&drawings, r, false)
+                                .map(|(k, p)| json!({ "index": k, "y": round(p.y - baseline) }));
+                            line.runs.push(Run::Picture {
+                                width: r.w,
+                                font,
+                                size,
+                                picture,
+                            })
+                        }
                     }
                     if r.y < baseline - TOP * line.size.max(11.0) - 0.5
                         || r.bottom() > baseline + BOTTOM * line.size.max(11.0) + 0.5
@@ -2267,7 +2644,7 @@ impl Builder {
         // The list's slot, taken before its items: a list nested in one takes the next.
         let id = self.lists.len();
         self.lists.push(Json::Null);
-        let numbering = numbering(&labels.iter().map(|l| l.0.clone()).collect::<Vec<_>>());
+        let mut numbering = numbering(&labels.iter().map(|l| l.0.clone()).collect::<Vec<_>>());
         let lefts: Vec<f64> = labels
             .iter()
             .filter(|l| l.1 != f64::MAX)
@@ -2306,8 +2683,18 @@ impl Builder {
                 }
             }
             let mut first = true;
-            for mut b in flow {
+            for (j, mut b) in flow.into_iter().enumerate() {
                 shift(&mut b.json, left - area.left);
+                if first && j == 0 && b.json.get("type") != Some(&json!("p")) {
+                    // An item starting with a table or a drawing: Word numbers paragraphs only, so its label is text
+                    // in a frame where Typst set it, and the list's labels are all text.
+                    let label = &items[k].0;
+                    if let Some(frame) = self.label_frame(label) {
+                        out.push(frame);
+                        numbering.0 = "none".into();
+                    }
+                    first = false;
+                }
                 if first && b.json.get("type") == Some(&json!("p")) {
                     let left = area.left + b.json["indent"]["left"].as_f64().unwrap_or(0.0);
                     body_left = body_left.min(left);
@@ -2328,6 +2715,58 @@ impl Builder {
             "bodyLeft": round(body_left - area.left),
         });
         out
+    }
+
+    /// A list label's text as a paragraph in a frame at its page position, taking no room (as `placed` text).
+    fn label_frame(&mut self, ids: &[usize]) -> Option<Block> {
+        let texts: Vec<(usize, Text)> = ids
+            .iter()
+            .filter_map(|&id| match &self.items[id].kind {
+                Kind::Text(t) => Some((self.items[id].page, t.clone())),
+                _ => None,
+            })
+            .collect();
+        let (page, first) = texts.first()?.clone();
+        let mut runs = Vec::new();
+        for (_, t) in &texts {
+            push_text(
+                &mut runs,
+                t.text.clone(),
+                self.fonts.get(&t.font),
+                t.size,
+                t.color.clone(),
+                false,
+                None,
+                t.script,
+            );
+        }
+        let x0 = texts.iter().map(|(_, t)| t.x).fold(f64::MAX, f64::min);
+        let x1 = texts
+            .iter()
+            .map(|(_, t)| t.x + t.inked)
+            .fold(f64::MIN, f64::max);
+        let top = first.y - TOP * first.size;
+        let mut json = Map::new();
+        json.insert("type".into(), json!("p"));
+        json.insert("align".into(), json!("start"));
+        json.insert("indent".into(), json!({ "left": 0.0, "firstLine": 0.0 }));
+        json.insert("pitch".into(), json!(round(PITCH * first.size)));
+        json.insert("lines".into(), json!(1));
+        json.insert(
+            "runs".into(),
+            Json::Array(runs.iter().map(run_json).collect()),
+        );
+        json.insert(
+            "frame".into(),
+            json!({ "x": round(x0), "y": round(top), "width": round(x1 - x0 + 2.0 * SLACK), "height": round(PITCH * first.size) }),
+        );
+        Some(Block {
+            page,
+            end_page: page,
+            top,
+            bottom: top + PITCH * first.size,
+            json,
+        })
     }
 
     fn ends_list(&self, id: usize, ids: &[usize]) -> bool {
@@ -2451,6 +2890,7 @@ impl Builder {
                     n.color.clone(),
                     false,
                     None,
+                    None,
                 );
                 // The number's line, its baseline where Typst set it.
                 let number = json!({
@@ -2495,8 +2935,8 @@ impl Builder {
         })
     }
 
-    /// A placeholder for something the model can't express yet: an empty paragraph as tall.
-    fn placeholder_block(&mut self, ids: &[usize], area: Area) -> Option<Block> {
+    /// A display equation without its Word math (math.rs had no tree for it): a picture of it.
+    fn equation_picture(&mut self, ids: &[usize], area: Area) -> Option<Block> {
         let mut r: Option<(usize, Rect)> = None;
         for &id in ids {
             let page = self.items[id].page;
@@ -2539,8 +2979,12 @@ impl Builder {
         json.insert("width".into(), json!(round(r.w)));
         json.insert("height".into(), json!(round(r.h)));
         json.insert("indent".into(), json!(round(r.x - area.left)));
-        json.insert("math".into(), json!(true));
-        json.insert("placeholder".into(), json!(true));
+        if let Some((k, p)) = self.picture(ids, r, true) {
+            json.insert(
+                "picture".into(),
+                json!({ "index": k, "x": round(p.x - r.x), "y": round(p.y - r.y) }),
+            );
+        }
         Some(Block {
             page,
             end_page: page,
@@ -2715,6 +3159,7 @@ impl Builder {
             Some(Item {
                 kind: Kind::Group(r, _),
                 page: p,
+                ..
             }) if *p == page => r.x,
             _ => at.x.to_pt(),
         };
@@ -3323,7 +3768,7 @@ impl Builder {
         let mut prev: Option<(usize, f64)> = None;
         for b in blocks.iter_mut() {
             // `fit` stays: the writer gives a cell no more slack than its paragraphs' fit.
-            if b.json.contains_key("frame") {
+            if out_of_flow(b) {
                 b.json.insert("before".into(), json!(0.0));
                 continue;
             }
@@ -3442,13 +3887,12 @@ fn tab_leader(fill: &str) -> Option<&'static str> {
 
 fn last_font(runs: &[Run]) -> Option<usize> {
     runs.iter().rev().find_map(|r| match r {
-        Run::Text { font, .. } | Run::Gap { font, .. } | Run::Placeholder { font, .. } => {
-            Some(*font)
-        }
+        Run::Text { font, .. } | Run::Gap { font, .. } | Run::Picture { font, .. } => Some(*font),
         Run::Tab | Run::Break | Run::Math { .. } => None,
     })
 }
 
+#[allow(clippy::too_many_arguments)]
 fn push_text(
     runs: &mut Vec<Run>,
     text: String,
@@ -3457,6 +3901,7 @@ fn push_text(
     color: String,
     underline: bool,
     link: Option<String>,
+    script: Option<&'static str>,
 ) {
     if let Some(Run::Text {
         text: t,
@@ -3465,9 +3910,16 @@ fn push_text(
         color: c,
         underline: u,
         link: l,
+        script: v,
     }) = runs.last_mut()
     {
-        if *f == font && (*s - size).abs() < 0.01 && *c == color && *u == underline && *l == link {
+        if *f == font
+            && (*s - size).abs() < 0.01
+            && *c == color
+            && *u == underline
+            && *l == link
+            && *v == script
+        {
             t.push_str(&text);
             return;
         }
@@ -3479,6 +3931,7 @@ fn push_text(
         color,
         underline,
         link,
+        script,
     });
 }
 
@@ -3491,6 +3944,7 @@ fn run_json(run: &Run) -> Json {
             color,
             underline,
             link,
+            script,
         } => {
             let mut m = Map::new();
             m.insert("text".into(), json!(text));
@@ -3504,6 +3958,9 @@ fn run_json(run: &Run) -> Json {
             }
             if let Some(l) = link {
                 m.insert("link".into(), json!(l));
+            }
+            if let Some(script) = script {
+                m.insert("script".into(), json!(script));
             }
             Json::Object(m)
         }
@@ -3522,8 +3979,20 @@ fn run_json(run: &Run) -> Json {
             }
             Json::Object(m)
         }
-        Run::Placeholder { width, font, size } => {
-            json!({ "gap": round(*width), "font": font, "size": round(*size), "placeholder": true })
+        Run::Picture {
+            width,
+            font,
+            size,
+            picture,
+        } => {
+            let mut m = Map::new();
+            m.insert("gap".into(), json!(round(*width)));
+            m.insert("font".into(), json!(font));
+            m.insert("size".into(), json!(round(*size)));
+            if let Some(p) = picture {
+                m.insert("picture".into(), p.clone());
+            }
+            Json::Object(m)
         }
         Run::Math {
             math,
@@ -3906,6 +4375,11 @@ fn shift(json: &mut Map<String, Json>, dx: f64) {
             }
         }
     }
+}
+
+/// Whether a block is placed where Typst put it on the page, taking no room in the flow: text in a frame, a picture.
+fn out_of_flow(b: &Block) -> bool {
+    b.json.contains_key("frame") || b.json.contains_key("placed")
 }
 
 fn round(v: f64) -> f64 {

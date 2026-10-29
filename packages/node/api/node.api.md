@@ -6,6 +6,8 @@
 
 import { CompileTarget } from '@typstream/core';
 import { Diagnostic } from '@typstream/core';
+import { DocxModel } from '@typstream/docx';
+import { DocxPictureData } from '@typstream/docx';
 import { FileContent } from '@typstream/core';
 import { HealOptions } from '@typstream/heal';
 import { ServerMessage } from '@typstream/core';
@@ -135,6 +137,18 @@ export interface RenderData {
     pdf: Uint8Array;
     svg: string[];
 }
+
+// @internal
+export const renderDocxModel: (source: string, options?: DocumentOptions) => Promise<{
+    ok: true;
+    diagnostics: Diagnostic[];
+    model: DocxModel;
+    fonts: Uint8Array[];
+    pictures: DocxPictureData[];
+} | {
+    ok: false;
+    diagnostics: Diagnostic[];
+}>;
 
 // @public
 export type RenderFormat = "pdf" | "html" | "svg" | "docx";

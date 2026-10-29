@@ -72,6 +72,7 @@ const run = (job: Job): JobResult => {
         diagnostics: r.diagnostics,
         model: r.model,
         fonts: r.fonts,
+        pictures: r.pictures,
         pageCount: r.pageCount,
         compileMs: r.ms,
       };

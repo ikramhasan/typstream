@@ -1,6 +1,6 @@
 //! A document's DOCX model, fonts and PDF, compiled natively the way the engine exports (#131):
 //! `cargo run --release --example docx_model -- doc.typ --out DIR [--packages DIR] [--input k=v]`.
-//! Writes DIR/model.json, DIR/font-N.ttf and DIR/typst.pdf (from a compile without the DOCX rule for equations, as
+//! Writes DIR/model.json, DIR/font-N.ttf, DIR/picture-N.svg and .png, and DIR/typst.pdf (from a compile without the DOCX rule for equations, as
 //! the engine's PDF; `--docx-pdf` also writes the DOCX compile's as DIR/typst-docx.pdf, which should look the same).
 
 mod common;
@@ -46,6 +46,13 @@ fn main() {
     fs::create_dir_all(&out).unwrap();
     let model = docx::model(&doc);
     fs::write(out.join("model.json"), &model.json).unwrap();
+    for (i, p) in model.pictures.iter().enumerate() {
+        fs::write(out.join(format!("picture-{i}.svg")), &p.svg).unwrap();
+        fs::write(out.join(format!("picture-{i}.png")), &p.png).unwrap();
+    }
+    for (span, what) in &model.fallbacks {
+        eprintln!("docx/fallback: {what} ({span:?})");
+    }
     for (i, data) in model.fonts.iter().enumerate() {
         fs::write(out.join(format!("font-{i}.ttf")), data).unwrap();
     }

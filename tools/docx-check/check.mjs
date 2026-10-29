@@ -1,12 +1,17 @@
 // DOCX exports against Typst's own PDF (#131): every Latin corpus document is exported to PDF and DOCX by
-// @typstream/node (engine-wasm, the layout profile, edu's and Universe's packages as files), the DOCX converted to PDF
-// by LibreOffice (which sees only the engine's fonts), and its lines and page starts compared with Typst's.
+// @typstream/node (engine-wasm, the layout profile, edu's, mindmap's and Universe's packages as files), the DOCX
+// converted to PDF by LibreOffice (which sees only the engine's fonts), and its lines and page starts compared with
+// Typst's. Pictures (#133) are compared pixel by pixel on their regions, and text drawn in them, which a DOCX has as
+// outlines, is left out of the lines.
 //
-//   node check.mjs [--native] [--onlyoffice] [--validate DLL] [--min-lines RATIO] [filter...]
+//   node check.mjs [--native] [--onlyoffice] [--validate DLL] [--min-lines RATIO] [--min-math-lines RATIO]
+//                  [--min-picture-lines RATIO] [--min-pictures RATIO] [filter...]
 //
 // --validate: Microsoft's Open XML validator (validator/, `dotnet publish -c Release -o out`) on every file; any
-// error fails the check. --min-lines: fail when fewer of Typst's lines come back in LibreOffice, over the documents
-// without equations or images (#132 and #133 write those), than RATIO (CI: 0.94; LibreOffice versions differ).
+// error fails the check. --min-lines, --min-math-lines, --min-picture-lines: fail when fewer of Typst's lines come
+// back, over the documents without equations or pictures, those with equations and those with pictures, than RATIO
+// (LibreOffice versions differ). --min-pictures: fail when fewer pictures than RATIO come out within the tolerance of
+// tools/browser-suites' PDF raster suite (a few differing pixels touching; pixels.mjs).
 //
 // --onlyoffice: lay the files out with ONLYOFFICE (`x2t` in the onlyoffice/documentserver image, Docker) instead of
 // LibreOffice: a second engine written apart from Word and LibreOffice (nightly). It reads only installed fonts.
@@ -19,11 +24,12 @@ import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { gunzipSync } from "node:zlib";
 import { writeDocx } from "@typstream/docx";
-import { strFromU8, unzipSync } from "fflate";
-import { EDU_VERSION, eduFiles, eduPreamble } from "@typstream/edu";
+import { eduFiles, eduPreamble } from "@typstream/edu";
 import { heal } from "@typstream/heal";
-import { render } from "@typstream/node";
+import { mindmapFiles, mindmapPreamble } from "@typstream/mindmap";
+import { render, renderDocxModel } from "@typstream/node";
 import { compare, linesOf, mathOf, sharedChars, textFaces, textLinesOf } from "./lines.mjs";
+import { compareRegions, TOLERANCE } from "./pixels.mjs";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
 const args = process.argv.slice(2);
@@ -36,6 +42,8 @@ const option = (name) => {
 const validator = option("--validate");
 const minLines = Number(option("--min-lines") ?? 0);
 const minMathLines = Number(option("--min-math-lines") ?? 0);
+const minPictureLines = Number(option("--min-picture-lines") ?? 0);
+const minPictures = Number(option("--min-pictures") ?? 0);
 const filters = () => args.filter((a) => !a.startsWith("--"));
 const out = join(tmpdir(), "typstream-docx-check");
 mkdirSync(out, { recursive: true });
@@ -45,24 +53,32 @@ const profile = /export const LAYOUT_PROFILE: string = `([^`]*)`;/.exec(
   readFileSync(join(root, "packages/engine/src/server/profile.ts"), "utf8"),
 )[1];
 
-// edu's package where native compiles find it, as corpus:validate lays it out.
+// edu's and mindmap's packages where native compiles find them, as corpus:validate lays them out.
 const packages = join(out, "packages");
-const eduVersion = /^version = "(.+)"$/m.exec(readFileSync(join(root, "packages/edu/typst/typst.toml"), "utf8"))[1];
+const version = (name) =>
+  /^version = "(.+)"$/m.exec(readFileSync(join(root, `packages/${name}/typst/typst.toml`), "utf8"))[1];
 rmSync(packages, { recursive: true, force: true });
-mkdirSync(join(packages, "typstream/edu"), { recursive: true });
-execFileSync("cp", ["-r", join(root, "packages/edu/typst"), join(packages, "typstream/edu", eduVersion)]);
+for (const name of ["edu", "mindmap"]) {
+  mkdirSync(join(packages, "typstream", name), { recursive: true });
+  execFileSync("cp", ["-r", join(root, `packages/${name}/typst`), join(packages, "typstream", name, version(name))]);
+}
+/** The plugins a corpus document may name: their preambles and files. */
+const PLUGINS = {
+  edu: { preamble: eduPreamble, files: eduFiles, native: `#import "@typstream/edu:${version("edu")}": *\n` },
+  mindmap: { preamble: mindmapPreamble, files: mindmapFiles, native: mindmapPreamble },
+};
 
-/** Latin corpus documents that compile: the edu set, and the llm set's (their plugins' preambles first). */
+/** Latin corpus documents that compile: the edu set, the llm set's and the islands' (their plugins' preambles first). */
 const documents = () => {
   const docs = [];
-  for (const set of ["edu", "llm"]) {
+  for (const set of ["edu", "llm", "islands"]) {
     const meta = JSON.parse(readFileSync(join(root, "corpus", set, "meta.json"), "utf8"));
     for (const [name, m] of Object.entries(meta)) {
       if ((m.expect ?? "ok") !== "ok") continue;
       if (/arabic|bengali|chinese|hindi|multilingual/.test(name)) continue;
       const plugins = m.plugins ?? [];
-      if (plugins.some((p) => p !== "edu")) continue;
-      docs.push({ id: `${set}/${name}`, path: join(root, "corpus", set, `${name}.typ`), edu: plugins.includes("edu") });
+      if (plugins.some((p) => !(p in PLUGINS))) continue;
+      docs.push({ id: `${set}/${name}`, path: join(root, "corpus", set, `${name}.typ`), plugins });
     }
   }
   return docs.filter((d) => filters().length === 0 || filters().some((f) => d.id.includes(f)));
@@ -100,10 +116,6 @@ if (native) {
   }
 }
 
-const documentXml = (data) => strFromU8(unzipSync(data)["word/document.xml"] ?? new Uint8Array());
-/** Whether a DOCX holds room for images or drawings (the writer's placeholder styles), which #133 fills. */
-const placeholders = (data) => documentXml(data).includes("TypstreamPlaceholder");
-
 const results = [];
 const docx = [];
 for (const doc of documents()) {
@@ -113,9 +125,10 @@ for (const doc of documents()) {
   // What an engine exports: the document healed in final mode, lint fixes included (the layout profile's among them).
   const text = heal(readFileSync(doc.path, "utf8"), { final: true }).source;
   const file = join(dir, `${basename(doc.path, ".typ")}.docx`);
+  const plugins = doc.plugins.map((p) => PLUGINS[p]);
   if (native) {
     const typ = join(dir, "main.typ");
-    writeFileSync(typ, profile + (doc.edu ? `#import "@typstream/edu:${eduVersion}": *\n` : "") + text);
+    writeFileSync(typ, profile + plugins.map((p) => p.native).join("") + text);
     for (const [name, data] of Object.entries(assetFiles(dirname(doc.path)))) {
       mkdirSync(dirname(join(dir, name)), { recursive: true });
       writeFileSync(join(dir, name), data);
@@ -128,29 +141,35 @@ for (const doc of documents()) {
     }
     const json = readFileSync(join(dir, "model.json"), "utf8");
     const model = JSON.parse(json);
-    // Images are placeholders until #133, and equations are set by each engine its own way: such documents are
-    // reported apart.
-    doc.placeholders = /"placeholder":true/.test(json);
-    doc.math = /"math":\[/.test(json);
     const data = model.fonts.map((_, i) => new Uint8Array(readFileSync(join(dir, `font-${i}.ttf`))));
-    writeFileSync(file, writeDocx(model, data));
-    // The fonts are in the DOCX now; copies per document would fill the disk.
+    const pictures = (model.pictures ?? []).map((_, i) => ({
+      svg: readFileSync(join(dir, `picture-${i}.svg`), "utf8"),
+      png: new Uint8Array(readFileSync(join(dir, `picture-${i}.png`))),
+    }));
+    writeFileSync(file, writeDocx(model, data, pictures));
+    // The fonts and pictures are in the DOCX now; copies per document would fill the disk.
     for (let i = 0; i < data.length; i++) rmSync(join(dir, `font-${i}.ttf`));
+    for (let i = 0; i < pictures.length; i++) for (const ext of ["svg", "png"]) rmSync(join(dir, `picture-${i}.${ext}`));
+    doc.model = model;
   } else {
     const options = {
-      preamble: doc.edu ? eduPreamble : undefined,
-      files: { ...packageFiles, ...assetFiles(dirname(doc.path)), ...(doc.edu ? eduFiles : {}) },
+      preamble: plugins.map((p) => p.preamble).join("") || undefined,
+      files: { ...packageFiles, ...assetFiles(dirname(doc.path)), ...Object.assign({}, ...plugins.map((p) => p.files)) },
     };
-    const [pdf, out] = await Promise.all([render(text, "pdf", options), render(text, "docx", options)]);
+    const [pdf, out] = await Promise.all([render(text, "pdf", options), renderDocxModel(text, options)]);
     if (!pdf.ok || !out.ok) {
       results.push({ id: doc.id, error: (pdf.ok ? out : pdf).diagnostics.map((d) => d.message).join("; ").slice(0, 300) });
       continue;
     }
     writeFileSync(join(dir, "typst.pdf"), pdf.data);
-    writeFileSync(file, out.data);
-    doc.placeholders = placeholders(out.data);
-    doc.math = documentXml(out.data).includes("<m:oMath");
+    writeFileSync(file, writeDocx(out.model, out.fonts, out.pictures));
+    writeFileSync(join(dir, "model.json"), JSON.stringify(out.model));
+    doc.model = out.model;
   }
+  // Equations are set by each engine its own way, and pictures hold text as outlines: such documents are reported
+  // apart.
+  doc.pictures = doc.model.pictures ?? [];
+  doc.math = JSON.stringify(doc.model.sections).includes('"math":[');
   docx.push({ doc, dir, file });
 }
 
@@ -206,14 +225,18 @@ for (const { doc, dir, file } of docx) {
   }
   const typst = join(dir, "typst.pdf");
   // With equations, lines are compared by their text around them, and every equation's letters and digits must be
-  // there (#132).
-  const math = doc.math ? [mathOf(typst), mathOf(pdf)] : undefined;
+  // there (#132). Text in pictures is outlines in the DOCX: Typst's is left out.
+  const regions = doc.pictures;
+  const math = doc.math ? [mathOf(typst, regions), mathOf(pdf)] : undefined;
   const faces = doc.math ? textFaces(typst) : undefined;
+  const pictures = compareRegions(typst, pdf, regions);
   results.push({
     id: doc.id,
-    placeholders: doc.placeholders,
+    pictures: pictures.length ? pictures : undefined,
     math: math && { chars: math[0].length, same: sharedChars(math[0], math[1]) },
-    ...(doc.math ? compare(textLinesOf(typst), textLinesOf(pdf, faces)) : compare(linesOf(typst), linesOf(pdf))),
+    ...(doc.math
+      ? compare(textLinesOf(typst, undefined, regions), textLinesOf(pdf, faces))
+      : compare(linesOf(typst, regions), linesOf(pdf))),
   });
 }
 
@@ -223,7 +246,9 @@ let starts = 0;
 let startsSame = 0;
 let identical = 0;
 const plain = { docs: 0, identical: 0, lines: 0, same: 0 };
-const withMath = { docs: 0, identical: 0, lines: 0, same: 0, chars: 0, charsSame: 0 };
+const withMath = { docs: 0, identical: 0, lines: 0, same: 0 };
+const withPictures = { docs: 0, identical: 0, lines: 0, same: 0, pictures: 0, close: 0, worst: null };
+const chars = { all: 0, same: 0 };
 for (const r of results.sort((a, b) => a.id.localeCompare(b.id))) {
   if (r.error) {
     console.log(`✗ ${r.id}: ${r.error}`);
@@ -235,21 +260,33 @@ for (const r of results.sort((a, b) => a.id.localeCompare(b.id))) {
   startsSame += r.pageStartsSame;
   const ok = r.same === r.lines && r.pageStartsSame === r.pageStarts && r.pages[0] === r.pages[1];
   if (ok) identical++;
-  const group = r.placeholders ? undefined : r.math ? withMath : plain;
-  if (group) {
-    group.docs++;
-    group.lines += r.lines;
-    group.same += r.same;
-    if (ok) group.identical++;
+  const group = r.pictures ? withPictures : r.math ? withMath : plain;
+  group.docs++;
+  group.lines += r.lines;
+  group.same += r.same;
+  if (ok) group.identical++;
+  if (r.math) {
+    chars.all += r.math.chars;
+    chars.same += r.math.same;
   }
-  if (r.math && !r.placeholders) {
-    withMath.chars += r.math.chars;
-    withMath.charsSame += r.math.same;
+  const close = (r.pictures ?? []).filter((p) => p.cluster <= TOLERANCE).length;
+  for (const p of r.pictures ?? []) {
+    withPictures.pictures++;
+    if (p.cluster <= TOLERANCE) withPictures.close++;
+    if (!withPictures.worst || p.cluster > withPictures.worst.cluster) withPictures.worst = { id: r.id, ...p };
   }
-  const tag = r.placeholders ? " (images)" : r.math ? ` (math ${r.math.same}/${r.math.chars})` : "";
+  const tags = [
+    r.pictures && `pictures ${close}/${r.pictures.length}`,
+    r.math && `math ${r.math.same}/${r.math.chars}`,
+  ].filter(Boolean);
   console.log(
-    `${ok ? "✓" : "✗"}${tag} ${r.id}: ${r.same}/${r.lines} lines, pages ${r.pages.join("/")}, starts ${r.pageStartsSame}/${r.pageStarts}` +
-      (ok || !r.first ? "" : `  typst ${JSON.stringify(r.first.typst)} other ${JSON.stringify(r.first.other)}`),
+    `${ok && close === (r.pictures?.length ?? 0) ? "✓" : "✗"}${tags.length ? ` (${tags.join(", ")})` : ""} ${r.id}: ` +
+      `${r.same}/${r.lines} lines, pages ${r.pages.join("/")}, starts ${r.pageStartsSame}/${r.pageStarts}` +
+      (ok || !r.first ? "" : `  typst ${JSON.stringify(r.first.typst)} other ${JSON.stringify(r.first.other)}`) +
+      (r.pictures ?? [])
+        .filter((p) => p.cluster > TOLERANCE)
+        .map((p) => `  picture on page ${p.page + 1}: ${p.cluster} pixels touching at ${JSON.stringify(p.box)}`)
+        .join(""),
   );
 }
 console.log(
@@ -257,21 +294,33 @@ console.log(
 );
 const ratio = plain.same / Math.max(1, plain.lines);
 const mathRatio = withMath.same / Math.max(1, withMath.lines);
-const charsRatio = withMath.charsSame / Math.max(1, withMath.chars);
+const pictureRatio = withPictures.same / Math.max(1, withPictures.lines);
+const charsRatio = chars.same / Math.max(1, chars.all);
+const percent = (r) => `${(100 * r).toFixed(1)}%`;
 const summary = [
   `${identical}/${results.length} identical; lines ${same}/${lines}, page starts ${startsSame}/${starts}`,
-  `without math and images: ${plain.identical}/${plain.docs} identical; lines ${plain.same}/${plain.lines} (${(100 * ratio).toFixed(1)}%)`,
-  `with math, without images: ${withMath.identical}/${withMath.docs} identical; lines ${withMath.same}/${withMath.lines} ` +
-    `(${(100 * mathRatio).toFixed(1)}%); equations' letters and digits ${withMath.charsSame}/${withMath.chars} (${(100 * charsRatio).toFixed(1)}%)`,
+  `without math and pictures: ${plain.identical}/${plain.docs} identical; lines ${plain.same}/${plain.lines} (${percent(ratio)})`,
+  `with math, without pictures: ${withMath.identical}/${withMath.docs} identical; lines ${withMath.same}/${withMath.lines} (${percent(mathRatio)})`,
+  `with pictures: ${withPictures.identical}/${withPictures.docs} identical; lines ${withPictures.same}/${withPictures.lines} ` +
+    `(${percent(pictureRatio)}); pictures within ${TOLERANCE} touching pixels of the PDF ${withPictures.close}/${withPictures.pictures}`,
+  `equations' letters and digits ${chars.same}/${chars.all} (${percent(charsRatio)})`,
 ];
-console.log(summary[1]);
-console.log(summary[2]);
+for (const line of summary.slice(1)) console.log(line);
+if (withPictures.worst)
+  console.log(
+    `most differing picture: ${withPictures.worst.id}, page ${withPictures.worst.page + 1}, ` +
+      `${withPictures.worst.cluster} pixels touching at ${JSON.stringify(withPictures.worst.box)}`,
+  );
 writeFileSync(join(out, "results.json"), JSON.stringify(results, null, 2));
 let failed = results.some((r) => r.error) ? "documents that didn't export" : "";
-if (ratio < minLines) failed = `line agreement ${(100 * ratio).toFixed(1)}% under ${(100 * minLines).toFixed(1)}%`;
-if (mathRatio < minMathLines)
-  failed = `line agreement with math ${(100 * mathRatio).toFixed(1)}% under ${(100 * minMathLines).toFixed(1)}%`;
-if (withMath.charsSame < withMath.chars) failed = "equations that didn't come out whole";
+if (ratio < minLines) failed = `line agreement ${percent(ratio)} under ${percent(minLines)}`;
+if (mathRatio < minMathLines) failed = `line agreement with math ${percent(mathRatio)} under ${percent(minMathLines)}`;
+if (pictureRatio < minPictureLines)
+  failed = `line agreement with pictures ${percent(pictureRatio)} under ${percent(minPictureLines)}`;
+if (chars.same < chars.all) failed = "equations that didn't come out whole";
+const picturesRatio = withPictures.close / Math.max(1, withPictures.pictures);
+if (picturesRatio < minPictures)
+  failed = `pictures within the PDF's tolerance ${percent(picturesRatio)} under ${percent(minPictures)}`;
 if (validator) {
   const files = docx.map((d) => d.file);
   let report = "";

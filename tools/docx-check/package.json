@@ -11,7 +11,7 @@
     "@typstream/docx": "workspace:*",
     "@typstream/edu": "workspace:*",
     "@typstream/heal": "workspace:*",
-    "@typstream/node": "workspace:*",
-    "fflate": "0.8.3"
+    "@typstream/mindmap": "workspace:*",
+    "@typstream/node": "workspace:*"
   }
 }

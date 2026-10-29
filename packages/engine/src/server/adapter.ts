@@ -94,12 +94,17 @@ export interface AdapterDocument {
   exportPdf?(options?: AdapterCompileOptions): MaybePromise<AdapterCompileResult & { pdf: Uint8Array | null }>;
   /**
    * Compiles paged output into a DOCX export's document model (engine-wasm's `compile_docx_model`): `model` is
-   * `@typstream/docx`'s `DocxModel` as JSON, `fonts` the data of the faces it names. The server appends
-   * {@link DOCX_MARGIN_PROBE} to `/main.typ` first and writes the file. Only when `exports` include `"docx"`.
+   * `@typstream/docx`'s `DocxModel` as JSON, `fonts` the data of the faces it names and `pictures` the SVG and PNG of
+   * the pictures it refers to (#133). The server appends {@link DOCX_MARGIN_PROBE} to `/main.typ` first and writes
+   * the file. Only when `exports` include `"docx"`.
    */
-  exportDocxModel?(
-    options?: AdapterCompileOptions,
-  ): MaybePromise<AdapterCompileResult & { model: string | null; fonts: Uint8Array[] }>;
+  exportDocxModel?(options?: AdapterCompileOptions): MaybePromise<
+    AdapterCompileResult & {
+      model: string | null;
+      fonts: Uint8Array[];
+      pictures?: { svg: string; png: Uint8Array }[];
+    }
+  >;
   /** Frees the document. */
   close(): void;
 }

@@ -1459,6 +1459,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
 
 [[package]]
+name = "pixglyph"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47945e80a49d08350e4a007ac4294c6498d23956c18ea5e6ff480dc93d31643c"
+dependencies = [
+ "ttf-parser",
+]
+
+[[package]]
 name = "plist"
 version = "1.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2553,11 +2562,16 @@ dependencies = [
 name = "typstream-engine-wasm"
 version = "0.0.0"
 dependencies = [
+ "bytemuck",
  "codex",
  "comemo",
+ "image",
  "js-sys",
+ "pixglyph",
  "rayon",
+ "resvg",
  "serde_json",
+ "tiny-skia",
  "ttf-parser",
  "typst",
  "typst-html",

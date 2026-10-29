@@ -29,6 +29,8 @@ export type {
   DocxModel,
   DocxPageNumbering,
   DocxParagraph,
+  DocxPicture,
+  DocxPictureData,
   DocxRow,
   DocxRule,
   DocxRun,

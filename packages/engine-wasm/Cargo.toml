@@ -39,6 +39,13 @@ unicode-script = "0.5"
 # Math styles (𝑥 → x, italic) and classes, for equations in Word math (math.rs); typst-library already depends on both.
 codex = "=0.3.0"
 unicode-math-class = "0.1"
+# typst-render's dependencies, for the PNG of a DOCX's pictures (src/raster/, #133). typst-pdf (tiny-skia, resvg) and
+# typst-library (image, bytemuck) already depend on all but pixglyph, typst-render's glyph rasterizer.
+tiny-skia = "0.12"
+resvg = { version = "0.47", default-features = false, features = ["raster-images"] }
+image = { version = "0.25", default-features = false }
+pixglyph = "0.6"
+bytemuck = "1"
 
 [dev-dependencies]
 # Native tools in examples/ compile on the calling thread: the font store is thread-local (fonts.rs), as wasm is
