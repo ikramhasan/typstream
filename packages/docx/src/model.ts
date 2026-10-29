@@ -19,6 +19,8 @@ export interface DocxSection {
   height: number;
   /** Page margins in points. */
   margin: { top: number; right: number; bottom: number; left: number };
+  /** How its first pages are numbered, when not from 1 in digits. */
+  pageNumbering?: DocxPageNumbering;
   /** The body's blocks, in order. */
   blocks: DocxBlock[];
   /** The header on every page (after the first, when `headerFirst` is set). */
@@ -74,6 +76,14 @@ export interface DocxBlockBase {
   before?: number;
   /** A page break before it (Typst's `pagebreak()`). */
   pageBreak?: boolean;
+  /** Typst's page numbering changes here: a section starts on a new page, numbered as this says. */
+  pageNumbering?: DocxPageNumbering;
+}
+
+/** How a section's pages are numbered: Word's format and, when it starts again, the first number. @internal */
+export interface DocxPageNumbering {
+  format: "decimal" | "lowerRoman" | "upperRoman" | "lowerLetter" | "upperLetter";
+  start?: number;
 }
 
 /** A paragraph. @internal */

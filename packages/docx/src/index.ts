@@ -27,6 +27,7 @@ export type {
   DocxMathScripts,
   DocxMathText,
   DocxModel,
+  DocxPageNumbering,
   DocxParagraph,
   DocxRow,
   DocxRule,

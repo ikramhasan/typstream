@@ -10,3 +10,6 @@ and aligned lines, inline in their line or displayed (a numbered one with its nu
 font. engine-wasm reads them from Typst's own math layout's first step during the export's compile. The layout profile
 now keeps Typst's default spacing between the lines of a display equation with line breaks (the profile's `leading: 0`
 made them touch).
+
+DOCX exports also number pages as Typst does (roman numerals, a restart after the front matter: Word sections), write
+outlines with Word's dot leaders, keep a centred table's columns and borders, and keep answer lines apart.

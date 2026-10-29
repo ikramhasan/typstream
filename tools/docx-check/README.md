@@ -53,8 +53,6 @@ Before 26.2 (CI's Ubuntu has 24.2), it drops a whole equation whose script is a 
 ONLYOFFICE draws operators in another face than the document's math font (presumably Cambria Math, which it doesn't
 have here, so whatever face has them). Exact line spacing would keep an equation Typst's height but clips it
 (LibreOffice, and #118's spike), so lines with math are "at least".
-Lines are compared with a leader's dots as one, since how many fit depends on their spacing.
-
-Not math, but in documents with equations, which #131 didn't count: roman page numbers and a numbering restart come
-out as the first page's literal footer (the climate report), and a centred table with strokes gets a wide first column
-and its strokes as rules (the statistics worksheets).
+Lines are compared with a leader's dots as one, since how many fit depends on their spacing. LibreOffice shades
+consecutive paragraphs with the same shading as one block, the gaps between them too, so rules one after another
+(answer lines) have a paragraph a hundredth of a point tall between them; the line comparison doesn't see colour.

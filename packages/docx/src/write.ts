@@ -15,6 +15,7 @@ import type {
   DocxGapRun,
   DocxMathRun,
   DocxModel,
+  DocxPageNumbering,
   DocxParagraph,
   DocxRule,
   DocxRun,
@@ -47,6 +48,14 @@ const esc = (s: string): string =>
 const halfPoints = (pt: number): number => Math.max(2, Math.round(pt * 2));
 /** Border widths are eighths of a point, from 2 to 96. */
 const eighths = (pt: number): number => Math.min(96, Math.max(2, Math.round(pt * 8)));
+
+/** A section's properties: how it starts (the first's doesn't matter), its numbering, its columns. */
+interface SectionProps {
+  type?: "continuous" | "nextPage";
+  numbering?: DocxPageNumbering;
+  cols: number;
+  gap: number;
+}
 
 /** What a part being written refers to: hyperlinks need relationships of their own. */
 interface Part {
@@ -319,6 +328,19 @@ class Writer {
   blocks(blocks: readonly DocxBlock[], part: Part): string {
     const out: string[] = [];
     blocks.forEach((b, i) => {
+      // Typst's page numbering changes here: a section on a new page, numbered from there. The section before ends
+      // in its last paragraph (an empty one of its own could take a line on a full page, and a page with it).
+      if (b.pageNumbering) {
+        const marker = this.endSection({ type: "nextPage", numbering: b.pageNumbering, cols: 1, gap: 0 });
+        const last = out.length - 1;
+        if (last >= 0 && (out[last] as string).endsWith("</w:pPr></w:p>"))
+          out[last] = (out[last] as string).replace(/<\/w:pPr><\/w:p>$/, `${marker}</w:pPr></w:p>`);
+        else if (last >= 0 && (out[last] as string).endsWith("</w:p>")) {
+          const p = out[last] as string;
+          const at = p.lastIndexOf("</w:pPr>");
+          out[last] = `${p.slice(0, at)}${marker}${p.slice(at)}`;
+        } else out.push(`<w:p>${this.pPr({ line: 0.05, rPr: `<w:rPr><w:sz w:val="2"/></w:rPr>${marker}` })}</w:p>`);
+      }
       const next = blocks[i + 1];
       const gapAfter = next?.type === "table" && b.type === "p" ? (next.before ?? 0) : undefined;
       switch (b.type) {
@@ -343,9 +365,16 @@ class Writer {
           out.push(this.table({ ...b, rows: [...(from > 0 ? headers : []), ...b.rows.slice(from)] }, part));
           break;
         }
-        case "rule":
-          out.push(this.rule(b));
+        case "rule": {
+          // Rules one after another (answer lines): LibreOffice shades paragraphs with the same shading as one block,
+          // the gap between them too. A paragraph a hundredth of a point tall between them keeps them apart.
+          const prev = blocks[i - 1];
+          if (prev?.type === "rule" && !b.pageBreak) {
+            out.push(this.spacer(0.05, Math.max(0, (b.before ?? 0) - 0.05)));
+            out.push(this.rule({ ...b, before: 0 }));
+          } else out.push(this.rule(b));
           break;
+        }
         case "drawing":
           out.push(this.drawing(b));
           break;
@@ -357,8 +386,19 @@ class Writer {
     return out.join("");
   }
 
-  /** Whether the body has columns: its sections then follow each other on the page (continuous). */
-  sectioned = false;
+  /**
+   * The section being written, and those ended so far (their properties go at their ends, as OOXML has them): how
+   * each starts (on the same page, a column section; on a new one, a page numbering's), its columns and numbering.
+   */
+  current: SectionProps = { cols: 1, gap: 0 };
+  ended: SectionProps[] = [];
+
+  /** Ends the section being written, `next` starting after it: a marker where its properties go. */
+  endSection(next: SectionProps): string {
+    this.ended.push(this.current);
+    this.current = next;
+    return `${SECTION}${this.ended.length - 1}${SECTION}`;
+  }
 
   /**
    * Columns as Word has them, in a section: a section break before (the text so far, one column), a column break
@@ -366,32 +406,35 @@ class Writer {
    * The section properties need the headers' references, written after the body: they stand in as markers here.
    */
   columns(c: DocxColumns, part: Part): string {
-    this.sectioned = true;
     const tiny = '<w:rPr><w:sz w:val="2"/></w:rPr>';
     const brk = `<w:p>${this.pPr({ line: 0.05, rPr: tiny })}<w:r>${tiny}<w:br w:type="column"/></w:r></w:p>`;
-    const end = (cols: number) =>
-      `<w:p>${this.pPr({ line: 0.05, rPr: `${tiny}${SECTION}${cols}:${c.gap}${SECTION}` })}</w:p>`;
+    const start = this.endSection({ type: "continuous", cols: c.columns.length, gap: c.gap });
     // The space before goes on the first column's first block: an engine may drop an empty paragraph that ends a
     // section, its spacing with it.
     const [first = [], ...rest] = c.columns;
     const lead = first.map((b, i) => (i === 0 ? { ...b, before: (b.before ?? 0) + (c.before ?? 0) } : b));
+    const columns = [lead, ...rest].map((col) => this.blocks(col, part)).join(brk);
+    const end = this.endSection({ type: "continuous", cols: 1, gap: 0 });
     return (
-      `<w:p>${this.pPr({ pageBreak: c.pageBreak, line: 0.05, rPr: `${tiny}${SECTION}1:0${SECTION}` })}</w:p>` +
-      [lead, ...rest].map((col) => this.blocks(col, part)).join(brk) +
-      end(c.columns.length)
+      `<w:p>${this.pPr({ pageBreak: c.pageBreak, line: 0.05, rPr: `${tiny}${start}` })}</w:p>` +
+      columns +
+      `<w:p>${this.pPr({ line: 0.05, rPr: `${tiny}${end}` })}</w:p>`
     );
   }
 
-  section(s: DocxSection, refs: string, cols = 1, gap = 0): string {
+  /** A section's properties, in CT_SectPr's order; only the document's first section has a first page of its own. */
+  section(s: DocxSection, refs: string, p: SectionProps, first: boolean): string {
     const landscape = s.width > s.height ? ' w:orient="landscape"' : "";
     const m = s.margin;
+    const n = p.numbering;
     return (
-      `<w:sectPr>${refs}${this.sectioned ? '<w:type w:val="continuous"/>' : ""}` +
+      `<w:sectPr>${refs}${!first && p.type ? `<w:type w:val="${p.type}"/>` : ""}` +
       `<w:pgSz w:w="${twips(s.width)}" w:h="${twips(s.height)}"${landscape}/>` +
       `<w:pgMar w:top="${twips(m.top)}" w:right="${twips(m.right)}" w:bottom="${twips(m.bottom)}" w:left="${twips(m.left)}" ` +
       `w:header="${twips(s.headerDistance ?? m.top / 2)}" w:footer="${twips(s.footerDistance ?? m.bottom / 2)}" w:gutter="0"/>` +
-      (cols > 1 ? `<w:cols w:num="${cols}" w:space="${twips(gap)}"/>` : "") +
-      (s.headerFirst || s.footerFirst ? "<w:titlePg/>" : "") +
+      (n ? `<w:pgNumType w:fmt="${n.format}"${n.start === undefined ? "" : ` w:start="${n.start}"`}/>` : "") +
+      (p.cols > 1 ? `<w:cols w:num="${p.cols}" w:space="${twips(p.gap)}"/>` : "") +
+      (first && (s.headerFirst || s.footerFirst) ? "<w:titlePg/>" : "") +
       "</w:sectPr>"
     );
   }
@@ -444,6 +487,7 @@ export const writeDocx = (model: DocxModel, fonts: readonly Uint8Array[]): Uint8
   const section = model.sections[0];
   if (!section) throw new Error("docx: a document model has at least one section");
   const docPart: Part = { rels: [] };
+  w.current = { cols: 1, gap: 0, numbering: section.pageNumbering };
   const body = w.blocks(section.blocks, docPart);
 
   // Headers and footers.
@@ -486,12 +530,11 @@ export const writeDocx = (model: DocxModel, fonts: readonly Uint8Array[]): Uint8
       if (m.kind === kind) refs += `<w:${kind}Reference w:type="${m.type}" r:id="rIdM${i + 1}"/>`;
     });
 
-  const sections = body.replace(
-    new RegExp(`${SECTION}(\\d+):([\\d.]+)${SECTION}`, "g"),
-    (_, cols: string, gap: string) => w.section(section, refs, Number(cols), Number(gap)),
+  const sections = body.replace(new RegExp(`${SECTION}(\\d+)${SECTION}`, "g"), (_, k: string) =>
+    w.section(section, refs, w.ended[Number(k)] as SectionProps, k === "0"),
   );
   files["word/document.xml"] = enc.encode(
-    `${XML}<w:document ${NS}><w:body>${sections}${w.section(section, refs)}</w:body></w:document>`,
+    `${XML}<w:document ${NS}><w:body>${sections}${w.section(section, refs, w.current, w.ended.length === 0)}</w:body></w:document>`,
   );
 
   // Styles: defaults for empty paragraphs, and headings for the outline (runs carry their own fonts and sizes).

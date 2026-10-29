@@ -94,6 +94,16 @@ describe("writeDocx", () => {
     expect(doc).toContain("<w:r><w:br/></w:r>");
   });
 
+  it("keeps rules one after another apart, as LibreOffice would shade the gap between them", () => {
+    const rule = { type: "rule", thickness: 0.4, color: "787878", indent: { left: 0, right: 0 } } as const;
+    const doc = parts(model([{ ...rule }, { ...rule, before: 20 }])).xml("word/document.xml");
+    const paragraphs = doc.match(/<w:p>.*?<\/w:p>/g) ?? [];
+    expect(paragraphs).toHaveLength(3);
+    expect(paragraphs[1]).not.toContain("<w:shd");
+    expect(paragraphs[1]).toContain('w:before="399"');
+    expect(paragraphs[2]).toContain('w:before="0"');
+  });
+
   it("writes a tab stop's leader: an outline entry's dots", () => {
     const doc = parts(
       model([
@@ -167,13 +177,33 @@ describe("writeDocx", () => {
       model([p("Before"), { type: "columns", gap: 20, columns: [[p("Left")], [p("Right")]] }, p("After")]),
     ).xml("word/document.xml");
     const sects = doc.match(/<w:sectPr>.*?<\/w:sectPr>/g) ?? [];
-    // The text before (one column), the columns, and the rest (the body's own), all on the same page.
+    // The text before (one column), the columns, and the rest (the body's own), all on the same page: the sections
+    // after the first start where the one before ended.
     expect(sects).toHaveLength(3);
-    for (const s of sects) expect(s).toContain('<w:type w:val="continuous"/>');
+    for (const s of sects.slice(1)) expect(s).toContain('<w:type w:val="continuous"/>');
     expect(sects[1]).toContain('<w:cols w:num="2" w:space="400"/>');
     expect(doc.indexOf("Left")).toBeLessThan(doc.indexOf('<w:br w:type="column"/>'));
     expect(doc.indexOf('<w:br w:type="column"/>')).toBeLessThan(doc.indexOf("Right"));
     expect(doc).not.toContain("\u0001");
+  });
+
+  it("starts a section on a new page where the page numbering changes, numbered as Typst numbers it", () => {
+    const m = model([p("Contents"), p("Introduction", { pageNumbering: { format: "decimal", start: 1 } })]);
+    const section = m.sections[0] as DocxModel["sections"][number];
+    section.pageNumbering = { format: "lowerRoman", start: 1 };
+    section.footer = [p("", { runs: [{ text: "0", font: 0, size: 11, field: "PAGE" }] })];
+    const doc = parts(m).xml("word/document.xml");
+    const sects = doc.match(/<w:sectPr>.*?<\/w:sectPr>/g) ?? [];
+    expect(sects).toHaveLength(2);
+    // The front matter's section ends in its last paragraph, numbered in roman numerals.
+    const contents = /<w:p>(?:(?!<w:p>).)*Contents<\/w:t><\/w:r><\/w:p>/.exec(doc)?.[0] ?? "";
+    expect(contents).toContain("<w:sectPr>");
+    expect(doc.match(/<w:p>/g)).toHaveLength(2);
+    expect(sects[0]).toContain('<w:pgNumType w:fmt="lowerRoman" w:start="1"/>');
+    expect(sects[1]).toContain('<w:type w:val="nextPage"/>');
+    expect(sects[1]).toContain('<w:pgNumType w:fmt="decimal" w:start="1"/>');
+    // Both sections show the footer: the same reference in each.
+    for (const s of sects) expect(s).toContain('<w:footerReference w:type="default"');
   });
 
   it("writes placed text as a frame at its page position, in the schema's order", () => {

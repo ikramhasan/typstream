@@ -38,7 +38,7 @@ use typst::layout::{
     Abs, Alignment, Frame, FrameItem, GridCell, HAlignment, PlaceElem, Point, Sides, Size,
     Transform, VAlignment,
 };
-use typst::model::{Destination, HeadingElem, TableCell};
+use typst::model::{Destination, HeadingElem, Numbering, TableCell};
 use typst::pdf::{PdfMarkerTag, PdfMarkerTagKind};
 use typst::text::Font;
 use typst::visualize::{Color, CurveItem, FixedStroke, Geometry, Paint, Shape};
@@ -904,8 +904,10 @@ impl Builder {
     }
 
     fn sections(&mut self, pages: &[Page]) -> Json {
-        let _ = pages;
         let n = self.items.len();
+        // Each page's number as Typst shows it (its numbering's first numeral system: i, ii, …) and Word's format.
+        let numbering: Vec<(&'static str, u64, String)> =
+            pages.iter().map(page_numbering).collect();
         // Split each page's items into header, body and footer by position.
         // Groups in a margin (the header's and footer's frames) go whole, and elements started there take their ends:
         // a table broken across pages has the next page's header among its items.
@@ -963,7 +965,26 @@ impl Builder {
         };
         let first_area = area(&self.geometry[0]);
         let blocks = self.flow(&body, first_area, true);
-        let blocks = self.with_gaps(blocks, true);
+        let mut blocks = self.with_gaps(blocks, true);
+        // Where Typst's page numbering changes format or starts again (`counter(page).update(1)` after the front
+        // matter), Word starts a section on a new page, numbered from there.
+        for p in 1..numbering.len() {
+            let (format, number, _) = &numbering[p];
+            let (prev_format, prev, _) = &numbering[p - 1];
+            if format == prev_format && *number == prev + 1 {
+                continue;
+            }
+            if let Some(b) = blocks
+                .iter_mut()
+                .find(|b| b.page == p && !b.json.contains_key("frame"))
+            {
+                b.json.remove("pageBreak");
+                b.json.insert(
+                    "pageNumbering".into(),
+                    json!({ "format": format, "start": number }),
+                );
+            }
+        }
         let page_count = self.geometry.len();
         let marginal = |b: &mut Builder,
                         map: &HashMap<usize, Vec<usize>>,
@@ -986,9 +1007,10 @@ impl Builder {
         for (name, map) in [("header", &header), ("footer", &footer)] {
             let pages: Vec<(Vec<Json>, String)> =
                 (0..page_count).map(|p| marginal(self, map, p)).collect();
+            let labels: Vec<String> = numbering.iter().map(|n| n.2.clone()).collect();
             let roles = field_roles(
                 &pages.iter().map(|(b, _)| b.clone()).collect::<Vec<_>>(),
-                page_count,
+                &labels,
             );
             let fielded: Vec<(Vec<Json>, String)> = pages
                 .iter()
@@ -1049,6 +1071,14 @@ impl Builder {
             "margin".into(),
             json!({ "top": round(m.top), "right": round(m.right), "bottom": round(m.bottom), "left": round(m.left) }),
         );
+        if let Some((format, number, _)) = numbering.first() {
+            if *format != "decimal" || *number != 1 {
+                section.insert(
+                    "pageNumbering".into(),
+                    json!({ "format": format, "start": number }),
+                );
+            }
+        }
         section.insert(
             "blocks".into(),
             Json::Array(blocks.into_iter().map(|b| Json::Object(b.json)).collect()),
@@ -2679,6 +2709,15 @@ impl Builder {
         // The grid's frame on each page it is on: the innermost group at its left edge, as wide as the first there,
         // opened before anything is drawn there (where a row continues on a page, the page's flow opens around it
         // first; a first cell's group is narrower).
+        // Its left edge: the frame right after its tag, which sits where the flow was (an `align`'s left edge, when
+        // the table is centred).
+        let x0 = match ids.get(1).map(|&j| &self.items[j]) {
+            Some(Item {
+                kind: Kind::Group(r, _),
+                page: p,
+            }) if *p == page => r.x,
+            _ => at.x.to_pt(),
+        };
         let mut frames: HashMap<usize, Rect> = HashMap::new();
         let mut drawn: HashSet<usize> = HashSet::new();
         for &id in &ids[1..] {
@@ -2686,7 +2725,7 @@ impl Builder {
             match &self.items[id].kind {
                 Kind::Group(r, _)
                     if !drawn.contains(&page)
-                        && (r.x - at.x.to_pt()).abs() < 0.5
+                        && (r.x - x0).abs() < 0.5
                         && frames.get(&page).is_none_or(|f| r.w >= f.w - 0.5) =>
                 {
                     frames.insert(page, *r);
@@ -2792,7 +2831,7 @@ impl Builder {
             })
             .max()
             .unwrap_or(1);
-        let left = at.x.to_pt();
+        let left = x0;
         let right = frame.map(|f| f.right()).unwrap_or(area.right);
         // Column starts: from cells that start in each column.
         let mut starts: Vec<Option<f64>> = vec![None; ncols + 1];
@@ -3581,7 +3620,7 @@ fn roman(s: &str) -> Option<u32> {
 }
 
 /// The numbers in a page's marginal text, in order.
-fn numbers(blocks: &[Json]) -> Vec<usize> {
+fn numbers(blocks: &[Json]) -> Vec<String> {
     let mut out = Vec::new();
     for b in blocks {
         for run in b
@@ -3591,32 +3630,78 @@ fn numbers(blocks: &[Json]) -> Vec<usize> {
             .flatten()
         {
             let text = run.get("text").and_then(|t| t.as_str()).unwrap_or("");
-            let mut digits = String::new();
-            for c in text.chars().chain(std::iter::once(' ')) {
-                if c.is_ascii_digit() {
-                    digits.push(c);
-                } else if !digits.is_empty() {
-                    out.push(digits.parse().unwrap_or(0));
-                    digits.clear();
-                }
-            }
+            out.extend(
+                tokens(text)
+                    .into_iter()
+                    .filter(|t| t.1)
+                    .map(|t| t.0.to_string()),
+            );
         }
     }
     out
 }
 
+/// A text's words and what's between them: (piece, whether it is a word). Page numbers are words: `12`, `iv`.
+fn tokens(text: &str) -> Vec<(&str, bool)> {
+    let mut out = Vec::new();
+    let mut start = 0;
+    let mut word = None;
+    for (i, c) in text.char_indices() {
+        let w = c.is_alphanumeric();
+        if word.is_some_and(|prev| prev != w) {
+            out.push((&text[start..i], word.unwrap()));
+            start = i;
+        }
+        word = Some(w);
+    }
+    if let Some(w) = word {
+        out.push((&text[start..], w));
+    }
+    out
+}
+
+/// A page's number as Typst shows it, and Word's format for its numbering (its first numeral system).
+fn page_numbering(page: &Page) -> (&'static str, u64, String) {
+    use codex::numeral_systems::NamedNumeralSystem as N;
+    let system = match &page.numbering {
+        Some(Numbering::Pattern(p)) => p.pieces.first().map(|(_, s)| *s),
+        _ => None,
+    };
+    let format = match system {
+        Some(N::LowerRoman) => "lowerRoman",
+        Some(N::UpperRoman) => "upperRoman",
+        Some(N::LowerLatin) => "lowerLetter",
+        Some(N::UpperLatin) => "upperLetter",
+        _ => "decimal",
+    };
+    let label = system
+        .and_then(|s| {
+            s.system()
+                .represent(page.number)
+                .ok()
+                .map(|r| r.to_string())
+        })
+        .unwrap_or_else(|| page.number.to_string());
+    (format, page.number, label)
+}
+
 /// What each number in the marginals is, by its index: the page's number (`PAGE`) where some page has it and not
 /// the count, the page count (`NUMPAGES`) the other way round. "2 / 2" alone can't say which is which.
-fn field_roles(pages: &[Vec<Json>], count: usize) -> Vec<Option<&'static str>> {
-    let lists: Vec<Vec<usize>> = pages.iter().map(|p| numbers(p)).collect();
+fn field_roles(pages: &[Vec<Json>], labels: &[String]) -> Vec<Option<&'static str>> {
+    let count = pages.len();
+    let total_label = count.to_string();
+    let lists: Vec<Vec<String>> = pages.iter().map(|p| numbers(p)).collect();
     let len = lists.iter().map(|l| l.len()).max().unwrap_or(0);
     (0..len)
         .map(|k| {
-            let at = |p: usize| lists[p].get(k).copied();
-            let page = (0..pages.len()).any(|p| at(p) == Some(p + 1) && p + 1 != count);
-            let total = (0..pages.len()).any(|p| at(p) == Some(count) && p + 1 != count);
-            let all_page = (0..pages.len()).all(|p| at(p).is_none() || at(p) == Some(p + 1));
-            let all_total = (0..pages.len()).all(|p| at(p).is_none() || at(p) == Some(count));
+            let at = |p: usize| lists[p].get(k).map(|s| s.as_str());
+            let label = |p: usize| labels.get(p).map(|s| s.as_str()).unwrap_or("");
+            let page = (0..count).any(|p| at(p) == Some(label(p)) && label(p) != total_label);
+            let total =
+                (0..count).any(|p| at(p) == Some(total_label.as_str()) && label(p) != total_label);
+            let all_page = (0..count).all(|p| at(p).is_none() || at(p) == Some(label(p)));
+            let all_total =
+                (0..count).all(|p| at(p).is_none() || at(p) == Some(total_label.as_str()));
             if page && all_page {
                 Some("PAGE")
             } else if total && all_total {
@@ -3640,33 +3725,28 @@ fn with_fields(block: &Json, roles: &[Option<&'static str>], k: &mut usize) -> J
                 out.push(run);
                 continue;
             };
-            let mut rest = text.as_str();
             let mut buf = String::new();
-            while !rest.is_empty() {
-                let digits: String = rest.chars().take_while(|c| c.is_ascii_digit()).collect();
-                if !digits.is_empty() {
-                    let role = roles.get(*k).copied().flatten();
+            for (piece, word) in tokens(&text) {
+                let role = if word {
                     *k += 1;
-                    if let Some(field) = role {
-                        if !buf.is_empty() {
-                            let mut r = run.clone();
-                            r["text"] = json!(std::mem::take(&mut buf));
-                            out.push(r);
-                        }
-                        let mut r = run.clone();
-                        // The field's digits differ by page: compared without them.
-                        r["text"] = json!("0");
-                        r["field"] = json!(field);
-                        out.push(r);
-                    } else {
-                        buf.push_str(&digits);
-                    }
-                    rest = &rest[digits.len()..];
+                    roles.get(*k - 1).copied().flatten()
+                } else {
+                    None
+                };
+                let Some(field) = role else {
+                    buf.push_str(piece);
                     continue;
+                };
+                if !buf.is_empty() {
+                    let mut r = run.clone();
+                    r["text"] = json!(std::mem::take(&mut buf));
+                    out.push(r);
                 }
-                let c = rest.chars().next().unwrap();
-                buf.push(c);
-                rest = &rest[c.len_utf8()..];
+                let mut r = run.clone();
+                // The field's text differs by page: compared without it.
+                r["text"] = json!("0");
+                r["field"] = json!(field);
+                out.push(r);
             }
             if !buf.is_empty() {
                 let mut r = run.clone();

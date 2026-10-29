@@ -11,6 +11,7 @@ export type DocxBlock = DocxParagraph | DocxTable | DocxRule | DocxDrawing | Doc
 export interface DocxBlockBase {
     before?: number;
     pageBreak?: boolean;
+    pageNumbering?: DocxPageNumbering;
 }
 
 // @internal
@@ -270,6 +271,14 @@ export interface DocxModel {
 }
 
 // @internal
+export interface DocxPageNumbering {
+    // (undocumented)
+    format: "decimal" | "lowerRoman" | "upperRoman" | "lowerLetter" | "upperLetter";
+    // (undocumented)
+    start?: number;
+}
+
+// @internal
 export interface DocxParagraph extends DocxBlockBase {
     // (undocumented)
     align: "start" | "center" | "end";
@@ -348,6 +357,7 @@ export interface DocxSection {
         bottom: number;
         left: number;
     };
+    pageNumbering?: DocxPageNumbering;
     width: number;
 }
 
