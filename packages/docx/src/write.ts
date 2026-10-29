@@ -65,6 +65,8 @@ interface Part {
 
 /** A paragraph mark's run properties: a point tall, so an empty paragraph's line is all its spacing makes it. */
 const TINY = '<w:rPr><w:sz w:val="2"/></w:rPr>';
+/** A drawing's picture run: its bottom half a point below the baseline, so the point-tall font's descent is in it. */
+const LOWERED = '<w:rPr><w:position w:val="-1"/><w:sz w:val="2"/></w:rPr>';
 /** Letters of complex scripts: Hebrew to Sinhala, Thai to Myanmar, Khmer (#134). */
 const COMPLEX = /[\u0590-\u0dff\u0e00-\u109f\u1780-\u17ff]/;
 
@@ -177,6 +179,8 @@ class Writer {
     after?: number;
     line: number;
     atLeast?: boolean;
+    /** Single spacing (`auto`): the line as tall as what is in it, `line` ignored. */
+    single?: boolean;
     left?: number;
     firstLine?: number;
     right?: number;
@@ -199,7 +203,10 @@ class Writer {
       x += `<w:tabs>${o.tabs.map((t) => `<w:tab w:val="${t.align === "end" ? "right" : t.align === "center" ? "center" : "left"}"${t.leader ? ` w:leader="${t.leader}"` : ""} w:pos="${twips(t.pos)}"/>`).join("")}</w:tabs>`;
     // Right to left: `left` and `right` (alignment, indents, tabs) are the paragraph's start and end.
     if (o.bidi) x += "<w:bidi/>";
-    x += `<w:spacing w:before="${Math.max(0, twips(o.before ?? 0))}" w:after="${Math.max(0, twips(o.after ?? 0))}" w:line="${Math.max(1, twips(o.line))}" w:lineRule="${o.atLeast ? "atLeast" : "exact"}"/>`;
+    const line = o.single
+      ? 'w:line="240" w:lineRule="auto"'
+      : `w:line="${Math.max(1, twips(o.line))}" w:lineRule="${o.atLeast ? "atLeast" : "exact"}"`;
+    x += `<w:spacing w:before="${Math.max(0, twips(o.before ?? 0))}" w:after="${Math.max(0, twips(o.after ?? 0))}" ${line}/>`;
     const first = o.firstLine ?? 0;
     const ind = [
       `w:left="${twips(o.left ?? 0)}"`,
@@ -295,8 +302,40 @@ class Writer {
     })}</w:p>`;
   }
 
-  /** A drawing: a paragraph holding its room, its picture anchored where the room starts. */
+  /**
+   * A drawing: its picture as a character in a line of its own, single spaced, so the line is as tall as the picture
+   * in every engine, the space before and after it holding the rest of its room. Not anchored over an exact line, as
+   * far as it can be: Google Docs has no exact line heights (it makes them multiples of the paragraph's point-tall
+   * font), so the line would hold a fraction of the room and the text after it would run under the picture.
+   */
   drawing(d: DocxDrawing, part: Part, lead = ""): string {
+    const p = d.picture && this.model.pictures?.[d.picture.index];
+    if (!d.picture || !p) return this.anchored(d, part, lead);
+    const { x, y } = d.picture;
+    // A picture past the room's bottom (half a stroke) takes that from the space above it: the picture a hair higher,
+    // the text after it where Typst put it.
+    const below = d.height - y - p.height;
+    const before = (d.before ?? 0) + y + Math.min(0, below);
+    // Anchored where a character couldn't be where Typst drew it: starting left of its container (a box as wide as a
+    // cell, its stroke half outside: engines clip a character at the cell's edges), or past its room by more than
+    // the space above it (the line would be taller than the room, and the text after it lower).
+    if (d.indent + x < 0 || before < -0.01) return this.anchored(d, part, lead);
+    const picture = this.picture(d.picture.index, part, { kind: "inline" });
+    // No picture data: the room alone.
+    if (!picture) return this.anchored(d, part, lead);
+    return `<w:p>${this.pPr({
+      pageBreak: d.pageBreak,
+      before,
+      after: below,
+      line: 0,
+      single: true,
+      left: d.indent + x,
+      rPr: TINY,
+    })}${lead}<w:r>${LOWERED}${picture}</w:r></w:p>`;
+  }
+
+  /** A drawing as a paragraph holding its room, its picture anchored where the room starts. */
+  private anchored(d: DocxDrawing, part: Part, lead: string): string {
     const picture = d.picture && this.picture(d.picture.index, part, { kind: "line", x: d.picture.x, y: d.picture.y });
     return this.spacer(
       d.height,

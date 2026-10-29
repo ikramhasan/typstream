@@ -98,6 +98,11 @@ to the document. What Word can't reproduce exactly:
 - numbers Word has no format for, Bengali and Eastern Arabic digits: list labels in them are text (not Word
   numbering), and page numbers in them come out in Western digits (Devanagari ones are Word's Hindi numbers).
 
+Google Docs opens the file with its own spacing: it has no exact line heights, so lines are spaced as multiples of
+the font's and its pages can break in other places. A picture in a line of its own keeps its room there. One that is
+anchored instead, because it starts left of its cell or reaches past its room by more than the space above it (a box
+as wide as its cell, half its stroke outside), can cover the text after it.
+
 ## HTML
 
 `EngineDocument.exportHtml()` returns Typst's HTML export: a complete HTML document, without the source anchors the

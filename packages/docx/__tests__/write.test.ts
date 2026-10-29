@@ -3,7 +3,7 @@
 
 import { strFromU8, unzipSync } from "fflate";
 import { describe, expect, it } from "vitest";
-import type { DocxBlock, DocxMath, DocxMathRun, DocxModel, DocxParagraph, DocxPictureData } from "../src";
+import type { DocxBlock, DocxDrawing, DocxMath, DocxMathRun, DocxModel, DocxParagraph, DocxPictureData } from "../src";
 import { writeDocx } from "../src";
 
 const FONT = new Uint8Array(Array.from({ length: 64 }, (_, i) => i));
@@ -217,7 +217,7 @@ describe("writeDocx", () => {
       { width: 40, height: 40, page: 0, x: 400, y: 600 },
     ];
 
-    it("anchors a drawing's picture where its room starts, over a paragraph as tall, with SVG and PNG", () => {
+    it("sets a drawing's picture in a single-spaced line of its own, the room's rest as space, with SVG and PNG", () => {
       const { files, xml } = parts(
         model(
           [{ type: "drawing", width: 99, height: 49, indent: 10, before: 6, picture: { index: 0, x: -0.5, y: -0.5 } }],
@@ -227,12 +227,14 @@ describe("writeDocx", () => {
         data(1),
       );
       const doc = xml("word/document.xml");
-      // The room: an exact line as tall, indented; the picture in front of the text, from its anchor's line.
-      expect(doc).toContain('w:line="980" w:lineRule="exact"');
-      expect(doc).toContain('<w:ind w:left="200"/>');
-      expect(doc).toMatch(
-        /<wp:anchor [^>]*behindDoc="0"[^>]*><wp:simplePos x="0" y="0"\/><wp:positionH relativeFrom="character"><wp:posOffset>-6350<\/wp:posOffset><\/wp:positionH><wp:positionV relativeFrom="line"><wp:posOffset>-6350<\/wp:posOffset><\/wp:positionV><wp:extent cx="1270000" cy="635000"\/><wp:effectExtent l="0" t="0" r="0" b="0"\/><wp:wrapNone\/><wp:docPr id="1"/,
+      // Half a stroke past the room on every side: the picture starts half a point left and up, and the half point
+      // past its bottom comes out of the space above, so the line and the space before it end where the room does.
+      expect(doc).toContain(
+        '<w:spacing w:before="100" w:after="0" w:line="240" w:lineRule="auto"/><w:ind w:left="190"/><w:rPr><w:sz w:val="2"/></w:rPr></w:pPr>' +
+          '<w:r><w:rPr><w:position w:val="-1"/><w:sz w:val="2"/></w:rPr><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0">' +
+          '<wp:extent cx="1270000" cy="635000"/>',
       );
+      expect(doc).not.toContain("<wp:anchor");
       // The PNG is the picture, the SVG its extension; both in media, with their content types.
       const rels = xml("word/_rels/document.xml.rels");
       const png = /<a:blip r:embed="(\w+)">/.exec(doc)?.[1];
@@ -248,6 +250,48 @@ describe("writeDocx", () => {
       const types = xml("[Content_Types].xml");
       expect(types).toContain('<Default Extension="png" ContentType="image/png"/>');
       expect(types).toContain('<Default Extension="svg" ContentType="image/svg+xml"/>');
+    });
+
+    it("leaves the space after a drawing whose picture is shorter than its room", () => {
+      const doc = parts(
+        model([{ type: "drawing", width: 100, height: 60, indent: 0, before: 6, picture: { index: 0, x: 0, y: 4 } }], {
+          pictures,
+        }),
+        [FONT],
+        data(1),
+      ).xml("word/document.xml");
+      // 4 pt down, 50 tall in a room of 60: 6 pt after it.
+      expect(doc).toContain(
+        '<w:spacing w:before="200" w:after="120" w:line="240" w:lineRule="auto"/><w:ind w:left="0"/>',
+      );
+      expect(doc).toContain("<wp:inline");
+    });
+
+    it("anchors a drawing's picture over a paragraph as tall as its room where a character couldn't be where Typst drew it", () => {
+      const anchored = (d: Partial<DocxDrawing>) => {
+        const doc = parts(
+          model(
+            [{ type: "drawing", width: 99, height: 49, indent: 0, before: 0, picture: { index: 0, x: 0, y: 0 }, ...d }],
+            {
+              pictures,
+            },
+          ),
+          [FONT],
+          data(1),
+        ).xml("word/document.xml");
+        expect(doc).not.toContain("<wp:inline");
+        return doc;
+      };
+      // Starting left of its container (a cell's edge would clip it), from its anchor's character and line.
+      const left = anchored({ indent: 0, before: 6, picture: { index: 0, x: -0.5, y: -0.5 } });
+      expect(left).toContain('w:line="980" w:lineRule="exact"');
+      expect(left).toMatch(
+        /<wp:anchor [^>]*behindDoc="0"[^>]*><wp:simplePos x="0" y="0"\/><wp:positionH relativeFrom="character"><wp:posOffset>-6350<\/wp:posOffset><\/wp:positionH><wp:positionV relativeFrom="line"><wp:posOffset>-6350<\/wp:posOffset><\/wp:positionV><wp:extent cx="1270000" cy="635000"\/><wp:effectExtent l="0" t="0" r="0" b="0"\/><wp:wrapNone\/><wp:docPr id="1"/,
+      );
+      // Past its room by more than the space above it: its line would be taller than the room.
+      expect(anchored({ indent: 10, picture: { index: 0, x: -0.5, y: -0.5 } })).toContain(
+        'w:line="980" w:lineRule="exact"',
+      );
     });
 
     it("sets a picture in a line as a character, its bottom raised to where Typst drew it", () => {
