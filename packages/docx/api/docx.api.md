@@ -11,6 +11,7 @@ export type DocxBlock = DocxParagraph | DocxTable | DocxRule | DocxDrawing | Doc
 export interface DocxBlockBase {
     before?: number;
     pageBreak?: boolean;
+    pageNumbering?: DocxPageNumbering;
 }
 
 // @internal
@@ -98,10 +99,183 @@ export interface DocxList {
 }
 
 // @internal
+export type DocxMath = DocxMathText | DocxMathFraction | DocxMathScripts | DocxMathNary | DocxMathFunction | DocxMathLimit | DocxMathRoot | DocxMathDelimiters | DocxMathMatrix | DocxMathAccent | DocxMathBar | DocxMathGroupChar | DocxMathBox;
+
+// @internal
+export interface DocxMathAccent {
+    // (undocumented)
+    chr: string;
+    // (undocumented)
+    e: DocxMath[];
+    // (undocumented)
+    t: "acc";
+}
+
+// @internal
+export interface DocxMathBar {
+    // (undocumented)
+    e: DocxMath[];
+    // (undocumented)
+    t: "bar";
+    // (undocumented)
+    top: boolean;
+}
+
+// @internal
+export interface DocxMathBox {
+    // (undocumented)
+    e: DocxMath[];
+    // (undocumented)
+    strike: "bltr" | "tlbr" | "both";
+    // (undocumented)
+    t: "box";
+}
+
+// @internal
+export interface DocxMathDelimiters {
+    // (undocumented)
+    close: string;
+    // (undocumented)
+    e: DocxMath[];
+    // (undocumented)
+    open: string;
+    // (undocumented)
+    t: "d";
+}
+
+// @internal
+export interface DocxMathFraction {
+    // (undocumented)
+    den: DocxMath[];
+    // (undocumented)
+    num: DocxMath[];
+    // (undocumented)
+    t: "f";
+    // (undocumented)
+    type?: "noBar" | "skw";
+}
+
+// @internal
+export interface DocxMathFunction {
+    // (undocumented)
+    e: DocxMath[];
+    // (undocumented)
+    name: DocxMath[];
+    // (undocumented)
+    t: "func";
+}
+
+// @internal
+export interface DocxMathGroupChar {
+    // (undocumented)
+    chr: string;
+    // (undocumented)
+    e: DocxMath[];
+    // (undocumented)
+    t: "groupChr";
+    // (undocumented)
+    top: boolean;
+}
+
+// @internal
+export interface DocxMathLimit {
+    // (undocumented)
+    below: boolean;
+    // (undocumented)
+    e: DocxMath[];
+    // (undocumented)
+    lim: DocxMath[];
+    // (undocumented)
+    t: "lim";
+}
+
+// @internal
+export interface DocxMathMatrix {
+    // (undocumented)
+    align: ("left" | "center" | "right")[];
+    // (undocumented)
+    gap?: number;
+    // (undocumented)
+    rows: DocxMath[][][];
+    // (undocumented)
+    t: "m";
+}
+
+// @internal
+export interface DocxMathNary {
+    // (undocumented)
+    chr: string;
+    // (undocumented)
+    e: DocxMath[];
+    // (undocumented)
+    limits: boolean;
+    // (undocumented)
+    sub?: DocxMath[];
+    // (undocumented)
+    sup?: DocxMath[];
+    // (undocumented)
+    t: "nary";
+}
+
+// @internal
+export interface DocxMathRoot {
+    // (undocumented)
+    deg?: DocxMath[];
+    // (undocumented)
+    e: DocxMath[];
+    // (undocumented)
+    t: "rad";
+}
+
+// @internal
+export interface DocxMathRun {
+    color?: string;
+    // (undocumented)
+    display?: boolean;
+    font: number;
+    // (undocumented)
+    math: DocxMath[];
+    size: number;
+}
+
+// @internal
+export interface DocxMathScripts {
+    // (undocumented)
+    e: DocxMath[];
+    // (undocumented)
+    pre?: boolean;
+    // (undocumented)
+    sub?: DocxMath[];
+    // (undocumented)
+    sup?: DocxMath[];
+    // (undocumented)
+    t: "s";
+}
+
+// @internal
+export interface DocxMathText {
+    nor?: boolean;
+    scr?: "script" | "fraktur" | "double-struck" | "sans-serif" | "monospace";
+    sty?: "p" | "b" | "i" | "bi";
+    // (undocumented)
+    t: "r";
+    // (undocumented)
+    text: string;
+}
+
+// @internal
 export interface DocxModel {
     fonts: DocxFont[];
     lists: DocxList[];
     sections: DocxSection[];
+}
+
+// @internal
+export interface DocxPageNumbering {
+    // (undocumented)
+    format: "decimal" | "lowerRoman" | "upperRoman" | "lowerLetter" | "upperLetter";
+    // (undocumented)
+    start?: number;
 }
 
 // @internal
@@ -133,7 +307,8 @@ export interface DocxParagraph extends DocxBlockBase {
     runs: DocxRun[];
     tabs?: {
         pos: number;
-        align: "start" | "end";
+        align: "start" | "center" | "end";
+        leader?: "dot" | "hyphen" | "underscore" | "middleDot";
     }[];
     // (undocumented)
     type: "p";
@@ -164,7 +339,7 @@ export interface DocxRule extends DocxBlockBase {
 }
 
 // @internal
-export type DocxRun = DocxTextRun | DocxGapRun | DocxBreakRun | DocxTabRun;
+export type DocxRun = DocxTextRun | DocxGapRun | DocxBreakRun | DocxTabRun | DocxMathRun;
 
 // @internal
 export interface DocxSection {
@@ -182,6 +357,7 @@ export interface DocxSection {
         bottom: number;
         left: number;
     };
+    pageNumbering?: DocxPageNumbering;
     width: number;
 }
 

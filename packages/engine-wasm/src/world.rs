@@ -45,18 +45,21 @@ pub fn file_path(id: FileId) -> String {
     }
 }
 
-fn build_library(inputs: Dict) -> LazyHash<Library> {
+fn build_library(inputs: Dict, docx: bool) -> LazyHash<Library> {
     // `Feature::Html` makes the HTML target available; it doesn't affect paged output.
-    LazyHash::new(
-        Library::builder()
-            .with_inputs(inputs)
-            .with_features([Feature::Html].into_iter().collect())
-            .build(),
-    )
+    let mut library = Library::builder()
+        .with_inputs(inputs)
+        .with_features([Feature::Html].into_iter().collect())
+        .build();
+    if docx {
+        crate::math::mark_equations(&mut library);
+    }
+    LazyHash::new(library)
 }
 
 pub struct MemWorld {
     library: LazyHash<Library>,
+    inputs: Dict,
     /// The instance's font book as of the last `begin_compile` (fonts.rs).
     book: Arc<LazyHash<FontBook>>,
     /// Lazy font files the current compile asked for before their bytes arrived.
@@ -74,7 +77,8 @@ impl MemWorld {
         let mut sources = HashMap::new();
         sources.insert(main, Source::new(main, String::new()));
         MemWorld {
-            library: build_library(Dict::new()),
+            library: build_library(Dict::new(), false),
+            inputs: Dict::new(),
             book: fonts::book(),
             missing_fonts: Mutex::new(BTreeSet::new()),
             main,
@@ -119,7 +123,14 @@ impl MemWorld {
 
     pub fn set_inputs(&mut self, inputs: Dict) {
         // An unchanged dict hashes the same, so comemo still hits.
-        self.library = build_library(inputs);
+        self.library = build_library(inputs.clone(), false);
+        self.inputs = inputs;
+    }
+
+    /// For a DOCX export's compile: equations carry their Word math (math.rs). Its rule hashes differently, so
+    /// nothing laid out without it is reused.
+    pub fn set_docx(&mut self, docx: bool) {
+        self.library = build_library(self.inputs.clone(), docx);
     }
 
     /// Converts a UTF-8 byte offset in a file to UTF-16 code units, the unit

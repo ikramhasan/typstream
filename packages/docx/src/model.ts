@@ -19,6 +19,8 @@ export interface DocxSection {
   height: number;
   /** Page margins in points. */
   margin: { top: number; right: number; bottom: number; left: number };
+  /** How its first pages are numbered, when not from 1 in digits. */
+  pageNumbering?: DocxPageNumbering;
   /** The body's blocks, in order. */
   blocks: DocxBlock[];
   /** The header on every page (after the first, when `headerFirst` is set). */
@@ -74,6 +76,14 @@ export interface DocxBlockBase {
   before?: number;
   /** A page break before it (Typst's `pagebreak()`). */
   pageBreak?: boolean;
+  /** Typst's page numbering changes here: a section starts on a new page, numbered as this says. */
+  pageNumbering?: DocxPageNumbering;
+}
+
+/** How a section's pages are numbered: Word's format and, when it starts again, the first number. @internal */
+export interface DocxPageNumbering {
+  format: "decimal" | "lowerRoman" | "upperRoman" | "lowerLetter" | "upperLetter";
+  start?: number;
 }
 
 /** A paragraph. @internal */
@@ -99,15 +109,15 @@ export interface DocxParagraph extends DocxBlockBase {
   frame?: { x: number; y: number; width: number; height: number };
   /** A heading's level. */
   heading?: number;
-  /** Tab stops, from the area's left: a tab run moves to the next. */
-  tabs?: { pos: number; align: "start" | "end" }[];
+  /** Tab stops, from the area's left: a tab run moves to the next, filled with `leader` (an outline's dots). */
+  tabs?: { pos: number; align: "start" | "center" | "end"; leader?: "dot" | "hyphen" | "underscore" | "middleDot" }[];
   /** A list item's first paragraph: its list and its label. */
   list?: { id: number; label: string };
   runs: DocxRun[];
 }
 
-/** A run of text, an exact-width gap, a tab or a line break. @internal */
-export type DocxRun = DocxTextRun | DocxGapRun | DocxBreakRun | DocxTabRun;
+/** A run of text, an exact-width gap, a tab, a line break or an equation. @internal */
+export type DocxRun = DocxTextRun | DocxGapRun | DocxBreakRun | DocxTabRun | DocxMathRun;
 
 /** A tab to the paragraph's next tab stop (what `h(1fr)` before a line's last words is). @internal */
 export interface DocxTabRun {
@@ -135,15 +145,152 @@ export interface DocxTextRun {
   field?: "PAGE" | "NUMPAGES";
 }
 
-/** An exact-width space: a gap in a line (`h()`), a blank's line, a placeholder (math, images). @internal */
+/** An exact-width space: a gap in a line (`h()`), a blank's line, a placeholder (images). @internal */
 export interface DocxGapRun {
   /** Width in points. */
   gap: number;
   font: number;
   size: number;
   underline?: boolean;
-  /** Room held for an equation or image (#132, #133), not a gap Typst made. */
+  /** Room held for an image (#133), not a gap Typst made. */
   placeholder?: boolean;
+}
+
+/**
+ * An equation as Word math (OMML, #132), from Typst's own math (engine-wasm's `src/math.rs`). Inline in a line, or
+ * `display`: a paragraph's only run, which Word sets on a line of its own. @internal
+ */
+export interface DocxMathRun {
+  math: DocxMath[];
+  /** The math font, an index into `DocxModel.fonts`. */
+  font: number;
+  /** Size in points. */
+  size: number;
+  /** Hex RGB, black when absent. */
+  color?: string;
+  display?: boolean;
+}
+
+/** A piece of an equation, shaped after the OMML element it becomes. @internal */
+export type DocxMath =
+  | DocxMathText
+  | DocxMathFraction
+  | DocxMathScripts
+  | DocxMathNary
+  | DocxMathFunction
+  | DocxMathLimit
+  | DocxMathRoot
+  | DocxMathDelimiters
+  | DocxMathMatrix
+  | DocxMathAccent
+  | DocxMathBar
+  | DocxMathGroupChar
+  | DocxMathBox;
+
+/** Math text (`m:r`). @internal */
+export interface DocxMathText {
+  t: "r";
+  text: string;
+  /** Word's style: plain (upright), bold, italic, bold italic. Without it, Word sets letters in italic. */
+  sty?: "p" | "b" | "i" | "bi";
+  /** Word's math alphabet. */
+  scr?: "script" | "fraktur" | "double-struck" | "sans-serif" | "monospace";
+  /** Text in math (Typst's quoted text): Word's normal text. */
+  nor?: boolean;
+}
+
+/** A fraction (`m:f`): stacked, without a bar (a binomial's), or skewed. @internal */
+export interface DocxMathFraction {
+  t: "f";
+  num: DocxMath[];
+  den: DocxMath[];
+  type?: "noBar" | "skw";
+}
+
+/** Scripts on a base (`m:sSub`, `m:sSup`, `m:sSubSup`), or before it (`pre`: `m:sPre`). @internal */
+export interface DocxMathScripts {
+  t: "s";
+  e: DocxMath[];
+  sub?: DocxMath[];
+  sup?: DocxMath[];
+  pre?: boolean;
+}
+
+/** A big operator and its operand (`m:nary`): limits under and over it with `limits`, else beside. @internal */
+export interface DocxMathNary {
+  t: "nary";
+  chr: string;
+  limits: boolean;
+  sub?: DocxMath[];
+  sup?: DocxMath[];
+  e: DocxMath[];
+}
+
+/** An operator's name (`sin`, `lim` and its limit) and its operand (`m:func`). @internal */
+export interface DocxMathFunction {
+  t: "func";
+  name: DocxMath[];
+  e: DocxMath[];
+}
+
+/** A limit under (`below`, `m:limLow`) or over (`m:limUpp`) a base. @internal */
+export interface DocxMathLimit {
+  t: "lim";
+  below: boolean;
+  e: DocxMath[];
+  lim: DocxMath[];
+}
+
+/** A root (`m:rad`), square without `deg`. @internal */
+export interface DocxMathRoot {
+  t: "rad";
+  e: DocxMath[];
+  deg?: DocxMath[];
+}
+
+/** Delimiters that grow with what they hold (`m:d`); an empty one is none. @internal */
+export interface DocxMathDelimiters {
+  t: "d";
+  open: string;
+  close: string;
+  e: DocxMath[];
+}
+
+/** A matrix (`m:m`): rows of cells, each column's alignment, and the gap between columns when not Word's. @internal */
+export interface DocxMathMatrix {
+  t: "m";
+  rows: DocxMath[][][];
+  align: ("left" | "center" | "right")[];
+  gap?: number;
+}
+
+/** An accent over a base (`m:acc`), its combining character. @internal */
+export interface DocxMathAccent {
+  t: "acc";
+  chr: string;
+  e: DocxMath[];
+}
+
+/** A line over (`top`) or under a base (`m:bar`). @internal */
+export interface DocxMathBar {
+  t: "bar";
+  top: boolean;
+  e: DocxMath[];
+}
+
+/** A brace or bracket stretched over (`top`) or under a base (`m:groupChr`). @internal */
+export interface DocxMathGroupChar {
+  t: "groupChr";
+  chr: string;
+  top: boolean;
+  e: DocxMath[];
+}
+
+/** A cancelled base (`m:borderBox` with its border hidden and a diagonal strike). @internal */
+export interface DocxMathBox {
+  t: "box";
+  strike: "bltr" | "tlbr" | "both";
+  e: DocxMath[];
 }
 
 /** A table, or anything drawn as one (a grid, a framed block). @internal */
@@ -203,7 +350,7 @@ export interface DocxDrawing extends DocxBlockBase {
   height: number;
   indent: number;
   math?: boolean;
-  /** Room held for an equation, image or drawing (#132, #133); without it, space an empty block takes. */
+  /** Room held for an image or drawing (#133); without it, space an empty block takes. */
   placeholder?: boolean;
 }
 

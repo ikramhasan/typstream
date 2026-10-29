@@ -36,6 +36,9 @@ unicode-bidi = "0.3"
 ttf-parser = "0.25"
 # Scripts of characters, for math fonts' fallback coverage (fonts.rs); typst-layout already depends on it.
 unicode-script = "0.5"
+# Math styles (𝑥 → x, italic) and classes, for equations in Word math (math.rs); typst-library already depends on both.
+codex = "=0.3.0"
+unicode-math-class = "0.1"
 
 [dev-dependencies]
 # Native tools in examples/ compile on the calling thread: the font store is thread-local (fonts.rs), as wasm is

@@ -9,6 +9,7 @@
 mod diagnostics;
 #[doc(hidden)]
 pub mod docx;
+pub mod math;
 mod draw;
 // Public for native tools (`examples/`), not part of the wasm API.
 #[doc(hidden)]
@@ -437,8 +438,10 @@ impl Engine {
     pub fn compile_docx_model(&mut self) -> JsValue {
         let t0 = perf_now();
         self.world.begin_compile();
+        self.world.set_docx(true);
         let Warned { output, warnings } =
             typst::compile::<typst_layout::PagedDocument>(&self.world);
+        self.world.set_docx(false);
         let obj = match output {
             Ok(doc) => {
                 let model = docx::model(&doc);

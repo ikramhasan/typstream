@@ -2553,6 +2553,7 @@ dependencies = [
 name = "typstream-engine-wasm"
 version = "0.0.0"
 dependencies = [
+ "codex",
  "comemo",
  "js-sys",
  "rayon",
@@ -2564,6 +2565,7 @@ dependencies = [
  "typst-pdf",
  "typst-svg",
  "unicode-bidi",
+ "unicode-math-class",
  "unicode-script",
  "wasm-bindgen",
 ]

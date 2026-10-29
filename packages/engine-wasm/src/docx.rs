@@ -17,9 +17,14 @@
 //!   borders and fills from the strokes and fills drawn on the cells' edges.
 //! - **Blocks** drawn with a frame or a fill (a group whose first item is a rectangle as big as the group, or strokes on
 //!   its edges) become one-cell tables.
-//! - **Gaps inside a line** (`h()`, blanks drawn as underlined boxes) become exact-width runs.
-//! - **Equations, images and drawings** are placeholders of their size until #132 and #133, so lines and pages still
-//!   break where Typst broke them.
+//! - **Gaps inside a line** (`h()`, blanks drawn as underlined boxes) become exact-width runs; one that ends the line's
+//!   last words at the right edge is a right tab, and an outline's dots (a `repeat`) a tab with Word's dot leader.
+//!   An outline's entries are paragraphs of their own.
+//! - **Equations** are Word math (#132): the DOCX compile marks each with its tree (math.rs), inline ones go in
+//!   their line, display ones in a paragraph of their own as tall as Typst set them (with a number, a borderless row
+//!   of three cells).
+//! - **Images and drawings** are placeholders of their size until #133, so lines and pages still break where Typst
+//!   broke them.
 //!
 //! Page margins aren't in the laid-out pages: the export appends a probe that records `page.margin`
 //! (`MARGIN_PROBE`), and `auto` margins are resolved as typst-layout does.
@@ -33,7 +38,7 @@ use typst::layout::{
     Abs, Alignment, Frame, FrameItem, GridCell, HAlignment, PlaceElem, Point, Sides, Size,
     Transform, VAlignment,
 };
-use typst::model::{Destination, HeadingElem, TableCell};
+use typst::model::{Destination, HeadingElem, Numbering, TableCell};
 use typst::pdf::{PdfMarkerTag, PdfMarkerTagKind};
 use typst::text::Font;
 use typst::visualize::{Color, CurveItem, FixedStroke, Geometry, Paint, Shape};
@@ -93,6 +98,7 @@ pub fn model(doc: &PagedDocument) -> Model {
             seen_cells: &mut seen_cells,
             repeated: &mut repeated,
             skipping: None,
+            marker: None,
         };
         lin.walk(&page.frame, Transform::identity());
     }
@@ -234,6 +240,8 @@ enum Kind {
     /// follow, then what is drawn in it.
     Rect(Rect),
     Link(Rect, String),
+    /// An equation's Word math, from its marker (math.rs): inside the equation's tags, after what it draws.
+    Math(Json),
 }
 
 struct Item {
@@ -269,6 +277,8 @@ struct Linearizer<'a> {
     repeated: &'a mut HashSet<(Location, usize)>,
     /// A repeated cell being skipped, up to its end.
     skipping: Option<Location>,
+    /// The last equation marker: its end tag is dropped with it.
+    marker: Option<Location>,
 }
 
 impl Linearizer<'_> {
@@ -364,6 +374,8 @@ impl Linearizer<'_> {
                     url.to_string(),
                 )),
                 FrameItem::Link(..) => {}
+                FrameItem::Tag(Tag::Start(elem, _)) if self.math(elem) => {}
+                FrameItem::Tag(Tag::End(loc, ..)) if Some(*loc) == self.marker => {}
                 FrameItem::Tag(Tag::Start(elem, _)) => {
                     if matches!(elem.func().name(), "table" | "grid") {
                         self.tables.extend(elem.location());
@@ -391,11 +403,23 @@ impl Linearizer<'_> {
         }
     }
 
+    /// An equation's marker becomes its Word math.
+    fn math(&mut self, elem: &Content) -> bool {
+        let Some(math) = crate::math::marked(elem) else {
+            return false;
+        };
+        self.marker = elem.location();
+        self.push(Kind::Math(math));
+        true
+    }
+
     /// The tags in a frame whose content is a drawing, placed where the drawing is.
     fn tags(&mut self, frame: &Frame, at: Point) {
         for (_, item) in frame.items() {
             match item {
                 FrameItem::Group(g) => self.tags(&g.frame, at),
+                FrameItem::Tag(Tag::Start(elem, _)) if self.math(elem) => {}
+                FrameItem::Tag(Tag::End(loc, ..)) if Some(*loc) == self.marker => {}
                 FrameItem::Tag(Tag::Start(elem, _)) => self.push(Kind::Start(elem.clone(), at)),
                 FrameItem::Tag(Tag::End(loc, ..)) => self.push(Kind::End(*loc)),
                 _ => {}
@@ -804,12 +828,30 @@ enum Run {
     Tab,
     /// A line break Typst was told to make (`\`), not one it chose.
     Break,
-    /// Room held for what the model can't express yet (math, images): an exact-width gap until #132, #133.
+    /// Room held for what the model can't express yet (images): an exact-width gap until #133.
     Placeholder {
         width: f64,
         font: usize,
         size: f64,
     },
+    /// An equation (math.rs): its tree, in the math font.
+    Math {
+        math: Json,
+        font: usize,
+        size: f64,
+        color: String,
+        display: bool,
+    },
+}
+
+/// An inline equation in a paragraph's lines.
+struct Equation {
+    math: Option<Json>,
+    /// Its math font and colour, from the first glyph it draws.
+    font: Option<(usize, String)>,
+    size: f64,
+    /// Written in the line it starts in.
+    written: bool,
 }
 
 struct Line {
@@ -822,6 +864,8 @@ struct Line {
     runs: Vec<Run>,
     /// Taller than the profile's line box (math, a box): Word gets "at least".
     tall: bool,
+    /// What a `repeat` on the line fills its room with, as Word's tab leader (an outline's dots).
+    leader: Option<&'static str>,
     /// Width of its first word, or of whatever it starts with.
     first_word: f64,
     top: f64,
@@ -860,8 +904,10 @@ impl Builder {
     }
 
     fn sections(&mut self, pages: &[Page]) -> Json {
-        let _ = pages;
         let n = self.items.len();
+        // Each page's number as Typst shows it (its numbering's first numeral system: i, ii, …) and Word's format.
+        let numbering: Vec<(&'static str, u64, String)> =
+            pages.iter().map(page_numbering).collect();
         // Split each page's items into header, body and footer by position.
         // Groups in a margin (the header's and footer's frames) go whole, and elements started there take their ends:
         // a table broken across pages has the next page's header among its items.
@@ -919,7 +965,26 @@ impl Builder {
         };
         let first_area = area(&self.geometry[0]);
         let blocks = self.flow(&body, first_area, true);
-        let blocks = self.with_gaps(blocks, true);
+        let mut blocks = self.with_gaps(blocks, true);
+        // Where Typst's page numbering changes format or starts again (`counter(page).update(1)` after the front
+        // matter), Word starts a section on a new page, numbered from there.
+        for p in 1..numbering.len() {
+            let (format, number, _) = &numbering[p];
+            let (prev_format, prev, _) = &numbering[p - 1];
+            if format == prev_format && *number == prev + 1 {
+                continue;
+            }
+            if let Some(b) = blocks
+                .iter_mut()
+                .find(|b| b.page == p && !b.json.contains_key("frame"))
+            {
+                b.json.remove("pageBreak");
+                b.json.insert(
+                    "pageNumbering".into(),
+                    json!({ "format": format, "start": number }),
+                );
+            }
+        }
         let page_count = self.geometry.len();
         let marginal = |b: &mut Builder,
                         map: &HashMap<usize, Vec<usize>>,
@@ -942,9 +1007,10 @@ impl Builder {
         for (name, map) in [("header", &header), ("footer", &footer)] {
             let pages: Vec<(Vec<Json>, String)> =
                 (0..page_count).map(|p| marginal(self, map, p)).collect();
+            let labels: Vec<String> = numbering.iter().map(|n| n.2.clone()).collect();
             let roles = field_roles(
                 &pages.iter().map(|(b, _)| b.clone()).collect::<Vec<_>>(),
-                page_count,
+                &labels,
             );
             let fielded: Vec<(Vec<Json>, String)> = pages
                 .iter()
@@ -1005,6 +1071,14 @@ impl Builder {
             "margin".into(),
             json!({ "top": round(m.top), "right": round(m.right), "bottom": round(m.bottom), "left": round(m.left) }),
         );
+        if let Some((format, number, _)) = numbering.first() {
+            if *format != "decimal" || *number != 1 {
+                section.insert(
+                    "pageNumbering".into(),
+                    json!({ "format": format, "start": number }),
+                );
+            }
+        }
         section.insert(
             "blocks".into(),
             Json::Array(blocks.into_iter().map(|b| Json::Object(b.json)).collect()),
@@ -1130,9 +1204,21 @@ impl Builder {
                         Node::Equation { block: true } => {
                             self.flush(&mut pending, &mut out, area, heading);
                             let end = self.end_of(ids, i, elem);
-                            if let Some(b) = self.placeholder_block(&ids[i + 1..end], area) {
+                            let inner = &ids[i + 1..end];
+                            if let Some(b) = self
+                                .display_equation(inner, area)
+                                .or_else(|| self.placeholder_block(inner, area))
+                            {
                                 out.push(b);
                             }
+                            i = end + 1;
+                            continue;
+                        }
+                        // An inline equation goes to its paragraph whole: what it draws (a fraction's bar) isn't
+                        // the flow's.
+                        Node::Equation { block: false } => {
+                            let end = self.end_of(ids, i, elem);
+                            pending.extend_from_slice(&ids[i..=end.min(ids.len() - 1)]);
                             i = end + 1;
                             continue;
                         }
@@ -1385,6 +1471,8 @@ impl Builder {
                     k
                 }
                 Kind::End(loc) => started.get(loc).copied().unwrap_or(current),
+                // With its equation.
+                Kind::Math(_) => current,
             };
             current = k;
             parts[k].push(id);
@@ -1452,6 +1540,8 @@ impl Builder {
                     inside(*r).then_some(j + 1)
                 }
                 Kind::Group(r, _) => inside(*r).then(|| group_end(&self.items, ids, j + 1)),
+                // With its equation, which came before.
+                Kind::Math(_) => Some(j + 1),
                 // A start on the drawing's right or bottom edge is something beside it (the next cell).
                 Kind::Start(elem, at) => {
                     let (x, y) = (at.x.to_pt(), at.y.to_pt());
@@ -1569,17 +1659,44 @@ impl Builder {
         let mut texts: Vec<(usize, Text)> = Vec::new();
         let mut segs: Vec<(usize, Seg)> = Vec::new();
         let mut links: Vec<(usize, Rect, String)> = Vec::new();
-        let mut boxes: Vec<(usize, Rect)> = Vec::new();
-        let mut equation = 0usize;
-        let mut eq_start: Option<(usize, f64)> = None;
+        // Boxes of what is drawn: an equation's pieces (with its index in `equations`), or drawings.
+        let mut boxes: Vec<(usize, Rect, Option<usize>)> = Vec::new();
+        let mut equations: Vec<Equation> = Vec::new();
+        // The equation open, and its end tag.
+        let mut equation: Option<(usize, Option<Location>)> = None;
+        // A `repeat` open (an outline's dots), its end tag, and its fill's leader; then the leaders by page and band.
+        let mut repeat: Option<(Option<Location>, Option<&'static str>)> = None;
+        let mut leaders: Vec<(usize, f64, &'static str)> = Vec::new();
         for &id in ids {
             let page = self.items[id].page;
+            let eq = equation.map(|(e, _)| e);
+            // What a repeat draws is room a tab's leader fills in Word.
+            if let Some((end, leader)) = &mut repeat {
+                match &self.items[id].kind {
+                    Kind::End(loc) if Some(*loc) == *end => {
+                        repeat = None;
+                    }
+                    Kind::Text(t) => {
+                        if leader.is_none() {
+                            *leader = tab_leader(t.text.trim());
+                            if let Some(l) = *leader {
+                                leaders.push((page, t.y, l));
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+                continue;
+            }
             match &self.items[id].kind {
-                Kind::Text(t) if equation == 0 => texts.push((page, t.clone())),
-                Kind::Text(t) if equation > 0 => {
-                    // Math: a placeholder covering the equation's items.
-                    if let Some((_, x0)) = eq_start {
-                        eq_start = Some((page, x0.min(t.x)));
+                Kind::Start(elem, _) if elem.func().name() == "repeat" && eq.is_none() => {
+                    repeat = Some((elem.location(), None));
+                }
+                Kind::Text(t) if eq.is_none() => texts.push((page, t.clone())),
+                Kind::Text(t) => {
+                    let e = &mut equations[eq.unwrap()];
+                    if e.font.is_none() {
+                        e.font = Some((self.fonts.get(&t.font), t.color.clone()));
                     }
                     boxes.push((
                         page,
@@ -1589,36 +1706,78 @@ impl Builder {
                             w: t.width,
                             h: t.size * 1.2,
                         },
+                        eq,
                     ));
                 }
-                Kind::Start(elem, at) if elem.func().name() == "equation" => {
-                    equation += 1;
-                    eq_start = Some((page, at.x.to_pt()));
+                Kind::Start(elem, _) if elem.func().name() == "equation" && eq.is_none() => {
+                    equations.push(Equation {
+                        math: None,
+                        font: None,
+                        size: 11.0,
+                        written: false,
+                    });
+                    equation = Some((equations.len() - 1, elem.location()));
                 }
-                Kind::End(_) if equation > 0 => {
-                    // Ends are matched loosely: equations don't nest.
-                    equation = 0;
+                Kind::End(loc) if equation.is_some_and(|(_, end)| end == Some(*loc)) => {
+                    equation = None
                 }
+                Kind::Math(math) => {
+                    // Its marker comes after what the equation draws, inside its tags.
+                    if let Some(e) = equations.last_mut().filter(|e| e.math.is_none()) {
+                        e.size = math["size"].as_f64().unwrap_or(11.0);
+                        e.math = Some(math["math"].clone());
+                    }
+                }
+                // A fraction's bar, a root's line: part of the equation.
+                Kind::Seg(s) if eq.is_some() => boxes.push((
+                    page,
+                    Rect {
+                        x: s.x0.min(s.x1),
+                        y: s.y0.min(s.y1),
+                        w: (s.x1 - s.x0).abs(),
+                        h: (s.y1 - s.y0).abs().max(0.1),
+                    },
+                    eq,
+                )),
                 Kind::Seg(s) if s.horizontal() => segs.push((page, s.clone())),
                 Kind::Link(r, url) => links.push((page, *r, url.clone())),
-                Kind::Drawing(r) => boxes.push((page, *r)),
+                Kind::Drawing(r) => boxes.push((page, *r, eq)),
                 _ => {}
             }
         }
-        // Merge math pieces into placeholders per baseline-ish band.
+        // An equation's pieces merge into one box per baseline-ish band (two, when Typst broke it over lines).
         let mut lines: Vec<Line> = Vec::new();
-        let mut atoms: Vec<(usize, f64, f64, f64, Option<Text>, Option<Rect>)> = Vec::new(); // page, x, w, baseline
+        // page, x, w, baseline, text or box, the box's equation
+        let mut atoms: Vec<(
+            usize,
+            f64,
+            f64,
+            f64,
+            Option<Text>,
+            Option<Rect>,
+            Option<usize>,
+        )> = Vec::new();
         for (page, t) in &texts {
-            atoms.push((*page, t.x, t.width, t.y, Some(t.clone()), None));
+            atoms.push((*page, t.x, t.width, t.y, Some(t.clone()), None, None));
         }
-        // Placeholders: attach to the line whose baseline is inside their box.
-        let mut placeholders: Vec<(usize, Rect)> = Vec::new();
-        for (page, r) in boxes {
-            if let Some(last) = placeholders.last_mut() {
-                if last.0 == page
-                    && r.x <= last.1.right() + 1.0
-                    && r.y < last.1.bottom()
-                    && r.bottom() > last.1.y
+        // Boxes: attach to the line whose baseline is inside them.
+        let mut placeholders: Vec<(usize, Rect, Option<usize>)> = Vec::new();
+        for (page, r, eq) in boxes {
+            // An equation's pieces (a numerator, a denominator) make one box, wherever they are.
+            let same = |p: &(usize, Rect, Option<usize>)| {
+                p.0 == page
+                    && p.2 == eq
+                    && (eq.is_some()
+                        || r.x <= p.1.right() + 1.0 && r.y < p.1.bottom() && r.bottom() > p.1.y)
+            };
+            let at = match eq {
+                Some(_) => placeholders.iter().rposition(same),
+                None => placeholders
+                    .len()
+                    .checked_sub(1)
+                    .filter(|&k| same(&placeholders[k])),
+            };
+            if let Some(last) = at.map(|k| &mut placeholders[k]) {
                 {
                     let x0 = last.1.x.min(r.x);
                     let y0 = last.1.y.min(r.y);
@@ -1633,16 +1792,16 @@ impl Builder {
                     continue;
                 }
             }
-            placeholders.push((page, r));
+            placeholders.push((page, r, eq));
         }
-        for (page, r) in placeholders {
+        for (page, r, eq) in placeholders {
             let baseline = texts
                 .iter()
                 .filter(|(p, t)| *p == page && t.y >= r.y - 1.0 && t.y <= r.bottom() + 1.0)
                 .map(|(_, t)| t.y)
                 .next()
                 .unwrap_or(r.bottom());
-            atoms.push((page, r.x, r.w, baseline, None, Some(r)));
+            atoms.push((page, r.x, r.w, baseline, None, Some(r), eq));
         }
         // Atoms in document order by (page, baseline band, x) — text items keep their logical order within a line.
         let mut order: Vec<usize> = (0..atoms.len()).collect();
@@ -1658,7 +1817,7 @@ impl Builder {
                 .then(atoms[a].1.partial_cmp(&atoms[b].1).unwrap())
         });
         for k in order {
-            let (page, x, w, baseline, text, rect) = atoms[k].clone();
+            let (page, x, w, baseline, text, rect, eq) = atoms[k].clone();
             let new_line = match lines.last() {
                 Some(l) => l.page != page || (l.baseline - baseline).abs() >= 0.6,
                 None => true,
@@ -1673,6 +1832,7 @@ impl Builder {
                     right: x + w,
                     runs: Vec::new(),
                     tall: false,
+                    leader: None,
                     top: f64::MAX,
                     bottom: f64::MIN,
                     first_word,
@@ -1717,11 +1877,30 @@ impl Builder {
                     );
                 }
                 (None, Some(r)) => {
-                    line.runs.push(Run::Placeholder {
-                        width: r.w,
-                        font,
-                        size,
-                    });
+                    match eq.map(|e| &mut equations[e]) {
+                        // An equation broken over lines is Word's to break: all of it goes where it starts.
+                        Some(Equation { written: true, .. }) => {}
+                        Some(Equation {
+                            math: Some(math),
+                            font: Some((math_font, color)),
+                            size: math_size,
+                            written,
+                        }) => {
+                            *written = true;
+                            line.runs.push(Run::Math {
+                                math: math.clone(),
+                                font: *math_font,
+                                size: *math_size,
+                                color: color.clone(),
+                                display: false,
+                            });
+                        }
+                        _ => line.runs.push(Run::Placeholder {
+                            width: r.w,
+                            font,
+                            size,
+                        }),
+                    }
                     if r.y < baseline - TOP * line.size.max(11.0) - 0.5
                         || r.bottom() > baseline + BOTTOM * line.size.max(11.0) + 0.5
                     {
@@ -1734,6 +1913,12 @@ impl Builder {
             }
             line.left = line.left.min(x);
             line.right = line.right.max(x + w);
+        }
+        for line in lines.iter_mut() {
+            line.leader = leaders
+                .iter()
+                .find(|(p, y, _)| *p == line.page && (y - line.baseline).abs() < 0.6)
+                .map(|l| l.2);
         }
         // Underlines past the last atom (a blank at the end of a line).
         for line in lines.iter_mut() {
@@ -1856,9 +2041,13 @@ impl Builder {
         // A gap that takes what's left of a line (`h(1fr)`), so its last words end at the right edge: a tab to a
         // right tab stop there, as Word writes it. An exact gap would fill the line to a hundredth of a point, and an
         // engine measuring a hair wider would push the last words onto a line of their own.
+        // An outline entry's dots (a `repeat`) are a tab too, with a leader, to where its page number ends.
         let mut right_tab = false;
+        let mut tab_at = area.right;
         for line in lines.iter_mut() {
-            if (line.right - area.right).abs() > 0.6 {
+            if line.leader.is_some() {
+                tab_at = line.right;
+            } else if (line.right - area.right).abs() > 0.6 {
                 continue;
             }
             if let Some(k) = line.runs.iter().rposition(
@@ -1899,6 +2088,7 @@ impl Builder {
                     size,
                 }],
                 tall: false,
+                leader: None,
                 first_word: s.x1 - s.x0,
                 top: baseline - TOP * size,
                 bottom: baseline + BOTTOM * size,
@@ -1956,10 +2146,11 @@ impl Builder {
             json.insert("atLeast".into(), json!(true));
         }
         if right_tab {
-            json.insert(
-                "tabs".into(),
-                json!([{ "pos": round(area.right - area.left), "align": "end" }]),
-            );
+            let mut tab = json!({ "pos": round(tab_at - area.left), "align": "end" });
+            if let Some(leader) = lines.iter().find_map(|l| l.leader) {
+                tab["leader"] = json!(leader);
+            }
+            json.insert("tabs".into(), json!([tab]));
         }
         json.insert("lines".into(), json!(lines.len()));
         if let Some(level) = heading {
@@ -2147,7 +2338,164 @@ impl Builder {
         ids.iter().any(|&j| matches!(&self.items[j].kind, Kind::Start(e, _) if e.location() == Some(*loc) && matches!(classify(e, Point::zero(), 0), Node::List)))
     }
 
-    /// A placeholder for something the model can't express yet (a display equation): an empty paragraph as tall.
+    /// A display equation: a paragraph of its own, as tall as Typst set it, centred or where Typst put it; with its
+    /// number, the equation goes to a centre tab and the number to a right one.
+    fn display_equation(&mut self, ids: &[usize], area: Area) -> Option<Block> {
+        let mut math = None;
+        let mut numbered = false;
+        let mut size = 11.0;
+        let mut texts: Vec<(usize, &Text)> = Vec::new();
+        let mut rects: Vec<(usize, Rect)> = Vec::new();
+        // The equation's frame: as tall as Typst set it (glyphs' boxes are a guess at their extent).
+        let mut frame: Option<Rect> = None;
+        for &id in ids {
+            let page = self.items[id].page;
+            match &self.items[id].kind {
+                Kind::Group(g, _) if frame.is_none() => frame = Some(*g),
+                Kind::Math(m) => {
+                    math = Some(m["math"].clone());
+                    numbered = m["numbered"].as_bool().unwrap_or(false);
+                    size = m["size"].as_f64().unwrap_or(11.0);
+                }
+                Kind::Text(t) => texts.push((page, t)),
+                Kind::Seg(s) => rects.push((
+                    page,
+                    Rect {
+                        x: s.x0.min(s.x1),
+                        y: s.y0.min(s.y1),
+                        w: (s.x1 - s.x0).abs(),
+                        h: (s.y1 - s.y0).abs().max(0.1),
+                    },
+                )),
+                Kind::Drawing(r) => rects.push((page, *r)),
+                _ => {}
+            }
+        }
+        let math = math?;
+        let &(page, first) = texts.first()?;
+        // The number: the last text, apart from the rest (Typst sets it at the area's edge).
+        let mut number = None;
+        if numbered && texts.len() > 1 {
+            let (_, last) = texts[texts.len() - 1];
+            let body = &texts[..texts.len() - 1];
+            let right = body
+                .iter()
+                .map(|(_, t)| t.x + t.width)
+                .fold(f64::MIN, f64::max);
+            let left = body.iter().map(|(_, t)| t.x).fold(f64::MAX, f64::min);
+            if last.x > right + 2.0 || last.x + last.width < left - 2.0 {
+                number = texts.pop().map(|(_, t)| t.clone());
+            }
+        }
+        for (p, t) in &texts {
+            rects.push((
+                *p,
+                Rect {
+                    x: t.x,
+                    y: t.y - t.size,
+                    w: t.width,
+                    h: t.size * 1.25,
+                },
+            ));
+        }
+        let mut r = rects
+            .iter()
+            .filter(|(p, _)| *p == page)
+            .map(|(_, r)| *r)
+            .reduce(|a, b| {
+                let x0 = a.x.min(b.x);
+                let y0 = a.y.min(b.y);
+                Rect {
+                    x: x0,
+                    y: y0,
+                    w: a.right().max(b.right()) - x0,
+                    h: a.bottom().max(b.bottom()) - y0,
+                }
+            })?;
+        if let Some(f) = frame.filter(|f| f.h > 0.0) {
+            r.y = f.y;
+            r.h = f.h;
+        }
+        let font = self.fonts.get(&first.font);
+        let width = area.right - area.left;
+        let centered = ((r.x - area.left) - (area.right - r.right())).abs() < 2.0;
+        let equation = |left: f64, align: &str| {
+            let run = Run::Math {
+                math: math.clone(),
+                font,
+                size,
+                color: first.color.clone(),
+                display: true,
+            };
+            json!({
+                "type": "p",
+                "align": align,
+                "indent": { "left": round(left), "firstLine": 0.0 },
+                "pitch": round(r.h),
+                "atLeast": true,
+                "lines": 1,
+                "runs": [run_json(&run)],
+            })
+        };
+        let json = match &number {
+            // Numbered: a borderless row of three cells, the equation centred in the middle one and the number at
+            // the right (Word sets an equation between tab stops inline, its fractions smaller).
+            Some(n) => {
+                let side = (n.width + 2.0).min(width / 4.0);
+                let mut runs = Vec::new();
+                push_text(
+                    &mut runs,
+                    n.text.clone(),
+                    self.fonts.get(&n.font),
+                    n.size,
+                    n.color.clone(),
+                    false,
+                    None,
+                );
+                // The number's line, its baseline where Typst set it.
+                let number = json!({
+                    "type": "p",
+                    "align": "end",
+                    "indent": { "left": 0.0, "firstLine": 0.0 },
+                    "pitch": round(PITCH * n.size),
+                    "lines": 1,
+                    "before": round((n.y - TOP * n.size - r.y).max(0.0)),
+                    "runs": runs.iter().map(run_json).collect::<Vec<_>>(),
+                });
+                let cell = |col: usize, blocks: Vec<Json>| {
+                    json!({
+                        "col": col,
+                        "margins": { "top": 0.0, "right": 0.0, "bottom": 0.0, "left": 0.0 },
+                        "borders": {},
+                        "blocks": blocks,
+                    })
+                };
+                json!({
+                    "type": "table",
+                    "indent": 0.0,
+                    "columns": [round(side), round(width - 2.0 * side), round(side)],
+                    "rows": [{
+                        "cantSplit": true,
+                        "cells": [cell(0, vec![]), cell(1, vec![equation(0.0, "center")]), cell(2, vec![number])],
+                    }],
+                })
+            }
+            None if centered => equation(0.0, "center"),
+            None => equation((r.x - area.left).max(0.0), "start"),
+        };
+        let Json::Object(json) = json else {
+            unreachable!()
+        };
+        Some(Block {
+            page,
+            end_page: page,
+            top: r.y,
+            bottom: r.bottom(),
+            json,
+        })
+    }
+
+    /// A placeholder for something the model can't express yet: an empty paragraph as tall.
     fn placeholder_block(&mut self, ids: &[usize], area: Area) -> Option<Block> {
         let mut r: Option<(usize, Rect)> = None;
         for &id in ids {
@@ -2361,6 +2709,15 @@ impl Builder {
         // The grid's frame on each page it is on: the innermost group at its left edge, as wide as the first there,
         // opened before anything is drawn there (where a row continues on a page, the page's flow opens around it
         // first; a first cell's group is narrower).
+        // Its left edge: the frame right after its tag, which sits where the flow was (an `align`'s left edge, when
+        // the table is centred).
+        let x0 = match ids.get(1).map(|&j| &self.items[j]) {
+            Some(Item {
+                kind: Kind::Group(r, _),
+                page: p,
+            }) if *p == page => r.x,
+            _ => at.x.to_pt(),
+        };
         let mut frames: HashMap<usize, Rect> = HashMap::new();
         let mut drawn: HashSet<usize> = HashSet::new();
         for &id in &ids[1..] {
@@ -2368,7 +2725,7 @@ impl Builder {
             match &self.items[id].kind {
                 Kind::Group(r, _)
                     if !drawn.contains(&page)
-                        && (r.x - at.x.to_pt()).abs() < 0.5
+                        && (r.x - x0).abs() < 0.5
                         && frames.get(&page).is_none_or(|f| r.w >= f.w - 0.5) =>
                 {
                     frames.insert(page, *r);
@@ -2474,7 +2831,7 @@ impl Builder {
             })
             .max()
             .unwrap_or(1);
-        let left = at.x.to_pt();
+        let left = x0;
         let right = frame.map(|f| f.right()).unwrap_or(area.right);
         // Column starts: from cells that start in each column.
         let mut starts: Vec<Option<f64>> = vec![None; ncols + 1];
@@ -2946,6 +3303,8 @@ impl Builder {
                     to
                 }
                 Kind::End(loc) => started.get(loc).copied(),
+                // With its equation.
+                Kind::Math(_) => adopted.last().map(|&(k, _)| k),
             };
             if let Some(k) = to {
                 adopted.push((k, id));
@@ -3070,12 +3429,23 @@ fn underlined(segs: &[(usize, Seg)], page: usize, x0: f64, x1: f64, baseline: f6
     })
 }
 
+/// Word's tab leader for what a `repeat` fills with, if Word has one like it.
+fn tab_leader(fill: &str) -> Option<&'static str> {
+    match fill {
+        "." => Some("dot"),
+        "-" | "‐" | "–" => Some("hyphen"),
+        "_" => Some("underscore"),
+        "·" | "⋅" => Some("middleDot"),
+        _ => None,
+    }
+}
+
 fn last_font(runs: &[Run]) -> Option<usize> {
     runs.iter().rev().find_map(|r| match r {
         Run::Text { font, .. } | Run::Gap { font, .. } | Run::Placeholder { font, .. } => {
             Some(*font)
         }
-        Run::Tab | Run::Break => None,
+        Run::Tab | Run::Break | Run::Math { .. } => None,
     })
 }
 
@@ -3155,6 +3525,25 @@ fn run_json(run: &Run) -> Json {
         Run::Placeholder { width, font, size } => {
             json!({ "gap": round(*width), "font": font, "size": round(*size), "placeholder": true })
         }
+        Run::Math {
+            math,
+            font,
+            size,
+            color,
+            display,
+        } => {
+            let mut m = Map::new();
+            m.insert("math".into(), math.clone());
+            m.insert("font".into(), json!(font));
+            m.insert("size".into(), json!(round(*size)));
+            if color != "000000" {
+                m.insert("color".into(), json!(color));
+            }
+            if *display {
+                m.insert("display".into(), json!(true));
+            }
+            Json::Object(m)
+        }
         Run::Tab => json!({ "tab": true }),
         Run::Break => json!({ "break": true }),
     }
@@ -3231,7 +3620,7 @@ fn roman(s: &str) -> Option<u32> {
 }
 
 /// The numbers in a page's marginal text, in order.
-fn numbers(blocks: &[Json]) -> Vec<usize> {
+fn numbers(blocks: &[Json]) -> Vec<String> {
     let mut out = Vec::new();
     for b in blocks {
         for run in b
@@ -3241,32 +3630,78 @@ fn numbers(blocks: &[Json]) -> Vec<usize> {
             .flatten()
         {
             let text = run.get("text").and_then(|t| t.as_str()).unwrap_or("");
-            let mut digits = String::new();
-            for c in text.chars().chain(std::iter::once(' ')) {
-                if c.is_ascii_digit() {
-                    digits.push(c);
-                } else if !digits.is_empty() {
-                    out.push(digits.parse().unwrap_or(0));
-                    digits.clear();
-                }
-            }
+            out.extend(
+                tokens(text)
+                    .into_iter()
+                    .filter(|t| t.1)
+                    .map(|t| t.0.to_string()),
+            );
         }
     }
     out
 }
 
+/// A text's words and what's between them: (piece, whether it is a word). Page numbers are words: `12`, `iv`.
+fn tokens(text: &str) -> Vec<(&str, bool)> {
+    let mut out = Vec::new();
+    let mut start = 0;
+    let mut word = None;
+    for (i, c) in text.char_indices() {
+        let w = c.is_alphanumeric();
+        if word.is_some_and(|prev| prev != w) {
+            out.push((&text[start..i], word.unwrap()));
+            start = i;
+        }
+        word = Some(w);
+    }
+    if let Some(w) = word {
+        out.push((&text[start..], w));
+    }
+    out
+}
+
+/// A page's number as Typst shows it, and Word's format for its numbering (its first numeral system).
+fn page_numbering(page: &Page) -> (&'static str, u64, String) {
+    use codex::numeral_systems::NamedNumeralSystem as N;
+    let system = match &page.numbering {
+        Some(Numbering::Pattern(p)) => p.pieces.first().map(|(_, s)| *s),
+        _ => None,
+    };
+    let format = match system {
+        Some(N::LowerRoman) => "lowerRoman",
+        Some(N::UpperRoman) => "upperRoman",
+        Some(N::LowerLatin) => "lowerLetter",
+        Some(N::UpperLatin) => "upperLetter",
+        _ => "decimal",
+    };
+    let label = system
+        .and_then(|s| {
+            s.system()
+                .represent(page.number)
+                .ok()
+                .map(|r| r.to_string())
+        })
+        .unwrap_or_else(|| page.number.to_string());
+    (format, page.number, label)
+}
+
 /// What each number in the marginals is, by its index: the page's number (`PAGE`) where some page has it and not
 /// the count, the page count (`NUMPAGES`) the other way round. "2 / 2" alone can't say which is which.
-fn field_roles(pages: &[Vec<Json>], count: usize) -> Vec<Option<&'static str>> {
-    let lists: Vec<Vec<usize>> = pages.iter().map(|p| numbers(p)).collect();
+fn field_roles(pages: &[Vec<Json>], labels: &[String]) -> Vec<Option<&'static str>> {
+    let count = pages.len();
+    let total_label = count.to_string();
+    let lists: Vec<Vec<String>> = pages.iter().map(|p| numbers(p)).collect();
     let len = lists.iter().map(|l| l.len()).max().unwrap_or(0);
     (0..len)
         .map(|k| {
-            let at = |p: usize| lists[p].get(k).copied();
-            let page = (0..pages.len()).any(|p| at(p) == Some(p + 1) && p + 1 != count);
-            let total = (0..pages.len()).any(|p| at(p) == Some(count) && p + 1 != count);
-            let all_page = (0..pages.len()).all(|p| at(p).is_none() || at(p) == Some(p + 1));
-            let all_total = (0..pages.len()).all(|p| at(p).is_none() || at(p) == Some(count));
+            let at = |p: usize| lists[p].get(k).map(|s| s.as_str());
+            let label = |p: usize| labels.get(p).map(|s| s.as_str()).unwrap_or("");
+            let page = (0..count).any(|p| at(p) == Some(label(p)) && label(p) != total_label);
+            let total =
+                (0..count).any(|p| at(p) == Some(total_label.as_str()) && label(p) != total_label);
+            let all_page = (0..count).all(|p| at(p).is_none() || at(p) == Some(label(p)));
+            let all_total =
+                (0..count).all(|p| at(p).is_none() || at(p) == Some(total_label.as_str()));
             if page && all_page {
                 Some("PAGE")
             } else if total && all_total {
@@ -3290,33 +3725,28 @@ fn with_fields(block: &Json, roles: &[Option<&'static str>], k: &mut usize) -> J
                 out.push(run);
                 continue;
             };
-            let mut rest = text.as_str();
             let mut buf = String::new();
-            while !rest.is_empty() {
-                let digits: String = rest.chars().take_while(|c| c.is_ascii_digit()).collect();
-                if !digits.is_empty() {
-                    let role = roles.get(*k).copied().flatten();
+            for (piece, word) in tokens(&text) {
+                let role = if word {
                     *k += 1;
-                    if let Some(field) = role {
-                        if !buf.is_empty() {
-                            let mut r = run.clone();
-                            r["text"] = json!(std::mem::take(&mut buf));
-                            out.push(r);
-                        }
-                        let mut r = run.clone();
-                        // The field's digits differ by page: compared without them.
-                        r["text"] = json!("0");
-                        r["field"] = json!(field);
-                        out.push(r);
-                    } else {
-                        buf.push_str(&digits);
-                    }
-                    rest = &rest[digits.len()..];
+                    roles.get(*k - 1).copied().flatten()
+                } else {
+                    None
+                };
+                let Some(field) = role else {
+                    buf.push_str(piece);
                     continue;
+                };
+                if !buf.is_empty() {
+                    let mut r = run.clone();
+                    r["text"] = json!(std::mem::take(&mut buf));
+                    out.push(r);
                 }
-                let c = rest.chars().next().unwrap();
-                buf.push(c);
-                rest = &rest[c.len_utf8()..];
+                let mut r = run.clone();
+                // The field's text differs by page: compared without it.
+                r["text"] = json!("0");
+                r["field"] = json!(field);
+                out.push(r);
             }
             if !buf.is_empty() {
                 let mut r = run.clone();
@@ -3360,7 +3790,8 @@ fn classify(elem: &Content, at: Point, page: usize) -> Node {
         );
     }
     match name {
-        "par" => Node::Par,
+        // An outline's entries are paragraphs of their own (Typst sets each as a block).
+        "par" | "entry" => Node::Par,
         "list" | "enum" | "terms" => Node::List,
         "table" | "grid" => {
             let gutters = gutters(elem);

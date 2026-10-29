@@ -3,7 +3,7 @@
 
 import { strFromU8, unzipSync } from "fflate";
 import { describe, expect, it } from "vitest";
-import type { DocxBlock, DocxModel, DocxParagraph } from "../src";
+import type { DocxBlock, DocxMath, DocxMathRun, DocxModel, DocxParagraph } from "../src";
 import { writeDocx } from "../src";
 
 const FONT = new Uint8Array(Array.from({ length: 64 }, (_, i) => i));
@@ -94,6 +94,28 @@ describe("writeDocx", () => {
     expect(doc).toContain("<w:r><w:br/></w:r>");
   });
 
+  it("keeps rules one after another apart, as LibreOffice would shade the gap between them", () => {
+    const rule = { type: "rule", thickness: 0.4, color: "787878", indent: { left: 0, right: 0 } } as const;
+    const doc = parts(model([{ ...rule }, { ...rule, before: 20 }])).xml("word/document.xml");
+    const paragraphs = doc.match(/<w:p>.*?<\/w:p>/g) ?? [];
+    expect(paragraphs).toHaveLength(3);
+    expect(paragraphs[1]).not.toContain("<w:shd");
+    expect(paragraphs[1]).toContain('w:before="399"');
+    expect(paragraphs[2]).toContain('w:before="0"');
+  });
+
+  it("writes a tab stop's leader: an outline entry's dots", () => {
+    const doc = parts(
+      model([
+        p("", {
+          runs: [{ text: "Introduction", font: 0, size: 11 }, { tab: true }, { text: "1", font: 0, size: 11 }],
+          tabs: [{ pos: 440, align: "end", leader: "dot" }],
+        }),
+      ]),
+    ).xml("word/document.xml");
+    expect(doc).toContain('<w:tabs><w:tab w:val="right" w:leader="dot" w:pos="8800"/></w:tabs>');
+  });
+
   it("writes a row span as a merge restarted and continued in the rows below", () => {
     const cell = (col: number, extra = {}) => ({
       col,
@@ -123,7 +145,7 @@ describe("writeDocx", () => {
     expect(doc).toContain("<w:cantSplit/>");
   });
 
-  it("marks room held for equations and images with styles of its own", () => {
+  it("marks room held for images and drawings with styles of its own", () => {
     const doc = parts(
       model([
         p("", { runs: [{ gap: 30, font: 0, size: 11, placeholder: true }] }),
@@ -155,13 +177,33 @@ describe("writeDocx", () => {
       model([p("Before"), { type: "columns", gap: 20, columns: [[p("Left")], [p("Right")]] }, p("After")]),
     ).xml("word/document.xml");
     const sects = doc.match(/<w:sectPr>.*?<\/w:sectPr>/g) ?? [];
-    // The text before (one column), the columns, and the rest (the body's own), all on the same page.
+    // The text before (one column), the columns, and the rest (the body's own), all on the same page: the sections
+    // after the first start where the one before ended.
     expect(sects).toHaveLength(3);
-    for (const s of sects) expect(s).toContain('<w:type w:val="continuous"/>');
+    for (const s of sects.slice(1)) expect(s).toContain('<w:type w:val="continuous"/>');
     expect(sects[1]).toContain('<w:cols w:num="2" w:space="400"/>');
     expect(doc.indexOf("Left")).toBeLessThan(doc.indexOf('<w:br w:type="column"/>'));
     expect(doc.indexOf('<w:br w:type="column"/>')).toBeLessThan(doc.indexOf("Right"));
     expect(doc).not.toContain("\u0001");
+  });
+
+  it("starts a section on a new page where the page numbering changes, numbered as Typst numbers it", () => {
+    const m = model([p("Contents"), p("Introduction", { pageNumbering: { format: "decimal", start: 1 } })]);
+    const section = m.sections[0] as DocxModel["sections"][number];
+    section.pageNumbering = { format: "lowerRoman", start: 1 };
+    section.footer = [p("", { runs: [{ text: "0", font: 0, size: 11, field: "PAGE" }] })];
+    const doc = parts(m).xml("word/document.xml");
+    const sects = doc.match(/<w:sectPr>.*?<\/w:sectPr>/g) ?? [];
+    expect(sects).toHaveLength(2);
+    // The front matter's section ends in its last paragraph, numbered in roman numerals.
+    const contents = /<w:p>(?:(?!<w:p>).)*Contents<\/w:t><\/w:r><\/w:p>/.exec(doc)?.[0] ?? "";
+    expect(contents).toContain("<w:sectPr>");
+    expect(doc.match(/<w:p>/g)).toHaveLength(2);
+    expect(sects[0]).toContain('<w:pgNumType w:fmt="lowerRoman" w:start="1"/>');
+    expect(sects[1]).toContain('<w:type w:val="nextPage"/>');
+    expect(sects[1]).toContain('<w:pgNumType w:fmt="decimal" w:start="1"/>');
+    // Both sections show the footer: the same reference in each.
+    for (const s of sects) expect(s).toContain('<w:footerReference w:type="default"');
   });
 
   it("writes placed text as a frame at its page position, in the schema's order", () => {
@@ -212,5 +254,118 @@ describe("writeDocx", () => {
     expect(doc.xml("word/numbering.xml")).toContain('<w:numFmt w:val="decimal"/><w:lvlText w:val="%1."/>');
     expect(doc.xml("word/document.xml")).toContain('<w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr>');
     expect(doc.xml("word/document.xml")).toContain('<w:ind w:left="260" w:hanging="260"/>');
+  });
+
+  describe("equations (#132)", () => {
+    const MATH_FONT = { name: "New Computer Modern Math", bold: false, italic: false, nbsp: 0.25 };
+    const r = (text: string, sty: "p" | "i" = "i"): DocxMath => ({ t: "r", text, sty });
+    const equation = (math: DocxMath[], extra: Partial<DocxMathRun> = {}): DocxMathRun => ({
+      math,
+      font: 1,
+      size: 11,
+      ...extra,
+    });
+    const doc = (blocks: DocxBlock[]) => {
+      const m = model(blocks);
+      m.fonts.push(MATH_FONT);
+      return parts(m, [FONT, FONT]);
+    };
+    const body = (math: DocxMath[]) =>
+      (
+        /<m:oMath>(.*)<\/m:oMath>/.exec(
+          doc([p("", { runs: [{ text: "x ", font: 0, size: 11 }, equation(math)] })]).xml("word/document.xml"),
+        )?.[1] ?? ""
+      ).replace(/<w:rPr>.*?<\/w:rPr>/g, "");
+
+    it("writes an inline equation in its line, in the math font, which the settings declare", () => {
+      const { xml } = doc([p("", { runs: [{ text: "Area ", font: 0, size: 11 }, equation([r("x")])] })]);
+      const document = xml("word/document.xml");
+      expect(document).toContain('xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"');
+      expect(document).toMatch(
+        /<m:oMath><m:r><m:rPr><m:sty m:val="i"\/><\/m:rPr><w:rPr><w:rFonts w:ascii="New Computer Modern Math"/,
+      );
+      expect(xml("word/settings.xml")).toContain(
+        '</w:compat><m:mathPr><m:mathFont m:val="New Computer Modern Math"/></m:mathPr>',
+      );
+    });
+
+    it("writes a display equation in a paragraph of its own, aligned as the paragraph", () => {
+      const document = doc([p("", { align: "center", runs: [equation([r("x")], { display: true })] })]).xml(
+        "word/document.xml",
+      );
+      expect(document).toContain('<m:oMathPara><m:oMathParaPr><m:jc m:val="center"/></m:oMathParaPr><m:oMath>');
+      expect(document).not.toContain("\u200b");
+    });
+
+    it("keeps an inline equation alone in its paragraph inline with a zero-width space", () => {
+      const document = doc([p("", { runs: [equation([r("x")])] })]).xml("word/document.xml");
+      expect(document).toContain("</m:oMath><w:r>");
+      expect(document).toContain("\u200b</w:t>");
+    });
+
+    it("writes each structure's properties first and its arguments in the schema's order", () => {
+      expect(body([{ t: "f", type: "noBar", num: [r("n")], den: [r("k")] }])).toBe(
+        '<m:f><m:fPr><m:type m:val="noBar"/></m:fPr><m:num><m:r><m:rPr><m:sty m:val="i"/></m:rPr><m:t xml:space="preserve">n</m:t></m:r></m:num>' +
+          '<m:den><m:r><m:rPr><m:sty m:val="i"/></m:rPr><m:t xml:space="preserve">k</m:t></m:r></m:den></m:f>',
+      );
+      expect(body([{ t: "s", e: [r("x")], sub: [r("1", "p")], sup: [r("2", "p")] }])).toMatch(
+        /^<m:sSubSup><m:e>.*<\/m:e><m:sub>.*<\/m:sub><m:sup>.*<\/m:sup><\/m:sSubSup>$/,
+      );
+      expect(body([{ t: "s", pre: true, e: [r("C")], sub: [r("6", "p")], sup: [r("14", "p")] }])).toMatch(
+        /^<m:sPre><m:sub>.*<\/m:sub><m:sup>.*<\/m:sup><m:e>.*<\/m:e><\/m:sPre>$/,
+      );
+      expect(body([{ t: "nary", chr: "∑", limits: true, sub: [r("i")], e: [r("i")] }])).toMatch(
+        /^<m:nary><m:naryPr><m:chr m:val="∑"\/><m:limLoc m:val="undOvr"\/><m:supHide m:val="1"\/><\/m:naryPr><m:sub>.*<\/m:sub><m:sup><\/m:sup><m:e>.*<\/m:e><\/m:nary>$/,
+      );
+      expect(
+        body([{ t: "func", name: [{ t: "lim", below: true, e: [r("lim", "p")], lim: [r("x")] }], e: [r("x")] }]),
+      ).toMatch(
+        /^<m:func><m:fName><m:limLow><m:e>.*<\/m:e><m:lim>.*<\/m:lim><\/m:limLow><\/m:fName><m:e>.*<\/m:e><\/m:func>$/,
+      );
+      // A square root's degree is there, hidden.
+      expect(body([{ t: "rad", e: [r("2", "p")] }])).toMatch(
+        /^<m:rad><m:radPr><m:degHide m:val="1"\/><\/m:radPr><m:deg><\/m:deg><m:e>.*<\/m:e><\/m:rad>$/,
+      );
+      expect(body([{ t: "d", open: "{", close: "", e: [r("x")] }])).toMatch(
+        /^<m:d><m:dPr><m:begChr m:val="\{"\/><m:endChr m:val=""\/><\/m:dPr><m:e>.*<\/m:e><\/m:d>$/,
+      );
+      expect(body([{ t: "acc", chr: "\u0302", e: [r("x")] }])).toMatch(
+        /^<m:acc><m:accPr><m:chr m:val="\u0302"\/><\/m:accPr>/,
+      );
+      expect(body([{ t: "bar", top: true, e: [r("z")] }])).toMatch(/^<m:bar><m:barPr><m:pos m:val="top"\/><\/m:barPr>/);
+      expect(body([{ t: "groupChr", chr: "⏞", top: true, e: [r("a")] }])).toMatch(
+        /^<m:groupChr><m:groupChrPr><m:chr m:val="⏞"\/><m:pos m:val="top"\/><m:vertJc m:val="bot"\/><\/m:groupChrPr>/,
+      );
+      expect(body([{ t: "box", strike: "bltr", e: [r("x")] }])).toMatch(
+        /^<m:borderBox><m:borderBoxPr><m:hideTop m:val="1"\/><m:hideBot m:val="1"\/><m:hideLeft m:val="1"\/><m:hideRight m:val="1"\/><m:strikeBLTR m:val="1"\/><\/m:borderBoxPr>/,
+      );
+    });
+
+    it("writes a matrix's columns, its gap, and empty cells LibreOffice keeps", () => {
+      const m = body([
+        {
+          t: "m",
+          rows: [
+            [[r("a")], [r("=b", "p")]],
+            [[], [r("=c", "p")]],
+          ],
+          align: ["right", "left"],
+          gap: 0,
+        },
+      ]);
+      expect(m).toContain(
+        '<m:mPr><m:cGpRule m:val="3"/><m:cGp m:val="0"/><m:mcs><m:mc><m:mcPr><m:count m:val="1"/><m:mcJc m:val="right"/></m:mcPr></m:mc>' +
+          '<m:mc><m:mcPr><m:count m:val="1"/><m:mcJc m:val="left"/></m:mcPr></m:mc></m:mcs></m:mPr>',
+      );
+      expect(m.match(/<m:mr>/g)).toHaveLength(2);
+      expect(m).toContain('<m:t xml:space="preserve">\u200b</m:t>');
+    });
+
+    it("writes normal text and Word's alphabets as run properties", () => {
+      expect(body([{ t: "r", text: "if", nor: true }])).toContain("<m:rPr><m:nor/></m:rPr>");
+      expect(body([{ t: "r", text: "R", sty: "p", scr: "double-struck" }])).toContain(
+        '<m:rPr><m:scr m:val="double-struck"/><m:sty m:val="p"/></m:rPr>',
+      );
+    });
   });
 });

@@ -68,15 +68,25 @@ laid-out pages as the PDF, and written as Word's own structure, so a teacher can
 - paragraphs and their runs (fonts, sizes, colours, links), headings with Word's heading styles, lists with Word's
   numbering, tables and grids with Typst's column widths and repeated header rows, framed boxes as one-cell tables,
   ruled lines, `columns` as Word's columns, placed text as frames where Typst put it;
-- page size and margins, headers and footers, page numbers as fields, page breaks where Typst starts a page;
+- page size and margins, headers and footers, page numbers as fields (numbered as Typst numbers the pages: roman
+  numerals for front matter and a restart, as Word sections), page breaks where Typst starts a page, outlines with
+  Word's dot leaders;
+- equations as Word equations you can edit: fractions, scripts and limits, roots, brackets, matrices and `cases`,
+  big operators with their operands, function names, accents, braces and aligned lines, inline in their line or
+  displayed (a numbered one with its number at the right), in Typst's math font;
 - Typst's fonts, embedded, so Word sets the text in the faces the PDF uses;
 - the [layout profile](/docs/concepts/render-targets#layout-profile)'s settings, which make Word break lines and pages
   where Typst does: exact line pitch, ragged right, no hyphenation, rows that stay on one page.
 
-Equations, images and drawings aren't written yet: they hold their place as empty space of their size, so the text
-around them still falls where it does in the PDF. The file is checked against the PDF with LibreOffice and Microsoft's
-Open XML validator; edits made in Word don't come back to the document. One thing Word can't reproduce: a word longer
-than its table column, which Typst lets run past the cell, Word breaks inside the cell.
+Images and drawings aren't written yet: they hold their place as empty space of their size, so the text around them
+still falls where it does in the PDF. The file is checked against the PDF with LibreOffice, ONLYOFFICE and Microsoft's
+Open XML validator; edits made in Word don't come back to the document. What Word can't reproduce exactly:
+
+- a word longer than its table column, which Typst lets run past the cell, Word breaks inside the cell;
+- equations: each word processor typesets math itself, so an equation can come out a little wider or taller than
+  Typst's, and a line or a page break can move where a document has many of them. Typst's math font is embedded and
+  named as the document's math font; whether Word uses it rather than Cambria Math is untested (no Word in the
+  checks).
 
 ## HTML
 
