@@ -1,9 +1,17 @@
 # DOCX checks (#131)
 
-`check.mjs` exports every Latin corpus document (the edu and llm sets, without non-Latin scripts) to PDF and DOCX
-through `@typstream/node`, healed in final mode first as an engine exports it (lint fixes included, the layout
+`check.mjs` exports every Latin corpus document (the edu, llm and islands sets, without non-Latin scripts) to PDF and
+DOCX through `@typstream/node`, healed in final mode first as an engine exports it (lint fixes included, the layout
 profile's among them), has a layout engine lay the DOCX out, and compares its lines and page starts with Typst's
-PDF (`lines.mjs`). Documents with images or drawings hold placeholders until #133, and are reported apart.
+PDF (`lines.mjs`).
+
+Documents with pictures (#133: images, CeTZ canvases, mind maps, edu's drawings, boxes with rounded corners) are
+reported apart. Text drawn in a picture is outlines in the DOCX, so Typst's is left out of the lines (the model says
+where each picture is: `@typstream/node`'s internal `renderDocxModel`). Each picture is compared with Typst's PDF
+pixel by pixel (`pixels.mjs`), as tools/browser-suites' PDF raster suite compares the canvas (#119): both rasterized
+by poppler, the differing pixels that touch counted, at most 3 allowed. A picture is found where it is in the other
+PDF first, on its page or the next (where the text above it came out taller, the lines already count that), to an
+eighth of a point.
 
 Documents with equations (#132) are reported apart too: each engine sets math itself (LibreOffice in formula objects
 of its own spacing), so their lines are compared by the text around the equations (`textLinesOf`: `pdftohtml`'s
@@ -27,13 +35,15 @@ Word would report as unreadable content.
 
 ```bash
 dotnet publish tools/docx-check/validator -c Release -o tools/docx-check/validator/out
-node tools/docx-check/check.mjs --validate tools/docx-check/validator/out/validator.dll --min-lines 0.99 --min-math-lines 0.95
+node tools/docx-check/check.mjs --validate tools/docx-check/validator/out/validator.dll --min-lines 0.99 --min-math-lines 0.95 \
+  --min-picture-lines 0.92 --min-pictures 0.95
 ```
 
 CI's `DOCX (validator, LibreOffice)` job runs that: it fails on any validator error, on an equation that doesn't
-come out whole, and when fewer of Typst's lines come back than the floors (`--min-lines` on the documents without
-equations or placeholders, `--min-math-lines` on those with equations; LibreOffice versions differ, so they're
-floors, not per-document baselines). The nightly `DOCX (ONLYOFFICE)` job reports ONLYOFFICE's numbers.
+come out whole, when fewer of Typst's lines come back than the floors (`--min-lines` on the documents without
+equations or pictures, `--min-math-lines` on those with equations, `--min-picture-lines` on those with pictures), and
+when fewer pictures than `--min-pictures` match the PDF's pixels (LibreOffice versions differ, so these are floors,
+not per-document baselines). The nightly `DOCX (ONLYOFFICE)` job reports ONLYOFFICE's numbers.
 
 Working on the model: `examples/frames.rs` in engine-wasm dumps a document's laid-out frames (items, positions,
 tags), and `examples/docx_model.rs` writes its model, fonts and Typst's PDF; with `--native`, the check gets Universe's
@@ -56,3 +66,8 @@ have here, so whatever face has them). Exact line spacing would keep an equation
 Lines are compared with a leader's dots as one, since how many fit depends on their spacing. LibreOffice shades
 consecutive paragraphs with the same shading as one block, the gaps between them too, so rules one after another
 (answer lines) have a paragraph a hundredth of a point tall between them; the line comparison doesn't see colour.
+
+Pictures (#133): LibreOffice (24.2 and 26.2) draws an SVG picture whose content stays inside its view box a pixel at
+96 DPI smaller than its frame (0.75 pt narrower and shorter, 0.31 pt in from its top left), so every picture's SVG has
+a stroke outside its view box, which nothing draws. ONLYOFFICE draws some a few tenths of a point shorter. All three
+draw the SVG, not the PNG (that is for older Word and apps that don't read Word's SVG extension).

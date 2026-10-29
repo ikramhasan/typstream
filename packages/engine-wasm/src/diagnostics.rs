@@ -31,6 +31,20 @@ pub fn to_js_array(
     out
 }
 
+/// A `docx/fallback` warning (#133): free-form content (`what`, written at `span`) is a picture in a DOCX export, so
+/// its text can't be edited there.
+pub fn fallback(world: &MemWorld, span: typst::syntax::Span, what: &str) -> JsValue {
+    let diag = SourceDiagnostic::warning(
+        span,
+        format!("{what} is a picture in a DOCX export: its text can't be edited there"),
+    )
+    .with_hint("edu's `callout` draws a box Word keeps editable");
+    let obj: js_sys::Object = to_js(world, &diag).into();
+    set(&obj, "source", "typstream");
+    set(&obj, "code", "docx/fallback");
+    obj.into()
+}
+
 /// `{ severity, span, message, hints, trace, file?, source: "typst" }`:
 /// - `span` is in the main source: the diagnostic's own range there, or for a
 ///   problem in another file the nearest call site in main (from the trace),

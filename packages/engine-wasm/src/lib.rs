@@ -10,6 +10,8 @@ mod diagnostics;
 #[doc(hidden)]
 pub mod docx;
 pub mod math;
+pub mod picture;
+mod raster;
 mod draw;
 // Public for native tools (`examples/`), not part of the wasm API.
 #[doc(hidden)]
@@ -36,8 +38,8 @@ export type Range = { from: number; to: number };
 /** One step of the call chain that led to a diagnostic. `span` is in /main.typ, or `null` if the step isn't. */
 export type TraceItem = { message: string; span: Range | null };
 /**
- * A Typst error or warning, in the shape of `@typstream/core`'s `Diagnostic` with
- * /main.typ as the document. `span` is in /main.typ: the problem itself, or for a
+ * A Typst error or warning, or one of the engine's own (`source: "typstream"`), in the
+ * shape of `@typstream/core`'s `Diagnostic` with /main.typ as the document. `span` is in /main.typ: the problem itself, or for a
  * problem in another file the nearest call site in /main.typ (else `null`); `file`
  * then holds the original location. `trace` is innermost first.
  */
@@ -48,7 +50,9 @@ export type Diagnostic = {
   hints: string[];
   trace: TraceItem[];
   file?: { path: string; span: Range | null };
-  source: "typst";
+  /** Typst's, or the engine's own: a DOCX export's `docx/fallback` warnings (`code`). */
+  source: "typst" | "typstream";
+  code?: string;
 };
 /**
  * What every compile returns. `ms` is the time spent in the call: compile,
@@ -149,9 +153,22 @@ export type SvgChangedResult = CompileResult & {
 export type CheckResult = CompileResult & { pageCount?: number };
 /**
  * A paged compile read into a DOCX document model (`compile_docx_model`): `model` is `@typstream/docx`'s
- * `DocxModel` as JSON, `fonts` the data of the faces it names, in its order.
+ * `DocxModel` as JSON, `fonts` the data of the faces it names and `pictures` the pictures it refers to, in its
+ * order. Free-form content a picture holds (a box with rounded corners) is a `docx/fallback` warning.
  */
-export type DocxModelResult = CompileResult & { model?: string; fonts?: Uint8Array[]; pageCount?: number };
+export type DocxModelResult = CompileResult & {
+  model?: string;
+  fonts?: Uint8Array[];
+  pictures?: DocxPictureData[];
+  pageCount?: number;
+};
+/** A picture of a DOCX model (#133): what Word draws, and the PNG older Word and other apps draw instead. */
+export interface DocxPictureData {
+  /** The picture as SVG, as typst-svg writes a page. */
+  svg: string;
+  /** The picture as PNG, at 300 DPI (less for one bigger than a page). */
+  png: Uint8Array;
+}
 "#;
 
 #[cfg(feature = "pdf")]
@@ -453,6 +470,23 @@ impl Engine {
                     .map(|data| JsValue::from(js_sys::Uint8Array::from(data.as_slice())))
                     .collect();
                 set(&obj, "fonts", fonts);
+                let pictures: js_sys::Array = model
+                    .pictures
+                    .iter()
+                    .map(|p| {
+                        let entry = js_sys::Object::new();
+                        set(&entry, "svg", p.svg.as_str());
+                        set(&entry, "png", js_sys::Uint8Array::from(p.png.as_slice()));
+                        JsValue::from(entry)
+                    })
+                    .collect();
+                set(&obj, "pictures", pictures);
+                if let Ok(list) = js_sys::Reflect::get(&obj, &"diagnostics".into()) {
+                    let list: js_sys::Array = list.into();
+                    for (span, what) in &model.fallbacks {
+                        list.push(&diagnostics::fallback(&self.world, *span, what));
+                    }
+                }
                 set(&obj, "pageCount", doc.pages().len() as f64);
                 obj
             }

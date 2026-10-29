@@ -262,6 +262,7 @@ export const engineWasm = (options: EngineWasmOptions = {}): EngineAdapter => {
           const result = {
             model: r.ok ? (r.model ?? null) : null,
             fonts: r.fonts ?? [],
+            pictures: r.pictures ?? [],
             diagnostics: r.diagnostics,
             compileMs: r.ms,
           };

@@ -55,6 +55,7 @@ export const eduPromptRules: string[] = [
   "Multiple choice: `#mcq([option], [option], ..., answer: n)` with n counting from 1. Matching: `#matching((left, right), ...)` with the pairs correctly matched; edu shuffles the right column.",
   'Write chemical formulas and equations with `#ce("2H2 + O2 -> 2H2O")`. Use Typst math for mathematics.',
   "Use `#columns(2)[...]` for two flowing columns and `#grid(columns: 2, ...)` for side-by-side content.",
+  "Put boxed text in edu's components (`#callout`, `#instructions`). Never give a `block`, `box` or `rect` rounded corners (`radius`) and never rotate text: a Word export keeps those only as pictures.",
   "Add `#answer-key()` at the end when the teacher asks for an answer key; it lists every answer by question and appears only in the teacher's copy.",
 ];
 

@@ -64,6 +64,18 @@ describe("exportDocx", () => {
     expect(files["word/settings.xml"]).toMatch(/<m:mathFont m:val="NewComputerModern ?Math"\/>/);
   });
 
+  it("writes what Word can't draw as pictures, SVG with a PNG, from the worker (#133)", async () => {
+    const files = await exported(
+      "Above.\n\n#box(width: 3cm, height: 1cm, place(circle(radius: 0.4cm, fill: red)))\n\nBelow.\n",
+    );
+    const doc = files["word/document.xml"] as string;
+    expect(doc).toContain("<wp:anchor ");
+    expect(doc).toContain("<asvg:svgBlip ");
+    expect(files["word/media/picture1.svg"]).toMatch(/^<svg /);
+    expect(files["word/media/picture1.png"]?.slice(1, 4)).toBe("PNG");
+    expect(files["[Content_Types].xml"]).toContain('<Default Extension="svg" ContentType="image/svg+xml"/>');
+  });
+
   it("rejects a document that doesn't compile, as the other exports do", async () => {
     const doc = engine.open({ target: "paged", text: "#nope" });
     doc.finish();

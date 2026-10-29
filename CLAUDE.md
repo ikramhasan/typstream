@@ -18,7 +18,9 @@ packages/engine   @typstream/engine: main-thread client (heal → scheduler → 
                   fallback (block isolation, stable prefix) and the Typst runtime library they insert; `worker.ts`, spawned
                   by `engineWorker()`).
 packages/engine-wasm  @typstream/engine-wasm: Typst 0.15.1 as wasm (Rust crate + wasm-bindgen glue): HTML, changed pages (SVG, or drawings for canvases), PDF, UTF-16 diagnostics,
-                  and the DOCX export's document model (`src/docx.rs`, read from the laid-out pages).
+                  and the DOCX export's document model (`src/docx.rs`, read from the laid-out pages), with pictures of
+                  what Word can't draw (`src/picture.rs`: typst-svg, and `src/raster/`, typst-render vendored without
+                  PDF images, for their PNG).
 packages/docx     @typstream/docx: the DOCX writer (OOXML from engine-wasm's model, fonts embedded, fflate); the engine's server
                   loads it on the first `export/docx` (#131).
 packages/html-compat  @typstream/html-compat: Typst prelude + CSS so HTML export keeps grid, align, shapes, place, … (tests need the engine).
@@ -48,7 +50,8 @@ tools/compile-oracle        Do healed prefixes compile? heal × engine-wasm over
 tools/llm-corpus  Real model output (#24): records Claude streams with edu's prompt kit, measures final-mode compile errors,
                   promotes recordings into corpus/llm.
 tools/docx-check  DOCX exports against Typst's PDF (#131): the Latin corpus through @typstream/node, LibreOffice's (or
-                  ONLYOFFICE's) lines and page starts compared with the PDF's, Microsoft's Open XML validator (validator/).
+                  ONLYOFFICE's) lines and page starts compared with the PDF's, pictures pixel by pixel (pixels.mjs),
+                  Microsoft's Open XML validator (validator/).
 tools/browser-suites  Corpus-wide browser suites (#19): final-render equivalence, flicker, accessibility (axe), preview vs PDF
                     (#118), and visual regression against baselines rendered in Playwright's Docker image.
 tools/repo        Repo tooling: package layer table (layers.mjs), layering check, shared tsup and api-extractor configs,
@@ -106,7 +109,7 @@ In `packages/engine-wasm` (Rust build, ~3 min cold):
 In `packages/engine`:
 - `pnpm test`: the `node` vitest project (client against a fake worker; server and protocol conformance against engine-wasm in-process). Needs engine-wasm's `dist/`.
 - `pnpm test:browser`: the `browser` project, the real worker in Chromium, Firefox and WebKit (vitest browser mode, Playwright). `BROWSERS=chromium` runs one.
-- `pnpm size`: main thread ≤ 9.6 KB, worker JS ≤ 40 KB, `@typstream/engine/websocket` and `@typstream/engine/images` ≤ 1.5 KB gzipped each, the DOCX writer the worker `import()`s ≤ 11.5 KB.
+- `pnpm size`: main thread ≤ 9.6 KB, worker JS ≤ 40 KB, `@typstream/engine/websocket` and `@typstream/engine/images` ≤ 1.5 KB gzipped each, the DOCX writer the worker `import()`s ≤ 12.5 KB.
 - Pages and PDFs follow the layout profile (#129): the server puts `LAYOUT_PROFILE` (`src/server/profile.ts`) before
   every paged compile's and PDF export's preamble (constant 1.3em pitch, ragged right, no hyphenation, unbreakable
   table rows), so a DOCX can match them; heal's `layout-profile` lint removes what would beat it. Not the HTML target.
@@ -183,8 +186,9 @@ DOCX checks (`tools/docx-check`, README there): `node tools/docx-check/check.mjs
 compares LibreOffice's layout with the PDF; `--validate <dll>` adds Microsoft's validator (`dotnet publish
 tools/docx-check/validator -c Release -o tools/docx-check/validator/out`), `--onlyoffice` uses ONLYOFFICE in Docker,
 `--native` takes the model from engine-wasm's native example (no wasm build). CI runs it with the validator and
-line floors (99% on documents without equations or images, 95% on those with equations, each of which must come out
-whole, #132); nightly runs ONLYOFFICE.
+line floors (99% on documents without equations or pictures, 95% on those with equations, each of which must come out
+whole, #132, 92% on those with pictures) and a picture floor (95% of pictures within the PDF raster suite's tolerance,
+pixel by pixel, #133); nightly runs ONLYOFFICE.
 
 Compile oracle (`tools/compile-oracle`, needs the built engine): `pnpm turbo run test --filter=@typstream/compile-oracle`; `pnpm --filter @typstream/compile-oracle report` for the full measurement (minutes).
 

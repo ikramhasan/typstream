@@ -168,6 +168,27 @@ describe("render", () => {
     expect(r.pageCount).toBe(2);
   });
 
+  it("exports what Word can't draw as pictures (#133): SVG with a PNG, and a warning for a rounded box's text", async () => {
+    const source =
+      "Before.\n\n#box(width: 4cm, height: 2cm, place(circle(radius: 0.5cm, fill: blue)))\n\n" +
+      "#block(radius: 4pt, stroke: 1pt, inset: 6pt)[Rounded text]\n\nAfter.";
+    const r = await render(source, "docx", { engine });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    const files = unzipSync(r.data);
+    const doc = strFromU8(files["word/document.xml"] as Uint8Array);
+    for (const text of ["Before.", "After."]) expect(doc).toContain(text);
+    // The rounded box's text is in its picture.
+    expect(doc).not.toContain("Rounded text");
+    expect(doc.match(/<wp:anchor /g)).toHaveLength(2);
+    expect(strFromU8(files["word/media/picture1.svg"] as Uint8Array)).toMatch(/^<svg /);
+    expect([...(files["word/media/picture1.png"] as Uint8Array).slice(1, 4)]).toEqual([0x50, 0x4e, 0x47]);
+    const warning = r.diagnostics.find((d) => d.code === "docx/fallback");
+    expect(warning).toMatchObject({ severity: "warning", source: "typstream" });
+    expect(warning?.message).toContain("a box with rounded corners is a picture");
+    expect(source.slice(warning?.span?.from, warning?.span?.to)).toContain("block(");
+  });
+
   it("returns diagnostics and no data for a broken document", async () => {
     const r = await render("#nope", "pdf", { engine });
     expect(r).toMatchObject({ ok: false, diagnostics: [{ message: "unknown variable: nope" }] });

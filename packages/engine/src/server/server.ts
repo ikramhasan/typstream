@@ -1012,7 +1012,7 @@ class Server implements EngineServer {
       if (r.model === null) return { uri, rev, diagnostics, status: "error" };
       // The writer loads on the first DOCX export: it isn't part of the worker's own code.
       const { writeDocx } = await import("@typstream/docx");
-      return { uri, rev, diagnostics, status: "ok", data: writeDocx(JSON.parse(r.model), r.fonts) };
+      return { uri, rev, diagnostics, status: "ok", data: writeDocx(JSON.parse(r.model), r.fonts, r.pictures) };
     },
 
     "export/pdf": async ({ uri, rev, inputs }: ExportParams): Promise<ExportResult<Uint8Array>> => {

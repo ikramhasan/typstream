@@ -32,6 +32,7 @@ export {
   type RenderFormat,
   type RenderResult,
   render,
+  renderDocxModel,
   type ValidateOptions,
   type ValidateResult,
   validate,

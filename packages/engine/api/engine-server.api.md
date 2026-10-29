@@ -46,6 +46,10 @@ export interface AdapterDocument {
     exportDocxModel?(options?: AdapterCompileOptions): MaybePromise<AdapterCompileResult & {
         model: string | null;
         fonts: Uint8Array[];
+        pictures?: {
+            svg: string;
+            png: Uint8Array;
+        }[];
     }>;
     exportPdf?(options?: AdapterCompileOptions): MaybePromise<AdapterCompileResult & {
         pdf: Uint8Array | null;

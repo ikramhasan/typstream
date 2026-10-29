@@ -20,7 +20,7 @@ pnpm corpus:validate llm/ --write-pages && pnpm fix                   # from the
 
 `runs/` is gitignored working data. The corpus keeps what tests need. Recordings contain nothing personal: the requests are the ones above.
 
-## Results (2026-10-27)
+## Results (2026-10-27; kit-v5 2026-10-29)
 
 29 requests per run; Haiku was sampled more often because it costs 1/20 as much. Documents failing in final mode, with the model's raw rate in brackets where heal's `math-lone-script` (#24) changes it:
 
@@ -31,10 +31,15 @@ pnpm corpus:validate llm/ --write-pages && pnpm fix                   # from the
 | kit-v2: Typst rules, packages must be imported | 4/58 6.9% (raw 8.6%) | 0/57 0% (raw 3.5%) |
 | kit-v3: + words, blanks in math, CeTZ shapes | 2/58 3.4% (raw 5.2%) | 1/29 3.4% |
 | kit-v4: + `mcq` math example, units in math | 4/116 3.4% (raw 6.9%) | **0/29 0%** |
+| kit-v5: + boxed text in edu's components, no rounded corners or rotated text (#133) | 2/29 6.9% | **0/29 0%** |
 
 Overflow (measured later, with the probe): none in the 405 kit-v1–v4 documents, whose tables are `#rubric` or `auto` columns; 2/58 in naive, both Haiku rubrics with fixed-width columns.
 
-All 463 documents cost $5.36 (Sonnet $5.03, Haiku $0.32). The kit's prompt is ~8.4K tokens, cached across a run. Error classes and the reasoning behind each rule are on [#24](https://github.com/ikramhasan/typstream/issues/24).
+kit-v5's rule is for DOCX exports, which keep a box with rounded corners or rotated text only as a picture (a
+`docx/fallback` warning): kit-v4 drew rounded boxes in 2 of its 58 documents (4 boxes, both Sonnet), kit-v5 in none of
+the 55 that compile, and used `#callout` in 32 (29). Its two failures are Haiku's usual math (`$… built …$`, `$CO$`).
+
+All 521 documents cost $6.15 (Sonnet $5.79, Haiku $0.35). The kit's prompt is ~8.4K tokens, cached across a run. Error classes and the reasoning behind each rule are on [#24](https://github.com/ikramhasan/typstream/issues/24).
 
 ## Edit requests (#34)
 

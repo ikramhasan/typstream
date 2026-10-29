@@ -866,12 +866,12 @@ importers:
       '@typstream/heal':
         specifier: workspace:*
         version: link:../../packages/heal
+      '@typstream/mindmap':
+        specifier: workspace:*
+        version: link:../../packages/mindmap
       '@typstream/node':
         specifier: workspace:*
         version: link:../../packages/node
-      fflate:
-        specifier: 0.8.3
-        version: 0.8.3
 
   tools/llm-corpus:
     devDependencies:

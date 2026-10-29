@@ -9,6 +9,35 @@ export interface DocxModel {
   fonts: DocxFont[];
   /** List numberings, by `DocxParagraph.list.id`. */
   lists: DocxList[];
+  /** Pictures drawings and runs refer to (#133), by index: their SVG and PNG come with the model, in the same order. */
+  pictures?: DocxPicture[];
+}
+
+/**
+ * A picture of what the model can't express otherwise (#133): an image, a CeTZ canvas, a mind map, a box with rounded
+ * corners. Its size, and where Typst drew it (page index and top left, in points). @internal
+ */
+export interface DocxPicture {
+  /** Width in points. */
+  width: number;
+  /** Height in points. */
+  height: number;
+  /** The page Typst drew it on, from 0. */
+  page: number;
+  /** Its left edge on the page, in points. */
+  x: number;
+  /** Its top edge on the page, in points. */
+  y: number;
+  /** Its description: an image's `alt`, an edu drawing's. */
+  alt?: string;
+}
+
+/** A picture's SVG, which Word draws, and the PNG older Word and other apps draw instead. @internal */
+export interface DocxPictureData {
+  /** The picture as SVG. */
+  svg: string;
+  /** The picture as PNG. */
+  png: Uint8Array;
 }
 
 /** Pages of one size and margins, and the blocks on them. @internal */
@@ -67,7 +96,7 @@ export interface DocxList {
   bodyLeft: number;
 }
 
-/** A block in a flow: a paragraph, a table, a rule or a placeholder. @internal */
+/** A block in a flow: a paragraph, a table, a rule, a drawing or columns. @internal */
 export type DocxBlock = DocxParagraph | DocxTable | DocxRule | DocxDrawing | DocxColumns;
 
 /** Fields every block has. @internal */
@@ -143,17 +172,22 @@ export interface DocxTextRun {
   link?: string;
   /** A page number: `PAGE` or `NUMPAGES`. */
   field?: "PAGE" | "NUMPAGES";
+  /** Typst's `super` or `sub`, set with the font's own glyphs: Word's superscript or subscript. */
+  script?: "superscript" | "subscript";
 }
 
-/** An exact-width space: a gap in a line (`h()`), a blank's line, a placeholder (images). @internal */
+/** An exact-width space: a gap in a line (`h()`), a blank's line, or a picture in the line. @internal */
 export interface DocxGapRun {
   /** Width in points. */
   gap: number;
   font: number;
   size: number;
   underline?: boolean;
-  /** Room held for an image (#133), not a gap Typst made. */
-  placeholder?: boolean;
+  /**
+   * A picture in the line, as wide as the gap (#133): its index in `DocxModel.pictures`, and where its top is below
+   * the baseline (negative above it). A gap stays when the model has no picture data for it.
+   */
+  picture?: { index: number; y: number };
 }
 
 /**
@@ -343,15 +377,23 @@ export interface DocxRule extends DocxBlockBase {
   indent: { left: number; right: number };
 }
 
-/** Space held for what the export can't write yet (equations, images, drawings), as big as Typst drew it. @internal */
+/**
+ * Room a drawing takes in the flow, as big as Typst drew it (an empty one: room an empty box takes), and its picture
+ * (#133): its index in `DocxModel.pictures` and its top left from the room's, which differ where the drawing reaches
+ * past its room (half a stroke, a label). @internal
+ */
 export interface DocxDrawing extends DocxBlockBase {
   type: "drawing";
   width: number;
   height: number;
   indent: number;
-  math?: boolean;
-  /** Room held for an image or drawing (#133); without it, space an empty block takes. */
-  placeholder?: boolean;
+  picture?: { index: number; x: number; y: number };
+  /**
+   * `place`d: anchored to the page where Typst drew it, in a paragraph next to it, taking no room. `host` says which:
+   * the paragraph after it unless that is on a later page.
+   */
+  placed?: boolean;
+  host?: "previous" | "next";
 }
 
 /**

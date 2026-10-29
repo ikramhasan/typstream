@@ -57,10 +57,16 @@ export interface DocxDrawing extends DocxBlockBase {
     // (undocumented)
     height: number;
     // (undocumented)
+    host?: "previous" | "next";
+    // (undocumented)
     indent: number;
     // (undocumented)
-    math?: boolean;
-    placeholder?: boolean;
+    picture?: {
+        index: number;
+        x: number;
+        y: number;
+    };
+    placed?: boolean;
     // (undocumented)
     type: "drawing";
     // (undocumented)
@@ -80,7 +86,10 @@ export interface DocxGapRun {
     // (undocumented)
     font: number;
     gap: number;
-    placeholder?: boolean;
+    picture?: {
+        index: number;
+        y: number;
+    };
     // (undocumented)
     size: number;
     // (undocumented)
@@ -267,6 +276,7 @@ export interface DocxMathText {
 export interface DocxModel {
     fonts: DocxFont[];
     lists: DocxList[];
+    pictures?: DocxPicture[];
     sections: DocxSection[];
 }
 
@@ -312,6 +322,22 @@ export interface DocxParagraph extends DocxBlockBase {
     }[];
     // (undocumented)
     type: "p";
+}
+
+// @internal
+export interface DocxPicture {
+    alt?: string;
+    height: number;
+    page: number;
+    width: number;
+    x: number;
+    y: number;
+}
+
+// @internal
+export interface DocxPictureData {
+    png: Uint8Array;
+    svg: string;
 }
 
 // @internal
@@ -383,6 +409,7 @@ export interface DocxTextRun {
     field?: "PAGE" | "NUMPAGES";
     font: number;
     link?: string;
+    script?: "superscript" | "subscript";
     size: number;
     // (undocumented)
     text: string;
@@ -391,7 +418,7 @@ export interface DocxTextRun {
 }
 
 // @internal
-export const writeDocx: (model: DocxModel, fonts: readonly Uint8Array[]) => Uint8Array;
+export const writeDocx: (model: DocxModel, fonts: readonly Uint8Array[], pictures?: readonly DocxPictureData[]) => Uint8Array;
 
 // (No @packageDocumentation comment for this package)
 

@@ -17,18 +17,20 @@ import type {
   DocxModel,
   DocxPageNumbering,
   DocxParagraph,
+  DocxPictureData,
   DocxRule,
   DocxRun,
   DocxSection,
   DocxTable,
   DocxTextRun,
 } from "./model";
+import { drawing, PICTURE_NS, type Placement } from "./picture";
 
 const NS =
   'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" ' +
   'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ' +
   'xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" ' +
-  `xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" ${MATH_NS} mc:Ignorable="w14"`;
+  `xmlns:w14="http://schemas.microsoft.com/office/word/2010/wordml" ${MATH_NS} ${PICTURE_NS} mc:Ignorable="w14"`;
 const REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/";
 const XML = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
 
@@ -39,9 +41,6 @@ const SLACK = 1;
 const FIT_MARGIN = 1.0;
 /** Marks where a section's properties go in the body, written once the headers' references are known. */
 const SECTION = "\u0001";
-/** Styles marking room held for images and drawings until the export writes them (#133). */
-const PLACEHOLDER = "TypstreamPlaceholder";
-const PLACEHOLDER_BLOCK = "TypstreamPlaceholderBlock";
 const esc = (s: string): string =>
   s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] as string);
 /** Text sizes are half points: Typst's are rounded to them (edu sets them so, #130). */
@@ -57,19 +56,44 @@ interface SectionProps {
   gap: number;
 }
 
-/** What a part being written refers to: hyperlinks need relationships of their own. */
+/** What a part being written refers to: hyperlinks and pictures' media need relationships of their own. */
 interface Part {
   rels: string[];
+  /** Pictures' relationship ids in this part, by index: PNG, SVG. */
+  media?: Map<number, [string, string]>;
 }
+
+/** A paragraph mark's run properties: a point tall, so an empty paragraph's line is all its spacing makes it. */
+const TINY = '<w:rPr><w:sz w:val="2"/></w:rPr>';
 
 class Writer {
   /** The face equations are set in (the document's `m:mathFont`), once one is written. */
   mathFont?: string;
+  /** Pictures written so far: they number their `wp:docPr`s. */
+  drawings = 0;
 
   constructor(
     private readonly model: DocxModel,
     private readonly fonts: readonly DocxFont[],
+    private readonly pictureData: readonly DocxPictureData[],
   ) {}
+
+  /** A picture's `w:drawing`, or nothing when the model has no picture data for it. */
+  private picture(index: number, part: Part, at: Placement): string {
+    const p = this.model.pictures?.[index];
+    if (!p || !this.pictureData[index]) return "";
+    part.media ??= new Map();
+    let ids = part.media.get(index);
+    if (!ids) {
+      ids = [`rIdPic${index + 1}p`, `rIdPic${index + 1}s`];
+      part.rels.push(
+        `<Relationship Id="${ids[0]}" Type="${REL}image" Target="media/picture${index + 1}.png"/>`,
+        `<Relationship Id="${ids[1]}" Type="${REL}image" Target="media/picture${index + 1}.svg"/>`,
+      );
+      part.media.set(index, ids);
+    }
+    return drawing(p, ++this.drawings, ids[0], ids[1], at);
+  }
 
   private rPr(
     font: number,
@@ -77,12 +101,11 @@ class Writer {
     color?: string,
     underline?: boolean,
     spacing?: number,
-    style?: string,
+    script?: string,
   ): string {
     const f = this.fonts[font];
     const name = esc(f?.name ?? "Libertinus Serif");
-    let x = style ? `<w:rStyle w:val="${style}"/>` : "";
-    x += `<w:rFonts w:ascii="${name}" w:hAnsi="${name}" w:cs="${name}" w:eastAsia="${name}"/>`;
+    let x = `<w:rFonts w:ascii="${name}" w:hAnsi="${name}" w:cs="${name}" w:eastAsia="${name}"/>`;
     if (f?.bold) x += "<w:b/><w:bCs/>";
     if (f?.italic) x += "<w:i/><w:iCs/>";
     if (color) x += `<w:color w:val="${color}"/>`;
@@ -90,6 +113,7 @@ class Writer {
     const sz = halfPoints(size);
     x += `<w:sz w:val="${sz}"/><w:szCs w:val="${sz}"/>`;
     if (underline) x += '<w:u w:val="single"/>';
+    if (script) x += `<w:vertAlign w:val="${script}"/>`;
     return `<w:rPr>${x}</w:rPr>`;
   }
 
@@ -104,14 +128,21 @@ class Writer {
     }
     if ("tab" in r) return "<w:r><w:tab/></w:r>";
     if ("gap" in r) {
+      // A picture in the line: a character as wide as its room, its bottom on the baseline unless raised (half points).
+      const picture = r.picture && this.picture(r.picture.index, part, { kind: "inline" });
+      if (r.picture && picture) {
+        const height = this.model.pictures?.[r.picture.index]?.height ?? 0;
+        const raise = Math.round(-(r.picture.y + height) * 2);
+        const sz = halfPoints(r.size);
+        return `<w:r><w:rPr><w:position w:val="${raise}"/><w:sz w:val="${sz}"/><w:szCs w:val="${sz}"/></w:rPr>${picture}</w:r>`;
+      }
       // A no-break space, widened to the gap by character spacing: exact to a twip, and Word underlines the spacing too.
       const nbsp = (this.fonts[r.font]?.nbsp ?? 0.25) * halfPoints(r.size) * 10;
       const spacing = Math.max(0, twips(r.gap) - Math.round(nbsp));
-      const style = r.placeholder ? PLACEHOLDER : undefined;
       // U+00A0, written as a character reference so it stays visible in the source.
-      return `<w:r>${this.rPr(r.font, r.size, undefined, r.underline, spacing, style)}<w:t xml:space="preserve">&#160;</w:t></w:r>`;
+      return `<w:r>${this.rPr(r.font, r.size, undefined, r.underline, spacing)}<w:t xml:space="preserve">&#160;</w:t></w:r>`;
     }
-    const run = `<w:r>${this.rPr(r.font, r.size, r.color, r.underline)}<w:t xml:space="preserve">${esc(r.text)}</w:t></w:r>`;
+    const run = `<w:r>${this.rPr(r.font, r.size, r.color, r.underline, undefined, r.script)}<w:t xml:space="preserve">${esc(r.text)}</w:t></w:r>`;
     if (r.field) return `<w:fldSimple w:instr="${r.field}">${run}</w:fldSimple>`;
     if (r.link) {
       const id = `rIdLink${part.rels.length + 1}`;
@@ -168,7 +199,8 @@ class Writer {
     return `<w:pPr>${x}</w:pPr>`;
   }
 
-  paragraph(p: DocxParagraph, part: Part, after?: number): string {
+  /** A paragraph; `lead` goes before its runs (pictures anchored in it). */
+  paragraph(p: DocxParagraph, part: Part, after?: number, lead = ""): string {
     const list = p.list ? this.model.lists[p.list.id] : undefined;
     const first = (p.runs.find((r) => "text" in r) ?? p.runs.find((r) => "gap" in r)) as
       | DocxTextRun
@@ -199,7 +231,7 @@ class Writer {
     const math = runs.find((r) => "math" in r && !r.display) as DocxMathRun | undefined;
     if (math && runs.every((r) => "math" in r || "tab" in r || "break" in r))
       runs = [...runs, { text: "\u200b", font: math.font, size: math.size }];
-    const content = label + runs.map((r) => this.run(r, part, jc === "left" ? "left" : jc)).join("");
+    const content = lead + label + runs.map((r) => this.run(r, part, jc === "left" ? "left" : jc)).join("");
     return `<w:p>${this.pPr({
       style: p.heading ? `Heading${Math.min(6, p.heading)}` : undefined,
       keepNext: p.heading !== undefined,
@@ -220,9 +252,9 @@ class Writer {
     })}${content}</w:p>`;
   }
 
-  /** A paragraph holding space: exact height, nothing in it. */
-  spacer(height: number, before = 0, pageBreak = false, left = 0, style?: string): string {
-    return `<w:p>${this.pPr({ style, pageBreak, before, line: Math.max(0.05, height), left, rPr: '<w:rPr><w:sz w:val="2"/></w:rPr>' })}</w:p>`;
+  /** A paragraph holding space: exact height, with nothing in it but `content` (anchored pictures). */
+  spacer(height: number, before = 0, pageBreak = false, left = 0, content = ""): string {
+    return `<w:p>${this.pPr({ pageBreak, before, line: Math.max(0.05, height), left, rPr: TINY })}${content}</w:p>`;
   }
 
   /**
@@ -241,8 +273,23 @@ class Writer {
     })}</w:p>`;
   }
 
-  drawing(d: DocxDrawing): string {
-    return this.spacer(d.height, d.before, d.pageBreak, d.indent, d.placeholder ? PLACEHOLDER_BLOCK : undefined);
+  /** A drawing: a paragraph holding its room, its picture anchored where the room starts. */
+  drawing(d: DocxDrawing, part: Part, lead = ""): string {
+    const picture = d.picture && this.picture(d.picture.index, part, { kind: "line", x: d.picture.x, y: d.picture.y });
+    return this.spacer(
+      d.height,
+      d.before,
+      d.pageBreak,
+      d.indent,
+      lead + (picture ? `<w:r>${TINY}${picture}</w:r>` : ""),
+    );
+  }
+
+  /** A placed drawing's picture, anchored to the page where Typst drew it: a run for a paragraph to hold. */
+  placed(d: DocxDrawing, part: Part): string {
+    const p = d.picture && this.model.pictures?.[d.picture.index];
+    const picture = d.picture && p && this.picture(d.picture.index, part, { kind: "page", x: p.x, y: p.y });
+    return picture ? `<w:r>${TINY}${picture}</w:r>` : "";
   }
 
   table(t: DocxTable, part: Part): string {
@@ -327,7 +374,18 @@ class Writer {
   /** Blocks in order. A table has no space before: the paragraph before it gets it after, or a spacer holds it. */
   blocks(blocks: readonly DocxBlock[], part: Part): string {
     const out: string[] = [];
+    // Placed pictures waiting for the next paragraph or drawing to hold them.
+    let lead = "";
     blocks.forEach((b, i) => {
+      if (b.type === "drawing" && b.placed) {
+        const run = this.placed(b, part);
+        const last = out.length - 1;
+        // In the paragraph before it, when the one after is on a later page.
+        if (b.host === "previous" && last >= 0 && (out[last] as string).endsWith("</w:p>"))
+          out[last] = `${(out[last] as string).slice(0, -"</w:p>".length)}${run}</w:p>`;
+        else lead += run;
+        return;
+      }
       // Typst's page numbering changes here: a section on a new page, numbered from there. The section before ends
       // in its last paragraph (an empty one of its own could take a line on a full page, and a page with it).
       if (b.pageNumbering) {
@@ -343,9 +401,15 @@ class Writer {
       }
       const next = blocks[i + 1];
       const gapAfter = next?.type === "table" && b.type === "p" ? (next.before ?? 0) : undefined;
+      // Anything else holds waiting pictures in a paragraph of its own, as small as a paragraph gets.
+      if (lead && b.type !== "p" && b.type !== "drawing") {
+        out.push(this.spacer(0.05, 0, false, 0, lead));
+        lead = "";
+      }
       switch (b.type) {
         case "p":
-          out.push(this.paragraph(b, part, gapAfter));
+          out.push(this.paragraph(b, part, gapAfter, lead));
+          lead = "";
           break;
         case "table": {
           const prev = blocks[i - 1];
@@ -376,13 +440,15 @@ class Writer {
           break;
         }
         case "drawing":
-          out.push(this.drawing(b));
+          out.push(this.drawing(b, part, lead));
+          lead = "";
           break;
         case "columns":
           out.push(this.columns(b, part));
           break;
       }
     });
+    if (lead) out.push(this.spacer(0.05, 0, false, 0, lead));
     return out.join("");
   }
 
@@ -480,8 +546,12 @@ const slot = (f: DocxFont): "Regular" | "Bold" | "Italic" | "BoldItalic" =>
  * sets the text in the faces Typst did.
  * @internal
  */
-export const writeDocx = (model: DocxModel, fonts: readonly Uint8Array[]): Uint8Array => {
-  const w = new Writer(model, model.fonts);
+export const writeDocx = (
+  model: DocxModel,
+  fonts: readonly Uint8Array[],
+  pictures: readonly DocxPictureData[] = [],
+): Uint8Array => {
+  const w = new Writer(model, model.fonts, pictures);
   const enc = new TextEncoder();
   const files: Record<string, Uint8Array> = {};
   const section = model.sections[0];
@@ -555,8 +625,6 @@ export const writeDocx = (model: DocxModel, fonts: readonly Uint8Array[]): Uint8
       "</w:docDefaults>" +
       '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>' +
       headings +
-      `<w:style w:type="character" w:styleId="${PLACEHOLDER}"><w:name w:val="Typstream placeholder"/></w:style>` +
-      `<w:style w:type="paragraph" w:styleId="${PLACEHOLDER_BLOCK}"><w:name w:val="Typstream placeholder block"/><w:basedOn w:val="Normal"/></w:style>` +
       "</w:styles>",
   );
 
@@ -616,6 +684,12 @@ export const writeDocx = (model: DocxModel, fonts: readonly Uint8Array[]): Uint8
       `${XML}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${fontRels.join("")}</Relationships>`,
     );
 
+  // Pictures' media, which the parts' relationships name.
+  pictures.forEach((p, i) => {
+    files[`word/media/picture${i + 1}.png`] = p.png;
+    files[`word/media/picture${i + 1}.svg`] = enc.encode(p.svg);
+  });
+
   const docRels = [
     `<Relationship Id="rId1" Type="${REL}styles" Target="styles.xml"/>`,
     `<Relationship Id="rId2" Type="${REL}settings" Target="settings.xml"/>`,
@@ -636,6 +710,9 @@ export const writeDocx = (model: DocxModel, fonts: readonly Uint8Array[]): Uint8
       '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
       '<Default Extension="xml" ContentType="application/xml"/>' +
       '<Default Extension="odttf" ContentType="application/vnd.openxmlformats-officedocument.obfuscatedFont"/>' +
+      (pictures.length
+        ? '<Default Extension="png" ContentType="image/png"/><Default Extension="svg" ContentType="image/svg+xml"/>'
+        : "") +
       `<Override PartName="/word/document.xml" ContentType="${main}.document.main+xml"/>` +
       `<Override PartName="/word/styles.xml" ContentType="${main}.styles+xml"/>` +
       `<Override PartName="/word/settings.xml" ContentType="${main}.settings+xml"/>` +

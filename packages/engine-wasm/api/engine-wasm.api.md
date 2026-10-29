@@ -36,11 +36,23 @@ export type Diagnostic = {
     hints: string[];
     trace: TraceItem[];
     file?: { path: string; span: Range_2 | null };
-    source: "typst";
+    source: "typst" | "typstream";
+    code?: string;
 };
 
 // @public
-export type DocxModelResult = CompileResult & { model?: string; fonts?: Uint8Array[]; pageCount?: number };
+export type DocxModelResult = CompileResult & {
+    model?: string;
+    fonts?: Uint8Array[];
+    pictures?: DocxPictureData[];
+    pageCount?: number;
+};
+
+// @public
+export interface DocxPictureData {
+    png: Uint8Array;
+    svg: string;
+}
 
 // @public
 export class Engine {

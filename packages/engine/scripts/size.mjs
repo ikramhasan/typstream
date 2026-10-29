@@ -42,7 +42,7 @@ const MAIN_THREAD = 9.6 * 1024;
 const ok = [
   await measure("@typstream/engine (main thread)", "src/index.ts", MAIN_THREAD, ["@typstream/heal"]),
   await measure("@typstream/engine (worker JS, excl. wasm and fonts)", "src/worker.ts", 40 * 1024, ["@typstream/docx"]),
-  await measure("@typstream/docx (loaded on a DOCX export)", "../docx/src/index.ts", 11.5 * 1024, []),
+  await measure("@typstream/docx (loaded on a DOCX export)", "../docx/src/index.ts", 12.5 * 1024, []),
   await measure("@typstream/engine/websocket", "src/websocket.ts", 1.5 * 1024, []),
   await measure("@typstream/engine/images", "src/images.ts", 1.5 * 1024, []),
 ];

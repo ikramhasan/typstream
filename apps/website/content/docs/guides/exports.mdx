@@ -74,13 +74,19 @@ laid-out pages as the PDF, and written as Word's own structure, so a teacher can
 - equations as Word equations you can edit: fractions, scripts and limits, roots, brackets, matrices and `cases`,
   big operators with their operands, function names, accents, braces and aligned lines, inline in their line or
   displayed (a numbered one with its number at the right), in Typst's math font;
+- what Word can't draw as pictures, at the size and place Typst drew them: images, CeTZ and fletcher canvases, mind
+  maps, edu's number lines, graph paper and coordinate planes (with their descriptions as alt text), and `place`d
+  drawings anchored to the page. Each is Typst's own drawing as SVG, which Word 2016 and later, LibreOffice and
+  ONLYOFFICE draw, with a 300 DPI PNG for older Word and other apps;
 - Typst's fonts, embedded, so Word sets the text in the faces the PDF uses;
 - the [layout profile](/docs/concepts/render-targets#layout-profile)'s settings, which make Word break lines and pages
   where Typst does: exact line pitch, ragged right, no hyphenation, rows that stay on one page.
 
-Images and drawings aren't written yet: they hold their place as empty space of their size, so the text around them
-still falls where it does in the PDF. The file is checked against the PDF with LibreOffice, ONLYOFFICE and Microsoft's
-Open XML validator; edits made in Word don't come back to the document. What Word can't reproduce exactly:
+Free-form drawing that Word could keep editable if it were drawn otherwise, a box with rounded corners or rotated
+text, becomes a picture too, its text with it, and the export warns about it: a diagnostic with `code:
+"docx/fallback"` at the box. edu's `callout` draws a box Word keeps editable. The file is checked against the PDF with
+LibreOffice, ONLYOFFICE and Microsoft's Open XML validator, pictures pixel by pixel; edits made in Word don't come back
+to the document. What Word can't reproduce exactly:
 
 - a word longer than its table column, which Typst lets run past the cell, Word breaks inside the cell;
 - equations: each word processor typesets math itself, so an equation can come out a little wider or taller than

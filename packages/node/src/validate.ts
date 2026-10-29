@@ -1,7 +1,7 @@
 // validate() and render(): one-shot compiles of a finished document (PLAN §5.7).
 
 import { type CompileTarget, type Diagnostic, hasErrors, normalizeDiagnostics } from "@typstream/core";
-import { writeDocx } from "@typstream/docx";
+import { type DocxModel, type DocxPictureData, writeDocx } from "@typstream/docx";
 import { DOCX_MARGIN_PROBE } from "@typstream/engine/server";
 import { type HealOptions, heal, type LintFinding } from "@typstream/heal";
 import { compileOnce, type DocumentOptions } from "./engine";
@@ -153,8 +153,33 @@ export const render = async <F extends RenderFormat>(
       : format === "html"
         ? r.html
         : format === "docx"
-          ? writeDocx(JSON.parse(r.model ?? "{}"), r.fonts ?? [])
+          ? writeDocx(JSON.parse(r.model ?? "{}"), r.fonts ?? [], r.pictures ?? [])
           : (r.pages ?? []).map((p) => p.svg)
   ) as RenderData[F];
   return { ok: true, diagnostics, data, ...(r.pageCount !== undefined ? { pageCount: r.pageCount } : {}), ms };
+};
+
+/**
+ * What {@link render} writes a DOCX from: the document model and the data it names, for tools that check exports
+ * against Typst's own layout (tools/docx-check reads where pictures are).
+ * @internal
+ */
+export const renderDocxModel = async (
+  source: string,
+  options: DocumentOptions = {},
+): Promise<
+  | {
+      ok: true;
+      diagnostics: Diagnostic[];
+      model: DocxModel;
+      fonts: Uint8Array[];
+      pictures: DocxPictureData[];
+    }
+  | { ok: false; diagnostics: Diagnostic[] }
+> => {
+  const compiled = await compileOnce(source + DOCX_MARGIN_PROBE, "docx", options);
+  const diagnostics = normalizeDiagnostics(compiled.diagnostics);
+  const r = compiled.result;
+  if (!compiled.ok || !r?.model) return { ok: false, diagnostics };
+  return { ok: true, diagnostics, model: JSON.parse(r.model), fonts: r.fonts ?? [], pictures: r.pictures ?? [] };
 };
