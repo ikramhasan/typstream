@@ -1,15 +1,16 @@
 // Smoke test (PLAN §10.4: example apps build and run): builds the app, starts it,
-// asks for a worksheet in Chromium (a suggestion, rendered as pages), then for a
-// change typed in the field, as HTML: an edit of that worksheet (#34). It checks
-// that the answer streams into <Typstream> and finishes, that the edit streams
-// into the finished document, highlighted, and can be undone, that the first
-// answer's Edit button changes that document in place, that none ever had an
-// error frame, that the replay's mind map is interactive in the HTML answer
-// (a render island), and that telemetry reached the example's sink. Without
-// ANTHROPIC_API_KEY the server replays a recorded worksheet and an edit of it, so
-// this runs offline.
+// asks for a worksheet in Chromium (a suggestion, rendered as pages) and exports
+// it as a Word file, then asks for a change typed in the field, as HTML: an edit
+// of that worksheet (#34). It checks that the answer streams into <Typstream> and
+// finishes, that the export downloads a .docx, that the edit streams into the
+// finished document, highlighted, and can be undone, that the first answer's Edit
+// button changes that document in place, that none ever had an error frame, that
+// the replay's mind map is interactive in the HTML answer (a render island), and
+// that telemetry reached the example's sink. Without ANTHROPIC_API_KEY the server
+// replays a recorded worksheet and an edit of it, so this runs offline.
 
 import { spawn } from "node:child_process";
+import { readFile } from "node:fs/promises";
 import { chromium } from "playwright";
 
 const PORT = 3417;
@@ -60,6 +61,14 @@ try {
   const text = await answered(0, "paged");
   if (!process.env.ANTHROPIC_API_KEY && !text.includes("Pythagorean triples"))
     throw new Error(`unexpected render: ${text}`);
+  // The answer as a Word file: a .docx download, a zip.
+  const [download] = await Promise.all([
+    page.waitForEvent("download", { timeout: 60_000 }),
+    page.getByRole("button", { name: "Export Word (.docx)", exact: true }).click(),
+  ]);
+  const docx = await readFile(await download.path());
+  if (!download.suggestedFilename().endsWith(".docx") || docx.length === 0 || docx.subarray(0, 2).toString() !== "PK")
+    throw new Error(`not a DOCX: ${download.suggestedFilename()}, ${docx.length} bytes`);
   // A second turn as HTML, typed and sent with Enter: an edit of the worksheet. The edit's answer shows
   // the worksheet at once, then the blocks it rewrites stream in, highlighted, and Keep and Undo follow.
   await page.getByRole("combobox", { name: "Render as" }).click();
@@ -117,7 +126,7 @@ try {
   if (!reached()) throw new Error(`no telemetry reached /api/telemetry:\n${log}`);
   if (process.argv.includes("--screenshot")) await page.screenshot({ path: "smoke.png", fullPage: true });
   console.log(
-    `ok: streamed an answer, an edit of it and an edit in place with no error frames (${text.length} characters in the first)`,
+    `ok: streamed an answer, an edit of it and an edit in place with no error frames (${text.length} characters in the first), and exported a ${docx.length}-byte DOCX`,
   );
 } finally {
   await browser.close();
