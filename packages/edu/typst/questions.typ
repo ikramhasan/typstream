@@ -1,5 +1,5 @@
 // Questions: numbered questions with points, multiple choice, true/false, matching.
-#import "util.typ": _accent, _answers-shown, _config, _el, _half, _html, _plain, _question, _rule, _tight
+#import "util.typ": _accent, _answers-shown, _config, _el, _half, _html, _plain, _question, _rule, _tight, _underline
 #import "i18n.typ": _letter, _letter-pattern, _points-text, _word
 #import "answers.typ": _record
 
@@ -209,7 +209,8 @@
           .map(row => (
             row.at(0),
             row.at(1),
-            box(width: 100%, stroke: (bottom: 0.5pt + _rule), outset: (bottom: 0.25em), _tight(align(center, row.at(2)))),
+            // On a text line, as `blank` is.
+            [#sym.wj#box(width: 100%, stroke: (bottom: 0.5pt + _rule), outset: (bottom: _underline), _tight(align(center, row.at(2))))],
             row.at(3),
             row.at(4),
           ))

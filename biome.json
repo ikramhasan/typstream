@@ -10,6 +10,7 @@
       "tools/repo/**",
       "tools/compile-oracle/**",
       "tools/browser-suites/**",
+      "tools/conformance/**",
       ".dependency-cruiser.mjs",
       "!**/dist",
       "!**/.next",

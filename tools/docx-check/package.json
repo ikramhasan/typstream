@@ -8,6 +8,7 @@
     "check": "node check.mjs"
   },
   "dependencies": {
+    "@typstream/conformance": "workspace:*",
     "@typstream/docx": "workspace:*",
     "@typstream/edu": "workspace:*",
     "@typstream/heal": "workspace:*",

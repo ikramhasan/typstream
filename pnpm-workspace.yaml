@@ -6,6 +6,7 @@ packages:
   - "tools/browser-suites"
   - "tools/llm-corpus"
   - "tools/docx-check"
+  - "tools/conformance"
   - "examples/*"
 
 allowBuilds:

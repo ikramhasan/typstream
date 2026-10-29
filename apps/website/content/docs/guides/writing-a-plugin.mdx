@@ -303,6 +303,74 @@ To add fixers to every document rather than through a document's plugins, pass t
   Importing a module runs it in the worker. A server that faces untrusted clients must not load modules they name; `@typstream/node`'s protocol server ignores them. See [Security](/docs/guides/security).
 </Callout>
 
+## Matching the PDF and Word
+
+A document looks the same three ways: in the paged view, in the PDF from `exportPdf()`, and in the Word file from `exportDocx()` (beta), which stays editable. The first two draw the same laid-out pages. The DOCX is rebuilt from them as Word paragraphs, tables, equations and pictures, and a layout engine lays it out again. A plugin's components have to survive that, so write them from what Word can express:
+
+- **Text, paragraphs and tables** come through as they are, line for line: the engine's layout profile keeps Typst's lines where Word puts them (a constant line pitch, ragged right, no hyphenation, rows that don't split). Don't set `par(leading: …)`, `par(justify: true)` or a breakable table row in your Typst; heal's lint takes them out of documents anyway.
+- **Boxes and blocks** with square corners, strokes and fills become one-cell tables or bordered paragraphs. A rounded corner or rotated text with text inside can't be one: it becomes a picture of the box, and the export warns (`docx/fallback`). Prefer square frames, as edu's callouts are.
+- **A blank to write on** is underlined space in Word, and Word draws an underline at the font's underline position: about 0.08em below the baseline. Draw the line there in Typst (edu's `blank` is a box with `stroke: (bottom: …)` and `outset: (bottom: 0.078em)`), and keep it on a line of text: a box alone in a cell has a line of its own, shorter than a text line, unless something before it (a word joiner, `#sym.wj`) makes it one.
+- **A rule across the column** (a line to write on) is a paragraph with a bottom border, at the bottom of its line.
+- **Equations** are Word math; each engine sets it a little differently.
+- **Drawings** (CeTZ, curves, a mind map) become pictures: an SVG with a PNG, the same size and place. Give them a description for screen readers (a `<typstream-drawing>` marker, as edu's drawings do).
+
+### The conformance suite
+
+This repository's plugins prove it with a shared suite (`tools/conformance`) run on their own examples: edu's catalogue, templates and examples with answers hidden and shown, mindmap's examples, and a few documents using each of Universe's packages. For each example:
+
+| Check | Where | Passes when |
+|---|---|---|
+| Paged view = PDF | a browser (vitest) | every page painted in the document panel matches pdf.js's raster of the PDF: no more than 3 differing pixels touching |
+| DOCX is valid | Node | Microsoft's Open XML validator reports no errors |
+| DOCX = PDF | Node, LibreOffice | every line and page start is Typst's (by their text around equations, where the example has some), pictures match the PDF's pixels, every equation's letters and digits come out, and rules, borders and shading are where Typst draws them (no more than 6 differing pixels touching) |
+
+A plugin in this repository adds three files and two vitest projects:
+
+```ts title="__tests__/conformance/suite.ts"
+import { type ConformanceSuite, withInputs } from "@typstream/conformance";
+import { chemistry, chemistryCatalogue } from "../../src/index";
+
+export const suite: ConformanceSuite = {
+  name: "chemistry",
+  plugins: [chemistry],
+  examples: withInputs(
+    chemistryCatalogue.map((d) => ({ name: d.name, source: d.example ?? "" })),
+    [{ showAnswers: "false" }, { showAnswers: "true" }],
+  ),
+};
+```
+
+```ts title="__tests__/conformance/paged.test.ts"
+import { pagedConformance } from "@typstream/conformance/paged";
+import { suite } from "./suite";
+
+pagedConformance(suite);
+```
+
+```ts title="__tests__/conformance/docx.test.ts"
+import { docxConformance } from "@typstream/conformance/docx";
+import { suite } from "./suite";
+
+docxConformance(suite);
+```
+
+```ts title="vitest.config.ts"
+import { defineConfig } from "vitest/config";
+import { conformanceProjects } from "../../tools/conformance/src/vitest.mjs";
+
+const alias = { "@typstream/core": new URL("../core/src/index.ts", import.meta.url).pathname };
+
+export default defineConfig({
+  test: {
+    projects: [{ test: { name: "node", include: ["__tests__/*.test.ts"] } }, ...conformanceProjects(alias)],
+  },
+});
+```
+
+`pnpm test:paged` (`vitest run --project paged`) runs the first in Chromium (`BROWSERS=firefox` for another). `pnpm test:docx` runs the second; it needs LibreOffice and poppler on `PATH`, and uses Microsoft's validator where it is built (`dotnet publish tools/docx-check/validator -c Release -o tools/docx-check/validator/out`). CI runs both on every pull request. A failure names the example, the DOCX it wrote (under `$TMPDIR/typstream-conformance/`) and what differs: the first line laid out differently, or where on the page a rule, a border or a picture is off.
+
+The suite is part of this repository, not a published package. To check a plugin of your own, export its examples with `exportPdf()` and `exportDocx()`, open the DOCX in Word or LibreOffice, and compare the pages with the PDF's.
+
 ## Testing a plugin
 
 Open a document with your plugin on a real engine and check what it renders, as typstream's own contract tests do. In Node, `@typstream/engine/server`'s `inProcess` runs the worker on the calling thread:

@@ -27,7 +27,23 @@ const raster = (pdf, n, x, y, w, h, scale = FINE) => {
   const px = (v) => String(Math.max(1, Math.round(v * scale)));
   const ppm = execFileSync(
     "pdftoppm",
-    ["-r", String(72 * scale), "-f", String(n), "-l", String(n), "-x", String(x0), "-y", String(y0), "-W", px(w), "-H", px(h), pdf],
+    [
+      "-r",
+      String(72 * scale),
+      "-f",
+      String(n),
+      "-l",
+      String(n),
+      "-x",
+      String(x0),
+      "-y",
+      String(y0),
+      "-W",
+      px(w),
+      "-H",
+      px(h),
+      pdf,
+    ],
     // A page past the last is a throw, not a message.
     { maxBuffer: 1 << 30, stdio: ["ignore", "pipe", "pipe"] },
   );
@@ -56,7 +72,9 @@ const channel = (img, x, y, c) => {
 const ink = (img, x, y) => 765 - channel(img, x, y, 0) - channel(img, x, y, 1) - channel(img, x, y, 2);
 
 const near = (a, i, b, j) =>
-  Math.abs(a[i] - b[j]) <= THRESHOLD && Math.abs(a[i + 1] - b[j + 1]) <= THRESHOLD && Math.abs(a[i + 2] - b[j + 2]) <= THRESHOLD;
+  Math.abs(a[i] - b[j]) <= THRESHOLD &&
+  Math.abs(a[i + 1] - b[j + 1]) <= THRESHOLD &&
+  Math.abs(a[i + 2] - b[j + 2]) <= THRESHOLD;
 
 /**
  * Typst's PDF and another's, compared on pictures' regions `{ page, x, y, width, height }` (page from 0, points): for
@@ -64,7 +82,13 @@ const near = (a, i, b, j) =>
  */
 export const compareRegions = (typst, other, regions) =>
   regions.map((r) => {
-    const failed = { ...r, pixels: Number.POSITIVE_INFINITY, cluster: Number.POSITIVE_INFINITY, box: null, offset: null };
+    const failed = {
+      ...r,
+      pixels: Number.POSITIVE_INFINITY,
+      cluster: Number.POSITIVE_INFINITY,
+      box: null,
+      offset: null,
+    };
     let a;
     try {
       a = raster(typst, r.page + 1, r.x, r.y, r.width, r.height);

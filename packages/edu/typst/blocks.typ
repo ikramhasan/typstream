@@ -163,14 +163,14 @@
       columns: fields.map(f => (auto, width(f))).flatten(),
       // Tight between a label and its line, wider between fields.
       column-gutter: range(fields.len() * 2 - 1).map(i => if calc.even(i) { 0.4em } else { 1.2em }),
-      // A line's cell holds no text, so at the top it would sit level with the middle of its label. At the
-      // bottom, it meets the label's baseline (where a text line's frame ends) and its stroke falls 0.25em
-      // below, as a blank's does in a sentence.
+      // A line's cell holds no text: at the bottom, level with its label's line.
       align: bottom,
       ..fields
         .map(f => (
           [#_field-label(f):],
-          box(width: 100%, stroke: (bottom: 0.5pt + _rule), outset: (bottom: 0.25em), h(1fr)),
+          // As tall as its label's line, the stroke at its bottom: a DOCX export writes a paragraph with a bottom border,
+          // which every engine draws there (an underline's place differs between them, #135).
+          box(width: 100%, stroke: (bottom: 0.5pt + _rule), h(1fr)),
         ))
         .flatten(),
     ))

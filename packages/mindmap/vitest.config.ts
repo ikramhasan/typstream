@@ -1,10 +1,12 @@
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
+import { conformanceProjects } from "../../tools/conformance/src/vitest.mjs";
 
-// Two projects. `node` (pnpm test): the Typst package through engine-wasm and native `typst`
+// `node` (pnpm test): the Typst package through engine-wasm and native `typst`
 // (both targets, every stream prefix of the examples), the data's checks and the layout.
 // `browser` (pnpm test:browser): the island in <Typstream> with the real engine worker, in
-// Chromium, Firefox and WebKit.
+// Chromium, Firefox and WebKit. The conformance suite (#135, pnpm test:paged and test:docx): the examples' pages
+// against their PDF, and their DOCX export against the PDF.
 
 const alias = {
   // Test against the source of sibling packages, not their builds; the engine-wasm build is loaded.
@@ -42,6 +44,7 @@ export default defineConfig({
           },
         },
       },
+      ...conformanceProjects(alias),
     ],
   },
 });

@@ -26,6 +26,8 @@
     "embed": "node scripts/embed.mjs",
     "test": "vitest run --project node",
     "test:browser": "vitest run --project browser",
+    "test:paged": "vitest run --project paged",
+    "test:docx": "vitest run --project docx",
     "size": "node scripts/size.mjs",
     "check-types": "tsc -p tsconfig.json",
     "check:api": "api-extractor run && api-extractor run -c api-extractor.react.json",

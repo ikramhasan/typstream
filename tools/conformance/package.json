@@ -1,0 +1,39 @@
+{
+  "name": "@typstream/conformance",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The plugin conformance suite (#135): a plugin's examples, its paged view against Typst's PDF (pixels, in a browser) and its DOCX export against the PDF (Microsoft's validator; LibreOffice's lines, pages, pictures and rules).",
+  "exports": {
+    ".": "./src/suite.ts",
+    "./paged": "./src/paged.ts",
+    "./mount": "./src/mount.ts",
+    "./docx": {
+      "types": "./src/docx.d.mts",
+      "default": "./src/docx.mjs"
+    },
+    "./vitest": {
+      "types": "./src/vitest.d.mts",
+      "default": "./src/vitest.mjs"
+    },
+    "./compare": "./src/compare.mjs",
+    "./ink": "./src/ink.mjs",
+    "./lines": "./src/lines.mjs",
+    "./office": "./src/office.mjs",
+    "./pixels": "./src/pixels.mjs"
+  },
+  "scripts": {
+    "check-types": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@typstream/core": "workspace:*",
+    "@typstream/docx": "workspace:*",
+    "@typstream/dom": "workspace:*",
+    "@typstream/engine": "workspace:*",
+    "@typstream/heal": "workspace:*",
+    "@typstream/node": "workspace:*",
+    "@vitest/browser-playwright": "4.1.12",
+    "pdfjs-dist": "^6.4.299",
+    "playwright": "^1.64.1"
+  }
+}

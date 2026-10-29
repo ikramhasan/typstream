@@ -5,13 +5,16 @@
 // outlines, is left out of the lines.
 //
 //   node check.mjs [--native] [--onlyoffice] [--scripts] [--fonts DIR] [--validate DLL] [--min-lines RATIO]
-//                  [--min-math-lines RATIO] [--min-picture-lines RATIO] [--min-pictures RATIO] [filter...]
+//                  [--min-math-lines RATIO] [--min-picture-lines RATIO] [--min-pictures RATIO] [--ink] [filter...]
 //
 // --validate: Microsoft's Open XML validator (validator/, `dotnet publish -c Release -o out`) on every file; any
 // error fails the check. --min-lines, --min-math-lines, --min-picture-lines: fail when fewer of Typst's lines come
 // back, over the documents without equations or pictures, those with equations and those with pictures, than RATIO
 // (LibreOffice versions differ). --min-pictures: fail when fewer pictures than RATIO come out within the tolerance of
-// tools/browser-suites' PDF raster suite (a few differing pixels touching; pixels.mjs).
+// tools/browser-suites' PDF raster suite (a few differing pixels touching; pixels.mjs). Each document is compared as the
+// plugin conformance suite compares an example (tools/conformance's compare.mjs, #135), whose modules this uses.
+// --ink: fail when a document laid out as Typst's (every line and page) draws rules, borders or shading otherwise
+// (ink.mjs).
 //
 // --onlyoffice: lay the files out with ONLYOFFICE (`x2t` in the onlyoffice/documentserver image, Docker) instead of
 // LibreOffice: a second engine written apart from Word and LibreOffice (nightly). It reads only installed fonts.
@@ -25,14 +28,15 @@ import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSyn
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { gunzipSync } from "node:zlib";
+import { compareExport } from "@typstream/conformance/compare";
+import { INK_TOLERANCE } from "@typstream/conformance/ink";
+import { layOut, packageFiles, validate } from "@typstream/conformance/office";
+import { TOLERANCE } from "@typstream/conformance/pixels";
 import { writeDocx } from "@typstream/docx";
 import { eduFiles, eduPreamble } from "@typstream/edu";
 import { heal } from "@typstream/heal";
 import { mindmapFiles, mindmapPreamble } from "@typstream/mindmap";
 import { render, renderDocxModel } from "@typstream/node";
-import { compare, linesOf, mathOf, scriptLinesOf, sharedChars, textFaces, textLinesOf } from "./lines.mjs";
-import { compareRegions, TOLERANCE } from "./pixels.mjs";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
 const args = process.argv.slice(2);
@@ -48,6 +52,7 @@ const minLines = Number(option("--min-lines") ?? 0);
 const minMathLines = Number(option("--min-math-lines") ?? 0);
 const minPictureLines = Number(option("--min-picture-lines") ?? 0);
 const minPictures = Number(option("--min-pictures") ?? 0);
+const minInk = args.includes("--ink");
 const filters = () => args.filter((a) => !a.startsWith("--"));
 const out = join(tmpdir(), "typstream-docx-check");
 mkdirSync(out, { recursive: true });
@@ -98,24 +103,20 @@ const assetFiles = (dir) => {
   return Object.fromEntries(readdirSync(assets).map((name) => [`assets/${name}`, new Uint8Array(readFileSync(join(assets, name)))]));
 };
 
-/** Universe's vendored packages as files, as @typstream/universe mounts them (ustar, regular files only). */
-const packageFiles = {};
+/** Universe's vendored packages as files, as @typstream/universe mounts them. */
 const vendor = join(root, "packages/universe/vendor");
-for (const tarball of readdirSync(vendor).filter((f) => f.endsWith(".tar.gz"))) {
-  const [, name, version] = /^(.+)-(\d+\.\d+\.\d+)\.tar\.gz$/.exec(tarball);
-  const tar = gunzipSync(readFileSync(join(vendor, tarball)));
-  for (let at = 0; at + 512 <= tar.length && tar[at] !== 0; ) {
-    const field = (from, length) => tar.toString("utf8", at + from, at + from + length).replace(/\0.*$/s, "");
-    const size = Number.parseInt(field(124, 12).trim() || "0", 8);
-    const path = ((field(345, 155) ? `${field(345, 155)}/` : "") + field(0, 100)).replace(/^\.\//, "");
-    if (["0", ""].includes(field(156, 1))) packageFiles[`@preview/${name}:${version}/${path}`] = new Uint8Array(tar.subarray(at + 512, at + 512 + size));
-    at += 512 + Math.ceil(size / 512) * 512;
-  }
-}
+const universeFiles = packageFiles(
+  readdirSync(vendor)
+    .filter((f) => f.endsWith(".tar.gz"))
+    .map((f) => {
+      const [, name, version] = /^(.+)-(\d+\.\d+\.\d+)\.tar\.gz$/.exec(f);
+      return { namespace: "preview", name, version, url: join(vendor, f) };
+    }),
+);
 
 // Native compiles read them from --packages, as @preview/name/version/….
 if (native) {
-  for (const [key, data] of Object.entries(packageFiles)) {
+  for (const [key, data] of Object.entries(universeFiles)) {
     const [, name, version, path] = /^@preview\/(.+?):(.+?)\/(.*)$/.exec(key);
     const file = join(packages, "preview", name, version, path);
     mkdirSync(dirname(file), { recursive: true });
@@ -161,7 +162,7 @@ for (const doc of documents()) {
   } else {
     const options = {
       preamble: plugins.map((p) => p.preamble).join("") || undefined,
-      files: { ...packageFiles, ...assetFiles(dirname(doc.path)), ...Object.assign({}, ...plugins.map((p) => p.files)) },
+      files: { ...universeFiles, ...assetFiles(dirname(doc.path)), ...Object.assign({}, ...plugins.map((p) => p.files)) },
     };
     const [pdf, out] = await Promise.all([render(text, "pdf", options), renderDocxModel(text, options)]);
     if (!pdf.ok || !out.ok) {
@@ -180,73 +181,21 @@ for (const doc of documents()) {
   docx.push({ doc, dir, file });
 }
 
-// ONLYOFFICE: one container for the batch, a font index of the engine's fonts, then x2t per file.
-const OO_SCRIPT = `
-set -e
-DIR=/var/www/onlyoffice/documentserver
-BIN=$DIR/server/FileConverter/bin
-export LD_LIBRARY_PATH=$BIN
-$DIR/server/tools/allfontsgen --input=/fonts --allfonts=$BIN/AllFonts.js --selection=$BIN/font_selection.bin --use-system=false > /dev/null
-cd $BIN
-for f in "$@"; do
-  printf '<?xml version="1.0" encoding="utf-8"?><TaskQueueDataConvert><m_sFileFrom>/work/%s.docx</m_sFileFrom><m_sFileTo>/work/%s.pdf</m_sFileTo><m_nFormatTo>513</m_nFormatTo><m_sFontDir>/fonts</m_sFontDir><m_bIsNoBase64>true</m_bIsNoBase64></TaskQueueDataConvert>' "$f" "$f" > /tmp/p.xml
-  ./x2t /tmp/p.xml > /dev/null 2>&1 || true
-  [ -f "/work/$f.pdf" ] && chown "$(stat -c %u:%g /work)" "/work/$f.pdf" || true
-done
-`;
-
-// LibreOffice, seeing only the engine's fonts (and what the DOCX embeds).
-const conf = join(out, "fonts.conf");
-writeFileSync(
-  conf,
-  `<?xml version="1.0"?><!DOCTYPE fontconfig SYSTEM "fonts.dtd"><fontconfig><dir>${fonts}</dir><cachedir>${join(out, "fc-cache")}</cachedir></fontconfig>`,
+// LibreOffice or ONLYOFFICE, seeing only the engine's fonts (and what the DOCX embeds).
+const pdfs = layOut(
+  docx.map((d) => d.file),
+  { out: join(out, "lo"), engine: onlyoffice ? "onlyoffice" : "libreoffice", fonts },
 );
-const lo = join(out, "lo");
-mkdirSync(lo, { recursive: true });
-if (onlyoffice) {
-  for (const { file } of docx) execFileSync("cp", [file, lo]);
-  execFileSync(
-    "docker",
-    [
-      ...["run", "--rm", "-v", `${fonts}:/fonts:ro`, "-v", `${lo}:/work`, "--entrypoint", "bash"],
-      ...["onlyoffice/documentserver", "-c", OO_SCRIPT, "x", ...docx.map(({ file }) => basename(file, ".docx"))],
-    ],
-    { stdio: "pipe", timeout: 1_800_000 },
-  );
-}
-for (let i = 0; i < (onlyoffice ? 0 : docx.length); i += 40) {
-  const batch = docx.slice(i, i + 40).map((d) => d.file);
-  try {
-    execFileSync(
-      "soffice",
-      [`-env:UserInstallation=file://${join(out, "lo-profile")}`, "--headless", "--convert-to", "pdf", "--outdir", lo, ...batch],
-      { env: { ...process.env, FONTCONFIG_FILE: conf, SAL_USE_VCLPLUGIN: "svp" }, stdio: "pipe", timeout: 600_000 },
-    );
-  } catch {}
-}
-for (const { doc, dir, file } of docx) {
-  const pdf = join(lo, `${basename(file, ".docx")}.pdf`);
-  if (!existsSync(pdf)) {
-    results.push({ id: doc.id, error: "LibreOffice didn't convert it" });
+for (const [i, { doc, dir }] of docx.entries()) {
+  const pdf = pdfs[i];
+  if (!pdf) {
+    results.push({ id: doc.id, error: `${onlyoffice ? "ONLYOFFICE" : "LibreOffice"} didn't convert it` });
     continue;
   }
-  const typst = join(dir, "typst.pdf");
   // With equations, lines are compared by their text around them, and every equation's letters and digits must be
   // there (#132). Text in pictures is outlines in the DOCX: Typst's is left out.
-  const regions = doc.pictures;
-  const math = doc.math ? [mathOf(typst, regions), mathOf(pdf)] : undefined;
-  const faces = doc.math ? textFaces(typst) : undefined;
-  const pictures = compareRegions(typst, pdf, regions);
-  results.push({
-    id: doc.id,
-    pictures: pictures.length ? pictures : undefined,
-    math: math && { chars: math[0].length, same: sharedChars(math[0], math[1]) },
-    ...(scripts
-      ? compare(scriptLinesOf(typst, regions), scriptLinesOf(pdf))
-      : doc.math
-        ? compare(textLinesOf(typst, undefined, regions), textLinesOf(pdf, faces))
-        : compare(linesOf(typst, regions), linesOf(pdf))),
-  });
+  const r = compareExport(join(dir, "typst.pdf"), pdf, doc.model, { scripts });
+  results.push({ id: doc.id, ...r, pictures: r.pictures.length ? r.pictures : undefined });
 }
 
 let lines = 0;
@@ -258,6 +207,8 @@ const plain = { docs: 0, identical: 0, lines: 0, same: 0 };
 const withMath = { docs: 0, identical: 0, lines: 0, same: 0 };
 const withPictures = { docs: 0, identical: 0, lines: 0, same: 0, pictures: 0, close: 0, worst: null };
 const chars = { all: 0, same: 0 };
+// What pages draw besides text (rules, borders, shading), on documents laid out as Typst's.
+const ink = { docs: 0, same: 0 };
 for (const r of results.sort((a, b) => a.id.localeCompare(b.id))) {
   if (r.error) {
     console.log(`✗ ${r.id}: ${r.error}`);
@@ -279,6 +230,11 @@ for (const r of results.sort((a, b) => a.id.localeCompare(b.id))) {
     chars.same += r.math.same;
   }
   const close = (r.pictures ?? []).filter((p) => p.cluster <= TOLERANCE).length;
+  const inked = !ok || !r.ink || r.ink.cluster <= INK_TOLERANCE;
+  if (ok && r.ink) {
+    ink.docs++;
+    if (inked) ink.same++;
+  }
   for (const p of r.pictures ?? []) {
     withPictures.pictures++;
     if (p.cluster <= TOLERANCE) withPictures.close++;
@@ -289,13 +245,14 @@ for (const r of results.sort((a, b) => a.id.localeCompare(b.id))) {
     r.math && `math ${r.math.same}/${r.math.chars}`,
   ].filter(Boolean);
   console.log(
-    `${ok && close === (r.pictures?.length ?? 0) ? "✓" : "✗"}${tags.length ? ` (${tags.join(", ")})` : ""} ${r.id}: ` +
+    `${ok && inked && close === (r.pictures?.length ?? 0) ? "✓" : "✗"}${tags.length ? ` (${tags.join(", ")})` : ""} ${r.id}: ` +
       `${r.same}/${r.lines} lines, pages ${r.pages.join("/")}, starts ${r.pageStartsSame}/${r.pageStarts}` +
       (ok || !r.first ? "" : `  typst ${JSON.stringify(r.first.typst)} other ${JSON.stringify(r.first.other)}`) +
       (r.pictures ?? [])
         .filter((p) => p.cluster > TOLERANCE)
         .map((p) => `  picture on page ${p.page + 1}: ${p.cluster} pixels touching at ${JSON.stringify(p.box)}`)
-        .join(""),
+        .join("") +
+      (inked ? "" : `  ink on page ${r.ink.page + 1}: ${r.ink.cluster} pixels touching at ${JSON.stringify(r.ink.box)}`),
   );
 }
 console.log(
@@ -313,6 +270,7 @@ const summary = [
   `with pictures: ${withPictures.identical}/${withPictures.docs} identical; lines ${withPictures.same}/${withPictures.lines} ` +
     `(${percent(pictureRatio)}); pictures within ${TOLERANCE} touching pixels of the PDF ${withPictures.close}/${withPictures.pictures}`,
   `equations' letters and digits ${chars.same}/${chars.all} (${percent(charsRatio)})`,
+  `rules, borders and shading as Typst's (within ${INK_TOLERANCE} touching pixels) on ${ink.same} of the ${ink.docs} identical documents without math`,
 ];
 for (const line of summary.slice(1)) console.log(line);
 if (withPictures.worst)
@@ -330,16 +288,11 @@ if (chars.same < chars.all) failed = "equations that didn't come out whole";
 const picturesRatio = withPictures.close / Math.max(1, withPictures.pictures);
 if (picturesRatio < minPictures)
   failed = `pictures within the PDF's tolerance ${percent(picturesRatio)} under ${percent(minPictures)}`;
+if (minInk && ink.same < ink.docs) failed = "rules, borders or shading unlike Typst's";
 if (validator) {
   const files = docx.map((d) => d.file);
-  let report = "";
-  try {
-    report = execFileSync("dotnet", [validator, ...files], { encoding: "utf8", maxBuffer: 1 << 26 });
-  } catch (e) {
-    report = String(e.stdout ?? e);
-    failed = "the validator found errors";
-  }
-  const bad = report.split("\n").filter((l) => /: [1-9]\d* error/.test(l) || l.startsWith("  "));
+  const bad = Object.values(validate(files, validator)).flat();
+  if (bad.length) failed = "the validator found errors";
   console.log(bad.length ? bad.join("\n") : `validator: ${files.length} files, no errors`);
   summary.push(bad.length ? `validator: errors\n\n${bad.slice(0, 40).join("\n")}` : `validator: ${files.length} files, no errors`);
 }

@@ -1,6 +1,6 @@
 // Answer spaces and answers. Answers appear only when the input `showAnswers` is "true":
 // written into the space in the accent color, and listed by `answer-key()`.
-#import "util.typ": _accent, _answers-shown, _css, _el, _half, _html, _length, _question, _rule, _tight
+#import "util.typ": _accent, _answers-shown, _css, _el, _half, _html, _length, _question, _rule, _tight, _underline
 #import "i18n.typ": _start-side, _word
 
 /// Records an answer for `answer-key()`, under the question it is in.
@@ -24,7 +24,9 @@
   } else {
     let body = if shown { text(fill: _accent, answer) } else { none }
     let w = if shown { calc.max(width.to-absolute(), measure(body).width + 0.6em.to-absolute()) } else { width }
-    box(width: w, stroke: (bottom: 0.5pt + _rule), outset: (bottom: 0.25em), inset: (x: 0.3em), _tight(align(center, body)))
+    // A word joiner before it puts it on a text line where it is alone (a table cell), as tall as one, with the
+    // answer on its baseline: a DOCX export writes the line as underlined text (#135).
+    [#sym.wj#box(width: w, stroke: (bottom: 0.5pt + _rule), outset: (bottom: _underline), inset: (x: 0.3em), _tight(align(center, body)))]
   }
 }
 

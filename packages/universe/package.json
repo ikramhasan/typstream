@@ -18,7 +18,9 @@
   ],
   "scripts": {
     "build": "tsup",
-    "test": "vitest run",
+    "test": "vitest run --project node",
+    "test:paged": "vitest run --project paged",
+    "test:docx": "vitest run --project docx",
     "vendor": "node scripts/vendor.mjs",
     "check-types": "tsc -p tsconfig.json",
     "check:api": "api-extractor run",

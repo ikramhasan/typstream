@@ -1,7 +1,7 @@
 // Document templates: page setup, a title block with student fields, page numbers. Applied as
 // the document's first line, `#show: worksheet.with(title: …)`. In HTML there are no pages, so
 // a template writes a <header> and no page rules (no "page set rule was ignored" warning).
-#import "util.typ": _array, _config, _el, _half, _html, _rule
+#import "util.typ": _array, _config, _el, _half, _html, _rule, _underline
 #import "i18n.typ": _points-text, _word
 #import "blocks.typ": instructions as _instructions, student-info
 
@@ -55,7 +55,7 @@
         header: if running-header {
           context if counter(page).get().first() > 1 {
             set text(size: _half(0.8))
-            [#title #h(1fr) #_word("candidate"): #box(width: 3.5cm, stroke: (bottom: 0.4pt + _rule))]
+            [#title #h(1fr) #_word("candidate"): #box(width: 3.5cm, stroke: (bottom: 0.4pt + _rule), outset: (bottom: _underline))]
           }
         },
         footer: context {

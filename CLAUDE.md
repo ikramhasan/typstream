@@ -50,8 +50,12 @@ tools/compile-oracle        Do healed prefixes compile? heal × engine-wasm over
 tools/llm-corpus  Real model output (#24): records Claude streams with edu's prompt kit, measures final-mode compile errors,
                   promotes recordings into corpus/llm.
 tools/docx-check  DOCX exports against Typst's PDF (#131): the Latin corpus through @typstream/node, LibreOffice's (or
-                  ONLYOFFICE's) lines and page starts compared with the PDF's, pictures pixel by pixel (pixels.mjs),
-                  Microsoft's Open XML validator (validator/).
+                  ONLYOFFICE's) lines and page starts compared with the PDF's, pictures pixel by pixel, rules and borders
+                  (tools/conformance's modules), Microsoft's Open XML validator (validator/).
+tools/conformance The plugin conformance suite (#135): a plugin's examples, its paged view against Typst's PDF (pixels, in a
+                  browser) and its DOCX export against the PDF (validator, LibreOffice's lines, pictures, rules). edu,
+                  mindmap and universe run it from `__tests__/conformance/` (`pnpm test:paged`, `test:docx`); they
+                  import it by path (a dependency would make a turbo cycle through the engine's tests).
 tools/browser-suites  Corpus-wide browser suites (#19): final-render equivalence, flicker, accessibility (axe), preview vs PDF
                     (#118), and visual regression against baselines rendered in Playwright's Docker image.
 tools/repo        Repo tooling: package layer table (layers.mjs), layering check, shared tsup and api-extractor configs,
@@ -109,7 +113,7 @@ In `packages/engine-wasm` (Rust build, ~3 min cold):
 In `packages/engine`:
 - `pnpm test`: the `node` vitest project (client against a fake worker; server and protocol conformance against engine-wasm in-process). Needs engine-wasm's `dist/`.
 - `pnpm test:browser`: the `browser` project, the real worker in Chromium, Firefox and WebKit (vitest browser mode, Playwright). `BROWSERS=chromium` runs one.
-- `pnpm size`: main thread ≤ 9.6 KB, worker JS ≤ 40 KB, `@typstream/engine/websocket` and `@typstream/engine/images` ≤ 1.5 KB gzipped each, the DOCX writer the worker `import()`s ≤ 12.5 KB.
+- `pnpm size`: main thread ≤ 9.6 KB, worker JS ≤ 40 KB, `@typstream/engine/websocket` and `@typstream/engine/images` ≤ 1.5 KB gzipped each, the DOCX writer the worker `import()`s ≤ 12.6 KB.
 - Pages and PDFs follow the layout profile (#129): the server puts `LAYOUT_PROFILE` (`src/server/profile.ts`) before
   every paged compile's and PDF export's preamble (constant 1.3em pitch, ragged right, no hyphenation, unbreakable
   table rows), so a DOCX can match them; heal's `layout-profile` lint removes what would beat it. Not the HTML target.
@@ -135,6 +139,9 @@ In `packages/google-fonts`:
 In `packages/edu`:
 - Edit `typst/*.typ`, `css/edu.css` or `examples/*.typ`, then `pnpm embed` to regenerate `src/assets.generated.ts` (the files, CSS, the prompt catalogue from the `///` doc comments of the names `lib.typ` imports, and the examples; a test checks it). Every public function needs a doc comment with an `example` block.
 - Answers must produce no output unless `sys.inputs.showAnswers` is `"true"`; every parameter needs a default and must accept what a stream cut leaves (`(2` is the number 2, `5em` arrives as `5`). Its tests compile with engine-wasm and native `typst`, so they run in CI's `Engine (wasm, html-compat, edu)` job; the compile oracle streams `examples/`.
+- Every catalogue example, template and example, answers hidden and shown, is in the conformance suite (`pnpm test:paged`,
+  `test:docx`): a component must come out of a DOCX export as it is on the page. A blank's line sits where Word draws
+  an underline (`_underline`, 0.078em below the baseline), on a text line (`#sym.wj` before a box alone in a cell).
 
 In `packages/mindmap`:
 - Edit `typst/*.typ` or `examples/*.typ`, then `pnpm embed` to regenerate `src/assets.generated.ts` (files, catalogue from
@@ -182,6 +189,12 @@ rates and classes, `node src/promote.mjs <label>` copies recordings into `corpus
 `node src/measure-edits.mjs <label>...`, `node src/promote-edits.mjs <label>...` into `corpus/edits` (answers, not
 documents; `loadEditAnswers()`).
 
+Plugin conformance (`tools/conformance`, README there, #135): in edu, mindmap and universe, `pnpm test:paged` runs
+their examples' pages against the PDF in Chromium (`BROWSERS=` for others), `pnpm test:docx` their DOCX exports against
+the PDF in LibreOffice (needs `@typstream/node` built, poppler, and the validator where built; `TYPSTREAM_DOCX_ENGINE=
+onlyoffice` for ONLYOFFICE). CI runs the paged half in the `Engine (chromium)` job and the DOCX half in the DOCX job.
+A plugin component Word can't draw the same fails there: change the component (#130), not the suite.
+
 DOCX checks (`tools/docx-check`, README there): `node tools/docx-check/check.mjs [filter…]` exports the Latin corpus and
 compares LibreOffice's layout with the PDF (`--scripts`: the Arabic, Bengali, Devanagari and Chinese documents instead,
 #134); `--validate <dll>` adds Microsoft's validator (`dotnet publish
@@ -189,7 +202,8 @@ tools/docx-check/validator -c Release -o tools/docx-check/validator/out`), `--on
 `--native` takes the model from engine-wasm's native example (no wasm build). CI runs it with the validator and
 line floors (99% on documents without equations or pictures, 95% on those with equations, each of which must come out
 whole, #132, 92% on those with pictures) and a picture floor (95% of pictures within the PDF raster suite's tolerance,
-pixel by pixel, #133), and the other scripts with floors of their own; nightly runs ONLYOFFICE.
+pixel by pixel, #133), and the other scripts with floors of their own; nightly runs ONLYOFFICE. It reports rules, borders
+and shading unlike Typst's (`--ink` fails on them) without a floor.
 
 Compile oracle (`tools/compile-oracle`, needs the built engine): `pnpm turbo run test --filter=@typstream/compile-oracle`; `pnpm --filter @typstream/compile-oracle report` for the full measurement (minutes).
 

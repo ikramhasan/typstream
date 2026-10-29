@@ -22,7 +22,9 @@
   "scripts": {
     "build": "node scripts/embed.mjs && tsup",
     "embed": "node scripts/embed.mjs",
-    "test": "vitest run",
+    "test": "vitest run --project node",
+    "test:paged": "vitest run --project paged",
+    "test:docx": "vitest run --project docx",
     "check-types": "tsc -p tsconfig.json",
     "check:api": "api-extractor run",
     "api:update": "api-extractor run --local",

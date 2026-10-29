@@ -59,7 +59,8 @@ caught up, while MutationObservers record what the renderers remove and add.
 Violations that come from Typst's own HTML or from axe's limits are listed in `KNOWN`, each with where it may occur
 and why; so is a known bug, with its issue.
 
-**Preview vs PDF** (`pdf-raster.test.ts`, [#118](https://github.com/ikramhasan/typstream/issues/118)). Every edu
+**Preview vs PDF** (`pdf-raster.test.ts`, [#118](https://github.com/ikramhasan/typstream/issues/118); the comparison is
+tools/conformance's `paged.ts`, which plugins run on their own examples, #135). Every edu
 document is shown in the document panel (paged, `fit-width` layout: its own pages scaled to the panel) and each page's pixels
 are compared with the same page of the mount's `exportPdf()`, rasterized by pdf.js at the same size in the same
 browser: the same page count and sizes, and no cluster of more than 3 touching pixels that differ. A pixel differs

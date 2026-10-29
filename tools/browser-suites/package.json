@@ -1,7 +1,7 @@
 {
   "name": "@typstream/browser-suites",
   "version": "0.0.0",
-  "description": "Browser suites over the whole corpus (PLAN.md §11.4): final-render equivalence, flicker, accessibility, preview vs PDF, and visual regression against committed baselines.",
+  "description": "Browser suites over the whole corpus (PLAN.md \u00a711.4): final-render equivalence, flicker, accessibility, preview vs PDF, and visual regression against committed baselines.",
   "license": "UNLICENSED",
   "private": true,
   "type": "module",
@@ -13,6 +13,7 @@
     "check-types": "tsc -p tsconfig.json"
   },
   "devDependencies": {
+    "@typstream/conformance": "workspace:*",
     "@typstream/core": "workspace:*",
     "@typstream/corpus": "workspace:*",
     "@typstream/dom": "workspace:*",
