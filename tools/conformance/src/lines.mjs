@@ -1,13 +1,54 @@
 // Lines of a PDF as `pdftotext -bbox` reads them, and how many of Typst's another layout reproduces (#118's spike,
-// spikes/docx/run.py).
+// spikes/docx/run.py; tools/docx-check, #131, and the conformance suite, #135).
 import { execFileSync } from "node:child_process";
 
 const PAGE = /<page [^>]*>([\s\S]*?)<\/page>/g;
 const WORD = /<word xMin="([\d.]+)" yMin="([\d.]+)" xMax="([\d.]+)" yMax="([\d.]+)">([^<]*)<\/word>/g;
-const unescape = (s) =>
+const decode = (s) =>
   s.replace(/&(amp|lt|gt|quot|apos|#\d+);/g, (_, e) =>
-    e === "amp" ? "&" : e === "lt" ? "<" : e === "gt" ? ">" : e === "quot" ? '"' : e === "apos" ? "'" : String.fromCodePoint(Number(e.slice(1))),
+    e === "amp"
+      ? "&"
+      : e === "lt"
+        ? "<"
+        : e === "gt"
+          ? ">"
+          : e === "quot"
+            ? '"'
+            : e === "apos"
+              ? "'"
+              : String.fromCodePoint(Number(e.slice(1))),
   );
+
+/**
+ * A word's or piece's text as compared: NFKC, without format characters (a word joiner a DOCX export writes to keep a
+ * blank's underline, which ONLYOFFICE's PDF keeps as text).
+ */
+const plain = (raw) =>
+  decode(raw)
+    .normalize("NFKC")
+    .replace(/\p{Cf}/gu, "");
+
+/** `pdftotext -bbox`'s XML of a PDF: its words' boxes, page by page. */
+const bbox = (pdf) =>
+  execFileSync("pdftotext", ["-bbox", pdf, "-"], {
+    encoding: "utf8",
+    maxBuffer: 1 << 28,
+    stdio: ["ignore", "pipe", "ignore"],
+  });
+
+/** Each page's words' boxes, `[x0, y0, x1, y1]` in points, from page 1. */
+export const wordBoxes = (pdf) =>
+  [...bbox(pdf).matchAll(PAGE)].map(([, page]) => [...page.matchAll(WORD)].map((m) => m.slice(1, 5).map(Number)));
+
+/** A PDF's page count. */
+export const pageCount = (pdf) =>
+  Number(/^Pages:\s+(\d+)/m.exec(execFileSync("pdfinfo", [pdf], { encoding: "utf8" }))?.[1] ?? 0);
+
+/** The boxes of a PDF's equations' pieces, `{ page, x, y, width, height }` (page from 0, points). */
+export const mathBoxes = (pdf) =>
+  pieces(pdf)
+    .filter((p) => p[5])
+    .map(([n, y0, x0, y1, , , , width]) => ({ page: n - 1, x: x0, y: y0, width, height: y1 - y0, math: true }));
 
 /**
  * Whether a box (page from 1, points) is in one of `regions` (`{ page, x, y, width, height }`, page from 0): text
@@ -21,15 +62,16 @@ const pictured = (regions, n, x0, y0, x1, y1) => {
 
 /** [page, "words of the line"], lines by the bottom of their words' boxes, top to bottom; none in `regions`. */
 export const linesOf = (pdf, regions = []) => {
-  const xml = execFileSync("pdftotext", ["-bbox", pdf, "-"], { encoding: "utf8", maxBuffer: 1 << 28 });
+  const xml = bbox(pdf);
   const out = [];
   let n = 0;
   for (const [, page] of xml.matchAll(PAGE)) {
     n++;
     const words = [];
     for (const [, x0, y0, x1, y1, w] of page.matchAll(WORD)) {
-      const t = unescape(w).normalize("NFKC");
-      if (t && !pictured(regions, n, Number(x0), Number(y0), Number(x1), Number(y1))) words.push([Number(y1), Number(x0), t]);
+      const t = plain(w);
+      if (t && !pictured(regions, n, Number(x0), Number(y0), Number(x1), Number(y1)))
+        words.push([Number(y1), Number(x0), t]);
     }
     words.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
     const lines = [];
@@ -38,7 +80,14 @@ export const linesOf = (pdf, regions = []) => {
       if (last && Math.abs(last[0] - y) < 3) last[1].push([x, t]);
       else lines.push([y, [[x, t]]]);
     }
-    for (const [, ws] of lines) out.push([n, ws.sort((a, b) => a[0] - b[0]).map((w) => w[1]).join(" ")]);
+    for (const [, ws] of lines)
+      out.push([
+        n,
+        ws
+          .sort((a, b) => a[0] - b[0])
+          .map((w) => w[1])
+          .join(" "),
+      ]);
   }
   return out;
 };
@@ -52,16 +101,20 @@ export const linesOf = (pdf, regions = []) => {
  * starts and ends is (`sameLine`): a line broken elsewhere has neither.
  */
 export const scriptLinesOf = (pdf, regions = []) => {
-  const xml = execFileSync("pdftotext", ["-bbox", pdf, "-"], { encoding: "utf8", maxBuffer: 1 << 28 });
+  const xml = bbox(pdf);
   const out = [];
   let n = 0;
   for (const [, page] of xml.matchAll(PAGE)) {
     n++;
     const words = [];
     for (const [, x0, y0, x1, y1, w] of page.matchAll(WORD)) {
-      const t = unescape(w).normalize("NFKC");
+      const t = plain(w);
       // A mark's word has no width (Typst's).
-      if (t.trim() && Number(x1) - Number(x0) > 0.01 && !pictured(regions, n, Number(x0), Number(y0), Number(x1), Number(y1)))
+      if (
+        t.trim() &&
+        Number(x1) - Number(x0) > 0.01 &&
+        !pictured(regions, n, Number(x0), Number(y0), Number(x1), Number(y1))
+      )
         words.push([Number(y0), Number(y1), Number(x0), t]);
     }
     words.sort((a, b) => a[1] - b[1]);
@@ -75,7 +128,12 @@ export const scriptLinesOf = (pdf, regions = []) => {
     lines.sort((a, b) => a.y1 - b.y1);
     const img = grey(pdf, n);
     for (const l of lines) {
-      const text = collapsed(l.words.sort((a, b) => a[0] - b[0]).map((w) => w[1]).join(""));
+      const text = collapsed(
+        l.words
+          .sort((a, b) => a[0] - b[0])
+          .map((w) => w[1])
+          .join(""),
+      );
       out.push([n, { text, ...inked(img, l) }]);
     }
   }
@@ -85,9 +143,9 @@ export const scriptLinesOf = (pdf, regions = []) => {
 /** Pixels per point lines' ink is measured at. */
 const INK_SCALE = 2;
 
-/** Page `n` (from 1) of a PDF as grey pixels at `INK_SCALE` per point. */
-const grey = (pdf, n) => {
-  const pgm = execFileSync("pdftoppm", ["-r", String(72 * INK_SCALE), "-gray", "-f", String(n), "-l", String(n), pdf], {
+/** Page `n` (from 1) of a PDF as grey pixels at `scale` per point. */
+export const grey = (pdf, n, scale = INK_SCALE) => {
+  const pgm = execFileSync("pdftoppm", ["-r", String(72 * scale), "-gray", "-f", String(n), "-l", String(n), pdf], {
     maxBuffer: 1 << 30,
   });
   // P5, width height, 255, then the pixels.
@@ -129,7 +187,8 @@ const collapsed = (text) => text.replace(/\s+/g, "").replace(/(.{1,6}?)\1+/gu, "
 
 /** Faces equations are set in: Typst's, and what an engine typesets OMML with besides. */
 const MATH_FONT = /Math|OpenSymbol|Cambria/i;
-const TEXT = /<text top="([\d.-]+)" left="([\d.-]+)" width="([\d.-]+)" height="([\d.-]+)" font="(\d+)">([\s\S]*?)<\/text>/g;
+const TEXT =
+  /<text top="([\d.-]+)" left="([\d.-]+)" width="([\d.-]+)" height="([\d.-]+)" font="(\d+)">([\s\S]*?)<\/text>/g;
 const FONTSPEC = /<fontspec id="(\d+)" size="[^"]*" family="([^"]*)"/g;
 
 /** A face's family without its subset tag, spaces or style: what two PDFs of the same text share. */
@@ -141,15 +200,25 @@ const face = (family) =>
     .toLowerCase();
 
 /** The faces a PDF sets its text (not its math) in. */
-export const textFaces = (pdf) => new Set(pieces(pdf).filter((p) => !p[5]).map((p) => p[6]));
+export const textFaces = (pdf) =>
+  new Set(
+    pieces(pdf)
+      .filter((p) => !p[5])
+      .map((p) => p[6]),
+  );
 
 /**
- * Text pieces in one face each (`pdftohtml -xml`), in points: [page, top, left, bottom, text, math, face]. With
+ * Text pieces in one face each (`pdftohtml -xml`), in points: [page, top, left, bottom, text, math, face, width]. With
  * `faces`, text in any other face is math too: an engine missing the math font a character asks for falls back to
  * whatever face has it (ONLYOFFICE draws operators so).
  */
 const pieces = (pdf, faces, regions = []) => {
-  const xml = execFileSync("pdftohtml", ["-xml", "-i", "-zoom", "1", "-stdout", pdf], { encoding: "utf8", maxBuffer: 1 << 28 });
+  const xml = execFileSync("pdftohtml", ["-xml", "-i", "-zoom", "1", "-stdout", pdf], {
+    encoding: "utf8",
+    maxBuffer: 1 << 28,
+    // "no word list" for a page without text.
+    stdio: ["ignore", "pipe", "ignore"],
+  });
   const families = new Map();
   const out = [];
   let n = 0;
@@ -157,12 +226,12 @@ const pieces = (pdf, faces, regions = []) => {
     n++;
     for (const [, id, family] of page.matchAll(FONTSPEC)) families.set(id, family);
     for (const [, top, left, width, height, font, raw] of page.matchAll(TEXT)) {
-      const text = unescape(raw.replace(/<[^>]*>/g, "")).normalize("NFKC");
+      const text = plain(raw.replace(/<[^>]*>/g, ""));
       const family = families.get(font) ?? "";
       const math = MATH_FONT.test(family) || (faces !== undefined && !faces.has(face(family)));
       const [y0, x0, y1] = [Number(top), Number(left), Number(top) + Number(height)];
       if (text.trim() && !pictured(regions, n, x0, y0, x0 + Number(width), y1))
-        out.push([n, y0, x0, y1, text, math, face(family)]);
+        out.push([n, y0, x0, y1, text, math, face(family), Number(width)]);
     }
   }
   return out;
@@ -190,7 +259,14 @@ export const textLinesOf = (pdf, faces, regions = []) => {
       } else lines.push({ top: p[1], bottom: p[3], pieces: [p] });
     }
     lines.sort((a, b) => a.bottom - b.bottom);
-    for (const l of lines) out.push([n, l.pieces.sort((a, b) => a[2] - b[2]).map((p) => p[4]).join(" ")]);
+    for (const l of lines)
+      out.push([
+        n,
+        l.pieces
+          .sort((a, b) => a[2] - b[2])
+          .map((p) => p[4])
+          .join(" "),
+      ]);
   }
   return out;
 };

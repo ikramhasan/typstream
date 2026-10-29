@@ -3,12 +3,13 @@
 `check.mjs` exports every Latin corpus document (the edu, llm and islands sets; `--scripts` for the others) to PDF and
 DOCX through `@typstream/node`, healed in final mode first as an engine exports it (lint fixes included, the layout
 profile's among them), has a layout engine lay the DOCX out, and compares its lines and page starts with Typst's
-PDF (`lines.mjs`).
+PDF. Each document is compared as the plugin conformance suite compares an example (#135), with its modules
+(tools/conformance: `compare.mjs`, `lines.mjs`, `pixels.mjs`, `ink.mjs`, `office.mjs`).
 
 Documents with pictures (#133: images, CeTZ canvases, mind maps, edu's drawings, boxes with rounded corners) are
 reported apart. Text drawn in a picture is outlines in the DOCX, so Typst's is left out of the lines (the model says
 where each picture is: `@typstream/node`'s internal `renderDocxModel`). Each picture is compared with Typst's PDF
-pixel by pixel (`pixels.mjs`), as tools/browser-suites' PDF raster suite compares the canvas (#119): both rasterized
+pixel by pixel (tools/conformance's `pixels.mjs`), as tools/browser-suites' PDF raster suite compares the canvas (#119): both rasterized
 by poppler, the differing pixels that touch counted, at most 3 allowed. A picture is found where it is in the other
 PDF first, on its page or the next (where the text above it came out taller, the lines already count that), to an
 eighth of a point.
@@ -38,6 +39,13 @@ ink starts and ends (poppler's raster, in the middle of the line, which only its
 reproduced when either is the same (a line broken elsewhere has neither). `--fonts DIR` gives the native example and
 the layout engine other fonts: the engine ships no CJK face, so the Chinese document is tofu in both PDFs without
 one.
+
+**Rules, borders and shading** (tools/conformance's `ink.mjs`): on documents without equations laid out line for
+line, what the pages draw besides text and pictures is compared with Typst's PDF, so a lost border or an underline
+drawn off its line shows (the lines compare text only). It is reported, not a floor (`--ink` fails on any): of the 51
+such corpus documents, 37 match. The rest are documents a model wrote: blanks of their own (`box(stroke: (bottom:
+…))`, its line on the baseline, where Word can only underline at the font's underline position), and tables that go
+on to another page.
 
 Files and LibreOffice's PDFs go to `$TMPDIR/typstream-docx-check` (`results.json` holds each document's numbers).
 

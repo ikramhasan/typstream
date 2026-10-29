@@ -52,9 +52,16 @@ jobs:
         run: sudo apt-get install -y --no-install-recommends poppler-utils
       - run: docker pull onlyoffice/documentserver
       - run: pnpm turbo run build --filter=@typstream/docx-check^...
+      - run: dotnet publish tools/docx-check/validator -c Release -o tools/docx-check/validator/out
       - run: node tools/docx-check/check.mjs --onlyoffice
       # Other scripts (#134), for the numbers: ONLYOFFICE's PDF drops Indic vowel signs, Bengali equations' digits too.
       - run: node tools/docx-check/check.mjs --onlyoffice --scripts
+        continue-on-error: true
+      # The plugins' conformance suites (#135), for what differs: ONLYOFFICE draws ruled lines taller and underlines a
+      # point higher than LibreOffice, so some examples fail there.
+      - run: pnpm --filter @typstream/edu --filter @typstream/mindmap --filter @typstream/universe test:docx
+        env:
+          TYPSTREAM_DOCX_ENGINE: onlyoffice
         continue-on-error: true
 
   # Mutation testing of heal (PLAN.md §11.1, #6). The score goes to the job summary and the HTML
@@ -102,5 +109,11 @@ jobs:
         with: { node: "${{ env.NODE }}" }
       # In Playwright's image, like CI's browser jobs: no apt.
       - run: node tools/repo/playwright-docker.mjs pnpm --filter @typstream/browser-suites test:browser
+        env:
+          BROWSERS: ${{ matrix.browser }}
+      # The plugins' conformance suites' paged half (#135), in every browser (PRs run Chromium's).
+      - run: >-
+          node tools/repo/playwright-docker.mjs pnpm --filter @typstream/edu --filter @typstream/mindmap
+          --filter @typstream/universe test:paged
         env:
           BROWSERS: ${{ matrix.browser }}

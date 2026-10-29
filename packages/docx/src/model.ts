@@ -186,6 +186,8 @@ export interface DocxTextRun {
   /** Hex RGB, black when absent. */
   color?: string;
   underline?: boolean;
+  /** Hex RGB of the underline, when it isn't black: the stroke Typst drew under it (a blank's line). */
+  underlineColor?: string;
   /** A URL the run links to. */
   link?: string;
   /** A page number: `PAGE` or `NUMPAGES`. */
@@ -205,6 +207,8 @@ export interface DocxGapRun {
   font: number;
   size: number;
   underline?: boolean;
+  /** Hex RGB of the underline, when it isn't black. */
+  underlineColor?: string;
   /**
    * A picture in the line, as wide as the gap (#133): its index in `DocxModel.pictures`, and where its top is below
    * the baseline (negative above it). A gap stays when the model has no picture data for it.

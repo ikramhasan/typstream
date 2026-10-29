@@ -30,6 +30,21 @@
       "@typstream/engine/images": [
         "./packages/engine/src/images.ts"
       ],
+      "@typstream/conformance": [
+        "./tools/conformance/src/suite.ts"
+      ],
+      "@typstream/conformance/paged": [
+        "./tools/conformance/src/paged.ts"
+      ],
+      "@typstream/conformance/mount": [
+        "./tools/conformance/src/mount.ts"
+      ],
+      "@typstream/conformance/docx": [
+        "./tools/conformance/src/docx.d.mts"
+      ],
+      "@typstream/conformance/vitest": [
+        "./tools/conformance/src/vitest.d.mts"
+      ],
       "@typstream/*": [
         "./packages/*/src/index.ts"
       ]

@@ -27,6 +27,11 @@
   body
 }
 
+// How far below the baseline a blank's line is drawn: where Word-like engines draw an underline, which a DOCX export
+// writes the line as (#135). LibreOffice and ONLYOFFICE centre it at the font's underline position: 0.078em in
+// Libertinus Serif (Noto's are within 0.03em).
+#let _underline = 0.078em
+
 /// A text size `factor` times the current one, rounded to half a point: Word sets text in half points, so a DOCX
 /// export keeps the size and the line breaks (#130). Needs context.
 #let _half(factor) = calc.round(text.size.to-absolute() / 0.5pt * factor) * 0.5pt

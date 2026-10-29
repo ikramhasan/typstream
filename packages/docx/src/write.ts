@@ -103,7 +103,7 @@ class Writer {
     color?: string,
     underline?: boolean,
     spacing?: number,
-    run?: Pick<DocxTextRun, "script" | "rtl" | "lang">,
+    run?: Pick<DocxTextRun, "script" | "rtl" | "lang" | "underlineColor">,
   ): string {
     const f = this.fonts[font];
     const name = esc(f?.name ?? "Libertinus Serif");
@@ -114,7 +114,7 @@ class Writer {
     if (spacing) x += `<w:spacing w:val="${spacing}"/>`;
     const sz = halfPoints(size);
     x += `<w:sz w:val="${sz}"/><w:szCs w:val="${sz}"/>`;
-    if (underline) x += '<w:u w:val="single"/>';
+    if (underline) x += `<w:u w:val="single"${run?.underlineColor ? ` w:color="${run.underlineColor}"` : ""}/>`;
     if (run?.script) x += `<w:vertAlign w:val="${run.script}"/>`;
     if (run?.rtl) x += "<w:rtl/>";
     if (run?.lang) x += `<w:lang w:val="${run.lang}" w:eastAsia="${run.lang}" w:bidi="${run.lang}"/>`;
@@ -145,7 +145,7 @@ class Writer {
       // U+00A0, written as a character reference so it stays visible in the source. In a right-to-left paragraph, a
       // right-to-left run: engines place runs by their direction.
       const space = (n: number, spacing: number) =>
-        `<w:r>${this.rPr(r.font, r.size, undefined, r.underline, spacing, { rtl })}<w:t xml:space="preserve">${"&#160;".repeat(n)}</w:t></w:r>`;
+        `<w:r>${this.rPr(r.font, r.size, undefined, r.underline, spacing, { rtl, underlineColor: r.underlineColor })}<w:t xml:space="preserve">${"&#160;".repeat(n)}</w:t></w:r>`;
       if (!complex) return space(1, Math.max(0, twips(r.gap) - Math.round(nbsp)));
       // Among complex-script text (Arabic, Indic), as many no-break spaces as fill the gap, the last spaced by the
       // rest: ONLYOFFICE ignores character spacing there (#134), so it is off by half a space at most.
@@ -245,6 +245,11 @@ class Writer {
     const math = runs.find((r) => "math" in r && !r.display) as DocxMathRun | undefined;
     if (math && runs.every((r) => "math" in r || "tab" in r || "break" in r))
       runs = [...runs, { text: "\u200b", font: math.font, size: math.size }];
+    // A blank ending the paragraph: engines don't underline trailing spaces, no-break ones included. A word joiner
+    // after it makes them inner ones (#135).
+    const last = runs.at(-1);
+    if (last && "gap" in last && last.underline && !last.picture)
+      runs = [...runs, { text: "\u2060", font: last.font, size: last.size }];
     const complex = runs.some((r) => "text" in r && COMPLEX.test(r.text));
     const content =
       lead + label + runs.map((r) => this.run(r, part, jc === "left" ? "left" : jc, p.rtl, complex)).join("");

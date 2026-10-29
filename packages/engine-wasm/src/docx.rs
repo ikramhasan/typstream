@@ -1065,7 +1065,8 @@ enum Run {
         font: usize,
         size: f64,
         color: String,
-        underline: bool,
+        /// Underlined, in the stroke's colour.
+        underline: Option<String>,
         link: Option<String>,
         script: Option<&'static str>,
         /// Right to left, and its language (#134).
@@ -1075,7 +1076,7 @@ enum Run {
     /// An exact-width space: a gap in a line, a blank, a placeholder.
     Gap {
         width: f64,
-        underline: bool,
+        underline: Option<String>,
         font: usize,
         size: f64,
     },
@@ -1416,11 +1417,19 @@ impl Builder {
         // Text gathered for the paragraph being built.
         let mut pending: Vec<usize> = Vec::new();
         let mut heading: Option<usize> = None;
+        // The paragraph open: what follows its end is another block, even without a paragraph of its own (a block's
+        // inline content, edu's shown answer under its question).
+        let mut par: Option<Location> = None;
         let items = self.items.clone();
         let mut i = 0;
         while i < ids.len() {
             let id = ids[i];
             match &items[id].kind {
+                Kind::End(loc) if par == Some(*loc) => {
+                    par = None;
+                    pending.push(id);
+                    self.flush(&mut pending, &mut out, area, heading);
+                }
                 Kind::Start(elem, at) => {
                     // Text placed out of the flow (`place`, not floating): a frame at Typst's position on the page,
                     // which takes no room. Placed drawings stay drawings; in a cell, a frame would leave the table.
@@ -1446,6 +1455,7 @@ impl Builder {
                     match node {
                         Node::Par => {
                             self.flush(&mut pending, &mut out, area, heading);
+                            par = elem.location();
                             i += 1;
                             continue;
                         }
@@ -1521,7 +1531,19 @@ impl Builder {
                             beside(p)
                                 && matches!(&self.items[p].kind, Kind::Text(t) if t.x >= rect.right() - 0.5)
                         });
-                    let inline = after || pending.iter().any(|&p| beside(p));
+                    // A box shorter than a line of the text in it (edu's blanks: their text's edges are tight) is set
+                    // on a line, even with nothing beside it (a cell's only content).
+                    let mut baselines = ids[i..=end.min(ids.len() - 1)].iter().filter_map(|&p| {
+                        match &self.items[p].kind {
+                            Kind::Text(t) => Some((t.y, t.size)),
+                            _ => None,
+                        }
+                    });
+                    let short = baselines.next().is_some_and(|(y, size)| {
+                        rect.h < (TOP + BOTTOM) * size - 0.5
+                            && baselines.all(|(y2, _)| (y2 - y).abs() < 0.5)
+                    });
+                    let inline = after || short || pending.iter().any(|&p| beside(p));
                     if inline || rect.h < 6.0 {
                         pending.extend_from_slice(&ids[i..=end.min(ids.len() - 1)]);
                     } else {
@@ -2090,9 +2112,9 @@ impl Builder {
         let mut text_ids: Vec<usize> = Vec::new();
         let mut segs: Vec<(usize, Seg)> = Vec::new();
         let mut links: Vec<(usize, Rect, String)> = Vec::new();
-        // Boxes of what is drawn: an equation's pieces (with its index in `equations`), or drawings (with the item);
-        // and the item they come from.
-        let mut boxes: Vec<(usize, Rect, Option<usize>, Option<usize>, usize)> = Vec::new();
+        // Boxes of what is drawn: an equation's pieces (with its index in `equations`, and their baseline), or
+        // drawings (with the item); and the item they come from.
+        let mut boxes: Vec<(usize, Rect, Option<usize>, Option<usize>, usize, f64)> = Vec::new();
         let mut equations: Vec<Equation> = Vec::new();
         // The equation open, and its end tag.
         let mut equation: Option<(usize, Option<Location>)> = None;
@@ -2144,6 +2166,7 @@ impl Builder {
                         eq,
                         None,
                         id,
+                        t.y,
                     ));
                 }
                 Kind::Start(elem, _) if elem.func().name() == "equation" && eq.is_none() => {
@@ -2177,14 +2200,15 @@ impl Builder {
                     eq,
                     None,
                     id,
+                    s.y0,
                 )),
                 Kind::Seg(s) if s.horizontal() => segs.push((page, s.clone())),
                 Kind::Link(r, url) => links.push((page, *r, url.clone())),
-                Kind::Drawing(r) => boxes.push((page, *r, eq, Some(id), id)),
+                Kind::Drawing(r) => boxes.push((page, *r, eq, Some(id), id, r.bottom())),
                 _ => {}
             }
         }
-        // An equation's pieces merge into one box per baseline-ish band (two, when Typst broke it over lines).
+        // An equation's pieces merge into one box per line (two, when Typst broke it over lines).
         let mut lines: Vec<Line> = Vec::new();
         // page, x, w, baseline, text or box, the box's equation, the drawings in the box, its first item
         let mut atoms: Vec<(
@@ -2200,20 +2224,43 @@ impl Builder {
         )> = Vec::new();
         // Boxes: attach to the line whose baseline is inside them.
         let mut placeholders: Vec<(usize, Rect, Option<usize>, Vec<usize>, usize)> = Vec::new();
-        for (page, r, eq, drawing, id) in boxes {
-            // An equation's pieces (a numerator, a denominator) make one box, wherever they are.
-            let same = |p: &(usize, Rect, Option<usize>, Vec<usize>, usize)| {
+        let mut placeholder_lines: Vec<usize> = Vec::new();
+        // Typst breaks an inline equation over lines: its pieces are on the text line whose baseline is nearest theirs
+        // (a numerator's is above its line's, but less than a line's pitch). Baselines a few points apart (a
+        // superscript's) are one line's.
+        let mut baselines: Vec<(usize, f64)> = texts.iter().map(|(p, t)| (*p, t.y)).collect();
+        baselines.sort_by(|a, b| a.0.cmp(&b.0).then(a.1.total_cmp(&b.1)));
+        baselines.dedup_by(|b, a| a.0 == b.0 && b.1 - a.1 < 4.0);
+        let line_of = |page: usize, y: f64| {
+            baselines
+                .iter()
+                .enumerate()
+                .filter(|(_, (p, _))| *p == page)
+                .min_by(|a, b| (a.1 .1 - y).abs().total_cmp(&(b.1 .1 - y).abs()))
+                .map_or(0, |(k, _)| k)
+        };
+        for (page, r, eq, drawing, id, baseline) in boxes {
+            let eq_line = if eq.is_some() {
+                line_of(page, baseline)
+            } else {
+                0
+            };
+            // An equation's pieces on a line (a numerator, a denominator) make one box, wherever they are.
+            let same = |(p, l): (&(usize, Rect, Option<usize>, Vec<usize>, usize), &usize)| {
                 p.0 == page
                     && p.2 == eq
-                    && (eq.is_some()
-                        || r.x <= p.1.right() + 1.0 && r.y < p.1.bottom() && r.bottom() > p.1.y)
+                    && (eq.is_some() && *l == eq_line
+                        || eq.is_none()
+                            && r.x <= p.1.right() + 1.0
+                            && r.y < p.1.bottom()
+                            && r.bottom() > p.1.y)
             };
             let at = match eq {
-                Some(_) => placeholders.iter().rposition(same),
+                Some(_) => placeholders.iter().zip(&placeholder_lines).rposition(same),
                 None => placeholders
                     .len()
                     .checked_sub(1)
-                    .filter(|&k| same(&placeholders[k])),
+                    .filter(|&k| same((&placeholders[k], &placeholder_lines[k]))),
             };
             if let Some(last) = at.map(|k| &mut placeholders[k]) {
                 {
@@ -2232,6 +2279,7 @@ impl Builder {
                 }
             }
             placeholders.push((page, r, eq, drawing.into_iter().collect(), id));
+            placeholder_lines.push(eq_line);
         }
         // Text drawn on a drawing in the line (a rounded box's words) is part of its picture.
         let mut pictured = vec![false; texts.len()];
@@ -2461,30 +2509,40 @@ impl Builder {
                 .find(|(p, y, _)| *p == line.page && (y - line.baseline).abs() < 0.6)
                 .map(|l| l.2);
         }
-        // Underlines past the last atom (a blank at the end of a line: on its left in right-to-left text).
+        // Underlines past the last atom (a blank at the end of a line: on its left in right-to-left text), and before
+        // the first (a blank alone in a cell, its answer centred on it).
         for line in lines.iter_mut() {
-            if let Some((_, s)) = segs.iter().find(|(p, s)| {
-                *p == line.page
-                    && s.y0 > line.baseline - 1.0
-                    && s.y0 < line.baseline + 0.6 * line.size.max(8.0)
-                    && if line.rtl {
-                        s.x0 < line.left - 0.5 && s.x1 > line.left - 0.5
-                    } else {
-                        s.x1 > line.right + 0.5 && s.x0 < line.right + 0.5
-                    }
-            }) {
-                let font = last_font(&line.runs).unwrap_or(0);
-                line.runs.push(Run::Gap {
-                    width: if line.rtl {
-                        line.left - s.x0
-                    } else {
-                        s.x1 - line.right
-                    },
-                    underline: true,
-                    font,
+            for end in [true, false] {
+                let (left, right) = (line.left, line.right);
+                let Some((_, s)) = segs.iter().find(|(p, s)| {
+                    *p == line.page
+                        && s.y0 > line.baseline - 1.0
+                        && s.y0 < line.baseline + 0.6 * line.size.max(8.0)
+                        && if end == line.rtl {
+                            s.x0 < left - 0.5 && s.x1 > left - 0.5
+                        } else {
+                            s.x1 > right + 0.5 && s.x0 < right + 0.5
+                        }
+                }) else {
+                    continue;
+                };
+                let width = if end == line.rtl {
+                    left - s.x0
+                } else {
+                    s.x1 - right
+                };
+                let gap = Run::Gap {
+                    width,
+                    underline: Some(s.color.clone()),
+                    font: last_font(&line.runs).unwrap_or(0),
                     size: line.size.max(8.0),
-                });
-                if line.rtl {
+                };
+                if end {
+                    line.runs.push(gap);
+                } else {
+                    line.runs.insert(0, gap);
+                }
+                if end == line.rtl {
                     line.left = s.x0;
                 } else {
                     line.right = s.x1;
@@ -2630,7 +2688,7 @@ impl Builder {
                 continue;
             }
             if let Some(k) = line.runs.iter().rposition(
-                |r| matches!(r, Run::Gap { width, underline: false, .. } if *width >= 2.0),
+                |r| matches!(r, Run::Gap { width, underline: None, .. } if *width >= 2.0),
             ) {
                 let after_text = line.runs[k + 1..]
                     .iter()
@@ -2662,7 +2720,7 @@ impl Builder {
                 right: s.x1,
                 runs: vec![Run::Gap {
                     width: s.x1 - s.x0,
-                    underline: true,
+                    underline: Some(s.color.clone()),
                     font: 0,
                     size,
                 }],
@@ -2962,7 +3020,7 @@ impl Builder {
         let (page, first) = texts.first()?.clone();
         let mut runs = Vec::new();
         for (_, t) in &texts {
-            push_text(&mut runs, t, self.fonts.get(&t.font), false, None);
+            push_text(&mut runs, t, self.fonts.get(&t.font), None, None);
         }
         let x0 = texts.iter().map(|(_, t)| t.x).fold(f64::MAX, f64::min);
         let x1 = texts
@@ -3113,7 +3171,7 @@ impl Builder {
                         ..n.clone()
                     },
                     self.fonts.get(&n.font),
-                    false,
+                    None,
                     None,
                 );
                 // The number's line, its baseline where Typst set it.
@@ -3389,8 +3447,31 @@ impl Builder {
         };
         let mut frames: HashMap<usize, Rect> = HashMap::new();
         let mut drawn: HashSet<usize> = HashSet::new();
+        // What it draws on each page, as (x0, y0, x1, y1): where a page has no frame of its own (the flow inlines it
+        // where a row moved on whole), where it ends there.
+        let mut extents: HashMap<usize, (f64, f64, f64, f64)> = HashMap::new();
         for &id in &ids[1..] {
             let page = self.items[id].page;
+            let extent = match &self.items[id].kind {
+                Kind::Seg(s) => Some((
+                    s.x0.min(s.x1),
+                    s.y0.min(s.y1),
+                    s.x0.max(s.x1),
+                    s.y0.max(s.y1),
+                )),
+                Kind::Fill(r, _) => Some((r.x, r.y, r.right(), r.bottom())),
+                Kind::Text(t) => Some((
+                    t.x,
+                    t.y - TOP * t.size,
+                    t.x + t.width,
+                    t.y + BOTTOM * t.size,
+                )),
+                _ => None,
+            };
+            if let Some((x0, y0, x1, y1)) = extent {
+                let e = extents.entry(page).or_insert((x0, y0, x1, y1));
+                *e = (e.0.min(x0), e.1.min(y0), e.2.max(x1), e.3.max(y1));
+            }
             match &self.items[id].kind {
                 Kind::Group(r, _)
                     if !drawn.contains(&page)
@@ -3578,7 +3659,12 @@ impl Builder {
                 }
             }
         }
-        let frame_bottom = |p: usize| frames.get(&p).map(|f| f.bottom());
+        let frame_bottom = |p: usize| {
+            frames
+                .get(&p)
+                .map(|f| f.bottom())
+                .or(extents.get(&p).map(|e| e.3))
+        };
         let row_gutter = |r: usize| {
             if r + 1 < nrows {
                 gutters.1.get(r).copied().unwrap_or(0.0)
@@ -3974,7 +4060,14 @@ impl Builder {
         let mut adopted: Vec<(usize, usize)> = Vec::new();
         for &id in orphans {
             let page = self.items[id].page;
+            // What a group a cell adopted draws is the cell's too: a stroke across the column (an answer line's
+            // rule) isn't the table's.
+            let inside = groups.last().copied().flatten();
             let to = match &self.items[id].kind {
+                Kind::Group(..) | Kind::GroupEnd => None,
+                _ => inside,
+            };
+            let to = to.or_else(|| match &self.items[id].kind {
                 Kind::Group(r, _) => {
                     let one = column(r.x).is_some_and(|c| r.right() <= starts[c + 1] + 0.5);
                     let to = if one { cell_at(page, r.x, r.y) } else { None };
@@ -4007,7 +4100,7 @@ impl Builder {
                 Kind::End(loc) => started.get(loc).copied(),
                 // With its equation.
                 Kind::Math(_) => adopted.last().map(|&(k, _)| k),
-            };
+            });
             if let Some(k) = to {
                 adopted.push((k, id));
             }
@@ -4119,16 +4212,25 @@ fn sides(s: Sides<f64>) -> Json {
     json!({ "top": round(s.top), "right": round(s.right), "bottom": round(s.bottom), "left": round(s.left) })
 }
 
-fn underlined(segs: &[(usize, Seg)], page: usize, x0: f64, x1: f64, baseline: f64) -> bool {
+/// The colour of the stroke under `x0..x1` on the line at `baseline`, if one underlines it.
+fn underlined(
+    segs: &[(usize, Seg)],
+    page: usize,
+    x0: f64,
+    x1: f64,
+    baseline: f64,
+) -> Option<String> {
     let mid = (x0 + x1) / 2.0;
-    segs.iter().any(|(p, s)| {
-        *p == page
-            && s.x0 <= mid
-            && s.x1 >= mid
-            && s.y0 > baseline - 1.0
-            && s.y0 < baseline + 6.0
-            && s.thickness < 2.0
-    })
+    segs.iter()
+        .find(|(p, s)| {
+            *p == page
+                && s.x0 <= mid
+                && s.x1 >= mid
+                && s.y0 > baseline - 1.0
+                && s.y0 < baseline + 6.0
+                && s.thickness < 2.0
+        })
+        .map(|(_, s)| s.color.clone())
 }
 
 /// Word's tab leader for what a `repeat` fills with, if Word has one like it.
@@ -4150,7 +4252,13 @@ fn last_font(runs: &[Run]) -> Option<usize> {
 }
 
 /// Appends `t`'s text in `font`, to the last run when it is set alike.
-fn push_text(runs: &mut Vec<Run>, t: &Text, font: usize, underline: bool, link: Option<String>) {
+fn push_text(
+    runs: &mut Vec<Run>,
+    t: &Text,
+    font: usize,
+    underline: Option<String>,
+    link: Option<String>,
+) {
     if let Some(Run::Text {
         text,
         font: f,
@@ -4209,8 +4317,11 @@ fn run_json(run: &Run) -> Json {
             if color != "000000" {
                 m.insert("color".into(), json!(color));
             }
-            if *underline {
+            if let Some(c) = underline {
                 m.insert("underline".into(), json!(true));
+                if c != "000000" {
+                    m.insert("underlineColor".into(), json!(c));
+                }
             }
             if let Some(l) = link {
                 m.insert("link".into(), json!(l));
@@ -4237,8 +4348,11 @@ fn run_json(run: &Run) -> Json {
             m.insert("gap".into(), json!(round(*width)));
             m.insert("font".into(), json!(font));
             m.insert("size".into(), json!(round(*size)));
-            if *underline {
+            if let Some(c) = underline {
                 m.insert("underline".into(), json!(true));
+                if c != "000000" {
+                    m.insert("underlineColor".into(), json!(c));
+                }
             }
             Json::Object(m)
         }

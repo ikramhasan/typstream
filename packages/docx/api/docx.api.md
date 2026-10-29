@@ -94,6 +94,7 @@ export interface DocxGapRun {
     size: number;
     // (undocumented)
     underline?: boolean;
+    underlineColor?: string;
 }
 
 // @internal
@@ -418,6 +419,7 @@ export interface DocxTextRun {
     text: string;
     // (undocumented)
     underline?: boolean;
+    underlineColor?: string;
 }
 
 // @internal

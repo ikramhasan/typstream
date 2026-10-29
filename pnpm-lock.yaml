@@ -797,6 +797,9 @@ importers:
 
   tools/browser-suites:
     devDependencies:
+      '@typstream/conformance':
+        specifier: workspace:*
+        version: link:../conformance
       '@typstream/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -855,8 +858,41 @@ importers:
         specifier: workspace:*
         version: link:../../packages/universe
 
+  tools/conformance:
+    dependencies:
+      '@typstream/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@typstream/docx':
+        specifier: workspace:*
+        version: link:../../packages/docx
+      '@typstream/dom':
+        specifier: workspace:*
+        version: link:../../packages/dom
+      '@typstream/engine':
+        specifier: workspace:*
+        version: link:../../packages/engine
+      '@typstream/heal':
+        specifier: workspace:*
+        version: link:../../packages/heal
+      '@typstream/node':
+        specifier: workspace:*
+        version: link:../../packages/node
+      '@vitest/browser-playwright':
+        specifier: 4.1.12
+        version: 4.1.12(playwright@1.64.1)(vite@8.3.5(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))(vitest@4.1.12)
+      pdfjs-dist:
+        specifier: ^6.4.299
+        version: 6.4.299
+      playwright:
+        specifier: ^1.64.1
+        version: 1.64.1
+
   tools/docx-check:
     dependencies:
+      '@typstream/conformance':
+        specifier: workspace:*
+        version: link:../conformance
       '@typstream/docx':
         specifier: workspace:*
         version: link:../../packages/docx

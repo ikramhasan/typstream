@@ -103,7 +103,8 @@ jobs:
   # Microsoft's Open XML validator (any error fails) and laid out by LibreOffice, whose lines must match Typst's PDF
   # at least as often as the floors say: on the documents without equations or pictures, on those with equations
   # (#132), each of which must come out whole, and on those with pictures (#133), most of which must match the PDF's
-  # pixels. LibreOffice reads Word's equations with its Math component.
+  # pixels. LibreOffice reads Word's equations with its Math component. Then the plugins' conformance suites (#135):
+  # edu's, mindmap's and Universe's examples, each valid and laid out as Typst's PDF, rules and borders included.
   docx:
     name: DOCX (validator, LibreOffice)
     runs-on: ubuntu-latest
@@ -125,6 +126,7 @@ jobs:
       - run: >-
           node tools/docx-check/check.mjs --scripts --validate tools/docx-check/validator/out/validator.dll
           --min-lines 0.97 --min-math-lines 0.86 --min-picture-lines 0.94 --min-pictures 0.95
+      - run: pnpm --filter @typstream/edu --filter @typstream/mindmap --filter @typstream/universe test:docx
 
   size:
     name: Size
@@ -216,7 +218,8 @@ jobs:
   # (packages/react/__tests__/browser) against that worker, the mind map island (packages/mindmap/__tests__/browser),
   # and examples/strict-csp: both targets and the island under a strict Content-Security-Policy, with no violation. One job per browser; Chromium's also runs examples/nextjs-ai-sdk, a
   # production Next.js build streaming an answer into <Typstream>, and tools/browser-suites' preview vs PDF check (#118:
-  # every edu page painted in the document panel equals the PDF export's; all three browsers run it nightly).
+  # every edu page painted in the document panel equals the PDF export's; all three browsers run it nightly), and the
+  # plugins' conformance suites' paged half (#135: edu's, mindmap's and Universe's examples, likewise).
   browsers:
     name: Engine (${{ matrix.browser }})
     runs-on: ubuntu-latest
@@ -244,6 +247,10 @@ jobs:
         run: node tools/repo/playwright-docker.mjs pnpm exec turbo run test --filter=@typstream/example-nextjs-ai-sdk
       - if: matrix.browser == 'chromium'
         run: node tools/repo/playwright-docker.mjs pnpm --filter @typstream/browser-suites test:pdf
+      - if: matrix.browser == 'chromium'
+        run: >-
+          node tools/repo/playwright-docker.mjs pnpm --filter @typstream/edu --filter @typstream/mindmap
+          --filter @typstream/universe test:paged
 
   # Visual regression (tools/browser-suites): screenshots against committed baselines, taken inside Playwright's
   # Docker image as they are locally (scripts/visual.mjs), so the runner's fonts don't matter. On a mismatch the
