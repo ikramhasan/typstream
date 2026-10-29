@@ -252,7 +252,7 @@ export interface ErrorResponse {
 }
 
 // @public
-export type ExportFormat = "pdf" | "html";
+export type ExportFormat = "pdf" | "html" | "docx";
 
 // @public
 export interface ExportParams extends DocumentParams {
@@ -643,6 +643,10 @@ export interface RequestMap {
     "document/setFiles": {
         params: DocumentSetFilesParams;
         result: null;
+    };
+    "export/docx": {
+        params: ExportParams;
+        result: ExportResult<Uint8Array>;
     };
     "export/html": {
         params: ExportParams;

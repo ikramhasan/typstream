@@ -19,6 +19,7 @@ export type {
   EngineAdapter,
   MaybePromise,
 } from "./server/adapter";
+export { DOCX_MARGIN_PROBE } from "./server/docx";
 export {
   type EngineWasmOptions,
   engineWasm,

@@ -77,7 +77,8 @@ Call one of them once per thread before creating an `Engine`.
 | `Engine.font_info(bytes)` | `string` | Typst's `FontInfo` for each face of a font file, as JSON, for `register_font`. |
 | `Engine.register_font(info)` | `number` | Registers a font file from its info, without its bytes; returns its id. The same info gets the same id. Throws on invalid info. |
 | `Engine.load_font(id, bytes)` | `void` | Gives a registered font its bytes. Throws unless they are the file the info came from. Loading a file again does nothing. |
-| `Engine.features()` | `string[]` | The optional features in this build: always `"html"` and `"svg"`, plus `"pdf"`. |
+| `Engine.features()` | `string[]` | The optional features in this build: always `"html"`, `"svg"` and `"docx"` (its document model), plus `"pdf"`. |
+| `Engine.docx_margin_probe()` | `string` | Typst source a DOCX export appends to the document, which records the page margins for `compile_docx_model`. |
 | `Engine.memory_bytes()` | `number` | Wasm linear memory in bytes, shared by all engines in the instance. A high-water mark: it never shrinks. |
 
 ### Instance methods
@@ -93,6 +94,7 @@ Call one of them once per thread before creating an `Engine`.
 | `reset_pages()` | `void` | Forgets the page hashes, so the next `compile_svg_changed` sends every page (a new document, or the renderer lost its DOM). |
 | `check_paged()` | `CheckResult` | Compiles paged without exporting: diagnostics and the page count, for validation. Leaves the changed-page baseline alone. |
 | `compile_pdf()` | `PdfResult` | Compiles paged and exports PDF. |
+| `compile_docx_model()` | `DocxModelResult` | Compiles paged and reads the pages into the document model a DOCX export is written from (`@typstream/docx`). The source should end with `Engine.docx_margin_probe()`, which records the page margins. |
 | `free()` / `[Symbol.dispose]()` | `void` | Frees the engine's wasm memory for reuse. Fonts and the instance's memory stay. |
 
 Methods that compile never throw for document errors; those come back as diagnostics. Methods that take a path throw
@@ -109,6 +111,7 @@ Every compile returns a `CompileResult`, extended per method:
 | `SvgChangedResult` | `CompileResult` and `pageCount?: number`, `changed?: ChangedPage[]`, `islands?: IslandMarker[]`, `compileMs: number`, `exportMs: number` |
 | `CheckResult` | `CompileResult` and `pageCount?: number` |
 | `PdfResult` | `CompileResult` and `pdf?: Uint8Array`, `pageCount?: number` |
+| `DocxModelResult` | `CompileResult` and `model?: string` (the document model as JSON), `fonts?: Uint8Array[]` (the data of the faces it names), `pageCount?: number` |
 
 **Changed pages.** `changed` holds only the pages whose content changed since the last successful call (all of them
 after `reset_pages`); indices refer to the new document, and pages at or past `pageCount` are gone. A failed compile

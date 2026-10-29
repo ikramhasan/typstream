@@ -35,12 +35,14 @@ export const PACKAGES = {
   engine: {
     name: "@typstream/engine",
     layer: 2,
-    deps: ["core", "heal", "engine-wasm"],
+    deps: ["core", "heal", "engine-wasm", "docx"],
     testDeps: ["universe"],
     fixed: true,
   },
   "engine-wasm": { name: "@typstream/engine-wasm", layer: 2, deps: [] },
-  node: { name: "@typstream/node", layer: 2, deps: ["core", "heal", "engine", "engine-wasm"] },
+  // The DOCX writer (#131): OOXML from engine-wasm's document model. The engine's server loads it on an export.
+  docx: { name: "@typstream/docx", layer: 2, deps: [], fixed: true },
+  node: { name: "@typstream/node", layer: 2, deps: ["core", "heal", "engine", "engine-wasm", "docx"] },
   universe: { name: "@typstream/universe", layer: 2, deps: ["core"] },
   edu: { name: "@typstream/edu", layer: 3, deps: ["core"], testDeps: ["engine-wasm", "html-compat"] },
   "html-compat": { name: "@typstream/html-compat", layer: 3, deps: ["core"], testDeps: ["engine-wasm", "universe"] },

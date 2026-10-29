@@ -42,6 +42,7 @@
   },
   "dependencies": {
     "@typstream/core": "workspace:*",
+    "@typstream/docx": "workspace:*",
     "@typstream/engine-wasm": "workspace:*",
     "@typstream/heal": "workspace:*"
   },
@@ -49,6 +50,7 @@
     "@typstream/corpus": "workspace:*",
     "@typstream/universe": "workspace:*",
     "@vitest/browser-playwright": "4.1.12",
+    "fflate": "0.8.3",
     "playwright": "^1.64.1"
   }
 }

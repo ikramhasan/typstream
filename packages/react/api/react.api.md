@@ -77,6 +77,8 @@ export { TypstreamExportOptions }
 export interface TypstreamHandle {
     readonly document: EngineDocument | null;
     readonly element: HTMLElement | null;
+    // @beta
+    exportDocx(options?: TypstreamExportOptions): Promise<Uint8Array>;
     exportHtml(options?: StandaloneHtmlOptions & TypstreamExportOptions): Promise<string>;
     exportPdf(options?: TypstreamExportOptions): Promise<Uint8Array>;
     exportSource(): string;
@@ -88,6 +90,8 @@ export interface TypstreamHandle {
 export interface TypstreamInfo {
     diagnostics: readonly Diagnostic[];
     document: EngineDocument | null;
+    // @beta
+    exportDocx(options?: TypstreamExportOptions): Promise<Uint8Array>;
     exportHtml(options?: StandaloneHtmlOptions & TypstreamExportOptions): Promise<string>;
     exportPdf(options?: TypstreamExportOptions): Promise<Uint8Array>;
     exportSource(): string;

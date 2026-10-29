@@ -78,6 +78,11 @@ export interface TypstreamHandle {
    */
   exportHtml(options?: StandaloneHtmlOptions & TypstreamExportOptions): Promise<string>;
   /**
+   * Exports the document as an editable DOCX file that Word lays out as the PDF (#131). Otherwise as
+   * {@link TypstreamHandle.exportPdf}, `options.inputs` included. @beta
+   */
+  exportDocx(options?: TypstreamExportOptions): Promise<Uint8Array>;
+  /**
    * The source the exports compile: the healed input, as a `.typ` file would
    * hold it. Opens a lazy document that hasn't opened yet. Throws when the
    * component isn't mounted.
@@ -115,6 +120,7 @@ export const createHandle = () => {
     },
     exportPdf: async (options) => mount().exportPdf(options),
     exportHtml: async (options) => mount().exportHtml(options),
+    exportDocx: async (options) => mount().exportDocx(options),
     exportSource: () => mount().exportSource(),
   };
   const attach = (next: MountedTypstream | null) => {

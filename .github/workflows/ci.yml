@@ -99,6 +99,25 @@ jobs:
         with: { node: "${{ env.NODE }}" }
       - run: pnpm corpus:validate
 
+  # DOCX exports (#131): every Latin corpus document exported through @typstream/node, each file checked by
+  # Microsoft's Open XML validator (any error fails) and laid out by LibreOffice, whose lines must match Typst's PDF
+  # on the documents without equations or images (#132, #133) at least as often as the floor says.
+  docx:
+    name: DOCX (validator, LibreOffice)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/engine-wasm
+      - uses: ./.github/actions/pnpm
+        with: { node: "${{ env.NODE }}" }
+      - name: Install LibreOffice and poppler
+        timeout-minutes: 6
+        run: sudo apt-get install -y --no-install-recommends libreoffice-writer-nogui poppler-utils
+      - run: pnpm turbo run build --filter=@typstream/docx-check^...
+      - run: dotnet publish tools/docx-check/validator -c Release -o tools/docx-check/validator/out
+      - run: node tools/docx-check/check.mjs --validate tools/docx-check/validator/out/validator.dll --min-lines 0.99
+
   size:
     name: Size
     runs-on: ubuntu-latest

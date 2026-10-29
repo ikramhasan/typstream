@@ -37,6 +37,11 @@ ttf-parser = "0.25"
 # Scripts of characters, for math fonts' fallback coverage (fonts.rs); typst-layout already depends on it.
 unicode-script = "0.5"
 
+[dev-dependencies]
+# Native tools in examples/ compile on the calling thread: the font store is thread-local (fonts.rs), as wasm is
+# single-threaded. typst already depends on it.
+rayon = "1"
+
 [profile.release]
 # Phase 0: opt-level "z" is the smallest; "s"/"3" are 6%/14% bigger and 25%/35% faster
 # (spikes/phase0/custom-engine/RESULTS.md).

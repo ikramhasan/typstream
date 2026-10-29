@@ -65,6 +65,17 @@ const run = (job: Job): JobResult => {
       const r = engine.compile_pdf();
       return { ok: r.ok, diagnostics: r.diagnostics, pdf: r.pdf, pageCount: r.pageCount, compileMs: r.ms };
     }
+    case "docx": {
+      const r = engine.compile_docx_model();
+      return {
+        ok: r.ok,
+        diagnostics: r.diagnostics,
+        model: r.model,
+        fonts: r.fonts,
+        pageCount: r.pageCount,
+        compileMs: r.ms,
+      };
+    }
     case "svg": {
       const full = job.baseline == null || job.baseline !== pagedToken;
       if (full) engine.reset_pages();

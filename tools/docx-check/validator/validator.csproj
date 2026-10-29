@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework>
+    <!-- Runs on any newer runtime: CI's runners have .NET 8's SDK, machines newer ones. -->
+    <RollForward>Major</RollForward><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings></PropertyGroup>
+  <ItemGroup><PackageReference Include="DocumentFormat.OpenXml" Version="3.3.0" /></ItemGroup>
+</Project>

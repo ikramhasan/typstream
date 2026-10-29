@@ -17,7 +17,10 @@ packages/engine   @typstream/engine: main-thread client (heal → scheduler → 
                   the worker half (`/server`: protocol server, EngineAdapter, engine-wasm adapter, Layer 3 fixers, Layer 4
                   fallback (block isolation, stable prefix) and the Typst runtime library they insert; `worker.ts`, spawned
                   by `engineWorker()`).
-packages/engine-wasm  @typstream/engine-wasm: Typst 0.15.1 as wasm (Rust crate + wasm-bindgen glue): HTML, changed pages (SVG, or drawings for canvases), PDF, UTF-16 diagnostics.
+packages/engine-wasm  @typstream/engine-wasm: Typst 0.15.1 as wasm (Rust crate + wasm-bindgen glue): HTML, changed pages (SVG, or drawings for canvases), PDF, UTF-16 diagnostics,
+                  and the DOCX export's document model (`src/docx.rs`, read from the laid-out pages).
+packages/docx     @typstream/docx: the DOCX writer (OOXML from engine-wasm's model, fonts embedded, fflate); the engine's server
+                  loads it on the first `export/docx` (#131).
 packages/html-compat  @typstream/html-compat: Typst prelude + CSS so HTML export keeps grid, align, shapes, place, … (tests need the engine).
 packages/universe @typstream/universe: the Typst Universe packages allowed by default (CeTZ, fletcher, cetz-plot, physica, unify,
                   chemformula, alchemist), vendored tarballs + integrity, as an allowlist plugin. The engine loads packages
@@ -44,6 +47,8 @@ tools/compile-oracle        Do healed prefixes compile? heal × engine-wasm over
                             error classes, the prefix compile rate, and final-mode renders of every corpus document.
 tools/llm-corpus  Real model output (#24): records Claude streams with edu's prompt kit, measures final-mode compile errors,
                   promotes recordings into corpus/llm.
+tools/docx-check  DOCX exports against Typst's PDF (#131): the Latin corpus through @typstream/node, LibreOffice's (or
+                  ONLYOFFICE's) lines and page starts compared with the PDF's, Microsoft's Open XML validator (validator/).
 tools/browser-suites  Corpus-wide browser suites (#19): final-render equivalence, flicker, accessibility (axe), preview vs PDF
                     (#118), and visual regression against baselines rendered in Playwright's Docker image.
 tools/repo        Repo tooling: package layer table (layers.mjs), layering check, shared tsup and api-extractor configs,
@@ -93,12 +98,15 @@ pnpm coverage          # line and branch coverage of the TypeScript packages, No
 In `packages/engine-wasm` (Rust build, ~3 min cold):
 - `pnpm build`: `build.sh` → `dist/` (glue, `.d.ts`, `wasm-opt -Oz` wasm, Typst's 17 bundled faces from typst-assets, the CFF ones converted to TrueType outlines (output SHA-256 pinned, #118): 5 base fonts and 12 lazy `extraFonts`, the same files `@typstream/node` serves (#128), and the lazily loaded script fonts, downloaded from notofonts at a pinned commit and SHA-256 checked, with their `FontInfo` registry written by `scripts/fonts.mjs`). It skips the build when `dist/` came from the same inputs (`FORCE=1` rebuilds). The root `pnpm test` / `pnpm check-types` (turbo) build it first; run inside the package, `pnpm test` uses the existing `dist/`.
 - `pnpm size`: wasm budget, 6.3 MB brotli (HTML, SVG and PDF in one build since #18).
+- Native tools in `examples/` (`cargo run --release --example …`, the font store is thread-local, so they compile on
+  the calling thread): `frames` dumps a document's laid-out frames (items, positions, tags), `docx_model` writes its
+  DOCX model, fonts and PDF. Both take `--packages DIR` (laid out as `--package-path`) and `--input k=v`.
 - It isn't a tsup package: `dist/` is wasm-bindgen's output, and its API report reads `dist/engine.d.ts`, whose types are written in `src/lib.rs`. Only CI's `Engine (wasm, html-compat, edu)` job runs its own checks; the other jobs pass `--filter=!@typstream/engine-wasm`, but `@typstream/engine` depends on it, so turbo still builds it there. Every job restores `dist/` with `.github/actions/engine-wasm` (cached on the inputs `build.sh` hashes; it builds with Rust on a miss), and `build.sh` then has nothing to do.
 
 In `packages/engine`:
 - `pnpm test`: the `node` vitest project (client against a fake worker; server and protocol conformance against engine-wasm in-process). Needs engine-wasm's `dist/`.
 - `pnpm test:browser`: the `browser` project, the real worker in Chromium, Firefox and WebKit (vitest browser mode, Playwright). `BROWSERS=chromium` runs one.
-- `pnpm size`: main thread ≤ 9.6 KB, worker JS ≤ 40 KB, `@typstream/engine/websocket` and `@typstream/engine/images` ≤ 1.5 KB gzipped each.
+- `pnpm size`: main thread ≤ 9.6 KB, worker JS ≤ 40 KB, `@typstream/engine/websocket` and `@typstream/engine/images` ≤ 1.5 KB gzipped each, the DOCX writer the worker `import()`s ≤ 10 KB.
 - Pages and PDFs follow the layout profile (#129): the server puts `LAYOUT_PROFILE` (`src/server/profile.ts`) before
   every paged compile's and PDF export's preamble (constant 1.3em pitch, ragged right, no hyphenation, unbreakable
   table rows), so a DOCX can match them; heal's `layout-profile` lint removes what would beat it. Not the HTML target.
@@ -170,6 +178,12 @@ rates and classes, `node src/promote.mjs <label>` copies recordings into `corpus
 (#34): `node src/record-edits.mjs --variant edit-quote|edit-selection --label <name>` (~$0.35 a run),
 `node src/measure-edits.mjs <label>...`, `node src/promote-edits.mjs <label>...` into `corpus/edits` (answers, not
 documents; `loadEditAnswers()`).
+
+DOCX checks (`tools/docx-check`, README there): `node tools/docx-check/check.mjs [filter…]` exports the Latin corpus and
+compares LibreOffice's layout with the PDF; `--validate <dll>` adds Microsoft's validator (`dotnet publish
+tools/docx-check/validator -c Release -o tools/docx-check/validator/out`), `--onlyoffice` uses ONLYOFFICE in Docker,
+`--native` takes the model from engine-wasm's native example (no wasm build). CI runs it with the validator and a
+99% line floor; nightly runs ONLYOFFICE.
 
 Compile oracle (`tools/compile-oracle`, needs the built engine): `pnpm turbo run test --filter=@typstream/compile-oracle`; `pnpm --filter @typstream/compile-oracle report` for the full measurement (minutes).
 

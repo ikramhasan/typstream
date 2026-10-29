@@ -20,6 +20,7 @@ const alias = {
   "@typstream/heal": new URL("../heal/src/index.ts", import.meta.url).pathname,
   "@typstream/corpus": new URL("../../corpus/src/index.ts", import.meta.url).pathname,
   "@typstream/universe": new URL("../universe/src/index.ts", import.meta.url).pathname,
+  "@typstream/docx": new URL("../docx/src/index.ts", import.meta.url).pathname,
 };
 
 export default defineConfig({

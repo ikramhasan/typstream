@@ -1,6 +1,8 @@
 // validate() and render(): one-shot compiles of a finished document (PLAN §5.7).
 
 import { type CompileTarget, type Diagnostic, hasErrors, normalizeDiagnostics } from "@typstream/core";
+import { writeDocx } from "@typstream/docx";
+import { DOCX_MARGIN_PROBE } from "@typstream/engine/server";
 import { type HealOptions, heal, type LintFinding } from "@typstream/heal";
 import { compileOnce, type DocumentOptions } from "./engine";
 
@@ -102,8 +104,8 @@ export const validate = async (source: string, options: ValidateOptions = {}): P
   };
 };
 
-/** What {@link render} exports: a PDF, an HTML document, or SVG pages. @public */
-export type RenderFormat = "pdf" | "html" | "svg";
+/** What {@link render} exports: a PDF, an HTML document, SVG pages, or a DOCX file (`docx` is in beta). @public */
+export type RenderFormat = "pdf" | "html" | "svg" | "docx";
 
 /** What {@link render} produces per format: PDF bytes, an HTML document, one SVG per page. @public */
 export interface RenderData {
@@ -113,6 +115,8 @@ export interface RenderData {
   html: string;
   /** One SVG string per page, in page order. */
   svg: string[];
+  /** The DOCX file's bytes: editable, laid out by Word as the PDF is (#131). @beta */
+  docx: Uint8Array;
 }
 
 /**
@@ -136,13 +140,21 @@ export const render = async <F extends RenderFormat>(
   options: DocumentOptions = {},
 ): Promise<RenderResult<F>> => {
   const t0 = performance.now();
-  const compiled = await compileOnce(source, format, options);
+  // A DOCX export's compile records the page margins, which laid-out pages don't keep.
+  const text = format === "docx" ? source + DOCX_MARGIN_PROBE : source;
+  const compiled = await compileOnce(text, format, options);
   const diagnostics = normalizeDiagnostics(compiled.diagnostics);
   const r = compiled.result;
   const ms = performance.now() - t0;
   if (!compiled.ok || !r) return { ok: false, diagnostics, ms };
   const data = (
-    format === "pdf" ? r.pdf : format === "html" ? r.html : (r.pages ?? []).map((p) => p.svg)
+    format === "pdf"
+      ? r.pdf
+      : format === "html"
+        ? r.html
+        : format === "docx"
+          ? writeDocx(JSON.parse(r.model ?? "{}"), r.fonts ?? [])
+          : (r.pages ?? []).map((p) => p.svg)
   ) as RenderData[F];
   return { ok: true, diagnostics, data, ...(r.pageCount !== undefined ? { pageCount: r.pageCount } : {}), ms };
 };

@@ -4,8 +4,8 @@
 
 import type { Diagnostic, PageUpdate } from "@typstream/core";
 
-/** What a job compiles to. `check` is a paged compile without export. */
-export type JobOp = "check" | "html" | "svg" | "pdf";
+/** What a job compiles to. `check` is a paged compile without export; `docx`, a DOCX export's document model. */
+export type JobOp = "check" | "html" | "svg" | "pdf" | "docx";
 
 /** A virtual file as a worker should hold it. `data` is omitted when the worker already has `version`. */
 export interface JobFile {
@@ -38,6 +38,9 @@ export interface JobResult {
   pageCount?: number;
   html?: string;
   pdf?: Uint8Array;
+  /** `docx`: the document model as JSON, and the data of the fonts it names. */
+  model?: string;
+  fonts?: Uint8Array[];
   /** `svg`: exported pages (engine-wasm's frame hash and size included); all of them when `full`. */
   pages?: PageUpdate[];
   full?: boolean;

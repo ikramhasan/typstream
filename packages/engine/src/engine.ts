@@ -524,7 +524,11 @@ class EngineImpl implements Engine, DocumentHost {
     const params: ExportParams = { uri: job.doc.uri, rev: synced.rev };
     if (job.inputs) params.inputs = job.inputs;
     const { result } =
-      job.format === "pdf" ? slot.conn.request("export/pdf", params) : slot.conn.request("export/html", params);
+      job.format === "pdf"
+        ? slot.conn.request("export/pdf", params)
+        : job.format === "docx"
+          ? slot.conn.request("export/docx", params)
+          : slot.conn.request("export/html", params);
     // Exports compile the whole document in final mode (PLAN §6.3).
     const disarm = this.watch(slot, params.uri, params.rev, this.watchdog.finalMs);
     let outcome: { result: ExportResult<Uint8Array | string> } | { error: unknown };

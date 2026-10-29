@@ -51,6 +51,7 @@ import type {
   EngineAdapter,
 } from "./adapter";
 import { type Anchored, Anchors, fromAnchored } from "./anchors";
+import { DOCX_MARGIN_PROBE } from "./docx";
 import { type Attempt, type RecoverMemo, recover, showsLess, toDocument, type Variant } from "./fallback";
 import {
   applyEdits,
@@ -996,6 +997,22 @@ class Server implements EngineServer {
       return r.html === null
         ? { uri, rev, diagnostics, status: "error" }
         : { uri, rev, diagnostics, status: "ok", data: r.html };
+    },
+
+    "export/docx": async ({ uri, rev, inputs }: ExportParams): Promise<ExportResult<Uint8Array>> => {
+      const doc = this.current(uri, rev);
+      const exportModel = doc.compiler.exportDocxModel?.bind(doc.compiler);
+      if (!this.adapter.exports.includes("docx") || !exportModel) this.unsupported("DOCX export");
+      await doc.packages.prepare(doc.prefix + doc.text, performance.now() + FIX_BUDGET_MS.final);
+      this.sync(doc, inputs, true);
+      // Laid-out pages don't keep their margins: the probe records them where the document ends.
+      this.writeFixed(doc, doc.text + DOCX_MARGIN_PROBE, true, false, (p) => p);
+      const r = await this.exportOnce(doc, () => exportModel({ mode: "final" }));
+      const diagnostics = this.diagnostics(doc, r.diagnostics);
+      if (r.model === null) return { uri, rev, diagnostics, status: "error" };
+      // The writer loads on the first DOCX export: it isn't part of the worker's own code.
+      const { writeDocx } = await import("@typstream/docx");
+      return { uri, rev, diagnostics, status: "ok", data: writeDocx(JSON.parse(r.model), r.fonts) };
     },
 
     "export/pdf": async ({ uri, rev, inputs }: ExportParams): Promise<ExportResult<Uint8Array>> => {

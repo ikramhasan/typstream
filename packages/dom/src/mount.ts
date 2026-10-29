@@ -200,6 +200,12 @@ export interface MountedTypstream {
    * {@link MountedTypstream.exportPdf}, `options.inputs` included.
    */
   exportHtml(options?: StandaloneHtmlOptions & TypstreamExportOptions): Promise<string>;
+  /**
+   * Exports the document as an editable DOCX file that Word lays out as the PDF (#131): its paragraphs, lists and
+   * tables, Typst's fonts embedded. Equations, images and drawings hold their place as empty space for now.
+   * Otherwise as {@link MountedTypstream.exportPdf}. @beta
+   */
+  exportDocx(options?: TypstreamExportOptions): Promise<Uint8Array>;
   /** The source the exports compile (the healed input); opens the document if needed. */
   exportSource(): string;
   /** Disposes the document and removes what was rendered. The engine stays (it isn't ours). */
@@ -665,6 +671,7 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
       if (!destroyed) apply(next);
     },
     exportPdf: async (options) => exportDoc().exportPdf({ inputs: exportInputs(options?.inputs) }),
+    exportDocx: async (options) => exportDoc().exportDocx({ inputs: exportInputs(options?.inputs) }),
     async exportHtml({ inputs, ...options } = {}) {
       const exported = exportDoc();
       const html = await exported.exportHtml({ inputs: exportInputs(inputs) });

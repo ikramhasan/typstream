@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { CORPUS_ROOT, loadCorpus } from "@typstream/corpus";
+import { strFromU8, unzipSync } from "fflate";
 import { afterAll, describe, expect, it } from "vitest";
 import { createEngine, render, validate } from "../src";
 
@@ -154,6 +155,17 @@ describe("render", () => {
     expect(svg.ok && svg.data.length).toBe(2);
     expect(svg.ok && svg.pageCount).toBe(2);
     expect(svg.ok && svg.data.every((page) => page.startsWith("<svg"))).toBe(true);
+  });
+
+  it("exports DOCX (#131): the document's text, a page break where pagebreak() put one", async () => {
+    const r = await render("= Title\nSome words.\n#pagebreak()\nPage two.", "docx", { engine });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(Buffer.from(r.data.slice(0, 2)).toString()).toBe("PK");
+    const doc = strFromU8(unzipSync(r.data)["word/document.xml"] as Uint8Array);
+    for (const text of ["Title", "Some words.", "Page two."]) expect(doc).toContain(text);
+    expect(doc).toContain("<w:pageBreakBefore/>");
+    expect(r.pageCount).toBe(2);
   });
 
   it("returns diagnostics and no data for a broken document", async () => {

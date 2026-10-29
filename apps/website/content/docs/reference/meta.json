@@ -14,6 +14,7 @@
     "google-fonts",
     "mindmap",
     "engine-wasm",
+    "docx",
     "core"
   ]
 }

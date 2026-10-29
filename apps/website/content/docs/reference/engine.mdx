@@ -619,6 +619,17 @@ Where typstream's runtime library is mounted in every document's files: the Typs
 changed. A document's own file at this path replaces it, for example to restyle the placeholders. In HTML they carry
 the classes `typstream-pending-ref`, `typstream-pending-text` and `typstream-error-block`.
 
+#### `DOCX_MARGIN_PROBE`
+
+```ts
+const DOCX_MARGIN_PROBE: string;
+```
+
+Typst source the server appends to a document before a DOCX export. Laid-out pages don't keep their margins, and
+Word needs them: it records `page.margin` where the document ends, inside every template's show rule. engine-wasm's
+`Engine.docx_margin_probe()` returns the same text. For adapters and custom servers: an adapter that exports DOCX
+implements `exportDocxModel`.
+
 #### `PREAMBLE_PATH`
 
 ```ts

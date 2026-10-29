@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "@typstream/core": "workspace:*",
+    "@typstream/docx": "workspace:*",
     "@typstream/engine": "workspace:*",
     "@typstream/engine-wasm": "workspace:*",
     "@typstream/heal": "workspace:*"
@@ -35,6 +36,7 @@
   "devDependencies": {
     "@types/ws": "^8.18.2",
     "@typstream/corpus": "workspace:*",
+    "fflate": "0.8.3",
     "ws": "^8.22.0"
   }
 }

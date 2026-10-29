@@ -76,7 +76,7 @@ const poolAdapter = (engine: NodeEngine, options: ProtocolServerOptions): Engine
       typstVersion: TYPST_VERSION,
     },
     targets: ["html", "paged"],
-    exports: ["pdf", "html"],
+    exports: ["pdf", "html", "docx"],
     init: async () => {},
 
     open(): AdapterDocument {
@@ -100,7 +100,7 @@ const poolAdapter = (engine: NodeEngine, options: ProtocolServerOptions): Engine
         op: JobOp,
         mode: CompileMode | undefined,
         extra: { baseline?: string | null; token?: string } = {},
-      ) => compile(engine, { text: main, op, files, inputs, timeoutMs: budget(mode), affinity, ...extra });
+      ) => compile(engine, { text: main, main: true, op, files, inputs, timeoutMs: budget(mode), affinity, ...extra });
       const timings = (c: Compiled) => ({ compileMs: c.result?.compileMs, exportMs: c.result?.exportMs });
 
       return {
@@ -159,6 +159,15 @@ const poolAdapter = (engine: NodeEngine, options: ProtocolServerOptions): Engine
         async exportPdf() {
           const c = await run("pdf", "final");
           return { pdf: c.ok ? (c.result?.pdf ?? null) : null, diagnostics: c.diagnostics, ...timings(c) };
+        },
+        async exportDocxModel() {
+          const c = await run("docx", "final");
+          return {
+            model: c.ok ? (c.result?.model ?? null) : null,
+            fonts: c.result?.fonts ?? [],
+            diagnostics: c.diagnostics,
+            ...timings(c),
+          };
         },
         close() {
           if (closed) return;
@@ -220,6 +229,7 @@ const paramsProblem = (method: string, p: unknown): string | null => {
       return optional(p.inputs, isStringRecord) ? null : "inputs must map names to strings";
     case "export/pdf":
     case "export/html":
+    case "export/docx":
       return optional(p.inputs, isStringRecord) ? null : "inputs must map names to strings";
     default:
       return null;

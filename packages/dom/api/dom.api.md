@@ -121,6 +121,8 @@ export interface MountedTypstream {
     destroy(): void;
     readonly document: EngineDocument | null;
     readonly element: HTMLElement;
+    // @beta
+    exportDocx(options?: TypstreamExportOptions): Promise<Uint8Array>;
     exportHtml(options?: StandaloneHtmlOptions & TypstreamExportOptions): Promise<string>;
     exportPdf(options?: TypstreamExportOptions): Promise<Uint8Array>;
     exportSource(): string;

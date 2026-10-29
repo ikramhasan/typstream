@@ -1,0 +1,17 @@
+{
+  "name": "@typstream/docx-check",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Checks DOCX exports against Typst's PDF: LibreOffice's lines and page breaks, Microsoft's validator (#131).",
+  "scripts": {
+    "check": "node check.mjs"
+  },
+  "dependencies": {
+    "@typstream/docx": "workspace:*",
+    "@typstream/edu": "workspace:*",
+    "@typstream/heal": "workspace:*",
+    "@typstream/node": "workspace:*",
+    "fflate": "0.8.3"
+  }
+}
