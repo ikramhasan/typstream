@@ -2,4 +2,4 @@
 
 export { isSafeHref } from "./links";
 export { type MountedPaged, type MountPagedOptions, mountPaged, REFLOW_PREAMBLE, reflowInputs } from "./mount";
-export { createPagedView, type DrawInfo, type PagedView, type PagedViewOptions } from "./view";
+export { createPagedView, type DrawInfo, type PagedRenderOptions, type PagedView, type PagedViewOptions } from "./view";

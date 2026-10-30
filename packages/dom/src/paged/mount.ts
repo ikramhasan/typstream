@@ -3,6 +3,8 @@
 // compiles pages as wide as the container (PLAN §6.5), through `sys.inputs`
 // read by REFLOW_PREAMBLE. The fit-width layout needs nothing here: it shows
 // the document's own pages, scaled by the view, so they are the PDF's (#118).
+// Islands (#28) get the document's plugins and files, and its stable offset
+// while it streams.
 
 import type { PagedArtifact } from "@typstream/core";
 import type { EngineDocument } from "@typstream/engine";
@@ -87,13 +89,16 @@ export const mountPaged = (
   doc: EngineDocument,
   options: MountPagedOptions = {},
 ): MountedPaged => {
-  const view = createPagedView(container, options);
+  const view = createPagedView(container, { plugins: doc.plugins, file: (path) => doc.file(path), ...options });
   let shown: PagedArtifact | null = null;
+  let final = false;
   const show = () => {
-    const { artifact } = doc.getState();
-    if (artifact?.target !== "paged" || artifact === shown) return;
+    const state = doc.getState();
+    const { artifact } = state;
+    if (artifact?.target !== "paged" || (artifact === shown && state.final === final)) return;
     shown = artifact;
-    view.render(artifact);
+    final = state.final;
+    view.render(artifact, { stable: final ? null : state.heal.stableOffset });
   };
   const unsubscribe = doc.subscribe(show);
 

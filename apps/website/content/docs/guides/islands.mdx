@@ -130,8 +130,8 @@ component paints.
 
 ### Without a framework
 
-`mountTypstream` and `createHtmlRenderer` take renderers, functions that mount into the host and return `update` and
-`destroy`:
+`mountTypstream`, `createHtmlRenderer` and `createPagedView` (and `mountPaged`) take renderers, functions that mount
+into the host and return `update` and `destroy`:
 
 ```ts
 import { mountTypstream, type IslandRenderer } from "@typstream/dom";
@@ -157,12 +157,14 @@ Keep the `islands` object the same between updates: a new one mounts every islan
 
 - **Paint your own background.** The host is positioned over the fallback, which keeps its box (nothing moves when the
   island mounts) and is hidden once the host has content; until then, while your code loads, it shows. `background: var(--typstream-island-background, Canvas)` matches the page; the paged view sets
-  white, the paper.
+  white, the paper, and paints it under a host with content (the fallback is on the page's canvas there, so it can't
+  be hidden, only covered).
 - **The document's element rules reach in.** The HTML renderer styles elements with zero specificity
   (`:where(.typstream) svg { max-width: 100% }`), so any class rule of yours overrides them; reset what you need.
 - **Ship CSS as constructable stylesheets** (`new CSSStyleSheet()`, `adoptedStyleSheets` on the host's root node), or
   through `stylesheets` on the mount: no `<style>` element, so a strict CSP needs nothing more.
-- **Print** hides islands and shows their fallbacks.
+- **Print** hides islands and shows their fallbacks. So do exports: PDF, DOCX and standalone HTML are compiled from
+  the document, where the island is its fallback.
 
 ## Security
 
@@ -176,12 +178,24 @@ Treat `data` as untrusted: the document wrote it, and a model wrote the document
 
 ## Accessibility
 
-When an island mounts, its fallback is `aria-hidden`: assistive technology reads the island. Give it a name (a
-`figure` with `aria-label`, say), keep its controls reachable by keyboard, and set `aria-busy` while `isIncomplete`.
+When an island mounts, its fallback is `aria-hidden`: assistive technology reads the island. On pages, that is the
+text layer's text under the island. Give it a name (a `figure` with `aria-label`, say), keep its controls reachable by
+keyboard, and set `aria-busy` while `isIncomplete`.
 
 ## The paged target
 
-The engine reports each marker's page, position and size (`PagedArtifact.islands`), and the paged view mounts islands
-over them in its per-page overlay, the layer of positioned elements over each page that the canvas pages
-([#14](https://github.com/ikramhasan/typstream/issues/14)) bring; until then, the paged target shows fallbacks. Islands
-are positioned in units of the page's width, so they follow its scale.
+The engine reports each marker's page, position and size (`PagedArtifact.islands`, the whole list with every paged
+artifact), and the paged view mounts each island in a box over its page (`.typstream-island-box`, in a
+`.typstream-islands` layer above the page's text layer and links). The box is as big as the marker's block: the
+column's width and the fallback's height. Boxes are positioned in units of the page's width (`cqw`), so they follow the
+page's scale (`fixed`, `fit-width`) with no script, and a page redrawn as the document streams leaves them be. An island
+that moves, further down its page or onto the next one, keeps its host: the component isn't mounted again.
+
+- **The page itself is Typst's drawing.** Islands are elements over the page's canvas (or SVG), never painted into it,
+  so the canvas is what prints and what PDF and DOCX exports contain, and checks that compare pages with the PDF
+  pixel by pixel (the browser suites' preview-vs-PDF check, plugins' paged conformance) compare the fallback.
+- **`isIncomplete`** comes from the marker's `source` against heal's stable offset, as in the HTML target: while the
+  document streams, an island whose source starts at or after it is still being written.
+- **Text under an island** (the fallback's labels in the text layer) is `aria-hidden` while the island is mounted, and
+  can't be selected through it.
+- In the DOM, a page's islands come after its text layer, so a screen reader meets them at the end of their page.

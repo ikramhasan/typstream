@@ -146,20 +146,32 @@ export interface MountPagedOptions extends PagedViewOptions {
 export const mountTypstream: (element: HTMLElement, initial: TypstreamOptions) => MountedTypstream;
 
 // @public
+export interface PagedRenderOptions {
+    // @beta
+    stable?: number | null;
+}
+
+// @public
 export interface PagedView {
     destroy(): void;
     readonly element: HTMLElement;
     flush(): void;
     readonly pending: number;
-    render(artifact: PagedArtifact): void;
+    render(artifact: PagedArtifact, options?: PagedRenderOptions): void;
 }
 
 // @public
 export interface PagedViewOptions {
+    // @beta
+    file?: (path: string) => FileContent | null;
+    // @beta
+    islands?: IslandRenderers;
     layout?: "fixed" | "fit-width" | "reflow";
     linkTarget?: string | null;
     // @beta
     onDraw?: (info: DrawInfo) => void;
+    // @beta
+    plugins?: readonly TypstreamPlugin[];
     rootMargin?: string;
     textLayer?: boolean;
 }

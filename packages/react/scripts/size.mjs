@@ -17,8 +17,9 @@ const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
 // the painter, the drawing's decoder, the link layer and pixel management, 1.6 KB) made it 20.2 KB; 20.3 KB until
 // streaming ranges in the mount (#34: a finished document streaming into a range again, and the edit typed at the
 // range's end, 0.16 KB) left it 148 bytes over; 20.5 KB until standalone exports' math font with its own media type
-// (#118's TrueType fonts: `fontType`, read from the file's first bytes) left it 2 bytes over.
-const BUDGET = 20.6 * 1024;
+// (#118's TrueType fonts: `fontType`, read from the file's first bytes) left it 2 bytes over; 20.6 KB until islands
+// on pages (#28: their layer over each page, covered text hidden, 0.55 KB) made it 21.15 KB.
+const BUDGET = 21.2 * 1024;
 
 const result = await build({
   entryPoints: ["src/index.ts"],

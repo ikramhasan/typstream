@@ -246,6 +246,11 @@ The paged renderer without a document: it appends a `.typstream-paged` element t
 - **Links.** Only `http(s)` and `mailto` links keep their `href` (see `isSafeHref`); they open in `linkTarget`. On a
   canvas page they are `<a>` elements over their area (`.typstream-links`). Links within the document stay inert.
   Images load only from `data:` URLs.
+- **Islands (beta).** With `islands` (and `plugins`, which declare the names, and `file`), each marker in the
+  artifact's `islands` is mounted over its page in a box positioned in `cqw`, like the links, so redrawing a page
+  leaves it alone. An island is incomplete while `PagedRenderOptions.stable` (`view.render(artifact, { stable })`) is
+  at or before its source. `mountPaged` passes the document's plugins, files and stable offset. See
+  [Writing an island](/docs/guides/islands#the-paged-target).
 - **Strict CSP.** Styles are added once per document as a constructed stylesheet, and the text layer is positioned
   through the CSSOM, so no `'unsafe-inline'` is needed.
 
@@ -256,6 +261,10 @@ The paged renderer without a document: it appends a `.typstream-paged` element t
 #### `PagedView`
 
 <auto-type-table path="packages/dom/src/paged/view.ts" name="PagedView" />
+
+#### `PagedRenderOptions`
+
+<auto-type-table path="packages/dom/src/paged/view.ts" name="PagedRenderOptions" />
 
 #### `DrawInfo` (beta)
 

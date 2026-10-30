@@ -420,14 +420,15 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
     return renderer;
   };
 
-  const pagedView = (): PagedView => {
-    const want = [opts.layout, opts.linkTarget, opts.textLayer];
+  const pagedView = (plugins: readonly TypstreamPlugin[]): PagedView => {
+    const want = [opts.layout, opts.linkTarget, opts.textLayer, plugins, opts.islands];
     if (paged && equal(paged.key, want)) return paged.view;
     dropPaged();
     const view = createPagedView(element, {
       ...(opts.layout ? { layout: opts.layout } : {}),
       ...(opts.linkTarget !== undefined ? { linkTarget: opts.linkTarget } : {}),
       ...(opts.textLayer !== undefined ? { textLayer: opts.textLayer } : {}),
+      ...(opts.islands ? { islands: opts.islands, plugins, file: (path: string) => doc?.file(path) ?? null } : {}),
     });
     paged = { view, key: want };
     shown = null;
@@ -461,11 +462,11 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
       if (event) opts.onRendered?.(event);
     } else {
       dropHtml();
-      const view = pagedView();
-      if (shown?.artifact === artifact) return;
+      const view = pagedView(doc?.plugins ?? []);
+      if (shown?.artifact === artifact && shown.final === state.final) return;
       shown = { artifact, caret: false, final: state.final };
       const start = performance.now();
-      view.render(artifact);
+      view.render(artifact, { stable: state.final ? null : state.heal.stableOffset });
       const event = opts.onRendered && rendered(state, performance.now() - start);
       if (event) opts.onRendered?.({ ...event, pages: artifact.pageCount });
     }
