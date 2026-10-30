@@ -196,6 +196,139 @@ describe("compile_docx_model", () => {
     });
   });
 
+  describe("lines as Typst set them, which the line comparison alone passed", () => {
+    type Run = { text?: string; gap?: number; underline?: boolean; fill?: string; break?: boolean; strike?: boolean };
+    type Block = {
+      type: string;
+      align?: string;
+      before?: number;
+      indent?: { left: number; firstLine: number } | number;
+      list?: { id: number; label: string };
+      runs?: Run[];
+      picture?: { index: number };
+      rows?: {
+        cells: { margins: Record<string, number>; borders: Record<string, { style?: string }>; blocks: Block[] }[];
+      }[];
+    };
+    const PROFILE =
+      "#show text: set text(overhang: false, top-edge: 1.054em, bottom-edge: -0.246em)\n#set par(leading: 0pt, spacing: 0.56em)\n";
+    const blocks = (source: string): Block[] => model(PROFILE + source).sections[0].blocks;
+    const show = (r: Run) =>
+      r.break
+        ? "\\"
+        : r.gap !== undefined
+          ? `[${r.gap}${r.underline ? " u" : ""}${r.fill ? ` ${r.fill}` : ""}]`
+          : r.text;
+
+    it("keeps a blank that is a list item's whole body on its label's line, not a rule under it", () => {
+      // `1. ` starts a cell's list: a matching exercise's numbered blank.
+      const [table] = blocks(
+        "#table(columns: 2, stroke: none, [1. #box(width: 2em, stroke: (bottom: 0.6pt), height: 1em)], [la manzana])\n",
+      );
+      const cell = table?.rows?.[0]?.cells[0]?.blocks ?? [];
+      expect(cell.map((b) => b.type)).toEqual(["p"]);
+      expect(cell[0]?.list?.label).toBe("1.");
+      expect(cell[0]?.runs?.map(show)).toEqual(["[22 u]"]);
+    });
+
+    it("underlines a blank after room: a term's whole description, a line's start", () => {
+      const [term, line] = blocks(
+        "/ Reason: #box(width: 5em, stroke: (bottom: 0.5pt))\n\n#box(width: 4em, stroke: (bottom: 0.5pt)) is the capital.\n",
+      );
+      expect(term?.runs?.map(show)).toEqual(["Reason", "[6.6]", "[55 u]"]);
+      expect(line?.runs?.map(show)).toEqual(["[44 u]", " is the capital."]);
+    });
+
+    it("keeps the label of a list item Typst centred where Typst set it, its body after it", () => {
+      const [table] = blocks("#table(columns: (4cm, 4cm), align: center, [1. run], [10. write])\n");
+      const [one, ten] = (table?.rows?.[0]?.cells ?? []).map((c) => c.blocks[0]);
+      // Word would centre the number with the word: the paragraphs start where Typst set the words.
+      for (const p of [one, ten]) expect(p).toMatchObject({ align: "start" });
+      expect(one?.list?.label).toBe("1.");
+      expect((one?.indent as { left: number }).left).toBeGreaterThan(40);
+    });
+
+    it("breaks a line where a `\\` did, though Typst would have broken there too", () => {
+      const [card] = blocks("#block(width: 150pt)[#set text(14pt)\nWhat is the capital of \\ *France*?]\n");
+      // Not joined as "ofFrance" (the `\\` took the space Typst keeps where it breaks).
+      expect(card?.runs?.map(show)).toEqual(["What is the capital of", "\\", "France", "?"]);
+    });
+
+    it("starts a paragraph after an empty line between lines broken on purpose, the room above it its space", () => {
+      const out = blocks(
+        "If in some smothering dreams \\\nBehind the wagon \\\n\\\nMy friend, you would not tell \\\nTo children ardent\n",
+      );
+      expect(out.map((b) => b.runs?.filter((r) => r.text).length)).toEqual([2, 2]);
+      expect(out[1]?.before).toBeGreaterThan(5);
+    });
+
+    it("shades a highlight and a filled box's words, a highlight starting a list item in its line", () => {
+      const [item, line] = blocks(
+        `- #highlight(fill: rgb("#bbf7d0"))[water] and light\n\nThe #box(fill: luma(225), inset: (x: 3pt))[key] term.\n`,
+      );
+      expect(item?.list).toBeDefined();
+      expect(item?.runs?.map(show)).toEqual(["water", " and light"]);
+      expect(item?.runs?.[0]?.fill).toBe("BBF7D0");
+      expect(line?.runs?.map(show)).toEqual(["The ", "[3 E1E1E1]", "key", "[3 E1E1E1]", " term."]);
+      expect(line?.runs?.[2]?.fill).toBe("E1E1E1");
+    });
+
+    it("draws a dashed rule as a picture, and a dotted frame's sides as Word's dotted borders", () => {
+      const [rule, frame] = blocks(
+        '#line(length: 100%, stroke: (dash: "dashed"))\n\n#rect(stroke: (dash: "dotted"))[Cut here]\n',
+      );
+      expect(rule).toMatchObject({ type: "drawing", picture: { index: 0 } });
+      const borders = frame?.rows?.[0]?.cells[0]?.borders ?? {};
+      expect(Object.values(borders).map((b) => b.style)).toEqual(["dotted", "dotted", "dotted", "dotted"]);
+    });
+
+    it("draws a gradient as a picture whose SVG gradient has its stops, which LibreOffice draws", () => {
+      engine.set_source(
+        "/main.typ",
+        `#rect(width: 4cm, height: 1cm, fill: gradient.linear(red, blue))${Engine.docx_margin_probe()}`,
+      );
+      const result = engine.compile_docx_model();
+      const [b] = JSON.parse(result.model as string).sections[0].blocks;
+      expect(b).toMatchObject({ type: "drawing", picture: { index: 0 } });
+      // typst-svg fills the shape with a gradient that takes its stops from another: copied in.
+      expect(result.pictures?.[0]?.svg).toMatch(/<linearGradient gradientTransform="[^"]*" id="[^"]*"[^/>]*><stop /);
+    });
+
+    it("numbers a list that starts at v in Roman numerals, not from the letter v", () => {
+      const out = model('#enum(numbering: "i.", start: 5)[Five][Six][Seven]\n');
+      expect(out.lists[0]).toMatchObject({ format: "lowerRoman", start: 5 });
+    });
+
+    it("strikes words through, as Word's strike, without a rule for the stroke", () => {
+      const [line] = blocks("Cross out the wrong word: the cat #strike[run] ran home.\n");
+      expect(line?.runs?.map(show)).toEqual(["Cross out the wrong word: the cat ", "run", " ran home."]);
+      expect(line?.runs?.[1]).toMatchObject({ strike: true });
+    });
+
+    it("gives a list's numbers its labels' face, not the bold run starting an item", () => {
+      const out = model(`${PROFILE}+ *T.* The membrane controls what enters.\n+ *F.* Ribosomes make lipids.\n`);
+      const bold = out.fonts.findIndex((f: { bold: boolean }) => f.bold);
+      expect(out.lists[0]).toMatchObject({ labelSize: 11 });
+      expect(out.lists[0].labelFont).not.toBe(bold);
+    });
+
+    it("starts a line after a `\\` with the room Typst left before it", () => {
+      const [q] = blocks("*1.* What is the capital of France? \\\n#h(1.5em) A) Paris #h(1.2em) B) Lyon\n");
+      const after = q?.runs?.findIndex((r) => r.break) ?? -1;
+      expect(q?.runs?.[after + 1]?.gap).toBe(16.5);
+    });
+
+    it("centres a framed block's centred lines, its inset what the block leaves on the right", () => {
+      const [card] = blocks(
+        "#rect(width: 6cm, inset: 5pt)[#align(center)[What is the capital of \\ *France*?] #place(bottom + right)[q]]\n",
+      );
+      const cell = card?.rows?.[0]?.cells[0];
+      // The 5 pt inset less half the 1 pt stroke, which Word adds: not the 30-odd points the first line is centred by.
+      expect(cell?.margins.left).toBe(4.5);
+      expect(cell?.blocks[0]).toMatchObject({ align: "center" });
+    });
+  });
+
   it("makes a picture of a drawing, SVG and PNG, with a stroke outside its view box for LibreOffice", () => {
     engine.set_source(
       "/main.typ",

@@ -8,7 +8,8 @@
 //   Word's half-point text sizes. `leading` is 0 and the text's edges make a line box exactly the pitch, the
 //   baseline 0.246em above its bottom (Libertinus Serif's descender), as Word's exact line spacing places it.
 // - Greedy, ragged-right lines without hyphenation: justification and hyphenation each cost 5–10% of lines in
-//   Word, whose breaking differs from Typst's.
+//   Word, whose breaking differs from Typst's. No hanging punctuation (`overhang`): Word has none, so a line ending
+//   in a full stop at the right edge didn't fit there, and a centred or right-aligned line sat off its place.
 // - Table rows don't split (Word: `w:cantSplit`). Not grids': a row that can't split and is taller than a page
 //   runs off it, and layout grids hold whole pages.
 //
@@ -26,7 +27,7 @@
  * @public
  */
 export const LAYOUT_PROFILE: string = `// typstream's layout profile: what a DOCX export can reproduce line for line.
-#show text: set text(hyphenate: false, top-edge: 1.054em, bottom-edge: -0.246em)
+#show text: set text(hyphenate: false, overhang: false, top-edge: 1.054em, bottom-edge: -0.246em)
 #show par: set par(leading: 0pt, justify: false, linebreaks: "simple")
 #show table: set table.cell(breakable: false)
 // A line holding only an equation is as tall as the equation, while Word gives every line of a paragraph with math

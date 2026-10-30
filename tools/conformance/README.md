@@ -37,10 +37,17 @@ per set of `sys.inputs`).
   - on examples without equations laid out line for line, what the pages draw besides text and pictures (rules,
     borders, shading, a blank's line) is where Typst draws it: no more than 6 differing pixels touching at 2 pixels per
     point, ink within a point counting as the same (`src/ink.mjs`). The lines alone would pass a lost border or an
-    underline 2 pt off.
+    underline 2 pt off;
+  - on the same examples, every line is where Typst set it, to 3 pt (`src/lines.mjs`'s `drift`): the same lines a gap
+    lower, or beside a label Word centred with them, match by text;
+  - every word's paper (a highlight, a shaded box) and ink (its colour) are Typst's, within 48 levels a channel, words
+    in equations aside (`src/colour.mjs`): the ink check sees only what is darker than a light grey;
+  - no equation is drawn with an operand missing (LibreOffice's red "¿").
 
 `src/vitest.mjs` has the two vitest projects a plugin adds (`paged`, `docx`), resolving the suite and packages from
-source. Plugins don't depend on this package (it imports the engine, whose tests import Universe's plugin): they
+source. This package runs a suite of its own with them (`__tests__/conformance/`, `pnpm --filter @typstream/conformance
+test:paged`, `test:docx`): Typst's own elements without a plugin, documents holding what an export once broke while
+its lines still matched by text. Plugins don't depend on this package (it imports the engine, whose tests import Universe's plugin): they
 import it by path, and TypeScript through `tsconfig.base.json`'s paths.
 
 tools/docx-check (#131) reports the whole corpus through the same modules: `compareExport`, the lines, pixels and ink
@@ -48,6 +55,12 @@ comparisons, LibreOffice, ONLYOFFICE and the validator.
 
 ## Known differences
 
+- LibreOffice draws an equation black whatever its colour (its import reads only math properties, not `w:color`,
+  which the DOCX gives every math run and Word reads), so the colour check leaves equations out.
+- Typst sets `super` and `sub` text with the font's own superscript and subscript glyphs; Word raises or lowers a
+  smaller letter. A superscript then sits apart from its line by the lines' measure, which the suite's examples avoid.
+- A word in a box framed on all sides in a line is underlined in the DOCX (Word frames a run only at its own line's
+  height); overlines, small capitals from the font, and letter and word spacing aren't written.
 - LibreOffice sets an inline fraction at display size (#132), so a line with one can push a word on: Universe's suite
   allows 80% of its lines with equations (2 of its 11 lines).
 - LibreOffice won't lower a drawing in a line (it ignores a negative `w:position` there): a picture Typst lowered below

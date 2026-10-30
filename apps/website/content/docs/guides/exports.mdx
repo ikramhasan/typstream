@@ -84,9 +84,12 @@ laid-out pages as the PDF, and written as Word's own structure, so a teacher can
 - the [layout profile](/docs/concepts/render-targets#layout-profile)'s settings, which make Word break lines and pages
   where Typst does: exact line pitch, ragged right, no hyphenation, rows that stay on one page.
 
-Free-form drawing that Word could keep editable if it were drawn otherwise, a box with rounded corners or rotated
-text, becomes a picture too, its text with it, and the export warns about it: a diagnostic with `code:
-"docx/fallback"` at the box. edu's `callout` draws a box Word keeps editable. The file is checked against the PDF with
+Free-form drawing that Word could keep editable if it were drawn otherwise, a box with rounded corners, filled with a
+gradient or rotated text, becomes a picture too, its text with it, and the export warns about it: a diagnostic with
+`code: "docx/fallback"` at the box. edu's `callout` draws a box Word keeps editable, and heal's
+[`layout-profile`](/docs/concepts/healing#lint-rules) lint rule squares the corners of the boxes a model draws around
+text, on the page too, so they come out as table cells Word can edit. Highlights and filled boxes around words are
+Word's shading, dashed and dotted frames Word's dashed and dotted borders, and a dashed line a picture. The file is checked against the PDF with
 LibreOffice, ONLYOFFICE and Microsoft's Open XML validator, pictures pixel by pixel; edits made in Word don't come back
 to the document. What Word can't reproduce exactly:
 
@@ -96,7 +99,11 @@ to the document. What Word can't reproduce exactly:
   named as the document's math font; whether Word uses it rather than Cambria Math is untested (no Word in the
   checks);
 - numbers Word has no format for, Bengali and Eastern Arabic digits: list labels in them are text (not Word
-  numbering), and page numbers in them come out in Western digits (Devanagari ones are Word's Hindi numbers).
+  numbering), and page numbers in them come out in Western digits (Devanagari ones are Word's Hindi numbers);
+- in LibreOffice only (Word isn't in the checks): equations come out black whatever their colour (its import drops
+  the colour Word reads), and inline fractions are set at display size, so a line with one is taller;
+- text decorations Word has no equivalent for, or sets otherwise: an overline, small capitals from the font, letter
+  and word spacing, and a word framed by a box in a line (Word underlines it).
 
 Google Docs opens the file with its own spacing: it has no exact line heights, so lines are spaced as multiples of
 the font's and its pages can break in other places. Pictures and the space around them keep their size there, so text

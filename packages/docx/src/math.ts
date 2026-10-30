@@ -12,10 +12,19 @@ const val = (name: string, v: string | number): string => `<m:${name} m:val="${e
 const arg = (name: string, nodes: DocxMath[] | undefined, rPr: string): string =>
   `<m:${name}>${omml(nodes ?? [], rPr)}</m:${name}>`;
 
+/** A run that is one operator: LibreOffice's import makes it an operator of its own math, which needs operands. */
+const OPERATOR = /^[\p{Sm}\-*/:]$/u;
+
 /** An equation's pieces as OMML; `rPr` is the text properties every run gets (the math font, size, colour). */
 export function omml(nodes: DocxMath[], rPr: string): string {
   let x = "";
-  for (const n of nodes) x += node(n, rPr);
+  nodes.forEach((n, i) => {
+    // An operator with nothing on one side (a worksheet's `$1/5 + 2/5 =$`, a cell's `= 2x`): LibreOffice draws its
+    // missing operand as a red "¿", and takes a leading `+` into the fraction after it. With a zero-width space
+    // after it, it reads the run as text and sets the operator as written; Word sets it as before.
+    const edge = (i === 0 || i === nodes.length - 1) && n.t === "r" && OPERATOR.test(n.text);
+    x += node(edge ? { ...n, text: `${n.text}\u200b` } : n, rPr);
+  });
   return x;
 }
 

@@ -202,6 +202,34 @@ describe("pattern edges", () => {
     expect(rules("#par(justify: true")).not.toContain("layout-profile");
   });
 
+  it("layout-profile: rounded corners of a box around text, which a DOCX export would make a picture of (#118)", () => {
+    const fixed = (text: string) => {
+      const source = final(text).source;
+      expect(syntaxErrors(source)).toEqual([]);
+      return source;
+    };
+    // What models write: a source or hint box, a word bank. Square corners make an editable table cell in Word.
+    expect(fixed("#block(width: 100%, inset: 10pt, stroke: 0.6pt + gray, radius: 3pt)[A source.]")).toBe(
+      "#block(width: 100%, inset: 10pt, stroke: 0.6pt + gray)[A source.]",
+    );
+    expect(fixed("#rect(radius: 3pt, inset: 8pt)[*Hint:* balance the metals first.]")).toBe(
+      "#rect(inset: 8pt)[*Hint:* balance the metals first.]",
+    );
+    expect(fixed("#box(radius: (top-left: 4pt, bottom-right: 4pt), [Word bank])")).toBe("#box([Word bank])");
+    // Set rules would round every frame, edu's callouts too.
+    expect(fixed("#set rect(radius: 4pt, inset: 6pt)")).toBe("#set rect(inset: 6pt)");
+    expect(fixed("#show heading: set block(radius: 2pt)")).toBe("#show heading: set block()");
+    expect(lintAll("#block(radius: 3pt)[x]")[0]?.message).toBe(
+      "rounded corners (`radius`) would make a picture of the box in a DOCX export, its text not editable; removed",
+    );
+    // A box with no text in it (a checkbox) is a picture either way, and CeTZ's rect takes coordinates.
+    expect(rules("#box(width: 1em, height: 1em, stroke: 0.5pt, radius: 2pt)")).not.toContain("layout-profile");
+    expect(rules("#cetz.canvas({ import cetz.draw: *; rect((0, 0), (4, 3), radius: 0.2) })")).not.toContain(
+      "layout-profile",
+    );
+    expect(rules("#block(inset: 4pt)[x]")).not.toContain("layout-profile");
+  });
+
   it("markdown-bold needs markup at both delimiters", () => {
     expect(rules("**a** b")).toContain("markdown-bold");
     expect(rules('#"**a**"')).not.toContain("markdown-bold");

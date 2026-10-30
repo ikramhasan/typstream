@@ -59,7 +59,9 @@ jobs:
         continue-on-error: true
       # The plugins' conformance suites (#135), for what differs: ONLYOFFICE draws ruled lines taller and underlines a
       # point higher than LibreOffice, so some examples fail there.
-      - run: pnpm --filter @typstream/edu --filter @typstream/mindmap --filter @typstream/universe test:docx
+      - run: >-
+          pnpm --filter @typstream/edu --filter @typstream/mindmap --filter @typstream/universe
+          --filter @typstream/conformance test:docx
         env:
           TYPSTREAM_DOCX_ENGINE: onlyoffice
         continue-on-error: true
@@ -114,6 +116,6 @@ jobs:
       # The plugins' conformance suites' paged half (#135), in every browser (PRs run Chromium's).
       - run: >-
           node tools/repo/playwright-docker.mjs pnpm --filter @typstream/edu --filter @typstream/mindmap
-          --filter @typstream/universe test:paged
+          --filter @typstream/universe --filter @typstream/conformance test:paged
         env:
           BROWSERS: ${{ matrix.browser }}

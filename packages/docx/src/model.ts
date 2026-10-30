@@ -94,6 +94,12 @@ export interface DocxList {
   labelRight: number;
   /** Where item bodies start. */
   bodyLeft: number;
+  /** The labels' face, an index into `DocxModel.fonts`, as Typst set them (not the first run's: Word's default). */
+  labelFont?: number;
+  /** The labels' size in points. */
+  labelSize?: number;
+  /** The labels' hex colour, when it isn't black. */
+  labelColor?: string;
 }
 
 /** A block in a flow: a paragraph, a table, a rule, a drawing or columns. @internal */
@@ -188,6 +194,10 @@ export interface DocxTextRun {
   underline?: boolean;
   /** Hex RGB of the underline, when it isn't black: the stroke Typst drew under it (a blank's line). */
   underlineColor?: string;
+  /** Hex RGB of the shading behind it (Word's `shd`): a `highlight`, a filled box around words. */
+  fill?: string;
+  /** Struck through (Typst's `strike`). */
+  strike?: boolean;
   /** A URL the run links to. */
   link?: string;
   /** A page number: `PAGE` or `NUMPAGES`. */
@@ -209,6 +219,8 @@ export interface DocxGapRun {
   underline?: boolean;
   /** Hex RGB of the underline, when it isn't black. */
   underlineColor?: string;
+  /** Hex RGB of the shading behind it: a filled box's inset beside its words. */
+  fill?: string;
   /**
    * Points to raise the gap by (negative lowers it), so its underline lands where Typst drew the blank's line: Word
    * underlines at the font's underline position, a box's stroke sits on the baseline.
@@ -394,8 +406,10 @@ export interface DocxCell {
    * make the row's height: engines read a row height of "at least" with or without the margins.
    */
   margins: { top: number; right: number; bottom: number; left: number };
-  /** Borders: width in points and hex colour, per side drawn. */
-  borders: Partial<Record<"top" | "right" | "bottom" | "left", { width: number; color: string }>>;
+  /** Borders: width in points, hex colour and, when not solid, Word's style, per side drawn. */
+  borders: Partial<
+    Record<"top" | "right" | "bottom" | "left", { width: number; color: string; style?: "dashed" | "dotted" }>
+  >;
   /** Hex fill. */
   fill?: string;
   valign?: "center" | "bottom";

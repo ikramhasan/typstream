@@ -66,6 +66,8 @@ const SLACK: f64 = 1.0;
 /// Slack stays this far under a paragraph's fit (how far a next word missed a line): engines measure some lines a
 /// hair narrower than Typst too.
 const FIT_MARGIN: f64 = 1.0;
+/// The fit of a paragraph whose lines Typst was told to break (a code block): no more room moves a word up.
+const FORCED_FIT: f64 = 100.0;
 /// A block Typst starts a page with gets a page break before it when the page before had more room left than this,
 /// in points: Typst moved it on (a heading kept with what follows, a table's header with its first row, a line that
 /// didn't quite fit) where an engine measuring a hair shorter wouldn't. A page break before a paragraph that already
@@ -236,6 +238,8 @@ struct Seg {
     y1: f64,
     thickness: f64,
     color: String,
+    /// Dashed or dotted (Word's border styles), not solid.
+    dash: Option<&'static str>,
 }
 
 impl Seg {
@@ -653,6 +657,11 @@ impl Linearizer<'_> {
                     w: size.x.to_pt(),
                     h: size.y.to_pt(),
                 };
+                // A gradient or a tiling: no table cell or shading has one, so a picture of the shape.
+                if shape.fill.as_ref().is_some_and(patterned) {
+                    self.push(Kind::Drawing(r));
+                    return;
+                }
                 if r.w >= 6.0 && r.h >= 6.0 {
                     self.push(Kind::Rect(r));
                 }
@@ -672,7 +681,7 @@ impl Linearizer<'_> {
             }
             Geometry::Curve(curve) => match (axis_rect(&curve.0), &shape.fill) {
                 // A thin filled rectangle is a stroke; a wider one a fill.
-                (Some(r), Some(fill)) if shape.stroke.is_none() => {
+                (Some(r), Some(fill)) if shape.stroke.is_none() && !patterned(fill) => {
                     let r = Rect {
                         x: x + r.x,
                         y: y + r.y,
@@ -688,6 +697,7 @@ impl Linearizer<'_> {
                             y1: mid,
                             thickness: r.h,
                             color,
+                            dash: None,
                         }));
                     } else if r.w <= 3.0 && r.h > r.w {
                         let mid = r.x + r.w / 2.0;
@@ -698,6 +708,7 @@ impl Linearizer<'_> {
                             y1: r.bottom(),
                             thickness: r.w,
                             color,
+                            dash: None,
                         }));
                     } else {
                         self.push(Kind::Fill(r, color));
@@ -715,6 +726,11 @@ impl Linearizer<'_> {
             },
         }
     }
+}
+
+/// Whether a paint is a gradient or a tiling, which Word has for shapes, not for text, cells or paragraphs.
+fn patterned(paint: &Paint) -> bool {
+    !matches!(paint, Paint::Solid(_))
 }
 
 /// Whether an element is a drawing's description: `metadata((alt: …))` labelled `<typstream-drawing>`.
@@ -742,6 +758,15 @@ fn seg(x0: f64, y0: f64, x1: f64, y1: f64, stroke: &FixedStroke) -> Seg {
         y1: y0.max(y1),
         thickness: stroke.thickness.to_pt(),
         color: paint_hex(&stroke.paint),
+        // Dots are dashes no longer than the stroke is thick (round caps make them dots).
+        dash: stroke.dash.as_ref().map(|d| {
+            let first = d.array.first().map_or(0.0, |a| a.to_pt());
+            if first <= stroke.thickness.to_pt() * 1.01 {
+                "dotted"
+            } else {
+                "dashed"
+            }
+        }),
     }
 }
 
@@ -956,7 +981,8 @@ fn paint_hex(paint: &Paint) -> String {
         Paint::Tiling(_) => Color::BLACK,
     };
     let rgb = color.to_rgb();
-    let byte = |v: f32| (v.clamp(0.0, 1.0) * 255.0).round() as u8;
+    // Word's colours are opaque: a translucent one (`highlight`'s default yellow) as it shows on white paper.
+    let byte = |v: f32| ((v * rgb.alpha + 1.0 - rgb.alpha).clamp(0.0, 1.0) * 255.0).round() as u8;
     format!(
         "{:02X}{:02X}{:02X}",
         byte(rgb.red),
@@ -1082,15 +1108,21 @@ enum Run {
         /// Right to left, and its language (#134).
         rtl: bool,
         lang: String,
+        /// Shaded behind (a `highlight`, a filled box around words), in this colour.
+        fill: Option<String>,
+        /// Struck through (`strike`).
+        strike: bool,
     },
     /// An exact-width space: a gap in a line, a blank, a placeholder. `raise` (points, negative lowers) moves its
-    /// underline to where Typst drew the stroke: nothing is written on it to move with it.
+    /// underline to where Typst drew the stroke: nothing is written on it to move with it. `fill`: shaded, as the
+    /// inset of a filled box beside its words.
     Gap {
         width: f64,
         underline: Option<String>,
         raise: f64,
         font: usize,
         size: f64,
+        fill: Option<String>,
     },
     Tab,
     /// A line break Typst was told to make (`\`), not one it chose.
@@ -1686,6 +1718,33 @@ impl Builder {
                     // A rule across the area (`line(length: 100%)`), or a shorter one between paragraphs (a blank
                     // under a label): an empty paragraph with a bottom border.
                     let inline = pending.iter().any(|&p| matches!(&self.items[p].kind, Kind::Text(t) if (t.y - s.y0).abs() < t.size));
+                    // Dashed or dotted (a "cut here" line): a paragraph's shading is solid, so a picture of it, which
+                    // holds no text to edit.
+                    if !inline && s.dash.is_some() {
+                        self.flush(&mut pending, &mut out, area, heading);
+                        let t = s.thickness / 2.0;
+                        let room = Rect { x: s.x0, y: s.y0 - t, w: s.x1 - s.x0, h: s.thickness };
+                        let mut json = Map::new();
+                        json.insert("type".into(), json!("drawing"));
+                        json.insert("width".into(), json!(round(room.w)));
+                        json.insert("height".into(), json!(round(room.h)));
+                        json.insert("indent".into(), json!(round(room.x - area.left)));
+                        if let Some((k, p)) = self.picture(&ids[i..=i], room, true) {
+                            json.insert(
+                                "picture".into(),
+                                json!({ "index": k, "x": round(p.x - room.x), "y": round(p.y - room.y) }),
+                            );
+                        }
+                        out.push(Block {
+                            page: self.items[id].page,
+                            end_page: self.items[id].page,
+                            top: room.y,
+                            bottom: room.bottom(),
+                            json,
+                        });
+                        i += 1;
+                        continue;
+                    }
                     if !inline {
                         self.flush(&mut pending, &mut out, area, heading);
                         let mut json = Map::new();
@@ -1705,7 +1764,9 @@ impl Builder {
                     }
                     pending.push(id);
                 }
-                Kind::Rect(rect) if !self.beside(&pending, *rect, items[id].page) => {
+                Kind::Rect(rect)
+                    if !self.beside(&pending, *rect, items[id].page) && !self.highlight(ids, i, *rect) =>
+                {
                     // A box drawn without a frame: a framed block of what is drawn in it, as a framed group is.
                     let end = self.drawn_over(ids, i, *rect);
                     self.flush(&mut pending, &mut out, area, heading);
@@ -1933,6 +1994,24 @@ impl Builder {
     }
 
     /// Index (into `ids`) of the last item after `ids[i]` drawn inside `rect`, on its page.
+    /// Whether the box at `ids[i]` is a fill behind one line of words and no frame (a `highlight` starting a line or
+    /// a list item's body): their runs' shading, not a framed block.
+    fn highlight(&self, ids: &[usize], i: usize, rect: Rect) -> bool {
+        let end = self.drawn_over(ids, i, rect);
+        let inner = &ids[i + 1..=end.min(ids.len() - 1)];
+        let mut baselines = inner.iter().filter_map(|&p| match &self.items[p].kind {
+            Kind::Text(t) => Some((t.y, t.size)),
+            _ => None,
+        });
+        let filled = inner.first().is_some_and(|&p| matches!(self.items[p].kind, Kind::Fill(..)));
+        let framed = inner.iter().any(|&p| matches!(self.items[p].kind, Kind::Seg(_)));
+        filled
+            && !framed
+            && baselines.next().is_some_and(|(y, size)| {
+                rect.h < (TOP + BOTTOM) * size + 5.0 && baselines.all(|(y2, _)| (y2 - y).abs() < 0.5)
+            })
+    }
+
     fn drawn_over(&self, ids: &[usize], i: usize, rect: Rect) -> usize {
         let page = self.items[ids[i]].page;
         let inside = |r: Rect| {
@@ -2145,6 +2224,8 @@ impl Builder {
         let mut boxes: Vec<(usize, Rect, Option<usize>, Option<usize>, usize, f64)> = Vec::new();
         let mut sides: Vec<(usize, Seg)> = Vec::new();
         let mut rects: Vec<(usize, Rect, usize)> = Vec::new();
+        // What is drawn behind words in their line (a `highlight`, a filled box): their runs' shading.
+        let mut fills: Vec<(usize, Rect, String)> = Vec::new();
         let mut equations: Vec<Equation> = Vec::new();
         // The equation open, and its end tag.
         let mut equation: Option<(usize, Option<Location>)> = None;
@@ -2235,6 +2316,7 @@ impl Builder {
                 Kind::Seg(s) if s.horizontal() => segs.push((page, s.clone())),
                 Kind::Seg(s) => sides.push((page, s.clone())),
                 Kind::Rect(r) if eq.is_none() => rects.push((page, *r, id)),
+                Kind::Fill(r, c) if eq.is_none() => fills.push((page, *r, c.clone())),
                 Kind::Link(r, url) => links.push((page, *r, url.clone())),
                 Kind::Drawing(r) => boxes.push((page, *r, eq, Some(id), id, r.bottom())),
                 _ => {}
@@ -2498,6 +2580,16 @@ impl Builder {
                         );
                     }
                 }
+                // And where fills behind it start and end: a filled box's inset is shaded, the room beside it not.
+                for (p, r, _) in &fills {
+                    if *p == page {
+                        cuts.extend(
+                            [r.x, r.right()]
+                                .into_iter()
+                                .filter(|&x| x > from + 0.5 && x < from + gap - 0.5),
+                        );
+                    }
+                }
                 cuts.sort_by(f64::total_cmp);
                 for c in cuts.windows(2).filter(|c| c[1] - c[0] > 0.05) {
                     let under = underlined(&segs, page, c[0], c[1], baseline);
@@ -2508,6 +2600,7 @@ impl Builder {
                         raise,
                         font,
                         size,
+                        fill: shaded(&fills, page, c[0], c[1], baseline),
                     });
                 }
             }
@@ -2531,7 +2624,18 @@ impl Builder {
                         rtl: t.rtl || (line.rtl && neutral),
                         ..t
                     };
-                    push_text(&mut line.runs, &t, font, underline, link);
+                    let fill = shaded(&fills, page, t.x, t.x + t.width, t.y);
+                    // A stroke through the middle of the words (Typst's `strike`, at the font's strikeout position).
+                    let mid = t.x + t.width / 2.0;
+                    let strike = segs.iter().any(|(p, s)| {
+                        *p == page
+                            && s.x0 <= mid
+                            && s.x1 >= mid
+                            && s.y0 < t.y - 0.15 * t.size
+                            && s.y0 > t.y - 0.6 * t.size
+                            && s.thickness < 2.0
+                    });
+                    push_text(&mut line.runs, &t, font, underline, link, fill, strike);
                 }
                 (None, Some(r)) => {
                     match eq.map(|e| &mut equations[e]) {
@@ -2585,45 +2689,114 @@ impl Builder {
                 .map(|l| l.2);
         }
         // Underlines past the last atom (a blank at the end of a line: on its left in right-to-left text), and before
-        // the first (a blank alone in a cell, its answer centred on it).
+        // the first (a blank alone in a cell, its answer centred on it; one starting a line), nearest first: right
+        // after the text, or after room (a term list's separator before a blank that is the whole description),
+        // which is a gap of its own.
         for line in lines.iter_mut() {
             for end in [true, false] {
-                let (left, right) = (line.left, line.right);
-                let Some((_, s)) = segs.iter().find(|(p, s)| {
-                    *p == line.page
-                        && s.y0 > line.baseline - 1.0
-                        && s.y0 < line.baseline + 0.6 * line.size.max(8.0)
-                        && if end == line.rtl {
-                            s.x0 < left - 0.5 && s.x1 > left - 0.5
-                        } else {
-                            s.x1 > right + 0.5 && s.x0 < right + 0.5
+                let left_side = end == line.rtl;
+                for _ in 0..segs.len() {
+                    let (left, right) = (line.left, line.right);
+                    let Some((_, s)) = segs
+                        .iter()
+                        .filter(|(p, s)| {
+                            *p == line.page
+                                && s.horizontal()
+                                && s.y0 > line.baseline - 1.0
+                                && s.y0 < line.baseline + 0.6 * line.size.max(8.0)
+                                && if left_side {
+                                    s.x0 < left - 0.5
+                                } else {
+                                    s.x1 > right + 0.5
+                                }
+                        })
+                        .min_by(|(_, a), (_, b)| {
+                            if left_side {
+                                b.x1.total_cmp(&a.x1)
+                            } else {
+                                a.x0.total_cmp(&b.x0)
+                            }
+                        })
+                    else {
+                        break;
+                    };
+                    let (room, width) = if left_side {
+                        (left - s.x1, left.min(s.x1) - s.x0)
+                    } else {
+                        (s.x0 - right, s.x1 - right.max(s.x0))
+                    };
+                    let (font, size) = (last_font(&line.runs).unwrap_or(0), line.size.max(8.0));
+                    let mut gaps = vec![Run::Gap {
+                        width,
+                        underline: Some(s.color.clone()),
+                        raise: self.raise(font, size, s.y0 - line.baseline),
+                        font,
+                        size,
+                        fill: None,
+                    }];
+                    if room > 0.05 {
+                        gaps.insert(
+                            0,
+                            Run::Gap {
+                                width: room,
+                                underline: None,
+                                raise: 0.0,
+                                font,
+                                size,
+                                fill: None,
+                            },
+                        );
+                    }
+                    if end {
+                        line.runs.extend(gaps);
+                    } else {
+                        gaps.reverse();
+                        for (k, gap) in gaps.into_iter().enumerate() {
+                            line.runs.insert(k, gap);
                         }
-                }) else {
-                    continue;
-                };
-                let width = if end == line.rtl {
-                    left - s.x0
-                } else {
-                    s.x1 - right
-                };
-                let (font, size) = (last_font(&line.runs).unwrap_or(0), line.size.max(8.0));
-                let gap = Run::Gap {
-                    width,
-                    underline: Some(s.color.clone()),
-                    raise: self.raise(font, size, s.y0 - line.baseline),
-                    font,
-                    size,
-                };
-                if end {
-                    line.runs.push(gap);
-                } else {
-                    line.runs.insert(0, gap);
+                    }
+                    if left_side {
+                        line.left = s.x0;
+                    } else {
+                        line.right = s.x1;
+                    }
                 }
-                if end == line.rtl {
-                    line.left = s.x0;
+            }
+        }
+        // A fill reaching past a line's words (a filled box's inset at its start or end): shaded room as wide.
+        for line in lines.iter_mut() {
+            let band = |r: &Rect| r.h < 36.0 && r.y < line.baseline && r.bottom() > line.baseline;
+            let (font, size) = (last_font(&line.runs).unwrap_or(0), line.size.max(8.0));
+            let gap = |width: f64, color: &str| Run::Gap {
+                width,
+                underline: None,
+                raise: 0.0,
+                font,
+                size,
+                fill: Some(color.to_string()),
+            };
+            let (left, right) = (line.left, line.right);
+            if let Some((_, r, c)) = fills.iter().find(|(p, r, _)| {
+                *p == line.page && band(r) && r.right() > right + 0.5 && r.x < right + 0.5
+            }) {
+                let run = gap(r.right() - right, c);
+                if line.rtl {
+                    line.runs.insert(0, run);
                 } else {
-                    line.right = s.x1;
+                    line.runs.push(run);
                 }
+                line.right = r.right();
+            }
+            if let Some((_, r, c)) = fills.iter().find(|(p, r, _)| {
+                *p == line.page && band(r) && r.x < left - 0.5 && r.right() > left - 0.5
+            }) {
+                let run = gap(left - r.x, c);
+                if line.rtl {
+                    line.runs.push(run);
+                } else {
+                    line.runs.insert(0, run);
+                }
+                line.left = r.x;
             }
         }
         lines.retain(|l| !l.runs.is_empty());
@@ -2670,7 +2843,19 @@ impl Builder {
             } else {
                 area.right - line.right
             };
-            if let Some(next) = iter.peek().filter(|n| n.page == line.page) {
+            let forced = match iter.peek() {
+                // The next line's first word would have fitted after this one: Typst didn't choose to break. Or the
+                // line ends in a word without the space Typst keeps where it breaks a line (Latin text breaks at
+                // spaces): a `\` there took it, where Typst would have broken anyway (a card's question).
+                Some(next) if next.page == line.page => {
+                    (room > next.first_word + 1.0 && (line.right - line.left) < width - 1.0)
+                        || (!line.rtl && ends_word(&line.runs))
+                }
+                _ => false,
+            };
+            // Only where Typst chose to break: more room doesn't move a word over a line break it was told to make
+            // (a code block's lines, `\`), which would leave such a paragraph no slack at all.
+            if let Some(next) = iter.peek().filter(|n| n.page == line.page && !forced) {
                 fit = fit.min(
                     next.first_word
                         - if centered {
@@ -2680,14 +2865,16 @@ impl Builder {
                         },
                 );
             }
-            let forced = match iter.peek() {
-                // The next line's first word would have fitted after this one: Typst didn't choose to break.
-                Some(next) if next.page == line.page => {
-                    room > next.first_word + 1.0 && (line.right - line.left) < width - 1.0
-                }
-                _ => false,
-            };
             let next_size = iter.peek().map(|n| n.size);
+            // Lines broken on purpose further apart than the pitch (an empty line, `\` alone, between stanzas):
+            // Word's exact spacing has one pitch for a paragraph's lines, so the next starts a paragraph, the room
+            // above it its space before.
+            let spaced = forced
+                && iter.peek().is_some_and(|n| {
+                    !n.tall
+                        && !line.tall
+                        && n.baseline - line.baseline > PITCH * n.size.max(line.size) + 0.5
+                });
             groups.last_mut().unwrap().push(line);
             k += 1;
             // A line in another size is another paragraph whatever broke it: Word's exact spacing is one pitch for a
@@ -2698,9 +2885,10 @@ impl Builder {
                 groups.push(Vec::new());
                 breaks.push(false);
             } else if forced && k < n {
-                let same = next_size.is_some_and(|s| {
-                    (s - groups.last().unwrap().last().unwrap().size).abs() < 0.01
-                });
+                let same = !spaced
+                    && next_size.is_some_and(|s| {
+                        (s - groups.last().unwrap().last().unwrap().size).abs() < 0.01
+                    });
                 if same {
                     breaks.push(true);
                 } else {
@@ -2724,10 +2912,10 @@ impl Builder {
             }
             out.extend(self.paragraph_of(group, ids, area, heading));
         }
-        if fit < f64::MAX {
-            for b in &mut out {
-                b.json.insert("fit".into(), json!(fit));
-            }
+        // Lines all broken on purpose: any room past them is slack.
+        let fit = fit.min(FORCED_FIT);
+        for b in &mut out {
+            b.json.insert("fit".into(), json!(fit));
         }
         out
     }
@@ -2765,7 +2953,7 @@ impl Builder {
                 continue;
             }
             if let Some(k) = line.runs.iter().rposition(
-                |r| matches!(r, Run::Gap { width, underline: None, .. } if *width >= 2.0),
+                |r| matches!(r, Run::Gap { width, underline: None, fill: None, .. } if *width >= 2.0),
             ) {
                 let after_text = line.runs[k + 1..]
                     .iter()
@@ -2802,6 +2990,7 @@ impl Builder {
                     raise: 0.0,
                     font: 0,
                     size,
+                    fill: None,
                 }],
                 tall: false,
                 leader: None,
@@ -2818,11 +3007,12 @@ impl Builder {
         let width = area.right - area.left;
         let lefts: Vec<f64> = lines.iter().map(|l| l.left - area.left).collect();
         let rights: Vec<f64> = lines.iter().map(|l| area.right - l.right).collect();
+        // (A centred paragraph's longest line may fill the area.)
         let centered = !right_tab
             && lines
                 .iter()
                 .all(|l| ((l.left - area.left) - (area.right - l.right)).abs() < 1.0)
-            && lefts[0] > 2.0;
+            && lefts.iter().any(|l| *l > 2.0);
         let right_aligned = !right_tab
             && !centered
             && rights.iter().all(|r| r.abs() < 1.0)
@@ -2845,6 +3035,17 @@ impl Builder {
         let tall = lines.iter().any(|l| l.tall);
         let mut runs: Vec<Json> = Vec::new();
         for (k, line) in lines.iter().enumerate() {
+            // A line after one broken on purpose that starts further in (`\ #h(1.5em) A) …`): Word starts it at the
+            // indent, so room as wide first.
+            let after_break = k > 0 && matches!(lines[k - 1].runs.last(), Some(Run::Break));
+            let extra = lefts[k] - indent_left;
+            if after_break && align == "start" && !rtl && extra > 0.5 {
+                let font = line.runs.iter().find_map(|r| match r {
+                    Run::Text { font, .. } => Some(*font),
+                    _ => None,
+                });
+                runs.push(json!({ "gap": round(extra), "font": font.unwrap_or(0), "size": round(line.size) }));
+            }
             for run in &line.runs {
                 let mut run = run_json(run);
                 // A raised or lowered run makes an "at least" line taller (an exact one keeps its height).
@@ -2997,6 +3198,15 @@ impl Builder {
         if items.is_empty() {
             return self.flow(ids, area, false);
         }
+        // The labels' face, size and colour, as the first is set: Word sets a number as its paragraph's mark (the
+        // first run's: a bold "T." made every number bold) unless its numbering says otherwise.
+        let label_text = items.iter().find_map(|(label, _)| {
+            label.iter().find_map(|&id| match &self.items[id].kind {
+                Kind::Text(t) => Some(t.clone()),
+                _ => None,
+            })
+        });
+        let label_style = label_text.map(|t| (self.fonts.get(&t.font), t.size, t.color));
         // Labels: their text and where they sit.
         let labels: Vec<(String, f64, f64)> = items
             .iter()
@@ -3048,6 +3258,8 @@ impl Builder {
         let label_left = lefts.iter().cloned().fold(f64::MAX, f64::min);
         let label_right = rights.iter().cloned().fold(f64::MIN, f64::max);
         let mut body_left = f64::MAX;
+        // Items whose body starts where Typst set its text: where in `out`, and that x.
+        let mut starts: Vec<(usize, f64)> = Vec::new();
         for (k, (_, body)) in items.iter().enumerate() {
             // The body flows from where it starts, so a line as long as the room left reads as flush, not as
             // centred in the area; its blocks are then indented by as much.
@@ -3055,14 +3267,19 @@ impl Builder {
                 .filter(|x| *x > area.left && *x < area.right && !rtl)
                 .unwrap_or(area.left);
             let nested = self.lists.len();
-            let flow = self.flow(
-                body,
-                Area {
-                    left,
-                    right: area.right,
-                },
-                false,
-            );
+            let body_area = Area {
+                left,
+                right: area.right,
+            };
+            // An item that is a blank on its label's line (`1. #box(stroke: (bottom: …))`, a matching exercise's): the
+            // flow alone would see a framed box with nothing beside it, a rule under the label.
+            let flow = match self.blank_line(&items[k].0, body) {
+                Some(line) => self
+                    .paragraph_of(vec![line], body, body_area, None)
+                    .into_iter()
+                    .collect(),
+                None => self.flow(body, body_area, false),
+            };
             // Lists nested in the body were measured from its start too.
             for l in &mut self.lists[nested..] {
                 for key in ["labelLeft", "labelRight", "bodyLeft"] {
@@ -3085,6 +3302,17 @@ impl Builder {
                     first = false;
                 }
                 if first && b.json.get("type") == Some(&json!("p")) {
+                    // A one-line body Typst centred or right-aligned beside its label (`[1. run]` in a centred cell
+                    // is a list): Word would centre the label with it. It starts where Typst set its text instead,
+                    // from the list's body start or after a gap, its label where Typst has it.
+                    let aligned = b.json.get("align").is_some_and(|a| a != "start");
+                    let one_line = b.json.get("lines").and_then(|l| l.as_u64()) == Some(1);
+                    if let Some(x) = self.text_start(body).filter(|_| aligned && one_line && !rtl) {
+                        b.json.insert("align".into(), json!("start"));
+                        b.json
+                            .insert("indent".into(), json!({ "left": round(x - area.left), "firstLine": 0.0 }));
+                        starts.push((out.len(), x));
+                    }
                     let left = area.left + b.json["indent"]["left"].as_f64().unwrap_or(0.0);
                     body_left = body_left.min(left);
                     b.json
@@ -3092,6 +3320,15 @@ impl Builder {
                     first = false;
                 }
                 out.push(b);
+            }
+        }
+        // Bodies set further right than the list's body start: a gap first.
+        for (i, x) in starts {
+            let runs = out[i].json.get_mut("runs").and_then(|r| r.as_array_mut());
+            if let Some(runs) = runs.filter(|_| x - body_left > 0.05) {
+                let first = runs.iter().find(|r| r.get("text").is_some());
+                let (font, size) = first.map_or((json!(0), json!(11.0)), |r| (r["font"].clone(), r["size"].clone()));
+                runs.insert(0, json!({ "gap": round(x - body_left), "font": font, "size": size }));
             }
         }
         self.lists[id] = json!({
@@ -3103,7 +3340,90 @@ impl Builder {
             "labelRight": round(label_right - area.left),
             "bodyLeft": round(body_left - area.left),
         });
+        if let Some((font, size, color)) = label_style {
+            self.lists[id]["labelFont"] = json!(font);
+            self.lists[id]["labelSize"] = json!(round(size));
+            if color != "000000" {
+                self.lists[id]["labelColor"] = json!(color);
+            }
+        }
         out
+    }
+
+    /// Where the first text of `ids` starts: the left of a one-line body's line.
+    fn text_start(&self, ids: &[usize]) -> Option<f64> {
+        ids.iter()
+            .filter_map(|&id| match &self.items[id].kind {
+                Kind::Text(t) => Some(t.x),
+                _ => None,
+            })
+            .min_by(f64::total_cmp)
+    }
+
+    /// The line of a list item whose body is only blanks on its label's line, without text: an underlined gap per
+    /// stroke, raised so Word's underline lands where Typst drew it.
+    fn blank_line(&mut self, label: &[usize], body: &[usize]) -> Option<Line> {
+        let (page, t) = label.iter().find_map(|&id| match &self.items[id].kind {
+            Kind::Text(t) => Some((self.items[id].page, t.clone())),
+            _ => None,
+        })?;
+        let mut segs: Vec<Seg> = Vec::new();
+        for &id in body {
+            match &self.items[id].kind {
+                Kind::Seg(s)
+                    if self.items[id].page == page
+                        && s.horizontal()
+                        && s.y0 > t.y - TOP * t.size
+                        && s.y0 < t.y + BOTTOM * t.size + 1.0 =>
+                {
+                    segs.push(s.clone())
+                }
+                // A box's other edges, drawn as nothing (no stroke there).
+                Kind::Seg(_) => return None,
+                Kind::Text(_) | Kind::Fill(..) | Kind::Drawing(_) | Kind::Rect(_) | Kind::Math(_) => return None,
+                _ => {}
+            }
+        }
+        segs.sort_by(|a, b| a.x0.total_cmp(&b.x0));
+        let first = segs.first()?;
+        let font = self.fonts.get(&t.font);
+        let mut runs = Vec::new();
+        let mut right = first.x0;
+        for s in &segs {
+            if s.x0 > right + 0.05 {
+                runs.push(Run::Gap {
+                    width: s.x0 - right,
+                    underline: None,
+                    raise: 0.0,
+                    font,
+                    size: t.size,
+                    fill: None,
+                });
+            }
+            runs.push(Run::Gap {
+                width: s.x1 - s.x0.max(right),
+                underline: Some(s.color.clone()),
+                raise: self.raise(font, t.size, s.y0 - t.y),
+                font,
+                size: t.size,
+                fill: None,
+            });
+            right = right.max(s.x1);
+        }
+        Some(Line {
+            page,
+            baseline: t.y,
+            size: t.size,
+            left: first.x0,
+            right,
+            runs,
+            tall: false,
+            leader: None,
+            first_word: right - first.x0,
+            top: t.y - TOP * t.size,
+            bottom: t.y + BOTTOM * t.size,
+            rtl: t.rtl,
+        })
     }
 
     /// A list label's text as a paragraph in a frame at its page position, taking no room (as `placed` text).
@@ -3118,7 +3438,7 @@ impl Builder {
         let (page, first) = texts.first()?.clone();
         let mut runs = Vec::new();
         for (_, t) in &texts {
-            push_text(&mut runs, t, self.fonts.get(&t.font), None, None);
+            push_text(&mut runs, t, self.fonts.get(&t.font), None, None, None, false);
         }
         let x0 = texts.iter().map(|(_, t)| t.x).fold(f64::MAX, f64::min);
         let x1 = texts
@@ -3271,6 +3591,8 @@ impl Builder {
                     self.fonts.get(&n.font),
                     None,
                     None,
+                    None,
+                    false,
                 );
                 // The number's line, its baseline where Typst set it.
                 let number = json!({
@@ -3436,6 +3758,24 @@ impl Builder {
         } else {
             inset_left.min(rect.right() - max_right).max(0.0)
         };
+        // Centred content (a card's question): its leftmost line's room on the left is as much as on the right, not
+        // the inset. The inset is no more than what the content leaves on the right.
+        let leftmost = inner
+            .iter()
+            .filter_map(|&id| match &self.items[id].kind {
+                Kind::Text(t) => Some(t.clone()),
+                _ => None,
+            })
+            .min_by(|a, b| a.x.total_cmp(&b.x));
+        let centred = leftmost.is_some_and(|first| {
+            let on_line = inner.iter().filter_map(|&id| match &self.items[id].kind {
+                Kind::Text(t) if (t.y - first.y).abs() < 0.6 => Some(t.x + t.inked),
+                _ => None,
+            });
+            let right = on_line.fold(f64::MIN, f64::max);
+            ((first.x - rect.x) - (rect.right() - right)).abs() < 1.0 && first.x - rect.x > inset_right + 1.0
+        });
+        let inset_left = if centred { inset_right } else { inset_left };
         let blocks = self.flow(
             &inner,
             Area {
@@ -4369,10 +4709,11 @@ fn sides_json(segs: &[Seg], r: Rect) -> Json {
             }
         });
         if let Some(s) = found {
-            out.insert(
-                side.into(),
-                json!({ "width": round(s.thickness), "color": s.color }),
-            );
+            let mut border = json!({ "width": round(s.thickness), "color": s.color });
+            if let Some(dash) = s.dash {
+                border["style"] = json!(dash);
+            }
+            out.insert(side.into(), border);
         }
     }
     Json::Object(out)
@@ -4395,6 +4736,31 @@ fn underlined(
     segs.iter()
         .find(|(p, s)| *p == page && s.x0 <= mid && s.x1 >= mid && underlines(s, baseline))
         .map(|(_, s)| (s.color.clone(), s.y0 - baseline))
+}
+
+/// The colour drawn behind `[x0, x1)` of the line at `baseline` on `page`: a fill around a line's words (not a block's
+/// background, which its table cell has).
+fn shaded(fills: &[(usize, Rect, String)], page: usize, x0: f64, x1: f64, baseline: f64) -> Option<String> {
+    let mid = (x0 + x1) / 2.0;
+    fills
+        .iter()
+        .rev()
+        .find(|(p, r, _)| {
+            *p == page && r.h < 36.0 && r.x <= mid && r.right() >= mid && r.y < baseline && r.bottom() > baseline
+        })
+        .map(|(_, _, c)| c.clone())
+}
+
+/// Whether a line's runs end in a word or after it, without the space Typst keeps at a line it broke: a line broken on
+/// purpose. (Not after a hyphen or a dash, or in text without spaces, where Typst may break too.)
+fn ends_word(runs: &[Run]) -> bool {
+    let Some(Run::Text { text, .. }) = runs.last() else {
+        return false;
+    };
+    text.chars().last().is_some_and(|c| {
+        (c.is_alphanumeric() || ".,;:!?)]}\"'’”»".contains(c))
+            && !matches!(c, '\u{2E80}'..='\u{9FFF}' | '\u{AC00}'..='\u{D7AF}' | '\u{F900}'..='\u{FAFF}' | '\u{FF00}'..='\u{FFEF}')
+    })
 }
 
 /// Whether `s` is drawn where it underlines the line at `baseline`.
@@ -4427,6 +4793,8 @@ fn push_text(
     font: usize,
     underline: Option<String>,
     link: Option<String>,
+    fill: Option<String>,
+    strike: bool,
 ) {
     if let Some(Run::Text {
         text,
@@ -4438,6 +4806,8 @@ fn push_text(
         script,
         rtl,
         lang,
+        fill: shade,
+        strike: struck,
     }) = runs.last_mut()
     {
         if *f == font
@@ -4448,6 +4818,8 @@ fn push_text(
             && *script == t.script
             && *rtl == t.rtl
             && *lang == t.lang
+            && *shade == fill
+            && *struck == strike
         {
             text.push_str(&t.text);
             return;
@@ -4463,6 +4835,8 @@ fn push_text(
         script: t.script,
         rtl: t.rtl,
         lang: t.lang.clone(),
+        fill,
+        strike,
     });
 }
 
@@ -4478,6 +4852,8 @@ fn run_json(run: &Run) -> Json {
             script,
             rtl,
             lang,
+            fill,
+            strike,
         } => {
             let mut m = Map::new();
             m.insert("text".into(), json!(text));
@@ -4505,6 +4881,12 @@ fn run_json(run: &Run) -> Json {
             if lang != "en" {
                 m.insert("lang".into(), json!(lang));
             }
+            if let Some(f) = fill {
+                m.insert("fill".into(), json!(f));
+            }
+            if *strike {
+                m.insert("strike".into(), json!(true));
+            }
             Json::Object(m)
         }
         Run::Gap {
@@ -4513,11 +4895,15 @@ fn run_json(run: &Run) -> Json {
             raise,
             font,
             size,
+            fill,
         } => {
             let mut m = Map::new();
             m.insert("gap".into(), json!(round(*width)));
             m.insert("font".into(), json!(font));
             m.insert("size".into(), json!(round(*size)));
+            if let Some(f) = fill {
+                m.insert("fill".into(), json!(f));
+            }
             if let Some(c) = underline {
                 m.insert("underline".into(), json!(true));
                 if c != "000000" {
@@ -4589,7 +4975,7 @@ fn numbering(labels: &[String]) -> (String, String, u32) {
     let (prefix, suffix) = (&first[..at], &rest[end..]);
     let (format, start) = if let Ok(n) = token.parse::<u32>() {
         ("decimal", n)
-    } else if let Some(n) = roman(token) {
+    } else if let Some(n) = roman(token).or_else(|| roman_start(token, labels.get(1))) {
         (
             if token.chars().all(|c| c.is_ascii_lowercase()) {
                 "lowerRoman"
@@ -4614,6 +5000,23 @@ fn numbering(labels: &[String]) -> (String, String, u32) {
     // Letters that are also numerals: "i" after "h" is a letter. The first label decides; a list starting at "i" is
     // Roman.
     (format.into(), format!("{prefix}%1{suffix}"), start)
+}
+
+/// A list starting at "v", "x", "l" or "c" whose next label is the next Roman numeral ("v." then "vi."): Roman, though
+/// a letter alone reads as one (`enum(numbering: "i.", start: 5)`).
+fn roman_start(token: &str, next: Option<&String>) -> Option<u32> {
+    let value = match token.to_ascii_uppercase().as_str() {
+        "V" => 5,
+        "X" => 10,
+        "L" => 50,
+        "C" => 100,
+        _ => return None,
+    };
+    let next = next?;
+    let at = next.find(|c: char| c.is_ascii_alphanumeric())?;
+    let rest = &next[at..];
+    let token = &rest[..rest.find(|c: char| !c.is_ascii_alphanumeric()).unwrap_or(rest.len())];
+    (roman(token) == Some(value + 1)).then_some(value)
 }
 
 fn roman(s: &str) -> Option<u32> {

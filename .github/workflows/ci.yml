@@ -120,15 +120,19 @@ jobs:
       - run: pnpm turbo run build --filter=@typstream/docx-check^...
       - run: dotnet publish tools/docx-check/validator -c Release -o tools/docx-check/validator/out
       # --ink: every document without equations laid out as Typst's draws its rules, borders and shading where
-      # Typst does (#118).
+      # Typst does (#118); --positions: and sets each line where Typst does; --colours: every word in Typst's colours.
+      # Pictures' floor 0.93: boxes with rounded corners around text are square now (heal's layout-profile lint), and
+      # no longer pictures; the misses are the same as before (boxes among the chemistry worksheet's equations).
       - run: >-
           node tools/docx-check/check.mjs --validate tools/docx-check/validator/out/validator.dll
-          --min-lines 0.99 --min-math-lines 0.95 --min-picture-lines 0.92 --min-pictures 0.95 --ink
+          --min-lines 0.99 --min-math-lines 0.95 --min-picture-lines 0.92 --min-pictures 0.93 --ink --positions --colours
       # Arabic, Bengali, Devanagari and Chinese documents (#134).
       - run: >-
           node tools/docx-check/check.mjs --scripts --validate tools/docx-check/validator/out/validator.dll
           --min-lines 0.97 --min-math-lines 0.86 --min-picture-lines 0.94 --min-pictures 0.95
-      - run: pnpm --filter @typstream/edu --filter @typstream/mindmap --filter @typstream/universe test:docx
+      - run: >-
+          pnpm --filter @typstream/edu --filter @typstream/mindmap --filter @typstream/universe
+          --filter @typstream/conformance test:docx
 
   size:
     name: Size
@@ -252,7 +256,7 @@ jobs:
       - if: matrix.browser == 'chromium'
         run: >-
           node tools/repo/playwright-docker.mjs pnpm --filter @typstream/edu --filter @typstream/mindmap
-          --filter @typstream/universe test:paged
+          --filter @typstream/universe --filter @typstream/conformance test:paged
 
   # Visual regression (tools/browser-suites): screenshots against committed baselines, taken inside Playwright's
   # Docker image as they are locally (scripts/visual.mjs), so the runner's fonts don't matter. On a mismatch the

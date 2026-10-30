@@ -8,7 +8,7 @@
 use typst::foundations::{Content, Smart};
 use typst::layout::{Abs, Frame, FrameItem, Point, Sides, Size, Transform};
 use typst::syntax::Span;
-use typst::visualize::{CurveItem, Geometry, Shape};
+use typst::visualize::{CurveItem, Geometry, Paint, Shape};
 use typst_layout::Page;
 
 /// Pixels per point of the PNG: 300 dots per inch.
@@ -68,7 +68,7 @@ pub fn render(
         supplement: Content::empty(),
         number: 1,
     };
-    let svg = typst_svg::svg(&page, &typst_svg::SvgOptions::default());
+    let svg = flat_gradients(typst_svg::svg(&page, &typst_svg::SvgOptions::default()));
     // LibreOffice draws an SVG whose content stays inside its view box a pixel at 96 DPI smaller than its frame (0.75 pt
     // narrower and shorter, 0.31 pt in from the top left, whatever its size); content reaching outside the view box,
     // which nothing draws, makes it draw the SVG exactly.
@@ -97,6 +97,60 @@ pub fn render(
         svg,
         png,
     })
+}
+
+/// typst-svg's gradients with their stops copied in. It fills a shape with a gradient that takes its stops from another
+/// one (`href`) and scales it to the shape (`gradientTransform`), and LibreOffice doesn't follow the reference: it
+/// draws the first stop's colour.
+fn flat_gradients(svg: String) -> String {
+    let mut out = String::with_capacity(svg.len());
+    let mut rest = svg.as_str();
+    while let Some(at) = rest.find("<linearGradient ").or_else(|| rest.find("<radialGradient ")) {
+        out.push_str(&rest[..at]);
+        let tag_end = match rest[at..].find('>') {
+            Some(e) => at + e,
+            None => break,
+        };
+        let tag = &rest[at..=tag_end];
+        // A reference: an empty element with an `href` to the gradient whose stops it takes.
+        let target = tag
+            .strip_suffix("/>")
+            .and_then(|t| t.split(" href=\"#").nth(1))
+            .and_then(|t| t.split('"').next());
+        let base = target.and_then(|id| {
+            let kind = &tag[1..tag.find(' ').unwrap_or(1)];
+            let open = svg.find(&format!(" id=\"{id}\""))?;
+            let start = svg[..=open].rfind(&format!("<{kind} "))?;
+            let end = svg[start..].find(&format!("</{kind}>"))? + start;
+            let inner_start = svg[start..end].find('>')? + start + 1;
+            let attrs = &svg[start + kind.len() + 2..inner_start - 1];
+            Some((kind, attrs, &svg[inner_start..end]))
+        });
+        match base {
+            Some((kind, attrs, stops)) => {
+                // Its own attributes (id, transform) and the base's others.
+                let own = tag[kind.len() + 2..tag.len() - 2]
+                    .split(" href=")
+                    .next()
+                    .unwrap_or("")
+                    .trim_end();
+                let inherited: Vec<&str> = attrs
+                    .split("\" ")
+                    .map(|a| a.trim().trim_end_matches('"'))
+                    .filter(|a| {
+                        let name = a.split('=').next().unwrap_or("");
+                        !a.is_empty() && !own.contains(&format!("{name}=")) && name != "id"
+                    })
+                    .collect();
+                let inherited: String = inherited.iter().map(|a| format!(" {a}\"")).collect();
+                out.push_str(&format!("<{kind} {own}{inherited}>{stops}</{kind}>"));
+            }
+            None => out.push_str(tag),
+        }
+        rest = &rest[tag_end + 1..];
+    }
+    out.push_str(rest);
+    out
 }
 
 /// The bounding box of what an item draws, `(x0, y0, x1, y1)` through `ts`.
@@ -185,6 +239,15 @@ fn corners(ts: Transform, x0: f64, y0: f64, x1: f64, y1: f64) -> (f64, f64, f64,
 /// box with rounded corners (its first shape, as big as it) or rotated text, with text in it. Where it is written.
 pub fn free_form(item: &FrameItem) -> Option<(Span, &'static str)> {
     match item {
+        // A gradient or a tiling, which no table cell or shading has.
+        FrameItem::Shape(shape, span)
+            if shape
+                .fill
+                .as_ref()
+                .is_some_and(|f| !matches!(f, Paint::Solid(_))) =>
+        {
+            Some((*span, "a box filled with a gradient"))
+        }
         FrameItem::Shape(shape, span) => {
             rounded(shape).then_some((*span, "a box with rounded corners"))
         }
@@ -258,4 +321,19 @@ fn first_text(frame: &Frame) -> Option<Span> {
         FrameItem::Group(group) => first_text(&group.frame),
         _ => None,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::flat_gradients;
+
+    #[test]
+    fn copies_a_referenced_gradients_stops_in() {
+        let svg = r##"<svg><path fill="url(#r1)" d="M 0 0"/><defs><linearGradient id="f1" spreadMethod="pad" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#ff4136"/><stop offset="100%" stop-color="#0074d9"/></linearGradient></defs><defs><linearGradient gradientTransform="scale(453 17)" id="r1" href="#f1" xlink:href="#f1"/></defs></svg>"##;
+        let flat = flat_gradients(svg.to_string());
+        assert!(
+            flat.contains(r##"<linearGradient gradientTransform="scale(453 17)" id="r1" spreadMethod="pad" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#ff4136"/><stop offset="100%" stop-color="#0074d9"/></linearGradient>"##),
+            "{flat}"
+        );
+    }
 }

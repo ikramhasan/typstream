@@ -53,9 +53,10 @@ tools/docx-check  DOCX exports against Typst's PDF (#131): the Latin corpus thro
                   ONLYOFFICE's) lines and page starts compared with the PDF's, pictures pixel by pixel, rules and borders
                   (tools/conformance's modules), Microsoft's Open XML validator (validator/).
 tools/conformance The plugin conformance suite (#135): a plugin's examples, its paged view against Typst's PDF (pixels, in a
-                  browser) and its DOCX export against the PDF (validator, LibreOffice's lines, pictures, rules). edu,
-                  mindmap and universe run it from `__tests__/conformance/` (`pnpm test:paged`, `test:docx`); they
-                  import it by path (a dependency would make a turbo cycle through the engine's tests).
+                  browser) and its DOCX export against the PDF (validator, LibreOffice's lines and where they are,
+                  pictures, rules, words' colours). edu, mindmap and universe run it from `__tests__/conformance/`
+                  (`pnpm test:paged`, `test:docx`); they import it by path (a dependency would make a turbo cycle
+                  through the engine's tests). Its own `__tests__/conformance/` is Typst's elements without a plugin.
 tools/browser-suites  Corpus-wide browser suites (#19): final-render equivalence, flicker, accessibility (axe), preview vs PDF
                     (#118), and visual regression against baselines rendered in Playwright's Docker image.
 tools/repo        Repo tooling: package layer table (layers.mjs), layering check, shared tsup and api-extractor configs,
@@ -113,7 +114,7 @@ In `packages/engine-wasm` (Rust build, ~3 min cold):
 In `packages/engine`:
 - `pnpm test`: the `node` vitest project (client against a fake worker; server and protocol conformance against engine-wasm in-process). Needs engine-wasm's `dist/`.
 - `pnpm test:browser`: the `browser` project, the real worker in Chromium, Firefox and WebKit (vitest browser mode, Playwright). `BROWSERS=chromium` runs one.
-- `pnpm size`: main thread ≤ 9.6 KB, worker JS ≤ 40 KB, `@typstream/engine/websocket` and `@typstream/engine/images` ≤ 1.5 KB gzipped each, the DOCX writer the worker `import()`s ≤ 12.9 KB.
+- `pnpm size`: main thread ≤ 9.6 KB, worker JS ≤ 40 KB, `@typstream/engine/websocket` and `@typstream/engine/images` ≤ 1.5 KB gzipped each, the DOCX writer the worker `import()`s ≤ 13.2 KB.
 - Pages and PDFs follow the layout profile (#129): the server puts `LAYOUT_PROFILE` (`src/server/profile.ts`) before
   every paged compile's and PDF export's preamble (constant 1.3em pitch, ragged right, no hyphenation, unbreakable
   table rows), so a DOCX can match them; heal's `layout-profile` lint removes what would beat it. Not the HTML target.
@@ -206,9 +207,11 @@ CLI with Google Drive) lays them out in Google Docs and fails on text over pictu
 and pages are only reported; ~3 requests a document, a Drive folder `typstream-docx-check` and
 `$TMPDIR/typstream-docx-check/google-docs` to delete afterwards). CI runs it with the validator and
 line floors (99% on documents without equations or pictures, 95% on those with equations, each of which must come out
-whole, #132, 92% on those with pictures) and a picture floor (95% of pictures within the PDF raster suite's tolerance,
-pixel by pixel, #133), and the other scripts with floors of their own; nightly runs ONLYOFFICE. It reports rules, borders
-and shading unlike Typst's (`--ink` fails on them) without a floor.
+whole, #132, 92% on those with pictures) and a picture floor (93% of pictures within the PDF raster suite's tolerance,
+pixel by pixel, #133), and the other scripts with floors of their own; nightly runs ONLYOFFICE. The Latin run also passes
+`--ink` (rules, borders and shading where Typst draws them), `--positions` (every line within 3 pt of Typst's) and
+`--colours` (every word's paper and ink in Typst's colours); an equation LibreOffice draws with an operand missing
+("¿") always fails.
 
 Compile oracle (`tools/compile-oracle`, needs the built engine): `pnpm turbo run test --filter=@typstream/compile-oracle`; `pnpm --filter @typstream/compile-oracle report` for the full measurement (minutes).
 

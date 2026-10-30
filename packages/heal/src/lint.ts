@@ -98,13 +98,21 @@ const CURRENCY = /^\d[\d.,]*\s+\p{L}{2,}[\p{L}\s,.;:!?'"()-]*\s$/u;
 // a `par(…)` call and a show-set rule on the element it sets. Set rules on `par` too: Typst sets text with no
 // blocks around it (a tight list's items, a cell's, a box's) without a `par` element, which the profile's show
 // rule never reaches, so a document's `set par(leading: …)` would space those lines.
+// Rounded corners, too: Word draws a frame's corners square, so a box with rounded ones around text is a picture in
+// a DOCX export, its text not editable there (#118), where a square one is a table cell. It comes out of calls that
+// hold content (a box without any, a checkbox, is a picture either way) and out of set rules, which would round
+// every frame, edu's callouts too.
 const PROFILE_KEYS: Readonly<Record<string, RegExp>> = {
   par: /^(justify|leading|linebreaks)$/,
   text: /^(hyphenate|top-edge|bottom-edge)$/,
   "table.cell": /^breakable$/,
+  block: /^radius$/,
+  rect: /^radius$/,
+  box: /^radius$/,
 };
+const FRAMES = new Set(["block", "rect", "box"]);
 const PROFILE_CALL =
-  /(?<![\w.-])(par)\(|\bshow\s+(par|text|table)(?:\.where\([^()\n]*\))?\s*:\s*set\s+(par|text|table\.cell)\(/g;
+  /(?<![\w.-])(par|block|rect|box)\(|\bshow\s+(par|text|table)(?:\.where\([^()\n]*\))?\s*:\s*set\s+(par|text|table\.cell)\(/g;
 
 interface Ctx {
   text: string;
@@ -246,6 +254,16 @@ const profileRule = (ctx: Ctx, element: string, at: number, open: number): void 
     const m = /^(\s*)(?:([\w-]+)\s*:)?/.exec(ctx.text.slice(from, to)) as RegExpExecArray;
     return { from: from + (m[1] as string).length, to, name: m[2], gone: keys.test(m[2] ?? "") };
   });
+  // A frame's call keeps its corners unless it holds content: a content block after it or as an argument. (Not any
+  // positional argument: CeTZ's `rect((0, 0), (4, 3), radius: 0.2)` takes coordinates.)
+  const set = /\bset\s+$/.test(ctx.text.slice(Math.max(0, at - 12), at));
+  if (
+    FRAMES.has(element) &&
+    !set &&
+    ctx.text[call.close + 1] !== "[" &&
+    !args.some((a) => a.name === undefined && ctx.text[a.from] === "[")
+  )
+    return;
   const changes: TextChange[] = [];
   args.forEach((arg, i) => {
     if (!arg.gone) return;
@@ -261,7 +279,9 @@ const profileRule = (ctx: Ctx, element: string, at: number, open: number): void 
       "layout-profile",
       at,
       call.close + 1,
-      `${names.join(", ")} would override the layout profile; removed`,
+      FRAMES.has(element)
+        ? "rounded corners (`radius`) would make a picture of the box in a DOCX export, its text not editable; removed"
+        : `${names.join(", ")} would override the layout profile; removed`,
       changes,
     );
 };

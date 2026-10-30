@@ -181,6 +181,45 @@ describe("writeDocx", () => {
     });
   });
 
+  it("writes a highlight as shading, a strike, and a cell's dashed borders, in the schema's orders", () => {
+    const doc = parts(
+      model([
+        p("", {
+          runs: [
+            { text: "key", font: 0, size: 11, fill: "FFFD88", strike: true, underline: true },
+            { gap: 3, font: 0, size: 11, fill: "FFFD88" },
+          ],
+        }),
+        {
+          type: "table",
+          indent: 0,
+          columns: [100],
+          rows: [
+            {
+              cantSplit: true,
+              cells: [
+                {
+                  col: 0,
+                  margins: { top: 0, right: 0, bottom: 0, left: 0 },
+                  borders: { top: { width: 1, color: "969696", style: "dashed" }, left: { width: 1, color: "000000" } },
+                  blocks: [p("x")],
+                },
+              ],
+            },
+          ],
+        },
+      ]),
+    ).xml("word/document.xml");
+    // CT_RPr: strike after the faces, shading after the underline.
+    const rPr = /<w:r><w:rPr>(.*?)<\/w:rPr><w:t xml:space="preserve">key/.exec(doc)?.[1] as string;
+    expect([...rPr.matchAll(/<w:(\w+)/g)].map((m) => m[1])).toEqual(["rFonts", "strike", "sz", "szCs", "u", "shd"]);
+    expect(rPr).toContain('<w:shd w:val="clear" w:color="auto" w:fill="FFFD88"/>');
+    // The inset beside the word is shaded too.
+    expect(doc.match(/w:fill="FFFD88"/g)).toHaveLength(2);
+    expect(doc).toContain('<w:top w:val="dashed" w:sz="8" w:space="0" w:color="969696"/>');
+    expect(doc).toContain('<w:left w:val="single" w:sz="8" w:space="0" w:color="000000"/>');
+  });
+
   it("keeps rules one after another apart, as LibreOffice would shade the gap between them", () => {
     const rule = { type: "rule", thickness: 0.4, color: "787878", indent: { left: 0, right: 0 } } as const;
     const doc = parts(model([{ ...rule }, { ...rule, before: 20 }])).xml("word/document.xml");
@@ -189,6 +228,37 @@ describe("writeDocx", () => {
     expect(paragraphs[1]).not.toContain("<w:shd");
     expect(paragraphs[1]).toContain('w:before="399"');
     expect(paragraphs[2]).toContain('w:before="0"');
+  });
+
+  it("ends a cell whose rule follows a table with a paragraph after the rule, which LibreOffice would drop", () => {
+    const rule = { type: "rule", thickness: 0.4, color: "787878", indent: { left: 0, right: 0 }, before: 30 } as const;
+    const inner: DocxBlock = {
+      type: "table",
+      indent: 0,
+      columns: [100],
+      rows: [
+        {
+          cantSplit: true,
+          cells: [{ col: 0, margins: { top: 0, right: 0, bottom: 0, left: 0 }, borders: {}, blocks: [p("x")] }],
+        },
+      ],
+    };
+    const cell = (blocks: DocxBlock[]) => ({
+      col: 0,
+      margins: { top: 0, right: 0, bottom: 0, left: 0 },
+      borders: {},
+      blocks,
+    });
+    const outer = (blocks: DocxBlock[]) =>
+      parts(
+        model([{ type: "table", indent: 0, columns: [200], rows: [{ cantSplit: true, cells: [cell(blocks)] }] }]),
+      ).xml("word/document.xml");
+    // The rule's shaded paragraph, then one a twentieth of a point tall, before the outer cell ends.
+    expect(outer([p("Question"), inner, rule])).toMatch(
+      /w:fill="787878".*?<\/w:p><w:p><w:pPr><w:spacing [^>]*w:line="1" w:lineRule="exact"\/>.*?<\/w:p><\/w:tc><\/w:tr><\/w:tbl><w:sectPr/,
+    );
+    // A rule after text is the cell's last paragraph, as before.
+    expect(outer([p("Question"), rule])).toMatch(/w:fill="787878".*?<\/w:p><\/w:tc>/);
   });
 
   it("writes a tab stop's leader: an outline entry's dots", () => {
@@ -550,6 +620,28 @@ describe("writeDocx", () => {
     expect(doc.xml("word/document.xml")).toContain('<w:ind w:left="260" w:hanging="260"/>');
   });
 
+  it("sets a list's numbers in the face, size and colour Typst set its labels in, not its first run's", () => {
+    const bold = { name: "Libertinus Serif", bold: true, italic: false, nbsp: 0.25 };
+    const doc = parts(
+      model([p("", { list: { id: 0, label: "1." }, runs: [{ text: "T.", font: 1, size: 11 }] })], {
+        fonts: [{ name: "Libertinus Serif", bold: false, italic: false, nbsp: 0.25 }, bold],
+        lists: [
+          {
+            format: "decimal",
+            ...{ text: "%1.", start: 1, align: "start", labelLeft: 0, labelRight: 7, bodyLeft: 13 },
+            ...{ labelFont: 0, labelSize: 11, labelColor: "4F4F4F" },
+          },
+        ],
+      }),
+      [FONT, FONT],
+    );
+    // The paragraph's mark is the bold run's (Word would number in bold); its level says regular.
+    expect(doc.xml("word/numbering.xml")).toContain(
+      '<w:rPr><w:rFonts w:ascii="Libertinus Serif" w:hAnsi="Libertinus Serif" w:cs="Libertinus Serif"/>' +
+        '<w:b w:val="0"/><w:bCs w:val="0"/><w:i w:val="0"/><w:iCs w:val="0"/><w:color w:val="4F4F4F"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr>',
+    );
+  });
+
   describe("equations (#132)", () => {
     const MATH_FONT = { name: "New Computer Modern Math", bold: false, italic: false, nbsp: 0.25 };
     const r = (text: string, sty: "p" | "i" = "i"): DocxMath => ({ t: "r", text, sty });
@@ -581,6 +673,15 @@ describe("writeDocx", () => {
       expect(xml("word/settings.xml")).toContain(
         '</w:compat><m:mathPr><m:mathFont m:val="New Computer Modern Math"/></m:mathPr>',
       );
+    });
+
+    it("writes an equation's colour on every run, as Word reads it (LibreOffice's import drops it)", () => {
+      const document = doc([
+        p("", { runs: [equation([r("x"), { t: "f", num: [r("1", "p")], den: [r("2", "p")] }], { color: "C0392B" })] }),
+      ]).xml("word/document.xml");
+      const runs = /<m:oMath>(.*)<\/m:oMath>/.exec(document)?.[1]?.match(/<m:r>.*?<\/m:r>/g) ?? [];
+      expect(runs).toHaveLength(3);
+      for (const run of runs) expect(run).toMatch(/<w:rPr>.*<w:color w:val="C0392B"\/>.*<\/w:rPr>/);
     });
 
     it("writes a display equation in a paragraph of its own, aligned as the paragraph", () => {
@@ -653,6 +754,24 @@ describe("writeDocx", () => {
       );
       expect(m.match(/<m:mr>/g)).toHaveLength(2);
       expect(m).toContain('<m:t xml:space="preserve">\u200b</m:t>');
+    });
+
+    it("writes an operator with nothing on one side as text for LibreOffice, which would draw a missing operand", () => {
+      const f: DocxMath = { t: "f", num: [r("1", "p")], den: [r("5", "p")] };
+      const texts = (math: DocxMath[]) =>
+        [...body(math).matchAll(/<m:t xml:space="preserve">([^<]*)</g)].map((m) => m[1]);
+      // `$1/5 + 2/5 =$`: the `=` ends the equation, the `+` between fractions doesn't.
+      expect(texts([f, r("+", "p"), f, r("=", "p")])).toEqual(["1", "5", "+", "1", "5", "=\u200b"]);
+      // A leading `+`, which LibreOffice would put in the fraction's numerator, and a cell's leading `=`.
+      expect(texts([r("+", "p"), f])).toEqual(["+\u200b", "1", "5"]);
+      expect(texts([{ t: "m", rows: [[[r("x")], [r("=", "p"), r("y")]]], align: ["right", "left"] }])).toEqual([
+        "x",
+        "=\u200b",
+        "y",
+      ]);
+      // Operators among other text, and other runs at the edges, are as written.
+      expect(texts([r("7−3=", "p")])).toEqual(["7−3="]);
+      expect(texts([r("x"), r("(", "p")])).toEqual(["x", "("]);
     });
 
     it("writes normal text and Word's alphabets as run properties", () => {

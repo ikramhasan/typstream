@@ -52,6 +52,17 @@ stroked on its sides in a line (a checkbox) is a picture. `--scripts` doesn't pa
 match, and the other two differ in text, not rules (LibreOffice mirrors an Arabic parenthesis next to a gap the other
 way; a Bengali blank of several no-break spaces comes out a few points short).
 
+**Where lines are, and their colours** (#118): the lines compare text, so the same lines a gap lower, or beside a label
+Word centred with them, passed; the ink check sees only what is darker than a light grey besides text, so a highlight
+Word lost or a red word come out black passed too. `--positions` fails a document without equations laid out line for
+line that sets a line farther than 3 pt from where Typst set it (`lines.mjs`'s `drift`: engines round glyph advances,
+which moves a right-aligned line by up to about 2 pt); `--colours` fails one where a word's paper (a highlight, a shaded
+box, a cell's fill) or the ink of its glyphs isn't Typst's colour, within 48 levels a channel (`colour.mjs`), equations
+left out: LibreOffice draws them black whatever their colour (Word reads it). CI's Latin run passes both. And any
+equation LibreOffice draws with an operand missing (its red "¿", for an operator at an equation's end: `$1/5 + 2/5 =$`)
+fails, with or without a flag. Words with emoji are compared without them: no engine here has an emoji font, Typst
+draws a missing glyph's box and leaves it out of its PDF's text, LibreOffice keeps it.
+
 LibreOffice won't lower a drawing in the line (it ignores a negative `w:position` on its run): a picture Typst lowered
 below the baseline (a checkbox with `baseline: 20%`) is anchored to its line instead, in an exact line. In an "at
 least" line (one with an equation) it sits on the baseline. Pictures among equations are where each engine's math
