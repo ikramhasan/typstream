@@ -30,6 +30,7 @@ jobs:
       - uses: ./.github/actions/oracle
       # heal's dependents include @typstream/engine, which builds on engine-wasm.
       - uses: ./.github/actions/engine-wasm
+      - uses: ./.github/actions/syntax
       - uses: ./.github/actions/pnpm
         with: { node: "${{ env.NODE }}" }
       - run: pnpm build --filter=@typstream/heal...
@@ -45,6 +46,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/engine-wasm
+      - uses: ./.github/actions/syntax
       - uses: ./.github/actions/pnpm
         with: { node: "${{ env.NODE }}" }
       - name: Install poppler
@@ -105,6 +107,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/engine-wasm
+      - uses: ./.github/actions/syntax
       - uses: ./.github/actions/pnpm
         with: { node: "${{ env.NODE }}" }
       # In Playwright's image, like CI's browser jobs: no apt.

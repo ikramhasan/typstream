@@ -77,8 +77,20 @@ export const PACKAGES = {
   },
   ai: { name: "@typstream/ai", layer: 5, deps: ["core", "heal"] },
   codemirror: { name: "@typstream/codemirror", layer: 5, deps: ["syntax", "engine"] },
-  "editor-core": { name: "@typstream/editor-core", layer: 5, deps: ["syntax", "engine", "dom"] },
-  "editor-react": { name: "@typstream/editor-react", layer: 5, deps: ["editor-core", "syntax", "engine", "dom"] },
+  // The visual editor (#36): its model (Typst as a Plate value, from Typst's syntax tree) and the
+  // React editor on Plate. editor-core's tests compile documents with engine-wasm and edu.
+  "editor-core": {
+    name: "@typstream/editor-core",
+    layer: 5,
+    deps: ["core", "syntax"],
+    testDeps: ["engine-wasm", "edu"],
+  },
+  "editor-react": {
+    name: "@typstream/editor-react",
+    layer: 5,
+    deps: ["core", "syntax", "editor-core", "react"],
+    testDeps: ["engine", "dom", "edu", "html-compat"],
+  },
 };
 
 // The table must itself respect the layering, or the rules built from it would

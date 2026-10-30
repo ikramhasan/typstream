@@ -346,7 +346,7 @@ describe(`mountTypstream in ${browser}`, () => {
       engine: { preamble: '#import "/acme/note.typ": note' },
       templates: [{ name: "memo", preamble: "#let kind = sys.inputs.kind", inputs: { kind: "memo" } }],
       // A facet this version doesn't read.
-      editor: { slashItems: [{ title: "Note" }] },
+      editor: { slashItems: [{ key: "note", label: "Note", insert: "#note[]" }] },
     });
     const view = mountTypstream(el, {
       engine,

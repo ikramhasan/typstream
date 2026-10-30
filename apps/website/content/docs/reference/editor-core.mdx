@@ -1,0 +1,97 @@
+---
+title: "@typstream/editor-core"
+description: The visual editor's model (beta). A Typst document as a Plate value, read from Typst's own syntax tree, and every change written back as a minimal edit of the source.
+icon: Package
+---
+
+<Callout type="warn" title="Beta">
+New with the visual editor (#36); may change before the first stable release.
+</Callout>
+
+`@typstream/editor-core` is what [`@typstream/editor-react`](/docs/reference/editor-react) edits: a Typst document as
+a [Plate](https://platejs.org) value (Slate's JSON), read from the syntax tree Typst's own parser builds
+([`@typstream/syntax`](/docs/reference/syntax)). It has no framework and doesn't import Slate: Plate values are plain
+JSON.
+
+The source stays the document. Each top-level block remembers the source it came from, so writing a value back keeps
+an unchanged block's source exactly, with the whitespace around it; only changed blocks are written fresh. The
+difference is one minimal `TextEdit`.
+
+## When to use it
+
+Use it to build an editor of your own on Plate (or anything that edits Slate-shaped values), or to turn Typst into
+structured content and back on a server.
+
+## Install
+
+```npm
+npm install @typstream/editor-core @typstream/syntax
+```
+
+## Example
+
+```ts
+import { TypstDocument } from "@typstream/editor-core";
+import { loadSyntax } from "@typstream/syntax";
+
+await loadSyntax();
+const doc = new TypstDocument("= Fractions\n\nAdd *same* denominators.\n");
+const value = doc.value; // [{ type: "h1", … }, { type: "p", children: [{ text: "Add " }, { text: "same", bold: true }, …] }]
+
+// The teacher underlines "Add":
+const edited = [value[0], { ...value[1], children: [{ text: "Add", underline: true }, ...value[1].children.slice(1)] }];
+doc.update(edited); // { from: 13, to: 16, insert: "#underline[Add]", origin: "user" }
+```
+
+## What becomes what
+
+| Typst | Plate node |
+|---|---|
+| A paragraph | `p` |
+| `=` … `======` | `h1` … `h6` (a label after it is `label`) |
+| `- `, `+ `, `1. ` items | `p` with `listStyleType` (`disc`, `decimal`) and `indent`, as Plate's lists; an explicit number is `listRestart` |
+| `*strong*`, `_emph_`, `` `raw` `` | the `bold`, `italic` and `code` marks |
+| `#underline`, `#strike`, `#sub`, `#super`, `#highlight` | the `underline`, `strikethrough`, `subscript`, `superscript` and `highlight` marks |
+| `#text(fill: …)`, `#text(size: …)`, `#highlight(fill: …)` | the `color`, `fontSize` and `backgroundColor` marks |
+| `#link("…")[…]`, a bare URL | `a` |
+| A raw block | `code_block` with `code_line`s |
+| `$ … $` on its own lines, `$…$` | `typst_equation`, `typst_inline_equation` (Typst math, not TeX) |
+| `#align(…)[…]`, `#par(justify: true)[…]` around a paragraph or heading | its `align` |
+| `#quote(block: true)[…]`, `#line(length: 100%)`, `#pagebreak()` | `blockquote`, `hr`, `typst_pagebreak` |
+| Any other code on its own lines, rules, comments, anything with a syntax error | `typst_code`, its source kept exactly |
+| Any other code in a paragraph, references, labels | `typst_inline_code` |
+
+A call is only read as a mark when every argument is understood; `#text(weight: "bold")[…]` stays code. Tests check
+every corpus document: written back unchanged it is byte for byte the same, and with every block written fresh it
+compiles to the same HTML.
+
+## API
+
+### `TypstDocument`
+
+A document behind an editor. `value` is the Plate value parsed from the source; `update(value)` writes a new value
+back and returns the edit (or `null`); `serialize(value, options?)` returns the source without keeping it
+(`{ rewrite: true }` writes every block fresh); `setSource(source)` takes an edit from outside and returns the new
+value, keeping the ids of blocks that didn't change; `rangeOf(id)` and `blockAt(offset)` map blocks to source.
+
+<auto-type-table path="packages/editor-core/src/document.ts" name="TypstDocumentOptions" />
+
+<auto-type-table path="packages/editor-core/src/document.ts" name="SerializeOptions" />
+
+### Writing Typst
+
+`serializeValue(value)` writes a whole value fresh, `serializeBlock(block, previous)` one block (the block before it
+tells a list's further paragraph from a paragraph), `serializeInlines(children, lineStart?)` a block's content.
+`normalizeInlines(children)` puts inline content in Plate's normal form (adjacent texts with the same marks merged,
+a text around each inline element).
+
+### Nodes
+
+`TypstValue` is a list of `TypstBlock`s: `TypstParagraph`, `TypstHeading`, `TypstBlockquote`, `TypstCodeBlock` (of
+`TypstCodeLine`s), `TypstEquation`, `TypstRule`, `TypstPageBreak` and `TypstCode`, with `TypstBlockProps` and, on
+paragraphs, `TypstListProps` and `TypstAlign`. Their content is `TypstInline`s: `TypstText` (with `TypstMarks`),
+`TypstLink`, `TypstInlineEquation` and `TypstInlineCode`.
+
+<auto-type-table path="packages/editor-core/src/types.ts" name="TypstMarks" />
+
+<auto-type-table path="packages/editor-core/src/types.ts" name="TypstCode" />

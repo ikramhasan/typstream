@@ -4,6 +4,8 @@
 
 ```ts
 
+import { EditorInsertItem } from '@typstream/core';
+import { EditorNodeSpec } from '@typstream/core';
 import { FunctionDoc } from '@typstream/core';
 import { PromptExample } from '@typstream/core';
 import { TemplateSpec } from '@typstream/core';
@@ -26,6 +28,12 @@ export const eduCatalogue: FunctionDoc[];
 
 // @public
 export const eduCss: string;
+
+// @beta
+export const eduEditorItems: EditorInsertItem[];
+
+// @beta
+export const eduEditorNodes: EditorNodeSpec[];
 
 // @public
 export const eduExamples: PromptExample[];

@@ -61,7 +61,10 @@ export interface TypstreamDefaults
 
 const Context = createContext<TypstreamDefaults>({});
 
-/** The defaults in effect here. @internal */
+/**
+ * The settings in effect here: the nearest {@link TypstreamProvider}'s, merged with those above it.
+ * For components built on typstream's, such as the visual editor. @beta
+ */
 export const useTypstreamDefaults = (): TypstreamDefaults => useContext(Context);
 
 /** Props of {@link TypstreamProvider}. @public */

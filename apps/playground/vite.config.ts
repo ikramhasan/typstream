@@ -26,7 +26,7 @@ export default defineConfig({
       { find: "@typstream/corpus/stream", replacement: `${root}corpus/src/stream.ts` },
       { find: "@typstream/mindmap/react", replacement: `${root}packages/mindmap/src/react.tsx` },
       {
-        find: /^@typstream\/(core|heal|engine|docx|html-compat|dom|react|universe|mindmap)$/,
+        find: /^@typstream\/(core|heal|engine|docx|html-compat|dom|react|universe|mindmap|edu|syntax|editor-core|editor-react)$/,
         replacement: `${root}packages/$1/src/index.ts`,
       },
     ],
@@ -37,6 +37,12 @@ export default defineConfig({
   // The engine worker is a module worker; its chunks must be ES modules too.
   worker: { format: "es" },
   // Corpus documents are lazy chunks; the adversarial ones are big on purpose.
-  build: { chunkSizeWarningLimit: 2048 },
+  // Two pages: the stream inspector (index.html) and the visual editor (editor.html, #36).
+  build: {
+    chunkSizeWarningLimit: 2048,
+    rollupOptions: {
+      input: { main: `${root}apps/playground/index.html`, editor: `${root}apps/playground/editor.html` },
+    },
+  },
   test: { include: ["src/**/*.test.ts"] },
 });

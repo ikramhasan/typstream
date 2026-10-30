@@ -63,7 +63,7 @@ const everything = definePlugin({
   islands: { molecule: { description: "A molecule." } },
   sanitize: { allowTags: ["typstream-island"], allowAttrs: { "*": ["data-name"] } },
   stylesheets: [".typstream .blank { color: red }"],
-  editor: { nodes: [{ type: "blank" }], someFutureFacet: true },
+  editor: { nodes: [{ call: "blank", label: "Blank" }], someFutureFacet: true },
 });
 
 /** A plugin from a later typstream, with a facet this one doesn't know. */

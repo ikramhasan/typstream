@@ -3,7 +3,14 @@
 // documents look right in both targets. The browser side is a stylesheet for that HTML
 // (css/edu.css). This module packages both as a typstream plugin, with the prompt catalogue
 // generated from the package's doc comments.
-import type { FunctionDoc, PromptExample, TemplateSpec, TypstreamPlugin } from "@typstream/core";
+import type {
+  EditorInsertItem,
+  EditorNodeSpec,
+  FunctionDoc,
+  PromptExample,
+  TemplateSpec,
+  TypstreamPlugin,
+} from "@typstream/core";
 import { CATALOGUE, CSS_SOURCE, EXAMPLES, FILES } from "./assets.generated";
 
 export { buildSystemPrompt, type SystemPromptOptions, typstPromptRules } from "./prompt";
@@ -75,6 +82,125 @@ export const eduTemplates: TemplateSpec[] = (
 ).map(([name, title, description]) => ({ name, title, description, preamble: `#show: ${name}\n` }));
 
 /**
+ * What the visual editor (`@typstream/editor-react`) inserts from its insert and slash menus:
+ * edu's components with a placeholder to fill in.
+ * @beta
+ */
+export const eduEditorItems: EditorInsertItem[] = [
+  {
+    key: "question",
+    label: "Question",
+    group: "Questions",
+    description: "A numbered question with points",
+    keywords: ["exercise", "task", "problem"],
+    insert: "#question(points: 1)[Write the question here.]",
+  },
+  {
+    key: "mcq",
+    label: "Multiple choice",
+    group: "Questions",
+    description: "A question with options",
+    keywords: ["mcq", "choice", "options", "quiz"],
+    insert:
+      "#question(points: 1)[\n  Which is correct?\n  #mcq([Option A], [Option B], [Option C], [Option D], answer: 1)\n]",
+  },
+  {
+    key: "true-false",
+    label: "True or false",
+    group: "Questions",
+    keywords: ["boolean", "statement"],
+    insert: "#true-false(answer: true)[Write the statement here.]",
+  },
+  {
+    key: "matching",
+    label: "Matching",
+    group: "Questions",
+    keywords: ["pairs", "match", "connect"],
+    insert:
+      "#matching(\n  ([Term 1], [Definition 1]),\n  ([Term 2], [Definition 2]),\n  ([Term 3], [Definition 3]),\n)",
+  },
+  {
+    key: "answer-lines",
+    label: "Answer lines",
+    group: "Answers",
+    description: "Lines to write on",
+    keywords: ["lines", "write", "space"],
+    insert: "#answer-lines(count: 3)",
+  },
+  {
+    key: "answer-space",
+    label: "Answer box",
+    group: "Answers",
+    description: "Room to work in",
+    keywords: ["box", "space", "working"],
+    insert: "#answer-space(height: 6em, boxed: true)",
+  },
+  {
+    key: "answer",
+    label: "Answer (teacher's copy)",
+    group: "Answers",
+    description: "Shown only with answers on",
+    keywords: ["solution", "key"],
+    insert: "#answer[Write the answer here.]",
+  },
+  {
+    key: "callout",
+    label: "Callout",
+    group: "Boxes",
+    keywords: ["note", "tip", "warning", "definition", "box"],
+    insert: '#callout(kind: "note")[Write the note here.]',
+  },
+  {
+    key: "instructions",
+    label: "Instructions",
+    group: "Boxes",
+    keywords: ["directions"],
+    insert: "#instructions[Answer all questions.]",
+  },
+  {
+    key: "learning-objectives",
+    label: "Learning objectives",
+    group: "Boxes",
+    keywords: ["goals", "aims"],
+    insert: "#learning-objectives[\n  - Students will …\n]",
+  },
+  {
+    key: "student-info",
+    label: "Name and date",
+    group: "Boxes",
+    keywords: ["name", "class", "date", "student"],
+    insert: "#student-info()",
+  },
+  {
+    key: "rubric",
+    label: "Rubric",
+    group: "Boxes",
+    keywords: ["criteria", "marking", "grading"],
+    insert: "#rubric(\n  ([Criterion], [Excellent], [Good], [Fair], [Poor]),\n  points: (4, 3, 2, 1),\n)",
+  },
+  {
+    key: "number-line",
+    label: "Number line",
+    group: "Drawings",
+    keywords: ["math", "line", "integers"],
+    insert: "#number-line()",
+  },
+  {
+    key: "coordinate-plane",
+    label: "Coordinate plane",
+    group: "Drawings",
+    keywords: ["graph", "axes", "grid", "plot"],
+    insert: "#coordinate-plane()",
+  },
+];
+
+/**
+ * Names the visual editor gives edu's components where it shows them compiled.
+ * @beta
+ */
+export const eduEditorNodes: EditorNodeSpec[] = eduEditorItems.map((item) => ({ call: item.key, label: item.label }));
+
+/**
  * edu as a typstream plugin: its files and preamble for the engine, templates, prompt kit, the
  * classes the sanitizer keeps, and its stylesheet for the HTML renderer and standalone exports.
  */
@@ -86,4 +212,5 @@ export const edu: TypstreamPlugin = {
   prompt: { catalogue: eduCatalogue, rules: eduPromptRules, examples: eduExamples },
   sanitize: { allowClasses: ["edu-*"] },
   stylesheets: [eduCss],
+  editor: { nodes: eduEditorNodes, slashItems: eduEditorItems },
 };

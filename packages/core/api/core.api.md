@@ -219,14 +219,30 @@ export type DocumentUri = string;
 export interface EditorFacet {
     [key: string]: unknown;
     commands?: unknown[];
-    nodes?: unknown[];
+    nodes?: EditorNodeSpec[];
     shortcuts?: unknown[];
-    slashItems?: unknown[];
-    toolbar?: unknown[];
+    slashItems?: EditorInsertItem[];
+    toolbar?: EditorInsertItem[];
 }
 
 // @public
 export type EditOrigin = "stream" | "user" | "ai" | "remote";
+
+// @beta
+export interface EditorInsertItem {
+    description?: string;
+    group?: string;
+    insert: string;
+    key: string;
+    keywords?: string[];
+    label: string;
+}
+
+// @beta
+export interface EditorNodeSpec {
+    call: string;
+    label: string;
+}
 
 // @public
 export type ErrorCode =

@@ -2,7 +2,7 @@
 // targets, with answers hidden and shown, without errors or warnings: in HTML none of edu's
 // output is dropped ("… was ignored during HTML export"), with html-compat or without it.
 import { describe, expect, it } from "vitest";
-import { eduCatalogue, eduExamples, eduTemplates } from "../src/index";
+import { eduCatalogue, eduEditorItems, eduExamples, eduTemplates } from "../src/index";
 import { compileHtml, compilePaged, newEngine, problems } from "./support/engine";
 
 const engine = newEngine();
@@ -105,6 +105,11 @@ describe("compiles without errors or warnings in both targets", () => {
   });
 
   it.each(EMPTY_CALLS)("%s", (source) => {
+    expect(check(source)).toEqual([]);
+  });
+
+  // What the visual editor inserts (#36) must compile as it is, before the teacher fills it in.
+  it.each(eduEditorItems.map((item) => [item.key, item.insert]))("editor item %s", (_, source) => {
     expect(check(source)).toEqual([]);
   });
 

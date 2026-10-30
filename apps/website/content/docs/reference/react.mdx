@@ -175,6 +175,16 @@ and plugins' functions is serializable, so it can be stored per organization or 
 
 <auto-type-table path="packages/react/src/context.tsx" name="TypstreamDefaults" />
 
+### `useTypstreamDefaults` (beta)
+
+```ts
+function useTypstreamDefaults(): TypstreamDefaults;
+```
+
+The settings in effect where it's called: the nearest provider's, merged with those above it. For components built on
+typstream's that compile documents the way `<Typstream>` does, such as the
+[visual editor](/docs/reference/editor-react), which takes its plugins from it.
+
 ### `TelemetryHooks`
 
 ```ts

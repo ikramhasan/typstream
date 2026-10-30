@@ -24,6 +24,10 @@
 // a block being rewritten streams into place while the rest stays, in HTML the
 // text a quote matches is highlighted, then Keep or Undo.
 //
+// Edit visually opens the document in the visual editor (#36, app/visual-editor.tsx): Typst as rich text
+// with Plate's toolbars, beside its pages. Done makes the edited text the document, as a kept edit does, so a
+// request typed next edits it; the editor's Ask AI opens the Edit field with the selected text.
+//
 // A deployment has no Anthropic key of its own: when the route says so, a
 // dialog asks for the visitor's (app/api/chat/key.ts). It stays in this page's
 // memory, goes with each request, and is gone when the page closes; without
@@ -58,8 +62,10 @@ import {
   RotateCwIcon,
   SquareIcon,
   SquarePenIcon,
+  TextCursorInputIcon,
   Undo2Icon,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import {
   type FormEvent,
   type ReactNode,
@@ -101,6 +107,9 @@ import type { ChatTools } from "./api/chat/images";
 import { type ChatConfig, KEY_HEADER } from "./api/chat/key";
 import type { ChatMetadata } from "./api/chat/route";
 import { Telemetry } from "./telemetry";
+
+/** The visual editor, downloaded (Plate and Typst's parser) the first time a teacher opens it. */
+const VisualEditor = dynamic(() => import("./visual-editor"), { ssr: false });
 
 type Target = "html" | "paged";
 
@@ -715,8 +724,15 @@ const NO_SESSION = () => () => {};
 const NO_STATE = () => null;
 
 /** Asks what to change in a document: Enter applies it, Escape closes the field. */
-const EditField = ({ onSubmit, onCancel }: { onSubmit: (instruction: string) => void; onCancel: () => void }) => {
-  const [value, setValue] = useState("");
+type EditFieldProps = {
+  onSubmit: (instruction: string) => void;
+  onCancel: () => void;
+  /** What the field starts with (the visual editor's Ask AI puts the selected text in). */
+  initial?: string;
+};
+
+const EditField = ({ onSubmit, onCancel, initial = "" }: EditFieldProps) => {
+  const [value, setValue] = useState(initial);
   return (
     <form
       className="pt-2"
@@ -783,6 +799,9 @@ const DocumentAnswer = ({ id, text, streaming, answer, history, latest, ...props
   const { session: answerSession, text: answerText, done: answerDone } = answer ?? {};
   useEffect(() => answerSession?.update(answerText ?? "", answerDone), [answerSession, answerText, answerDone]);
   const [asking, setAsking] = useState(false);
+  // The Edit field's first text, from the visual editor's Ask AI.
+  const [prefill, setPrefill] = useState("");
+  const [visual, setVisual] = useState(false);
   const [running, setRunning] = useState<AbortController | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
 
@@ -825,6 +844,21 @@ const DocumentAnswer = ({ id, text, streaming, answer, history, latest, ...props
     setRunning(null);
   };
 
+  /**
+   * The visual editor's text becomes the document: a session with no edits of its own, kept at once, so
+   * the answer shows it and a request typed next (or Edit) edits it.
+   */
+  const commit = (edited: string) => {
+    const current = state?.text ?? text;
+    if (edited === current) return;
+    if (state?.phase === "review") session?.keep();
+    const next = createEditSession(edited);
+    next.update("", true);
+    next.keep();
+    latest.set(id, next);
+    setSession(next);
+  };
+
   const writing = streaming || running !== null || state?.phase === "streaming";
   const doing = state?.edits.find((e) => e.status === "quoting" || e.status === "writing");
   const feedback = state && state.phase !== "streaming" ? editFeedback(state.edits) : null;
@@ -840,12 +874,44 @@ const DocumentAnswer = ({ id, text, streaming, answer, history, latest, ...props
         <>
           {state?.message && <p className="text-sm whitespace-pre-wrap text-muted-foreground">{state.message}</p>}
           {failure && <p className="text-sm text-destructive">The edit failed: {failure}</p>}
-          {asking && <EditField onSubmit={(instruction) => void edit(instruction)} onCancel={() => setAsking(false)} />}
+          {asking && (
+            <EditField
+              initial={prefill}
+              onSubmit={(instruction) => void edit(instruction)}
+              onCancel={() => setAsking(false)}
+            />
+          )}
+          {visual && (
+            <VisualEditor
+              source={state?.text ?? text}
+              plugins={PLUGINS}
+              onDone={(edited) => {
+                commit(edited);
+                setVisual(false);
+              }}
+              onAskAI={(edited, request) => {
+                commit(edited);
+                setVisual(false);
+                setPrefill(request.text.trim() ? `In “${request.text.trim()}”: ` : "");
+                setAsking(true);
+              }}
+            />
+          )}
         </>
       }
     >
-      <Action label="Edit" onClick={() => setAsking((open) => !open)} disabled={writing}>
+      <Action
+        label="Edit"
+        onClick={() => {
+          setPrefill("");
+          setAsking((open) => !open);
+        }}
+        disabled={writing}
+      >
         <PencilIcon />
+      </Action>
+      <Action label="Edit visually" onClick={() => setVisual(true)} disabled={writing}>
+        <TextCursorInputIcon />
       </Action>
       {running && (
         <Button size="sm" variant="outline" className="ml-2" onClick={() => running.abort()}>

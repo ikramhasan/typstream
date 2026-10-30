@@ -267,6 +267,18 @@ questions in `#question`, give every answer to edu rather than as plain text, us
 so on. They come from measuring real models with and without them, and each one targets an error class those runs
 produced. Every edu function they call exists and takes the arguments they name.
 
+### eduEditorItems and eduEditorNodes (beta)
+
+```ts
+const eduEditorItems: EditorInsertItem[];
+const eduEditorNodes: EditorNodeSpec[];
+```
+
+What the [visual editor](/docs/reference/editor-react) lets a teacher insert from its insert and slash menus: a
+question, multiple choice, true or false, matching, answer lines and boxes, a teacher's answer, callouts,
+instructions, learning objectives, a name and date line, a rubric, a number line and a coordinate plane, each with a
+placeholder to fill in. They are `edu`'s `editor` facet; each compiles as it is, in both targets.
+
 ### buildSystemPrompt
 
 <Callout type="warn" title="Beta">

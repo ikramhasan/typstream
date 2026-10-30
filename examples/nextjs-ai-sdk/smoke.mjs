@@ -6,8 +6,9 @@
 // finished document, highlighted, and can be undone, that the first answer's Edit
 // button changes that document in place, that none ever had an error frame, that
 // the replay's mind map is interactive in the HTML answer (a render island), and
-// that telemetry reached the example's sink. Without ANTHROPIC_API_KEY the server
-// replays a recorded worksheet and an edit of it, so this runs offline.
+// that telemetry reached the example's sink, and that the first answer opens in the visual editor (#36),
+// where a change is kept. Without ANTHROPIC_API_KEY the server replays a recorded worksheet and an edit of
+// it, so this runs offline.
 
 import { spawn } from "node:child_process";
 import { readFile } from "node:fs/promises";
@@ -118,6 +119,19 @@ try {
     const nodes = await answers.nth(1).locator("typstream-island .react-flow__node").count();
     if (nodes !== 9) throw new Error(`the mind map island has ${nodes} nodes, not 9`);
   }
+  // The first answer in the visual editor (#36): its document as rich text, the question's heading among it.
+  // A word made bold there is in the answer's document after Done.
+  await page.getByRole("button", { name: "Edit visually", exact: true }).first().click();
+  const dialog = page.getByRole("dialog", { name: "Edit document" });
+  const content = dialog.locator(".ts-content");
+  await content.locator("h1").first().waitFor({ timeout: 60_000 });
+  await content.getByText("Worked example", { exact: true }).dblclick();
+  await dialog.locator(".ts-floating-toolbar").getByRole("button", { name: "Bold", exact: true }).click();
+  await dialog.getByRole("button", { name: "Done", exact: true }).click();
+  await dialog.waitFor({ state: "detached" });
+  await page.getByRole("button", { name: "Edit visually", exact: true }).first().click();
+  await dialog.locator(".ts-content h2 strong").first().waitFor({ timeout: 60_000 });
+  await dialog.getByRole("button", { name: "Done", exact: true }).click();
   if (errors.length) throw new Error(`console errors:\n${errors.join("\n")}`);
   // The telemetry hooks (app/telemetry.tsx) reached the example's sink.
   const reached = () => /\[telemetry\] rendered \S+ rev \d+ \(final\)/.test(log);

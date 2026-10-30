@@ -36,6 +36,7 @@ jobs:
       - uses: ./.github/actions/oracle
       - id: wasm
         uses: ./.github/actions/engine-wasm
+      - uses: ./.github/actions/syntax
       # @typstream/node's build and tests take Typst's fonts from the typst-assets crate (cargo metadata), as in CI's
       # engine jobs. Set up already when the action built dist/.
       - if: steps.wasm.outputs.cache-hit == 'true'

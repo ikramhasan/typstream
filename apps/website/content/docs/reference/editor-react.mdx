@@ -1,0 +1,106 @@
+---
+title: "@typstream/editor-react"
+description: The visual editor (beta). Typst edited as rich text with Plate, with a fixed and a floating toolbar, a slash menu and compiled previews of code; every change comes out as a minimal edit of the Typst source.
+icon: Package
+---
+
+<Callout type="warn" title="Beta">
+The visual editor is new (#36). Its props and what it writes may change before the first stable release.
+</Callout>
+
+`@typstream/editor-react` lets a teacher edit a Typst document the way they edit in a word processor. It is built on
+[Plate](https://platejs.org) and looks like Plate's editor: a fixed toolbar above the document, a floating toolbar
+over a selection, a slash menu, Markdown-style shortcuts that write Typst (`= ` for a heading, `- ` and `+ ` for
+lists, `*bold*`), and Plate's undo history.
+
+The Typst source stays the document. The editor shows it as rich text and writes each change back as one minimal
+`TextEdit`: a block the teacher didn't touch keeps its source exactly, comments and spacing included. Typst the
+editor can't show as rich text (a `#question[…]`, a table, a CeTZ drawing, `#set` and `#show` rules) shows as the
+engine compiles it, and is edited as source in a popover. See [`@typstream/editor-core`](/docs/reference/editor-core)
+for what becomes what.
+
+## When to use it
+
+Use it when teachers change documents themselves, next to the paged preview: a generated worksheet to adjust, a
+template to fill in. Show the same `source` in a `<Typstream>` beside it.
+
+## Install
+
+```npm
+npm install @typstream/editor-react typstream
+```
+
+It loads Typst's parser (`@typstream/syntax`, about 76 KB of wasm) when it first renders, and with Plate it is about
+205 KB of JavaScript (gzipped), so load the page or component that uses it lazily.
+
+## Example
+
+```tsx title="app/editor.tsx"
+"use client";
+
+import { edu } from "@typstream/edu";
+import { TypstEditor } from "@typstream/editor-react";
+import { useState } from "react";
+import { Typstream, TypstreamProvider } from "typstream";
+
+export function WorksheetEditor({ initial }: { initial: string }) {
+  const [source, setSource] = useState(initial);
+  return (
+    <TypstreamProvider plugins={[edu]}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", height: "100vh" }}>
+        <TypstEditor source={source} onChange={setSource} />
+        <Typstream source={source} target="paged" layout="fit-width" />
+      </div>
+    </TypstreamProvider>
+  );
+}
+```
+
+`onChange` also gets the edit (`{ from, to, insert }`), for an app that stores edits, sends them to a collaborator,
+or applies them to an engine document directly.
+
+## Toolbars and menus
+
+The **fixed toolbar** has undo and redo, "Ask AI" (when `onAskAI` is set), export (PDF, Word, HTML, Typst) and
+import (a `.typ` file), insert, turn into, font size, bold, italic, underline, strikethrough, code, text and highlight
+colours, alignment, lists and indentation, link, inline equation, more (subscript, superscript, highlight) and the
+Editing / Viewing switch. The **floating toolbar** has "Ask AI", turn into, the marks, link, inline equation, text
+colour and more. `toolbar` picks which show.
+
+Each writes Typst a teacher could have written: `*bold*` (or `#strong[…]` inside a word), `#underline[…]`,
+`#text(fill: rgb("…"))[…]`, `#text(size: 14pt)[…]`, `#align(center)[…]`, `#par(justify: true)[…]`, `- ` and `+ `
+lists, `#link("…")[…]`, `$…$`.
+
+The **insert and slash menus** (`/` at the start of a line) list the basic blocks, an equation, a table, a divider, a
+page break and any Typst, and what plugins add through their `editor` facet: with `@typstream/edu`, questions,
+multiple choice, answer lines, callouts, rubrics and drawings ([`eduEditorItems`](/docs/reference/edu)).
+
+## Ask AI
+
+With `onAskAI`, both toolbars show "Ask AI". It gets the selected text and the source range of the blocks it is in,
+which [`@typstream/ai`'s edit session](/docs/guides/streaming-edits) can stream an edit into; apply the result with
+the handle's `setSource` (or a controlled `source`), which keeps every block the edit didn't change.
+
+## API
+
+### `TypstEditor`
+
+The editor component. With `source` it is controlled: a new `source` that isn't the editor's own (an AI edit, a
+collaborator's) replaces what it shows, keeping the blocks it didn't change. Without, `defaultSource` is where it
+starts.
+
+<auto-type-table path="packages/editor-react/src/TypstEditor.tsx" name="TypstEditorProps" />
+
+### `TypstEditorHandle`
+
+<auto-type-table path="packages/editor-react/src/TypstEditor.tsx" name="TypstEditorHandle" />
+
+### `AskAIRequest`
+
+<auto-type-table path="packages/editor-react/src/TypstEditor.tsx" name="AskAIRequest" />
+
+## See also
+
+- [`@typstream/editor-core`](/docs/reference/editor-core): the model, without React.
+- [`@typstream/syntax`](/docs/reference/syntax): Typst's parser in JavaScript.
+- [Plugins](/docs/reference/core#plugins): the `editor` facet.

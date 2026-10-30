@@ -4,6 +4,8 @@
     "typstream",
     "react",
     "ai",
+    "editor-react",
+    "editor-core",
     "dom",
     "engine",
     "heal",
@@ -13,6 +15,7 @@
     "universe",
     "google-fonts",
     "mindmap",
+    "syntax",
     "engine-wasm",
     "docx",
     "core"

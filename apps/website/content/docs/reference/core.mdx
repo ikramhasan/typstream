@@ -250,7 +250,7 @@ functions, so worker-side code is referenced by module URL (`fixerModules`).
 | `sanitize` | The HTML renderer | Extra tags, attributes (by tag, `"*"` for every HTML element) and classes to let through. |
 | `stylesheets` | The HTML renderer, `standaloneHtml` | CSS for the HTML this plugin's Typst writes. |
 | `islands` | The HTML renderer, `@typstream/react` | Render islands by name (beta): which island markers mount, and `parse`, which checks their data. See [Writing an island](/docs/guides/islands). |
-| `editor` | Nothing yet | Reserved (beta) for the visual editor. |
+| `editor` | `@typstream/editor-react` | The visual editor (beta): items for its insert and slash menus, names for the plugin's functions where it shows them compiled. |
 
 A plugin's `engine.fonts` load only from `createEngine`'s `plugins`, since fonts belong to the worker; their other
 facets apply to the documents that list them.
@@ -378,7 +378,14 @@ with the same files. See [A catalogue of your own](/docs/guides/fonts-and-langua
 
 <auto-type-table path="packages/core/src/plugin.ts" name="LoadedFontFamily" />
 
-`EditorFacet` is reserved for the visual editor: typed loosely on purpose, and nothing reads it yet.
+`EditorFacet` is what a plugin adds to the [visual editor](/docs/reference/editor-react): `slashItems` and `toolbar`
+are `EditorInsertItem`s, Typst the insert and slash menus put in the document (edu's questions and callouts), and
+`nodes` are `EditorNodeSpec`s, names for the plugin's functions where the editor shows them compiled. Its other
+fields are reserved and typed loosely, so plugins may fill them in early.
+
+<auto-type-table path="packages/core/src/plugin.ts" name="EditorInsertItem" />
+
+<auto-type-table path="packages/core/src/plugin.ts" name="EditorNodeSpec" />
 
 ### Render islands (beta)
 

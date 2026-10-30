@@ -122,6 +122,9 @@ export interface TypstreamProviderProps extends TypstreamDefaults {
 // @public
 export const useTypstream: () => TypstreamInfo;
 
+// @beta
+export const useTypstreamDefaults: () => TypstreamDefaults;
+
 export { WatchdogEvent }
 
 // (No @packageDocumentation comment for this package)

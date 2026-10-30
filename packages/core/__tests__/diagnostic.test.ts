@@ -122,8 +122,12 @@ describe("plugin contract", () => {
       },
       sanitize: { allowTags: ["typstream-island"], allowAttrs: { "*": ["data-name"] } },
       stylesheets: [".typstream .molecule { display: block }"],
-      // Loosely typed until the editor exists.
-      editor: { nodes: [{ type: "formula" }], someFutureFacet: true },
+      // The editor's facet: what it reads is typed, the rest stays open.
+      editor: {
+        nodes: [{ call: "ce", label: "Formula" }],
+        slashItems: [{ key: "ce", label: "Formula", insert: '#ce("H2O")' }],
+        someFutureFacet: true,
+      },
     });
     expectTypeOf(plugin).toExtend<TypstreamPlugin>();
     expectTypeOf(plugin.key).toBeString();

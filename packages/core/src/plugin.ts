@@ -329,22 +329,53 @@ export interface IslandProps<Data = unknown> {
 }
 
 /**
- * Reserved for the visual editor (PLAN §10.3). Typed loosely on purpose: the
- * editor will narrow these, and plugins may fill them in early without
- * breaking when it does.
+ * Something the visual editor (`@typstream/editor-react`, PLAN §10.3) lets a teacher insert from
+ * its insert and slash menus: a block of Typst, such as a question or a callout. Plain data.
+ * @beta
+ */
+export interface EditorInsertItem {
+  /** Unique within the plugin. */
+  key: string;
+  /** The menu's label ("Question"). */
+  label: string;
+  /** A line under the label. */
+  description?: string;
+  /** The menu group it is listed under ("Questions"); default the plugin's key. */
+  group?: string;
+  /** Other words the slash menu matches. */
+  keywords?: string[];
+  /** The Typst inserted, read as blocks of the document (`#question(points: 1)[…]`). */
+  insert: string;
+}
+
+/**
+ * A function the visual editor names when it shows a call as compiled code (`#question` →
+ * "Question"). Plain data.
+ * @beta
+ */
+export interface EditorNodeSpec {
+  /** The function's name, as called (`question`). */
+  call: string;
+  /** What the editor calls it. */
+  label: string;
+}
+
+/**
+ * The visual editor's facet (PLAN §10.3, #36): what a plugin adds to `@typstream/editor-react`.
+ * Typed loosely where the editor doesn't read it yet, so plugins may fill those in early.
  * @beta
  */
 export interface EditorFacet {
-  /** Custom blocks the editor can show and edit (edu will add `question`, `mcq`, `answer`). */
-  nodes?: unknown[];
-  /** Editing commands the plugin adds. */
+  /** Names for the plugin's functions where the editor shows them as compiled code. */
+  nodes?: EditorNodeSpec[];
+  /** Editing commands the plugin adds (not read yet). */
   commands?: unknown[];
-  /** Toolbar entries the plugin adds. */
-  toolbar?: unknown[];
-  /** Keyboard shortcuts the plugin adds. */
+  /** Items the plugin adds to the fixed toolbar's insert menu. */
+  toolbar?: EditorInsertItem[];
+  /** Keyboard shortcuts the plugin adds (not read yet). */
   shortcuts?: unknown[];
-  /** Entries the plugin adds to the editor's slash menu. */
-  slashItems?: unknown[];
+  /** Items the plugin adds to the slash menu (and the insert menu). */
+  slashItems?: EditorInsertItem[];
   /** Further facets the editor may define. */
   [key: string]: unknown;
 }

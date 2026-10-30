@@ -55,3 +55,10 @@ export const loadCorpusStream = async (id: string, seed: number): Promise<Loaded
   const options = item?.meta?.stream?.source === "synthetic" ? item.meta.stream.options : undefined;
   return { chunks: synthesizeStream(await load(), { ...options, seed }), recorded: false };
 };
+
+/** An entry's source. */
+export const loadCorpusSource = async (id: string): Promise<string> => {
+  const load = sources[`../../../corpus/${id}.typ`];
+  if (!load) throw new Error(`no corpus entry ${id}`);
+  return load();
+};
