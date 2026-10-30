@@ -490,43 +490,43 @@ const Answer = ({ text: answered, streaming, target, answers, busy, onRetry }: A
             />
           </article>
         ) : (
-        <article
-          // HTML in a card; pages on their own, as sheets with shadows (app/globals.css), inset so the
-          // chat's scroll area doesn't cut the shadows off at the sides.
-          className={
-            target === "paged" ? "answer px-4 pt-2 pb-8" : "answer rounded-xl border bg-card px-8 py-6 shadow-xs"
-          }
-          data-status={t.status}
-          data-stale={stale}
-          data-target={target}
-        >
-          <div
-            ref={host}
-            // Clipped vertically only: the pages' shadows stay at their sides while the answer streams.
-            className={clip === null ? undefined : "overflow-y-clip"}
-            style={clip === null ? undefined : { height: clip }}
+          <article
+            // HTML in a card; pages on their own, as sheets with shadows (app/globals.css), inset so the
+            // chat's scroll area doesn't cut the shadows off at the sides.
+            className={
+              target === "paged" ? "answer px-4 pt-2 pb-8" : "answer rounded-xl border bg-card px-8 py-6 shadow-xs"
+            }
+            data-status={t.status}
+            data-stale={stale}
+            data-target={target}
           >
-            <Typstream
-              ref={t.ref}
-              source={text}
-              isStreaming={streaming}
-              target={target}
-              plugins={PLUGINS}
-              // A mind map is interactive in the HTML target (pan, zoom, open and close branches): React Flow,
-              // loaded the first time an answer has one. Pages show its drawing.
-              islands={mindmapIslands}
-              resolveImage={IMAGES}
-              inputs={answers ? ANSWERS : undefined}
-              layout="fit-width"
-              animated
-              caret
-              onRendered={measure}
-              onStatusChange={(status) => {
-                if (status === "stale" || status === "error") setStale((n) => n + 1);
-              }}
-            />
-          </div>
-        </article>
+            <div
+              ref={host}
+              // Clipped vertically only: the pages' shadows stay at their sides while the answer streams.
+              className={clip === null ? undefined : "overflow-y-clip"}
+              style={clip === null ? undefined : { height: clip }}
+            >
+              <Typstream
+                ref={t.ref}
+                source={text}
+                isStreaming={streaming}
+                target={target}
+                plugins={PLUGINS}
+                // A mind map is interactive in the HTML target (pan, zoom, open and close branches): React Flow,
+                // loaded the first time an answer has one. Pages show its drawing.
+                islands={mindmapIslands}
+                resolveImage={IMAGES}
+                inputs={answers ? ANSWERS : undefined}
+                layout="fit-width"
+                animated
+                caret
+                onRendered={measure}
+                onStatusChange={(status) => {
+                  if (status === "stale" || status === "error") setStale((n) => n + 1);
+                }}
+              />
+            </div>
+          </article>
         )}
         <MessageFooter className="gap-1 px-0">
           <CopySource target={target} text={text} exportHtml={t.exportHtml} disabled={streaming} />
@@ -550,7 +550,11 @@ const Answer = ({ text: answered, streaming, target, answers, busy, onRetry }: A
           >
             <FileTypeIcon />
           </Export>
-          <Action label={editing ? "Done editing" : "Edit"} onClick={() => setEditing((on) => !on)} disabled={streaming}>
+          <Action
+            label={editing ? "Done editing" : "Edit"}
+            onClick={() => setEditing((on) => !on)}
+            disabled={streaming}
+          >
             {editing ? <CheckIcon /> : <PencilIcon />}
           </Action>
           <Action label="Retry" onClick={onRetry} disabled={busy}>
