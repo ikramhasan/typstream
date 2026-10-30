@@ -13,7 +13,7 @@ import {
   type EditorView,
   fromTypstreamPlugin,
 } from "@typstream/editor-core";
-import type { DocumentOptions, Engine, EngineDocument } from "@typstream/engine";
+import type { DocumentOptions, Engine, EngineDocument, ImageResolver } from "@typstream/engine";
 import { acquireEngine, releaseEngine, useTypstreamDefaults } from "@typstream/react";
 import { loadSyntax } from "@typstream/syntax";
 import {
@@ -89,6 +89,12 @@ export interface TypstEditorHandle {
   focus(): void;
 }
 
+const NO_PLUGINS: readonly TypstreamPlugin[] = [];
+const NO_EDITOR_PLUGINS: readonly EditorPlugin[] = [];
+
+/** A list of plugins as a key that changes only when their keys do. */
+const keysOf = (plugins: readonly { key: string }[]): string => plugins.map((p) => p.key).join("\u0000");
+
 /** Re-renders whenever the view changes (state, layout, focus). */
 const useViewVersion = (view: EditorView | null): number => {
   const [version, setVersion] = useState(0);
@@ -107,7 +113,7 @@ export const TypstEditor = forwardRef<TypstEditorHandle, TypstEditorProps>(funct
   const [doc, setDoc] = useState<EngineDocument | null>(null);
   const [slash, setSlash] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
-  const plugins = props.plugins ?? defaults.plugins ?? [];
+  const plugins = props.plugins ?? defaults.plugins ?? NO_PLUGINS;
   const template = props.template ?? defaults.template;
   const preamble = props.preamble ?? defaults.preamble;
   const inputs = props.inputs ?? defaults.inputs;
@@ -119,16 +125,13 @@ export const TypstEditor = forwardRef<TypstEditorHandle, TypstEditorProps>(funct
   /** The source the editor last reported, so the prop echoing it back changes nothing. */
   const emitted = useRef(props.source);
 
-  const editorPlugins = useMemo(
-    () => [
-      ...basicPlugins,
-      ...plugins.map(fromTypstreamPlugin).filter((p): p is EditorPlugin => p !== null),
-      ...(props.editorPlugins ?? []),
-    ],
-    [plugins, props.editorPlugins],
-  );
-
-  // The document opens again when what it is opened with changes: its engine, plugins, preamble.
+  // The document opens again when what it is opened with changes: its engine, plugins (by key, so
+  // arrays written inline don't reopen it on every render), preamble, layout. Opening again drops the
+  // caret and the history; the text is kept.
+  const pluginKeys = keysOf(plugins);
+  const editorPluginKeys = keysOf(props.editorPlugins ?? NO_EDITOR_PLUGINS);
+  const opened = useRef({ plugins, editorPlugins: props.editorPlugins, resolveImage });
+  opened.current = { plugins, editorPlugins: props.editorPlugins, resolveImage };
   const templateSpec = template
     ? plugins
         .flatMap((p) => p.templates ?? [])
@@ -143,7 +146,8 @@ export const TypstEditor = forwardRef<TypstEditorHandle, TypstEditorProps>(funct
     if (host.current) ensureEditorStyles(host.current.ownerDocument);
   }, []);
 
-  // Files, inputs and the source change the open document instead (below).
+  // Files, inputs and the source change the open document instead (below); plugins and
+  // `resolveImage` are read through `opened` (their keys and presence say when to reopen).
   // biome-ignore lint/correctness/useExhaustiveDependencies: see above
   useEffect(() => {
     const el = host.current;
@@ -151,14 +155,22 @@ export const TypstEditor = forwardRef<TypstEditorHandle, TypstEditorProps>(funct
     let cancelled = false;
     const engine = engineProp ?? acquireEngine();
     const shared = !engineProp;
-    let opened: EngineDocument | null = null;
+    let document: EngineDocument | null = null;
     let mounted: EditorView | null = null;
+    const { plugins, editorPlugins: extra } = opened.current;
+    const editorPlugins = [
+      ...basicPlugins,
+      ...plugins.map(fromTypstreamPlugin).filter((p): p is EditorPlugin => p !== null),
+      ...(extra ?? []),
+    ];
+    const images = !!opened.current.resolveImage;
     // Typst's parser (the commands' syntax tree) loads once, a few tens of KB.
     loadSyntax()
       .then(() => {
         if (cancelled) return;
-        const source = latest.current.source;
-        opened = engine.open({
+        // The editor's text: what it last reported, or the source given since.
+        const source = emitted.current;
+        document = engine.open({
           target: "paged",
           pageFormat: "drawing",
           positions: true,
@@ -167,10 +179,14 @@ export const TypstEditor = forwardRef<TypstEditorHandle, TypstEditorProps>(funct
           ...(Object.keys(allInputs).length ? { inputs: allInputs } : {}),
           ...(plugins.length ? { plugins } : {}),
           ...(fullPreamble ? { preamble: fullPreamble } : {}),
-          ...(resolveImage ? { resolveImage } : {}),
+          ...(images
+            ? {
+                resolveImage: ((path, o) => opened.current.resolveImage?.(path, o) ?? null) satisfies ImageResolver,
+              }
+            : {}),
         });
         mounted = createEditor(el, {
-          doc: opened,
+          doc: document,
           text: source,
           plugins: editorPlugins,
           layout,
@@ -181,7 +197,7 @@ export const TypstEditor = forwardRef<TypstEditorHandle, TypstEditorProps>(funct
           },
         });
         emitted.current = source;
-        setDoc(opened);
+        setDoc(document);
         setView(mounted);
         latest.current.onReady?.(mounted);
       })
@@ -191,12 +207,12 @@ export const TypstEditor = forwardRef<TypstEditorHandle, TypstEditorProps>(funct
     return () => {
       cancelled = true;
       mounted?.destroy();
-      opened?.dispose();
+      document?.dispose();
       setView(null);
       setDoc(null);
       if (shared) releaseEngine();
     };
-  }, [engineProp, plugins, fullPreamble, editorPlugins, layout, resolveImage]);
+  }, [engineProp, pluginKeys, editorPluginKeys, fullPreamble, layout, !!resolveImage]);
 
   // A source from outside (an AI edit, a reload): one edit.
   useEffect(() => {

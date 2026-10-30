@@ -47,7 +47,7 @@ const view = createEditor(document.querySelector("#editor")!, {
   plugins: [...basicPlugins, fromTypstreamPlugin(edu)!],
   onChange: (source) => save(source),
 });
-view.select({ anchor: 8, head: 12 });
+view.select({ anchor: 2, head: 6 });
 view.run(toggleMark({ name: "strong" })); // = Quiz → *Quiz*
 ```
 

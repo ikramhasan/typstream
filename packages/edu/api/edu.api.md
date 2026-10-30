@@ -25,7 +25,7 @@ export const EDU_VERSION = "0.1.0";
 // @public
 export const eduCatalogue: FunctionDoc[];
 
-// @public
+// @beta
 export const eduComponents: EditorComponentSpec[];
 
 // @public

@@ -8,6 +8,7 @@ import type { EditorView } from "@typstream/editor-core";
 import { edu } from "@typstream/edu";
 import { createEngine, type Engine, fromWorker } from "@typstream/engine";
 import { mindmap } from "@typstream/mindmap";
+import { useState } from "react";
 import { afterEach, describe, expect, it } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { TypstEditor } from "../../src/index";
@@ -156,5 +157,26 @@ describe("<TypstEditor>", () => {
     expect(view.state.text).toBe("Intro.\n\n$ a^2 + b^2 = c^2 $");
     await laidOut(view);
     await page.screenshot({ path: "screenshots/equation.png" });
+  });
+
+  it("mounts once without plugins, keeping its history while it is typed into", async () => {
+    const engine = createEngine({ spawn: spawn() });
+    engines.push(engine);
+    const views: EditorView[] = [];
+    const Host = () => {
+      const [source, setSource] = useState("Plain text.");
+      // No plugins: the editor must not reopen on the re-render every change makes.
+      return <TypstEditor source={source} engine={engine} onChange={setSource} onReady={(v) => views.push(v)} />;
+    };
+    render(<Host />);
+    await waitFor(() => !!views[0]?.layout, 30_000, "for the layout");
+    const view = views[0] as EditorView;
+    act(() => view.select({ anchor: 6, head: 6 }));
+    view.focus();
+    await userEvent.keyboard("old ");
+    await new Promise((r) => setTimeout(r, 300));
+    expect(views).toHaveLength(1);
+    expect(view.state.text).toBe("Plain old text.");
+    expect(view.history.canUndo).toBe(true);
   });
 });

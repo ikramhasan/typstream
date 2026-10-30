@@ -13,6 +13,7 @@
 import { diffEdit, type PagedArtifact, type TextEdit } from "@typstream/core";
 import { type MountedPaged, mountPaged } from "@typstream/dom";
 import type { EngineDocument } from "@typstream/engine";
+import { hasErrors, parse } from "@typstream/syntax";
 import { indentItems } from "./blocks";
 import {
   blockAtOffset,
@@ -174,7 +175,9 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
   let state = new EditorState(options.text ?? doc.exportSource());
   // The caret starts where text can be typed: the first character's place, not in a heading's marker or code.
   {
-    const first = unitsAt(state, schema).find((u) => u.kind === "char" || u.kind === "space");
+    const units = unitsAt(state, schema);
+    // A character's place: the space between two rules of a preamble isn't where text shows.
+    const first = units.find((u) => u.kind === "char") ?? units.find((u) => u.kind === "space");
     if (first) state = state.select({ anchor: first.from, head: first.from });
   }
   // Edits are offsets into the document's input: it must be the editor's text.
@@ -889,7 +892,10 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
     if (state.selection.anchor === state.selection.head) return;
     e.preventDefault();
     e.clipboardData?.setData("text/plain", shownText(state.from, state.to));
-    e.clipboardData?.setData("text/x-typst", state.text.slice(state.from, state.to));
+    // Typst as it is, for a paste here that keeps the formatting, only if it stands on its own: a
+    // selection cutting through `*bold*` would paste an unclosed delimiter.
+    const slice = state.text.slice(state.from, state.to);
+    if (!hasErrors(parse(slice))) e.clipboardData?.setData("text/x-typst", slice);
     if (cut && !readOnly) {
       const tr = deleteSelection(state, schema);
       if (tr) dispatch(tr);
@@ -901,7 +907,7 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
     if (readOnly) return;
     const typst = e.clipboardData?.getData("text/x-typst");
     const plain = e.clipboardData?.getData("text/plain") ?? "";
-    if (typst && canType(state, state.from)) {
+    if (typst && canType(state, state.from) && !hasErrors(parse(typst))) {
       const del = state.empty ? null : deleteSelection(state, schema);
       const base = del ? state.apply(del).state : state;
       const at = base.selection.head;

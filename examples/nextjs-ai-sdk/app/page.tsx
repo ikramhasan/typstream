@@ -529,14 +529,15 @@ const Answer = ({ text: answered, streaming, target, answers, busy, onRetry }: A
           </article>
         )}
         <MessageFooter className="gap-1 px-0">
-          <CopySource target={target} text={text} exportHtml={t.exportHtml} disabled={streaming} />
+          {/* Exports compile the page view's document, which isn't mounted while the editor shows. */}
+          <CopySource target={target} text={text} exportHtml={t.exportHtml} disabled={streaming || editing} />
           <Export
             format={target === "html" ? "html" : "pdf"}
             exportPdf={t.exportPdf}
             exportHtml={t.exportHtml}
             exportDocx={t.exportDocx}
             source={text}
-            disabled={streaming}
+            disabled={streaming || editing}
           >
             <FileDownIcon />
           </Export>
@@ -546,7 +547,7 @@ const Answer = ({ text: answered, streaming, target, answers, busy, onRetry }: A
             exportHtml={t.exportHtml}
             exportDocx={t.exportDocx}
             source={text}
-            disabled={streaming}
+            disabled={streaming || editing}
           >
             <FileTypeIcon />
           </Export>

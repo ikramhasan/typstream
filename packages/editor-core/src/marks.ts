@@ -108,7 +108,8 @@ const pieces = (state: EditorState, from: number, to: number, schema: EditorSche
 
 /**
  * The value of `mark` over `[from, to)`: `true` (or the argument's source for a value mark) when
- * every character is inside such a wrapper, `null` when not all are (or they differ).
+ * every character is inside such a wrapper, `null` when not all are (or they differ). At a caret,
+ * the innermost such wrapper holding it.
  * @beta
  */
 export const markValue = (
@@ -119,6 +120,12 @@ export const markValue = (
   schema: EditorSchema = DEFAULT_SCHEMA,
 ): string | true | null => {
   const ws = wrappers(state).filter((w) => matches(w, mark));
+  if (from === to) {
+    // A caret: on when a wrapper holds it, so the toolbar shows what typing (and toggling) does there.
+    const w = ws.filter((w) => w.innerFrom <= from && from <= w.innerTo).at(-1);
+    if (!w) return null;
+    return mark.arg ? (w.args.get(mark.arg) ?? null) : true;
+  }
   let value: string | true | null = null;
   const ps = pieces(state, from, to, schema);
   if (ps.length === 0) return null;
@@ -133,7 +140,7 @@ export const markValue = (
   return value;
 };
 
-/** Whether `mark` is on all of `[from, to)` (a caret: on the text before it). @beta */
+/** Whether `mark` is on all of `[from, to)` (a caret: inside a wrapper of it). @beta */
 export const isMarked = (
   state: EditorState,
   mark: Mark,

@@ -79,6 +79,9 @@ describe("marks", () => {
     expect(isMarked(s, { name: "strong" })).toBe(true);
     expect(isMarked(s, { name: "emph" })).toBe(false);
     expect(isMarked(state("x *ab‸c* y"), { name: "strong" })).toBe(true);
+    // Right after strong text, typing isn't bold, so the toolbar doesn't say it is and Ctrl+B starts bold.
+    expect(isMarked(state("x *abc*‸ y"), { name: "strong" })).toBe(false);
+    expect(run("x *abc*‸ y", bold)).toBe("x *abc*#strong[‸] y");
   });
 
   it("set a colour, and change it in place", () => {

@@ -85,6 +85,7 @@ const content = (name: string, label: string, help?: string) => ({
  * edu's components as the visual editor offers them (#36): in its insert menu, with a form for
  * their arguments. Their text (a question's body, a callout's, the options of a multiple choice)
  * is edited on the page.
+ * @beta
  */
 export const eduComponents: EditorComponentSpec[] = [
   {
