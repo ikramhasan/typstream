@@ -59,7 +59,8 @@ line that sets a line farther than 3 pt from where Typst set it (`lines.mjs`'s `
 which moves a right-aligned line by up to about 2 pt); `--colours` fails one where a word's paper (a highlight, a shaded
 box, a cell's fill) or the ink of its glyphs isn't Typst's colour, within 48 levels a channel (`colour.mjs`), equations
 left out: LibreOffice draws them black whatever their colour (Word reads it). CI's Latin run passes both. And any
-equation LibreOffice draws with an operand missing (its red "¿", for an operator at an equation's end: `$1/5 + 2/5 =$`)
+equation LibreOffice draws with an operand missing (its red "¿", for an operator at an equation's start or end, `$1/5 + 2/5 =$`
+or an aligned equation's " = 22", and in 24.2 for absolute-value bars, which it reads as "or")
 fails, with or without a flag. Words with emoji are compared without them: no engine here has an emoji font, Typst
 draws a missing glyph's box and leaves it out of its PDF's text, LibreOffice keeps it.
 

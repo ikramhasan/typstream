@@ -105,7 +105,12 @@ pub fn render(
 fn flat_gradients(svg: String) -> String {
     let mut out = String::with_capacity(svg.len());
     let mut rest = svg.as_str();
-    while let Some(at) = rest.find("<linearGradient ").or_else(|| rest.find("<radialGradient ")) {
+    // The next gradient of either kind: linear and radial ones can come in any order.
+    let next = |s: &str| {
+        let (l, r) = (s.find("<linearGradient "), s.find("<radialGradient "));
+        l.into_iter().chain(r).min()
+    };
+    while let Some(at) = next(rest) {
         out.push_str(&rest[..at]);
         let tag_end = match rest[at..].find('>') {
             Some(e) => at + e,
@@ -335,5 +340,16 @@ mod tests {
             flat.contains(r##"<linearGradient gradientTransform="scale(453 17)" id="r1" spreadMethod="pad" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#ff4136"/><stop offset="100%" stop-color="#0074d9"/></linearGradient>"##),
             "{flat}"
         );
+    }
+
+    #[test]
+    fn flattens_a_radial_reference_before_a_linear_gradient() {
+        let svg = r##"<svg><defs><radialGradient id="f2" cx="0.5"><stop offset="0%" stop-color="#ffffff"/></radialGradient></defs><defs><radialGradient gradientTransform="scale(10 10)" id="r2" href="#f2" xlink:href="#f2"/></defs><defs><linearGradient id="f1" x1="0"><stop offset="0%" stop-color="#ff4136"/></linearGradient></defs></svg>"##;
+        let flat = flat_gradients(svg.to_string());
+        assert!(
+            flat.contains(r##"<radialGradient gradientTransform="scale(10 10)" id="r2" cx="0.5"><stop offset="0%" stop-color="#ffffff"/></radialGradient>"##),
+            "{flat}"
+        );
+        assert!(!flat.contains("href"), "{flat}");
     }
 }

@@ -756,21 +756,43 @@ describe("writeDocx", () => {
       expect(m).toContain('<m:t xml:space="preserve">\u200b</m:t>');
     });
 
-    it("writes an operator with nothing on one side as text for LibreOffice, which would draw a missing operand", () => {
+    it("writes an operator with nothing on one side with a zero-width space there, which LibreOffice reads as the operand", () => {
       const f: DocxMath = { t: "f", num: [r("1", "p")], den: [r("5", "p")] };
       const texts = (math: DocxMath[]) =>
         [...body(math).matchAll(/<m:t xml:space="preserve">([^<]*)</g)].map((m) => m[1]);
       // `$1/5 + 2/5 =$`: the `=` ends the equation, the `+` between fractions doesn't.
       expect(texts([f, r("+", "p"), f, r("=", "p")])).toEqual(["1", "5", "+", "1", "5", "=\u200b"]);
-      // A leading `+`, which LibreOffice would put in the fraction's numerator, and a cell's leading `=`.
-      expect(texts([r("+", "p"), f])).toEqual(["+\u200b", "1", "5"]);
+      // `$7 times 8 =$`: an operator ending a run of other text too (LibreOffice 24.2 draws "¿" there).
+      expect(texts([r("7×8=", "p")])).toEqual(["7×8=\u200b"]);
+      // A leading `+`, which LibreOffice would put in the fraction's numerator, a leading `=`, and a cell's.
+      expect(texts([r("+", "p"), f])).toEqual(["\u200b+", "1", "5"]);
+      expect(texts([r("=5", "p")])).toEqual(["\u200b=5"]);
       expect(texts([{ t: "m", rows: [[[r("x")], [r("=", "p"), r("y")]]], align: ["right", "left"] }])).toEqual([
         "x",
-        "=\u200b",
+        "\u200b=",
         "y",
       ]);
-      // Operators among other text, and other runs at the edges, are as written.
-      expect(texts([r("7−3=", "p")])).toEqual(["7−3="]);
+      // An aligned equation's cell, which starts with the space Typst sets before its relation.
+      expect(texts([{ t: "m", rows: [[[r("3x")], [r(" =22", "p")]]], align: ["right", "left"] }])).toEqual([
+        "3x",
+        "\u200b =22",
+      ]);
+      expect(texts([r("7×8= ", "p")])).toEqual(["7×8= \u200b"]);
+      // An equation of operators alone (`$->$` between boxes) is normal text: no operands, no spacing, as in Typst.
+      expect(texts([r("→", "p")])).toEqual(["→"]);
+      expect(body([r("→", "p")])).toContain("<m:rPr><m:nor/></m:rPr>");
+      // Absolute value bars are normal text, which LibreOffice 24.2 would read as "or" (and the `=` after one with it).
+      const abs = body([r("|2", "p"), r("x"), r("−3|=7", "p")]);
+      expect([...abs.matchAll(/<m:r>(.*?)<\/m:r>/g)].map((m) => m[1]?.replace(/<w:rPr>.*?<\/w:rPr>/, ""))).toEqual([
+        '<m:rPr><m:nor/></m:rPr><m:t xml:space="preserve">|</m:t>',
+        '<m:rPr><m:sty m:val="p"/></m:rPr><m:t xml:space="preserve">2</m:t>',
+        '<m:rPr><m:sty m:val="i"/></m:rPr><m:t xml:space="preserve">x</m:t>',
+        '<m:rPr><m:sty m:val="p"/></m:rPr><m:t xml:space="preserve">−3</m:t>',
+        '<m:rPr><m:nor/></m:rPr><m:t xml:space="preserve">|</m:t>',
+        '<m:rPr><m:sty m:val="p"/></m:rPr><m:t xml:space="preserve">=7</m:t>',
+      ]);
+      // Operators inside, and other characters at the edges, are as written.
+      expect(texts([r("7−3", "p")])).toEqual(["7−3"]);
       expect(texts([r("x"), r("(", "p")])).toEqual(["x", "("]);
     });
 

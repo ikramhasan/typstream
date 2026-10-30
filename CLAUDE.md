@@ -179,7 +179,7 @@ In `packages/heal`:
 - `pnpm test:long`: 20,000-run property campaign (minutes).
 - `pnpm bench`: vitest benchmarks.
 - `node scripts/perf.mjs`: asserts the latency budgets; run `pnpm build` first. `PERF_TOLERANCE=3` (what CI uses) fails only above 3× budget.
-- `pnpm size`: bundle budget, 16.2 KB gzipped.
+- `pnpm size`: bundle budget, 16.3 KB gzipped.
 - `pnpm mutate`: Stryker mutation testing of `src/` (~1.5–2 h on 6 cores). `STRYKER_INCREMENTAL=1` retests only what changed since the last run, but it reuses static mutants' (module-level constants) results whatever changed, so record scores from full runs. It fails below an 80% score; the first full run scored 80.59% (2026-10-26). It runs the suite without the corpus tests and with few, seeded property runs (`vitest.mutation.config.ts`, the `mutate` script's env). `node scripts/mutation-report.mjs --survivors` lists what survived. Equivalent mutants and known survivors are triaged on #6.
 
 LLM corpus (`tools/llm-corpus`, README there): `node src/record.mjs --variant kit --label <name>` streams the 29 requests
@@ -207,7 +207,7 @@ CLI with Google Drive) lays them out in Google Docs and fails on text over pictu
 and pages are only reported; ~3 requests a document, a Drive folder `typstream-docx-check` and
 `$TMPDIR/typstream-docx-check/google-docs` to delete afterwards). CI runs it with the validator and
 line floors (99% on documents without equations or pictures, 95% on those with equations, each of which must come out
-whole, #132, 92% on those with pictures) and a picture floor (93% of pictures within the PDF raster suite's tolerance,
+whole, #132, 92% on those with pictures) and a picture floor (95% of pictures within the PDF raster suite's tolerance,
 pixel by pixel, #133), and the other scripts with floors of their own; nightly runs ONLYOFFICE. The Latin run also passes
 `--ink` (rules, borders and shading where Typst draws them), `--positions` (every line within 3 pt of Typst's) and
 `--colours` (every word's paper and ink in Typst's colours); an equation LibreOffice draws with an operand missing

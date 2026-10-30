@@ -121,11 +121,9 @@ jobs:
       - run: dotnet publish tools/docx-check/validator -c Release -o tools/docx-check/validator/out
       # --ink: every document without equations laid out as Typst's draws its rules, borders and shading where
       # Typst does (#118); --positions: and sets each line where Typst does; --colours: every word in Typst's colours.
-      # Pictures' floor 0.93: boxes with rounded corners around text are square now (heal's layout-profile lint), and
-      # no longer pictures; the misses are the same as before (boxes among the chemistry worksheet's equations).
       - run: >-
           node tools/docx-check/check.mjs --validate tools/docx-check/validator/out/validator.dll
-          --min-lines 0.99 --min-math-lines 0.95 --min-picture-lines 0.92 --min-pictures 0.93 --ink --positions --colours
+          --min-lines 0.99 --min-math-lines 0.95 --min-picture-lines 0.92 --min-pictures 0.95 --ink --positions --colours
       # Arabic, Bengali, Devanagari and Chinese documents (#134).
       - run: >-
           node tools/docx-check/check.mjs --scripts --validate tools/docx-check/validator/out/validator.dll
@@ -282,4 +280,6 @@ jobs:
         with:
           name: visual-diffs-${{ matrix.browser }}
           path: tools/browser-suites/.vitest-attachments/
+          # A dot directory: upload-artifact leaves hidden files out unless told, and uploaded nothing.
+          include-hidden-files: true
           if-no-files-found: ignore

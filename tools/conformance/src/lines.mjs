@@ -22,12 +22,13 @@ const decode = (s) =>
 /**
  * A word's or piece's text as compared: NFKC, without format characters (a word joiner a DOCX export writes to keep a
  * blank's underline, which ONLYOFFICE's PDF keeps as text) or emoji, which no engine here has a font for: Typst draws
- * a missing glyph's box and leaves it out of its PDF's text, LibreOffice draws nothing and keeps it.
+ * a missing glyph's box and leaves it out of its PDF's text, LibreOffice draws nothing and keeps it. Only characters
+ * shown as emoji by default (💡): ©, ™, arrows, ☑ or ⚠ are pictographic too, but Typst's fonts draw them.
  */
 const plain = (raw) =>
   decode(raw)
     .normalize("NFKC")
-    .replace(/\p{Cf}|\p{Extended_Pictographic}/gu, "");
+    .replace(/\p{Cf}|\p{Emoji_Presentation}/gu, "");
 
 /** `pdftotext -bbox`'s XML of a PDF: its words' boxes, page by page. */
 const bbox = (pdf) =>

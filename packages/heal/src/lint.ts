@@ -101,7 +101,8 @@ const CURRENCY = /^\d[\d.,]*\s+\p{L}{2,}[\p{L}\s,.;:!?'"()-]*\s$/u;
 // Rounded corners, too: Word draws a frame's corners square, so a box with rounded ones around text is a picture in
 // a DOCX export, its text not editable there (#118), where a square one is a table cell. It comes out of calls that
 // hold content (a box without any, a checkbox, is a picture either way) and out of set rules, which would round
-// every frame, edu's callouts too.
+// every frame, edu's callouts too. Only a small fixed radius, a text box's (2–10 pt in models' documents): a ratio or a
+// large one draws a shape (`rect(radius: 40%)`, a cell's outline), which is a picture whatever its corners.
 const PROFILE_KEYS: Readonly<Record<string, RegExp>> = {
   par: /^(justify|leading|linebreaks)$/,
   text: /^(hyphenate|top-edge|bottom-edge)$/,
@@ -111,6 +112,11 @@ const PROFILE_KEYS: Readonly<Record<string, RegExp>> = {
   box: /^radius$/,
 };
 const FRAMES = new Set(["block", "rect", "box"]);
+/** A text box's corner radius: lengths up to 12 pt (1em, 4 mm), alone or in a dictionary; no ratio, no expression. */
+const small = (v: string): boolean =>
+  /\d(pt|em|mm)/.test(v) &&
+  !/%|[^\s\w.:(),-]/.test(v) &&
+  [...v.matchAll(/([\d.]+)(pt|em|mm)/g)].every(([, n, u]) => Number(n) <= (u === "pt" ? 12 : u === "em" ? 1 : 4));
 const PROFILE_CALL =
   /(?<![\w.-])(par|block|rect|box)\(|\bshow\s+(par|text|table)(?:\.where\([^()\n]*\))?\s*:\s*set\s+(par|text|table\.cell)\(/g;
 
@@ -252,7 +258,9 @@ const profileRule = (ctx: Ctx, element: string, at: number, open: number): void 
   // Each argument from its first character, its name, and whether it goes.
   const args = call.args.map(([from, to]) => {
     const m = /^(\s*)(?:([\w-]+)\s*:)?/.exec(ctx.text.slice(from, to)) as RegExpExecArray;
-    return { from: from + (m[1] as string).length, to, name: m[2], gone: keys.test(m[2] ?? "") };
+    const value = ctx.text.slice(from + m[0].length, to);
+    const gone = keys.test(m[2] ?? "") && (!FRAMES.has(element) || small(value));
+    return { from: from + (m[1] as string).length, to, name: m[2], gone };
   });
   // A frame's call keeps its corners unless it holds content: a content block after it or as an argument. (Not any
   // positional argument: CeTZ's `rect((0, 0), (4, 3), radius: 0.2)` takes coordinates.)

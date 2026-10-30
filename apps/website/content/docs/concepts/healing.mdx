@@ -95,7 +95,7 @@ Each rule has a severity: `fix` applies the change, `warn` only reports it as a 
 | `stray-closer` | fix | A `]` with nothing open | `\]` |
 | `unclosed-delim` | fix | A `*` or `_` never closed in its paragraph (a hard error in Typst) | `\*`, `\_` |
 | `math-lone-script` | fix | An equation that starts with `^` or `_`: units written as `m/s$^2$`, `H$_2$O` | An empty base: `m/s$""^2$` |
-| `layout-profile` | fix | `par(justify: true)[…]`, `leading` or `linebreaks` arguments, and `show par: set par(…)` or `show text: set text(hyphenate: …)` rules: what would beat the [layout profile](/docs/concepts/render-targets#layout-profile). `radius` on a `block`, `rect` or `box` around text, and in their set rules: a DOCX export keeps a rounded box only as a picture | The argument removed: `par()[…]`, `block(inset: 8pt)[…]` |
+| `layout-profile` | fix | `par(justify: true)[…]`, `leading` or `linebreaks` arguments, and `show par: set par(…)` or `show text: set text(hyphenate: …)` rules: what would beat the [layout profile](/docs/concepts/render-targets#layout-profile). a small fixed `radius` (up to 12 pt) on a `block`, `rect` or `box` around text, and in their set rules: a DOCX export keeps a rounded box only as a picture | The argument removed: `par()[…]`, `block(inset: 8pt)[…]` |
 | `unclosed-block-comment` | warn | A `/*` that is never closed: it compiles, but hides the rest of the document | none |
 | `currency-dollar` | warn | Prices read as math: `costs $5 and $10` | `\$5`, `\$10` |
 

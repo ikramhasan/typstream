@@ -1993,7 +1993,6 @@ impl Builder {
         }
     }
 
-    /// Index (into `ids`) of the last item after `ids[i]` drawn inside `rect`, on its page.
     /// Whether the box at `ids[i]` is a fill behind one line of words and no frame (a `highlight` starting a line or
     /// a list item's body): their runs' shading, not a framed block.
     fn highlight(&self, ids: &[usize], i: usize, rect: Rect) -> bool {
@@ -2012,6 +2011,7 @@ impl Builder {
             })
     }
 
+    /// Index (into `ids`) of the last item after `ids[i]` drawn inside `rect`, on its page.
     fn drawn_over(&self, ids: &[usize], i: usize, rect: Rect) -> usize {
         let page = self.items[ids[i]].page;
         let inside = |r: Rect| {

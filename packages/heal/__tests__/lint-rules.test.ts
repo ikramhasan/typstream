@@ -222,6 +222,11 @@ describe("pattern edges", () => {
     expect(lintAll("#block(radius: 3pt)[x]")[0]?.message).toBe(
       "rounded corners (`radius`) would make a picture of the box in a DOCX export, its text not editable; removed",
     );
+    // A ratio or a large radius draws a shape (a cell's outline), which is a picture whatever its corners.
+    expect(rules("#rect(width: 70%, height: 5cm, radius: 40%)[#circle()[1]]")).not.toContain("layout-profile");
+    expect(rules("#block(radius: 2cm)[x]")).not.toContain("layout-profile");
+    expect(rules("#block(radius: (top-left: 4pt, rest: 30pt))[x]")).not.toContain("layout-profile");
+    expect(fixed("#block(radius: 0.5em)[x]")).toBe("#block()[x]");
     // A box with no text in it (a checkbox) is a picture either way, and CeTZ's rect takes coordinates.
     expect(rules("#box(width: 1em, height: 1em, stroke: 0.5pt, radius: 2pt)")).not.toContain("layout-profile");
     expect(rules("#cetz.canvas({ import cetz.draw: *; rect((0, 0), (4, 3), radius: 0.2) })")).not.toContain(

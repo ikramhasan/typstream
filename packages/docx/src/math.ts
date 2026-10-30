@@ -12,18 +12,46 @@ const val = (name: string, v: string | number): string => `<m:${name} m:val="${e
 const arg = (name: string, nodes: DocxMath[] | undefined, rPr: string): string =>
   `<m:${name}>${omml(nodes ?? [], rPr)}</m:${name}>`;
 
-/** A run that is one operator: LibreOffice's import makes it an operator of its own math, which needs operands. */
-const OPERATOR = /^[\p{Sm}\-*/:]$/u;
+/**
+ * An operator at a run's start or end, spaces aside (an aligned equation's cell starts " =22"): the math LibreOffice
+ * imports it as needs an operand on that side.
+ */
+const LEADING = /^\s*[\p{Sm}\-*/:]/u;
+const TRAILING = /[\p{Sm}\-*/:]\s*$/u;
+const ONLY_OPERATORS = /^\s*[\p{Sm}\-*/:]+\s*$/u;
+
+/**
+ * Runs with their vertical bars (`|2x - 3| = 7`) as runs of normal text: LibreOffice 24.2 reads a bar in math as its
+ * "or" operator, drawn ∨ and needing operands. Word sets the bar as before.
+ */
+const bars = (nodes: DocxMath[]): DocxMath[] =>
+  nodes.flatMap((n) =>
+    n.t === "r" && !n.nor && n.text.includes("|")
+      ? n.text
+          .split(/(\|)/)
+          .filter(Boolean)
+          .map((text): DocxMath => (text === "|" ? { t: "r", text, nor: true } : { ...n, text }))
+      : [n],
+  );
 
 /** An equation's pieces as OMML; `rPr` is the text properties every run gets (the math font, size, colour). */
 export function omml(nodes: DocxMath[], rPr: string): string {
   let x = "";
-  nodes.forEach((n, i) => {
-    // An operator with nothing on one side (a worksheet's `$1/5 + 2/5 =$`, a cell's `= 2x`): LibreOffice draws its
-    // missing operand as a red "¿", and takes a leading `+` into the fraction after it. With a zero-width space
-    // after it, it reads the run as text and sets the operator as written; Word sets it as before.
-    const edge = (i === 0 || i === nodes.length - 1) && n.t === "r" && OPERATOR.test(n.text);
-    x += node(edge ? { ...n, text: `${n.text}\u200b` } : n, rPr);
+  const all = bars(nodes);
+  // Only operators (`$->$` between a worksheet's boxes): normal text, as Typst sets it, without the spacing operands
+  // would give it in LibreOffice.
+  const [only] = all;
+  if (all.length === 1 && only?.t === "r" && !only.nor && ONLY_OPERATORS.test(only.text))
+    return node({ ...only, nor: true }, rPr);
+  all.forEach((n, i) => {
+    // An operator with nothing on one side (a worksheet's `$7 times 8 =$`, a cell's `= 2x`): LibreOffice draws its
+    // missing operand as a red "¿" (24.2 for any run ending or starting with one, 26.8 for an operator alone in its
+    // run), and takes a leading `+` into the fraction after it. A zero-width space on that side reads as the operand;
+    // Word sets the equation as before.
+    let text = n.t === "r" && !n.nor ? n.text : "";
+    if (i === 0 && LEADING.test(text)) text = `\u200b${text}`;
+    if (i === all.length - 1 && TRAILING.test(text)) text = `${text}\u200b`;
+    x += node(n.t === "r" && text && text !== n.text ? { ...n, text } : n, rPr);
   });
   return x;
 }
