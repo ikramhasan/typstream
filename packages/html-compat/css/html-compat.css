@@ -30,23 +30,19 @@
 :where(.typstream) p {
   margin-block: 0.56em;
 }
-/* Spacing between blocks collapses as Typst's does (typst-layout's flow, distribute.rs): the larger of two gaps wins,
-   unless one is stronger. A block's own `above` and `below` (a heading's, `.ts-sp`) beat the paragraph spacing that
-   blocks without them get, even when smaller. */
-:where(.typstream) :is(h1, h2, h3, h4, h5, h6, .ts-sp) + :not(h1, h2, h3, h4, h5, h6, .ts-sp) {
-  margin-block-start: 0;
-}
-:where(.typstream) :not(h1, h2, h3, h4, h5, h6, .ts-sp):has(+ :is(h1, h2, h3, h4, h5, h6, .ts-sp)) {
-  margin-block-end: 0;
-}
-/* Typst drops the spacing above the first block of a page (the renderer's pages, below a break too). */
-:where(.typstream-flow) > :first-child {
-  margin-block-start: 0;
-}
 :where(.typstream) :is(h1, h2, h3, h4, h5, h6) {
   font-size: 1em;
   font-weight: 700;
-  margin-block: 0.71em 0.3em;
+  margin-block: var(--ts-above, 0.71em) var(--ts-below, 0.3em);
+}
+/* A block's own spacing (html-compat.typ's `.ts-sp`), reset for what it holds. */
+:where(.typstream) :is(h1, h2, h3, h4, h5, h6) > *,
+:where(.typstream .ts-sp) > * {
+  --ts-above: initial;
+  --ts-below: initial;
+}
+:where(.typstream .ts-sp) {
+  margin-block: var(--ts-above, 0.56em) var(--ts-below, 0.56em);
 }
 :where(.typstream) h2 {
   font-size: 1.4em;
@@ -121,19 +117,34 @@
   /* biome-ignore lint/a11y/useGenericFontNames: `math` is the generic family (CSS Fonts 4). */
   font-family: "New Computer Modern Math", math;
 }
-:where(.typstream) math[display="block"] {
-  margin: 0.65em 0;
+/* Equations (html-compat.typ) are Typst's drawings; their MathML is for screen readers only. A display equation is
+   centred on its line, its number at the end, both vertically centred. */
+:where(.typstream .ts-sr) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+/* Typst writes `display: block` on a frame it finds at a block's start; an equation is in its line. */
+:where(.typstream .ts-math) svg {
+  display: inline !important;
+  vertical-align: baseline;
 }
 :where(.typstream .ts-equation) {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: 1em;
+  margin-block: 0.56em;
+  padding-top: 0.02px;
 }
-:where(.typstream .ts-equation) > math {
-  flex: 1;
+:where(.typstream .ts-equation-body) {
+  grid-column: 2;
 }
-:where(.typstream .ts-equation) > p {
-  margin: 0;
+:where(.typstream .ts-equation-number) {
+  grid-column: 3;
+  justify-self: end;
 }
 
 /* Strokes (html-compat.typ's `_box-props`): centred on the element's edge, half outside, taking no room, as Typst
@@ -268,22 +279,11 @@
 }
 :where(.typstream) :is(.ts-block, .ts-shape) {
   position: relative;
-  margin-block: 0.56em;
+  margin-block: var(--ts-above, 0.56em) var(--ts-below, 0.56em);
 }
 /* A block is as wide as its content unless it has a width. */
 :where(.typstream .ts-block) {
   width: fit-content;
-}
-/* Typst spaces blocks apart, not from the edges of what contains them. */
-:where(.typstream)
-  :is(.ts-cell, .ts-valign-body, .ts-align-body, .ts-block, .ts-shape, .ts-box, .ts-stack-item, .ts-place, .ts-align, .ts-pad, .ts-item-body, figure)
-  > :first-child {
-  margin-block-start: 0;
-}
-:where(.typstream)
-  :is(.ts-cell, .ts-valign-body, .ts-align-body, .ts-block, .ts-shape, .ts-box, .ts-stack-item, .ts-place, .ts-align, .ts-pad, .ts-item-body, figure)
-  > :last-child {
-  margin-block-end: 0;
 }
 :where(.typstream .ts-box) {
   display: inline-block;
@@ -380,10 +380,28 @@
   padding-top: 0.02px;
 }
 
-/* What the renderer scrolls in a box of its own (a wide equation or block, #95) leaves its margins
-   out: inside the box they would no longer collapse with its neighbours'. Last, and naming math,
-   to win over the margins above. */
-:where(.typstream) [data-typstream-wide="1"] > math,
-:where(.typstream) [data-typstream-wide="1"] > * {
-  margin-block: 0;
+/* Last, to win over the margins above. */
+/* Typst spaces blocks apart, not from the edges of what contains them. */
+:where(.typstream)
+  :is(.ts-cell, .ts-valign-body, .ts-align-body, .ts-block, .ts-shape, .ts-box, .ts-stack-item, .ts-place, .ts-align, .ts-pad, .ts-item-body, figure)
+  > :first-child {
+  margin-block-start: 0;
+}
+:where(.typstream)
+  :is(.ts-cell, .ts-valign-body, .ts-align-body, .ts-block, .ts-shape, .ts-box, .ts-stack-item, .ts-place, .ts-align, .ts-pad, .ts-item-body, figure)
+  > :last-child {
+  margin-block-end: 0;
+}
+/* Spacing between blocks collapses as Typst's does (typst-layout's flow, distribute.rs): the larger of two gaps wins,
+   unless one is stronger. A block's own `above` and `below` (a heading's, `.ts-sp`) beat the paragraph spacing that
+   blocks without them get, even when smaller. */
+:where(.typstream) :is(h1, h2, h3, h4, h5, h6, .ts-sp) + :not(h1, h2, h3, h4, h5, h6, .ts-sp) {
+  margin-block-start: 0;
+}
+:where(.typstream) :not(h1, h2, h3, h4, h5, h6, .ts-sp):has(+ :is(h1, h2, h3, h4, h5, h6, .ts-sp)) {
+  margin-block-end: 0;
+}
+/* Typst drops the spacing above the first block of a page (the renderer's pages, below a break too). */
+:where(.typstream-flow) > :first-child {
+  margin-block-start: 0;
 }

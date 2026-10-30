@@ -19,6 +19,28 @@
 /// Whether this compile writes HTML. Needs context; inside `html.frame` it is the paged target.
 #let _html() = target() == "html"
 
+/// The page's text area: its size less the margins (Typst's default, 2.5/21 of the shorter side, where `auto`).
+/// Needs context.
+#let _text-area() = {
+  let (w, h) = (page.width, page.height)
+  if page.flipped { (w, h) = (h, w) }
+  let (w, h) = (if w == auto { 595.28pt } else { w }, if h == auto { 841.89pt } else { h })
+  let default = 2.5 / 21 * calc.min(w, h)
+  let m = page.margin
+  let sides = if m == auto { (:) } else if type(m) == dictionary { m } else { (rest: m) }
+  let side(name, axis, size) = {
+    let v = sides.at(name, default: sides.at(axis, default: sides.at("rest", default: auto)))
+    if v == auto { default } else if type(v) == ratio { float(v) * size } else if type(v) == relative {
+      float(v.ratio) * size + v.length.to-absolute()
+    } else { v.to-absolute() }
+  }
+  (width: w - side("left", "x", w) - side("right", "x", w), height: h - side("top", "y", h) - side("bottom", "y", h))
+}
+
+/// `layout`, which HTML has nothing to lay out with: there `func` gets the page's text area, as wide as the pages
+/// the renderer lays the HTML out on.
+#let _layout(func) = context if _html() { func(_text-area()) } else { layout(func) }
+
 // Typst's default text edges (a line box from the cap height to the baseline) inside an inline box whose stroke or
 // fill hugs its text. The engine's layout profile (#129) makes every line box the full line pitch, which would push
 // a circle or an underline away from the text; a later show-set rule wins over the profile's.

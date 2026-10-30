@@ -1,7 +1,7 @@
 // Document templates: page setup, a title block with student fields, page numbers. Applied as
 // the document's first line, `#show: worksheet.with(title: …)`. In HTML there are no pages, so
 // a template writes a <header> and no page rules (no "page set rule was ignored" warning).
-#import "util.typ": _array, _config, _el, _half, _html, _rule, _underline
+#import "util.typ": _array, _config, _half, _rule, _underline
 #import "i18n.typ": _points-text, _word
 #import "blocks.typ": instructions as _instructions, student-info
 
@@ -33,22 +33,7 @@
     }
     let meta = meta.filter(m => m != none) + if total != none { (total,) } else { () }
     let details = details.filter(((k, v)) => v != none)
-    if _html() {
-      _el("header", "edu-header", {
-        if title != none { html.elem("h1", title) }
-        if subtitle != none { _el("p", "edu-subtitle", subtitle) }
-        if meta.len() > 0 { _el("p", "edu-meta", meta.join([ · ])) }
-        if details.len() > 0 {
-          _el("dl", "edu-details", for (k, v) in details {
-            html.elem("dt", _word(k))
-            html.elem("dd", v)
-          })
-        }
-        if info != none { student-info(..info) }
-      })
-      if instructions != none { _instructions(instructions) }
-      body
-    } else {
+    {
       set page(
         paper: paper,
         margin: (x: 2cm, top: 2cm, bottom: 2.2cm),

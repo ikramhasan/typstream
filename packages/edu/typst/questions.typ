@@ -1,5 +1,5 @@
 // Questions: numbered questions with points, multiple choice, true/false, matching.
-#import "util.typ": _accent, _answers-shown, _config, _el, _half, _html, _plain, _question, _rule, _tight, _underline
+#import "util.typ": _accent, _answers-shown, _config, _half, _plain, _question, _rule, _tight, _underline
 #import "i18n.typ": _letter, _letter-pattern, _points-text, _word
 #import "answers.typ": _record
 
@@ -23,13 +23,7 @@
     let n = numbering("1.", _question.get().first())
     let pts = if points != none { [(#_points-text(points, word: _config.get().points-label))] }
     set enum(numbering: _letter-pattern())
-    if _html() {
-      _el("div", "edu-question", {
-        _el("span", "edu-number", n)
-        _el("div", "edu-body", body)
-        if pts != none { _el("span", "edu-points", pts) }
-      })
-    } else {
+    {
       block(width: 100%, above: 0.76em, below: 0.76em, grid(
         columns: (2em, 1fr, auto),
         column-gutter: 0.4em,
@@ -92,16 +86,7 @@
   }
   context {
     let pattern = _letter-pattern()
-    if _html() {
-      _el("ol", ("edu-mcq", "edu-cols-" + str(cols)), for (i, o) in options.enumerate() {
-        let correct = shown and (i + 1) in picks
-        _el("li", if correct { "edu-correct" }, {
-          _el("span", "edu-marker", numbering(pattern, i + 1))
-          [ ]
-          o
-        })
-      })
-    } else {
+    {
       // One grid, a marker column and an option column per option in a row: a DOCX export writes it as one table
       // (#130), without tables in its cells.
       block(above: 0.16em, below: 0.16em, _whole-rows(grid(
@@ -134,14 +119,7 @@
   context {
     let choice(key) = (key, shown and value == (key == "true"))
     let choices = (choice("true"), choice("false"))
-    if _html() {
-      _el("div", "edu-tf", {
-        _el("span", "edu-tf-statement", body)
-        _el("span", "edu-tf-choices", for (key, correct) in choices {
-          _el("span", if correct { ("edu-choice", "edu-correct") } else { "edu-choice" }, _word(key))
-        })
-      })
-    } else {
+    {
       block(above: 0.06em, below: 0.06em, _whole-rows(grid(
         columns: (1fr, auto),
         column-gutter: 1em,
@@ -192,15 +170,7 @@
         pairs.at(order.at(i)).at(1),
       )
     })
-    if _html() {
-      _el("div", "edu-matching", for row in rows {
-        _el("span", "edu-number", row.at(0))
-        _el("span", none, row.at(1))
-        _el("span", "edu-blank", if row.at(2) == none { [ ] } else { _el("span", "edu-ink", row.at(2)) })
-        _el("span", "edu-marker", row.at(3))
-        _el("span", none, row.at(4))
-      })
-    } else {
+    {
       block(above: 0.16em, below: 0.16em, _whole-rows(grid(
         columns: (auto, 1fr, 2.5em, auto, 1fr),
         column-gutter: 0.6em,

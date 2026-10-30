@@ -343,6 +343,8 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
   let visible = false;
   let exporting = false;
   let widthInputs: Record<string, string> | null = null;
+  // HTML: how many pages the renderer laid the document out on, which html-compat gives `counter(page).final()`.
+  let pageCount = 1;
   let io: IntersectionObserver | null = null;
   let ro: ResizeObserver | null = null;
   let resizeTimer: ReturnType<typeof setTimeout> | undefined;
@@ -415,6 +417,11 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
       ...(opts.linkTarget !== undefined ? { linkTarget: opts.linkTarget } : {}),
       ...(opts.islands ? { islands: opts.islands, file: (path: string) => doc?.file(path) ?? null } : {}),
       ...(opts.layout ? { layout: opts.layout } : {}),
+      onPages: (count) => {
+        if (count === pageCount) return;
+        pageCount = count;
+        sync();
+      },
     });
     html = { renderer, root, key: want };
     shown = null;
@@ -563,7 +570,11 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
 
     const target = opts.target ?? "html";
     const pageFormat = opts.renderer === "svg" ? "svg" : "drawing";
-    const inputs = { ...exportInputs(), ...widthInputs };
+    const inputs = {
+      ...exportInputs(),
+      ...widthInputs,
+      ...(target === "html" && pageCount > 1 ? { "typstream-page-count": String(pageCount) } : {}),
+    };
     const files = opts.files ?? {};
     const text = reading ? reading.state.text : (opts.source ?? "");
     const final = !streaming();

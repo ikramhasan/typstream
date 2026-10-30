@@ -1,5 +1,5 @@
 // Teaching content: callouts, instructions, learning objectives, rubrics, student fields.
-#import "util.typ": _array, _el, _half, _html, _rule
+#import "util.typ": _array, _half, _layout, _rule
 #import "i18n.typ": _field-label, _word, _words
 
 #let _kinds = (
@@ -43,12 +43,7 @@
   let color = _kinds.at(kind)
   context {
     let title = if title == auto { _word(kind) } else { title }
-    if _html() {
-      _el("aside", ("edu-callout", "edu-" + kind), role: "note", {
-        if title != none { _el("div", "edu-callout-title", title) }
-        body
-      })
-    } else {
+    {
       _framed(color, if title != none { text(weight: "bold", fill: color, title) }, body)
     }
   }
@@ -63,12 +58,7 @@
 /// ]
 /// ```
 #let instructions(body) = context {
-  if _html() {
-    _el("aside", ("edu-callout", "edu-instructions"), role: "note", {
-      _el("div", "edu-callout-title", _word("instructions"))
-      body
-    })
-  } else {
+  {
     _framed(_rule, strong(_word("instructions")), body)
   }
 }
@@ -87,7 +77,7 @@
 // space, and the engine's layout profile turns hyphenation off (#129), so a word such as "Counterargument" in a narrow
 // column would run into the next one, where Word would break it mid-word. The text shrinks, in half points as Word
 // sets it, until the widest word fits; cells whose words fit keep their size.
-#let _fit-words(body) = layout(size => {
+#let _fit-words(body) = _layout(size => {
   // The widest word: the body with every space a line break.
   let widest = measure({
     show regex("\s+"): linebreak()
@@ -118,20 +108,7 @@
   let points = if points == auto { range(n, 0, step: -1) } else if points != none { _array(points) }
   let head(i) = if points == none { levels.at(i) } else { [#levels.at(i) (#points.at(i, default: ""))] }
   let cells(c) = range(n).map(i => c.at(i + 1, default: []))
-  if _html() {
-    _el("table", "edu-rubric", {
-      html.elem("thead", html.elem("tr", {
-        html.elem("th", attrs: (scope: "col"), _word("criteria"))
-        for i in range(n) { html.elem("th", attrs: (scope: "col"), head(i)) }
-      }))
-      html.elem("tbody", for c in criteria {
-        html.elem("tr", {
-          html.elem("th", attrs: (scope: "row"), c.at(0, default: []))
-          for cell in cells(c) { html.elem("td", cell) }
-        })
-      })
-    })
-  } else {
+  {
     set text(size: _half(0.9))
     table(
       columns: (1.1fr,) + (1fr,) * n,
@@ -153,11 +130,7 @@
 /// ```
 #let student-info(..fields) = context {
   let fields = if fields.pos().len() == 0 { ("name", "date", "class") } else { fields.pos() }
-  if _html() {
-    _el("div", "edu-info", for f in fields {
-      _el("span", "edu-field", [#_field-label(f):#_el("span", "edu-blank", [ ])])
-    })
-  } else {
+  {
     let width(f) = if f == "name" { 2.2fr } else { 1fr }
     block(above: 0.36em, below: 0.36em, grid(
       columns: fields.map(f => (auto, width(f))).flatten(),

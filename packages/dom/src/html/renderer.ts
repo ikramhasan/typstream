@@ -68,6 +68,13 @@ export interface HtmlRendererOptions {
    * breaks its pages.
    */
   layout?: PagesLayout;
+  /**
+   * Called when the number of pages changes. A document whose headers or footers show the page count
+   * (`counter(page).final()`) reads it from the input `typstream-page-count` (html-compat): `mountTypstream` sets it
+   * and compiles again.
+   * @beta
+   */
+  onPages?: (count: number) => void;
 }
 
 /** Per-update options. @public */
@@ -135,11 +142,18 @@ interface Block {
 const SRC_ATTRIBUTE = "data-typstream-src";
 
 /**
- * The page html-compat writes on the source anchors, and its header and footer inside them: the first block's
- * anchor's (a document's pages are all alike). Anchors before it mark set rules (`#set page(..)`), which come out
- * as nothing.
+ * The page html-compat writes on the source anchors, and its header and footer inside them: the last anchor's (a
+ * document's pages are all alike). The first ones can come before the document's `#set page(..)`, or a template's.
  */
-const PAGE = /<typstream-anchor data-src="\d+" data-page="([^"]*)">([\s\S]*?)<\/typstream-anchor>(?!\s*<typstream-anchor)/;
+const PAGES = /<typstream-anchor data-src="\d+" data-page="([^"]*)">([\s\S]*?)<\/typstream-anchor>/g;
+
+/** The last match of `re` (global) in `s`. */
+const lastMatch = (re: RegExp, s: string): RegExpExecArray | null => {
+  re.lastIndex = 0;
+  let last: RegExpExecArray | null = null;
+  for (let m = re.exec(s); m; m = re.exec(s)) last = m;
+  return last;
+};
 
 /**
  * Typst writes the document's language on `<html>`, first in its output, and
@@ -224,7 +238,7 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
     for (const css of [htmlRendererCss, ...plugins, ...(options.stylesheets ?? [])]) injectCss(root, css);
   }
 
-  const pages = createHtmlPages(root, options.layout ?? "fixed");
+  const pages = createHtmlPages(root, options.layout ?? "fixed", options.onPages);
   /** Where the document goes: the flow over the pages. */
   const host = pages.flow;
 
@@ -321,7 +335,7 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
       shell = split.shell;
     }
     setLanguage(HTML_LANG.exec(html)?.[1]);
-    const page = PAGE.exec(html);
+    const page = lastMatch(PAGES, html);
     pages.setGeometry(parseGeometry(page?.[1]));
     if ((page?.[2] ?? "") !== marginals) {
       marginals = page?.[2] ?? "";

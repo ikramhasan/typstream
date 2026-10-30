@@ -103,9 +103,8 @@ interface Unit {
 }
 
 const SPACER = "typstream-break";
-/** What html-compat writes for the page number and the page count in headers and footers. */
+/** What html-compat writes for the page number in headers and footers. */
 const PAGE_NUMBER = "7777";
-const PAGE_COUNT = "8888";
 
 /** Elements that don't break across pages. */
 const WHOLE =
@@ -124,7 +123,11 @@ const outOfFlow = (el: Element, view: Window): boolean => {
 };
 
 /** Lays the document in `flow` out on sheets in `sheets`. */
-export const createHtmlPages = (root: HTMLElement, layout: PagesLayout = "fixed"): HtmlPages => {
+export const createHtmlPages = (
+  root: HTMLElement,
+  layout: PagesLayout = "fixed",
+  onCount?: (count: number) => void,
+): HtmlPages => {
   const doc = root.ownerDocument;
   const view = doc.defaultView as Window & typeof globalThis;
   const sheets = doc.createElement("div");
@@ -219,7 +222,7 @@ export const createHtmlPages = (root: HTMLElement, layout: PagesLayout = "fixed"
         const walker = doc.createTreeWalker(el, 4);
         for (let t = walker.nextNode(); t; t = walker.nextNode()) {
           const text = t as Text;
-          text.data = text.data.replaceAll(PAGE_NUMBER, String(i + 1)).replaceAll(PAGE_COUNT, String(count));
+          text.data = text.data.replaceAll(PAGE_NUMBER, String(i + 1));
         }
         marginals.append(el);
       }
@@ -534,8 +537,9 @@ export const createHtmlPages = (root: HTMLElement, layout: PagesLayout = "fixed"
     let page = 0;
     // Spacing above the first block collapses through to the top of the flow; Typst drops it.
     const head = units[0];
-    if (head && !head.force && head.measure().top > contentTop(0) + EPS) {
-      const gap = head.gap();
+    const first = [...flow.children].find((c) => !c.classList.contains(SPACER));
+    if (head && first && !head.force && head.measure().top > contentTop(0) + EPS) {
+      const gap = spacerBefore(first, true);
       gaps.push(gap);
       gap.set(contentTop(0) - head.measure().top);
     }
@@ -566,7 +570,13 @@ export const createHtmlPages = (root: HTMLElement, layout: PagesLayout = "fixed"
     while (sheets.children.length > count) sheets.lastElementChild?.remove();
     drawMarginals();
     numberOutline();
+    if (count !== told) {
+      told = count;
+      onCount?.(count);
+    }
   };
+  /** The page count `onCount` was last given. */
+  let told = 1;
 
   /** The page of each outline entry's target (html-compat's `.ts-outline-page`), now that the pages are known. */
   const numberOutline = () => {

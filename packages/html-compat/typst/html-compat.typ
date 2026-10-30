@@ -495,6 +495,20 @@
   out.join()
 }
 
+/// Whether content takes the whole width it is given, wherever it is: a grid or a table with fractional or
+/// relative columns, something given a relative width, fractional spacing. A block around it is as wide as its
+/// region in Typst, where CSS would shrink it to its content (`width: fit-content`) and collapse those columns.
+#let _expands(c) = _find(c, e => {
+  let f = e.fields()
+  let rel(w) = type(w) in (ratio, relative, fraction)
+  if e.func() in (grid, table) {
+    let cols = f.at("columns", default: ())
+    type(cols) == array and cols.any(rel)
+  } else if e.func() in (block, box, rect, square, line, image) { rel(f.at("width", default: f.at("length", default: auto))) }
+  else if e.func() == h { type(f.amount) == fraction }
+  else { false }
+})
+
 // ---------------------------------------------------------------------------
 // Pages: what the renderer lays the HTML out on
 
@@ -529,10 +543,8 @@
   ).join(" ")
 }
 
-/// What stands for the page number and the page count in a page's header and footer: the renderer writes each
-/// page's own in their place.
+/// What stands for the page number in a page's header and footer: the renderer writes each page's own in its place.
 #let _page-number = 7777
-#let _page-count = 8888
 
 /// The page's header and footer, for the renderer to put on each page (typst-layout's pages/run.rs): as on the first
 /// page and as on the others, the page number `_page-number` there. `none` when the page has neither. Needs context.
@@ -638,13 +650,16 @@
     if type(it.body) != content or it.body.func() == html.elem { return it }
     if _has-drawing(it.body) or _is-canvas(it.body) { return _frame(it) }
     let props = _box-props(fill: it.fill, stroke: it.stroke, inset: it.inset, radius: it.radius) + _inset-vars(it.inset)
-    props.insert("width", _len(it.width))
+    props.insert("width", if it.width == auto and _expands(it.body) { "100%" } else { _len(it.width) })
     props.insert("height", _len(it.height))
     if it.clip { props.insert("overflow", "hidden") }
     let custom = (it.above, it.below).any(s => s != auto)
     if custom {
+      // As custom properties, which html-compat.css reads: a margin in the style attribute would beat its rules
+      // that drop spacing at the start and end of what holds the block.
       let gap(s) = if s == auto { _len(par.spacing) } else if type(s) == fraction { "0pt" } else { _len(s) }
-      props.insert("margin-block", gap(it.above) + " " + gap(it.below))
+      props.insert("--ts-above", gap(it.above))
+      props.insert("--ts-below", gap(it.below))
     }
     let class = "ts-block" + _stroked(props) + if custom { " ts-sp" } + if not it.breakable { " ts-whole" } + if it.sticky { " ts-sticky" }
     _el("div", class, style: _style(props), _empty-lines(it.body))
@@ -719,10 +734,14 @@
   show heading: html-only(it => {
     let level = calc.min(it.level, 5)
     let tag = "h" + str(level + 1)
-    if it.numbering == none or it.body == [] { return html.elem(tag, it.body) }
+    // Spacing other than the layout profile's (a template's `show heading: set block(..)`).
+    let gap(s) = if type(s) == length { _len(s) }
+    let (above, below) = (gap(block.above), gap(block.below))
+    let spacing = (if above not in (none, "0.71em") { "--ts-above: " + above }, if below not in (none, "0.3em") { "--ts-below: " + below }).filter(x => x != none)
+    if it.numbering == none or it.body == [] { return html.elem(tag, attrs: if spacing.len() > 0 { (style: spacing.join("; ")) } else { (:) }, it.body) }
     let number = counter(heading).display(it.numbering)
     let indent = measure(number).width + 0.3em.to-absolute()
-    html.elem(tag, attrs: (style: "padding-inline-start: " + _len(indent) + "; text-indent: -" + _len(indent)), {
+    html.elem(tag, attrs: (style: (..spacing, "padding-inline-start: " + _len(indent), "text-indent: -" + _len(indent)).join("; ")), {
       html.elem("span", attrs: (class: "ts-heading-number", style: "margin-inline-end: 0.3em"), number)
       it.body
     })
@@ -809,21 +828,35 @@
     })
   })
 
-  // Math: numbered block equations show their number; equations with cancel() are drawn;
-  // overline becomes an accent, which MathML has.
-  show math.overline: html-only(it => math.accent(it.body, "‾"))
+  // Math as Typst draws it on pages: an SVG of the equation's frame, sitting on the line where Typst puts it (the
+  // depth below the baseline is measured beside a tall strut), its MathML beside it for screen readers. A display
+  // equation is centred, its number at the end of the line (typst-layout's `layout_equation_block`).
   show math.equation: html-only(it => {
-    if _find(it.body, c => c.func() == math.cancel) { return _frame(it, inline: not it.block) }
-    // A set rule doesn't survive `return`, so the marked equation is the block's value.
-    let marked = _mark-math(it)
-    if not it.block or it.numbering == none { marked } else {
-      _el("div", "ts-equation", marked + _el("span", "ts-equation-number", counter(math.equation).display(it.numbering)))
+    let mathml = html.elem("span", attrs: (class: "ts-sr"), _mark-math(it))
+    if not it.block {
+      let depth = measure({
+        set text(top-edge: "baseline", bottom-edge: "baseline")
+        box(height: 100pt)
+        it
+      }).height - 100pt
+      return html.elem("span", attrs: (class: "ts-math", style: "vertical-align: -" + _len(depth)), {
+        html.elem("span", attrs: (aria-hidden: "true"), html.frame(it))
+        mathml
+      })
     }
+    let eq = if it.numbering == none { it } else { math.equation(block: true, numbering: none, it.body) }
+    let number = if it.numbering != none { counter(math.equation).display(it.numbering) }
+    _el("div", "ts-equation ts-whole", {
+      html.elem("div", attrs: (class: "ts-equation-body", aria-hidden: "true"), html.frame(eq))
+      if number != none { html.elem("span", attrs: (class: "ts-equation-number"), number) }
+      mathml
+    })
   })
 
   doc
-  // The page count a header or footer shows (`counter(page).final()`), for the renderer to replace.
-  context if target() == "html" { counter(page).update(_page-count) }
+  // The page count a header or footer shows (`counter(page).final()`): the renderer's, which it gives the document
+  // as an input once it has laid the pages out.
+  context if target() == "html" { counter(page).update(int(sys.inputs.at("typstream-page-count", default: "1"))) }
 }
 
 /// `layout` in HTML calls `func` with `compat-size` (there is no page to measure), so its
