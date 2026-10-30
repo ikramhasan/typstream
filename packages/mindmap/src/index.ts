@@ -147,4 +147,42 @@ export const mindmap: TypstreamPlugin = {
   engine: { files: mindmapFiles, preamble: mindmapPreamble },
   prompt: { catalogue: mindmapCatalogue, rules: mindmapPromptRules, examples: mindmapExamples },
   islands: { mindmap: mindmapIsland as IslandSpec },
+  // In the visual editor (#36) a map's topics are edited on the page as the list they are written
+  // as: Enter adds a branch, Tab nests it.
+  editor: {
+    components: [
+      {
+        name: "mindmap",
+        label: "Mind map",
+        description: "A centre topic and its branches",
+        group: "Drawings",
+        icon: "network",
+        keywords: ["map", "diagram", "brainstorm"],
+        template: "#mindmap[\n  {{cursor}}Main topic\n  - First branch\n    - A detail\n  - Second branch\n]",
+        params: [
+          {
+            name: "style",
+            label: "Style",
+            type: "choice",
+            default: '"visual"',
+            options: [
+              { value: '"visual"', label: "Colourful" },
+              { value: '"text-focused"', label: "For printing" },
+            ],
+          },
+          {
+            name: "layout",
+            label: "Branches",
+            type: "choice",
+            default: '"both"',
+            options: [
+              { value: '"both"', label: "On both sides" },
+              { value: '"right"', label: "On one side" },
+            ],
+          },
+        ],
+      },
+    ],
+    inline: ["topic"],
+  },
 };

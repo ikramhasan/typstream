@@ -14,7 +14,7 @@ let engine: Engine | null = null;
 let users = 0;
 let timer: ReturnType<typeof setTimeout> | undefined;
 
-/** Takes a reference to the default engine, creating it if needed. Call from effects only. */
+/** Takes a reference to the default engine, creating it if needed. Call from effects only. @internal */
 export const acquireEngine = (): Engine => {
   clearTimeout(timer);
   users++;
@@ -22,7 +22,7 @@ export const acquireEngine = (): Engine => {
   return engine;
 };
 
-/** Gives back a reference from {@link acquireEngine}; the last one disposes the engine after {@link RELEASE_DELAY}. */
+/** Gives back a reference from {@link acquireEngine}; the last one disposes the engine after {@link RELEASE_DELAY}. @internal */
 export const releaseEngine = (): void => {
   users = Math.max(0, users - 1);
   if (users > 0) return;

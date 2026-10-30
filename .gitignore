@@ -25,3 +25,4 @@ reports/
 # Vercel CLI: linked project settings, pulled env files and `vercel build` output (.github/workflows/deploy.yml)
 .vercel/
 packages/syntax/wasm/
+packages/editor-react/__tests__/browser/screenshots/
