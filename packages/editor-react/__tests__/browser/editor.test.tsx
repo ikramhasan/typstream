@@ -3,7 +3,7 @@
 // source, the insert menu adds tables and edu's components, a table's bar adds rows and columns, a
 // component's settings edit its arguments, and the pages are drawn as the page view draws them.
 
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import type { EditorView } from "@typstream/editor-core";
 import { edu } from "@typstream/edu";
 import { createEngine, type Engine, fromWorker } from "@typstream/engine";
@@ -21,10 +21,10 @@ afterEach(() => {
   for (const e of engines.splice(0)) e.dispose();
 });
 
-const waitFor = async (check: () => boolean, ms = 60_000) => {
+const waitFor = async (check: () => boolean, ms = 10_000, what = "") => {
   const start = performance.now();
   while (!check()) {
-    if (performance.now() - start > ms) throw new Error("timed out");
+    if (performance.now() - start > ms) throw new Error(`timed out waiting ${what}`);
     await new Promise((r) => setTimeout(r, 30));
   }
 };
@@ -49,7 +49,7 @@ const mount = async (source: string, plugins = [edu]) => {
       />
     </div>,
   );
-  await waitFor(() => !!(view as EditorView | null)?.layout);
+  await waitFor(() => !!(view as EditorView | null)?.layout, 30_000, "for the layout");
   const v = view as unknown as EditorView;
   return { view: v, changes };
 };
@@ -115,5 +115,41 @@ describe("<TypstEditor>", () => {
     await userEvent.keyboard("{Enter}Stem");
     expect(view.state.text).toBe("#mindmap[\n  Plants\n  - Roots\n  - Leaves\n  - Stem\n]");
     await page.screenshot({ path: "screenshots/mindmap.png" });
+  });
+
+  it("links a selection from the toolbar's field", async () => {
+    const { view } = await mount("Read the guide today.");
+    act(() => view.select({ anchor: 5, head: 14 }));
+    view.focus();
+    // The fixed toolbar's (the floating one over the selection has one too).
+    const fixed = screen.getByRole("toolbar", { name: "Formatting" });
+    // A DOM click: the two buttons share a label, which a locator can't tell apart.
+    act(() => within(fixed).getByRole("button", { name: "Link" }).click());
+    await userEvent.type(screen.getByRole("textbox", { name: /Link to/ }), "https://typst.app{Enter}");
+    expect(view.state.text).toBe('Read #link("https://typst.app")[the guide] today.');
+  });
+
+  it("inserts from the slash menu, and edits an equation in its field", async () => {
+    const { view } = await mount("Intro.\n\n");
+    act(() => view.select({ anchor: view.state.text.length, head: view.state.text.length }));
+    view.focus();
+    await userEvent.keyboard("/");
+    await waitFor(() => !!screen.queryByRole("textbox", { name: "Search what to insert" }), 5000, "for the slash menu");
+    await userEvent.keyboard("equation");
+    await userEvent.keyboard("{Enter}");
+    expect(view.state.text).toBe("Intro.\n\n$ x =  $");
+    // Selected whole, an equation shows its field.
+    const at = view.state.text.indexOf("$");
+    act(() => view.select({ anchor: at, head: view.state.text.length, node: true }));
+    const field = await waitFor(
+      () => !!screen.queryByRole("textbox", { name: /Formula/ }),
+      5000,
+      "for the formula",
+    ).then(() => screen.getByRole("textbox", { name: /Formula/ }));
+    await userEvent.clear(field);
+    await userEvent.type(field, "a^2 + b^2 = c^2");
+    expect(view.state.text).toBe("Intro.\n\n$ a^2 + b^2 = c^2 $");
+    await laidOut(view);
+    await page.screenshot({ path: "screenshots/equation.png" });
   });
 });

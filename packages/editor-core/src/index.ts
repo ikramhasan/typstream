@@ -2,7 +2,16 @@
 // a selection and the keyboard on the pages the engine lays out; commands turn what the teacher
 // does into minimal edits of the source; plugins add toolbars, menus and components.
 
-export { type Alignment, alignmentAt, type BlockType, blockType, indentItems, setAlignment, setBlockType, toggleList } from "./blocks";
+export {
+  type Alignment,
+  alignmentAt,
+  type BlockType,
+  blockType,
+  indentItems,
+  setAlignment,
+  setBlockType,
+  toggleList,
+} from "./blocks";
 export {
   canType,
   DEFAULT_SCHEMA,
@@ -29,7 +38,7 @@ export {
 } from "./components";
 export { History } from "./history";
 export { type CaretBox, type Glyph, type LaidElement, Layout, type Line, type PageRect } from "./layout";
-export { isMarked, type Mark, markValue, setMark, toggleMark } from "./marks";
+export { isMarked, linkAt, type Mark, markValue, setLink, setMark, toggleMark } from "./marks";
 export {
   basicPlugins,
   blocksPlugin,

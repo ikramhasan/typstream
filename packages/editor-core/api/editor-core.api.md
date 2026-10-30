@@ -343,6 +343,9 @@ export interface Line {
 }
 
 // @beta
+export const linkAt: (state: EditorState, schema?: EditorSchema) => string | null;
+
+// @beta
 export const mapSelection: (s: Selection_2, edits: readonly TextEdit[]) => Selection_2;
 
 // @beta
@@ -394,6 +397,9 @@ export const setArgument: (component: Component, name: string, value: string | n
 
 // @beta
 export const setBlockType: (type: BlockType) => (state: EditorState, schema?: EditorSchema) => Transaction | null;
+
+// @beta
+export const setLink: (url: string | null) => (state: EditorState, schema?: EditorSchema) => Transaction | null;
 
 // @beta
 export const setMark: (mark: Mark, value: string | true | null) => (state: EditorState, schema?: EditorSchema) => Transaction | null;
@@ -449,6 +455,12 @@ export interface ToolbarItem {
             label: string;
             swatch?: string;
         }[];
+        value: (state: EditorState, schema: EditorSchema) => string | null;
+        apply: (value: string | null) => EditorCommand;
+    };
+    prompt?: {
+        label: string;
+        placeholder?: string;
         value: (state: EditorState, schema: EditorSchema) => string | null;
         apply: (value: string | null) => EditorCommand;
     };

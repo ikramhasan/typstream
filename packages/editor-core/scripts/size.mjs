@@ -5,8 +5,8 @@ import { gzipSync } from "node:zlib";
 import { build } from "esbuild";
 
 const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
-// 23.0 KB when it was written (#36): the view, the commands, tables, marks and the basic plugins.
-const BUDGET = 23.5 * 1024;
+// 23.5 KB when it was written (#36): the view, the commands, tables, marks, links and the basic plugins.
+const BUDGET = 24 * 1024;
 
 const result = await build({
   entryPoints: ["src/index.ts"],

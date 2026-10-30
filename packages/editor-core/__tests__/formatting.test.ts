@@ -12,10 +12,12 @@ import {
   indentItems,
   insertBlock,
   isMarked,
+  linkAt,
   markValue,
   setAlignment,
   setArgument,
   setBlockType,
+  setLink,
   setMark,
   tableAt,
   tableTemplate,
@@ -199,5 +201,19 @@ describe("tables", () => {
     expect(run("Text‸", insertBlock(tableTemplate(2, 2)))).toBe(
       "Text\n\n#table(\n  columns: 2,\n  table.header([‸], []),\n  [], [],\n)",
     );
+  });
+});
+
+describe("links", () => {
+  it("wrap a selection, change their URL and come off", () => {
+    const linked = run("See «the site» now", setLink("https://example.org")) as string;
+    expect(linked).toBe('See #link("https://example.org")[«the site»] now');
+    expect(linkAt(state(linked))).toBe("https://example.org");
+    expect(run(linked, setLink("https://typst.app"))).toBe('See #link("https://typst.app")[«the site»] now');
+    expect(run(linked, setLink(null))).toBe("See «the site» now");
+  });
+
+  it("write the URL as the text at a caret", () => {
+    expect(run("Go ‸", setLink("https://x.org/a_b"))).toBe('Go #link("https://x.org/a_b")[https:\\/\\/x.org\\/a\\_b]‸');
   });
 });

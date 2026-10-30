@@ -27,15 +27,17 @@ import { Button, keepFocus, Layer, Popover } from "./ui";
 
 /**
  * What `measure` says now: measured again after every render (the editor's state or layout
- * changed), on scroll and on resize, and kept while it says the same.
+ * changed), on scroll and on resize, and kept while it says the same. `undefined` keeps the last
+ * value: the thing is there but has no box yet (an equation emptied to be typed again).
  */
-const usePlacement = <T,>(measure: () => T | null): T | null => {
+const usePlacement = <T,>(measure: () => T | null | undefined): T | null => {
   const [value, setValue] = useState<T | null>(null);
   const latest = useRef(measure);
   latest.current = measure;
   const last = useRef("null");
   const place = useCallback(() => {
     const next = latest.current();
+    if (next === undefined) return;
     const key = JSON.stringify(next);
     if (key === last.current) return;
     last.current = key;
@@ -226,7 +228,7 @@ export const ComponentBar = ({ view }: { view: EditorView }) => {
   const style = usePlacement<CSSProperties>(() => {
     if (!component) return null;
     const box = view.boxesOf(component.from, component.to)[0];
-    if (!box) return null;
+    if (!box) return undefined;
     const top = box.top - BAR_HEIGHT - 6;
     return { left: Math.max(8, box.left), top: top < 4 ? box.bottom + 6 : top };
   });
@@ -398,7 +400,7 @@ export const EquationPanel = ({ view }: { view: EditorView }) => {
   const style = usePlacement<CSSProperties>(() => {
     if (!eq) return null;
     const box = view.boxesOf(eq.from, eq.to)[0];
-    if (!box) return null;
+    if (!box) return undefined;
     return { left: Math.max(8, Math.min(box.left, window.innerWidth - 268)), top: box.bottom + 8 };
   });
   if (!eq || !style) return null;

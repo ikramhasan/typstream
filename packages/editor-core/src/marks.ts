@@ -376,3 +376,57 @@ const diffEdit = (a: string, b: string): TextEdit | null => {
   while (end < max - start && a.charCodeAt(a.length - 1 - end) === b.charCodeAt(b.length - 1 - end)) end++;
   return { from: start, to: a.length - end, insert: b.slice(start, b.length - end) };
 };
+
+/**
+ * The URL of the link at the selection (its `#link("…")[…]`), or `null`.
+ * @beta
+ */
+export const linkAt = (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): string | null => {
+  const ps = pieces(state, state.from, state.to, schema);
+  const p = ps[0];
+  if (!p) return null;
+  const w = wrappers(state)
+    .filter((w) => w.name === "link" && w.innerFrom <= p.from && p.to <= w.innerTo)
+    .at(-1);
+  const url = w?.positional[0];
+  return url ? (/^"((?:[^"\\]|\\.)*)"$/.exec(url)?.[1]?.replace(/\\(.)/g, "$1") ?? null) : null;
+};
+
+/**
+ * Makes the selection a link to `url` (`#link("…")[…]`), changes the link it is in, or takes links
+ * off it with `null`. On a caret, writes the URL as the link's text.
+ * @beta
+ */
+export const setLink =
+  (url: string | null) =>
+  (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): Transaction | null => {
+    const quoted = url === null ? null : `"${url.replace(/["\\]/g, "\\$&")}"`;
+    const around = wrappers(state)
+      .filter((w) => w.name === "link" && w.innerFrom <= state.from && state.to <= w.innerTo)
+      .at(-1);
+    if (around && quoted !== null) {
+      // Another URL for the link the selection is in.
+      const edits = [{ from: around.from, to: around.innerFrom, insert: `#link(${quoted})[` }];
+      return { edits, selection: mapSel(state.selection, edits) };
+    }
+    if (quoted === null) {
+      const edits = removeEdits(state, { name: "link" }, state.from, state.to);
+      return edits.length ? { edits, selection: mapSel(state.selection, edits) } : null;
+    }
+    if (state.empty) {
+      const shown = escapeLinkText(url ?? "");
+      const insert = `#link(${quoted})[${shown}]`;
+      return { edits: [{ from: state.from, to: state.from, insert }], selection: caretAt(state.from + insert.length) };
+    }
+    const edits: TextEdit[] = [];
+    for (const seg of segments(state, state.from, state.to, schema))
+      edits.push(
+        { from: seg.from, to: seg.from, insert: `#link(${quoted})[` },
+        { from: seg.to, to: seg.to, insert: "]" },
+      );
+    const sorted = edits.sort((a, b) => a.from - b.from || a.to - b.to);
+    return { edits: sorted, selection: mapSel(state.selection, sorted) };
+  };
+
+/** A URL as a link's text: markup's characters escaped. */
+const escapeLinkText = (url: string): string => url.replace(/[\\*_`$#<>@[\]~/]/g, "\\$&");

@@ -40,6 +40,14 @@ packages/dom      @typstream/dom: framework-free renderers. `src/html/`: HTML re
                   `src/islands.ts`: render islands, components mounted over Typst markers (PLAN §8.4), in both renderers.
                   `src/export/`: `standaloneHtml`, a downloadable file from an HTML export (theme, CSS, CSP).
 packages/react    @typstream/react: <Typstream>, TypstreamProvider, useTypstream(); a thin layer over mountTypstream.
+packages/syntax   @typstream/syntax: typst-syntax 0.15.1 as wasm (Rust crate in rust/, wasm-bindgen glue in wasm/): the
+                  lossless syntax tree with UTF-16 offsets, for the editor's commands.
+packages/editor-core  @typstream/editor-core: the visual editor without a framework (#36): `createEditor` edits a
+                  document on the page view's own pages (caret, selection, clicks and keys from the engine's
+                  `positions`), commands that turn typing, marks, blocks, tables and components into minimal edits of
+                  the source, the plugin contract (Plate-like) and the basic plugins.
+packages/editor-react @typstream/editor-react: <TypstEditor>: fixed and floating toolbars, insert and slash menus, bars
+                  over components (settings forms, table rows and columns, equations).
 packages/typstream  typstream: the convenience package (<Typstream> with html-compat, the math font and universe's packages; re-exports).
 packages/ai       @typstream/ai: typstream with AI SDKs. Generation: an assistant message as a document (`textOf`, `isStreaming`,
                   `textStream`), read structurally, so no `ai` dependency. Streaming edits: `<edit>`s that quote what they
@@ -165,6 +173,24 @@ In `packages/react`:
 - `pnpm size`: ≤ 21.2 KB gzipped including `@typstream/dom` (React and the engine external).
 - Its bundle starts with `"use client"` (tsup banner), as does `typstream`'s, for Next.js's App Router.
 
+In `packages/syntax`: `pnpm build` runs `build.sh` (the crate to `wasm/`, skipped when `wasm/.inputs` matches, then
+tsup; Rust, the wasm target, wasm-bindgen-cli at Cargo.lock's version and wasm-opt, as engine-wasm). CI restores
+`wasm/` with `.github/actions/syntax`. A fresh worktree can copy `wasm/` from another whose `.inputs` match.
+
+In `packages/editor-core` and `packages/editor-react` (#36):
+- The editor edits on the pages: a document opened with `positions: true` gets, with each paged artifact, where every
+  glyph cluster and element of the source is on each page (engine-wasm's `src/positions.rs`; `cargo run --release
+  --example positions -- doc.typ` dumps them). editor-core's `Layout` answers caret, clicks and arrow keys from them;
+  commands read `@typstream/syntax`'s tree. Never show the teacher Typst: typed text is escaped (`escapeMarkup`), and
+  a construct only partly selected keeps its delimiters.
+- `pnpm test`: the commands against Typst's parser (`__tests__/support.ts` marks a state with `‸` or `«…»` and checks
+  the result parses). `pnpm test:browser`: the view and `<TypstEditor>` on the real worker in Chromium, Firefox and
+  WebKit (Playwright clicks and keys); editor-react's tests write screenshots to `__tests__/browser/screenshots/`
+  (ignored) for a look. `pnpm size`: editor-core ≤ 24 KB, editor-react ≤ 16.4 KB gzipped.
+- A plugin's components for the editor are plain data in its `editor` facet (`EditorComponentSpec`: a template with
+  `{{cursor}}`, form fields); edu's are `eduComponents`. A new one's icon must be one
+  `packages/editor-react/src/icons.tsx` draws (a test checks).
+
 In `packages/ai`: `pnpm test` runs the helpers through AI SDK 7 itself (a devDependency): recorded `corpus/llm` streams
 sent as UI message streams, read back by `readUIMessageStream`, `DefaultChatTransport` and a `Chat`, including `stop()`
 and a failed stream (a text part stays `"streaming"` then; only the chat's status changes), and the edit session over
@@ -173,7 +199,7 @@ external). Change the edit prompt's rules (`editPromptRules`) only with a new me
 
 In `examples/strict-csp`: `pnpm test` builds the pages (a worksheet in both targets, and a mind map island in both), serves them with the policy in `csp.mjs` and fails on any CSP violation or console error in Chromium, Firefox and WebKit (`BROWSERS=` picks some). Build the packages first (`pnpm turbo run build --filter=@typstream/example-strict-csp^...`). CI runs it in each browser's `Engine (<browser>)` job. Hostile documents go in `corpus/adversarial/hostile-*.typ` (category `hostile-…`); the engine's and the browser suites' `security.test.ts` run them all.
 
-In `examples/nextjs-ai-sdk`: deployed at https://typstream-ai-sdk.vercel.app with no `ANTHROPIC_API_KEY`, so when the server has none (`GET /api/chat`), the page asks for the visitor's key in a dialog, keeps it in memory only and sends it in a header (`app/api/chat/key.ts`); the smoke test declines it ("Replay a sample"). `pnpm test` builds the app (Turbopack) and streams an answer into `<Typstream>` in Chromium (pages), then an edit of it (HTML: the edit streams into the finished document, highlighted, then Undo), then the first answer's Edit button editing that document in place, failing on any error frame. Once there's a document, a request sends it in the user message's metadata and the route adds `editPrompt()`; the page applies the answer with `createEditSession`. The route prompts with edu's kit (with universe, google-fonts and mindmap) and the page renders with their plugins (mind maps as islands); the UI is shadcn/ui (AI Elements, Base UI, Tailwind 4) in `components/ui/`, added with the shadcn CLI. Without `ANTHROPIC_API_KEY` the route replays a worksheet (or, asked to edit, two `<edit>`s of it) that compiles at every prefix (a kit recording doesn't, and the test fails on any error frame); a key in `.env.local` reaches `next start` too, so run the test with `ANTHROPIC_API_KEY=` to keep it offline. Build the packages first (`pnpm turbo run build --filter=@typstream/example-nextjs-ai-sdk^...`). CI runs it in the `Engine (chromium)` job.
+In `examples/nextjs-ai-sdk`: deployed at https://typstream-ai-sdk.vercel.app with no `ANTHROPIC_API_KEY`, so when the server has none (`GET /api/chat`), the page asks for the visitor's key in a dialog, keeps it in memory only and sends it in a header (`app/api/chat/key.ts`); the smoke test declines it ("Replay a sample"). `pnpm test` builds the app (Turbopack) and streams an answer into `<Typstream>` in Chromium (pages), then an edit of it (HTML: the edit streams into the finished document, highlighted, then Undo), then the first answer's Edit with AI button editing that document in place, then its Edit button opening `<TypstEditor>` and typing into it (Done shows the edit in the page view), failing on any error frame. Once there's a document, a request sends it in the user message's metadata and the route adds `editPrompt()`; the page applies the answer with `createEditSession`. The route prompts with edu's kit (with universe, google-fonts and mindmap) and the page renders with their plugins (mind maps as islands); the UI is shadcn/ui (AI Elements, Base UI, Tailwind 4) in `components/ui/`, added with the shadcn CLI. Without `ANTHROPIC_API_KEY` the route replays a worksheet (or, asked to edit, two `<edit>`s of it) that compiles at every prefix (a kit recording doesn't, and the test fails on any error frame); a key in `.env.local` reaches `next start` too, so run the test with `ANTHROPIC_API_KEY=` to keep it offline. Build the packages first (`pnpm turbo run build --filter=@typstream/example-nextjs-ai-sdk^...`). CI runs it in the `Engine (chromium)` job.
 
 In `packages/heal`:
 - `pnpm test:long`: 20,000-run property campaign (minutes).

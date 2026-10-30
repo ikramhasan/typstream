@@ -84,6 +84,7 @@ Each is `(state, schema) => Transaction | null` (an `EditorCommand`); `null` whe
 | `splitBlock`, `insertLineBreak` | Enter and Shift+Enter. |
 | `moveChar`, `snap` | Where the caret goes one character on, and the nearest place a caret can be. |
 | `toggleMark(mark)`, `setMark(mark, value)` | Bold, italic, underline (a `Mark`: a function, and for colours and sizes an argument); `isMarked` and `markValue` read them at the selection. |
+| `setLink(url)`, `linkAt` | A `#link("…")[…]` around the selection, its URL changed, or links taken off with `null`. |
 | `setBlockType(type)`, `blockType` | Paragraph, heading levels, list items (`BlockType`). `toggleList` and `indentItems` for lists. |
 | `setAlignment(align)`, `alignmentAt` | An `#align(…)[…]` around the blocks (`Alignment`). |
 | `insertBlock(template)`, `insertInline(template)` | Inserts Typst as a block after the caret's, or at the caret; `CURSOR` (`{{cursor}}`) marks where the caret goes. |

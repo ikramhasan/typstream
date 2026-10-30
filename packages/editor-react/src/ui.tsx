@@ -125,7 +125,8 @@ export interface PopoverProps {
 /** A popover positioned at `anchor`, closed by Escape or a click outside. */
 export const Popover = ({ anchor, onClose, children, className, prefer, ignore, label }: PopoverProps) => {
   const ref = useRef<HTMLDivElement>(null);
-  const [style, setStyle] = useState<CSSProperties>({ visibility: "hidden", top: 0, left: 0 });
+  // Unplaced until measured, but focusable (a hidden element isn't, and its fields autofocus).
+  const [style, setStyle] = useState<CSSProperties>({ opacity: 0, top: 0, left: 0 });
   const place = useCallback(() => {
     const a = anchor();
     const el = ref.current;

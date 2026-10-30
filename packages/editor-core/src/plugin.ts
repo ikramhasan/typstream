@@ -8,7 +8,7 @@ import type { EditorComponentSpec, EditorParamSpec, TypstreamPlugin } from "@typ
 import { alignmentAt, blockType, indentItems, setAlignment, setBlockType, toggleList } from "./blocks";
 import { DEFAULT_SCHEMA, type EditorSchema } from "./commands";
 import { insertBlock, insertInline } from "./components";
-import { isMarked, markValue, setMark, toggleMark } from "./marks";
+import { isMarked, linkAt, markValue, setLink, setMark, toggleMark } from "./marks";
 import type { EditorState, Transaction } from "./state";
 import { tableTemplate } from "./table";
 
@@ -44,6 +44,16 @@ export interface ToolbarItem {
   items?: ToolbarItem[];
   /** A menu's label at the selection (the block type: `Heading 2`). */
   current?: (state: EditorState, schema: EditorSchema) => string | null;
+  /**
+   * A text field in a popover (a link's URL): what it holds at the selection, and the command for
+   * what is typed (`null` for Remove).
+   */
+  prompt?: {
+    label: string;
+    placeholder?: string;
+    value: (state: EditorState, schema: EditorSchema) => string | null;
+    apply: (value: string | null) => EditorCommand;
+  };
   /** A value picker. */
   picker?: {
     kind: "color" | "select";
@@ -226,6 +236,21 @@ const colorPicker = (
   apply: (value) => setMark({ name, arg }, value === null ? null : rgb(value)),
 });
 
+/** The link at the selection, edited in a field. */
+const link: ToolbarItem = {
+  key: "link",
+  label: "Link",
+  icon: "link",
+  group: "link",
+  active: (s, schema) => linkAt(s, schema) !== null,
+  prompt: {
+    label: "Link to",
+    placeholder: "https://…",
+    value: (s, schema) => linkAt(s, schema),
+    apply: (value) => setLink(value === null || value.trim() === "" ? null : value.trim()),
+  },
+};
+
 const SIZES = ["8pt", "9pt", "10pt", "11pt", "12pt", "14pt", "16pt", "18pt", "20pt", "24pt", "28pt", "32pt"];
 
 /** Bold, italic, underline, strikethrough, sub- and superscript, colours and sizes. @beta */
@@ -260,6 +285,7 @@ export const marksPlugin: EditorPlugin = createEditorPlugin({
       group: "color",
       picker: colorPicker("highlight", "fill", HIGHLIGHTS, "None"),
     },
+    link,
     {
       key: "size",
       label: "Font size",
@@ -294,6 +320,7 @@ export const marksPlugin: EditorPlugin = createEditorPlugin({
       group: "color",
       picker: colorPicker("highlight", "fill", HIGHLIGHTS, "None"),
     },
+    link,
   ],
 });
 
@@ -413,7 +440,29 @@ function marker(insert: (match: RegExpExecArray) => string): InputRule["run"] {
 /** Tables, equations, page breaks and dividers in the insert menu. @beta */
 export const insertPlugin: EditorPlugin = createEditorPlugin({
   key: "insert",
-  components: [{ name: "table", label: "Table", icon: "table", controls: "table" }],
+  components: [
+    { name: "table", label: "Table", icon: "table", controls: "table" },
+    {
+      name: "image",
+      label: "Image",
+      icon: "image",
+      params: [
+        {
+          name: "width",
+          label: "Width",
+          type: "length",
+          help: "Like 50% or 6cm. Empty: its own size, at most the column's.",
+        },
+        { name: "alt", label: "Description", type: "text", help: "What it shows, for screen readers." },
+      ],
+    },
+    {
+      name: "figure",
+      label: "Figure",
+      icon: "image",
+      params: [{ name: "caption", label: "Caption", type: "content" }],
+    },
+  ],
   insert: [
     {
       key: "table",

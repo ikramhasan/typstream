@@ -3,9 +3,78 @@
 // selection, menus what the block is, pickers the colour.
 
 import type { EditorView, ToolbarItem } from "@typstream/editor-core";
-import { type CSSProperties, Fragment, type ReactNode, useLayoutEffect, useRef, useState } from "react";
+import { type CSSProperties, Fragment, type ReactNode, useCallback, useLayoutEffect, useRef, useState } from "react";
 import { InsertMenu } from "./insert";
-import { Button, ColorMenu, Layer, Menu, Separator } from "./ui";
+import { Button, ColorMenu, Layer, Menu, Popover, Separator } from "./ui";
+
+/** A button opening a text field (a link's URL); Enter applies it, Remove takes it off. */
+const PromptButton = ({
+  item,
+  view,
+}: {
+  item: ToolbarItem & { prompt: NonNullable<ToolbarItem["prompt"]> };
+  view: EditorView;
+}) => {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState("");
+  const button = useRef<HTMLButtonElement>(null);
+  const close = useCallback(() => setOpen(false), []);
+  const anchor = useCallback(() => button.current?.getBoundingClientRect() ?? null, []);
+  const current = item.prompt.value(view.state, view.schema);
+  const apply = (value: string | null) => {
+    setOpen(false);
+    view.run(item.prompt.apply(value));
+    view.focus();
+  };
+  return (
+    <>
+      <Button
+        label={item.label}
+        icon={item.icon}
+        buttonRef={button}
+        expanded={open}
+        active={current !== null}
+        onClick={() => {
+          setDraft(current ?? "");
+          setOpen((o) => !o);
+        }}
+      />
+      {open && (
+        <Popover anchor={anchor} onClose={close} ignore={button} label={item.prompt.label}>
+          <form
+            className="tse-field"
+            style={{ padding: 4, minWidth: 260 }}
+            onSubmit={(e) => {
+              e.preventDefault();
+              apply(draft);
+            }}
+          >
+            <label htmlFor={`tse-prompt-${item.key}`}>{item.prompt.label}</label>
+            <input
+              id={`tse-prompt-${item.key}`}
+              type="text"
+              value={draft}
+              placeholder={item.prompt.placeholder}
+              // biome-ignore lint/a11y/noAutofocus: the popover opened to type into it
+              autoFocus
+              onChange={(e) => setDraft(e.target.value)}
+            />
+            <span className="tse-actions">
+              <button type="submit" className="tse-button" data-variant="primary">
+                Apply
+              </button>
+              {current !== null && (
+                <button type="button" className="tse-button" data-variant="destructive" onClick={() => apply(null)}>
+                  Remove
+                </button>
+              )}
+            </span>
+          </form>
+        </Popover>
+      )}
+    </>
+  );
+};
 
 /** One toolbar item at the view's state. */
 export const Item = ({ item, view }: { item: ToolbarItem; view: EditorView }) => {
@@ -14,6 +83,8 @@ export const Item = ({ item, view }: { item: ToolbarItem; view: EditorView }) =>
     view.run(command);
     view.focus();
   };
+  if (item.prompt)
+    return <PromptButton item={item as ToolbarItem & { prompt: NonNullable<ToolbarItem["prompt"]> }} view={view} />;
   if (item.picker) {
     const value = item.picker.value(state, schema);
     const apply = item.picker.apply;
