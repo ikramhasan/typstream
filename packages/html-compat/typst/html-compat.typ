@@ -586,9 +586,13 @@
     context html.elem("typstream-anchor", attrs: it.attrs + (data-page: _page-geometry()), _page-parts())
   }
 
+  // A paragraph's empty lines (`_empty-lines`) need its body in a span (`.ts-par`), whose own paragraph, this rule's,
+  // is left as it is.
   show par: html-only(it => {
-    let body = _empty-lines(it.body)
-    if body == it.body { it } else { html.elem("p", body) }
+    let b = it.body
+    if b.func() == html.elem and b.at("tag", default: "") == "span" and b.attrs.at("class", default: "") == "ts-par" { return it }
+    let body = _empty-lines(b)
+    if body == b { it } else { html.elem("span", attrs: (class: "ts-par"), body) }
   })
 
   // Text in a style the defaults don't have. Not in math, which MathML styles itself.
@@ -647,7 +651,7 @@
   // `below` (paragraph spacing when `auto`; its own, `.ts-sp`, beats its neighbours' paragraph spacing, as Typst's
   // flow collapses them). An unbreakable or sticky block tells the renderer's pages so (`.ts-whole`, `.ts-sticky`).
   show block: html-only(it => {
-    if type(it.body) != content or it.body.func() == html.elem { return it }
+    if type(it.body) == content and it.body.func() == html.elem { return it }
     if _has-drawing(it.body) or _is-canvas(it.body) { return _frame(it) }
     let props = _box-props(fill: it.fill, stroke: it.stroke, inset: it.inset, radius: it.radius) + _inset-vars(it.inset)
     props.insert("width", if it.width == auto and _expands(it.body) { "100%" } else { _len(it.width) })
@@ -801,7 +805,7 @@
     let marker = if type(marker) == function { marker(0) } else { marker }
     // Nested lists take the next marker.
     let rest = if markers.len() > 1 { markers.slice(1) + markers.slice(0, 1) } else { markers }
-    html.elem("ul", attrs: (class: "ts-list", style: list-props(it)), {
+    html.elem("ul", attrs: (class: "ts-list" + if it.tight { " ts-tight" }, style: list-props(it)), {
       set list(marker: rest)
       for child in it.children { item(marker, child.body) }
     })
@@ -814,7 +818,7 @@
       item(if type(it.numbering) == str { numbering(it.numbering, n) } else { (it.numbering)(n) }, child.body)
       n += if it.reversed { -1 } else { 1 }
     }
-    html.elem("ol", attrs: (class: "ts-list ts-enum", style: list-props(it)), items)
+    html.elem("ol", attrs: (class: "ts-list ts-enum" + if it.tight { " ts-tight" }, style: list-props(it)), items)
   })
   // Term lists: each term and its description a paragraph with a hanging indent, the term bold.
   show terms: html-only(it => {
@@ -823,7 +827,7 @@
       text-indent: "-" + _len(it.hanging-indent),
       row-gap: _len(gutter(it)),
     )
-    html.elem("dl", attrs: (class: "ts-terms", style: props), for child in it.children {
+    html.elem("dl", attrs: (class: "ts-terms" + if it.tight { " ts-tight" }, style: props), for child in it.children {
       html.elem("div", attrs: (class: "ts-term"), html.elem("dt", strong(child.term)) + it.separator + html.elem("dd", child.description))
     })
   })

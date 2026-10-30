@@ -141,6 +141,37 @@ interface Block {
 
 const SRC_ATTRIBUTE = "data-typstream-src";
 
+/** Elements whose text is inline content of their own: text directly in any other element is a run of a block's. */
+const INLINE = new Set([
+  "span", "a", "strong", "em", "b", "i", "u", "s", "sub", "sup", "code", "mark", "small", "q", "cite", "abbr",
+  "kbd", "samp", "var", "time", "data", "bdi", "bdo", "label", "del", "ins",
+]);
+/** Spans that hold lines of their own (html-compat's blocks inside boxes, boxes, a paragraph's body). */
+const LINE_HOLDERS = /\bts-(?:b|box|par)\b/;
+
+/**
+ * Wraps the text that sits directly in a block (and in html-compat's boxes) in spans (`typstream-t`). With the
+ * pages' CSS, blocks have no strut (`line-height: 0`) and inline elements keep their own line: a line is as tall as
+ * the text on it, as in Typst, not at least as tall as its block's text would be. Whitespace alone is left out.
+ */
+const wrapRuns = (root: ParentNode, doc: Document): void => {
+  const walker = doc.createTreeWalker(root, 4);
+  const runs: Text[] = [];
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    const parent = n.parentElement;
+    if (!parent || !(n as Text).data.trim()) continue;
+    if (INLINE.has(parent.localName) && !LINE_HOLDERS.test(parent.className)) continue;
+    if (parent.closest("math, svg, pre, script, style")) continue;
+    runs.push(n as Text);
+  }
+  for (const text of runs) {
+    const span = doc.createElement("span");
+    span.className = "typstream-t";
+    text.replaceWith(span);
+    span.append(text);
+  }
+};
+
 /**
  * The page html-compat writes on the source anchors, and its header and footer inside them: the last anchor's (a
  * document's pages are all alike). The first ones can come before the document's `#set page(..)`, or a template's.
@@ -275,6 +306,7 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
       }
     }
     sanitize(content);
+    wrapRuns(content, inert);
     // Moving the cleaned nodes adopts them into the page's document.
     const fragment = doc.createDocumentFragment();
     fragment.append(...Array.from(content.childNodes));
