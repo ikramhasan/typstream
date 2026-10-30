@@ -393,12 +393,12 @@
   margin-block-end: 0;
 }
 /* Spacing between blocks collapses as Typst's does (typst-layout's flow, distribute.rs): the larger of two gaps wins,
-   unless one is stronger. A block's own `above` and `below` (a heading's, `.ts-sp`) beat the paragraph spacing that
-   blocks without them get, even when smaller. */
-:where(.typstream) :is(h1, h2, h3, h4, h5, h6, .ts-sp) + :not(h1, h2, h3, h4, h5, h6, .ts-sp) {
+   unless one is stronger. A block's own `above` and `below` (a heading's; html-compat.typ's `.ts-sp-a`, `.ts-sp-b`)
+   beat the paragraph spacing that blocks get by default (`auto`), even when smaller. */
+:where(.typstream) :is(h1, h2, h3, h4, h5, h6, .ts-sp-b) + :not(h1, h2, h3, h4, h5, h6, .ts-sp-a) {
   margin-block-start: 0;
 }
-:where(.typstream) :not(h1, h2, h3, h4, h5, h6, .ts-sp):has(+ :is(h1, h2, h3, h4, h5, h6, .ts-sp)) {
+:where(.typstream) :not(h1, h2, h3, h4, h5, h6, .ts-sp-b):has(+ :is(h1, h2, h3, h4, h5, h6, .ts-sp-a)) {
   margin-block-end: 0;
 }
 /* A tight list right after a paragraph (or text) is attached to it: its items' gap, `par.leading`, 0 on pages,

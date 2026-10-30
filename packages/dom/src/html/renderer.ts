@@ -141,27 +141,18 @@ interface Block {
 
 const SRC_ATTRIBUTE = "data-typstream-src";
 
-/** Elements whose text is inline content of their own: text directly in any other element is a run of a block's. */
-const INLINE = new Set([
-  "span", "a", "strong", "em", "b", "i", "u", "s", "sub", "sup", "code", "mark", "small", "q", "cite", "abbr",
-  "kbd", "samp", "var", "time", "data", "bdi", "bdo", "label", "del", "ins",
-]);
-/** Spans that hold lines of their own (html-compat's blocks inside boxes, boxes, a paragraph's body). */
-const LINE_HOLDERS = /\bts-(?:b|box|par)\b/;
-
 /**
- * Wraps the text that sits directly in a block (and in html-compat's boxes) in spans (`typstream-t`). With the
- * pages' CSS, blocks have no strut (`line-height: 0`) and inline elements keep their own line: a line is as tall as
- * the text on it, as in Typst, not at least as tall as its block's text would be. Whitespace alone is left out.
+ * Wraps text in spans (`typstream-t`): with the pages' CSS, only they have a line box (`line-height: normal`, the
+ * engine's fonts making it Typst's 1.3em) and every element around them has none, so a line is as tall as the text
+ * on it, as in Typst, not at least as tall as a strut of its block's or a `<strong>`'s size. Whitespace alone is left
+ * out, and math and drawings, which aren't text.
  */
 const wrapRuns = (root: ParentNode, doc: Document): void => {
   const walker = doc.createTreeWalker(root, 4);
   const runs: Text[] = [];
   for (let n = walker.nextNode(); n; n = walker.nextNode()) {
     const parent = n.parentElement;
-    if (!parent || !(n as Text).data.trim()) continue;
-    if (INLINE.has(parent.localName) && !LINE_HOLDERS.test(parent.className)) continue;
-    if (parent.closest("math, svg, pre, script, style")) continue;
+    if (!parent || !(n as Text).data.trim() || parent.closest("math, svg, script, style")) continue;
     runs.push(n as Text);
   }
   for (const text of runs) {

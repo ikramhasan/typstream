@@ -126,14 +126,11 @@ export const htmlRendererCss: string = `${THEME_CSS}
   max-width: 100%;
   background: white;
 }
-:where(.typstream-pages) :is(div, p, li, dd, dt, dl, ul, ol, h1, h2, h3, h4, h5, h6, blockquote, figure, figcaption, section, nav, header, footer, aside, pre) {
+:where(.typstream-pages *) {
   line-height: 0;
 }
-:where(.typstream-pages) :is(span, a, strong, em, b, i, u, s, sub, sup, code, mark, small, q, cite, abbr, kbd, samp, var, del, ins) {
+:where(.typstream-pages .typstream-t) {
   line-height: normal;
-}
-:where(.typstream-pages) :is(.ts-b, .ts-box, .ts-par, .ts-math) {
-  line-height: 0;
 }
 :where(.typstream-flow) {
   position: absolute;

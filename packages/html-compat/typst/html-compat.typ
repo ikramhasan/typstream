@@ -665,7 +665,7 @@
       props.insert("--ts-above", gap(it.above))
       props.insert("--ts-below", gap(it.below))
     }
-    let class = "ts-block" + _stroked(props) + if custom { " ts-sp" } + if not it.breakable { " ts-whole" } + if it.sticky { " ts-sticky" }
+    let class = "ts-block" + _stroked(props) + if custom { " ts-sp" } + if it.above != auto { " ts-sp-a" } + if it.below != auto { " ts-sp-b" } + if not it.breakable { " ts-whole" } + if it.sticky { " ts-sticky" }
     _el("div", class, style: _style(props), _empty-lines(it.body))
   })
   show box: html-only(it => {
@@ -728,7 +728,7 @@
       [— #cite(it.attribution, form: "prose")]
     } else { [— #it.attribution] }
     let quoted = if it.quotes == true { quote(block: false, quotes: true, it.body) } else { it.body }
-    html.elem("blockquote", attrs: (class: "ts-quote ts-sp"), _el("div", "ts-quote-body", quoted) + if attribution != none {
+    html.elem("blockquote", attrs: (class: "ts-quote ts-sp ts-sp-a ts-sp-b"), _el("div", "ts-quote-body", quoted) + if attribution != none {
       _el("div", "ts-attribution", attribution)
     })
   })
