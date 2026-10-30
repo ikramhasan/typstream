@@ -59,15 +59,12 @@ request, Arabic, and three requests that don't say which part they mean. Every q
 matched the document exactly, every edited document compiled, and the edits changed the parts each request meant.
 When a request didn't say which part it meant, the models asked 8 times out of 9.
 
-If your chat history can't be rewritten (some agent frameworks store it append-only), send the document as it is now in
-each request anyway, or the teacher's own edits as diffs. Quotes work either way. They only need the model to know the
-text.
-
-Put the document only into the request you're sending, and keep it there in later requests: never change a message the
-model has already answered. With Claude's extended thinking, an answer's thinking is signed over everything that came
-before it, and a request in which that changed fails ("Invalid `signature` in `thinking` block"). Taking the document
-back out of an earlier request is such a change, and so is adding `editPrompt()` to the system prompt partway through a
-chat, so send it from the first request.
+Treat the chat as append-only: put the document as it is now (or the teacher's own edits, as diffs) into the request
+you're sending, and send earlier requests again exactly as they were sent. Quotes work either way. They only need the
+model to know the text. Never change a message the model has already answered: with Claude's extended thinking, an
+answer's thinking is signed over everything that came before it, and a request in which that changed fails ("Invalid
+`signature` in `thinking` block"). Taking the document back out of an earlier request is such a change, and so is adding
+`editPrompt()` to the system prompt partway through a chat, so include `editPrompt()` from the first request.
 
 ## The edit session
 
