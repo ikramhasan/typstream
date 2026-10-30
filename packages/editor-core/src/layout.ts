@@ -393,11 +393,37 @@ export class Layout {
     return [...byPage].map(([page, b]) => ({ page, x: b.x0, y: b.y0, width: b.x1 - b.x0, height: b.y1 - b.y0 }));
   }
 
+  /**
+   * A table cell's box: from where it starts to where the next cell in its row starts (or its
+   * table's right edge), and down to the next row (or the table's bottom). An empty cell draws
+   * nothing, so its element has no box of its own.
+   */
+  cellBox(cell: LaidElement): [number, number, number, number] {
+    const table = findLast(
+      this.elements.slice(0, this.elements.indexOf(cell)),
+      (e) => e.page === cell.page && e.depth < cell.depth && (e.kind === "table" || e.kind === "grid") && !!e.box,
+    );
+    const [tx, ty, tw, th] = table?.box ?? cell.box ?? [cell.x, cell.y, 0, 0];
+    const cells = this.elements.filter((e) => e.kind === "cell" && e.page === cell.page && e.depth === cell.depth && e.x >= tx - 0.5 && e.x <= tx + tw && e.y >= ty - 0.5 && e.y <= ty + th);
+    let right = tx + tw;
+    let bottom = ty + th;
+    for (const e of cells) {
+      if (Math.abs(e.y - cell.y) < 0.5 && e.x > cell.x + 0.5) right = Math.min(right, e.x);
+      if (e.y > cell.y + 0.5) bottom = Math.min(bottom, e.y);
+    }
+    return [cell.x, cell.y, right - cell.x, bottom - cell.y];
+  }
+
   /** Elements of `kind` whose own source is `[from, to)` or inside it. */
   elementsIn(from: number, to: number, kind?: string): LaidElement[] {
     return this.elements.filter((e) => (!kind || e.kind === kind) && e.node && e.node[0] >= from && e.node[1] <= to);
   }
 }
+
+const findLast = <T>(list: readonly T[], test: (item: T) => boolean): T | undefined => {
+  for (let i = list.length - 1; i >= 0; i--) if (test(list[i] as T)) return list[i];
+  return undefined;
+};
 
 /** Whether `inner`'s box is inside `outer`'s (a nested element in the walk). */
 const within = (inner: LaidElement, outer: LaidElement): boolean => {

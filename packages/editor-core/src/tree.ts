@@ -80,7 +80,13 @@ export const pathAt = (root: SyntaxNode, offset: number, side: 1 | -1 = 1): Path
   for (;;) {
     let next: SyntaxNode | undefined;
     for (const child of node.children) {
-      const inside = side > 0 ? child.from <= offset && offset < child.to : child.from < offset && offset <= child.to;
+      // An empty node (an empty `[]`'s markup) holds the offset it sits at.
+      const inside =
+        child.from === child.to
+          ? child.from === offset && child.kind === "Markup"
+          : side > 0
+            ? child.from <= offset && offset < child.to
+            : child.from < offset && offset <= child.to;
       if (inside) {
         next = child;
         break;

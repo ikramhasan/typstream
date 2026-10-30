@@ -194,3 +194,10 @@ describe("escapeMarkup", () => {
     expect(escapeMarkup("Hello, world. It's 3 o'clock!")).toBe("Hello, world. It's 3 o'clock!");
   });
 });
+
+describe("empty content blocks", () => {
+  it("can be typed into", () => {
+    expect(run("#table(columns: 2, [a], [‸])", insertText("b"))).toBe("#table(columns: 2, [a], [b‸])");
+    expect(run("#question[‸]", insertText("Why?"))).toBe("#question[Why?‸]");
+  });
+});
