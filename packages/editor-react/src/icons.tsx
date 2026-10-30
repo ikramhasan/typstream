@@ -98,6 +98,7 @@ const ICONS: Record<string, LucideIcon> = {
   redo: Redo2,
   rows: Rows3,
   sigma: Sigma,
+  square: Square,
   strikethrough: Strikethrough,
   subscript: Subscript,
   superscript: Superscript,
@@ -108,6 +109,9 @@ const ICONS: Record<string, LucideIcon> = {
   undo: Undo2,
   x: X,
 };
+
+/** Whether the toolbar draws `name` (else a square). */
+export const hasIcon = (name: string): boolean => name in ICONS;
 
 /** The icon named `name` (lucide's names), or a square. */
 export const Icon = ({ name, className }: { name: string | undefined; className?: string }) => {

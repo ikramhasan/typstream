@@ -78,7 +78,7 @@ const remove = (view: EditorView, c: Component) => {
 const LENGTH = /^-?(\d+(\.\d*)?|\.\d+)(pt|mm|cm|in|em|%|fr)$/;
 
 /** What the field shows for an argument's source. */
-const display = (param: EditorParamSpec, source: string | null): string => {
+export const display = (param: EditorParamSpec, source: string | null): string => {
   if (source === null) return "";
   if (param.type === "text") return readString(source) ?? source;
   if (param.type === "content")
@@ -90,7 +90,7 @@ const display = (param: EditorParamSpec, source: string | null): string => {
 };
 
 /** The source for what the field holds; `null` leaves the argument out (its default). */
-const source = (param: EditorParamSpec, value: string): string | null | undefined => {
+export const source = (param: EditorParamSpec, value: string): string | null | undefined => {
   if (value === "") return null;
   switch (param.type) {
     case "number":
