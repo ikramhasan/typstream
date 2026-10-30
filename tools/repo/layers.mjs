@@ -77,8 +77,21 @@ export const PACKAGES = {
   },
   ai: { name: "@typstream/ai", layer: 5, deps: ["core", "heal"] },
   codemirror: { name: "@typstream/codemirror", layer: 5, deps: ["syntax", "engine"] },
-  "editor-core": { name: "@typstream/editor-core", layer: 5, deps: ["syntax", "engine", "dom"] },
-  "editor-react": { name: "@typstream/editor-react", layer: 5, deps: ["editor-core", "syntax", "engine", "dom"] },
+  // The visual editor (#36): on the pages themselves (the engine's positions), framework-free in
+  // editor-core, with React's toolbars in editor-react. Their tests compile with engine-wasm, edu and
+  // mindmap.
+  "editor-core": {
+    name: "@typstream/editor-core",
+    layer: 5,
+    deps: ["core", "syntax", "engine", "dom"],
+    testDeps: ["engine-wasm", "edu", "mindmap"],
+  },
+  "editor-react": {
+    name: "@typstream/editor-react",
+    layer: 5,
+    deps: ["core", "syntax", "engine", "dom", "editor-core", "react"],
+    testDeps: ["engine-wasm", "edu", "mindmap", "html-compat"],
+  },
 };
 
 // The table must itself respect the layering, or the rules built from it would
