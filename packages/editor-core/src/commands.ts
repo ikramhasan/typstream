@@ -7,7 +7,18 @@ import type { TextEdit } from "@typstream/core";
 import type { SyntaxNode } from "@typstream/syntax";
 import { type EditorState, mapThrough, type Selection, type Transaction } from "./state";
 import { atLineStart, escapeMarkup, isWordy } from "./text";
-import { type Block, blocksOf, calleeName, contentBlocksIn, findLast, isEmbedded, itemAt, markupOf, pathAt, type Path } from "./tree";
+import {
+  type Block,
+  blocksOf,
+  calleeName,
+  contentBlocksIn,
+  findLast,
+  isEmbedded,
+  itemAt,
+  markupOf,
+  type Path,
+  pathAt,
+} from "./tree";
 import { step, type Unit, unitAfter, unitBefore, unitInside, unitsOf } from "./units";
 
 /**
@@ -24,7 +35,21 @@ export interface EditorSchema {
 
 /** The marks and inline calls of Typst's standard library. @beta */
 export const DEFAULT_SCHEMA: EditorSchema = {
-  marks: new Set(["strong", "emph", "underline", "overline", "strike", "highlight", "sub", "super", "smallcaps", "text", "link", "lower", "upper"]),
+  marks: new Set([
+    "strong",
+    "emph",
+    "underline",
+    "overline",
+    "strike",
+    "highlight",
+    "sub",
+    "super",
+    "smallcaps",
+    "text",
+    "link",
+    "lower",
+    "upper",
+  ]),
   inline: new Set([
     "strong",
     "emph",
@@ -82,7 +107,14 @@ const markupAround = (path: Path, offset: number): { markup: SyntaxNode; index: 
     if (n.kind === "Markup" && n.from <= offset && offset <= n.to) {
       // A block item's own markup is its text; blocks are its parent's.
       const parent = path[i - 1];
-      if (parent && (parent.kind === "Heading" || parent.kind === "ListItem" || parent.kind === "EnumItem" || parent.kind === "TermItem")) continue;
+      if (
+        parent &&
+        (parent.kind === "Heading" ||
+          parent.kind === "ListItem" ||
+          parent.kind === "EnumItem" ||
+          parent.kind === "TermItem")
+      )
+        continue;
       if (parent && (parent.kind === "Strong" || parent.kind === "Emph")) continue;
       return { markup: n, index: i };
     }
@@ -111,7 +143,14 @@ const typingContext = (path: Path): "markup" | "raw" | null => {
       return leaf.kind === "RawDelim" || leaf.kind === "RawLang" ? null : "raw";
     }
     if (kind === "Markup") return "markup";
-    if (kind === "Math" || kind === "Code" || kind === "Args" || kind === "CodeBlock" || kind === "Str" || kind === "Equation")
+    if (
+      kind === "Math" ||
+      kind === "Code" ||
+      kind === "Args" ||
+      kind === "CodeBlock" ||
+      kind === "Str" ||
+      kind === "Equation"
+    )
       return null;
     if (kind === "Hash" || kind === "Ident" || kind === "FuncCall" || kind === "FieldAccess") return null;
   }
@@ -130,7 +169,12 @@ const TEXTY = new Set(["Text", "Space"]);
  * before, as in word processors).
  * @beta
  */
-export const deleteEdits = (state: EditorState, from: number, to: number, schema: EditorSchema = DEFAULT_SCHEMA): TextEdit[] => {
+export const deleteEdits = (
+  state: EditorState,
+  from: number,
+  to: number,
+  schema: EditorSchema = DEFAULT_SCHEMA,
+): TextEdit[] => {
   const text = state.text;
   const edits: TextEdit[] = [];
   const push = (a: number, b: number) => {
@@ -147,8 +191,10 @@ export const deleteEdits = (state: EditorState, from: number, to: number, schema
       return;
     }
     if (node.children.length === 0) {
-      if ((markup && TEXTY.has(node.kind)) || (node.kind === "Text" && !markup)) push(Math.max(from, node.from), Math.min(to, node.to));
-      else if (node.kind === "Text" || node.kind === "RawTrimmed") push(Math.max(from, node.from), Math.min(to, node.to));
+      if ((markup && TEXTY.has(node.kind)) || (node.kind === "Text" && !markup))
+        push(Math.max(from, node.from), Math.min(to, node.to));
+      else if (node.kind === "Text" || node.kind === "RawTrimmed")
+        push(Math.max(from, node.from), Math.min(to, node.to));
       return;
     }
     const kids = node.children;
@@ -190,7 +236,8 @@ export const deleteEdits = (state: EditorState, from: number, to: number, schema
         push(node.from, node.to);
         return;
       default:
-        for (const k of kids) if (k.kind === "ContentBlock" || k.kind === "Markup" || k.kind === "Args") visit(k, k.kind === "Markup");
+        for (const k of kids)
+          if (k.kind === "ContentBlock" || k.kind === "Markup" || k.kind === "Args") visit(k, k.kind === "Markup");
     }
   };
   /** An embedded expression partly in the range: only the text in its content blocks goes, unless it is a mark. */
@@ -267,7 +314,13 @@ const unmark = (state: EditorState, item: SyntaxNode): TextEdit[] => {
   const edits: TextEdit[] = [{ from: item.from, to: end, insert: "" }];
   const lineStart = text.lastIndexOf("\n", item.from - 1);
   // The text before on the previous line would run into it: a blank line keeps them apart.
-  if (lineStart > 0 && text[lineStart - 1] !== "\n" && text.slice(lineStart + 1, item.from).trim() === "" && item.kind !== "ListItem" && item.kind !== "EnumItem")
+  if (
+    lineStart > 0 &&
+    text[lineStart - 1] !== "\n" &&
+    text.slice(lineStart + 1, item.from).trim() === "" &&
+    item.kind !== "ListItem" &&
+    item.kind !== "EnumItem"
+  )
     edits.unshift({ from: lineStart, to: lineStart, insert: "\n" });
   const after = text.indexOf("\n", item.to);
   if (item.kind === "Heading" && after >= 0 && text[after + 1] !== "\n" && after + 1 < text.length)
@@ -316,7 +369,12 @@ export const insertText =
     const all = dedupe(edits);
     const guarded = [...all, ...guardDelimiters(state, all)];
     // After the typed text: where `at` goes, before what was inserted there, plus the text.
-    const head = mapThrough(at, dedupe(guarded).sort((a, b) => a.from - b.from || a.to - b.to), -1) + insert.length;
+    const head =
+      mapThrough(
+        at,
+        dedupe(guarded).sort((a, b) => a.from - b.from || a.to - b.to),
+        -1,
+      ) + insert.length;
     return { edits: dedupe(guarded), selection: caret(head), merge: true };
   };
 
@@ -349,6 +407,8 @@ const guardDelimiters = (state: EditorState, edits: readonly TextEdit[]): TextEd
   const touched = (pos: number) => sorted.some((e) => e.from <= pos + 1 && pos - 1 <= e.to);
   const deleted = (a: number, b: number) => sorted.some((e) => e.from < b && a < e.to);
   const inWord = (pos: number) => isWordy(next[pos - 1]) && isWordy(next[pos + 1]);
+  const start = (sorted[0] as TextEdit).from;
+  const end = (sorted[sorted.length - 1] as TextEdit).to;
   const out: TextEdit[] = [];
   const visit = (node: SyntaxNode) => {
     if (node.kind === "Strong" || node.kind === "Emph") {
@@ -364,7 +424,7 @@ const guardDelimiters = (state: EditorState, edits: readonly TextEdit[]): TextEd
         }
       }
     }
-    for (const c of node.children) if (c.to >= sorted[0]!.from - 1 && c.from <= sorted[sorted.length - 1]!.to + 1) visit(c);
+    for (const c of node.children) if (c.to >= start - 1 && c.from <= end + 1) visit(c);
   };
   visit(state.tree);
   // Only those that don't overlap the edits themselves.
@@ -417,7 +477,8 @@ export const splitBlock = (state: EditorState, schema: EditorSchema = DEFAULT_SC
       tr = { edits: [{ from: item.from, to: item.from, insert }], selection: caret(item.from + insert.length) };
     } else {
       const indent = " ".repeat(column(text, item.from));
-      const markerText = item.kind === "EnumItem" ? "+" : item.kind === "TermItem" ? "/" : text.slice(marker.from, marker.to);
+      const markerText =
+        item.kind === "EnumItem" ? "+" : item.kind === "TermItem" ? "/" : text.slice(marker.from, marker.to);
       const insert = item.kind === "TermItem" ? `\n${indent}/ ` : `\n${indent}${markerText} `;
       // The rest of the line's spaces stay with the text after the break, not before.
       tr = { edits: [{ from: at, to: at, insert }], selection: caret(at + insert.length) };
@@ -440,7 +501,7 @@ export const splitBlock = (state: EditorState, schema: EditorSchema = DEFAULT_SC
     }
   }
   if (pre.length === 0) return tr;
-  return chain(state, pre, base, tr);
+  return chain(state, base, tr);
 };
 
 /** How far the line at `offset` is indented (content blocks written over several lines keep it). */
@@ -462,14 +523,14 @@ export const insertLineBreak = (state: EditorState, schema: EditorSchema = DEFAU
   if (!canType(s, at)) return null;
   const insert = s.text[at - 1] === " " ? "\\ " : " \\ ";
   const tr: Transaction = { edits: [{ from: at, to: at, insert }], selection: caret(at + insert.length) };
-  return base ? chain(state, [state.apply(base).edit as TextEdit], s, tr) : tr;
+  return base ? chain(state, s, tr) : tr;
 };
 
 /**
- * One transaction from edits already applied to `state` (giving `mid`) and a transaction on
- * `mid`: what was replaced in `state` by everything, as a single edit.
+ * One transaction from `state` to `mid` (edits already made) and on through `tr`: what was
+ * replaced in `state` by everything, as a single edit.
  */
-const chain = (state: EditorState, applied: TextEdit[], mid: EditorState, tr: Transaction): Transaction => {
+const chain = (state: EditorState, mid: EditorState, tr: Transaction): Transaction => {
   const { state: end } = mid.apply(tr);
   const edit = diff(state.text, end.text);
   return { edits: edit ? [edit] : [], selection: end.selection };
@@ -492,8 +553,12 @@ const diff = (a: string, b: string): TextEdit | null => {
  * Where a caret at `offset` moves one unit left (-1) or right (1); `offset` itself at the end.
  * @beta
  */
-export const moveChar = (state: EditorState, offset: number, dir: 1 | -1, schema: EditorSchema = DEFAULT_SCHEMA): number =>
-  step(unitsFor(state, schema), offset, dir);
+export const moveChar = (
+  state: EditorState,
+  offset: number,
+  dir: 1 | -1,
+  schema: EditorSchema = DEFAULT_SCHEMA,
+): number => step(unitsFor(state, schema), offset, dir);
 
 /**
  * Snaps `offset` to a place a caret can be: not inside a character, an atom or a component's code.
@@ -507,10 +572,15 @@ export const snap = (state: EditorState, offset: number, schema: EditorSchema = 
 };
 
 /** The units, for views that need them. @beta */
-export const unitsAt = (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): readonly Unit[] => unitsFor(state, schema);
+export const unitsAt = (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): readonly Unit[] =>
+  unitsFor(state, schema);
 
 /** The block (in the innermost markup) holding `offset`. @beta */
-export const blockAtOffset = (state: EditorState, offset: number, schema: EditorSchema = DEFAULT_SCHEMA): Block | null => {
+export const blockAtOffset = (
+  state: EditorState,
+  offset: number,
+  schema: EditorSchema = DEFAULT_SCHEMA,
+): Block | null => {
   const { blocks } = blocksAround(state, offset, schema);
   let found: Block | null = null;
   for (const b of blocks) {
@@ -519,4 +589,3 @@ export const blockAtOffset = (state: EditorState, offset: number, schema: Editor
   }
   return found;
 };
-

@@ -83,7 +83,11 @@ export interface InputRule {
   /** The line's source before the caret, e.g. `^\\-[ ]$` for `- ` (the editor escapes what it types). */
   match: RegExp;
   /** The command, run on the state with the typed text in (it replaces `[lineStart, caret)` itself). */
-  run: (state: EditorState, line: { from: number; to: number; match: RegExpExecArray }, schema: EditorSchema) => Transaction | null;
+  run: (
+    state: EditorState,
+    line: { from: number; to: number; match: RegExpExecArray },
+    schema: EditorSchema,
+  ) => Transaction | null;
 }
 
 /**
@@ -204,9 +208,15 @@ export const HIGHLIGHTS: { value: string; label: string }[] = [
 
 /** A colour as Typst source, and back. */
 const rgb = (hex: string) => `rgb("${hex}")`;
-const hexOf = (source: string | null): string | null => /^rgb\("(#[0-9a-fA-F]{6})"\)$/.exec(source ?? "")?.[1] ?? source;
+const hexOf = (source: string | null): string | null =>
+  /^rgb\("(#[0-9a-fA-F]{6})"\)$/.exec(source ?? "")?.[1] ?? source;
 
-const colorPicker = (name: string, arg: string, options: { value: string; label: string }[], none: string): ToolbarItem["picker"] => ({
+const colorPicker = (
+  name: string,
+  arg: string,
+  options: { value: string; label: string }[],
+  none: string,
+): ToolbarItem["picker"] => ({
   kind: "color",
   options: [{ value: null, label: none }, ...options.map((o) => ({ ...o, swatch: o.value }))],
   value: (s, schema) => {
@@ -236,8 +246,20 @@ export const marksPlugin: EditorPlugin = createEditorPlugin({
     mark("strike", "Strikethrough", "strikethrough", "Mod-Shift-x"),
     mark("sub", "Subscript", "subscript", "Mod-,"),
     mark("super", "Superscript", "superscript", "Mod-."),
-    { key: "color", label: "Text colour", icon: "baseline", group: "color", picker: colorPicker("text", "fill", COLORS, "Default") },
-    { key: "highlight", label: "Highlight", icon: "highlighter", group: "color", picker: colorPicker("highlight", "fill", HIGHLIGHTS, "None") },
+    {
+      key: "color",
+      label: "Text colour",
+      icon: "baseline",
+      group: "color",
+      picker: colorPicker("text", "fill", COLORS, "Default"),
+    },
+    {
+      key: "highlight",
+      label: "Highlight",
+      icon: "highlighter",
+      group: "color",
+      picker: colorPicker("highlight", "fill", HIGHLIGHTS, "None"),
+    },
     {
       key: "size",
       label: "Font size",
@@ -258,8 +280,20 @@ export const marksPlugin: EditorPlugin = createEditorPlugin({
     mark("emph", "Italic", "italic", "Mod-i"),
     mark("underline", "Underline", "underline", "Mod-u"),
     mark("strike", "Strikethrough", "strikethrough", "Mod-Shift-x"),
-    { key: "color", label: "Text colour", icon: "baseline", group: "color", picker: colorPicker("text", "fill", COLORS, "Default") },
-    { key: "highlight", label: "Highlight", icon: "highlighter", group: "color", picker: colorPicker("highlight", "fill", HIGHLIGHTS, "None") },
+    {
+      key: "color",
+      label: "Text colour",
+      icon: "baseline",
+      group: "color",
+      picker: colorPicker("text", "fill", COLORS, "Default"),
+    },
+    {
+      key: "highlight",
+      label: "Highlight",
+      icon: "highlighter",
+      group: "color",
+      picker: colorPicker("highlight", "fill", HIGHLIGHTS, "None"),
+    },
   ],
 });
 
@@ -303,7 +337,9 @@ const align = (value: "left" | "center" | "right", label: string, icon: string):
 export const blocksPlugin: EditorPlugin = createEditorPlugin({
   key: "blocks",
   shortcuts: {
-    ...Object.fromEntries(BLOCK_TYPES.filter((t) => t.shortcut).map((t) => [t.shortcut as string, setBlockType(t.type)])),
+    ...Object.fromEntries(
+      BLOCK_TYPES.filter((t) => t.shortcut).map((t) => [t.shortcut as string, setBlockType(t.type)]),
+    ),
     "Mod-Shift-8": toggleList("list"),
     "Mod-Shift-7": toggleList("enum"),
     "Mod-Shift-e": setAlignment("center"),
@@ -312,16 +348,41 @@ export const blocksPlugin: EditorPlugin = createEditorPlugin({
   },
   toolbar: [
     turnInto,
-    { key: "list", label: "Bulleted list", icon: "list", group: "list", run: toggleList("list"), active: (s, schema) => blockType(s, schema)?.kind === "list" },
-    { key: "enum", label: "Numbered list", icon: "list-ordered", group: "list", run: toggleList("enum"), active: (s, schema) => blockType(s, schema)?.kind === "enum" },
-    { key: "outdent", label: "Outdent", icon: "indent-decrease", group: "list", shortcut: "Shift-Tab", run: indentItems(-1) },
+    {
+      key: "list",
+      label: "Bulleted list",
+      icon: "list",
+      group: "list",
+      run: toggleList("list"),
+      active: (s, schema) => blockType(s, schema)?.kind === "list",
+    },
+    {
+      key: "enum",
+      label: "Numbered list",
+      icon: "list-ordered",
+      group: "list",
+      run: toggleList("enum"),
+      active: (s, schema) => blockType(s, schema)?.kind === "enum",
+    },
+    {
+      key: "outdent",
+      label: "Outdent",
+      icon: "indent-decrease",
+      group: "list",
+      shortcut: "Shift-Tab",
+      run: indentItems(-1),
+    },
     { key: "indent", label: "Indent", icon: "indent-increase", group: "list", shortcut: "Tab", run: indentItems(1) },
     {
       key: "align",
       label: "Align",
       group: "align",
       icon: "align-left",
-      items: [align("left", "Align left", "align-left"), align("center", "Center", "align-center"), align("right", "Align right", "align-right")],
+      items: [
+        align("left", "Align left", "align-left"),
+        align("center", "Center", "align-center"),
+        align("right", "Align right", "align-right"),
+      ],
       current: (s) => alignmentAt(s),
     },
   ],
@@ -342,7 +403,10 @@ function marker(insert: (match: RegExpExecArray) => string): InputRule["run"] {
     const indent = line.match[1] ?? "";
     const at = line.from + indent.length;
     const text = insert(line.match);
-    return { edits: [{ from: at, to: line.to, insert: text }], selection: { anchor: at + text.length, head: at + text.length } };
+    return {
+      edits: [{ from: at, to: line.to, insert: text }],
+      selection: { anchor: at + text.length, head: at + text.length },
+    };
   };
 }
 
@@ -351,11 +415,51 @@ export const insertPlugin: EditorPlugin = createEditorPlugin({
   key: "insert",
   components: [{ name: "table", label: "Table", icon: "table", controls: "table" }],
   insert: [
-    { key: "table", label: "Table", description: "A table with a header row", icon: "table", group: "Basic", keywords: ["grid"], run: insertBlock(tableTemplate(3, 3)) },
-    { key: "equation", label: "Equation", description: "A formula on its own line", icon: "radical", group: "Basic", keywords: ["math", "formula"], run: insertBlock("$ x = {{cursor}} $") },
-    { key: "inline-equation", label: "Inline equation", description: "A formula in the text", icon: "sigma", group: "Basic", keywords: ["math"], run: insertInline("$x$") },
-    { key: "divider", label: "Divider", description: "A horizontal line", icon: "minus", group: "Basic", keywords: ["line", "rule", "hr"], run: insertBlock("#line(length: 100%)") },
-    { key: "page-break", label: "Page break", description: "Start a new page", icon: "file-plus", group: "Basic", keywords: ["new page"], run: insertBlock("#pagebreak()") },
+    {
+      key: "table",
+      label: "Table",
+      description: "A table with a header row",
+      icon: "table",
+      group: "Basic",
+      keywords: ["grid"],
+      run: insertBlock(tableTemplate(3, 3)),
+    },
+    {
+      key: "equation",
+      label: "Equation",
+      description: "A formula on its own line",
+      icon: "radical",
+      group: "Basic",
+      keywords: ["math", "formula"],
+      run: insertBlock("$ x = {{cursor}} $"),
+    },
+    {
+      key: "inline-equation",
+      label: "Inline equation",
+      description: "A formula in the text",
+      icon: "sigma",
+      group: "Basic",
+      keywords: ["math"],
+      run: insertInline("$x$"),
+    },
+    {
+      key: "divider",
+      label: "Divider",
+      description: "A horizontal line",
+      icon: "minus",
+      group: "Basic",
+      keywords: ["line", "rule", "hr"],
+      run: insertBlock("#line(length: 100%)"),
+    },
+    {
+      key: "page-break",
+      label: "Page break",
+      description: "Start a new page",
+      icon: "file-plus",
+      group: "Basic",
+      keywords: ["new page"],
+      run: insertBlock("#pagebreak()"),
+    },
   ],
 });
 

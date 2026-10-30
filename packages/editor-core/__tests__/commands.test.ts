@@ -2,7 +2,16 @@
 // Delete, Enter and Shift+Enter do to the source, and that the result still parses.
 import { parse } from "@typstream/syntax";
 import { beforeAll, describe, expect, it } from "vitest";
-import { deleteChar, EditorState, escapeMarkup, insertLineBreak, insertText, moveChar, splitBlock, unitsOf } from "../src/index";
+import {
+  deleteChar,
+  EditorState,
+  escapeMarkup,
+  insertLineBreak,
+  insertText,
+  moveChar,
+  splitBlock,
+  unitsOf,
+} from "../src/index";
 import { load, run } from "./support";
 
 beforeAll(load);
@@ -34,7 +43,23 @@ describe("typing", () => {
   });
 
   it("escapes what Typst would read as markup", () => {
-    for (const typed of ["*", "_", "#", "$", "@", "<b>", "`", "[x]", "\\", "~", "a -- b", "...", "//", "https://x.org", "1. no"]) {
+    for (const typed of [
+      "*",
+      "_",
+      "#",
+      "$",
+      "@",
+      "<b>",
+      "`",
+      "[x]",
+      "\\",
+      "~",
+      "a -- b",
+      "...",
+      "//",
+      "https://x.org",
+      "1. no",
+    ]) {
       const out = run(`Text ‸`, insertText(typed)) as string;
       const source = out.replace("‸", "");
       expect(shown(source), typed).toBe(`Text ${typed}`);

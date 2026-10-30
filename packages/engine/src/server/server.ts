@@ -43,6 +43,7 @@ import {
   type VersionMismatchData,
 } from "@typstream/core";
 import { fileKey } from "../image-paths";
+import { mapPositions } from "../positions";
 import type {
   AdapterCompileResult,
   AdapterDocument,
@@ -66,7 +67,6 @@ import {
 import { anyArrives, type FontCatalogueOptions, FontCatalogues } from "./fonts";
 import { DocumentPackages, type PackageOptions, PackageStore } from "./packages";
 import { LAYOUT_PROFILE } from "./profile";
-import { mapPositions } from "../positions";
 import { RUNTIME, RUNTIME_IMPORT, RUNTIME_PATH } from "./runtime";
 
 /**
@@ -964,7 +964,9 @@ class Server implements EngineServer {
                 })),
               }),
               ...(laid && {
-                positions: laid.map((p) => mapPositions(p, (at) => (at < offset ? -1 : toOriginal(at - offset)), offset)),
+                positions: laid.map((p) =>
+                  mapPositions(p, (at) => (at < offset ? -1 : toOriginal(at - offset)), offset),
+                ),
               }),
             },
           },

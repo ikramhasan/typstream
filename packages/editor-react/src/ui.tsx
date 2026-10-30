@@ -19,7 +19,8 @@ import { Icon } from "./icons";
 /** Keeps focus in the document: a mousedown on a toolbar would blur its input. */
 export const keepFocus = (event: { preventDefault(): void }): void => event.preventDefault();
 
-const APPLE = typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent);
+const APPLE =
+  typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent);
 
 /** `Mod-Shift-x` as the platform writes it: `Ctrl+Shift+X`, or `⇧⌘X` on Apple's. */
 export const shortcutLabel = (shortcut: string | undefined): string | undefined => {
@@ -50,7 +51,19 @@ export interface ButtonProps {
 }
 
 /** A ghost button with a tooltip that says what it does and its shortcut. */
-export const Button = ({ label, icon, active, disabled, shortcut, onClick, children, variant, className, expanded, buttonRef }: ButtonProps) => {
+export const Button = ({
+  label,
+  icon,
+  active,
+  disabled,
+  shortcut,
+  onClick,
+  children,
+  variant,
+  className,
+  expanded,
+  buttonRef,
+}: ButtonProps) => {
   const keys = shortcutLabel(shortcut);
   return (
     <button
@@ -81,12 +94,17 @@ export const Layer = ({ children }: { children: ReactNode }) =>
   typeof document === "undefined" ? null : createPortal(<div className="tse-layer">{children}</div>, document.body);
 
 /** Where a popover goes: below its anchor (or above it if the window has no room), kept on screen. */
-const placeAt = (anchor: DOMRect, size: { width: number; height: number }, prefer: "below" | "above" = "below"): CSSProperties => {
+const placeAt = (
+  anchor: DOMRect,
+  size: { width: number; height: number },
+  prefer: "below" | "above" = "below",
+): CSSProperties => {
   const margin = 6;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   let top = prefer === "below" ? anchor.bottom + margin : anchor.top - size.height - margin;
-  if (prefer === "below" && top + size.height > vh - 8 && anchor.top - size.height - margin > 8) top = anchor.top - size.height - margin;
+  if (prefer === "below" && top + size.height > vh - 8 && anchor.top - size.height - margin > 8)
+    top = anchor.top - size.height - margin;
   if (prefer === "above" && top < 8) top = anchor.bottom + margin;
   const left = Math.max(8, Math.min(anchor.left, vw - size.width - 8));
   return { top, left };
@@ -137,7 +155,13 @@ export const Popover = ({ anchor, onClose, children, className, prefer, ignore, 
   }, [onClose, ignore, place]);
   return (
     <Layer>
-      <div ref={ref} className={className ? `tse-popover ${className}` : "tse-popover"} style={style} role="dialog" aria-label={label}>
+      <div
+        ref={ref}
+        className={className ? `tse-popover ${className}` : "tse-popover"}
+        style={style}
+        role="dialog"
+        aria-label={label}
+      >
         {children}
       </div>
     </Layer>
@@ -160,7 +184,15 @@ export interface MenuEntry {
 }
 
 /** A list of entries, grouped under their group's label, moved through with the arrow keys. */
-export const MenuList = ({ entries, highlighted, onHighlight }: { entries: MenuEntry[]; highlighted?: number; onHighlight?: (i: number) => void }) => {
+export const MenuList = ({
+  entries,
+  highlighted,
+  onHighlight,
+}: {
+  entries: MenuEntry[];
+  highlighted?: number;
+  onHighlight?: (i: number) => void;
+}) => {
   let lastGroup: string | undefined;
   return (
     <div role="menu">
@@ -182,7 +214,14 @@ export const MenuList = ({ entries, highlighted, onHighlight }: { entries: MenuE
               onMouseEnter={() => onHighlight?.(i)}
               onClick={e.onSelect}
             >
-              {e.icon && (e.large ? <span className="tse-item-icon"><Icon name={e.icon} /></span> : <Icon name={e.icon} />)}
+              {e.icon &&
+                (e.large ? (
+                  <span className="tse-item-icon">
+                    <Icon name={e.icon} />
+                  </span>
+                ) : (
+                  <Icon name={e.icon} />
+                ))}
               <span>
                 {e.label}
                 {e.description && <small>{e.description}</small>}
@@ -218,12 +257,25 @@ export const Menu = ({
   const anchor = useCallback(() => button.current?.getBoundingClientRect() ?? null, []);
   return (
     <>
-      <Button label={label} icon={icon} buttonRef={button} expanded={open} disabled={disabled} onClick={() => setOpen((o) => !o)}>
+      <Button
+        label={label}
+        icon={icon}
+        buttonRef={button}
+        expanded={open}
+        disabled={disabled}
+        onClick={() => setOpen((o) => !o)}
+      >
         {text && <span>{text}</span>}
         <ChevronDown className="tse-chevron" aria-hidden="true" />
       </Button>
       {open && (
-        <Popover anchor={anchor} onClose={close} ignore={button} label={label} className={wide ? "tse-wide" : undefined}>
+        <Popover
+          anchor={anchor}
+          onClose={close}
+          ignore={button}
+          label={label}
+          className={wide ? "tse-wide" : undefined}
+        >
           <MenuList
             entries={entries.map((e) => ({
               ...e,
@@ -264,7 +316,10 @@ export const ColorMenu = ({
       <Button label={label} buttonRef={button} expanded={open} disabled={disabled} onClick={() => setOpen((o) => !o)}>
         <span className="tse-icon-stack">
           <Icon name={icon} />
-          <span className="tse-swatch-dot" style={{ background: value ?? "transparent", outline: value ? undefined : "1px solid currentColor" }} />
+          <span
+            className="tse-swatch-dot"
+            style={{ background: value ?? "transparent", outline: value ? undefined : "1px solid currentColor" }}
+          />
         </span>
         <ChevronDown className="tse-chevron" aria-hidden="true" />
       </Button>

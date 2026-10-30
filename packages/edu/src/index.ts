@@ -74,7 +74,12 @@ export const eduTemplates: TemplateSpec[] = (
   ] as const
 ).map(([name, title, description]) => ({ name, title, description, preamble: `#show: ${name}\n` }));
 
-const content = (name: string, label: string, help?: string) => ({ name, label, type: "content" as const, ...(help && { help }) });
+const content = (name: string, label: string, help?: string) => ({
+  name,
+  label,
+  type: "content" as const,
+  ...(help && { help }),
+});
 
 /**
  * edu's components as the visual editor offers them (#36): in its insert menu, with a form for
@@ -101,7 +106,14 @@ export const eduComponents: EditorComponentSpec[] = [
     keywords: ["choice", "options", "quiz"],
     template: "#mcq([First option], [Second option], [Third option], answer: 1)",
     params: [
-      { name: "answer", label: "Correct option", type: "number", min: 1, step: 1, help: "1 is the first option. Shown in the answer key only." },
+      {
+        name: "answer",
+        label: "Correct option",
+        type: "number",
+        min: 1,
+        step: 1,
+        help: "1 is the first option. Shown in the answer key only.",
+      },
       { name: "columns", label: "Columns", type: "number", min: 1, max: 6, step: 1, help: "Empty: as many as fit." },
     ],
   },
@@ -133,7 +145,10 @@ export const eduComponents: EditorComponentSpec[] = [
     inline: true,
     keywords: ["gap", "fill in", "cloze"],
     template: "#blank(answer: [answer])",
-    params: [content("answer", "Answer", "Shown in the answer key only."), { name: "width", label: "Width", type: "length", default: "4em" }],
+    params: [
+      content("answer", "Answer", "Shown in the answer key only."),
+      { name: "width", label: "Width", type: "length", default: "4em" },
+    ],
   },
   {
     name: "answer-lines",

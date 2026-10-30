@@ -100,13 +100,13 @@ export const pathAt = (root: SyntaxNode, offset: number, side: 1 | -1 = 1): Path
 
 /** The innermost `Markup` on `path`, and its index in it. */
 export const markupOf = (path: Path): { markup: SyntaxNode; index: number } | null => {
-  for (let i = path.length - 1; i >= 0; i--) if ((path[i] as SyntaxNode).kind === "Markup") return { markup: path[i] as SyntaxNode, index: i };
+  for (let i = path.length - 1; i >= 0; i--)
+    if ((path[i] as SyntaxNode).kind === "Markup") return { markup: path[i] as SyntaxNode, index: i };
   return null;
 };
 
 /** The ancestors on `path` of `kind`, innermost first. */
-export const ancestors = (path: Path, kind: SyntaxKind): SyntaxNode[] =>
-  path.filter((n) => n.kind === kind).reverse();
+export const ancestors = (path: Path, kind: SyntaxKind): SyntaxNode[] => path.filter((n) => n.kind === kind).reverse();
 
 /** Whether `path` ends in markup text a caret can type into (not code, math or a string). */
 export const inMarkup = (path: Path): boolean => {
@@ -308,7 +308,14 @@ export const callArgs = (call: SyntaxNode, text: string): CallArgs | null => {
     else if (c.kind !== "Comma" && c.kind !== "Space" && c.kind !== "LineComment" && c.kind !== "BlockComment")
       positional.push(c);
   }
-  return { node: args, named, namedNodes, positional, trailing, parens: open !== null && close !== null ? { from: open, to: close } : null };
+  return {
+    node: args,
+    named,
+    namedNodes,
+    positional,
+    trailing,
+    parens: open !== null && close !== null ? { from: open, to: close } : null,
+  };
 };
 
 /** The `Markup` inside a `ContentBlock` (`[…]`). */

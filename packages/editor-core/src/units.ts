@@ -39,7 +39,6 @@ const graphemes = (text: string, from: number, out: Unit[]) => {
     out.push({ kind: /^\s+$/.test(segment) ? "space" : "char", from: from + index, to: from + index + segment.length });
 };
 
-
 /**
  * The document's units in source order. `transparent(name)` says whether a call is a mark (text
  * styling such as `strong` or `text`), whose code is skipped like a delimiter, rather than a
@@ -201,7 +200,12 @@ export const wordStep = (units: readonly Unit[], text: string, offset: number, d
   }
   let i = unitAfter(units, offset);
   while (i < units.length && !isWord(units[i] as Unit)) i++;
-  while (i + 1 < units.length && isWord(units[i + 1] as Unit) && (units[i + 1] as Unit).from <= (units[i] as Unit).to + 8) i++;
+  while (
+    i + 1 < units.length &&
+    isWord(units[i + 1] as Unit) &&
+    (units[i + 1] as Unit).from <= (units[i] as Unit).to + 8
+  )
+    i++;
   return i < units.length ? (units[i] as Unit).to : offset;
 };
 

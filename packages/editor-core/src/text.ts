@@ -32,7 +32,10 @@ export const escapeMarkup = (text: string, before = "", after = ""): string => {
     const next = full[i + 1];
     const lineStart = i === 0 ? atLineStart(before) : /\n[ \t]*$/.test(text.slice(0, i));
     if (ESCAPED.has(c)) out += `\\${c}`;
-    else if (lineStart && (c === "=" || c === "/" || ((c === "-" || c === "+") && (next === " " || next === undefined))))
+    else if (
+      lineStart &&
+      (c === "=" || c === "/" || ((c === "-" || c === "+") && (next === " " || next === undefined)))
+    )
       out += `\\${c}`;
     else if (lineStart && DIGIT.test(c) && /^\p{N}+\./u.test(full.slice(i))) {
       // `1.` starts a numbered item: escape the dot.
@@ -52,7 +55,12 @@ export const escapeMarkup = (text: string, before = "", after = ""): string => {
     // Comments: `//`, `/*`, and a `*/` closing one.
     else if (c === "/" && (next === "/" || next === "*" || prev === "/" || prev === "*")) out += "\\/";
     // `http://` and `https://` start a link: escape the first slash.
-    else if (c === ":" && /^\/\//.test(full.slice(i + 1)) && /https?$/.test((before + text.slice(0, i)).slice(-5)) && i + 2 < text.length) {
+    else if (
+      c === ":" &&
+      /^\/\//.test(full.slice(i + 1)) &&
+      /https?$/.test((before + text.slice(0, i)).slice(-5)) &&
+      i + 2 < text.length
+    ) {
       out += ":\\//";
       i += 2;
     } else out += c;

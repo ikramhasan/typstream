@@ -119,7 +119,15 @@ export class Layout {
     this.glyphs.forEach((g, i) => {
       const prev = this.glyphs[i - 1];
       if (!line || !prev || !continues(line, prev, g)) {
-        line = { page: g.page, top: g.y - g.ascent, bottom: g.y + g.descent, left: g.x, right: g.x + g.width, first: i, last: i };
+        line = {
+          page: g.page,
+          top: g.y - g.ascent,
+          bottom: g.y + g.descent,
+          left: g.x,
+          right: g.x + g.width,
+          first: i,
+          last: i,
+        };
         this.lines.push(line);
       } else {
         line.top = Math.min(line.top, g.y - g.ascent);
@@ -236,7 +244,12 @@ export class Layout {
     if (!editable) return { offset: null, glyph: best, line };
     const right = x > editable.x + editable.width / 2;
     const rtl = (editable.flags & RTL) !== 0;
-    if (editable.flags & EXACT && editable.to - editable.from > 1 && x > editable.x && x < editable.x + editable.width) {
+    if (
+      editable.flags & EXACT &&
+      editable.to - editable.from > 1 &&
+      x > editable.x &&
+      x < editable.x + editable.width
+    ) {
       // A ligature: the nearest character boundary inside it.
       const share = (x - editable.x) / editable.width;
       const n = Math.round((rtl ? 1 - share : share) * (editable.to - editable.from));
@@ -292,7 +305,12 @@ export class Layout {
       if (pageGap > 1) break;
       const below = pageGap > 0 || (dir > 0 ? other.top >= line.bottom - 1 : other.bottom <= line.top + 1);
       if (!below) continue;
-      const dy = pageGap > 0 ? 1000 * pageGap + (dir > 0 ? other.top : this.height(other.page) - other.bottom) : dir > 0 ? other.top - line.bottom : line.top - other.bottom;
+      const dy =
+        pageGap > 0
+          ? 1000 * pageGap + (dir > 0 ? other.top : this.height(other.page) - other.bottom)
+          : dir > 0
+            ? other.top - line.bottom
+            : line.top - other.bottom;
       const dx = x < other.left ? other.left - x : x > other.right ? x - other.right : 0;
       const score = dy + dx * 2;
       if (score < bestScore) {
@@ -404,7 +422,16 @@ export class Layout {
       (e) => e.page === cell.page && e.depth < cell.depth && (e.kind === "table" || e.kind === "grid") && !!e.box,
     );
     const [tx, ty, tw, th] = table?.box ?? cell.box ?? [cell.x, cell.y, 0, 0];
-    const cells = this.elements.filter((e) => e.kind === "cell" && e.page === cell.page && e.depth === cell.depth && e.x >= tx - 0.5 && e.x <= tx + tw && e.y >= ty - 0.5 && e.y <= ty + th);
+    const cells = this.elements.filter(
+      (e) =>
+        e.kind === "cell" &&
+        e.page === cell.page &&
+        e.depth === cell.depth &&
+        e.x >= tx - 0.5 &&
+        e.x <= tx + tw &&
+        e.y >= ty - 0.5 &&
+        e.y <= ty + th,
+    );
     let right = tx + tw;
     let bottom = ty + th;
     for (const e of cells) {
@@ -434,6 +461,8 @@ const within = (inner: LaidElement, outer: LaidElement): boolean => {
 };
 
 /** Of two glyphs at one offset, the one to put a caret at: text over a node's glyph, then not math. */
-const better = (g: Glyph, than: Glyph): boolean => (g.flags & EXACT) > (than.flags & EXACT) || ((g.flags & EXACT) === (than.flags & EXACT) && (g.flags & MATH) < (than.flags & MATH));
+const better = (g: Glyph, than: Glyph): boolean =>
+  (g.flags & EXACT) > (than.flags & EXACT) ||
+  ((g.flags & EXACT) === (than.flags & EXACT) && (g.flags & MATH) < (than.flags & MATH));
 
 const box = (g: Glyph, x: number): CaretBox => ({ page: g.page, x, top: g.y - g.ascent, bottom: g.y + g.descent });

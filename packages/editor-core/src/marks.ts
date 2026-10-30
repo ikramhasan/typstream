@@ -8,7 +8,7 @@ import type { TextEdit } from "@typstream/core";
 import type { SyntaxNode } from "@typstream/syntax";
 import { DEFAULT_SCHEMA, type EditorSchema, unitsFor } from "./commands";
 import { type EditorState, mapSelection, type Selection, type Transaction } from "./state";
-import { ITEM_NODES, calleeName, callArgs, contentBlocksIn, isEmbedded } from "./tree";
+import { callArgs, calleeName, contentBlocksIn, ITEM_NODES, isEmbedded } from "./tree";
 
 /**
  * A mark: a Typst function wrapping text. `arg` makes it a styled call (`text` with `fill`): its
@@ -111,7 +111,13 @@ const pieces = (state: EditorState, from: number, to: number, schema: EditorSche
  * every character is inside such a wrapper, `null` when not all are (or they differ).
  * @beta
  */
-export const markValue = (state: EditorState, mark: Mark, from = state.from, to = state.to, schema: EditorSchema = DEFAULT_SCHEMA): string | true | null => {
+export const markValue = (
+  state: EditorState,
+  mark: Mark,
+  from = state.from,
+  to = state.to,
+  schema: EditorSchema = DEFAULT_SCHEMA,
+): string | true | null => {
   const ws = wrappers(state).filter((w) => matches(w, mark));
   let value: string | true | null = null;
   const ps = pieces(state, from, to, schema);
@@ -128,8 +134,13 @@ export const markValue = (state: EditorState, mark: Mark, from = state.from, to 
 };
 
 /** Whether `mark` is on all of `[from, to)` (a caret: on the text before it). @beta */
-export const isMarked = (state: EditorState, mark: Mark, from = state.from, to = state.to, schema?: EditorSchema): boolean =>
-  markValue(state, mark, from, to, schema) !== null;
+export const isMarked = (
+  state: EditorState,
+  mark: Mark,
+  from = state.from,
+  to = state.to,
+  schema?: EditorSchema,
+): boolean => markValue(state, mark, from, to, schema) !== null;
 
 /** The call that opens a wrapper of `mark` with `value`: `#strong[`, `#text(fill: red)[`. */
 const opening = (mark: Mark, value: string | null, rest: Map<string, string> = new Map()): string => {
@@ -171,7 +182,12 @@ const snapOut = (state: EditorState, offset: number, dir: 1 | -1, w: Wrapper): n
   const stack: SyntaxNode[] = [];
   while (node) {
     stack.push(node);
-    node = node.children.find((c) => c.from <= w.innerFrom && w.innerTo <= c.to && !(c.from === w.innerFrom && c.to === w.innerTo && c.kind !== "Markup"));
+    node = node.children.find(
+      (c) =>
+        c.from <= w.innerFrom &&
+        w.innerTo <= c.to &&
+        !(c.from === w.innerFrom && c.to === w.innerTo && c.kind !== "Markup"),
+    );
     if (node && node.from === w.innerFrom && node.to === w.innerTo && node.kind === "Markup") break;
   }
   if (!node) return offset;
@@ -186,7 +202,12 @@ const snapOut = (state: EditorState, offset: number, dir: 1 | -1, w: Wrapper): n
  * (text cut where the range ends), split at paragraph breaks and block items, going into what the
  * range only partly covers.
  */
-const segments = (state: EditorState, from: number, to: number, schema: EditorSchema): { from: number; to: number }[] => {
+const segments = (
+  state: EditorState,
+  from: number,
+  to: number,
+  schema: EditorSchema,
+): { from: number; to: number }[] => {
   const text = state.text;
   const out: { from: number; to: number }[] = [];
   const markup = (node: SyntaxNode) => {
@@ -215,7 +236,8 @@ const segments = (state: EditorState, from: number, to: number, schema: EditorSc
     const kids = node.children;
     for (let i = 0; i < kids.length; i++) {
       const c = kids[i] as SyntaxNode;
-      const expr = c.kind === "Hash" && kids[i + 1] && isEmbedded(kids[i + 1] as SyntaxNode) ? (kids[i + 1] as SyntaxNode) : null;
+      const expr =
+        c.kind === "Hash" && kids[i + 1] && isEmbedded(kids[i + 1] as SyntaxNode) ? (kids[i + 1] as SyntaxNode) : null;
       const end = expr ? expr.to : c.to;
       if (end <= from || c.from >= to) {
         if (expr) i++;
@@ -298,7 +320,10 @@ export const setMark =
     // An exact wrapper with another value: change the argument only.
     if (mark.arg && value !== null && value !== true) {
       const exact = wrappers(state).find(
-        (w) => matches(w, mark) && snapText(state, w.innerFrom) === snapText(state, from) && snapText(state, w.innerTo, -1) === snapText(state, to, -1),
+        (w) =>
+          matches(w, mark) &&
+          snapText(state, w.innerFrom) === snapText(state, from) &&
+          snapText(state, w.innerTo, -1) === snapText(state, to, -1),
       );
       if (exact) {
         const edits = [{ from: exact.from, to: exact.innerFrom, insert: opening(mark, value, exact.args) }];
@@ -337,7 +362,10 @@ const snapText = (state: EditorState, offset: number, dir: 1 | -1 = 1): number =
 const caretAt = (at: number): Selection => ({ anchor: at, head: at });
 
 const mapSel = (s: Selection, edits: readonly TextEdit[]): Selection =>
-  mapSelection(s, [...edits].sort((a, b) => a.from - b.from || a.to - b.to));
+  mapSelection(
+    s,
+    [...edits].sort((a, b) => a.from - b.from || a.to - b.to),
+  );
 
 const diffEdit = (a: string, b: string): TextEdit | null => {
   if (a === b) return null;

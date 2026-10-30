@@ -26,7 +26,14 @@ export class History {
   private undone: Entry[] = [];
 
   /** Records a change from `before` to `after`. `merge` joins typing into the entry before. */
-  record(before: string, after: string, selectionBefore: Selection, selectionAfter: Selection, merge = false, now = Date.now()): void {
+  record(
+    before: string,
+    after: string,
+    selectionBefore: Selection,
+    selectionAfter: Selection,
+    merge = false,
+    now = Date.now(),
+  ): void {
     if (before === after) return;
     const last = this.done[this.done.length - 1];
     if (merge && last?.merge && last.after === before && now - last.time < MERGE_MS) {

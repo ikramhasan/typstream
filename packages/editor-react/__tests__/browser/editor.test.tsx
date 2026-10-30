@@ -3,11 +3,11 @@
 // source, the insert menu adds tables and edu's components, a table's bar adds rows and columns, a
 // component's settings edit its arguments, and the pages are drawn as the page view draws them.
 
-import { edu } from "@typstream/edu";
-import { mindmap } from "@typstream/mindmap";
-import type { EditorView } from "@typstream/editor-core";
 import { act, cleanup, render, screen } from "@testing-library/react";
+import type { EditorView } from "@typstream/editor-core";
+import { edu } from "@typstream/edu";
 import { createEngine, type Engine, fromWorker } from "@typstream/engine";
+import { mindmap } from "@typstream/mindmap";
 import { afterEach, describe, expect, it } from "vitest";
 import { page, userEvent } from "vitest/browser";
 import { TypstEditor } from "../../src/index";
@@ -51,7 +51,7 @@ const mount = async (source: string, plugins = [edu]) => {
   );
   await waitFor(() => !!(view as EditorView | null)?.layout);
   const v = view as unknown as EditorView;
-  return { view: v, changes, settled: () => waitFor(() => (v.layout ? true : false)) };
+  return { view: v, changes };
 };
 
 /** Waits for the engine to lay out the editor's current text. */

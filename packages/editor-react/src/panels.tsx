@@ -25,21 +25,32 @@ import { type CSSProperties, type ReactNode, useCallback, useEffect, useLayoutEf
 import { Icon } from "./icons";
 import { Button, keepFocus, Layer, Popover } from "./ui";
 
-/** Re-measures `measure` on scroll, resize and whenever `deps` change. */
-const usePlacement = <T,>(measure: () => T | null, deps: unknown[]): T | null => {
-  const [style, setStyle] = useState<T | null>(null);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: the caller's deps say when to measure
-  useLayoutEffect(() => {
-    const place = () => setStyle(measure());
-    place();
+/**
+ * What `measure` says now: measured again after every render (the editor's state or layout
+ * changed), on scroll and on resize, and kept while it says the same.
+ */
+const usePlacement = <T,>(measure: () => T | null): T | null => {
+  const [value, setValue] = useState<T | null>(null);
+  const latest = useRef(measure);
+  latest.current = measure;
+  const last = useRef("null");
+  const place = useCallback(() => {
+    const next = latest.current();
+    const key = JSON.stringify(next);
+    if (key === last.current) return;
+    last.current = key;
+    setValue(next);
+  }, []);
+  useLayoutEffect(place);
+  useEffect(() => {
     window.addEventListener("scroll", place, true);
     window.addEventListener("resize", place);
     return () => {
       window.removeEventListener("scroll", place, true);
       window.removeEventListener("resize", place);
     };
-  }, deps);
-  return style;
+  }, [place]);
+  return value;
 };
 
 /** A component's spec from the plugins, by its function's name. */
@@ -70,7 +81,10 @@ const LENGTH = /^-?(\d+(\.\d*)?|\.\d+)(pt|mm|cm|in|em|%|fr)$/;
 const display = (param: EditorParamSpec, source: string | null): string => {
   if (source === null) return "";
   if (param.type === "text") return readString(source) ?? source;
-  if (param.type === "content") return source.startsWith("[") && source.endsWith("]") ? source.slice(1, -1).replace(/\\(.)/g, "$1") : (readString(source) ?? source);
+  if (param.type === "content")
+    return source.startsWith("[") && source.endsWith("]")
+      ? source.slice(1, -1).replace(/\\(.)/g, "$1")
+      : (readString(source) ?? source);
   if (param.type === "color") return /^rgb\("(#[0-9a-fA-F]{6})"\)$/.exec(source)?.[1] ?? source;
   return source;
 };
@@ -94,7 +108,15 @@ const source = (param: EditorParamSpec, value: string): string | null | undefine
   }
 };
 
-const Field = ({ param, value, onChange }: { param: EditorParamSpec; value: string | null; onChange: (source: string | null) => void }) => {
+const Field = ({
+  param,
+  value,
+  onChange,
+}: {
+  param: EditorParamSpec;
+  value: string | null;
+  onChange: (source: string | null) => void;
+}) => {
   const shown = display(param, value);
   const [draft, setDraft] = useState(shown);
   // An undo or another change from outside: the field follows.
@@ -108,7 +130,11 @@ const Field = ({ param, value, onChange }: { param: EditorParamSpec; value: stri
   if (param.type === "boolean")
     return (
       <label className="tse-field-row">
-        <input type="checkbox" checked={(value ?? param.default) === "true"} onChange={(e) => onChange(e.target.checked ? "true" : "false")} />
+        <input
+          type="checkbox"
+          checked={(value ?? param.default) === "true"}
+          onChange={(e) => onChange(e.target.checked ? "true" : "false")}
+        />
         {param.label}
       </label>
     );
@@ -116,7 +142,11 @@ const Field = ({ param, value, onChange }: { param: EditorParamSpec; value: stri
   if (param.type === "choice")
     input = (
       <select value={value ?? ""} onChange={(e) => onChange(e.target.value === "" ? null : e.target.value)}>
-        <option value="">{param.default ? `${param.options?.find((o) => o.value === param.default)?.label ?? param.default} (default)` : "Default"}</option>
+        <option value="">
+          {param.default
+            ? `${param.options?.find((o) => o.value === param.default)?.label ?? param.default} (default)`
+            : "Default"}
+        </option>
         {param.options?.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}
@@ -141,6 +171,7 @@ const Field = ({ param, value, onChange }: { param: EditorParamSpec; value: stri
       />
     );
   return (
+    // biome-ignore lint/a11y/noLabelWithoutControl: the control is `input`, a field of the kind above
     <label className="tse-field">
       {param.label}
       {input}
@@ -150,7 +181,15 @@ const Field = ({ param, value, onChange }: { param: EditorParamSpec; value: stri
 };
 
 /** The form of a component's arguments. */
-export const ComponentForm = ({ view, component, spec }: { view: EditorView; component: Component; spec: ComponentSpec }) => (
+export const ComponentForm = ({
+  view,
+  component,
+  spec,
+}: {
+  view: EditorView;
+  component: Component;
+  spec: ComponentSpec;
+}) => (
   <>
     {(spec.params ?? []).map((param) => (
       <Field
@@ -190,7 +229,7 @@ export const ComponentBar = ({ view }: { view: EditorView }) => {
     if (!box) return null;
     const top = box.top - BAR_HEIGHT - 6;
     return { left: Math.max(8, box.left), top: top < 4 ? box.bottom + 6 : top };
-  }, [view, view.state, view.layout, key]);
+  });
   if (!component || !style) return null;
   const table = spec?.controls === "table" ? tableAt(view.state, view.state.selection.head, view.schema) : null;
   const run = (command: Parameters<EditorView["run"]>[0]) => {
@@ -206,7 +245,12 @@ export const ComponentBar = ({ view }: { view: EditorView }) => {
           {label}
         </span>
         {spec?.params?.length ? (
-          <Button label="Settings" buttonRef={settingsButton} expanded={settings} onClick={() => setSettings((s) => !s)}>
+          <Button
+            label="Settings"
+            buttonRef={settingsButton}
+            expanded={settings}
+            onClick={() => setSettings((s) => !s)}
+          >
             Settings
           </Button>
         ) : null}
@@ -231,8 +275,17 @@ export const ComponentBar = ({ view }: { view: EditorView }) => {
         />
       </div>
       {settings && spec && (
-        <Popover anchor={settingsAnchor} onClose={closeSettings} ignore={settingsButton} label={`${label} settings`} className="tse-form">
-          <div className="tse-panel" style={{ position: "static", boxShadow: "none", border: 0, padding: 4, animation: "none" }}>
+        <Popover
+          anchor={settingsAnchor}
+          onClose={closeSettings}
+          ignore={settingsButton}
+          label={`${label} settings`}
+          className="tse-form"
+        >
+          <div
+            className="tse-panel"
+            style={{ position: "static", boxShadow: "none", border: 0, padding: 4, animation: "none" }}
+          >
             <ComponentForm view={view} component={component} spec={spec} />
           </div>
         </Popover>
@@ -255,7 +308,7 @@ const TableEdges = ({ view }: { view: EditorView }) => {
       row: { left: (last.left + last.right) / 2 - 10, top: last.bottom + 4 },
       column: { left: first.right + 4, top: (first.top + first.bottom) / 2 - 10 },
     };
-  }, [view, view.state, view.layout]);
+  });
   if (!table || !at) return null;
   const inLast = (row: number, column: number) => {
     const cell = table.ranges[row]?.[column];
@@ -347,12 +400,15 @@ export const EquationPanel = ({ view }: { view: EditorView }) => {
     const box = view.boxesOf(eq.from, eq.to)[0];
     if (!box) return null;
     return { left: Math.max(8, Math.min(box.left, window.innerWidth - 268)), top: box.bottom + 8 };
-  }, [view, view.state, view.layout, key]);
+  });
   if (!eq || !style) return null;
   const write = (math: string, display = eq.display) => {
     setDraft(math);
     const src = display ? `$ ${math} $` : `$${math}$`;
-    view.dispatch({ edits: [{ from: eq.from, to: eq.to, insert: src }], selection: { anchor: eq.from, head: eq.from + src.length, node: true } });
+    view.dispatch({
+      edits: [{ from: eq.from, to: eq.to, insert: src }],
+      selection: { anchor: eq.from, head: eq.from + src.length, node: true },
+    });
   };
   const insertKey = (insert: string) => {
     const el = field.current;

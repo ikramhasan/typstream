@@ -13,6 +13,7 @@
 import { diffEdit, type PagedArtifact, type TextEdit } from "@typstream/core";
 import { type MountedPaged, mountPaged } from "@typstream/dom";
 import type { EngineDocument } from "@typstream/engine";
+import { indentItems } from "./blocks";
 import {
   blockAtOffset,
   canType,
@@ -32,7 +33,6 @@ import { type CaretBox, type Layout, Layout as LayoutClass, type Line, type Page
 import { basicPlugins, type EditorCommand, type EditorPlugin, matchesShortcut, schemaOf } from "./plugin";
 import { EditorState, mapThrough, type Selection, type Transaction } from "./state";
 import { escapeMarkup } from "./text";
-import { indentItems } from "./blocks";
 import { unitBefore, wordAt, wordStep } from "./units";
 
 /** Options of {@link createEditor}. @beta */
@@ -242,7 +242,9 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
     if (!layout) return null;
     const lt = layoutText ?? state.text;
     // An empty cell or list item: where its element starts.
-    const cell = layout.elements.find((e) => (e.kind === "cell" || e.kind === "item-body") && e.node && e.node[0] <= at && at <= e.node[1]);
+    const cell = layout.elements.find(
+      (e) => (e.kind === "cell" || e.kind === "item-body") && e.node && e.node[0] <= at && at <= e.node[1],
+    );
     if (cell) {
       const size = 11;
       const inset = cell.kind === "cell" ? 5 : 0;
@@ -294,7 +296,11 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
   };
 
   /** A client point as a page and a point on it, in points. */
-  const pointAt = (clientX: number, clientY: number, target: EventTarget | null): { page: number; x: number; y: number } | null => {
+  const pointAt = (
+    clientX: number,
+    clientY: number,
+    target: EventTarget | null,
+  ): { page: number; x: number; y: number } | null => {
     if (!layout) return null;
     const els = pageEls();
     let index = target instanceof Element ? els.indexOf(target.closest(".typstream-page") as HTMLElement) : -1;
@@ -507,33 +513,46 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
   let lastClickAt = { x: 0, y: 0 };
 
   /** The current offset under a client point, or a component to select there. */
-  const resolve = (clientX: number, clientY: number, target: EventTarget | null): { offset: number } | { component: Component } | null => {
+  const resolve = (
+    clientX: number,
+    clientY: number,
+    target: EventTarget | null,
+  ): { offset: number } | { component: Component } | null => {
     const point = pointAt(clientX, clientY, target);
     if (!point || !layout) return null;
     const hit = layout.hit(point.page, point.x, point.y);
     const line = hit.line;
     // In a table cell whose text isn't what was hit (an empty cell next to a full one): its start.
     const cellOf = (x: number, y: number) =>
-      layout?.elements.find((e) => e.kind === "cell" && e.page === point.page && e.node && within({ x, y }, layout?.cellBox(e) ?? [], 0));
+      layout?.elements.find(
+        (e) => e.kind === "cell" && e.page === point.page && e.node && within({ x, y }, layout?.cellBox(e) ?? [], 0),
+      );
     const cell = cellOf(point.x, point.y);
     if (cell?.node && (!hit.glyph || cellOf(hit.glyph.x + hit.glyph.width / 2, hit.glyph.y) !== cell)) {
       const lt = layoutText ?? state.text;
       const start = lt[cell.node[0]] === "[" ? cell.node[0] + 1 : cell.node[0];
       return { offset: snap(state, fromLayout(start), schema) };
     }
-    const onText = !!hit.glyph && hit.glyph.from >= 0 && !!line && point.y >= line.top - 4 && point.y <= line.bottom + 4;
+    const onText =
+      !!hit.glyph && hit.glyph.from >= 0 && !!line && point.y >= line.top - 4 && point.y <= line.bottom + 4;
     if (onText && hit.offset !== null) return { offset: snap(state, fromLayout(hit.offset), schema) };
     // Off the text, on a component's own drawing (a question's number, a table's rules, a
     // drawing): the innermost component there.
     const inside = (from: number, to: number) => {
       const range = toLayoutRange(from, to);
-      return layout?.boxes(range.from, range.to).some((b) => b.page === point.page && within(point, [b.x, b.y, b.width, b.height], 1)) ?? false;
+      return (
+        layout
+          ?.boxes(range.from, range.to)
+          .some((b) => b.page === point.page && within(point, [b.x, b.y, b.width, b.height], 1)) ?? false
+      );
     };
     const hits = componentsIn(state, schema).filter((c) => inside(c.from, c.to));
     const innermost = hits.sort((a, b) => a.to - a.from - (b.to - b.from))[0];
     if (innermost) {
       // A table's cell: a caret in it.
-      const cell = layout.elements.find((e) => e.kind === "cell" && e.page === point.page && e.node && within(point, layout?.cellBox(e) ?? [], 0));
+      const cell = layout.elements.find(
+        (e) => e.kind === "cell" && e.page === point.page && e.node && within(point, layout?.cellBox(e) ?? [], 0),
+      );
       if (cell?.node && (innermost.name === "table" || innermost.name === "grid")) {
         const lt = layoutText ?? state.text;
         const start = lt[cell.node[0]] === "[" ? cell.node[0] + 1 : cell.node[0];
@@ -550,7 +569,8 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
     const target = e.target as Element | null;
     if (target?.closest(".typstream-island")) return;
     const now = e.timeStamp;
-    clicks = now - lastClick < 450 && Math.hypot(e.clientX - lastClickAt.x, e.clientY - lastClickAt.y) < 6 ? clicks + 1 : 1;
+    clicks =
+      now - lastClick < 450 && Math.hypot(e.clientX - lastClickAt.x, e.clientY - lastClickAt.y) < 6 ? clicks + 1 : 1;
     lastClick = now;
     lastClickAt = { x: e.clientX, y: e.clientY };
     const hit = resolve(e.clientX, e.clientY, e.target);
@@ -670,7 +690,9 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
             moveTo(dir < 0 ? state.from : state.to, false);
             return true;
           }
-          const at = word ? wordStep(unitsAt(state, schema), state.text, selection.head, dir) : moveChar(state, selection.head, dir, schema);
+          const at = word
+            ? wordStep(unitsAt(state, schema), state.text, selection.head, dir)
+            : moveChar(state, selection.head, dir, schema);
           moveTo(at, e.shiftKey);
           return true;
         }
@@ -718,8 +740,15 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
       }
       if (mod && !e.altKey) {
         const k = e.key.toLowerCase();
-        if (k === "z") return e.shiftKey ? redo() : undo(), true;
-        if (k === "y" && !apple) return redo(), true;
+        if (k === "z") {
+          if (e.shiftKey) redo();
+          else undo();
+          return true;
+        }
+        if (k === "y" && !apple) {
+          redo();
+          return true;
+        }
         if (k === "a") {
           select({ anchor: 0, head: state.text.length });
           return true;
@@ -734,8 +763,10 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
   const moveCell = (dir: 1 | -1): boolean => {
     if (!layout) return false;
     const at = toLayout(state.selection.head).offset;
-    const cells = layout.elements.filter((e) => e.kind === "cell" && e.node).sort((a, b) => (a.node as number[])[0]! - (b.node as number[])[0]!);
-    const i = cells.findIndex((c) => (c.node as number[])[0]! <= at && at <= (c.node as number[])[1]!);
+    const cells = layout.elements
+      .filter((e): e is typeof e & { node: [number, number] } => e.kind === "cell" && !!e.node)
+      .sort((a, b) => a.node[0] - b.node[0]);
+    const i = cells.findIndex((c) => c.node[0] <= at && at <= c.node[1]);
     if (i < 0) return false;
     const next = cells[i + dir];
     if (!next?.node) return true;
@@ -842,7 +873,8 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
       const t = state.text.slice(u.from, u.to);
       if (u.kind === "break") out += "\n\n";
       else if (u.kind === "space") out += t.includes("\n") ? " " : t.replace(/~/g, " ");
-      else if (u.kind === "char") out += t.startsWith("\\") && t.length === 2 ? t.slice(1) : t === "~" ? " " : t.startsWith("\\") ? "\n" : t;
+      else if (u.kind === "char")
+        out += t.startsWith("\\") && t.length === 2 ? t.slice(1) : t === "~" ? " " : t.startsWith("\\") ? "\n" : t;
       else if (u.kind === "atom") out += t;
     }
     return out;
@@ -868,7 +900,10 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
       const del = state.empty ? null : deleteSelection(state, schema);
       const base = del ? state.apply(del).state : state;
       const at = base.selection.head;
-      const tr = { edits: [{ from: at, to: at, insert: typst }], selection: { anchor: at + typst.length, head: at + typst.length } };
+      const tr = {
+        edits: [{ from: at, to: at, insert: typst }],
+        selection: { anchor: at + typst.length, head: at + typst.length },
+      };
       const end = base.apply(tr).state;
       const edit = diffEdit(state.text, end.text);
       dispatch({ edits: edit ? [edit] : [], selection: end.selection });
@@ -888,7 +923,10 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
       const at = s.selection.head;
       const before = s.text.slice(s.text.lastIndexOf("\n", at - 1) + 1, at);
       const insert = lines.map((l, j) => escapeMarkup(l, j === 0 ? before : "", "")).join(" ");
-      s = s.apply({ edits: [{ from: at, to: at, insert }], selection: { anchor: at + insert.length, head: at + insert.length } }).state;
+      s = s.apply({
+        edits: [{ from: at, to: at, insert }],
+        selection: { anchor: at + insert.length, head: at + insert.length },
+      }).state;
     });
     const edit = diffEdit(state.text, s.text);
     dispatch({ edits: edit ? [edit] : [], selection: s.selection });

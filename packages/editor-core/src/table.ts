@@ -4,10 +4,10 @@
 // commands (they return `null`); the cells' text is edited on the page like any other.
 
 import type { SyntaxNode } from "@typstream/syntax";
-import { componentAt } from "./components";
 import { DEFAULT_SCHEMA, type EditorSchema } from "./commands";
+import { componentAt } from "./components";
 import type { EditorState, Transaction } from "./state";
-import { calleeName, callArgs } from "./tree";
+import { callArgs, calleeName } from "./tree";
 
 const TABLES = new Set(["table", "grid"]);
 
@@ -38,7 +38,11 @@ export interface TableModel {
 }
 
 /** Reads the table (or grid) the caret is in. `null` when there is none, or it spans cells. @beta */
-export const tableAt = (state: EditorState, offset = state.from, schema: EditorSchema = DEFAULT_SCHEMA): TableModel | null => {
+export const tableAt = (
+  state: EditorState,
+  offset = state.from,
+  schema: EditorSchema = DEFAULT_SCHEMA,
+): TableModel | null => {
   const component = componentAt(state, offset, schema, TABLES);
   if (!component) return null;
   return readTable(state, component.call, component.from);
@@ -56,11 +60,15 @@ const readTable = (state: EditorState, call: SyntaxNode, from: number): TableMod
   if (columnsArg) {
     if (columnsArg.kind === "Int") columns = Number(src(columnsArg));
     else if (columnsArg.kind === "Array") {
-      sizes = columnsArg.children.filter((c) => !["LeftParen", "RightParen", "Comma", "Space"].includes(c.kind)).map(src);
+      sizes = columnsArg.children
+        .filter((c) => !["LeftParen", "RightParen", "Comma", "Space"].includes(c.kind))
+        .map(src);
       columns = sizes.length;
     } else return null;
   }
-  const named = [...args.namedNodes].filter(([k]) => k !== "columns").map(([k]) => [k, src(args.named.get(k) as SyntaxNode)] as [string, string]);
+  const named = [...args.namedNodes]
+    .filter(([k]) => k !== "columns")
+    .map(([k]) => [k, src(args.named.get(k) as SyntaxNode)] as [string, string]);
   const flat: SyntaxNode[] = [];
   let header = false;
   let headerCells: SyntaxNode[] = [];
@@ -144,7 +152,11 @@ const rewrite = (state: EditorState, table: TableModel, next: TableModel, row: n
   return { edits, selection: { anchor: at, head: at } };
 };
 
-const clone = (t: TableModel): TableModel => ({ ...t, cells: t.cells.map((r) => [...r]), sizes: t.sizes ? [...t.sizes] : null });
+const clone = (t: TableModel): TableModel => ({
+  ...t,
+  cells: t.cells.map((r) => [...r]),
+  sizes: t.sizes ? [...t.sizes] : null,
+});
 
 /**
  * Adds a row above or below the caret's row (a header gets its row below it).
@@ -218,4 +230,3 @@ export const deleteTable = (state: EditorState, schema?: EditorSchema): Transact
   if (after) to += after[0].length;
   return { edits: [{ from: table.from, to, insert: "" }], selection: { anchor: table.from, head: table.from } };
 };
-

@@ -16,8 +16,10 @@
 // you stay at the bottom and lets you scroll away from it. As pages, an answer
 // is cut off below the text being written, so that bottom is the text.
 //
-// Documents can be edited (#34). Each answer's Edit button asks what to change
-// and edits that document in place; once there's a document, a request typed in
+// Documents can be edited on their pages (#36): Edit shows the answer in
+// @typstream/editor-react's <TypstEditor>, the same pages, with a toolbar, and
+// Done shows the edited document again. Or with AI (#34): Edit with AI asks what
+// to change and edits that document in place; once there's a document, a request typed in
 // the chat edits the latest one in a new answer. Either way the page sends the
 // document with the request, the model answers with `<edit>`s that quote what
 // they replace, and an edit session (@typstream/ai) applies them as they stream:
@@ -565,47 +567,47 @@ const Answer = ({
             {editor}
           </article>
         ) : (
-        <article
-          // HTML in a card; pages on their own, as sheets with shadows (app/globals.css), inset so the
-          // chat's scroll area doesn't cut the shadows off at the sides.
-          className={
-            target === "paged" ? "answer px-4 pt-2 pb-8" : "answer rounded-xl border bg-card px-8 py-6 shadow-xs"
-          }
-          data-status={t.status}
-          data-stale={stale}
-          data-target={target}
-        >
-          <div
-            ref={host}
-            // Clipped vertically only: the pages' shadows stay at their sides while the answer streams.
-            className={clip === null ? undefined : "overflow-y-clip"}
-            style={clip === null ? undefined : { height: clip }}
+          <article
+            // HTML in a card; pages on their own, as sheets with shadows (app/globals.css), inset so the
+            // chat's scroll area doesn't cut the shadows off at the sides.
+            className={
+              target === "paged" ? "answer px-4 pt-2 pb-8" : "answer rounded-xl border bg-card px-8 py-6 shadow-xs"
+            }
+            data-status={t.status}
+            data-stale={stale}
+            data-target={target}
           >
-            <Typstream
-              ref={t.ref}
-              source={text}
-              isStreaming={streaming}
-              streamingRange={streamingRange}
-              target={target}
-              plugins={PLUGINS}
-              // A mind map is interactive in the HTML target (pan, zoom, open and close branches): React Flow,
-              // loaded the first time an answer has one. Pages show its drawing.
-              islands={mindmapIslands}
-              resolveImage={IMAGES}
-              inputs={answers ? ANSWERS : undefined}
-              layout="fit-width"
-              animated
-              caret
-              onRendered={() => {
-                measure();
-                mark();
-              }}
-              onStatusChange={(status) => {
-                if (status === "stale" || status === "error") setStale((n) => n + 1);
-              }}
-            />
-          </div>
-        </article>
+            <div
+              ref={host}
+              // Clipped vertically only: the pages' shadows stay at their sides while the answer streams.
+              className={clip === null ? undefined : "overflow-y-clip"}
+              style={clip === null ? undefined : { height: clip }}
+            >
+              <Typstream
+                ref={t.ref}
+                source={text}
+                isStreaming={streaming}
+                streamingRange={streamingRange}
+                target={target}
+                plugins={PLUGINS}
+                // A mind map is interactive in the HTML target (pan, zoom, open and close branches): React Flow,
+                // loaded the first time an answer has one. Pages show its drawing.
+                islands={mindmapIslands}
+                resolveImage={IMAGES}
+                inputs={answers ? ANSWERS : undefined}
+                layout="fit-width"
+                animated
+                caret
+                onRendered={() => {
+                  measure();
+                  mark();
+                }}
+                onStatusChange={(status) => {
+                  if (status === "stale" || status === "error") setStale((n) => n + 1);
+                }}
+              />
+            </div>
+          </article>
         )}
         <MessageFooter className="gap-1 px-0">
           <CopySource target={target} text={text} exportHtml={t.exportHtml} disabled={streaming} />

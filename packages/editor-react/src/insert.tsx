@@ -84,7 +84,10 @@ export const InsertMenu = ({ view, items }: { view: EditorView; items: InsertIte
 /** The slash menu: the insert list at the caret. */
 export const SlashMenu = ({ view, onClose }: { view: EditorView; onClose: () => void }) => {
   const items = view.plugins.flatMap((p) => p.insert ?? []);
-  const anchor = useCallback(() => view.element.querySelector(".typstream-editor-caret")?.getBoundingClientRect() ?? null, [view]);
+  const anchor = useCallback(
+    () => view.element.querySelector(".typstream-editor-caret")?.getBoundingClientRect() ?? null,
+    [view],
+  );
   const close = useCallback(() => {
     onClose();
     view.focus();

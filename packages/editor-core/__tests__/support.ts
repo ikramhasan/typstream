@@ -34,6 +34,7 @@ export const run = (marked: string, command: (s: EditorState) => Transaction | n
   const tr = command(before);
   if (!tr) return null;
   const { state: after } = before.apply(tr);
-  if (!hasErrors(parse(before.text))) expect(hasErrors(parse(after.text)), `parses: ${JSON.stringify(after.text)}`).toBe(false);
+  if (!hasErrors(parse(before.text)))
+    expect(hasErrors(parse(after.text)), `parses: ${JSON.stringify(after.text)}`).toBe(false);
   return show(after);
 };

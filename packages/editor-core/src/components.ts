@@ -7,7 +7,7 @@ import type { TextEdit } from "@typstream/core";
 import type { SyntaxNode } from "@typstream/syntax";
 import { blocksAround, DEFAULT_SCHEMA, type EditorSchema } from "./commands";
 import type { EditorState, Selection, Transaction } from "./state";
-import { calleeName, callArgs, findLast, isEmbedded } from "./tree";
+import { callArgs, calleeName, findLast, isEmbedded } from "./tree";
 
 /**
  * A component in the source: a call embedded in markup (`#question(…)[…]`) that isn't a mark.
@@ -44,7 +44,8 @@ export const componentsAt = (
       const next = kids[i + 1];
       if (c.kind === "Hash" && next && next.kind === "FuncCall" && c.from <= offset && offset <= next.to) {
         const name = calleeName(next, text);
-        if (name && !schema.marks.has(name) && (!names || names.has(name))) out.push({ name, from: c.from, to: next.to, call: next });
+        if (name && !schema.marks.has(name) && (!names || names.has(name)))
+          out.push({ name, from: c.from, to: next.to, call: next });
       }
       if (c.to < offset || c.from > offset) continue;
       if (c.children.length) visit(c);
@@ -55,12 +56,20 @@ export const componentsAt = (
 };
 
 /** The innermost component at `offset`, of `names` if given. @beta */
-export const componentAt = (state: EditorState, offset: number, schema?: EditorSchema, names?: ReadonlySet<string>): Component | null =>
-  componentsAt(state, offset, schema, names)[0] ?? null;
+export const componentAt = (
+  state: EditorState,
+  offset: number,
+  schema?: EditorSchema,
+  names?: ReadonlySet<string>,
+): Component | null => componentsAt(state, offset, schema, names)[0] ?? null;
 
 /** The component whose call is exactly `[from, to)` (a node selection). @beta */
-export const componentIn = (state: EditorState, from: number, to: number, schema: EditorSchema = DEFAULT_SCHEMA): Component | null =>
-  componentsAt(state, from + 1, schema).find((c) => c.from === from && c.to === to) ?? null;
+export const componentIn = (
+  state: EditorState,
+  from: number,
+  to: number,
+  schema: EditorSchema = DEFAULT_SCHEMA,
+): Component | null => componentsAt(state, from + 1, schema).find((c) => c.from === from && c.to === to) ?? null;
 
 /**
  * A named argument's Typst source (`2` for `points: 2`), or `null` when the call doesn't write it.
@@ -99,7 +108,8 @@ export const setArgument =
         edit = { from, to, insert: "" };
         // `f()[…]`: the empty parentheses go too.
         const rest = text.slice(args.parens?.from ?? 0, args.parens?.to ?? 0);
-        if (args.parens && rest.length - (to - from) <= 2 && args.trailing.length > 0) edit = { from: args.parens.from, to: args.parens.to, insert: "" };
+        if (args.parens && rest.length - (to - from) <= 2 && args.trailing.length > 0)
+          edit = { from: args.parens.from, to: args.parens.to, insert: "" };
       } else {
         const v = args.named.get(name) as SyntaxNode;
         edit = { from: v.from, to: v.to, insert: value };
@@ -122,8 +132,11 @@ export const setArgument =
 /** A selection kept through `edit`, as the component around it moves or grows. */
 const keep = (s: Selection, edit: TextEdit): Selection => {
   const shift = edit.insert.length - (edit.to - edit.from);
-  const map = (p: number) => (p > edit.from || (p === edit.from && edit.from !== edit.to) ? (p >= edit.to ? p + shift : edit.from) : p);
-  return s.node ? { anchor: Math.min(s.anchor, s.head), head: Math.max(s.anchor, s.head) + shift, node: true } : { anchor: map(s.anchor), head: map(s.head) };
+  const map = (p: number) =>
+    p > edit.from || (p === edit.from && edit.from !== edit.to) ? (p >= edit.to ? p + shift : edit.from) : p;
+  return s.node
+    ? { anchor: Math.min(s.anchor, s.head), head: Math.max(s.anchor, s.head) + shift, node: true }
+    : { anchor: map(s.anchor), head: map(s.head) };
 };
 
 /** Where `{{cursor}}` marks the caret in a template; removed before inserting. */
@@ -164,7 +177,8 @@ export const insertBlock =
     // After a list item, the component would continue it: after the whole list.
     if (block && (block.kind === "list" || block.kind === "enum" || block.kind === "term")) {
       let last = block;
-      for (const b of blocks) if (b.from >= last.to && b.kind === block.kind && text.slice(last.to, b.from).trim() === "") last = b;
+      for (const b of blocks)
+        if (b.from >= last.to && b.kind === block.kind && text.slice(last.to, b.from).trim() === "") last = b;
       from = last.to;
     }
     prefix = `\n\n${indent}`;
@@ -182,7 +196,9 @@ const place = (
   const insert = prefix + clean + suffix;
   const start = from + prefix.length;
   const selection: Selection =
-    cursor >= 0 ? { anchor: start + cursor, head: start + cursor } : { anchor: start, head: start + clean.length, node: true };
+    cursor >= 0
+      ? { anchor: start + cursor, head: start + cursor }
+      : { anchor: start, head: start + clean.length, node: true };
   void state;
   return { edits: [{ from, to, insert }], selection };
 };
@@ -201,7 +217,9 @@ export const insertInline =
     const clean = template.replace(CURSOR, "");
     // A space before, if it would stick to a word (`a#blank()` is fine; `$x$` needs nothing).
     const selection: Selection =
-      cursor >= 0 ? { anchor: from + cursor, head: from + cursor } : { anchor: from, head: from + clean.length, node: true };
+      cursor >= 0
+        ? { anchor: from + cursor, head: from + cursor }
+        : { anchor: from, head: from + clean.length, node: true };
     return { edits: [{ from, to, insert: clean }], selection };
   };
 

@@ -129,7 +129,12 @@ export const TypstEditor = forwardRef<TypstEditorHandle, TypstEditorProps>(funct
   );
 
   // The document opens again when what it is opened with changes: its engine, plugins, preamble.
-  const templateSpec = template ? plugins.flatMap((p) => p.templates ?? []).filter((t) => t.name === template).pop() : undefined;
+  const templateSpec = template
+    ? plugins
+        .flatMap((p) => p.templates ?? [])
+        .filter((t) => t.name === template)
+        .pop()
+    : undefined;
   const fullPreamble = [templateSpec?.preamble, preamble].filter(Boolean).join("\n");
   const allInputs = useMemo(() => ({ ...templateSpec?.inputs, ...inputs }), [templateSpec, inputs]);
   const engineProp = props.engine ?? defaults.engine;
@@ -138,6 +143,8 @@ export const TypstEditor = forwardRef<TypstEditorHandle, TypstEditorProps>(funct
     if (host.current) ensureEditorStyles(host.current.ownerDocument);
   }, []);
 
+  // Files, inputs and the source change the open document instead (below).
+  // biome-ignore lint/correctness/useExhaustiveDependencies: see above
   useEffect(() => {
     const el = host.current;
     if (!el) return;
@@ -189,8 +196,6 @@ export const TypstEditor = forwardRef<TypstEditorHandle, TypstEditorProps>(funct
       setDoc(null);
       if (shared) releaseEngine();
     };
-    // Files, inputs and the source change the open document instead (below).
-    // biome-ignore lint/correctness/useExhaustiveDependencies: see above
   }, [engineProp, plugins, fullPreamble, editorPlugins, layout, resolveImage]);
 
   // A source from outside (an AI edit, a reload): one edit.
@@ -209,6 +214,8 @@ export const TypstEditor = forwardRef<TypstEditorHandle, TypstEditorProps>(funct
   // Focus once the first pages are laid out.
   const version = useViewVersion(view);
   const focusedOnce = useRef(false);
+  // `version` changes with the view's layout.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: see above
   useEffect(() => {
     if (!props.autoFocus || focusedOnce.current || !view?.layout) return;
     focusedOnce.current = true;
@@ -240,7 +247,9 @@ export const TypstEditor = forwardRef<TypstEditorHandle, TypstEditorProps>(funct
   return (
     <div className={className} style={props.style} data-layout={layout}>
       {view && props.toolbar !== false && !props.readOnly && <FixedToolbar view={view} end={props.toolbarEnd} />}
-      {!view && props.toolbar !== false && !props.readOnly && <div className="tse-toolbar tse-fixed" aria-hidden="true" style={{ minHeight: 40 }} />}
+      {!view && props.toolbar !== false && !props.readOnly && (
+        <div className="tse-toolbar tse-fixed" aria-hidden="true" style={{ minHeight: 40 }} />
+      )}
       <div ref={host} className="tse-pages" />
       {failed && (
         <p className="tse-status" role="alert">
@@ -258,5 +267,3 @@ export const TypstEditor = forwardRef<TypstEditorHandle, TypstEditorProps>(funct
     </div>
   );
 });
-
-

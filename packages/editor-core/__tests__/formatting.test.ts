@@ -24,6 +24,12 @@ import {
 } from "../src/index";
 import { load, run, state } from "./support";
 
+/** `value`, which the test expects to be there. */
+const the = <T>(value: T | null | undefined): T => {
+  if (value === null || value === undefined) throw new Error("expected a value");
+  return value;
+};
+
 beforeAll(load);
 
 const bold = toggleMark({ name: "strong" });
@@ -136,12 +142,16 @@ describe("components", () => {
     const s = state("#question[Wh‸at?]");
     const q = componentAt(s, s.from);
     expect(q?.name).toBe("question");
-    const added = run("#question[Wh‸at?]", (st) => setArgument(componentAt(st, st.from)!, "points", "2")(st)) as string;
+    const added = run("#question[Wh‸at?]", (st) =>
+      setArgument(the(componentAt(st, st.from)), "points", "2")(st),
+    ) as string;
     expect(added).toBe("#question(points: 2)[Wh‸at?]");
-    expect(argumentOf(state(added), componentAt(state(added), 15)!, "points")).toBe("2");
-    const changed = run(added, (st) => setArgument(componentAt(st, st.from)!, "points", "5")(st)) as string;
+    expect(argumentOf(state(added), the(componentAt(state(added), 15)), "points")).toBe("2");
+    const changed = run(added, (st) => setArgument(the(componentAt(st, st.from)), "points", "5")(st)) as string;
     expect(changed).toBe("#question(points: 5)[Wh‸at?]");
-    expect(run(changed, (st) => setArgument(componentAt(st, st.from)!, "points", null)(st))).toBe("#question[Wh‸at?]");
+    expect(run(changed, (st) => setArgument(the(componentAt(st, st.from)), "points", null)(st))).toBe(
+      "#question[Wh‸at?]",
+    );
   });
 
   it("are inserted as a block after the caret's paragraph, or on its empty line", () => {

@@ -7,14 +7,19 @@ import type { TextEdit } from "@typstream/core";
 import type { SyntaxNode } from "@typstream/syntax";
 import { blocksAround, DEFAULT_SCHEMA, type EditorSchema } from "./commands";
 import { type EditorState, mapThrough, type Selection, type Transaction } from "./state";
-import { type Block, calleeName, callArgs, pathAt } from "./tree";
+import { type Block, callArgs, calleeName, pathAt } from "./tree";
 
 /**
  * What a block is: a paragraph, a heading (level 1–6), or an item of a bulleted (`list`), numbered
  * (`enum`) or term list.
  * @beta
  */
-export type BlockType = { kind: "paragraph" } | { kind: "heading"; level: number } | { kind: "list" } | { kind: "enum" } | { kind: "term" };
+export type BlockType =
+  | { kind: "paragraph" }
+  | { kind: "heading"; level: number }
+  | { kind: "list" }
+  | { kind: "enum" }
+  | { kind: "term" };
 
 /** The blocks of the markup around the selection that it touches. */
 const selectedBlocks = (state: EditorState, schema: EditorSchema): { blocks: Block[]; all: Block[] } => {
@@ -30,13 +35,13 @@ export const blockType = (state: EditorState, schema: EditorSchema = DEFAULT_SCH
   const { blocks } = selectedBlocks(state, schema);
   const b = blocks[0];
   if (!b) return null;
-  if (b.kind === "heading") return { kind: "heading", level: headingLevel(state, b.node as SyntaxNode) };
+  if (b.kind === "heading") return { kind: "heading", level: headingLevel(b.node as SyntaxNode) };
   if (b.kind === "list" || b.kind === "enum" || b.kind === "term") return { kind: b.kind };
   if (b.kind === "paragraph") return { kind: "paragraph" };
   return null;
 };
 
-const headingLevel = (state: EditorState, heading: SyntaxNode): number => {
+const headingLevel = (heading: SyntaxNode): number => {
   const marker = heading.children[0] as SyntaxNode;
   return marker.to - marker.from;
 };
@@ -60,13 +65,21 @@ export const setBlockType =
       if (type.kind === "paragraph") return null;
       const marker = type.kind === "heading" ? `${"=".repeat(type.level)} ` : (MARKERS[type.kind] as string);
       const at = state.from;
-      return { edits: [{ from: at, to: at, insert: marker }], selection: { anchor: at + marker.length, head: at + marker.length } };
+      return {
+        edits: [{ from: at, to: at, insert: marker }],
+        selection: { anchor: at + marker.length, head: at + marker.length },
+      };
     }
     const edits: TextEdit[] = [];
     blocks.forEach((b, i) => {
       if (b.kind === "expression") return;
       const markerEnd = markerEndOf(b);
-      const marker = type.kind === "paragraph" ? "" : type.kind === "heading" ? `${"=".repeat(type.level)} ` : (MARKERS[type.kind] as string);
+      const marker =
+        type.kind === "paragraph"
+          ? ""
+          : type.kind === "heading"
+            ? `${"=".repeat(type.level)} `
+            : (MARKERS[type.kind] as string);
       const oneLine = type.kind === "paragraph" ? null : joinLines(text, markerEnd, b.to);
       edits.push({ from: b.from, to: markerEnd, insert: marker });
       if (oneLine) edits.push(...oneLine);
@@ -75,8 +88,10 @@ export const setBlockType =
       if (next && next.kind !== "expression") {
         const gap = text.slice(b.to, next.from);
         const want = type.kind === "list" || type.kind === "enum" || type.kind === "term" ? "\n" : "\n\n";
-        if (gap.trim() === "" && gap !== want && !gap.startsWith(want.length === 1 ? "\n" : "\n\n")) edits.push({ from: b.to, to: next.from, insert: want });
-        else if (gap.trim() === "" && want === "\n" && gap !== "\n") edits.push({ from: b.to, to: next.from, insert: want });
+        if (gap.trim() === "" && gap !== want && !gap.startsWith(want.length === 1 ? "\n" : "\n\n"))
+          edits.push({ from: b.to, to: next.from, insert: want });
+        else if (gap.trim() === "" && want === "\n" && gap !== "\n")
+          edits.push({ from: b.to, to: next.from, insert: want });
       }
     });
     // A paragraph or heading needs blank lines around it where it sat in a list.
@@ -84,9 +99,11 @@ export const setBlockType =
     const last = blocks[blocks.length - 1] as Block;
     if (type.kind === "paragraph" || type.kind === "heading") {
       const before = text.slice(0, first.from);
-      if (before.trim() !== "" && !/\n[ \t]*\n[ \t]*$/.test(before) && /\n[ \t]*$/.test(before)) edits.push({ from: first.from, to: first.from, insert: "\n" });
+      if (before.trim() !== "" && !/\n[ \t]*\n[ \t]*$/.test(before) && /\n[ \t]*$/.test(before))
+        edits.push({ from: first.from, to: first.from, insert: "\n" });
       const after = text.slice(last.to);
-      if (after.trim() !== "" && !/^[ \t]*\n[ \t]*\n/.test(after) && /^[ \t]*\n/.test(after)) edits.push({ from: last.to, to: last.to, insert: "\n" });
+      if (after.trim() !== "" && !/^[ \t]*\n[ \t]*\n/.test(after) && /^[ \t]*\n/.test(after))
+        edits.push({ from: last.to, to: last.to, insert: "\n" });
     }
     const merged = mergeTouching(edits);
     return { edits: merged, selection: mapBlockSelection(state.selection, merged, new Set(blocks.map((b) => b.from))) };
@@ -191,10 +208,17 @@ const itemsInSelection = (state: EditorState): SyntaxNode[] => {
       if (c.kind === "ListItem" || c.kind === "EnumItem" || c.kind === "TermItem") {
         // The innermost item holding the caret, or every item a selection touches.
         const inner = c.children.find((k) => k.kind === "Markup");
-        const nested = inner?.children.some((k) => (k.kind === "ListItem" || k.kind === "EnumItem") && k.from <= state.to && k.to >= state.from);
-        if (nested && state.from >= (inner?.children.find((k) => k.kind === "ListItem" || k.kind === "EnumItem")?.from ?? Infinity)) visit(inner as SyntaxNode);
+        const nested = inner?.children.some(
+          (k) => (k.kind === "ListItem" || k.kind === "EnumItem") && k.from <= state.to && k.to >= state.from,
+        );
+        if (
+          nested &&
+          state.from >= (inner?.children.find((k) => k.kind === "ListItem" || k.kind === "EnumItem")?.from ?? Infinity)
+        )
+          visit(inner as SyntaxNode);
         else out.push(c);
-      } else if (c.kind === "Markup" || c.kind === "ContentBlock" || c.kind === "FuncCall" || c.kind === "Args") visit(c);
+      } else if (c.kind === "Markup" || c.kind === "ContentBlock" || c.kind === "FuncCall" || c.kind === "Args")
+        visit(c);
     }
   };
   visit(state.tree);
@@ -267,4 +291,3 @@ export const setAlignment =
 
 const alignOpen = (align: Alignment): string => `#align(${align})[`;
 const wrapAlign = (align: Alignment, body: string): string => `${alignOpen(align)}${body}]`;
-

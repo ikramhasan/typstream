@@ -18,13 +18,26 @@ export const Item = ({ item, view }: { item: ToolbarItem; view: EditorView }) =>
     const value = item.picker.value(state, schema);
     const apply = item.picker.apply;
     if (item.picker.kind === "color")
-      return <ColorMenu label={item.label} icon={item.icon} value={value} options={item.picker.options} onSelect={(v) => run(apply(v))} />;
+      return (
+        <ColorMenu
+          label={item.label}
+          icon={item.icon}
+          value={value}
+          options={item.picker.options}
+          onSelect={(v) => run(apply(v))}
+        />
+      );
     const current = item.picker.options.find((o) => o.value === value)?.label ?? "Default";
     return (
       <Menu
         label={item.label}
         text={current}
-        entries={item.picker.options.map((o) => ({ key: o.label, label: o.label, active: o.value === value, onSelect: () => run(apply(o.value)) }))}
+        entries={item.picker.options.map((o) => ({
+          key: o.label,
+          label: o.label,
+          active: o.value === value,
+          onSelect: () => run(apply(o.value)),
+        }))}
       />
     );
   }
@@ -86,7 +99,13 @@ export const FixedToolbar = ({ view, end }: { view: EditorView; end?: ReactNode 
   return (
     <div className="tse-toolbar tse-fixed" role="toolbar" aria-label="Formatting" aria-orientation="horizontal">
       <Button label="Undo" icon="undo" shortcut="Mod-z" disabled={!view.history.canUndo} onClick={() => view.undo()} />
-      <Button label="Redo" icon="redo" shortcut="Mod-Shift-z" disabled={!view.history.canRedo} onClick={() => view.redo()} />
+      <Button
+        label="Redo"
+        icon="redo"
+        shortcut="Mod-Shift-z"
+        disabled={!view.history.canRedo}
+        onClick={() => view.redo()}
+      />
       <Separator />
       {inserts.length > 0 && (
         <>
@@ -122,6 +141,8 @@ export const FloatingToolbar = ({ view, extra }: { view: EditorView; extra?: Rea
   const { selection } = view.state;
   const show = view.focused && selection.anchor !== selection.head && !selection.node;
   const items = view.plugins.flatMap((p) => p.floating ?? []);
+  // Placed again when the selection or the layout under it changes.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: see above
   useLayoutEffect(() => {
     if (!show) {
       setStyle(null);
