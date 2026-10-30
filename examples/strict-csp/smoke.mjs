@@ -106,6 +106,16 @@ try {
           null,
           { timeout: 60_000 },
         );
+        // React Flow draws edges once it has measured the nodes, a frame or more later (two maps load at once).
+        await page
+          .waitForFunction(
+            () =>
+              document.querySelectorAll("#island .react-flow__edge").length === 6 &&
+              document.querySelectorAll("#island-paged .react-flow__edge").length === 6,
+            null,
+            { timeout: 30_000 },
+          )
+          .catch(() => {}); // The counts are reported below.
         const island = await page.evaluate(() => ({
           edges: document.querySelectorAll("#island .react-flow__edge").length,
           fallbackHidden: document.querySelector("#island typstream-island > svg")?.getAttribute("aria-hidden"),
