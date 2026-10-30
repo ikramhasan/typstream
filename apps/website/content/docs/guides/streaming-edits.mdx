@@ -63,6 +63,12 @@ If your chat history can't be rewritten (some agent frameworks store it append-o
 each request anyway, or the teacher's own edits as diffs. Quotes work either way. They only need the model to know the
 text.
 
+Put the document only into the request you're sending, and keep it there in later requests: never change a message the
+model has already answered. With Claude's extended thinking, an answer's thinking is signed over everything that came
+before it, and a request in which that changed fails ("Invalid `signature` in `thinking` block"). Taking the document
+back out of an earlier request is such a change, and so is adding `editPrompt()` to the system prompt partway through a
+chat, so send it from the first request.
+
 ## The edit session
 
 Open a session per answer, over the document the model was given, and feed it the answer as it grows:
@@ -124,6 +130,5 @@ No quote has to match, so nothing can fail to: in the measurement, every selecti
 
 In the HTML target, each top-level block's elements carry `data-typstream-src`, the block's offset in the compiled
 source. Map it to the text with `state.heal.map.toInput` (from `useTypstream()`) and compare it with each edit's
-`range`. The [Next.js example](https://github.com/ikramhasan/typstream/tree/main/examples/nextjs-ai-sdk) highlights
-what a quote matches, the block being written, and then what the answer changed, until Keep or Undo. Pages have no
-anchors yet. There the example says in words what the edit is doing.
+`range`, to highlight what a quote matches, the block being written, and then what the answer changed, until Keep or
+Undo. Pages have no anchors yet: there, say in words what the edit is doing.
