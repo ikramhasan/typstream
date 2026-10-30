@@ -14,6 +14,57 @@
 import type { LoadedFontFamily } from "@typstream/core";
 import { injectCss } from "./css";
 
+/**
+ * The line box of the engine's layout profile (#129), as a web font's metrics: 1.054em above the baseline, 0.246em
+ * below, no gap. With `line-height: normal`, a line of text in any of these fonts is as tall as Typst's and has its
+ * baseline where Typst's is.
+ */
+const PROFILE_METRICS = { ascentOverride: "105.4%", descentOverride: "24.6%", lineGapOverride: "0%" };
+
+/** The web font a family is registered as: html-compat's name for it (`_family` in html-compat.typ). */
+const familyName = (family: string): string => `typstream-${family.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+
+/** A font file to show the HTML target's text in. @public */
+export interface TypstFont {
+  /** Where the file is. */
+  url: string | URL;
+  /** Its family, as Typst names it (`Libertinus Serif`). */
+  family: string;
+  /** Default 400. */
+  weight?: number;
+  /** Default `normal`. */
+  style?: "normal" | "italic";
+}
+
+/** Fonts registered per document, by URL. */
+const typstFonts = new WeakMap<Document, Set<string>>();
+
+/**
+ * Registers Typst's fonts as web fonts in `doc`, so the HTML target sets its text as the pages do: each under
+ * html-compat's name for its family (`typstream-libertinus-serif`), with the layout profile's line box as its
+ * metrics. The browser downloads a file the first time text needs it (the script fonts only for their scripts).
+ * Pass the engine's (`typstream` does: `@typstream/engine-wasm/fonts`' base, extra and script fonts).
+ * `mountTypstream` calls it with its `fonts`. Uses the FontFace API, so no `font-src` exception for inline CSS.
+ * @public
+ */
+export const registerTypstFonts = (fonts: readonly TypstFont[], doc: Document = document): void => {
+  const view = doc.defaultView as (Window & typeof globalThis) | null;
+  if (!view) return;
+  const done = typstFonts.get(doc) ?? new Set<string>();
+  typstFonts.set(doc, done);
+  for (const font of fonts) {
+    const url = String(font.url);
+    if (done.has(url)) continue;
+    done.add(url);
+    const face = new view.FontFace(familyName(font.family), `url(${JSON.stringify(url)})`, {
+      weight: String(font.weight ?? 400),
+      style: font.style ?? "normal",
+      ...PROFILE_METRICS,
+    });
+    doc.fonts.add(face);
+  }
+};
+
 /** The family html-compat's stylesheet uses for `math`. */
 const MATH_FAMILY = "New Computer Modern Math";
 
@@ -43,8 +94,7 @@ export const FONT_ATTRIBUTE = "data-typstream-font";
  * name keeps its quotes and no CSS refers to it; Firefox's parses it as CSS,
  * where a name like "M PLUS 1p" needs them.
  */
-export const webFontFamily = (font: LoadedFontFamily): string =>
-  `typstream-${font.family.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+export const webFontFamily = (font: LoadedFontFamily): string => familyName(font.family);
 
 /** A file's `font-weight` descriptor: its weight, or a variable font's range. */
 export const fontWeight = (file: LoadedFontFamily["files"][number]): string => String(file.weight).replace(",", " ");
@@ -81,6 +131,7 @@ export const registerLoadedFont = async (font: LoadedFontFamily, root: Node): Pr
         const face = new view.FontFace(webFontFamily(font), await response.arrayBuffer(), {
           style: file.style,
           weight: fontWeight(file),
+          ...PROFILE_METRICS,
         });
         return face.load();
       }),

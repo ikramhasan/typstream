@@ -15,9 +15,12 @@
 /* Typst's text, as the engine's layout profile (#129) sets it on pages: Libertinus Serif at 11pt, lines a constant
    1.3em apart, ragged right, no hyphenation. The fonts are the engine's own (dom's `registerTypstFonts`), registered
    with the profile's line box as their ascent and descent (1.054em and 0.246em, no gap), so `line-height: normal`
-   makes every line box what Typst's is, in any font and size, with the baseline where Typst puts it. */
+   makes every line box what Typst's is, in any font and size, with the baseline where Typst puts it. Text the base
+   font lacks falls back to the engine's script fonts, as in Typst. */
 :where(.typstream) {
-  font-family: typstream-libertinus-serif, "Libertinus Serif", serif;
+  font-family:
+    typstream-libertinus-serif, typstream-noto-naskh-arabic, typstream-noto-serif-bengali,
+    typstream-noto-serif-devanagari, "Libertinus Serif", serif;
   font-size: 11pt;
   font-weight: 400;
   line-height: normal;
@@ -58,6 +61,15 @@
   margin-block: 0.56em;
   white-space: pre;
 }
+/* Text with its own line box (html-compat.typ's `.ts-edges`): a strut as tall, its letters with none of theirs. */
+:where(.typstream .ts-strut) {
+  display: inline-block;
+  width: 0;
+}
+:where(.typstream .ts-edges) .typstream-t {
+  line-height: 0;
+}
+
 /* Text decorations from the font, as Typst draws them. */
 :where(.typstream) :is(u, s, [style*="text-decoration"]) {
   text-decoration-thickness: from-font;

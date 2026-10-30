@@ -33,6 +33,7 @@ export interface TypstreamDefaults
       | "animated"
       | "caret"
       | "theme"
+      | "fonts"
       | "linkTarget"
       | "textLayer"
       | "renderer"

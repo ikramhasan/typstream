@@ -26,7 +26,7 @@ import type {
 import type { DocumentOptions, DocumentState, DocumentStatus, Engine, EngineDocument } from "@typstream/engine";
 import { type StandaloneHtmlOptions, standaloneHtml } from "./export/standalone";
 import type { AnimateOptions } from "./html/animate";
-import { registerLoadedFont } from "./html/fonts";
+import { registerLoadedFont, registerTypstFonts, type TypstFont } from "./html/fonts";
 import { createHtmlRenderer, type HtmlRenderer } from "./html/renderer";
 import type { IslandRenderers } from "./islands";
 import { REFLOW_PREAMBLE, reflowInputs } from "./paged/mount";
@@ -124,6 +124,11 @@ export interface TypstreamOptions {
   animated?: boolean | AnimateOptions;
   /** Show a caret after the last text while streaming (HTML target). Default false. */
   caret?: boolean;
+  /**
+   * HTML target: Typst's fonts, registered as web fonts so the text is set as on the pages (`registerTypstFonts`).
+   * The `typstream` package passes the engine's.
+   */
+  fonts?: readonly TypstFont[];
   /** HTML target: `auto` (default) follows the page's `color-scheme`. */
   theme?: "auto" | "light" | "dark";
   /** `target` of external links; `null` keeps them in the same tab. Default `_blank`. */
@@ -409,6 +414,7 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
     dropHtml();
     const root = element.ownerDocument.createElement("div");
     element.append(root);
+    if (opts.fonts) registerTypstFonts(opts.fonts, element.ownerDocument);
     const renderer = createHtmlRenderer(root, {
       ...(opts.theme ? { theme: opts.theme } : {}),
       ...(animation ? { animation } : {}),

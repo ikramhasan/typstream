@@ -5,13 +5,35 @@
 // Everything else is @typstream/react's, plus the engine and healer for apps
 // that drive documents themselves.
 
-import { baseFonts } from "@typstream/engine-wasm/fonts";
+import { baseFonts, extraFonts, scriptFonts } from "@typstream/engine-wasm/fonts";
 import { htmlCompat } from "@typstream/html-compat";
-import { type TypstreamProps as BaseProps, Typstream as BaseTypstream } from "@typstream/react";
+import { type TypstFont, type TypstreamProps as BaseProps, Typstream as BaseTypstream } from "@typstream/react";
 import { universe } from "@typstream/universe";
 
 /** The engine's copy of New Computer Modern Math, the font html-compat's CSS asks for in `<math>`. */
 const MATH_FONT = baseFonts.find((url) => url.pathname.includes("NewCMMath"));
+
+/** The families of the base fonts, which come without metadata, by file name. */
+const BASE_FAMILIES: Record<string, string> = {
+  LibertinusSerif: "Libertinus Serif",
+  NewCMMath: "New Computer Modern Math",
+  DejaVuSansMono: "DejaVu Sans Mono",
+};
+
+/** A file's weight and style from its name (`LibertinusSerif-BoldItalic.ttf`). */
+const variant = (file: string): Pick<TypstFont, "weight" | "style"> => ({
+  weight: /Semibold/.test(file) ? 600 : /Bold/.test(file) ? 700 : 400,
+  style: /Italic|Oblique/.test(file) ? "italic" : "normal",
+});
+
+/** The engine's fonts, for the HTML target to set its text in as the pages do (dom's `registerTypstFonts`). */
+const TYPST_FONTS: readonly TypstFont[] = [
+  ...baseFonts.map((url) => {
+    const file = url.pathname.split("/").pop() ?? "";
+    return { url, family: BASE_FAMILIES[file.split("-")[0] ?? ""] ?? "Libertinus Serif", ...variant(file) };
+  }),
+  ...[...extraFonts, ...scriptFonts].map(({ url, file, family }) => ({ url, family, ...variant(file) })),
+];
 
 /** Props of {@link Typstream}. @public */
 export interface TypstreamProps extends BaseProps {
@@ -50,6 +72,7 @@ export const Typstream = ({
   ...props
 }: TypstreamProps) => (
   <BaseTypstream
+    fonts={TYPST_FONTS}
     {...props}
     plugins={[...(compat ? [htmlCompat] : []), ...(packages ? [universe] : []), ...(plugins ?? [])]}
     mathFont={mathFont ?? MATH_FONT}

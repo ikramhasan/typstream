@@ -350,16 +350,26 @@
   let columns = if type(it.columns) == int { (auto,) * it.columns } else if it.columns.len() == 0 { (auto,) } else { it.columns }
   let rows = if type(it.rows) == int { (auto,) * it.rows } else { it.rows }
   let (cells, hlines, vlines) = _place-cells(it.children, columns.len())
-  let gap(g) = if g.len() == 0 { none } else { _len(g.first()) }
+  // Gutters per gap, the last repeated. One for all gaps is CSS's gap; differing ones become tracks of their own
+  // between the columns (or rows), the cells spanning them.
+  let ncols = columns.len()
+  let nrows = calc.max(rows.len(), ..cells.map(c => c.y + c.rowspan), 1)
+  let gutters(g, n) = range(calc.max(n - 1, 0)).map(i => if g.len() == 0 { 0pt } else { g.at(calc.min(i, g.len() - 1)) })
+  let (cg, rg) = (gutters(it.column-gutter, ncols), gutters(it.row-gutter, nrows))
+  let (col-tracks, row-tracks) = (cg.dedup().len() > 1, rg.dedup().len() > 1)
+  let interleave(tracks, gaps) = tracks.enumerate().map(((i, t)) => if i < gaps.len() { (t, _len(gaps.at(i))) } else { (t,) }).flatten()
+  let row-track(i) = if rows.len() == 0 { auto } else { rows.at(calc.min(i, rows.len() - 1)) }
   let container = _css(
-    grid-template-columns: columns.map(_track).join(" "),
-    grid-template-rows: if rows.len() > 0 { rows.map(_track).join(" ") },
+    grid-template-columns: if col-tracks { interleave(columns.map(_track), cg).join(" ") } else { columns.map(_track).join(" ") },
+    grid-template-rows: if row-tracks { interleave(range(nrows).map(i => _track(row-track(i))), rg).join(" ") } else if rows.len() > 0 { rows.map(_track).join(" ") },
     // Typst's auto columns take their natural width and don't stretch to fill: the grid is as wide as they are.
     justify-content: if columns.all(t => type(t) != fraction) { "start" },
     width: if columns.all(t => type(t) != fraction and type(t) != ratio and type(t) != relative) { "fit-content" },
-    column-gap: gap(it.column-gutter),
-    row-gap: gap(it.row-gutter),
+    column-gap: if not col-tracks and cg.len() > 0 { _len(cg.first()) },
+    row-gap: if not row-tracks and rg.len() > 0 { _len(rg.first()) },
   )
+  // A cell's place: every other track when gutters are tracks.
+  let area(start, span, tracks) = if tracks { (2 * start + 1, 2 * span - 1) } else { (start + 1, span) }
   let body = for c in cells {
     let (x, y) = (c.x, c.y)
     let f = c.cell.fields()
@@ -376,7 +386,9 @@
     }
     let align = pick("align")
     let props = _box-props(fill: pick("fill"), stroke: stroke, inset: pick("inset"))
-    props.insert("grid-area", str(y + 1) + " / " + str(x + 1) + " / span " + str(c.rowspan) + " / span " + str(c.colspan))
+    let (row, rows-spanned) = area(y, c.rowspan, row-tracks)
+    let (col, cols-spanned) = area(x, c.colspan, col-tracks)
+    props.insert("grid-area", str(row) + " / " + str(col) + " / span " + str(rows-spanned) + " / span " + str(cols-spanned))
     props.insert("text-align", _text-align(align))
     let valign = _vertical-align(align)
     let role = if not table { none } else if c.header { "columnheader" } else { "cell" }
@@ -509,6 +521,16 @@
   else { false }
 })
 
+/// The current text's line box when its edges aren't the layout profile's (1.054em above the baseline, 0.246em below):
+/// how far it reaches above and below the baseline, measured. `none` with the profile's. Needs context.
+#let _edges() = {
+  if text.top-edge == 1.054em and text.bottom-edge == -0.246em { return none }
+  // Show-set rules: the layout profile's (and edu's own) are, and a set rule wouldn't win over them.
+  let above = measure({ show text: set text(bottom-edge: "baseline"); [X] }).height
+  let below = measure({ show text: set text(top-edge: "baseline"); [X] }).height
+  (above, below)
+}
+
 // ---------------------------------------------------------------------------
 // Pages: what the renderer lays the HTML out on
 
@@ -596,10 +618,19 @@
   })
 
   // Text in a style the defaults don't have. Not in math, which MathML styles itself.
+  // Text whose line box isn't the profile's (edu's answers written on ruled lines, its tight blanks) has its own:
+  // a strut that tall on the baseline (`.ts-strut`), its letters taking no line of their own (`.ts-edges`).
   show text: html-only(it => {
     if text.costs.runt == _in-math { return it }
     let props = _text-props()
-    if props.len() == 0 { it } else { html.span(style: _css(..props), it) }
+    let edges = _edges()
+    if edges == none {
+      return if props.len() == 0 { it } else { html.span(style: _css(..props), it) }
+    }
+    let (above, below) = edges
+    let strut = html.elem("span", attrs: (class: "ts-strut", style: "height: " + _len(above + below) + "; vertical-align: -" + _len(below)))
+    let style = _css(..props)
+    html.elem("span", attrs: (class: "ts-edges") + if style != none { (style: style) } else { (:) }, strut + it)
   })
   // Highlights carry their fill (the export writes a bare <mark>).
   show highlight: html-only(it => html.elem("mark", attrs: (style: "--ts-mark: " + _paint(it.fill, gradients: false)), it.body))

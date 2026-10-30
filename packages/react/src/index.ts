@@ -12,7 +12,7 @@ export type {
   RenderedEvent,
   WatchdogEvent,
 } from "@typstream/core";
-export type { StandaloneHtmlOptions, TypstreamExportOptions } from "@typstream/dom";
+export type { StandaloneHtmlOptions, TypstFont, TypstreamExportOptions } from "@typstream/dom";
 export type { DocumentState, DocumentStatus, Engine } from "@typstream/engine";
 export { type TypstreamDefaults, TypstreamProvider, type TypstreamProviderProps } from "./context";
 export type { IslandComponent, IslandComponents } from "./islands";
