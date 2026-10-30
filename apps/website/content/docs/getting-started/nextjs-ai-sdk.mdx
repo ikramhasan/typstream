@@ -133,14 +133,14 @@ Run `npm run dev` and ask for "A one-page worksheet on the Pythagorean theorem f
 - **`"use client"`.** `useChat` already makes the page a client component. The `typstream` bundle is marked `"use client"` itself, so you can also render `<Typstream>` from a Server Component with a fixed `source`. On the server it renders an empty `<div>`; the document appears in the browser.
 - **No Next.js configuration.** The engine's worker, the wasm and the fonts are `new URL(…, import.meta.url)` assets that Turbopack and webpack emit. The example's `next.config.ts` sets only `turbopack.root`, because it lives in a pnpm monorepo whose packages are symlinked from outside the app; a standalone app doesn't need it.
 
-## Edit the document from the chat
+## Follow-ups
 
-Once there's a document, the teacher's next request usually changes it ("make question 3 harder") rather than asking
-for a new one. Each answer has an **Edit** button that asks what to change and edits that document in place; a request
-typed in the chat edits the latest document in a new answer. Either way the example sends the document with the request, the model answers with edits that quote what they
-replace, and `@typstream/ai`'s edit session applies them as they stream: the part being rewritten changes in place, the
-rest stays, and Keep or Undo follows. [Streaming edits](/docs/guides/streaming-edits) shows the route's prompt and the
-page's session.
+Once there's a document, the teacher's next request usually changes it ("make question 3 harder"). The example
+answers it with a new document: edu's prompt kit asks for the whole document in every answer, and the earlier answers
+are in the chat. The route sends the chat to the model exactly as `useChat` posted it, with the same system prompt
+every time. Don't rewrite earlier messages (to add the current document to them, say): with Claude's extended
+thinking, an answer's thinking is signed over everything before it, and a request in which that changed fails.
+[Streaming edits](/docs/guides/streaming-edits) changes the document in place instead.
 
 ## Show progress under each answer
 

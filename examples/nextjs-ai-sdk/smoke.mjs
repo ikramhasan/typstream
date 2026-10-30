@@ -1,13 +1,12 @@
 // Smoke test (PLAN §10.4: example apps build and run): builds the app, starts it,
 // asks for a worksheet in Chromium (a suggestion, rendered as pages) and exports
-// it as a Word file, then asks for a change typed in the field, as HTML: an edit
-// of that worksheet (#34). It checks that the answer streams into <Typstream> and
-// finishes, that the export downloads a .docx, that the edit streams into the
-// finished document, highlighted, and can be undone, that the first answer's Edit
-// button changes that document in place, that none ever had an error frame, that
-// the replay's mind map is interactive in the HTML answer (a render island), and
-// that telemetry reached the example's sink. Without ANTHROPIC_API_KEY the server
-// replays a recorded worksheet and an edit of it, so this runs offline.
+// it as a Word file, then asks for a change typed in the field, as HTML: a second
+// answer, the worksheet again with the change. It checks that both answers stream
+// into <Typstream> and finish, with no error frame, that the export downloads a
+// .docx, that the replay's mind map is interactive in the HTML answer (a render
+// island), and that telemetry reached the example's sink. Without
+// ANTHROPIC_API_KEY the server replays a recorded worksheet and a revision of it,
+// so this runs offline.
 
 import { spawn } from "node:child_process";
 import { readFile } from "node:fs/promises";
@@ -69,57 +68,25 @@ try {
   const docx = await readFile(await download.path());
   if (!download.suggestedFilename().endsWith(".docx") || docx.length === 0 || docx.subarray(0, 2).toString() !== "PK")
     throw new Error(`not a DOCX: ${download.suggestedFilename()}, ${docx.length} bytes`);
-  // A second turn as HTML, typed and sent with Enter: an edit of the worksheet. The edit's answer shows
-  // the worksheet at once, then the blocks it rewrites stream in, highlighted, and Keep and Undo follow.
+  // A second turn as HTML, typed and sent with Enter: the worksheet again, with the change.
   await page.getByRole("combobox", { name: "Render as" }).click();
   await page.getByRole("option", { name: "HTML" }).click();
   await page.getByRole("textbox", { name: "Message" }).fill("Make the worked example use a longer ladder.");
   await page.getByRole("textbox", { name: "Message" }).press("Enter");
-  const edit = answers.nth(1);
-  await edit.locator("[data-edit]").first().waitFor({ timeout: 60_000 });
-  const undo = page.getByRole("button", { name: "Undo", exact: true });
-  await undo.waitFor({ timeout: 120_000 });
-  await edit.and(page.locator('[data-status="done"]')).waitFor({ timeout: 120_000 });
-  const stale = await edit.getAttribute("data-stale");
-  if (stale !== "0") throw new Error(`the edit: ${stale} error frames while streaming`);
+  const revised = await answered(1, "html");
   if (!process.env.ANTHROPIC_API_KEY) {
-    const edited = await edit.locator(".typstream-host").textContent();
-    if (!edited.includes("12 m up the wall") || !edited.includes("Pythagorean triples"))
-      throw new Error(`unexpected edit: ${edited}`);
-    await undo.click();
-    await page.waitForFunction(
-      (el) => el?.textContent.includes("4 m up the wall") && !el.textContent.includes("12 m up the wall"),
-      await edit.locator(".typstream-host").elementHandle(),
-      { timeout: 30_000 },
-    );
-  }
-  // Edit the first answer in place: its Edit with AI button asks what to change, and that document changes,
-  // with no new answer below it. Then Keep.
-  await page.getByRole("button", { name: "Edit with AI", exact: true }).first().click();
-  await page.getByRole("textbox", { name: "Edit instruction" }).fill("Use a longer ladder in the worked example.");
-  await page.getByRole("textbox", { name: "Edit instruction" }).press("Enter");
-  const keep = page.getByRole("button", { name: "Keep", exact: true });
-  await keep.waitFor({ timeout: 120_000 });
-  await answers.first().and(page.locator('[data-status="done"]')).waitFor({ timeout: 120_000 });
-  if ((await answers.count()) !== 2) throw new Error(`an edit in place added an answer: ${await answers.count()}`);
-  const inPlace = await answers.first().getAttribute("data-stale");
-  if (inPlace !== "0") throw new Error(`the edit in place: ${inPlace} error frames while streaming`);
-  if (!process.env.ANTHROPIC_API_KEY) {
-    await page.waitForFunction(
-      (el) => el?.textContent.includes("12 m up the wall"),
-      await answers.first().locator(".typstream-host").elementHandle(),
-      { timeout: 30_000 },
-    );
-  }
-  await keep.click();
-  if (!process.env.ANTHROPIC_API_KEY) {
+    if (!revised.includes("12 m up the wall") || !revised.includes("Pythagorean triples"))
+      throw new Error(`unexpected revision: ${revised}`);
+    // The first answer is as it was.
+    const first = await answers.first().locator(".typstream-host").textContent();
+    if (!first.includes("4 m up the wall")) throw new Error(`the first answer changed: ${first}`);
     // The replay's mind map, as an island: React Flow's nodes over the drawing.
     await answers.nth(1).locator("typstream-island .react-flow__node").first().waitFor({ timeout: 30_000 });
     const nodes = await answers.nth(1).locator("typstream-island .react-flow__node").count();
     if (nodes !== 9) throw new Error(`the mind map island has ${nodes} nodes, not 9`);
   }
   // Edit the first answer on its pages (#36): Edit shows the editor in place of the document, with its toolbar; what
-  // is typed goes into the document, and Done shows it in the page view again.
+  // is typed goes into the document, and Done shows it in the view again.
   await page.getByRole("button", { name: "Edit", exact: true }).first().click();
   const editor = page.locator(".typstream-editor").first();
   await editor.locator(".typstream-page canvas").first().waitFor({ timeout: 30_000 });
@@ -129,7 +96,7 @@ try {
   await page.keyboard.press("Enter");
   await page.keyboard.type("Checked by the editor.");
   await page.getByRole("button", { name: "Done", exact: true }).first().click();
-  // The page view renders near the viewport (`lazy`): the answer is above it after editing its end.
+  // The view renders near the viewport (`lazy`): the answer is above it after editing its end.
   await answers.first().scrollIntoViewIfNeeded();
   await page.waitForFunction(
     (el) => el?.textContent.includes("Checked by the editor."),
@@ -144,7 +111,7 @@ try {
   if (!reached()) throw new Error(`no telemetry reached /api/telemetry:\n${log}`);
   if (process.argv.includes("--screenshot")) await page.screenshot({ path: "smoke.png", fullPage: true });
   console.log(
-    `ok: streamed an answer, an edit of it and an edit in place with no error frames (${text.length} characters in the first), edited it on its pages, and exported a ${docx.length}-byte DOCX`,
+    `ok: streamed an answer and a revision of it with no error frames (${text.length} and ${revised.length} characters), edited the first on its pages, and exported a ${docx.length}-byte DOCX`,
   );
 } finally {
   await browser.close();
