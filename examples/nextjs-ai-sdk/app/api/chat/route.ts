@@ -4,14 +4,14 @@
 // The key is the server's ANTHROPIC_API_KEY, or else the visitor's, sent with
 // the request (./key.ts).
 //
-// Once there's a document, the page sends it with each request (in the user
-// message's metadata), and the model edits it instead of writing a new one:
-// @typstream/ai's `editPrompt()` teaches the `<edit>` format, and the request
-// goes in with the document as it is now (`editRequest`). The page applies the
-// answer's edits as they stream (`createEditSession`).
+// A follow-up ("make it harder") is answered with a new document: the kit asks
+// for the whole document every time, and the earlier answers are in the chat.
+// The chat goes to the model exactly as it was, every request: the same
+// instructions and tools, and no earlier message rewritten. Anthropic checks
+// that what came before an earlier answer's thinking is unchanged, and rejects
+// the request if it isn't.
 
 import { createAnthropic } from "@ai-sdk/anthropic";
-import { editPrompt, editRequest, textOf } from "@typstream/ai";
 import { buildSystemPrompt, edu } from "@typstream/edu";
 import { googleFonts } from "@typstream/google-fonts";
 import { mindmap } from "@typstream/mindmap";
@@ -27,7 +27,7 @@ import {
 } from "ai";
 import { IMAGE_RULES, stopWhen, tools } from "./images";
 import { type ChatConfig, KEY_HEADER } from "./key";
-import { EDIT, WORKSHEET } from "./worksheet";
+import { REVISED, WORKSHEET } from "./worksheet";
 
 // Image searches come before the document, so an answer can take longer than one model call.
 export const maxDuration = 120;
@@ -49,15 +49,9 @@ const INSTRUCTIONS: SystemModelMessage[] = [
   { role: "system", content: IMAGE_RULES },
 ];
 
-/** In edit mode, after the kit: the `<edit>` format and its rules (measured in tools/llm-corpus, #34). */
-const EDITING: SystemModelMessage = { role: "system", content: editPrompt() };
-
 export function GET() {
   return Response.json({ serverKey: Boolean(process.env.ANTHROPIC_API_KEY) } satisfies ChatConfig);
 }
-
-/** What the page sends: the chat, and on a user message, the document it is about. */
-export type ChatMetadata = { document?: string };
 
 /** Splits text into token-sized chunks (words and the space before them), as a model streams. */
 const tokens = (text: string): string[] => text.match(/\s*\S+|\s+$/g) ?? [];
@@ -78,31 +72,14 @@ const replay = (text: string) =>
   });
 
 export async function POST(request: Request) {
-  const { messages }: { messages: UIMessage<ChatMetadata>[] } = await request.json();
-  const last = messages[messages.length - 1];
-  const document = last?.role === "user" ? last.metadata?.document : undefined;
+  const { messages }: { messages: UIMessage[] } = await request.json();
   const apiKey = process.env.ANTHROPIC_API_KEY || request.headers.get(KEY_HEADER);
-  if (!apiKey) return replay(document === undefined ? WORKSHEET : EDIT);
-  // Editing: the last request goes in with the document as it is now. Earlier answers stay as
-  // they were written (documents, or edits); the document in the last turn is the one to quote.
-  const sent =
-    document === undefined
-      ? messages
-      : messages.map((message) =>
-          message === last
-            ? {
-                ...message,
-                parts: [
-                  { type: "text" as const, text: editRequest(document, textOf(message)) },
-                  ...message.parts.filter((part) => part.type !== "text"),
-                ],
-              }
-            : message,
-        );
+  // Offline, a follow-up gets the worksheet revised.
+  if (!apiKey) return replay(messages.some((message) => message.role === "assistant") ? REVISED : WORKSHEET);
   const result = streamText({
     model: createAnthropic({ apiKey })(process.env.TYPSTREAM_MODEL ?? "claude-sonnet-5-5"),
-    instructions: document === undefined ? INSTRUCTIONS : [...INSTRUCTIONS, EDITING],
-    messages: await convertToModelMessages(sent, { tools, ignoreIncompleteToolCalls: true }),
+    instructions: INSTRUCTIONS,
+    messages: await convertToModelMessages(messages, { tools, ignoreIncompleteToolCalls: true }),
     tools,
     stopWhen,
   });

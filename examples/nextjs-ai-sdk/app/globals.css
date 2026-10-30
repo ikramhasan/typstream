@@ -149,28 +149,3 @@
     0 2px 6px oklch(0 0 0 / 0.06),
     0 10px 28px oklch(0.2 0.03 255 / 0.13);
 }
-
-/* An edit's highlights in HTML (app/page.tsx, `highlight`): the block a quote matches while the model
-   writes it, the block being rewritten, then what the answer changed, until Keep or Undo. */
-.answer [data-edit] {
-  border-radius: 4px;
-  box-shadow: 0 0 0 4px var(--edit-mark);
-  background: var(--edit-mark);
-  transition:
-    background 200ms,
-    box-shadow 200ms;
-}
-.answer [data-edit="quoting"] {
-  --edit-mark: oklch(0.95 0.08 95 / 0.7);
-}
-.answer [data-edit="writing"] {
-  --edit-mark: oklch(0.94 0.05 250 / 0.7);
-}
-.answer [data-edit="changed"] {
-  --edit-mark: oklch(0.95 0.06 150 / 0.7);
-}
-@media (prefers-reduced-motion: reduce) {
-  .answer [data-edit] {
-    transition: none;
-  }
-}
