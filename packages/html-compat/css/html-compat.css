@@ -417,20 +417,36 @@
   margin-block-end: 0;
 }
 /* A tight list right after a paragraph (or text) is attached to it: its items' gap, `par.leading`, 0 on pages,
-   replaces the spacing between them (typst-layout's LIST_RULE, an attached weak `v`). */
-:where(.typstream) :is(p, span, strong, em, b, i, a, code, mark, sub, sup, u, s) + .ts-tight {
+   replaces the spacing between them (typst-layout's LIST_RULE, an attached weak `v`). Not after a blank line, which
+   ends the paragraph first: the renderer marks the blocks that start there (`data-typstream-start`). */
+:where(.typstream) :is(p, span, strong, em, b, i, a, code, mark, sub, sup, u, s) + .ts-tight:not([data-typstream-start]) {
   margin-block-start: 0;
 }
-:where(.typstream) p:has(+ .ts-tight) {
+:where(.typstream) p:has(+ .ts-tight:not([data-typstream-start])) {
   margin-block-end: 0;
 }
-/* Spacing (`v`): Typst adds it to the gap its neighbours' spacing collapses to (the larger of the two, here the one
-   above); weak spacing replaces that gap, as fractional spacing does (distribute.rs trims weak spacing next to it). */
-:where(.typstream .ts-v) + * {
+/* In a container, html-compat.typ marks the blank line itself (`.ts-start`). */
+:where(.typstream .ts-start) {
+  display: none;
+}
+/* Spacing (`v`): Typst adds it to the gap its neighbours' spacing collapses to (distribute.rs, keep_spacing): the
+   stronger of the spacing below the block before it and above the one after (a block's own, a heading's, beats
+   paragraph spacing), or, when they are alike, the larger (here the one before). Weak spacing replaces that gap, as
+   fractional spacing does (distribute.rs trims weak spacing next to it). */
+:where(.typstream) .ts-v + :not(h1, h2, h3, h4, h5, h6, .ts-sp-a),
+:where(.typstream) :is(h1, h2, h3, h4, h5, h6, .ts-sp-b) + .ts-v + * {
   margin-block-start: 0;
+}
+:where(.typstream) :not(h1, h2, h3, h4, h5, h6, .ts-sp-b):has(+ .ts-v + :is(h1, h2, h3, h4, h5, h6, .ts-sp-a)) {
+  margin-block-end: 0;
 }
 :where(.typstream) :has(+ :is(.ts-v-weak, .ts-vfill)) {
   margin-block-end: 0;
+}
+/* Text that isn't in a paragraph element (a tight list item's, the renderer's `.typstream-t`) is one in Typst, spaced
+   from spacing after it as a paragraph is. */
+:where(.typstream) :is(.typstream-t, span, strong, em, b, i, a, code, mark, sub, sup, u, s) + .ts-v:not(.ts-v-weak, .ts-vfill) {
+  margin-block-start: 0.56em;
 }
 /* Typst drops the spacing above the first block of a page (the renderer's pages, below a break too). */
 :where(.typstream .typstream-flow) > :first-child {

@@ -17,6 +17,8 @@ export interface SplitBlock {
   html: string;
   /** Source offset from the anchor before it (PLAN §10.2), or `null`. */
   src: number | null;
+  /** The anchor is right before it: it starts a block of the source (after a blank line, or a heading). */
+  start?: boolean;
 }
 
 export interface Split {
@@ -193,17 +195,20 @@ const collect = (
   reuse: Reuse,
 ): void => {
   let prev = from;
+  let start = false;
   for (const item of items) {
     if (item.tag === "typstream-anchor") {
       const anchor = ANCHOR.exec(html.slice(item.start, item.end));
       if (anchor) {
         src = Number(anchor[1]);
+        start = true;
         continue;
       }
     }
     const segment = copy(html.slice(prev, item.end));
     const own = segment.slice(item.start - prev);
-    blocks.push({ html: own, src: own.startsWith(ENDNOTES) ? null : src });
+    blocks.push({ html: own, src: own.startsWith(ENDNOTES) ? null : src, ...(start ? { start } : {}) });
+    start = false;
     reuse.segments.push(item.tag === null ? null : segment);
     reuse.srcAfter.push(src);
     prev = item.end;

@@ -177,6 +177,24 @@
   if size != 11pt { _len(size) }
 }
 
+/// A list after a blank line isn't attached to the paragraph before it (typst-layout's LIST_RULE attaches a tight
+/// list only to a paragraph it follows directly), which the HTML can't tell: an empty `.ts-start` goes between them,
+/// as the renderer's `data-typstream-start` marks the document's top-level blocks.
+#let _flat(c) = if c.func() == [].func() { c.children.map(_flat).flatten() } else { (c,) }
+#let _mark-starts(body) = {
+  if type(body) != content or body.func() != [].func() { return body }
+  let out = ()
+  let after = false
+  for c in _flat(body) {
+    if c.func() == parbreak { after = true; out.push(c); continue }
+    if c == [ ] { out.push(c); continue }
+    if after and c.func() in (list.item, enum.item, terms.item) { out.push(html.elem("div", attrs: (class: "ts-start"))) }
+    after = false
+    out.push(c)
+  }
+  out.join()
+}
+
 #let _el(tag, class, style: none, role: none, body) = {
   if tag == "div" and text.costs.widow == _inline { (tag, class) = ("span", class + " ts-b") }
   let attrs = (class: class)
@@ -184,7 +202,7 @@
   if size != none { style = (style, "font-size: " + size).filter(x => x != none).join("; ") }
   if style != none { attrs.insert("style", style) }
   if role != none { attrs.insert("role", role) }
-  html.elem(tag, attrs: attrs, if body == none { [] } else { body })
+  html.elem(tag, attrs: attrs, if body == none { [] } else { _mark-starts(body) })
 }
 
 /// The CSS `text-align` for a horizontal alignment, or `none`.

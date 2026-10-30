@@ -22,7 +22,7 @@ import { injectCss } from "./css";
 import { directionOf } from "./dir";
 import { createHtmlPages, type PagesLayout, parseGeometry } from "./pages";
 import { createSanitizer, hideStyles, type Sanitizer } from "./sanitize";
-import { type Split, splitHtml } from "./split";
+import { type Split, type SplitBlock, splitHtml } from "./split";
 import { htmlRendererCss } from "./styles";
 
 /** Options for {@link createHtmlRenderer}. @public */
@@ -135,11 +135,15 @@ interface Block {
   key: string;
   nodes: Node[];
   src: number | null;
+  /** Its element has {@link START_ATTRIBUTE}. */
+  start: boolean;
   /** Start times of words still fading in. */
   timings: Timings | null;
 }
 
 const SRC_ATTRIBUTE = "data-typstream-src";
+/** On a block right after its anchor: one the source starts after a blank line (html-compat's CSS reads it). */
+const START_ATTRIBUTE = "data-typstream-start";
 
 /** Inline elements: a run of inline content goes on through them. */
 const INLINE_TAGS = new Set([
@@ -156,6 +160,39 @@ const inline = (node: Node): boolean =>
  * of the line between them, as Typst's does (`Left #h(1fr) Right`, a question's points at the end of its line).
  * Done here, as the HTML comes, so it holds whatever wrote the run: a `context`, a set rule, a helper function.
  */
+/** The nearest block-level element around `node`. */
+const blockOf = (node: Node): Node | null => {
+  let at = node.parentNode;
+  while (at && at.nodeType === 1 && inline(at)) at = at.parentNode;
+  return at;
+};
+
+/** The text beside `from` in its paragraph, `forward` or back, skipping empty text. */
+const besideText = (from: Node, forward: boolean, doc: Document): Text | null => {
+  const walker = doc.createTreeWalker(blockOf(from) ?? from, 4);
+  walker.currentNode = from;
+  // Back from an element: its own text (none for spacing) isn't before it.
+  for (let t = forward ? walker.nextNode() : walker.previousNode(); t; t = forward ? walker.nextNode() : walker.previousNode()) {
+    if ((t as Text).data === "") continue;
+    return blockOf(t) === blockOf(from) ? (t as Text) : null;
+  }
+  return null;
+};
+
+/**
+ * Typst drops the space after spacing (`h`) and, for fractional spacing, the one before it too (realize.rs,
+ * collapse_spaces). html-compat's spacing is an element by then, so its HTML keeps them.
+ */
+const collapseSpaces = (root: ParentNode, doc: Document): void => {
+  for (const h of root.querySelectorAll(".ts-h, .ts-hfill")) {
+    const after = besideText(h, true, doc);
+    if (after && /^\s/.test(after.data)) after.data = after.data.replace(/^\s+/, "");
+    if (!h.classList.contains("ts-hfill")) continue;
+    const before = besideText(h, false, doc);
+    if (before && /\s$/.test(before.data)) before.data = before.data.replace(/\s+$/, "");
+  }
+};
+
 const rowRuns = (root: ParentNode, doc: Document): void => {
   const spacers = Array.from(root.querySelectorAll(".ts-hfill"));
   const done = new Set<Node>();
@@ -350,6 +387,7 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
       }
     }
     sanitize(content);
+    collapseSpaces(content, inert);
     rowRuns(content, inert);
     wrapRuns(content, inert);
     // Moving the cleaned nodes adopts them into the page's document.
@@ -358,13 +396,15 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
     return Array.from(fragment.childNodes);
   };
 
-  const setSrc = (block: Block, src: number | null): void => {
-    if (block.src === src) return;
+  const setSrc = (block: Block, src: number | null, start: boolean): void => {
+    if (block.src === src && block.start === start) return;
     block.src = src;
+    block.start = start;
     const el = firstElement(block.nodes);
     if (!el) return;
     if (src === null) el.removeAttribute(SRC_ATTRIBUTE);
     else el.setAttribute(SRC_ATTRIBUTE, String(src));
+    el.toggleAttribute(START_ATTRIBUTE, start);
   };
 
   const removeNodes = (block: Block): void => {
@@ -447,16 +487,16 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
     const result: Block[] = [];
     const created: Block[] = [];
     for (let i = 0; i < next.length; i++) {
-      const item = next[i] as { html: string; src: number | null };
+      const item = next[i] as SplitBlock;
       let block: Block | undefined;
       if (i < head) block = old[i];
       else if (i >= next.length - tail) block = old[old.length - (next.length - i)];
       else block = byKey.get(item.html)?.shift();
       if (!block) {
-        block = { key: item.html, nodes: parse(item.html), src: null, timings: null };
+        block = { key: item.html, nodes: parse(item.html), src: null, start: false, timings: null };
         created.push(block);
       }
-      setSrc(block, item.src);
+      setSrc(block, item.src, item.start === true);
       result.push(block);
     }
     const reused = new Set(result);

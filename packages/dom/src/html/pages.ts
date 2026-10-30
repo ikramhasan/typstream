@@ -111,6 +111,8 @@ interface Unit {
   fit?(room: number): void;
   /** Fractional spacing (html-compat's `.ts-vfill`): its share of the room its page's content leaves. */
   fr?: HTMLElement;
+  /** The first unit of a block aligned in its page (html-compat's `.ts-align-v`): to its middle or its end. */
+  align?: { el: Element; at: number };
 }
 
 const SPACER = "typstream-break";
@@ -157,6 +159,8 @@ export const createHtmlPages = (
 
   let geometry: PageGeometry = A4;
   let gaps: Gap[] = [];
+  /** The room above blocks aligned in their page: laid out again with all the pages. */
+  let shifts: Gap[] = [];
   let count = 0;
   let scale = 1;
 
@@ -520,6 +524,12 @@ export const createHtmlPages = (
       }
       flush();
       const before = out.length;
+      // Spacing after a page break starts the next page. Elsewhere Typst drops it where a page ends.
+      if (force && child.classList.contains("ts-v") && !child.classList.contains("ts-v-weak") && !child.classList.contains("ts-vfill")) {
+        out.push({ ...whole(child), force });
+        force = false;
+        continue;
+      }
       if (child.classList.contains("ts-vfill")) {
         out.push({ measure: () => inFlow(child.getBoundingClientRect(), origin()), gap: () => spacerBefore(child, true), fr: child });
         continue;
@@ -539,6 +549,12 @@ export const createHtmlPages = (
         (out[before] as Unit).force = force;
         force = false;
       }
+      // Typst aligns a block of the page's flow in the room the page's content leaves (typst-layout's flow,
+      // distribute.rs and the ruler in compose.rs).
+      if (el === flow && child.classList.contains("ts-align-v") && out.length > before) {
+        const y = (child as HTMLElement).style.justifyContent;
+        (out[before] as Unit).align = { el: child, at: y === "center" ? 0.5 : 1 };
+      }
     }
     flush();
   };
@@ -546,8 +562,9 @@ export const createHtmlPages = (
   // --- breaking ----------------------------------------------------------------------
 
   const clear = () => {
-    for (const gap of gaps) gap.remove();
+    for (const gap of [...gaps, ...shifts]) gap.remove();
     gaps = [];
+    shifts = [];
   };
 
   /** The unit to move to the next page when `units[i]` doesn't fit: Typst keeps orphans, widows and sticky blocks. */
@@ -586,7 +603,7 @@ export const createHtmlPages = (
   const paginate = (from: Node | null) => {
     place();
     const key = JSON.stringify([geometry, pageWidth(), scale]);
-    if (key !== laidOut || geometry.height === null) from = null;
+    if (key !== laidOut || geometry.height === null || shifts.length) from = null;
     laidOut = key;
     if (geometry.height === null) {
       // One page, as tall as the content.
@@ -626,13 +643,19 @@ export const createHtmlPages = (
       gaps.push(gap);
       gap.set(contentTop(0) - head.measure().top);
     }
-    /** The fractional spacing on the page being laid out. */
+    /** The fractional spacing and aligned blocks on the page being laid out. */
     let fills: { index: number; el: HTMLElement }[] = [];
-    /** Gives the page's fractional spacing what its content leaves, the units before `end` being on it. */
+    let aligns: { index: number; el: Element; at: number }[] = [];
+    /**
+     * Gives the room the page's content leaves (the units before `end` being on it) to its fractional spacing, or
+     * else before its aligned blocks: the first in the middle moves down by half, the first at the end by the rest.
+     */
     const fill = (end: number) => {
       const mine = fills.filter((f) => f.index < end);
       fills = fills.filter((f) => f.index >= end);
-      if (!mine.length) return;
+      const aligned = aligns.filter((a) => a.index < end);
+      aligns = aligns.filter((a) => a.index >= end);
+      if (!mine.length && !aligned.length) return;
       let last = end - 1;
       while (last >= 0 && (units[last] as Unit).fr) last--;
       const bottom = Math.max(contentTop(page), last >= 0 ? (units[last] as Unit).measure().bottom : 0);
@@ -640,6 +663,17 @@ export const createHtmlPages = (
       const total = mine.reduce((sum, f) => sum + grow(f.el), 0);
       const room = Math.max(0, contentBottom(page) - bottom);
       for (const f of mine) f.el.style.height = `${(room * grow(f.el)) / total}px`;
+      if (mine.length) return;
+      let ruler = 0;
+      for (const a of aligned) {
+        if (a.at <= ruler) continue;
+        // The spacer stops the block's own spacing from collapsing away at the top of the page: without it.
+        const top = a.el.getBoundingClientRect().top;
+        const gap = spacerBefore(a.el, true);
+        gap.set(room * (a.at - ruler) - (a.el.getBoundingClientRect().top - top) / scale);
+        shifts.push(gap);
+        ruler = a.at;
+      }
     };
     for (let i = 0; i < units.length; i++) {
       const unit = units[i] as Unit;
@@ -651,6 +685,7 @@ export const createHtmlPages = (
         fills.push({ index: i, el: unit.fr });
         continue;
       }
+      if (unit.align) aligns.push({ index: i, ...unit.align });
       // A weak break where the page has nothing above yet is no break.
       if (unit.force === "weak" && top <= contentTop(page) + EPS) continue;
       if (unit.fit && !unit.force) {
