@@ -216,7 +216,7 @@ type LintSeverity = "fix" | "warn" | "off"; // fix applies the change, warn only
 | `stray-closer` | `fix` | Escapes an unmatched `]` (`\]`). |
 | `unclosed-delim` | `fix` | Escapes a `*` or `_` that is never closed in its paragraph. |
 | `math-lone-script` | `fix` | Gives a `^` or `_` without a base an empty one: `m/s$^2$` becomes `m/s$""^2$`. |
-| `layout-profile` | `fix` | Takes `justify`, `leading` and `linebreaks` out of `par(…)` calls and `show par: set par(…)` rules, `hyphenate` and the text edges out of `show text: set text(…)`, and `breakable` out of `show table: set table.cell(…)`: they would win over the engine's layout profile. |
+| `layout-profile` | `fix` | Takes `justify`, `leading` and `linebreaks` out of `par(…)` calls and `show par: set par(…)` rules, `hyphenate` and the text edges out of `show text: set text(…)`, and `breakable` out of `show table: set table.cell(…)`: they would win over the engine's layout profile. Takes a small fixed `radius` (up to 12 pt, 1em or 4 mm) out of `block`, `rect` and `box` calls that hold content and out of their set rules: a DOCX export would make a picture of a box with rounded corners, its text not editable. A ratio or a larger radius draws a shape and stays. |
 | `unclosed-block-comment` | `warn` | Reports a `/*` that is never closed and hides the rest of the document. |
 | `currency-dollar` | `warn` | Reports `$` signs that look like prices (`$5 and $10`), not math. As a fix it escapes both (`\$`). |
 

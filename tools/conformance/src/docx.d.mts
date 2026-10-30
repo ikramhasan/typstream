@@ -29,9 +29,18 @@ export type DocxResult =
       pageStartsSame: number;
       first: { typst: string[]; other: string[] } | null;
       pictures: { page: number; cluster: number; box: number[] | null }[];
-      math?: { chars: number; same: number };
+      /** Equations' letters and digits Typst's has and how many came out; operands drawn as missing ("¿"). */
+      math?: { chars: number; same: number; missing: number };
       /** None with equations. */
       ink: { page: number; pixels: number; cluster: number; box: number[] | null } | null;
+      /** Words whose paper or ink differ from Typst's, of those found in both (colour.mjs). */
+      colours: {
+        words: number;
+        differing: number;
+        first: { page: number; text: string; paper: [string, string]; ink: [string, string] } | null;
+      };
+      /** The line farthest from where Typst set it, in points (page from 1); none with equations or in other scripts. */
+      drift: { distance: number; dy: number; dx: number; page: number; text: string } | null;
     };
 
 /** Exports every example and compares it with Typst's PDF. */

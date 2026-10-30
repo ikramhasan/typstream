@@ -6,7 +6,7 @@
 //
 //   node check.mjs [--native] [--onlyoffice | --google-docs [--google-docx]] [--scripts] [--fonts DIR]
 //                  [--validate DLL] [--min-lines RATIO] [--min-math-lines RATIO] [--min-picture-lines RATIO]
-//                  [--min-pictures RATIO] [--ink] [filter...]
+//                  [--min-pictures RATIO] [--ink] [--positions] [--colours] [filter...]
 //
 // --validate: Microsoft's Open XML validator (validator/, `dotnet publish -c Release -o out`) on every file; any
 // error fails the check. --min-lines, --min-math-lines, --min-picture-lines: fail when fewer of Typst's lines come
@@ -15,7 +15,11 @@
 // tools/browser-suites' PDF raster suite (a few differing pixels touching; pixels.mjs). Each document is compared as the
 // plugin conformance suite compares an example (tools/conformance's compare.mjs, #135), whose modules this uses.
 // --ink: fail when a document laid out as Typst's (every line and page) draws rules, borders or shading otherwise
-// (ink.mjs).
+// (ink.mjs). An equation drawn with an operand missing (LibreOffice's red "¿") always fails.
+// --positions: fail when such a document sets a line farther than lines.mjs's DRIFT_TOLERANCE from where Typst set it
+// (a gap lost above it, a label centred with it): its lines would all match by text.
+// --colours: fail when a word's paper or ink (a highlight, a shaded box, a coloured word) isn't Typst's colour
+// (colour.mjs), equations aside.
 //
 // --onlyoffice: lay the files out with ONLYOFFICE (`x2t` in the onlyoffice/documentserver image, Docker) instead of
 // LibreOffice: a second engine written apart from Word and LibreOffice (nightly). It reads only installed fonts.
@@ -36,7 +40,9 @@ import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { compareExport } from "@typstream/conformance/compare";
+import { COLOUR_TOLERANCE } from "@typstream/conformance/colour";
 import { INK_TOLERANCE } from "@typstream/conformance/ink";
+import { DRIFT_TOLERANCE } from "@typstream/conformance/lines";
 import { layOut, packageFiles, validate } from "@typstream/conformance/office";
 import { TOLERANCE } from "@typstream/conformance/pixels";
 import { writeDocx } from "@typstream/docx";
@@ -63,6 +69,8 @@ const minMathLines = Number(option("--min-math-lines") ?? 0);
 const minPictureLines = Number(option("--min-picture-lines") ?? 0);
 const minPictures = Number(option("--min-pictures") ?? 0);
 const minInk = args.includes("--ink");
+const positions = args.includes("--positions");
+const colours = args.includes("--colours");
 const filters = () => args.filter((a) => !a.startsWith("--"));
 // A Google Docs run's files, its own and the exports it uploads, are kept apart from the others' and each other's,
 // named as its Drive folder is: when it ran, from which commit.
@@ -248,8 +256,14 @@ const plain = { docs: 0, identical: 0, lines: 0, same: 0 };
 const withMath = { docs: 0, identical: 0, lines: 0, same: 0 };
 const withPictures = { docs: 0, identical: 0, lines: 0, same: 0, pictures: 0, close: 0, worst: null };
 const chars = { all: 0, same: 0 };
+// Operands LibreOffice's math drew as missing ("¿"), by document.
+const operands = [];
 // What pages draw besides text (rules, borders, shading), on documents laid out as Typst's.
 const ink = { docs: 0, same: 0 };
+// Where their lines are, on the same documents.
+const placed = { docs: 0, same: 0 };
+// Documents with words in other colours than Typst's.
+const recoloured = [];
 // Google Docs: documents with text over a picture.
 const overlapping = [];
 // Google Docs: documents with pictures missing from its PDF.
@@ -273,6 +287,7 @@ for (const r of results.sort((a, b) => a.id.localeCompare(b.id))) {
   if (r.math) {
     chars.all += r.math.chars;
     chars.same += r.math.same;
+    if (r.math.missing) operands.push(`${r.id} (${r.math.missing})`);
   }
   if (r.overlaps) {
     // Google Docs: its line spacing moves lines and pages where nothing is wrong, so text over a picture decides.
@@ -294,6 +309,13 @@ for (const r of results.sort((a, b) => a.id.localeCompare(b.id))) {
     ink.docs++;
     if (inked) ink.same++;
   }
+  const inPlace = !ok || !r.drift || r.drift.distance <= DRIFT_TOLERANCE;
+  const coloured = !r.colours?.differing;
+  if (!coloured) recoloured.push(`${r.id} (${r.colours.differing})`);
+  if (ok && r.drift) {
+    placed.docs++;
+    if (inPlace) placed.same++;
+  }
   for (const p of r.pictures ?? []) {
     withPictures.pictures++;
     if (p.cluster <= TOLERANCE) withPictures.close++;
@@ -301,17 +323,21 @@ for (const r of results.sort((a, b) => a.id.localeCompare(b.id))) {
   }
   const tags = [
     r.pictures && `pictures ${close}/${r.pictures.length}`,
-    r.math && `math ${r.math.same}/${r.math.chars}`,
+    r.math && `math ${r.math.same}/${r.math.chars}${r.math.missing ? `, ${r.math.missing} missing operands` : ""}`,
   ].filter(Boolean);
   console.log(
-    `${ok && inked && close === (r.pictures?.length ?? 0) ? "✓" : "✗"}${tags.length ? ` (${tags.join(", ")})` : ""} ${r.id}: ` +
+    `${ok && inked && inPlace && coloured && close === (r.pictures?.length ?? 0) ? "✓" : "✗"}${tags.length ? ` (${tags.join(", ")})` : ""} ${r.id}: ` +
       `${r.same}/${r.lines} lines, pages ${r.pages.join("/")}, starts ${r.pageStartsSame}/${r.pageStarts}` +
       (ok || !r.first ? "" : `  typst ${JSON.stringify(r.first.typst)} other ${JSON.stringify(r.first.other)}`) +
       (r.pictures ?? [])
         .filter((p) => p.cluster > TOLERANCE)
         .map((p) => `  picture on page ${p.page + 1}: ${p.cluster} pixels touching at ${JSON.stringify(p.box)}`)
         .join("") +
-      (inked ? "" : `  ink on page ${r.ink.page + 1}: ${r.ink.cluster} pixels touching at ${JSON.stringify(r.ink.box)}`),
+      (inked ? "" : `  ink on page ${r.ink.page + 1}: ${r.ink.cluster} pixels touching at ${JSON.stringify(r.ink.box)}`) +
+      (inPlace
+        ? ""
+        : `  line ${JSON.stringify(r.drift.text)} on page ${r.drift.page} moved by ${r.drift.dx.toFixed(1)}, ${r.drift.dy.toFixed(1)} pt`) +
+      (coloured ? "" : `  ${r.colours.differing} words in other colours, first ${JSON.stringify(r.colours.first)}`),
   );
 }
 console.log(
@@ -328,8 +354,12 @@ const summary = [
   `with math, without pictures: ${withMath.identical}/${withMath.docs} identical; lines ${withMath.same}/${withMath.lines} (${percent(mathRatio)})`,
   `with pictures: ${withPictures.identical}/${withPictures.docs} identical; lines ${withPictures.same}/${withPictures.lines} ` +
     `(${percent(pictureRatio)}); pictures within ${TOLERANCE} touching pixels of the PDF ${withPictures.close}/${withPictures.pictures}`,
-  `equations' letters and digits ${chars.same}/${chars.all} (${percent(charsRatio)})`,
+  `equations' letters and digits ${chars.same}/${chars.all} (${percent(charsRatio)}); operands drawn as missing ("¿") in ` +
+    `${operands.length} documents${operands.length ? ` (${operands.join(", ")})` : ""}`,
   `rules, borders and shading as Typst's (within ${INK_TOLERANCE} touching pixels) on ${ink.same} of the ${ink.docs} identical documents without math`,
+  `every line where Typst set it (within ${DRIFT_TOLERANCE} pt) on ${placed.same} of the ${placed.docs} identical documents without math`,
+  `words in Typst's colours (within ${COLOUR_TOLERANCE} levels) in ${results.length - recoloured.length - results.filter((r) => r.error).length} documents` +
+    (recoloured.length ? `; not in ${recoloured.join(", ")}` : ""),
 ];
 // Google Docs: pictures are checked for text over them, not pixel by pixel.
 const checked = results.filter((r) => r.overlaps).length;
@@ -353,10 +383,13 @@ if (mathRatio < minMathLines) failed = `line agreement with math ${percent(mathR
 if (pictureRatio < minPictureLines)
   failed = `line agreement with pictures ${percent(pictureRatio)} under ${percent(minPictureLines)}`;
 if (chars.same < chars.all) failed = "equations that didn't come out whole";
+if (operands.length) failed = "equations drawn with missing operands";
 const picturesRatio = withPictures.close / Math.max(1, withPictures.pictures);
 if (picturesRatio < minPictures)
   failed = `pictures within the PDF's tolerance ${percent(picturesRatio)} under ${percent(minPictures)}`;
 if (minInk && ink.same < ink.docs) failed = "rules, borders or shading unlike Typst's";
+if (positions && placed.same < placed.docs) failed = "lines set away from where Typst set them";
+if (colours && recoloured.length) failed = "words in other colours than Typst's";
 if (overlapping.length) failed = "text over pictures in Google Docs";
 if (missing.length) failed = "pictures missing in Google Docs";
 if (validator) {

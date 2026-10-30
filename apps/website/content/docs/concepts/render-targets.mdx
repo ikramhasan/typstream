@@ -104,12 +104,13 @@ Every page the engine lays out, on screen or in a PDF, follows typstream's layou
 
 - **A constant line pitch** of 1.3 times the text size, close to Typst's default spacing.
 - **Ragged right, without hyphenation**, lines filled one at a time. Word justifies and hyphenates differently from Typst, so either would move line breaks.
+- **No hanging punctuation.** Typst lets a full stop at the end of a line hang into the margin, Word doesn't: a line that only fit with it would break elsewhere in Word, and a right-aligned or centred line would sit a little off.
 - **Table rows stay on one page.** A row taller than a page runs off it, so long text belongs in paragraphs, not in a table cell.
 - **Inline math** gets at least one line's height.
 - **Display equations with line breaks** keep Typst's default spacing between their lines (the text's is set by the
   pitch).
 
-The profile's rules win over a document's `#set par(justify: true)`, its `#set text(hyphenate: true)` or its `leading`. A document can still set the gaps between paragraphs and headings, its fonts and its sizes. Heal's [`layout-profile`](/docs/concepts/healing#lint-rules) lint rule takes out what would beat the profile: `par(justify: true)[…]` arguments and the document's own `show par: set par(…)` rules.
+The profile's rules win over a document's `#set par(justify: true)`, its `#set text(hyphenate: true)` or its `leading`. A document can still set the gaps between paragraphs and headings, its fonts and its sizes. Heal's [`layout-profile`](/docs/concepts/healing#lint-rules) lint rule takes out what would beat the profile: `par(justify: true)[…]` arguments and the document's own `show par: set par(…)` rules. It also squares the corners of boxes models draw around text (`block(radius: 3pt)[…]`, a small fixed radius): Word can't draw a rounded frame, so a DOCX export would have to make a picture of the box, its text no longer editable.
 
 Plugins can step outside the profile on purpose with an element's own arguments or a show-set rule of their own. edu's answer lines do, so that written answers sit on the ruled lines.
 

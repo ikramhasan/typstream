@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "The plugin conformance suite (#135): a plugin's examples, its paged view against Typst's PDF (pixels, in a browser) and its DOCX export against the PDF (Microsoft's validator; LibreOffice's lines, pages, pictures and rules).",
+  "description": "The plugin conformance suite (#135), and Typst's own elements' (#118): a plugin's examples, its paged view against Typst's PDF (pixels, in a browser) and its DOCX export against the PDF (Microsoft's validator; LibreOffice's lines, pages, pictures and rules).",
   "exports": {
     ".": "./src/suite.ts",
     "./paged": "./src/paged.ts",
@@ -16,6 +16,7 @@
       "types": "./src/vitest.d.mts",
       "default": "./src/vitest.mjs"
     },
+    "./colour": "./src/colour.mjs",
     "./compare": "./src/compare.mjs",
     "./ink": "./src/ink.mjs",
     "./lines": "./src/lines.mjs",
@@ -23,6 +24,8 @@
     "./pixels": "./src/pixels.mjs"
   },
   "scripts": {
+    "test:paged": "vitest run --project paged",
+    "test:docx": "vitest run --project docx",
     "check-types": "tsc -p tsconfig.json"
   },
   "dependencies": {

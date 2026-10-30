@@ -13,6 +13,7 @@ import type {
   DocxDrawing,
   DocxFont,
   DocxGapRun,
+  DocxList,
   DocxMathRun,
   DocxModel,
   DocxPageNumbering,
@@ -118,19 +119,21 @@ class Writer {
     color?: string,
     underline?: boolean,
     spacing?: number,
-    run?: Pick<DocxTextRun, "script" | "rtl" | "lang" | "underlineColor"> & { raise?: number },
+    run?: Pick<DocxTextRun, "script" | "rtl" | "lang" | "underlineColor" | "fill" | "strike"> & { raise?: number },
   ): string {
     const f = this.fonts[font];
     const name = esc(f?.name ?? "Libertinus Serif");
     let x = `<w:rFonts w:ascii="${name}" w:hAnsi="${name}" w:cs="${name}" w:eastAsia="${name}"/>`;
     if (f?.bold) x += "<w:b/><w:bCs/>";
     if (f?.italic) x += "<w:i/><w:iCs/>";
+    if (run?.strike) x += "<w:strike/>";
     if (color) x += `<w:color w:val="${color}"/>`;
     if (spacing) x += `<w:spacing w:val="${spacing}"/>`;
     if (run?.raise) x += `<w:position w:val="${Math.round(run.raise * 2)}"/>`;
     const sz = halfPoints(size);
     x += `<w:sz w:val="${sz}"/><w:szCs w:val="${sz}"/>`;
     if (underline) x += `<w:u w:val="single"${run?.underlineColor ? ` w:color="${run.underlineColor}"` : ""}/>`;
+    if (run?.fill) x += `<w:shd w:val="clear" w:color="auto" w:fill="${run.fill}"/>`;
     if (run?.script) x += `<w:vertAlign w:val="${run.script}"/>`;
     if (run?.rtl) x += "<w:rtl/>";
     if (run?.lang) x += `<w:lang w:val="${run.lang}" w:eastAsia="${run.lang}" w:bidi="${run.lang}"/>`;
@@ -429,7 +432,9 @@ class Writer {
     const sides = (["top", "left", "bottom", "right"] as const)
       .map((s) => {
         const b = c.borders[s];
-        return b ? `<w:${s} w:val="single" w:sz="${eighths(b.width)}" w:space="0" w:color="${b.color}"/>` : "";
+        return b
+          ? `<w:${s} w:val="${b.style ?? "single"}" w:sz="${eighths(b.width)}" w:space="0" w:color="${b.color}"/>`
+          : "";
       })
       .join("");
     if (sides) pr += `<w:tcBorders>${sides}</w:tcBorders>`;
@@ -452,8 +457,12 @@ class Writer {
     if (c.valign) pr += `<w:vAlign w:val="${c.valign}"/>`;
     // What the cell's paragraphs have between its margins, in points: a drawing's picture past it is anchored.
     let body = this.blocks(c.blocks, part, width / 20 - m.left - right);
-    // A cell ends with a paragraph; after a table, one that takes no room.
-    if (!body.endsWith("</w:p>")) body += this.spacer(0.05);
+    // A cell ends with a paragraph; after a table, one that takes no room. LibreOffice drops a cell's last paragraph
+    // when it is empty and follows a table, as the paragraph Word requires there: a rule (an answer line under a
+    // callout in a question) or a room would go, and the space it holds. One that takes no room after it instead.
+    const [prev, last] = c.blocks.slice(-2);
+    const empty = last?.type === "rule" || (last?.type === "drawing" && !last.placed && !last.picture);
+    if (!body.endsWith("</w:p>") || (prev?.type === "table" && empty)) body += this.spacer(0.05);
     return `<w:tc><w:tcPr>${pr}</w:tcPr>${body}</w:tc>`;
   }
 
@@ -719,7 +728,24 @@ export const writeDocx = (
       "</w:styles>",
   );
 
-  // Numbering: one abstract numbering and one instance per list.
+  // Numbering: one abstract numbering and one instance per list. Its label in the face, size and colour Typst set it
+  // in: Word sets a number as its paragraph's mark otherwise, the first run's (a bold "T." made the numbers bold).
+  const label = (l: DocxList): string => {
+    const f = l.labelFont === undefined ? undefined : model.fonts[l.labelFont];
+    const name = f ? esc(f.name) : base;
+    const sz =
+      l.labelSize === undefined
+        ? ""
+        : `<w:sz w:val="${halfPoints(l.labelSize)}"/><w:szCs w:val="${halfPoints(l.labelSize)}"/>`;
+    return (
+      `<w:rFonts w:ascii="${name}" w:hAnsi="${name}" w:cs="${name}"/>` +
+      (f
+        ? `<w:b w:val="${f.bold ? 1 : 0}"/><w:bCs w:val="${f.bold ? 1 : 0}"/><w:i w:val="${f.italic ? 1 : 0}"/><w:iCs w:val="${f.italic ? 1 : 0}"/>`
+        : "") +
+      (l.labelColor ? `<w:color w:val="${l.labelColor}"/>` : f ? '<w:color w:val="000000"/>' : "") +
+      sz
+    );
+  };
   const abstract = model.lists
     .map((l, i) => {
       const hanging = Math.max(0, l.bodyLeft - (l.align === "end" ? l.labelRight : l.labelLeft));
@@ -728,7 +754,7 @@ export const writeDocx = (
         `<w:lvl w:ilvl="0"><w:start w:val="${l.start}"/><w:numFmt w:val="${l.format === "none" ? "decimal" : l.format}"/>` +
         `<w:lvlText w:val="${esc(l.text)}"/><w:lvlJc w:val="${l.align === "end" ? "right" : "left"}"/>` +
         `<w:pPr><w:ind w:left="${twips(l.bodyLeft)}" w:hanging="${twips(hanging)}"/></w:pPr>` +
-        `<w:rPr><w:rFonts w:ascii="${base}" w:hAnsi="${base}" w:cs="${base}"/></w:rPr></w:lvl></w:abstractNum>`
+        `<w:rPr>${label(l)}</w:rPr></w:lvl></w:abstractNum>`
       );
     })
     .join("");

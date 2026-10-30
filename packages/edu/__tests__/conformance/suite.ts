@@ -6,6 +6,32 @@ import { EDU_VERSION, edu, eduCatalogue, eduExamples, eduTemplates, SHOW_ANSWERS
 /** A body for template examples, so they have questions and points to count. */
 const BODY = "\n= Part A\n\n#question(points: 2)[What is $2 + 2$? #blank(answer: [4])]\n";
 
+/**
+ * Components inside one another, as documents put them, where a DOCX export once broke what each alone keeps: a
+ * callout's table inside a question's cell, its answer line the cell's last paragraph.
+ */
+const COMBINATIONS: ConformanceExample[] = [
+  {
+    name: "combination: answer line after a callout in a question",
+    source: `#question(points: 2)[
+  Read the definition, then use it in a sentence.
+  #callout(kind: "definition")[*Photosynthesis* is how plants make food from light.]
+  #answer-lines(count: 1, answer: [Plants use photosynthesis to grow.])
+]
+
+#question(points: 1)[Name the gas plants take in. #answer-lines(count: 1, answer: [Carbon dioxide.])]
+`,
+  },
+  {
+    name: "combination: blanks after equations that end with an operator",
+    source: `#question(points: 3)[
+  + $1/5 + 2/5 =$ #blank(answer: [$3/5$])
+  + $3^2 + 4^2 =$ #blank(answer: [25])
+]
+`,
+  },
+];
+
 const examples: ConformanceExample[] = [
   ...eduCatalogue.map((d) => ({
     name: `catalogue: ${d.name}`,
@@ -13,6 +39,7 @@ const examples: ConformanceExample[] = [
   })),
   ...eduTemplates.map((t) => ({ name: `template: ${t.name}`, source: t.preamble + BODY })),
   ...eduExamples.map((e) => ({ name: `example: ${e.title}`, source: e.output })),
+  ...COMBINATIONS,
 ];
 
 export const suite: ConformanceSuite = {

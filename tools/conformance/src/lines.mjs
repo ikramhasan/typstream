@@ -21,12 +21,14 @@ const decode = (s) =>
 
 /**
  * A word's or piece's text as compared: NFKC, without format characters (a word joiner a DOCX export writes to keep a
- * blank's underline, which ONLYOFFICE's PDF keeps as text).
+ * blank's underline, which ONLYOFFICE's PDF keeps as text) or emoji, which no engine here has a font for: Typst draws
+ * a missing glyph's box and leaves it out of its PDF's text, LibreOffice draws nothing and keeps it. Only characters
+ * shown as emoji by default (💡): ©, ™, arrows, ☑ or ⚠ are pictographic too, but Typst's fonts draw them.
  */
 const plain = (raw) =>
   decode(raw)
     .normalize("NFKC")
-    .replace(/\p{Cf}/gu, "");
+    .replace(/\p{Cf}|\p{Emoji_Presentation}/gu, "");
 
 /** `pdftotext -bbox`'s XML of a PDF: its words' boxes, page by page. */
 const bbox = (pdf) =>
@@ -60,7 +62,10 @@ const pictured = (regions, n, x0, y0, x1, y1) => {
   return regions.some((r) => r.page === n - 1 && x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.height);
 };
 
-/** [page, "words of the line"], lines by the bottom of their words' boxes, top to bottom; none in `regions`. */
+/**
+ * [page, "words of the line", bottom, left], lines by the bottom of their words' boxes (points), top to bottom; none in
+ * `regions`.
+ */
 export const linesOf = (pdf, regions = []) => {
   const xml = bbox(pdf);
   const out = [];
@@ -80,16 +85,39 @@ export const linesOf = (pdf, regions = []) => {
       if (last && Math.abs(last[0] - y) < 3) last[1].push([x, t]);
       else lines.push([y, [[x, t]]]);
     }
-    for (const [, ws] of lines)
-      out.push([
-        n,
-        ws
-          .sort((a, b) => a[0] - b[0])
-          .map((w) => w[1])
-          .join(" "),
-      ]);
+    for (const [y, ws] of lines) {
+      ws.sort((a, b) => a[0] - b[0]);
+      out.push([n, ws.map((w) => w[1]).join(" "), y, ws[0][0]]);
+    }
   }
   return out;
+};
+
+/**
+ * How far, in points, another layout may set a line from where Typst set it (`drift`). Engines round glyph advances
+ * (LibreOffice to twips), which moves a right-aligned line's start by up to about 2 points; a gap Word lost moves every
+ * line after it by the gap.
+ */
+export const DRIFT_TOLERANCE = 3;
+
+/**
+ * How far another layout's lines are from Typst's (`linesOf`'s, each matched to the next of the same text on the same
+ * page): the farthest, `{ distance, dy, dx, page, text }` in points (page from 1), or null when none match. Lines with
+ * the same words can still be in the wrong place: below a gap that was lost, or beside a label Word centred with them.
+ */
+export const drift = (ref, got) => {
+  const key = (t) => t.replace(/\s+/g, "").replace(/\.{3,}/g, "…");
+  let worst = null;
+  let j = 0;
+  for (const [page, text, y, x] of ref) {
+    const k = got.findIndex((l, i) => i >= j && l[0] === page && key(l[1]) === key(text));
+    if (k < 0) continue;
+    j = k + 1;
+    const [dy, dx] = [got[k][2] - y, got[k][3] - x];
+    const distance = Math.max(Math.abs(dy), Math.abs(dx));
+    if (!worst || distance > worst.distance) worst = { distance, dy, dx, page, text };
+  }
+  return worst;
 };
 
 /**
@@ -275,8 +303,20 @@ export const textLinesOf = (pdf, faces, regions = []) => {
 export const mathOf = (pdf, regions = []) =>
   pieces(pdf, undefined, regions)
     .filter((p) => p[5])
-    .map((p) => p[4].replace(/[^\p{L}\p{N}]/gu, ""))
+    // Base letters: an accent is a piece of its own in another engine's PDF (`dot(x)` is "ẋ" in Typst's).
+    .map((p) => p[4].normalize("NFD").replace(/[^\p{L}\p{N}]/gu, ""))
     .join("");
+
+/**
+ * How many times a PDF's text has "¿": what LibreOffice draws, in red, for an operand its math is missing (an operator
+ * it took to need one). Typst's PDF has it only where the text does.
+ */
+export const missingOperands = (pdf) =>
+  execFileSync("pdftotext", [pdf, "-"], {
+    encoding: "utf8",
+    maxBuffer: 1 << 28,
+    stdio: ["ignore", "pipe", "ignore"],
+  }).split("\u00bf").length - 1;
 
 /** How many of `ref`'s characters `got` has, as multisets. */
 export const sharedChars = (ref, got) => {

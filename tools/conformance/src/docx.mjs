@@ -10,8 +10,10 @@ import { writeDocx } from "@typstream/docx";
 import { heal } from "@typstream/heal";
 import { render, renderDocxModel } from "@typstream/node";
 import { beforeAll, describe, expect, it } from "vitest";
+import { COLOUR_TOLERANCE } from "./colour.mjs";
 import { compareExport, OTHER_SCRIPT } from "./compare.mjs";
 import { INK_TOLERANCE } from "./ink.mjs";
+import { DRIFT_TOLERANCE } from "./lines.mjs";
 import { layOut, packageFiles, VALIDATOR, validate } from "./office.mjs";
 import { TOLERANCE } from "./pixels.mjs";
 
@@ -125,6 +127,7 @@ export const docxConformance = (suite, options = {}) => {
         `${where}: pictures off by more than ${TOLERANCE} pixels touching`,
       ).toEqual([]);
       if (r.math) expect(r.math.same, `${where}: equations' letters and digits`).toBe(r.math.chars);
+      if (r.math) expect(r.math.missing, `${where}: operands the equations' math drew as missing ("¿")`).toBe(0);
       // Every line and page as Typst's; with equations, which each engine sets its own way (#132), the suite's share.
       if (!r.math) {
         expect(
@@ -142,6 +145,17 @@ export const docxConformance = (suite, options = {}) => {
           r.ink.cluster,
           `${where}: ink besides text on page ${r.ink.page + 1} at ${JSON.stringify(r.ink.box)}`,
         ).toBeLessThanOrEqual(INK_TOLERANCE);
+      // Every word in its colours: a highlight, a shaded box or a coloured word, which the rest don't see.
+      expect(
+        r.colours.differing,
+        `${where}: colours more than ${COLOUR_TOLERANCE} apart, first ${JSON.stringify(r.colours.first)}`,
+      ).toBe(0);
+      // And each line where Typst set it: the same lines a gap lower, or beside a label Word moved, would pass.
+      if (r.drift && identical(r))
+        expect(
+          r.drift.distance,
+          `${where}: line ${JSON.stringify(r.drift.text)} on page ${r.drift.page} moved by ${r.drift.dx.toFixed(1)}, ${r.drift.dy.toFixed(1)} pt`,
+        ).toBeLessThanOrEqual(DRIFT_TOLERANCE);
     });
 
     it(`keeps ${Math.round(mathLines * 100)}% of the lines of examples with equations`, () => {

@@ -27,6 +27,7 @@ export interface DocxCell {
     borders: Partial<Record<"top" | "right" | "bottom" | "left", {
         width: number;
         color: string;
+        style?: "dashed" | "dotted";
     }>>;
     col: number;
     fill?: string;
@@ -84,6 +85,7 @@ export interface DocxFont {
 
 // @internal
 export interface DocxGapRun {
+    fill?: string;
     // (undocumented)
     font: number;
     gap: number;
@@ -105,8 +107,11 @@ export interface DocxList {
     align: "start" | "end";
     bodyLeft: number;
     format: string;
+    labelColor?: string;
+    labelFont?: number;
     labelLeft: number;
     labelRight: number;
+    labelSize?: number;
     start: number;
     text: string;
 }
@@ -412,12 +417,14 @@ export interface DocxTabRun {
 export interface DocxTextRun {
     color?: string;
     field?: "PAGE" | "NUMPAGES";
+    fill?: string;
     font: number;
     lang?: string;
     link?: string;
     rtl?: boolean;
     script?: "superscript" | "subscript";
     size: number;
+    strike?: boolean;
     // (undocumented)
     text: string;
     // (undocumented)
