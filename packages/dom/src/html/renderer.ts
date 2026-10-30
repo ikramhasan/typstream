@@ -141,6 +141,49 @@ interface Block {
 
 const SRC_ATTRIBUTE = "data-typstream-src";
 
+/** Inline elements: a run of inline content goes on through them. */
+const INLINE_TAGS = new Set([
+  "span", "a", "strong", "em", "b", "i", "u", "s", "sub", "sup", "code", "mark", "small", "q", "cite", "abbr",
+  "kbd", "samp", "var", "del", "ins", "math", "svg", "img", "br", "wbr",
+]);
+const inline = (node: Node): boolean =>
+  node.nodeType !== 1 ||
+  (INLINE_TAGS.has((node as Element).localName) && !/\bts-(?:b|v)\b/.test((node as Element).className));
+
+/**
+ * Makes each run of inline content that holds fractional spacing (html-compat's `.ts-hfill`, `h(1fr)`) a row
+ * (`typstream-row`): its pieces between the spacing are its items (`typstream-seg`), and the spacing takes the rest
+ * of the line between them, as Typst's does (`Left #h(1fr) Right`, a question's points at the end of its line).
+ * Done here, as the HTML comes, so it holds whatever wrote the run: a `context`, a set rule, a helper function.
+ */
+const rowRuns = (root: ParentNode, doc: Document): void => {
+  const spacers = Array.from(root.querySelectorAll(".ts-hfill"));
+  const done = new Set<Node>();
+  for (const spacer of spacers) {
+    if (done.has(spacer) || spacer.parentElement?.classList.contains("typstream-row")) continue;
+    // The run: the inline siblings around it, up to block-level content.
+    let first: Node = spacer;
+    while (first.previousSibling && inline(first.previousSibling)) first = first.previousSibling;
+    let last: Node = spacer;
+    while (last.nextSibling && inline(last.nextSibling)) last = last.nextSibling;
+    const row = doc.createElement("span");
+    row.className = "typstream-row";
+    (first.parentNode as Node).insertBefore(row, first);
+    let seg = doc.createElement("span");
+    seg.className = "typstream-seg";
+    for (let node: Node | null = first, next: Node | null; node; node = next) {
+      next = node === last ? null : node.nextSibling;
+      if ((node as Element).classList?.contains("ts-hfill")) {
+        done.add(node);
+        row.append(seg, node);
+        seg = doc.createElement("span");
+        seg.className = "typstream-seg";
+      } else seg.append(node);
+    }
+    row.append(seg);
+  }
+};
+
 /**
  * Wraps text in spans (`typstream-t`): with the pages' CSS, only they have a line box (`line-height: normal`, the
  * engine's fonts making it Typst's 1.3em) and every element around them has none, so a line is as tall as the text
@@ -307,6 +350,7 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
       }
     }
     sanitize(content);
+    rowRuns(content, inert);
     wrapRuns(content, inert);
     // Moving the cleaned nodes adopts them into the page's document.
     const fragment = doc.createDocumentFragment();
@@ -438,7 +482,10 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
       const { nodes } = result[i] as Block;
       if (nodes.length === 0) continue;
       const last = nodes[nodes.length - 1] as Node;
-      if (last.parentNode !== container || last.nextSibling !== after) {
+      // Past the pages' breaks between blocks (pages.ts), which aren't blocks.
+      let next = last.nextSibling;
+      while (next && (next as Element).classList?.contains("typstream-break")) next = next.nextSibling;
+      if (last.parentNode !== container || next !== after) {
         for (const node of nodes) container.insertBefore(node, after);
       }
       after = nodes[0] as Node;

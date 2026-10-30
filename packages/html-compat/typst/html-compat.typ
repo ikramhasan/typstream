@@ -25,13 +25,12 @@
 // str() writes negative numbers with U+2212; CSS needs a hyphen-minus.
 #let _num(x) = str(calc.round(float(x), digits: 3)).replace("\u{2212}", "-")
 
-/// A length, ratio or relative length as CSS; `none` for `auto`, `none` and fractions.
+/// A length, ratio or relative length as CSS; `none` for `auto`, `none` and fractions. Em lengths are resolved
+/// where Typst resolves them, against the text size of the element they are on (a heading's), which the HTML
+/// element needn't have.
 #let _len(l) = {
   if type(l) == length {
-    let (pt, em) = (l.abs.pt(), l.em)
-    if em == 0 { _num(pt) + "pt" } else if pt == 0 { _num(em) + "em" } else {
-      "calc(" + _num(pt) + "pt + " + _num(em) + "em)"
-    }
+    _num(l.to-absolute().pt()) + "pt"
   } else if type(l) == ratio {
     _num(float(l) * 100) + "%"
   } else if type(l) == relative {
@@ -144,7 +143,7 @@
 }
 
 /// `.ts-stroked` when `props` (from `_box-props`) draw a stroke, for an element's class.
-#let _stroked(props) = if props.keys().any(k => k.starts-with("--ts-b")) { " ts-stroked" } else { "" }
+#let _stroked(props) = if props.keys().any(k => k in ("--ts-bt", "--ts-br", "--ts-bb", "--ts-bl")) { " ts-stroked" } else { "" }
 
 #let _style(props) = _css(..props)
 
@@ -533,6 +532,46 @@
   (above, below)
 }
 
+// Math classes of the symbols Typst breaks an inline equation after (typst-layout's math/run.rs,
+// `into_par_items`): binary operators and relations, as Unicode classes them.
+#let _binary = "+−-±∓×·⋅÷∗∘∙∪∩∧∨⊕⊖⊗⊘⊙⋆∖⊎⊓⊔"
+#let _relation = "=≠<>≤≥≦≧≪≫≈≡≢∼≃≄≅≆∝→←↔⇒⇐⇔⟶⟵⟷⟹⟸⟺↦⇌⇋⇄⇆∈∉∋∌⊂⊃⊆⊇⊊⊋∣∤∥∦≺≻⪯⪰⊢⊣⊨≐≔≕"
+#let _closing = ")]}⟩⟫⌋⌉|‖"
+
+/// The class of a top-level child of an equation's body, as far as breaking it goes.
+#let _math-class(c) = {
+  let t = c.fields().at("text", default: none)
+  if type(t) != str or t.clusters().len() != 1 { return "normal" }
+  if _binary.contains(t) { "binary" } else if _relation.contains(t) { "relation" } else if _closing.contains(t) { "closing" } else if t in "([{⟨⟪⌊⌈" { "opening" } else { "normal" }
+}
+
+/// An inline equation's body cut where Typst may break the line: after a binary operator (not before a closing
+/// delimiter) and after a relation (not before another relation or a closing delimiter). A binary operator with no
+/// operand before it (`-3`) is a sign, not an operator. One piece when there is no such place.
+#let _math-pieces(body) = {
+  if body.func() != [].func() or "children" not in body.fields() { return ((body,),) }
+  let children = body.children
+  let real = children.enumerate().filter(((_, c)) => c != [ ] and c.func() != h)
+  let breaks = ()
+  for (k, (i, c)) in real.enumerate() {
+    let class = _math-class(c)
+    if class not in ("binary", "relation") or k == 0 or k + 1 == real.len() { continue }
+    let before = _math-class(real.at(k - 1).at(1))
+    let next = _math-class(real.at(k + 1).at(1))
+    if class == "binary" and (before in ("binary", "relation", "opening") or next == "closing") { continue }
+    if class == "relation" and next in ("relation", "closing") { continue }
+    breaks.push(i)
+  }
+  let pieces = ()
+  let from = 0
+  for i in breaks {
+    pieces.push(children.slice(from, i + 1))
+    from = i + 1
+  }
+  pieces.push(children.slice(from))
+  pieces.filter(p => p.any(c => c != [ ]))
+}
+
 // ---------------------------------------------------------------------------
 // Pages: what the renderer lays the HTML out on
 
@@ -678,7 +717,10 @@
   show h: html-only(it => {
     if text.costs.runt == _in-math { return it }
     let w = _len(it.amount)
-    if w == none { _el("span", "ts-hfill", none) } else { _el("span", "ts-h", style: "width: " + w, none) }
+    // Fractional spacing takes its share of the rest of the line: the renderer makes the run it is in a row.
+    if w == none {
+      html.elem("span", attrs: (class: "ts-hfill", style: "flex-grow: " + if type(it.amount) == fraction { _num(it.amount / 1fr) } else { "1" }))
+    } else { _el("span", "ts-h", style: "width: " + w, none) }
   })
 
   // Containers with a look. Blocks Typst makes for its own HTML elements (headings, lists, …) pass through.
@@ -686,7 +728,12 @@
   // `below` (paragraph spacing when `auto`; its own, `.ts-sp`, beats its neighbours' paragraph spacing, as Typst's
   // flow collapses them). An unbreakable or sticky block tells the renderer's pages so (`.ts-whole`, `.ts-sticky`).
   show block: html-only(it => {
-    if type(it.body) == content and it.body.func() == html.elem { return it }
+    // Typst's own blocks around its HTML elements (headings, lists, figures …) have no look or spacing of their own.
+    let plain = (
+      _box-props(fill: it.fill, stroke: it.stroke, inset: it.inset, radius: it.radius).len() == 0
+        and (it.width, it.height, it.above, it.below) == (auto, auto, auto, auto) and not it.clip
+    )
+    if type(it.body) == content and it.body.func() == html.elem and plain { return it }
     if _has-drawing(it.body) or _is-canvas(it.body) { return _frame(it) }
     let props = _box-props(fill: it.fill, stroke: it.stroke, inset: it.inset, radius: it.radius) + _inset-vars(it.inset)
     props.insert("width", if it.width == auto and _expands(it.body) { "100%" } else { _len(it.width) })
@@ -774,9 +821,9 @@
     let level = calc.min(it.level, 5)
     let tag = "h" + str(level + 1)
     // Spacing other than the layout profile's (a template's `show heading: set block(..)`).
-    let gap(s) = if type(s) == length { _len(s) }
-    let (above, below) = (gap(block.above), gap(block.below))
-    let spacing = (if above not in (none, "0.71em") { "--ts-above: " + above }, if below not in (none, "0.3em") { "--ts-below: " + below }).filter(x => x != none)
+    let gap(s, profile) = if type(s) == length and s != profile { _len(s) }
+    let (above, below) = (gap(block.above, 0.71em), gap(block.below, 0.3em))
+    let spacing = (if above != none { "--ts-above: " + above }, if below != none { "--ts-below: " + below }).filter(x => x != none)
     if it.numbering == none or it.body == [] { return html.elem(tag, attrs: if spacing.len() > 0 { (style: spacing.join("; ")) } else { (:) }, it.body) }
     let number = counter(heading).display(it.numbering)
     let indent = measure(number).width + 0.3em.to-absolute()
@@ -881,15 +928,24 @@
   show math.equation: html-only(it => {
     let mathml = html.elem("span", attrs: (class: "ts-sr"), _mark-math(it))
     if not it.block {
-      let depth = measure({
-        set text(top-edge: "baseline", bottom-edge: "baseline")
-        box(height: 100pt)
-        it
-      }).height - 100pt
-      return html.elem("span", attrs: (class: "ts-math", style: "vertical-align: -" + _len(depth)), {
-        html.elem("span", attrs: (aria-hidden: "true"), html.frame(it))
-        mathml
-      })
+      // A picture per piece Typst may break the line between, each with its operator's spacing after it (an empty
+      // operand keeps it), so the pieces side by side are the whole equation.
+      let pieces = _math-pieces(it.body)
+      let last = pieces.len() - 1
+      return pieces.enumerate().map(((i, piece)) => {
+        let eq = if last == 0 { it } else {
+          math.equation(block: false, (piece + if i < last { (text(""),) } else { () }).join())
+        }
+        let depth = measure({
+          set text(top-edge: "baseline", bottom-edge: "baseline")
+          box(height: 100pt)
+          eq
+        }).height - 100pt
+        html.elem("span", attrs: (class: "ts-math", style: "vertical-align: -" + _len(depth)), {
+          html.elem("span", attrs: (aria-hidden: "true"), html.frame(eq))
+          if i == 0 { mathml }
+        })
+      }).join(html.elem("wbr"))
     }
     let eq = if it.numbering == none { it } else { math.equation(block: true, numbering: none, it.body) }
     let number = if it.numbering != none { counter(math.equation).display(it.numbering) }

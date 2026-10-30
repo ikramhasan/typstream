@@ -134,6 +134,13 @@ export const htmlRendererCss: string = `${THEME_CSS}
 :where(.typstream-pages .typstream-t) {
   line-height: normal;
 }
+:where(.typstream .typstream-row) {
+  display: flex;
+  align-items: baseline;
+}
+:where(.typstream .typstream-seg:empty) {
+  display: none;
+}
 :where(.typstream-flow) {
   position: absolute;
   box-sizing: border-box;

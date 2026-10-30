@@ -546,10 +546,11 @@ export const createHtmlPages = (
   /** What the pages were last laid out for: a change lays them all out again. */
   let laidOut = "";
 
-  /** The child of the flow that holds `node`. */
+  /** The child of the flow that holds `node`; a break between blocks belongs to the block after it. */
   const topOf = (node: Node): Node | null => {
     let at: Node | null = node;
     while (at && at.parentNode !== flow) at = at.parentNode;
+    while (at && (at as Element).classList?.contains(SPACER)) at = at.nextSibling;
     return at;
   };
 

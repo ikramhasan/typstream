@@ -370,15 +370,10 @@
 :where(.typstream .ts-h) {
   display: inline-block;
 }
-/* h(1fr) takes the rest of the line: a paragraph holding one lays its pieces out in a row. */
+/* h(1fr) takes the rest of the line: the renderer makes the run of inline content holding it a row of its pieces
+   (`.typstream-row`, `.typstream-seg`), the spacing growing between them. */
 :where(.typstream .ts-hfill) {
-  display: inline-block;
-  flex-grow: 1;
-}
-:where(.typstream) :is(p, .ts-cell, .ts-item-body, .ts-marginal):has(> .ts-hfill) {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
+  flex-basis: 0;
 }
 
 /* Drawings (html.frame): inline SVG, scaled down to fit narrow containers. */
@@ -415,7 +410,7 @@
 }
 /* A tight list right after a paragraph (or text) is attached to it: its items' gap, `par.leading`, 0 on pages,
    replaces the spacing between them (typst-layout's LIST_RULE, an attached weak `v`). */
-:where(.typstream) :is(p, .typstream-t) + .ts-tight {
+:where(.typstream) :is(p, span, strong, em, b, i, a, code, mark, sub, sup, u, s) + .ts-tight {
   margin-block-start: 0;
 }
 :where(.typstream) p:has(+ .ts-tight) {
