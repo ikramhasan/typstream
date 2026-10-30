@@ -18,5 +18,13 @@ export const applyPaged = (
   if (pages.length !== next.pageCount) return null;
   for (let i = 0; i < pages.length; i++) if (!pages[i]) return null;
   // Island markers are the whole list, whichever pages changed.
-  return { target: "paged", base: null, pageCount: next.pageCount, pages, islands: next.islands };
+  // So are positions: every page's.
+  return {
+    target: "paged",
+    base: null,
+    pageCount: next.pageCount,
+    pages,
+    islands: next.islands,
+    ...(next.positions && { positions: next.positions }),
+  };
 };
