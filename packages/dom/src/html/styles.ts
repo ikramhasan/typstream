@@ -137,6 +137,13 @@ export const htmlRendererCss: string = `${THEME_CSS}
   box-sizing: border-box;
   transform-origin: 0 0;
 }
+:where(.typstream-flow .typstream-island) {
+  inset: 0 auto auto 0;
+  width: calc(100% * var(--typstream-scale, 1));
+  height: calc(100% * var(--typstream-scale, 1));
+  transform: scale(calc(1 / var(--typstream-scale, 1)));
+  transform-origin: 0 0;
+}
 :where(.typstream-flow) > :first-child {
   margin-block-start: 0;
 }

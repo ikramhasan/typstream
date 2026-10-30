@@ -173,6 +173,8 @@ export const createHtmlPages = (
     }
     const first = sheet(0);
     scale = first.clientWidth > 0 ? first.clientWidth / width : 1;
+    // Islands undo the scale: their components are laid out at the size the page shows them, as on canvas pages.
+    flow.style.setProperty("--typstream-scale", String(scale));
     for (const el of [flow, marginals])
       Object.assign(el.style, {
         width: `${width}px`,
