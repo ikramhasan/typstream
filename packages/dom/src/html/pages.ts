@@ -359,23 +359,24 @@ export const createHtmlPages = (
       const start = i === 0 ? null : lineStart(nodes, line.top, o);
       if (i > 0 && !start) continue;
       const first = nodes[0] as Node;
+      /** The top of the line's first box: a character, an element, or the run's first node. */
+      const firstTop = (now: number): number => {
+        const range = doc.createRange();
+        if (start && "text" in start) {
+          range.setStart(start.text, start.offset);
+          range.setEnd(start.text, start.offset + 1);
+          const r = range.getClientRects()[0] ?? (start.text.parentElement as Element).getBoundingClientRect();
+          return inFlow(r, now).top;
+        }
+        range.selectNode((start as Element | null) ?? first);
+        const rects = [...range.getClientRects()].filter((r) => r.height > 0);
+        return rects.length ? inFlow(rects[0] as DOMRect, now).top : line.top;
+      };
+      // The line's box can start above its first box (an equation further on is taller).
+      const above = line.top - firstTop(o);
       const unit: Unit = {
         measure: () => {
-          const now = origin();
-          let top: number;
-          if (start && "text" in start) {
-            const range = doc.createRange();
-            range.setStart(start.text, start.offset);
-            range.setEnd(start.text, start.offset + 1);
-            top = inFlow(range.getClientRects()[0] ?? start.text.parentElement!.getBoundingClientRect(), now).top;
-          } else {
-            const at = (start as Element | null) ?? first;
-            const range = doc.createRange();
-            range.selectNode(at);
-            const rects = [...range.getClientRects()].filter((r) => r.height > 0);
-            top = rects.length ? inFlow(rects[0] as DOMRect, now).top : line.top;
-          }
-          // The line box can be taller than its first box (an inline-block further on).
+          const top = firstTop(origin()) + above;
           return { top, bottom: top + height };
         },
         gap: () => {
