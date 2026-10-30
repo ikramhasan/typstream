@@ -66,7 +66,11 @@ describe("<TypstEditor>", () => {
     const { view } = await mount("= Fractions\n\nAdd the fractions below.");
     expect(screen.getByRole("toolbar", { name: "Formatting" })).toBeTruthy();
     // The page view paints at the next frame (or in idle time), after the layout arrives.
-    await waitFor(() => document.querySelectorAll(".typstream-page canvas").length === 1, 10_000, "for the page's canvas");
+    await waitFor(
+      () => document.querySelectorAll(".typstream-page canvas").length === 1,
+      10_000,
+      "for the page's canvas",
+    );
     act(() => view.select({ anchor: 13, head: 16 }));
     await userEvent.click(screen.getAllByRole("button", { name: "Bold" })[0] as HTMLElement);
     expect(view.state.text).toBe("= Fractions\n\n*Add* the fractions below.");
