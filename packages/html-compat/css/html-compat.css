@@ -34,6 +34,10 @@
 :where(.typstream) p {
   margin-block: 0.56em;
 }
+/* `par.first-line-indent` without `all`: only a paragraph right after another is indented. */
+:where(.typstream) p + p.ts-indent {
+  text-indent: var(--ts-indent);
+}
 :where(.typstream) :is(h1, h2, h3, h4, h5, h6) {
   font-size: 1em;
   font-weight: 700;
@@ -143,7 +147,15 @@
 /* Typst writes `display: block` on a frame it finds at a block's start; an equation is in its line. */
 :where(.typstream .ts-math) svg {
   display: inline !important;
-  vertical-align: baseline;
+  /* Its bottom edge is its baseline: the equation's depth below the text's (html-compat.typ measures it). */
+  vertical-align: var(--ts-depth, baseline);
+}
+/* An equation no deeper than the line: from the bottom of the text's line box, as Typst's line holds it, raised by
+   what the line is deeper (0.246em less its depth). From the baseline, it would stick out of a line as tall as it:
+   browsers round the font's ascent and descent to pixels, which moves the baseline in the line box. */
+:where(.typstream .ts-math.ts-flat) svg {
+  vertical-align: text-bottom;
+  margin-block-end: var(--ts-lift);
 }
 :where(.typstream .ts-equation) {
   display: grid;
@@ -371,8 +383,9 @@
 :where(.typstream .ts-h) {
   display: inline-block;
 }
-/* h(1fr) takes the rest of the line: the renderer makes the run of inline content holding it a row of its pieces
-   (`.typstream-row`, `.typstream-seg`), the spacing growing between them. */
+/* h(1fr) takes the rest of the line: the renderer's pages give one in a run of inline content
+   (`.typstream-fill`) what its line leaves, and make a run with more a row of its pieces (`.typstream-row`,
+   `.typstream-seg`), the spacing growing between them. */
 :where(.typstream .ts-hfill) {
   flex-basis: 0;
 }
@@ -392,7 +405,7 @@
 /* Typst spaces blocks apart, not from the edges of what contains them. */
 :where(.typstream)
   :is(.ts-cell, .ts-valign-body, .ts-align-body, .ts-block, .ts-shape, .ts-box, .ts-stack-item, .ts-place, .ts-align, .ts-pad, .ts-item-body, .ts-columns, figure)
-  > :first-child {
+  > :is(:first-child, .ts-place:first-child + *) {
   margin-block-start: 0;
 }
 :where(.typstream)

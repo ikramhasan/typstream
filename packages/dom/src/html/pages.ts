@@ -600,8 +600,32 @@ export const createHtmlPages = (
     return at;
   };
 
+  /**
+   * Fractional spacing alone in its run of text (the renderer's `.typstream-fill`) takes what its line leaves, as
+   * Typst's does: nothing while lines break, then the rest of the line it is on.
+   */
+  const fillLines = () => {
+    const fills = [...flow.querySelectorAll<HTMLElement>(".typstream-fill > .ts-hfill")];
+    for (const h of fills) h.style.width = "0px";
+    const widths = fills.map((h) => {
+      const row = h.parentElement as HTMLElement;
+      const at = h.getBoundingClientRect();
+      const range = doc.createRange();
+      range.setStartAfter(h);
+      range.setEnd(row, row.childNodes.length);
+      let right = at.right;
+      for (const r of range.getClientRects())
+        if (r.width && r.top <= at.top + EPS && r.bottom >= at.top - EPS) right = Math.max(right, r.right);
+      return (row.getBoundingClientRect().right - right) / scale;
+    });
+    fills.forEach((h, i) => {
+      h.style.width = `${Math.max(0, widths[i] as number)}px`;
+    });
+  };
+
   const paginate = (from: Node | null) => {
     place();
+    fillLines();
     const key = JSON.stringify([geometry, pageWidth(), scale]);
     if (key !== laidOut || geometry.height === null || shifts.length) from = null;
     laidOut = key;

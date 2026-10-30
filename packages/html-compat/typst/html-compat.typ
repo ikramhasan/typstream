@@ -684,8 +684,12 @@
     let b = it.body
     if b.func() == html.elem and b.at("tag", default: "") == "span" and b.attrs.at("class", default: "") == "ts-par" { return it }
     let body = _empty-lines(b)
-    let size = _size()
-    if size != none { html.elem("p", attrs: (style: "font-size: " + size), body) }
+    // Its text size, and its first line's indent: on every paragraph (`all`), or on one right after another.
+    let indent = par.first-line-indent
+    let (amount, all) = if type(indent) == dictionary { (indent.at("amount", default: 0pt), indent.at("all", default: false)) } else { (indent, false) }
+    let amount = if amount == 0pt { none } else { _len(amount) }
+    let style = _css(..(font-size: _size(), text-indent: if all { amount }, "--ts-indent": if not all { amount }))
+    if style != none { html.elem("p", attrs: (style: style) + if amount != none and not all { (class: "ts-indent") } else { (:) }, body) }
     else if body == b { it } else { html.elem("span", attrs: (class: "ts-par"), body) }
   })
 
@@ -745,7 +749,9 @@
     if type(it.amount) == fraction {
       return _el("div", "ts-v ts-vfill", style: "flex-grow: " + _num(it.amount / 1fr), none)
     }
-    _el("div", "ts-v" + if it.weak { " ts-v-weak" }, style: if h != none { "height: " + h }, none)
+    // Negative spacing pulls what follows up: a margin, which collapses with its neighbours' as Typst adds them.
+    let negative = type(it.amount) == length and it.amount.to-absolute() < 0pt
+    _el("div", "ts-v" + if it.weak { " ts-v-weak" }, style: if h != none { (if negative { "margin-block-start: " } else { "height: " }) + h }, none)
   })
   show h: html-only(it => {
     if text.costs.runt == _in-math { return it }
@@ -987,7 +993,11 @@
           box(height: 100pt)
           eq
         }).height - 100pt
-        html.elem("span", attrs: (class: "ts-math", style: "vertical-align: -" + _len(depth)), {
+        // No deeper than a line of text: placed from the line's bottom (`.ts-flat`, see the CSS). Deeper, from the
+        // baseline, so the line grows below as Typst's does.
+        let lift = 0.246em.to-absolute() - depth
+        let style = if lift >= -0.01pt { "--ts-lift: " + _len(calc.max(lift, 0pt)) } else { "--ts-depth: -" + _len(depth) }
+        html.elem("span", attrs: (class: "ts-math" + if lift >= -0.01pt { " ts-flat" }, style: style), {
           html.elem("span", attrs: (aria-hidden: "true"), html.frame(eq))
           if i == 0 { mathml }
         })

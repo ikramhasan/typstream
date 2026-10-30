@@ -206,6 +206,15 @@ const rowRuns = (root: ParentNode, doc: Document): void => {
     const row = doc.createElement("span");
     row.className = "typstream-row";
     (first.parentNode as Node).insertBefore(row, first);
+    // One spacing: the text wraps as Typst's lines do, the spacing as wide as its line leaves (the pages size it).
+    const run: Node[] = [];
+    for (let node: Node | null = first; node; node = node === last ? null : node.nextSibling) run.push(node);
+    if (run.filter((n) => (n as Element).classList?.contains("ts-hfill")).length === 1) {
+      row.className = "typstream-fill";
+      done.add(spacer);
+      row.append(...run);
+      continue;
+    }
     let seg = doc.createElement("span");
     seg.className = "typstream-seg";
     for (let node: Node | null = first, next: Node | null; node; node = next) {

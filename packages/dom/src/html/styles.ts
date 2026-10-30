@@ -141,6 +141,12 @@ export const htmlRendererCss: string = `${THEME_CSS}
 :where(.typstream .typstream-seg:empty) {
   display: none;
 }
+:where(.typstream .typstream-fill) {
+  display: block;
+}
+:where(.typstream .typstream-fill > .ts-hfill) {
+  display: inline-block;
+}
 :where(.typstream-flow) {
   position: absolute;
   box-sizing: border-box;
