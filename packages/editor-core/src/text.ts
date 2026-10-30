@@ -22,6 +22,7 @@ const ESCAPED = new Set(["\\", "*", "_", "`", "$", "#", "<", ">", "@", "[", "]",
  * insertion point), so Typst reads it back as the same characters: delimiters, shorthands (`--`,
  * `...`, `-?`), comments (`//`), links (`https://`), and at the start of a line the markers of
  * headings, lists and terms.
+ * @beta
  */
 export const escapeMarkup = (text: string, before = "", after = ""): string => {
   let out = "";
@@ -78,7 +79,7 @@ const dots = (left: string, right: string): boolean => {
 /** Whether `before` ends at the start of a line (only spaces since its last newline, or nothing). */
 export const atLineStart = (before: string): boolean => /(^|\n)[ \t]*$/.test(before);
 
-/** A Typst string literal for `value`. */
+/** A Typst string literal for `value`. @beta */
 export const typstString = (value: string): string => {
   let out = '"';
   for (const c of value) {
@@ -91,7 +92,7 @@ export const typstString = (value: string): string => {
   return `${out}"`;
 };
 
-/** The value of a Typst string literal, or null if `literal` isn't a simple one. */
+/** The value of a Typst string literal, or null if `literal` isn't a simple one. @beta */
 export const readString = (literal: string): string | null => {
   if (literal.length < 2 || !literal.startsWith('"') || !literal.endsWith('"')) return null;
   let out = "";

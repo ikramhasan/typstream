@@ -5,7 +5,11 @@
 // shadcn app as it is and has defaults elsewhere; a published package can't rely on the app's
 // Tailwind. Injected as a constructable stylesheet, so strict CSPs need no `'unsafe-inline'`.
 
-export const EDITOR_CSS = `
+/**
+ * The CSS of the editor's toolbars, menus and panels (the pages are the page view's), for an app that
+ * renders them somewhere `ensureEditorStyles` can't reach (a shadow root). @beta
+ */
+export const EDITOR_CSS: string = `
 .tse-root {
   --tse-bg: var(--background, #fff);
   --tse-fg: var(--foreground, #0a0a0a);

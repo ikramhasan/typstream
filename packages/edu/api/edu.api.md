@@ -4,6 +4,7 @@
 
 ```ts
 
+import { EditorComponentSpec } from '@typstream/core';
 import { FunctionDoc } from '@typstream/core';
 import { PromptExample } from '@typstream/core';
 import { TemplateSpec } from '@typstream/core';
@@ -23,6 +24,9 @@ export const EDU_VERSION = "0.1.0";
 
 // @public
 export const eduCatalogue: FunctionDoc[];
+
+// @public
+export const eduComponents: EditorComponentSpec[];
 
 // @public
 export const eduCss: string;

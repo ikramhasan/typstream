@@ -16,6 +16,7 @@ import { InitializeOptions } from '@typstream/core';
 import { InitInput } from '@typstream/engine-wasm';
 import { PackageSpec } from '@typstream/core';
 import { PagedIsland } from '@typstream/core';
+import { PagePositions } from '@typstream/core';
 import { PageUpdate } from '@typstream/core';
 import { ServerMessage } from '@typstream/core';
 
@@ -42,6 +43,7 @@ export interface AdapterDocument {
     compilePaged(options: {
         fullPages: boolean;
         drawings?: boolean;
+        positions?: boolean;
     } & AdapterCompileOptions): MaybePromise<AdapterPagedResult>;
     exportDocxModel?(options?: AdapterCompileOptions): MaybePromise<AdapterCompileResult & {
         model: string | null;
@@ -69,6 +71,7 @@ export interface AdapterPagedResult extends AdapterCompileResult {
         pageCount: number;
         changed: PageUpdate[];
         islands?: PagedIsland[];
+        positions?: PagePositions[];
     } | null;
 }
 

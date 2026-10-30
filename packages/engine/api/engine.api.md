@@ -67,6 +67,8 @@ export interface DocumentOptions {
     packages?: PackageSpec[];
     pageFormat?: PageFormat;
     plugins?: readonly TypstreamPlugin[];
+    // @beta
+    positions?: boolean;
     preamble?: string;
     resolveImage?: ImageResolver;
     schedule?: Partial<ScheduleOptions>;
@@ -78,6 +80,8 @@ export interface DocumentOptions {
 // @public
 export interface DocumentState {
     artifact: Artifact | null;
+    // @beta
+    artifactInput: string | null;
     artifactRev: Revision | null;
     diagnostics: Diagnostic[];
     failure: CompileFailure | null;
@@ -129,6 +133,8 @@ export interface EngineDocument {
     setFiles(files: FileDelta): void;
     setInputs(inputs: Record<string, string>): void;
     setPageFormat(format: PageFormat): void;
+    // @beta
+    setPositions(positions: boolean): void;
     setStreamingRange(range: Range | null): void;
     setTarget(target: CompileTarget): void;
     subscribe(listener: (state: DocumentState) => void): () => void;

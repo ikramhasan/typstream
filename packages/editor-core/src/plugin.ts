@@ -183,7 +183,7 @@ const mark = (name: string, label: string, icon: string, shortcut?: string): Too
   active: (s, schema) => isMarked(s, { name }, s.from, s.to, schema),
 });
 
-/** Colours of the colour pickers: Tailwind's 600s, which print well on white. */
+/** Colours of the colour pickers: Tailwind's 600s, which print well on white. @beta */
 export const COLORS: { value: string; label: string }[] = [
   { value: "#dc2626", label: "Red" },
   { value: "#ea580c", label: "Orange" },
@@ -196,7 +196,7 @@ export const COLORS: { value: string; label: string }[] = [
   { value: "#4b5563", label: "Gray" },
 ];
 
-/** Highlight colours: light, for under text. */
+/** Highlight colours: light, for under text. @beta */
 export const HIGHLIGHTS: { value: string; label: string }[] = [
   { value: "#fef08a", label: "Yellow" },
   { value: "#bbf7d0", label: "Green" },

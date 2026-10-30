@@ -1,0 +1,105 @@
+---
+title: "@typstream/editor-react"
+description: The typstream editor for React (beta). A Typst document edited on its own pages, with fixed and floating toolbars, insert and slash menus, and forms for components.
+icon: PenLine
+---
+
+<Callout type="warn" title="Beta">
+New with the visual editor (#36); may change before the first stable release.
+</Callout>
+
+`@typstream/editor-react` edits a Typst document **on its pages**: the same pages the page view shows, painted by
+the engine, with a caret and a selection drawn over them. What the teacher sees while editing is what prints, exports
+to PDF and converts to Word, because it is the same layout. Nobody writes Typst: typing is escaped (a `*` stays a
+star), the toolbars write the markup, tables get buttons for their rows and columns, and a plugin's components (edu's
+questions, a mind map) come from the insert menu with a form for their settings.
+
+Around the pages it has the chrome of [Plate](https://platejs.org)'s editors, written for Typst: a fixed toolbar, a
+floating toolbar over a selection, an insert menu and a slash menu, and a bar over the component at the caret. It is a
+thin React layer over [`@typstream/editor-core`](/docs/reference/editor-core), which does the editing.
+
+## Install
+
+```npm
+npm install @typstream/editor-react
+```
+
+React 19 is a peer dependency. The bundle is marked `"use client"`.
+
+## Example
+
+```tsx title="EditDocument.tsx"
+"use client";
+import { TypstEditor } from "@typstream/editor-react";
+import { edu } from "@typstream/edu";
+import { useState } from "react";
+
+export function EditDocument({ initial }: { initial: string }) {
+  const [source, setSource] = useState(initial);
+  return <TypstEditor source={source} onChange={setSource} plugins={[edu]} layout="fit-width" autoFocus />;
+}
+```
+
+`TypstEditor` opens the document as `<Typstream>` does: the provider's engine and settings
+([`TypstreamProvider`](/docs/reference/react)), the plugins' files, packages and preambles, a `template`, `inputs`. Show
+the page view and the editor with the same props and they draw the same pages.
+
+## What it does
+
+- **Typing** goes into the source at the caret, escaped so it shows as typed. Enter starts a paragraph (a list item in a
+  list; an empty one ends the list), Shift+Enter breaks the line, Backspace joins paragraphs and, at a heading's or
+  item's start, makes it a paragraph. `- `, `+ `, `# ` and `= ` at a line's start make a list or a heading.
+- **The fixed toolbar**: undo and redo, insert, the block's type (text, headings, lists), font size, bold, italic,
+  underline, strikethrough, sub- and superscript, text colour and highlight, alignment, lists and indentation.
+- **The floating toolbar** over a selection: the block's type, the marks, colours. `floatingStart` puts the app's own
+  buttons at its start (an "Ask AI").
+- **Insert menu and slash menu** (`/` on an empty line): tables, equations, a divider, a page break, and every
+  component the plugins declare (`EditorComponentSpec` in their `editor` facet).
+- **Components**: the caret in one shows a bar over it with its name, **Settings** (a form for the arguments its
+  plugin lists) and Delete. A table's bar adds and removes rows and columns, and ➕ buttons at its edges add one at
+  the end. A selected equation shows a field for its formula, with keys for fractions, roots and symbols.
+- **Shortcuts**: Ctrl or ⌘ with B, I, U, Shift+X (strikethrough), Z and Shift+Z, Alt+1–3 for headings, Shift+8 and
+  Shift+7 for lists; Tab indents a list item or moves to the next table cell.
+
+## API
+
+### TypstEditor
+
+```tsx
+const TypstEditor: React.ForwardRefExoticComponent<TypstEditorProps & React.RefAttributes<TypstEditorHandle>>;
+```
+
+<auto-type-table path="packages/editor-react/src/TypstEditor.tsx" name="TypstEditorProps" />
+
+<auto-type-table path="packages/editor-react/src/TypstEditor.tsx" name="TypstEditorHandle" />
+
+A ref gives the `EditorView` (commands, the selection, the history) and the engine document (exports).
+
+### Plugins
+
+`editorPlugins` adds editor plugins: shortcuts, toolbar items (`ToolbarItem`), insert items (`InsertItem`), input
+rules (`InputRule`) and components (`ComponentSpec`), each command an `EditorCommand`. `createEditorPlugin` type-checks
+one. These types are re-exported from [`@typstream/editor-core`](/docs/reference/editor-core), where they are
+described with the view (`EditorView`).
+
+```tsx
+import { createEditorPlugin, TypstEditor } from "@typstream/editor-react";
+import { insertBlock } from "@typstream/editor-core";
+
+const signature = createEditorPlugin({
+  key: "acme/signature",
+  insert: [{ key: "signature", label: "Signature line", group: "Acme", run: insertBlock("#line(length: 40%)\nSigned") }],
+});
+
+<TypstEditor source={source} onChange={setSource} editorPlugins={[signature]} />;
+```
+
+### EDITOR_CSS
+
+```ts
+const EDITOR_CSS: string;
+```
+
+The CSS of the toolbars, menus and panels, on shadcn/ui's variables (`--background`, `--border`, `--primary`,
+`--radius`, …), so the editor fits a shadcn app as it is. The component adds it to the document itself (as a
+constructed stylesheet, which strict Content-Security-Policies allow); use the string for a shadow root.

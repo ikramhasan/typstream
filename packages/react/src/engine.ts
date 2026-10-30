@@ -22,7 +22,7 @@ export const acquireEngine = (): Engine => {
   return engine;
 };
 
-/** Gives back a reference from {@link acquireEngine}; the last one disposes the engine after {@link RELEASE_DELAY}. @internal */
+/** Gives back a reference from {@link acquireEngine}; the last one disposes the engine after `RELEASE_DELAY`. @internal */
 export const releaseEngine = (): void => {
   users = Math.max(0, users - 1);
   if (users > 0) return;

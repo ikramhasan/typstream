@@ -3,8 +3,10 @@
   "pages": [
     "typstream",
     "react",
+    "editor-react",
     "ai",
     "dom",
+    "editor-core",
     "engine",
     "heal",
     "node",
@@ -15,6 +17,7 @@
     "mindmap",
     "engine-wasm",
     "docx",
+    "syntax",
     "core"
   ]
 }

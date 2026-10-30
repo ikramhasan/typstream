@@ -127,7 +127,7 @@ const selectOnly = (selection: Selection): Transaction => ({ edits: [], selectio
 
 const caret = (at: number): Selection => ({ anchor: at, head: at });
 
-/** Whether `offset` is where a caret can type: in markup, not inside code, math or a string. */
+/** Whether `offset` is where a caret can type: in markup, not inside code, math or a string. @beta */
 export const canType = (state: EditorState, offset: number): boolean => {
   const after = pathAt(state.tree, offset, 1);
   const before = pathAt(state.tree, offset, -1);

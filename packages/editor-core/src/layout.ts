@@ -7,62 +7,84 @@ import type { PagedArtifact, PageElement, PagePositions } from "@typstream/core"
 
 /** Floats per glyph in `PagePositions.glyphs`. */
 const STRIDE = 8;
-/** Glyph flag: its range is exactly the characters it shows. */
+/** Glyph flag: its range is exactly the characters it shows (text, not a whole node such as a space). @internal */
 export const EXACT = 1;
-/** Glyph flag: math. */
+/** Glyph flag: math. @internal */
 export const MATH = 2;
-/** Glyph flag: shaped right to left. */
+/** Glyph flag: shaped right to left. @internal */
 export const RTL = 4;
 
-/** A glyph cluster on a page. Points from the page's top left. */
+/** A glyph cluster on a page. Points from the page's top left. @beta */
 export interface Glyph {
+  /** Zero-based page index. */
   page: number;
   /** Left edge. */
   x: number;
   /** Baseline. */
   y: number;
+  /** Advance along the baseline. */
   width: number;
+  /** Its font's ascender at its size: how far the line box reaches above the baseline. */
   ascent: number;
+  /** Its font's descender at its size, as a positive distance below the baseline. */
   descent: number;
-  /** The source it shows, `[from, to)`, or -1 when it doesn't show the document's text. */
+  /** Start of the source it shows, or -1 when it doesn't show the document's text (a numbering, a template's word). */
   from: number;
+  /** End of the source it shows (exclusive), or -1. */
   to: number;
+  /** 1: its range is exactly the characters drawn (text, not a whole node such as a space); 2: math; 4: right to left. */
   flags: number;
   /** Index of its line in {@link Layout.lines}. */
   line: number;
 }
 
-/** A line of text: glyphs next to each other on one baseline, in the order Typst laid them out. */
+/** A line of text: glyphs next to each other on one baseline, in the order Typst laid them out. @beta */
 export interface Line {
+  /** Zero-based page index. */
   page: number;
+  /** Top of its tallest glyph's line box. */
   top: number;
+  /** Bottom of its deepest glyph's line box. */
   bottom: number;
+  /** Left edge of its first glyph. */
   left: number;
+  /** Right edge of its last glyph. */
   right: number;
-  /** Glyph indices `[first, last]`. */
+  /** Index of its first glyph in {@link Layout.glyphs}. */
   first: number;
+  /** Index of its last glyph (inclusive). */
   last: number;
 }
 
-/** An element on a page (see core's `PageElement`), with its page. */
+/** An element on a page (see core's `PageElement`), with its page. @beta */
 export interface LaidElement extends PageElement {
+  /** Zero-based page index. */
   page: number;
 }
 
-/** Where a caret goes: a vertical bar on a page. */
+/** Where a caret goes: a vertical bar on a page. @beta */
 export interface CaretBox {
+  /** Zero-based page index. */
   page: number;
+  /** Where the bar is across. */
   x: number;
+  /** Its top. */
   top: number;
+  /** Its bottom. */
   bottom: number;
 }
 
-/** A rectangle on a page, in points. */
+/** A rectangle on a page, in points. @beta */
 export interface PageRect {
+  /** Zero-based page index. */
   page: number;
+  /** Left edge. */
   x: number;
+  /** Top edge. */
   y: number;
+  /** Width. */
   width: number;
+  /** Height. */
   height: number;
 }
 
@@ -99,16 +121,21 @@ const continues = (line: Line, prev: Glyph, g: Glyph): boolean => {
 /**
  * A document's layout: its glyphs, lines and elements, from a paged artifact with positions.
  * Offsets are in the text the artifact was compiled from (`DocumentState.artifactInput`).
+ * @beta
  */
 export class Layout {
+  /** Every glyph cluster, page by page, in the order Typst laid them out. */
   readonly glyphs: Glyph[] = [];
+  /** The glyphs' lines, in the same order. */
   readonly lines: Line[] = [];
+  /** The elements on the pages that show some of the document. */
   readonly elements: LaidElement[] = [];
   /** Page sizes, in points. */
   readonly pages: { width: number; height: number }[];
   /** Indices of glyphs that show the document's text, sorted by `from`. */
   private readonly bySource: number[];
 
+  /** The layout of `artifact` (complete, with `positions`). */
   constructor(artifact: PagedArtifact) {
     this.pages = artifact.pages.map((p) => ({ width: p.width, height: p.height }));
     (artifact.positions ?? []).forEach((positions, page) => {

@@ -139,7 +139,7 @@ const keep = (s: Selection, edit: TextEdit): Selection => {
     : { anchor: map(s.anchor), head: map(s.head) };
 };
 
-/** Where `{{cursor}}` marks the caret in a template; removed before inserting. */
+/** Where `{{cursor}}` marks the caret in a template; removed before inserting. @beta */
 export const CURSOR = "{{cursor}}";
 
 /**

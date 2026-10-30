@@ -43,7 +43,7 @@ export interface TypstEditorProps {
    * (components in the insert menu, with forms). Default: the provider's.
    */
   plugins?: readonly TypstreamPlugin[];
-  /** Editor plugins added to the editor's own ({@link basicPlugins}) and the typstream plugins'. */
+  /** Editor plugins added to the editor's own (`basicPlugins`: marks, blocks, inserts) and the typstream plugins'. */
   editorPlugins?: readonly EditorPlugin[];
   /** Typst evaluated before the document, after the plugins' and the template's. Default: the provider's. */
   preamble?: string;
