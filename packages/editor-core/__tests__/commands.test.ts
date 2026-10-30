@@ -161,7 +161,7 @@ describe("Backspace and Delete", () => {
 
 describe("Enter and Shift+Enter", () => {
   it("start a new paragraph", () => {
-    expect(run("Hello ‸world", splitBlock)).toBe("Hello\n\n‸world");
+    expect(run("Hello ‸world", splitBlock)).toBe("Hello \n\n‸world");
   });
 
   it("add a list item, and end the list from an empty one", () => {
@@ -175,11 +175,11 @@ describe("Enter and Shift+Enter", () => {
   });
 
   it("split a heading: the rest is a paragraph", () => {
-    expect(run("= Big ‸title", splitBlock)).toBe("= Big\n\n‸title");
+    expect(run("= Big ‸title", splitBlock)).toBe("= Big \n\n‸title");
   });
 
   it("start a new paragraph inside a component", () => {
-    expect(run("#question[\n  First ‸second\n]", splitBlock)).toBe("#question[\n  First\n\n  ‸second\n]");
+    expect(run("#question[\n  First ‸second\n]", splitBlock)).toBe("#question[\n  First \n\n  ‸second\n]");
   });
 
   it("break a line", () => {
@@ -224,5 +224,13 @@ describe("empty content blocks", () => {
   it("can be typed into", () => {
     expect(run("#table(columns: 2, [a], [‸])", insertText("b"))).toBe("#table(columns: 2, [a], [b‸])");
     expect(run("#question[‸]", insertText("Why?"))).toBe("#question[Why?‸]");
+  });
+});
+
+describe("Enter then Backspace", () => {
+  it("give the text back, the space before the break included", () => {
+    const split = run("really ‸balanced", splitBlock) as string;
+    expect(split).toBe("really \n\n‸balanced");
+    expect(run(split, deleteChar(-1))).toBe("really ‸balanced");
   });
 });

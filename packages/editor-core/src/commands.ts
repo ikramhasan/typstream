@@ -303,7 +303,16 @@ export const deleteChar =
     if (u.kind === "atom") return selectOnly({ anchor: u.from, head: u.to, node: true });
     const [from, to] = u.kind === "break" ? [Math.min(at, u.from), Math.max(at, u.to)] : [u.from, u.to];
     const edits = deleteEdits(state, from, to, schema);
-    return { edits, selection: caret(mapThrough(dir < 0 ? from : at, edits, -1)) };
+    // The paragraph before ended with a space (Typst's break holds it): joined, the space stays.
+    let kept = 0;
+    if (u.kind === "break" && /^[ \t]/.test(state.text.slice(u.from, u.to))) {
+      const first = edits.find((e) => e.from <= u.from && u.from < e.to);
+      if (first) {
+        first.insert = ` ${first.insert}`;
+        kept = dir < 0 ? 1 : 0;
+      }
+    }
+    return { edits, selection: caret(mapThrough(dir < 0 ? from : at, edits, -1) + kept) };
   };
 
 /** Edits that turn a heading or list item into a paragraph: its marker goes, and it stays a block of its own. */
@@ -490,10 +499,10 @@ export const splitBlock = (state: EditorState, schema: EditorSchema = DEFAULT_SC
     if (heading && body && at <= body.from) {
       tr = { edits: [{ from: heading.from, to: heading.from, insert: "\n\n" }], selection: caret(at + 2) };
     } else {
-      // Spaces around the break would start or end a paragraph: they go.
-      let a = at;
+      // Spaces after the break would start the new paragraph: they go. Those before it stay, so
+      // joining the paragraphs again (Backspace) gives the text back as it was.
+      const a = at;
       let b = at;
-      while (a > 0 && (text[a - 1] === " " || text[a - 1] === "\t")) a--;
       while (b < text.length && (text[b] === " " || text[b] === "\t")) b++;
       const indent = " ".repeat(Math.max(0, indentOf(text, at)));
       const insert = `\n\n${indent}`;

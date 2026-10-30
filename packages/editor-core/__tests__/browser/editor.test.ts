@@ -7,7 +7,8 @@ import { createEngine, type DocumentState, type Engine, type EngineDocument, fro
 import { loadSyntax } from "@typstream/syntax";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
-import { createEditor, type EditorView, toggleMark } from "../../src/index";
+import { edu, eduExamples } from "@typstream/edu";
+import { basicPlugins, createEditor, type EditorView, fromTypstreamPlugin, toggleMark } from "../../src/index";
 
 const spawn = () =>
   fromWorker(() => new Worker(new URL("../../../engine/src/worker.ts", import.meta.url), { type: "module" }));
@@ -105,7 +106,7 @@ describe("the editor on the pages", () => {
     await userEvent.keyboard("{Backspace}{Backspace}");
     expect(view.state.text).toBe("Start. a\\*b ");
     await userEvent.keyboard("{Enter}Next");
-    expect(view.state.text).toBe("Start. a\\*b\n\nNext");
+    expect(view.state.text).toBe("Start. a\\*b \n\nNext");
     await settled(view, doc);
     expect(doc.getState().diagnostics.filter((d) => d.severity === "error")).toEqual([]);
   });
@@ -149,5 +150,50 @@ describe("the editor on the pages", () => {
     await userEvent.keyboard("b");
     expect(view.state.text).toBe("#table(columns: 2, [a], [b], [c], [d])");
     await settled(view, doc);
+  });
+
+  it("edits an edu exam on its pages: a question's text, an option, Enter and Backspace, compiling throughout", async () => {
+    const exam = eduExamples.find((e) => e.title?.includes("exam-chemistry"))?.output;
+    expect(exam).toBeDefined();
+    const text = exam as string;
+    const engine = createEngine({ spawn: spawn() });
+    engines.push(engine);
+    const doc = engine.open({ target: "paged", plugins: [edu], text, positions: true, pageFormat: "drawing" });
+    const el = document.createElement("div");
+    el.style.width = "820px";
+    document.body.append(el);
+    const view = createEditor(el, { doc, text, plugins: [...basicPlugins, fromTypstreamPlugin(edu) as NonNullable<ReturnType<typeof fromTypstreamPlugin>>] });
+    cleanups.push(() => {
+      view.destroy();
+      el.remove();
+    });
+    await settled(view, doc);
+    // Into a question's text.
+    const word = text.indexOf("balanced?");
+    const at = glyphAt(view, word);
+    await clickAt(view, at.page, at.x, at.y);
+    expect(view.state.selection.head).toBeGreaterThanOrEqual(word);
+    expect(view.state.selection.head).toBeLessThanOrEqual(word + 1);
+    const started = performance.now();
+    await userEvent.keyboard("really ");
+    await settled(view, doc);
+    const ms = performance.now() - started;
+    expect(view.state.text).toContain("Which equation is really balanced?");
+    // An option of a multiple choice: text in a content block of a call, edited in place.
+    const option = view.state.text.indexOf("$+2$");
+    await settled(view, doc);
+    const plus = view.layout?.glyphs.find((g) => g.from > option && g.from < option + 4);
+    expect(plus).toBeDefined();
+    // Enter and Backspace in the question: a new paragraph, then joined again.
+    view.select({ anchor: view.state.text.indexOf("really ") + 7, head: view.state.text.indexOf("really ") + 7 });
+    view.focus();
+    await userEvent.keyboard("{Enter}");
+    expect(view.state.text).toMatch(/really \n\n\s*balanced\?/);
+    await userEvent.keyboard("{Backspace}");
+    expect(view.state.text).toContain("really balanced?");
+    await settled(view, doc);
+    expect(doc.getState().diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    // Typing to the new layout: a compile and a frame (CI machines are slower).
+    expect(ms).toBeLessThan(3000);
   });
 });
