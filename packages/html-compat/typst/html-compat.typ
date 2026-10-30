@@ -46,13 +46,15 @@
   if type(p) == color { return p.to-hex() }
   if type(p) != gradient { return none }
   let stops = p.stops().map(((c, r)) => c.to-hex() + " " + _len(r)).join(", ")
+  // The colour space it interpolates in (Typst's default is Oklab).
+  let space = (oklab: "oklab", oklch: "oklch", srgb: "srgb", linear-rgb: "srgb-linear", hsl: "hsl", hsv: "hsl", cmyk: "srgb", luma: "srgb").at(repr(p.space()), default: "oklab")
   if not gradients { p.stops().first().first().to-hex() } else if p.kind() == gradient.linear {
     // Typst's 0deg points right, CSS's points up.
-    "linear-gradient(" + _num(p.angle().deg() + 90) + "deg, " + stops + ")"
+    "linear-gradient(" + _num(p.angle().deg() + 90) + "deg in " + space + ", " + stops + ")"
   } else if p.kind() == gradient.radial {
-    "radial-gradient(" + stops + ")"
+    "radial-gradient(in " + space + ", " + stops + ")"
   } else {
-    "conic-gradient(" + stops + ")"
+    "conic-gradient(in " + space + ", " + stops + ")"
   }
 }
 
@@ -352,8 +354,9 @@
   let container = _css(
     grid-template-columns: columns.map(_track).join(" "),
     grid-template-rows: if rows.len() > 0 { rows.map(_track).join(" ") },
-    // Typst's auto columns take their natural width and don't stretch to fill.
+    // Typst's auto columns take their natural width and don't stretch to fill: the grid is as wide as they are.
     justify-content: if columns.all(t => type(t) != fraction) { "start" },
+    width: if columns.all(t => type(t) != fraction and type(t) != ratio and type(t) != relative) { "fit-content" },
     column-gap: gap(it.column-gutter),
     row-gap: gap(it.row-gutter),
   )
@@ -471,6 +474,27 @@
   props
 }
 
+/// Typst sets a line that holds only a line break (`\ \`) from the cap height to the baseline: the profile's text
+/// edges don't reach it, as it has no text. In HTML it would be a whole line. The second break of a pair becomes a
+/// block that tall (`.ts-empty-line`), which ends the line before it as the break did.
+#let _empty-lines(body) = {
+  if type(body) != content or body.func() != [].func() or "children" not in body.fields() { return body }
+  if body.children.filter(c => c.func() == linebreak).len() < 2 { return body }
+  let after-break = false
+  let out = ()
+  for c in body.children {
+    if c.func() == linebreak and after-break {
+      out.push(html.elem("span", attrs: (class: "ts-empty-line")))
+      continue
+    }
+    // Typst drops the spaces that start a line.
+    if c == [ ] { if not after-break { out.push(c) }; continue }
+    after-break = c.func() == linebreak
+    out.push(c)
+  }
+  out.join()
+}
+
 // ---------------------------------------------------------------------------
 // Pages: what the renderer lays the HTML out on
 
@@ -550,6 +574,11 @@
     context html.elem("typstream-anchor", attrs: it.attrs + (data-page: _page-geometry()), _page-parts())
   }
 
+  show par: html-only(it => {
+    let body = _empty-lines(it.body)
+    if body == it.body { it } else { html.elem("p", body) }
+  })
+
   // Text in a style the defaults don't have. Not in math, which MathML styles itself.
   show text: html-only(it => {
     if text.costs.runt == _in-math { return it }
@@ -562,9 +591,12 @@
   // Layout containers.
   show grid: html-only(_grid)
   // text-align moves the text; the class moves blocks (frames, shapes, tables) the same way.
+  // Aligned vertically (horizon, bottom), it fills the height of what holds it and puts its content there.
   show align: html-only(it => {
     let x = _text-align(it.alignment)
-    _el("div", "ts-align" + if x != none { " ts-align-" + x }, style: _css(text-align: x), it.body)
+    let y = _vertical-align(it.alignment)
+    let class = "ts-align" + if x != none { " ts-align-" + x } + if y != none { " ts-align-v" }
+    _el("div", class, style: _css(text-align: x, justify-content: y), if y == none { it.body } else { _el("div", "ts-align-body", it.body) })
   })
   show stack: html-only(it => {
     let dir = (ltr: "row", rtl: "row-reverse", ttb: "column", btt: "column-reverse").at(repr(it.dir))
@@ -615,7 +647,7 @@
       props.insert("margin-block", gap(it.above) + " " + gap(it.below))
     }
     let class = "ts-block" + _stroked(props) + if custom { " ts-sp" } + if not it.breakable { " ts-whole" } + if it.sticky { " ts-sticky" }
-    _el("div", class, style: _style(props), it.body)
+    _el("div", class, style: _style(props), _empty-lines(it.body))
   })
   show box: html-only(it => {
     if type(it.body) == content and (_has-drawing(it.body) or _is-canvas(it.body)) { return _frame(it, inline: true) }
@@ -649,7 +681,13 @@
   show ellipse: html-only(shape("ts-ellipse", extra: (border-radius: "50%")))
   show line: html-only(it => {
     if it.angle != 0deg or it.end != none or it.start != (0% + 0pt, 0% + 0pt) { return _frame(it) }
-    _el("div", "ts-line", style: _css(width: _len(it.length), border-top: _stroke(it.stroke, default: 1pt + black)), none)
+    // A dashed line is drawn by Typst (its dashes aren't CSS's); a solid one is a block of no height whose
+    // stroke is centred on it.
+    let s = if it.stroke == auto { stroke(1pt + black) } else { stroke(it.stroke) }
+    if s.dash not in (auto, none) { return _frame(it) }
+    let props = _box-props(stroke: (top: it.stroke), stroke-default: 1pt + black)
+    props.insert("width", _len(it.length))
+    _el("div", "ts-line ts-stroked", style: _style(props), none)
   })
   show curve: html-only(it => _frame(it, inline: true))
   show polygon: html-only(it => _frame(it, inline: true))
@@ -673,6 +711,54 @@
     let quoted = if it.quotes == true { quote(block: false, quotes: true, it.body) } else { it.body }
     html.elem("blockquote", attrs: (class: "ts-quote ts-sp"), _el("div", "ts-quote-body", quoted) + if attribution != none {
       _el("div", "ts-attribution", attribution)
+    })
+  })
+
+  // Headings as Typst sets them on pages (typst-layout's HEADING_RULE): the number 0.3em before the title, and a
+  // title of more than one line hanging after the number. Their size, weight and spacing are html-compat.css's.
+  show heading: html-only(it => {
+    let level = calc.min(it.level, 5)
+    let tag = "h" + str(level + 1)
+    if it.numbering == none or it.body == [] { return html.elem(tag, it.body) }
+    let number = counter(heading).display(it.numbering)
+    let indent = measure(number).width + 0.3em.to-absolute()
+    html.elem(tag, attrs: (style: "padding-inline-start: " + _len(indent) + "; text-indent: -" + _len(indent)), {
+      html.elem("span", attrs: (class: "ts-heading-number", style: "margin-inline-end: 0.3em"), number)
+      it.body
+    })
+  })
+
+  // An outline as Typst lays it out on pages (typst-layout's OUTLINE_RULE and OUTLINE_ENTRY_RULE): its title a
+  // heading, then one line per entry: its number, 0.5em, its title, a row of dots, the page, which the renderer
+  // writes in (`.ts-outline-page`) once it knows where the entry's target is.
+  show outline: html-only(it => {
+    let titles = (en: "Contents", de: "Inhaltsverzeichnis", fr: "Table des matières", es: "Índice", it: "Indice", pt: "Sumário", nl: "Inhoudsopgave")
+    let title = if it.title == auto { titles.at(text.lang, default: "Contents") } else { it.title }
+    let entries = query(it.target).filter(e => e.at("outlined", default: true) and (it.depth == none or e.at("level", default: 1) <= it.depth))
+    let prefix(e) = if e.func() == heading and e.numbering != none { numbering(e.numbering, ..counter(heading).at(e.location())) }
+    // Each level's entries start after the widest number of the levels above (Typst's `indent: auto`).
+    let gap = 0.5em.to-absolute()
+    let inset = (:)
+    for e in entries {
+      let p = prefix(e)
+      let w = if p == none { 0pt } else { measure(p).width + gap }
+      let k = str(e.at("level", default: 1))
+      inset.insert(k, calc.max(inset.at(k, default: 0pt), w))
+    }
+    html.elem("nav", attrs: (role: "doc-toc", class: "ts-outline"), {
+      if title != none { heading(level: 1, numbering: none, outlined: false, bookmarked: false, title) }
+      for e in entries {
+        let level = e.at("level", default: 1)
+        let base = range(1, level).map(l => inset.at(str(l), default: 0pt)).sum(default: 0pt)
+        let p = prefix(e)
+        let body = if e.func() == heading { e.body } else { e.at("body", default: []) }
+        _el("div", "ts-outline-entry", style: if base != 0pt { "padding-inline-start: " + _len(base) }, link(e.location(), {
+          if p != none { html.elem("span", attrs: (class: "ts-outline-prefix", style: "min-width: " + _len(inset.at(str(level)))), p) }
+          html.elem("span", attrs: (class: "ts-outline-body"), body)
+          html.elem("span", attrs: (class: "ts-outline-fill"), "." * 120)
+          html.elem("span", attrs: (class: "ts-outline-page"), "1")
+        }))
+      }
     })
   })
 

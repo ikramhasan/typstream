@@ -162,6 +162,41 @@
   pointer-events: none;
 }
 
+/* Figures: centred, their caption 0.65em under them (`figure.gap`), as on pages. */
+:where(.typstream) figure {
+  margin: 0.56em 0;
+  text-align: center;
+}
+:where(.typstream) figure > :not(figcaption) {
+  margin-inline: auto;
+}
+:where(.typstream) figcaption {
+  margin-block-start: 0.65em;
+  color: inherit;
+}
+
+/* An outline (html-compat.typ): a line per entry, its dots filling the room to the page number. */
+:where(.typstream .ts-outline-entry) {
+  display: flex;
+  align-items: baseline;
+}
+:where(.typstream .ts-outline-entry) > a {
+  display: contents;
+}
+:where(.typstream .ts-outline-prefix) {
+  flex-shrink: 0;
+}
+:where(.typstream .ts-outline-fill) {
+  flex: 1 1 0;
+  min-width: 1em;
+  margin-inline: 0.25em;
+  overflow: hidden;
+  white-space: nowrap;
+  letter-spacing: 0.15em;
+  text-align: justify;
+  text-align-last: justify;
+}
+
 /* A block quote (html-compat.typ): padded by 1em, 2.4em above and 1.8em below, its attribution 0.9em under it. */
 :where(.typstream .ts-quote) {
   margin: 2.4em 1em 1.8em;
@@ -180,6 +215,11 @@
 }
 :where(.typstream) :is(.ts-align-end, .ts-align-right) > * {
   margin-inline-start: auto;
+}
+:where(.typstream .ts-align-v) {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 :where(.typstream .ts-grid) {
   display: grid;
@@ -236,12 +276,12 @@
 }
 /* Typst spaces blocks apart, not from the edges of what contains them. */
 :where(.typstream)
-  :is(.ts-cell, .ts-valign-body, .ts-block, .ts-shape, .ts-box, .ts-stack-item, .ts-place, .ts-align, .ts-pad, .ts-item-body, figure)
+  :is(.ts-cell, .ts-valign-body, .ts-align-body, .ts-block, .ts-shape, .ts-box, .ts-stack-item, .ts-place, .ts-align, .ts-pad, .ts-item-body, figure)
   > :first-child {
   margin-block-start: 0;
 }
 :where(.typstream)
-  :is(.ts-cell, .ts-valign-body, .ts-block, .ts-shape, .ts-box, .ts-stack-item, .ts-place, .ts-align, .ts-pad, .ts-item-body, figure)
+  :is(.ts-cell, .ts-valign-body, .ts-align-body, .ts-block, .ts-shape, .ts-box, .ts-stack-item, .ts-place, .ts-align, .ts-pad, .ts-item-body, figure)
   > :last-child {
   margin-block-end: 0;
 }
@@ -273,7 +313,13 @@
 }
 :where(.typstream .ts-line) {
   height: 0;
-  margin: 0.6em 0;
+  margin: 0.56em 0;
+  /* Not empty: Typst spaces it from both neighbours, where CSS would collapse its margins through it. */
+  padding-top: 0.02px;
+}
+:where(.typstream .ts-empty-line) {
+  display: block;
+  height: 0.658em;
 }
 :where(.typstream .ts-transform) {
   width: fit-content;
@@ -330,7 +376,8 @@
 }
 :where(.typstream) :is(div.ts-frame, span.ts-frame.ts-b) {
   width: fit-content;
-  margin-block: 0.6em;
+  margin-block: 0.56em;
+  padding-top: 0.02px;
 }
 
 /* What the renderer scrolls in a box of its own (a wide equation or block, #95) leaves its margins

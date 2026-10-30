@@ -247,8 +247,10 @@ export const createHtmlPages = (root: HTMLElement, layout: PagesLayout = "fixed"
     el.style.height = "0px";
     (node.parentNode as Node).insertBefore(el, node);
     return {
+      // Less than nothing pulls what follows up: spacing that Typst drops at the top of a page.
       set: (px) => {
         el.style.height = `${Math.max(0, px)}px`;
+        el.style.marginTop = px < 0 ? `${px}px` : "";
       },
       remove: () => {
         const parent = el.parentNode;
@@ -378,7 +380,9 @@ export const createHtmlPages = (root: HTMLElement, layout: PagesLayout = "fixed"
             const rest = start.offset > 0 ? start.text.splitText(start.offset) : start.text;
             return spacerBefore(rest, false);
           }
-          return spacerBefore((start as Node | null) ?? first, false);
+          // A paragraph's first line: room before the paragraph (and what it starts), where its own indent stays.
+          if (!start) return spacerBefore(opening(first), true);
+          return spacerBefore(start, false);
         },
         ...(sticky ? { sticky } : {}),
       };
@@ -386,6 +390,24 @@ export const createHtmlPages = (root: HTMLElement, layout: PagesLayout = "fixed"
     }
     for (const [index, unit] of units.entries()) unit.par = { index, lines: units };
     out.push(...units);
+  };
+
+  /**
+   * The outermost block that `node` starts: room before it moves the block, not just its first line. Not past a
+   * grid's or flex box's item, before which room would be an item of its own.
+   */
+  const opening = (node: Node): Node => {
+    let at = node;
+    for (;;) {
+      const parent = at.parentElement;
+      if (!parent || parent === flow) return at;
+      const display = view.getComputedStyle(parent).display;
+      if (/grid|flex|contents|inline|table/.test(display) || parent.matches(".ts-cell, .ts-item-body")) return at;
+      let prev = at.previousSibling;
+      while (prev && prev.nodeType === 3 && !(prev as Text).data.trim()) prev = prev.previousSibling;
+      if (prev) return at;
+      at = parent;
+    }
   };
 
   /** The units of a grid's rows; a row of a table, or of a block that doesn't break, is one. */
@@ -510,6 +532,13 @@ export const createHtmlPages = (root: HTMLElement, layout: PagesLayout = "fixed"
     const units: Unit[] = [];
     collect(flow, origin(), units);
     let page = 0;
+    // Spacing above the first block collapses through to the top of the flow; Typst drops it.
+    const head = units[0];
+    if (head && !head.force && head.measure().top > contentTop(0) + EPS) {
+      const gap = head.gap();
+      gaps.push(gap);
+      gap.set(contentTop(0) - head.measure().top);
+    }
     for (let i = 0; i < units.length; i++) {
       const unit = units[i] as Unit;
       let { top, bottom } = unit.measure();
@@ -528,12 +557,30 @@ export const createHtmlPages = (root: HTMLElement, layout: PagesLayout = "fixed"
       const moved = units[i] as Unit;
       const gap = moved.gap();
       gaps.push(gap);
+      // Measured with some room already: margins stop collapsing across a spacer once it has height.
+      gap.set(1);
       ({ top, bottom } = moved.measure());
-      gap.set(contentTop(page) - top);
+      gap.set(1 + contentTop(page) - top);
     }
     count = page + 1;
     while (sheets.children.length > count) sheets.lastElementChild?.remove();
     drawMarginals();
+    numberOutline();
+  };
+
+  /** The page of each outline entry's target (html-compat's `.ts-outline-page`), now that the pages are known. */
+  const numberOutline = () => {
+    const tops = [...Array(count).keys()].map(sheetTop);
+    const scope = root.getRootNode() as Document | ShadowRoot;
+    for (const span of flow.querySelectorAll(".ts-outline-page")) {
+      const href = span.closest("a")?.getAttribute("href");
+      const target = href?.startsWith("#") ? scope.getElementById(decodeURIComponent(href.slice(1))) : null;
+      if (!target) continue;
+      const top = inFlow(target.getBoundingClientRect(), origin()).top;
+      let page = 0;
+      while (page + 1 < tops.length && (tops[page + 1] as number) <= top + EPS) page++;
+      span.textContent = String(page + 1);
+    }
   };
 
   let frame = 0;
