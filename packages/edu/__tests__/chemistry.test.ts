@@ -9,7 +9,11 @@ const mathml = (formula: string): string => {
   const out = compileHtml(engine, `#ce(${JSON.stringify(formula)})`);
   expect(problems(out.diagnostics)).toEqual([]);
   const m = /<math>([\s\S]*?)<\/math>/.exec(out.html);
-  return (m?.[1] ?? "").replace(/>\s+</g, "><").trim();
+  // html-compat's text rule gives each text a context, which MathML writes as an <mrow> of one.
+  return (m?.[1] ?? "")
+    .replace(/>\s+</g, "><")
+    .replace(/<mrow>(<(mtext|mn)>[^<]*<\/\2>)<\/mrow>/g, "$1")
+    .trim();
 };
 
 describe("ce", () => {

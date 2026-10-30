@@ -524,7 +524,9 @@
 /// The current text's line box when its edges aren't the layout profile's (1.054em above the baseline, 0.246em below):
 /// how far it reaches above and below the baseline, measured. `none` with the profile's. Needs context.
 #let _edges() = {
-  if text.top-edge == 1.054em and text.bottom-edge == -0.246em { return none }
+  // The profile's, or Typst's defaults where it isn't in front (a compile outside the engine): CSS's line.
+  let (top, bottom) = (text.top-edge, text.bottom-edge)
+  if (top, bottom) in ((1.054em, -0.246em), ("cap-height", "baseline")) { return none }
   // Show-set rules: the layout profile's (and edu's own) are, and a set rule wouldn't win over them.
   let above = measure({ show text: set text(bottom-edge: "baseline"); [X] }).height
   let below = measure({ show text: set text(top-edge: "baseline"); [X] }).height
@@ -599,7 +601,9 @@
 
 
 /// Applies html-compat to a document: `#show: html-compat`.
-#let html-compat(doc) = {
+#let html-compat(doc) = context if target() != "html" { doc } else {
+  // In HTML only: a paged compile gets the document as it is, its pages unchanged. Inside `html.frame` the target is
+  // "paged" again, where each rule leaves what it shows to Typst.
   let html-only(rule) = it => context if target() == "html" { rule(it) } else { it }
 
   // The source anchors the engine writes before each top-level block (PLAN §10.2) carry the page they are on.
@@ -663,15 +667,14 @@
     padding: ("top", "right", "bottom", "left").map(s => _len(it.at(s))).map(v => if v == none { "0" } else { v }).join(" "),
   ), it.body))
 
-  // Spacing. Fractional spacing has no HTML equivalent; it becomes a gap. In math
-  // (`quad` is h(1em)) MathML has its own spacing, so h is left alone there. Weak
-  // spacing is Typst's own (an inline quote has some) and is left alone everywhere:
-  // wrapped in `context`, it no longer collapses, which changes paged layout.
-  show v.where(weak: false): html-only(it => {
+  // Spacing. Fractional spacing takes the rest of the line (html-compat.css). In math (`quad` is h(1em)) MathML has
+  // its own spacing, so h is left alone there. Weak spacing becomes spacing too: in HTML there is no paged layout
+  // its collapsing would change.
+  show v: html-only(it => {
     let h = _len(it.amount)
-    _el("div", "ts-v", style: if h != none { "height: " + h }, none)
+    _el("div", "ts-v" + if it.weak { " ts-v-weak" }, style: if h != none { "height: " + h }, none)
   })
-  show h.where(weak: false): html-only(it => {
+  show h: html-only(it => {
     if text.costs.runt == _in-math { return it }
     let w = _len(it.amount)
     if w == none { _el("span", "ts-hfill", none) } else { _el("span", "ts-h", style: "width: " + w, none) }
@@ -789,7 +792,11 @@
     let titles = (en: "Contents", de: "Inhaltsverzeichnis", fr: "Table des matières", es: "Índice", it: "Indice", pt: "Sumário", nl: "Inhoudsopgave")
     let title = if it.title == auto { titles.at(text.lang, default: "Contents") } else { it.title }
     let entries = query(it.target).filter(e => e.at("outlined", default: true) and (it.depth == none or e.at("level", default: 1) <= it.depth))
-    let prefix(e) = if e.func() == heading and e.numbering != none { numbering(e.numbering, ..counter(heading).at(e.location())) }
+    let prefix(e) = if e.numbering == none { none } else if e.func() == heading {
+      numbering(e.numbering, ..counter(heading).at(e.location()))
+    } else if e.func() == figure {
+      [#e.supplement #numbering(e.numbering, ..e.counter.at(e.location()))]
+    }
     // Each level's entries start after the widest number of the levels above (Typst's `indent: auto`).
     let gap = 0.5em.to-absolute()
     let inset = (:)
@@ -805,7 +812,8 @@
         let level = e.at("level", default: 1)
         let base = range(1, level).map(l => inset.at(str(l), default: 0pt)).sum(default: 0pt)
         let p = prefix(e)
-        let body = if e.func() == heading { e.body } else { e.at("body", default: []) }
+        // A figure's entry is its caption's text.
+        let body = if e.func() == heading { e.body } else if e.func() == figure and e.caption != none { e.caption.body } else { e.at("body", default: []) }
         _el("div", "ts-outline-entry", style: if base != 0pt { "padding-inline-start: " + _len(base) }, link(e.location(), {
           if p != none { html.elem("span", attrs: (class: "ts-outline-prefix", style: "min-width: " + _len(inset.at(str(level)))), p) }
           html.elem("span", attrs: (class: "ts-outline-body"), body)
@@ -866,6 +874,9 @@
   // Math as Typst draws it on pages: an SVG of the equation's frame, sitting on the line where Typst puts it (the
   // depth below the baseline is measured beside a tall strut), its MathML beside it for screen readers. A display
   // equation is centred, its number at the end of the line (typst-layout's `layout_equation_block`).
+  // MathML has no overline, but an accent; nor cancel, whose drawing is in the picture.
+  show math.overline: html-only(it => math.accent(it.body, "‾"))
+  show math.cancel: html-only(it => it.body)
   show math.equation: html-only(it => {
     let mathml = html.elem("span", attrs: (class: "ts-sr"), _mark-math(it))
     if not it.block {
@@ -891,7 +902,7 @@
   doc
   // The page count a header or footer shows (`counter(page).final()`): the renderer's, which it gives the document
   // as an input once it has laid the pages out.
-  context if target() == "html" { counter(page).update(int(sys.inputs.at("typstream-page-count", default: "1"))) }
+  counter(page).update(int(sys.inputs.at("typstream-page-count", default: "1")))
 }
 
 /// `layout` in HTML calls `func` with `compat-size` (there is no page to measure), so its

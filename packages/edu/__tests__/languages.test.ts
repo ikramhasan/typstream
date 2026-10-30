@@ -42,15 +42,10 @@ describe("languages", () => {
     for (const word of words) expect(text).toContain(word);
   });
 
-  it("marks edu's HTML right to left in Arabic, and only there", () => {
-    const ar = compileHtml(engine, doc("ar")).html;
-    for (const cls of ["edu-header", "edu-question", "edu-mcq", "edu-tf", "edu-callout"]) {
-      expect(ar).toMatch(
-        new RegExp(`<[a-z]+ class="${cls}[^"]*"[^>]* dir="rtl"|<[a-z]+ [^>]*dir="rtl"[^>]* class="${cls}`),
-      );
-    }
-    expect(compileHtml(engine, doc("en")).html).not.toContain('dir="rtl"');
-    expect(compileHtml(engine, doc("bn")).html).not.toContain('dir="rtl"');
+  it("marks the HTML's language, whose direction the renderer takes: right to left in Arabic", () => {
+    expect(compileHtml(engine, doc("ar")).html).toMatch(/<html lang="ar"/);
+    expect(compileHtml(engine, doc("en")).html).toMatch(/<html lang="en"/);
+    expect(compileHtml(engine, doc("bn")).html).toMatch(/<html lang="bn"/);
   });
 
   it("keeps question numbers in Western digits (A7 on #23)", () => {

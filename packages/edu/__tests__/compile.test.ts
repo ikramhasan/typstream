@@ -3,7 +3,7 @@
 // output is dropped ("… was ignored during HTML export"), with html-compat or without it.
 import { describe, expect, it } from "vitest";
 import { eduCatalogue, eduExamples, eduTemplates } from "../src/index";
-import { compileHtml, compilePaged, newEngine, problems } from "./support/engine";
+import { compileHtml, compilePaged, htmlText, newEngine, problems } from "./support/engine";
 
 const engine = newEngine();
 
@@ -82,11 +82,10 @@ const EMPTY_CALLS = [
   "#show: handout\n",
 ];
 
+// HTML with html-compat, which edu depends on: its HTML is html-compat's of the same Typst as its pages.
 const variants = [
   { target: "paged", answers: false, compat: false },
   { target: "paged", answers: true, compat: false },
-  { target: "html", answers: false, compat: false },
-  { target: "html", answers: true, compat: false },
   { target: "html", answers: false, compat: true },
   { target: "html", answers: true, compat: true },
 ] as const;
@@ -108,11 +107,12 @@ describe("compiles without errors or warnings in both targets", () => {
     expect(check(source)).toEqual([]);
   });
 
-  it("templates write pages only in the paged target", () => {
+  it("templates set the page in both targets", () => {
     const source = `#show: exam.with(title: [T])${BODY}#pagebreak()\nMore.`;
     expect(compilePaged(engine, source).pages.length).toBe(2);
     const { html } = compileHtml(engine, source);
-    expect(html).toContain('<header class="edu-header">');
-    expect(html).toContain("<h1>T</h1>");
+    // The renderer lays HTML out on the template's page (2 cm margins), whose header and footer html-compat writes.
+    expect(html).toContain("ts-pagebreak");
+    expect(htmlText(html)).toContain("T");
   });
 });

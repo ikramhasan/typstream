@@ -1,6 +1,7 @@
 // edu's conformance suite (#135): every catalogue entry's example, every template spec and every prompt example, as a
 // student's copy and with the answers shown, must look the same in the paged view, Typst's PDF and the DOCX export.
 import { type ConformanceExample, type ConformanceSuite, withInputs } from "@typstream/conformance";
+import { htmlCompat } from "@typstream/html-compat";
 import { EDU_VERSION, edu, eduCatalogue, eduExamples, eduTemplates, SHOW_ANSWERS_INPUT } from "../../src/index";
 
 /** A body for template examples, so they have questions and points to count. */
@@ -44,6 +45,6 @@ const examples: ConformanceExample[] = [
 
 export const suite: ConformanceSuite = {
   name: `edu-${EDU_VERSION}`,
-  plugins: [edu],
+  plugins: [htmlCompat, edu],
   examples: withInputs(examples, [{ [SHOW_ANSWERS_INPUT]: "false" }, { [SHOW_ANSWERS_INPUT]: "true" }]),
 };
