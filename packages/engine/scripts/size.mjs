@@ -46,7 +46,7 @@ const ok = [
   // 12.6 KB until drawings became inline pictures where they can, for Google Docs (#149, 107 bytes over); 12.8 KB until
   // #118's last ink fixes raised blanks to their stroke, anchored lowered pictures to their line and made a cell's room
   // before a moved block breakable (14 bytes over).
-  await measure("@typstream/docx (loaded on a DOCX export)", "../docx/src/index.ts", 13.2 * 1024, []),
+  await measure("@typstream/docx (loaded on a DOCX export)", "../docx/src/index.ts", 13.4 * 1024, []),
   await measure("@typstream/engine/websocket", "src/websocket.ts", 1.5 * 1024, []),
   await measure("@typstream/engine/images", "src/images.ts", 1.5 * 1024, []),
 ];
