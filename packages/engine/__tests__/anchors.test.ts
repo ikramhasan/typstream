@@ -222,12 +222,12 @@ describe("server", () => {
     await send("export/html", { uri, rev: 1 });
     await send("document/edit", { uri, rev: 2, edits: [{ from: 10, to: 10, insert: "\nMore\n" }] });
     await send("compile", { uri, rev: 2, target: "html" });
-    const prefix = "#let x = 1\n";
+    // Every compile has the layout profile in front (#129), HTML too, which html-compat reads.
+    const prefix = `${LAYOUT_PROFILE}#let x = 1\n`;
     expect(compiled).toEqual([
       { kind: "html", main: `${prefix}${anchorText(0)}= A\n\n${anchorText(5)}Body\n` },
       { kind: "html", main: `${prefix}= A\n\nBody\n` },
-      // Pages have the layout profile in front (#129).
-      { kind: "paged", main: `${LAYOUT_PROFILE}${prefix}= A\n\nBody\n` },
+      { kind: "paged", main: `${prefix}= A\n\nBody\n` },
       { kind: "export", main: `${prefix}= A\n\nBody\n` },
       { kind: "html", main: `${prefix}${anchorText(0)}= A\n\n${anchorText(5)}Body\n\n${anchorText(11)}More\n` },
     ]);

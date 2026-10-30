@@ -110,16 +110,29 @@
   if css.all(v => v == "0pt") { none } else if css.all(v => v == css.first()) { css.first() } else { css.join(" ") }
 }
 
-/// Fill, stroke, inset and radius of a box-like element as CSS declarations.
+/// A stroke's thickness, or `none`. `auto` is the given default's.
+#let _stroke-width(s, default: none) = {
+  if s == auto { s = default }
+  if s == none { return none }
+  let s = stroke(s)
+  if s.thickness == auto { 1pt } else { s.thickness }
+}
+
+/// Fill, stroke, inset and radius of a box-like element as CSS declarations. Typst draws a stroke centred on the
+/// element's edge, half of it outside, and the stroke takes no room: the inset is measured from the edge. A CSS
+/// border would take room inside the box, so strokes are drawn by the element's `::before` (html-compat.css,
+/// `.ts-stroked`), half their width past each edge, from custom properties: each side's border (`--ts-bt`, …) and
+/// width (`--ts-wt`, …).
 #let _box-props(fill: none, stroke: none, stroke-default: none, inset: none, radius: none) = {
   let props = (:)
   let bg = _paint(fill)
   if bg != none { props.insert("background", bg) }
-  let strokes = _sides(stroke).pairs().map(((side, s)) => (side, _stroke(s, default: stroke-default)))
-  if strokes.all(((_, s)) => s == strokes.first().last()) {
-    if strokes.first().last() != none { props.insert("border", strokes.first().last()) }
-  } else {
-    for (side, s) in strokes { if s != none { props.insert("border-" + side, s) } }
+  for (side, s) in _sides(stroke) {
+    let css = _stroke(s, default: stroke-default)
+    if css == none { continue }
+    let k = side.first()
+    props.insert("--ts-b" + k, css)
+    props.insert("--ts-w" + k, _len(_stroke-width(s, default: stroke-default)))
   }
   let padding = _shorthand(_sides(inset).values())
   if padding != none { props.insert("padding", padding) }
@@ -127,6 +140,9 @@
   if radius != none { props.insert("border-radius", radius) }
   props
 }
+
+/// `.ts-stroked` when `props` (from `_box-props`) draw a stroke, for an element's class.
+#let _stroked(props) = if props.keys().any(k => k.starts-with("--ts-b")) { " ts-stroked" } else { "" }
 
 #let _style(props) = _css(..props)
 
@@ -153,10 +169,11 @@
 /// An HTML element with a class and an optional style; unset attributes are left out. Needs
 /// context: inside an inline element (a box) a `div` would end the paragraph around it in
 /// the browser's parser, so it becomes a `span` with class `ts-b` (display: block).
-#let _el(tag, class, style: none, body) = {
+#let _el(tag, class, style: none, role: none, body) = {
   if tag == "div" and text.costs.widow == _inline { (tag, class) = ("span", class + " ts-b") }
   let attrs = (class: class)
   if style != none { attrs.insert("style", style) }
+  if role != none { attrs.insert("role", role) }
   html.elem(tag, attrs: attrs, if body == none { [] } else { body })
 }
 
@@ -275,7 +292,8 @@
 /// with `x`, `y`, `colspan`, `rowspan` and the original `cell`.
 #let _place-cells(children, ncols) = {
   let taken = (:)
-  let free(x, y, cs, rs) = {
+  // Closures capture by value: `taken` is passed in.
+  let free(taken, x, y, cs, rs) = {
     if x + cs > ncols { return false }
     for dx in range(cs) { for dy in range(rs) { if str(x + dx) + "," + str(y + dy) in taken { return false } } }
     true
@@ -283,8 +301,11 @@
   let (cells, hlines, vlines) = ((), (), ())
   let (cx, cy) = (0, 0)
   // Header and footer cells are laid out where they appear, which is first and last in practice.
-  let flat = children.map(c => if "children" in c.fields() { c.children } else { (c,) }).flatten()
-  for c in flat {
+  let flat = children.map(c => {
+    let head = c.func() in (grid.header, table.header)
+    if "children" in c.fields() { c.children.map(x => (x, head)) } else { ((c, false),) }
+  }).flatten().chunks(2)
+  for (c, head) in flat {
     let f = c.fields()
     if c.func() in (grid.hline, table.hline) {
       hlines.push((y: f.at("y", default: auto), cell: c, at: if cx == 0 { cy } else { cy + 1 }))
@@ -301,14 +322,14 @@
       (cx, cy) = (cx, cy)
     } else if x != auto {
       y = cy
-      while not free(x, y, cs, rs) { y += 1 }
+      while not free(taken, x, y, cs, rs) { y += 1 }
     } else if y != auto {
       x = 0
-      while not free(x, y, cs, rs) and x < ncols { x += 1 }
+      while not free(taken, x, y, cs, rs) and x < ncols { x += 1 }
       if x >= ncols { x = 0 }
     } else {
       (x, y) = (cx, cy)
-      while not free(x, y, cs, rs) {
+      while not free(taken, x, y, cs, rs) {
         x += 1
         if x >= ncols { (x, y) = (0, y + 1) }
       }
@@ -316,12 +337,14 @@
       if cx >= ncols { (cx, cy) = (0, cy + 1) }
     }
     for dx in range(cs) { for dy in range(rs) { taken.insert(str(x + dx) + "," + str(y + dy), true) } }
-    cells.push((x: x, y: y, colspan: cs, rowspan: rs, cell: c))
+    cells.push((x: x, y: y, colspan: cs, rowspan: rs, cell: c, header: head))
   }
   (cells, hlines, vlines)
 }
 
-#let _grid(it) = {
+/// A grid or a table as a CSS grid with Typst's tracks, gutters and cell placement. A table keeps its semantics
+/// through ARIA roles: its rows are `display: contents`, so their cells are the grid's items.
+#let _grid(it, table: false) = {
   let columns = if type(it.columns) == int { (auto,) * it.columns } else if it.columns.len() == 0 { (auto,) } else { it.columns }
   let rows = if type(it.rows) == int { (auto,) * it.rows } else { it.rows }
   let (cells, hlines, vlines) = _place-cells(it.children, columns.len())
@@ -353,13 +376,21 @@
     props.insert("grid-area", str(y + 1) + " / " + str(x + 1) + " / span " + str(c.rowspan) + " / span " + str(c.colspan))
     props.insert("text-align", _text-align(align))
     let valign = _vertical-align(align)
-    if valign == none { _el("div", "ts-cell", style: _style(props), f.body) } else {
+    let role = if not table { none } else if c.header { "columnheader" } else { "cell" }
+    let class = "ts-cell" + _stroked(props) + if c.header { " ts-head" } + if valign != none { " ts-valign" }
+    if valign != none { props.insert("justify-content", valign) }
+    let cell = _el("div", class, style: _style(props), role: role,
       // Flex would make every inline run its own item; one wrapper keeps the text flowing.
-      props.insert("justify-content", valign)
-      _el("div", "ts-cell ts-valign", style: _style(props), _el("div", "ts-valign-body", f.body))
-    }
+      if valign == none { f.body } else { _el("div", "ts-valign-body", f.body) })
+    ((y: y, cell: cell),)
   }
-  _el("div", "ts-grid", style: container, body)
+  if body == none { body = () }
+  if not table { return _el("div", "ts-grid", style: container, body.map(c => c.cell).join()) }
+  // Rows for the table's semantics, in the order of their first cells.
+  let rows = body.map(c => c.y).dedup()
+  _el("div", "ts-grid ts-table", style: container, role: "table", for y in rows {
+    _el("div", "ts-row", role: "row", body.filter(c => c.y == y).map(c => c.cell).join())
+  })
 }
 
 // ---------------------------------------------------------------------------
@@ -402,12 +433,131 @@
 }
 
 // ---------------------------------------------------------------------------
+// Text: what Typst's HTML export leaves out of it
+//
+// html-compat.css gives the document Typst's defaults as the engine's layout profile (#129) sets them on pages: the
+// base font at 11pt in black, lines 1.3em apart, paragraphs 0.56em apart. The export writes `strong`, `emph` and a
+// few decorations as elements and drops the rest of a text's style (its size, colour, font, weight …): text that
+// differs from the defaults is a span carrying it.
+
+/// The web font a family is registered as in the browser (dom's `webFontFamily`), then the family itself.
+#let _family(f) = {
+  let name = if type(f) == dictionary { f.name } else { f }
+  "typstream-" + lower(name).replace(regex("[^a-z0-9]+"), "-") + ", \"" + name + "\""
+}
+
+#let _weights = (thin: 100, extralight: 200, light: 300, regular: 400, medium: 500, semibold: 600, bold: 700, extrabold: 800, black: 900)
+
+/// The current text style's differences from the document's defaults, as CSS declarations. Needs context.
+#let _text-props() = {
+  let props = (:)
+  let size = text.size.to-absolute()
+  if size != 11pt { props.insert("font-size", _len(size)) }
+  if text.fill != black { props.insert("color", _paint(text.fill, gradients: false)) }
+  let fonts = if type(text.font) == array { text.font } else { (text.font,) }
+  if fonts.map(f => lower(if type(f) == dictionary { f.name } else { f })) != ("libertinus serif",) {
+    props.insert("font-family", fonts.map(_family).join(", "))
+  }
+  let weight = if type(text.weight) == str { _weights.at(text.weight, default: 400) } else { text.weight }
+  if weight != 400 { props.insert("font-weight", str(weight)) }
+  if text.style != "normal" { props.insert("font-style", text.style) }
+  if text.tracking != 0pt { props.insert("letter-spacing", _len(text.tracking)) }
+  // Typst's word spacing is a share of the space's width (0.25em in Libertinus Serif) plus a length.
+  let spacing = text.spacing
+  let extra = (float(spacing.ratio) - 1) * 0.25em + spacing.length
+  if extra != 0em { props.insert("word-spacing", _len(extra)) }
+  // A positive baseline shift moves text down.
+  if text.baseline != 0pt { props.insert("position", "relative"); props.insert("top", _len(text.baseline)) }
+  props
+}
+
+// ---------------------------------------------------------------------------
+// Pages: what the renderer lays the HTML out on
+
+/// The page as the renderer's pages need it (dom's `html/pages.ts`): width, height (`auto` for a page as tall as
+/// its content), the margins (top, right, bottom, left) and the fill, in points, space-separated. Margins Typst
+/// leaves `auto` are its default, 2.5/21 of the page's shorter side. Needs context.
+#let _page-geometry() = {
+  let (w, h) = (page.width, page.height)
+  if page.flipped { (w, h) = (h, w) }
+  let size = (x: if w == auto { 595.28pt } else { w }, y: if h == auto { 841.89pt } else { h })
+  let default = 2.5 / 21 * if w == auto { size.y } else if h == auto { size.x } else { calc.min(size.x, size.y) }
+  let m = page.margin
+  let sides = if m == auto { (:) } else if type(m) == dictionary { m } else { (rest: m) }
+  let rest = sides.at("rest", default: auto)
+  let x = sides.at("x", default: rest)
+  let y = sides.at("y", default: rest)
+  let pick(side, fallback, axis) = {
+    let v = sides.at(side, default: fallback)
+    if v == auto { default } else if type(v) == ratio { float(v) * size.at(axis) } else if type(v) == relative {
+      float(v.ratio) * size.at(axis) + v.length.to-absolute()
+    } else { v.to-absolute() }
+  }
+  let left = pick("left", sides.at("inside", default: x), "x")
+  let right = pick("right", sides.at("outside", default: x), "x")
+  let fill = if page.fill in (auto, none) { "none" } else { _paint(page.fill, gradients: false) }
+  let pt(l) = _num(l.pt())
+  let (top, bottom) = (pick("top", y, "y"), pick("bottom", y, "y"))
+  let rel(r, of) = float(r.ratio) * of + r.length.to-absolute()
+  (
+    pt(size.x), if h == auto { "auto" } else { pt(size.y) }, pt(top), pt(right), pt(bottom), pt(left), fill,
+    pt(rel(page.header-ascent, top)), pt(rel(page.footer-descent, bottom)),
+  ).join(" ")
+}
+
+/// What stands for the page number and the page count in a page's header and footer: the renderer writes each
+/// page's own in their place.
+#let _page-number = 7777
+#let _page-count = 8888
+
+/// The page's header and footer, for the renderer to put on each page (typst-layout's pages/run.rs): as on the first
+/// page and as on the others, the page number `_page-number` there. `none` when the page has neither. Needs context.
+#let _page-parts() = {
+  let marginal = if page.numbering == none { none } else {
+    let both = type(page.numbering) != str or page.numbering.matches(regex("[1aAiI]")).len() >= 2
+    let display = counter(page).display(page.numbering, both: both)
+    let x = page.number-align.x
+    if x == none { display } else { align(x, display) }
+  }
+  let top = page.number-align.y == top
+  let header = if page.header == auto { if top { marginal } } else { page.header }
+  let footer = if page.footer == auto { if not top { marginal } } else { page.footer }
+  if header == none and footer == none { return none }
+  let part(class, body, n) = if body != none {
+    counter(page).update(n)
+    _el("div", class, body)
+  }
+  {
+    part("ts-page-header ts-first", header, 1)
+    part("ts-page-header", header, _page-number)
+    part("ts-page-footer ts-first", footer, 1)
+    part("ts-page-footer", footer, _page-number)
+    counter(page).update(1)
+  }
+}
+
+// ---------------------------------------------------------------------------
 // The show rules
 
 
 /// Applies html-compat to a document: `#show: html-compat`.
 #let html-compat(doc) = {
   let html-only(rule) = it => context if target() == "html" { rule(it) } else { it }
+
+  // The source anchors the engine writes before each top-level block (PLAN §10.2) carry the page they are on.
+  show html.elem.where(tag: "typstream-anchor"): it => {
+    if "data-page" in it.attrs { return it }
+    context html.elem("typstream-anchor", attrs: it.attrs + (data-page: _page-geometry()), _page-parts())
+  }
+
+  // Text in a style the defaults don't have. Not in math, which MathML styles itself.
+  show text: html-only(it => {
+    if text.costs.runt == _in-math { return it }
+    let props = _text-props()
+    if props.len() == 0 { it } else { html.span(style: _css(..props), it) }
+  })
+  // Highlights carry their fill (the export writes a bare <mark>).
+  show highlight: html-only(it => html.elem("mark", attrs: (style: "--ts-mark: " + _paint(it.fill, gradients: false)), it.body))
 
   // Layout containers.
   show grid: html-only(_grid)
@@ -449,6 +599,9 @@
   })
 
   // Containers with a look. Blocks Typst makes for its own HTML elements (headings, lists, …) pass through.
+  // Typst's block is as wide as its content unless given a width, spaced from its neighbours by its `above` and
+  // `below` (paragraph spacing when `auto`; its own, `.ts-sp`, beats its neighbours' paragraph spacing, as Typst's
+  // flow collapses them). An unbreakable or sticky block tells the renderer's pages so (`.ts-whole`, `.ts-sticky`).
   show block: html-only(it => {
     if type(it.body) != content or it.body.func() == html.elem { return it }
     if _has-drawing(it.body) or _is-canvas(it.body) { return _frame(it) }
@@ -456,7 +609,13 @@
     props.insert("width", _len(it.width))
     props.insert("height", _len(it.height))
     if it.clip { props.insert("overflow", "hidden") }
-    _el("div", "ts-block", style: _style(props), it.body)
+    let custom = (it.above, it.below).any(s => s != auto)
+    if custom {
+      let gap(s) = if s == auto { _len(par.spacing) } else if type(s) == fraction { "0pt" } else { _len(s) }
+      props.insert("margin-block", gap(it.above) + " " + gap(it.below))
+    }
+    let class = "ts-block" + _stroked(props) + if custom { " ts-sp" } + if not it.breakable { " ts-whole" } + if it.sticky { " ts-sticky" }
+    _el("div", class, style: _style(props), it.body)
   })
   show box: html-only(it => {
     if type(it.body) == content and (_has-drawing(it.body) or _is-canvas(it.body)) { return _frame(it, inline: true) }
@@ -466,7 +625,7 @@
     if it.clip { props.insert("overflow", "hidden") }
     let shift = _len(it.baseline.shift)
     if shift not in (none, "0pt") { props.insert("vertical-align", "calc(-1 * " + shift + ")") }
-    _el("span", "ts-box" + if type(it.width) == fraction { " ts-fr" }, style: _style(props), _mark-inline(it.body))
+    _el("span", "ts-box" + _stroked(props) + if type(it.width) == fraction { " ts-fr" }, style: _style(props), _mark-inline(it.body))
   })
 
   // Shapes with content are boxes; without, they are drawn boxes. Circles and ellipses round them.
@@ -482,7 +641,7 @@
     let size = if it.func() == circle and fields.at("radius", default: auto) != auto { 2 * it.radius } else { fields.at("size", default: auto) }
     props.insert("width", _len(if size != auto { size } else { fields.at("width", default: auto) }))
     props.insert("height", _len(if size != auto { size } else { fields.at("height", default: auto) }))
-    _el("div", "ts-shape " + class, style: _style(props + extra), it.body)
+    _el("div", "ts-shape " + class + _stroked(props), style: _style(props + extra), it.body)
   }
   show rect: html-only(shape("ts-rect"))
   show square: html-only(shape("ts-square", extra: (aspect-ratio: "1")))
@@ -505,25 +664,63 @@
   // A box(width: 1fr) has no width in HTML; the repeats fill what CSS gives it and are clipped.
   show repeat: html-only(it => _el("span", "ts-repeat", ((it.body,) * 60).join()))
 
-  // Tables are native HTML tables; their cells carry Typst's resolved fill, alignment and inset.
-  show table.cell: html-only(it => {
-    let props = _box-props(fill: it.fill, inset: it.inset)
-    props.insert("text-align", _text-align(it.align))
-    let unstroked = it.stroke == none or (type(it.stroke) == dictionary and it.stroke.values().all(s => s == none))
-    _el("div", "ts-cell" + if unstroked { " ts-no-stroke" }, style: _style(props), it.body)
+  // A block quote as Typst lays it out on pages (typst-layout's QUOTE_RULE): padded by 1em on both sides, 2.4em above
+  // it and 1.8em below, its attribution 0.9em under it at the end of the line.
+  show quote.where(block: true): html-only(it => {
+    let attribution = if it.attribution == none { none } else if type(it.attribution) == label {
+      [— #cite(it.attribution, form: "prose")]
+    } else { [— #it.attribution] }
+    let quoted = if it.quotes == true { quote(block: false, quotes: true, it.body) } else { it.body }
+    html.elem("blockquote", attrs: (class: "ts-quote ts-sp"), _el("div", "ts-quote-body", quoted) + if attribution != none {
+      _el("div", "ts-attribution", attribution)
+    })
   })
 
-  // Lists numbered with a pattern HTML's <ol> can't show ("a)", "(i)"): explicit markers.
+  // Tables are laid out as grids are, with a table's semantics.
+  show table: html-only(it => _grid(it, table: true))
+
+  // Lists as Typst lays them out: a marker column as wide as the widest marker, `body-indent` after it, the items
+  // `spacing` apart (`par.leading`, 0 on pages, when tight; `par.spacing` when wide). The markers are text, so they
+  // are the ones Typst draws (a list's by depth, an enum's from its numbering, "a)", "(i)" …); the list keeps its
+  // semantics, its markers hidden from screen readers.
+  let gutter(it) = if it.spacing != auto { it.spacing } else if it.tight { par.leading } else { par.spacing }
+  let list-props(it) = _css(
+    padding-inline-start: if it.indent != 0pt { _len(it.indent) },
+    column-gap: if it.body-indent != 0.5em { _len(it.body-indent) },
+    row-gap: _len(gutter(it)),
+  )
+  let item(marker, body) = html.elem("li", html.elem("span", attrs: (class: "ts-marker", aria-hidden: "true"), marker) + _el("div", "ts-item-body", body))
+  show list: html-only(it => {
+    let markers = if type(it.marker) == array { it.marker } else { (it.marker,) }
+    let marker = markers.at(0, default: [•])
+    let marker = if type(marker) == function { marker(0) } else { marker }
+    // Nested lists take the next marker.
+    let rest = if markers.len() > 1 { markers.slice(1) + markers.slice(0, 1) } else { markers }
+    html.elem("ul", attrs: (class: "ts-list", style: list-props(it)), {
+      set list(marker: rest)
+      for child in it.children { item(marker, child.body) }
+    })
+  })
   show enum: html-only(it => {
-    if type(it.numbering) != str or it.numbering in ("1.", "1") or it.full { return it }
-    let n = if it.start == auto { 1 } else { it.start }
-    let items = for item in it.children {
-      let number = item.fields().at("number", default: auto)
+    let n = if it.start == auto { if it.reversed { it.children.len() } else { 1 } } else { it.start }
+    let items = for child in it.children {
+      let number = child.fields().at("number", default: auto)
       if number not in (auto, none) { n = number }
-      html.elem("li", html.span(class: "ts-marker", numbering(it.numbering, n)) + item.body)
-      n += 1
+      item(if type(it.numbering) == str { numbering(it.numbering, n) } else { (it.numbering)(n) }, child.body)
+      n += if it.reversed { -1 } else { 1 }
     }
-    html.elem("ol", attrs: (class: "ts-enum"), items)
+    html.elem("ol", attrs: (class: "ts-list ts-enum", style: list-props(it)), items)
+  })
+  // Term lists: each term and its description a paragraph with a hanging indent, the term bold.
+  show terms: html-only(it => {
+    let props = _css(
+      padding-inline-start: _len(it.indent + it.hanging-indent),
+      text-indent: "-" + _len(it.hanging-indent),
+      row-gap: _len(gutter(it)),
+    )
+    html.elem("dl", attrs: (class: "ts-terms", style: props), for child in it.children {
+      html.elem("div", attrs: (class: "ts-term"), html.elem("dt", strong(child.term)) + it.separator + html.elem("dd", child.description))
+    })
   })
 
   // Math: numbered block equations show their number; equations with cancel() are drawn;
@@ -539,6 +736,8 @@
   })
 
   doc
+  // The page count a header or footer shows (`counter(page).final()`), for the renderer to replace.
+  context if target() == "html" { counter(page).update(_page-count) }
 }
 
 /// `layout` in HTML calls `func` with `compat-size` (there is no page to measure), so its

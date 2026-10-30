@@ -68,7 +68,11 @@ const RAW = new Set(["script", "style", "textarea", "title"]);
 /** Elements a template wraps the whole document in, descended into. */
 const WRAPPERS = new Set(["div", "section", "article", "main"]);
 
-const ANCHOR = /^<typstream-anchor data-src="(\d+)"><\/typstream-anchor>$/;
+/**
+ * An anchor. html-compat adds the page it is on (`data-page`) and the page's header and footer inside it, which the
+ * renderer reads from the HTML itself.
+ */
+const ANCHOR = /^<typstream-anchor data-src="(\d+)"(?: data-page="[^"]*")?>[\s\S]*<\/typstream-anchor>$/;
 /** Typst writes footnotes after the last block; no anchor belongs to them. */
 const ENDNOTES = '<section role="doc-endnotes"';
 

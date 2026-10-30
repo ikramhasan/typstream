@@ -402,7 +402,7 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
   /** `doc`'s plugins as the engine resolved them: dependencies first, each key once. */
   const htmlRenderer = (plugins: readonly TypstreamPlugin[]): HtmlRenderer => {
     const animation = typeof opts.animated === "object" ? opts.animated : undefined;
-    const want = [opts.theme, animation, plugins, opts.stylesheets, opts.linkTarget, opts.islands];
+    const want = [opts.theme, animation, plugins, opts.stylesheets, opts.linkTarget, opts.islands, opts.layout];
     if (html && equal(html.key, want)) return html.renderer;
     dropHtml();
     const root = element.ownerDocument.createElement("div");
@@ -414,6 +414,7 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
       ...(opts.stylesheets ? { stylesheets: opts.stylesheets } : {}),
       ...(opts.linkTarget !== undefined ? { linkTarget: opts.linkTarget } : {}),
       ...(opts.islands ? { islands: opts.islands, file: (path: string) => doc?.file(path) ?? null } : {}),
+      ...(opts.layout ? { layout: opts.layout } : {}),
     });
     html = { renderer, root, key: want };
     shown = null;
@@ -500,7 +501,8 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
     key = null;
   };
 
-  const reflow = () => opts.target === "paged" && opts.layout === "reflow";
+  // Both targets: HTML is laid out on pages too, whose size html-compat reads from reflow's inputs.
+  const reflow = () => opts.layout === "reflow";
 
   /** The document's inputs without reflow's page size: what exports compile with, plus an export's own. */
   const exportInputs = (extra?: Record<string, string>): Record<string, string> => ({

@@ -1,0 +1,578 @@
+// Pages for the HTML target: the document laid out as the paged view shows it (#118's look), on sheets of its page
+// size with its margins, breaking where Typst breaks pages.
+//
+// The flow is one element over the sheets, as wide as a page's text and scaled as the paged view scales its pages
+// (`fixed`, `fit-width`, `reflow`). Its lines break where Typst's do: the HTML is set in Typst's fonts and metrics
+// (html-compat's CSS, `registerTypstFonts`). Page breaks are spacers put into the flow where a page ends: before a
+// block, or inside a paragraph before a line (a block-level span there splits it without moving its line breaks),
+// so the DOM stays one flow (selection, find in page, screen readers) and the sheets only draw paper behind it.
+//
+// Where a page ends follows Typst's flow (typst-layout's flow/collect.rs and distribute.rs): whole lines; a
+// paragraph keeps two lines together at its start and at its end (orphans and widows, all three of a three-line
+// one); unbreakable blocks (`.ts-whole`, figures, tables' rows, drawings) move whole to the next page; a sticky
+// block (a heading) goes with what follows it; spacing at the top of a page is dropped; `pagebreak()` starts one.
+//
+// The page comes from html-compat, which writes it on the source anchors (`data-page`: width, height, margins and
+// fill in points); without it, A4 with Typst's default margins.
+
+/** A page's size, margins and fill, in points. */
+export interface PageGeometry {
+  width: number;
+  /** `null`: as tall as its content (Typst's `height: auto`). */
+  height: number | null;
+  /** Top, right, bottom, left. */
+  margin: [number, number, number, number];
+  fill: string | null;
+  /** How far above the top margin's end the header ends, and below the bottom margin's start the footer starts. */
+  ascent: number;
+  descent: number;
+}
+
+/** A4 with Typst's default margins (2.5/21 of the shorter side). */
+export const A4: PageGeometry = {
+  width: 595.28,
+  height: 841.89,
+  margin: [70.87, 70.87, 70.87, 70.87],
+  fill: null,
+  ascent: 21.26,
+  descent: 21.26,
+};
+
+/** html-compat's `data-page`: `width height top right bottom left fill ascent descent`. */
+export const parseGeometry = (attr: string | null | undefined): PageGeometry => {
+  const parts = attr?.trim().split(/\s+/) ?? [];
+  const n = parts.slice(0, 6).map(Number);
+  if (parts.length < 6 || n.some((v, i) => (i === 1 ? false : !Number.isFinite(v)))) return A4;
+  const [width, height, top, right, bottom, left] = n as [number, number, number, number, number, number];
+  const fill = parts[6] && parts[6] !== "none" ? parts[6] : null;
+  const [ascent, descent] = [parts[7], parts[8]].map((v) => Number(v ?? Number.NaN));
+  return {
+    width,
+    height: parts[1] === "auto" ? null : height,
+    margin: [top, right, bottom, left],
+    fill,
+    ascent: Number.isFinite(ascent) ? (ascent as number) : top * 0.3,
+    descent: Number.isFinite(descent) ? (descent as number) : bottom * 0.3,
+  };
+};
+
+/** CSS px per point. */
+const PX = 4 / 3;
+/** How far (px) a unit may stand past a page's end and still count as on it: rounding of line boxes. */
+const EPS = 0.5;
+
+/** How the pages are shown: as the paged view's layouts. */
+export type PagesLayout = "fixed" | "fit-width" | "reflow";
+
+/** The pages of an HTML document. */
+export interface HtmlPages {
+  /** Where the document goes. */
+  readonly flow: HTMLElement;
+  /** The page the document is on; lays the pages out again when it changed. */
+  setGeometry(geometry: PageGeometry): void;
+  /**
+   * The page's header and footer (html-compat's `.ts-page-header` and `.ts-page-footer`, `.ts-first` on the first
+   * page's), sanitized, put on every page with its number and the page count in place of html-compat's.
+   */
+  setMarginals(nodes: readonly Node[]): void;
+  /** Breaks the flow into pages again (after the document changed). */
+  layout(): void;
+  /** The sheets shown. */
+  readonly count: number;
+  dispose(): void;
+}
+
+/** Where a page break goes: what puts space before a unit, and takes it out again. */
+interface Gap {
+  set(px: number): void;
+  remove(): void;
+}
+
+/** Something that doesn't break across pages: a line, a block that doesn't break, a table's row. */
+interface Unit {
+  /** Its top and bottom in the flow, px, unscaled, read when asked (breaks before it move it). */
+  measure(): { top: number; bottom: number };
+  /** Makes room before it. */
+  gap(): Gap;
+  /** Lines of one paragraph: this one's index and how many there are, and the paragraph's units. */
+  par?: { index: number; lines: Unit[] };
+  /** The sticky block (a heading) it belongs to. */
+  sticky?: Element;
+  /** A forced page break comes before it. */
+  force?: boolean;
+}
+
+const SPACER = "typstream-break";
+/** What html-compat writes for the page number and the page count in headers and footers. */
+const PAGE_NUMBER = "7777";
+const PAGE_COUNT = "8888";
+
+/** Elements that don't break across pages. */
+const WHOLE =
+  ".ts-whole, figure, img, svg, math, typstream-island, .ts-frame, .ts-shape, .ts-line, .ts-columns, pre, .typstream-island";
+/** Sticky blocks: they move to the next page with what follows them. */
+const STICKY = "h1, h2, h3, h4, h5, h6, .ts-sticky";
+
+const isBlock = (el: Element, view: Window): boolean => {
+  const display = view.getComputedStyle(el).display;
+  return !display.startsWith("inline") && display !== "contents" && display !== "none" && display !== "ruby";
+};
+
+const outOfFlow = (el: Element, view: Window): boolean => {
+  const style = view.getComputedStyle(el);
+  return style.position === "absolute" || style.position === "fixed" || style.display === "none";
+};
+
+/** Lays the document in `flow` out on sheets in `sheets`. */
+export const createHtmlPages = (root: HTMLElement, layout: PagesLayout = "fixed"): HtmlPages => {
+  const doc = root.ownerDocument;
+  const view = doc.defaultView as Window & typeof globalThis;
+  const sheets = doc.createElement("div");
+  sheets.className = "typstream-paged";
+  sheets.dataset.layout = layout;
+  const flow = doc.createElement("div");
+  flow.className = "typstream-flow";
+  // Headers and footers, placed and scaled as the flow is.
+  const marginals = doc.createElement("div");
+  marginals.className = "typstream-flow typstream-marginals";
+  marginals.setAttribute("aria-hidden", "true");
+  root.append(sheets, flow, marginals);
+  let parts: readonly Node[] = [];
+  let partsKey = "";
+  root.classList.add("typstream-pages");
+
+  let geometry: PageGeometry = A4;
+  let gaps: Gap[] = [];
+  let count = 0;
+  let scale = 1;
+
+  /** The page's width in px: the element's in the reflow layout. */
+  const pageWidth = () => (layout === "reflow" ? root.clientWidth || geometry.width * PX : geometry.width * PX);
+
+  const sheet = (i: number): HTMLElement => {
+    while (sheets.children.length <= i) {
+      const el = doc.createElement("div");
+      el.className = "typstream-page";
+      el.setAttribute("aria-hidden", "true");
+      sheets.append(el);
+    }
+    return sheets.children[i] as HTMLElement;
+  };
+
+  /** Sizes the sheets and puts the flow over the first, scaled as it is. */
+  const place = () => {
+    const width = pageWidth();
+    const [top, right, bottom, left] = geometry.margin.map((m) => m * PX) as [number, number, number, number];
+    for (const el of sheets.children as HTMLCollectionOf<HTMLElement>) {
+      el.style.width = layout === "fixed" ? `${width}px` : "";
+      el.style.background = geometry.fill ?? "";
+      el.style.aspectRatio = geometry.height ? `${geometry.width} / ${geometry.height}` : "";
+    }
+    const first = sheet(0);
+    scale = first.clientWidth > 0 ? first.clientWidth / width : 1;
+    for (const el of [flow, marginals])
+      Object.assign(el.style, {
+        width: `${width}px`,
+        padding: `${top}px ${right}px ${bottom}px ${left}px`,
+        left: `${first.offsetLeft}px`,
+        top: `${first.offsetTop}px`,
+        transform: scale === 1 ? "" : `scale(${scale})`,
+      });
+  };
+
+  /** Each page's header and footer, its number and the count written in. */
+  const drawMarginals = () => {
+    marginals.replaceChildren();
+    if (!parts.length || geometry.height === null) return;
+    const pick = (kind: string, first: boolean) =>
+      (parts.find(
+        (n) =>
+          n.nodeType === 1 &&
+          (n as Element).classList.contains(kind) &&
+          (n as Element).classList.contains("ts-first") === first,
+      ) as Element | undefined) ?? null;
+    const [top, , bottom, left] = geometry.margin.map((m) => m * PX) as [number, number, number, number];
+    const width = pageWidth() - left - geometry.margin[1] * PX;
+    for (let i = 0; i < count; i++) {
+      for (const [kind, y, h, end] of [
+        ["ts-page-header", sheetTop(i), top - geometry.ascent * PX, true],
+        ["ts-page-footer", sheetTop(i) + pageHeight() - bottom + geometry.descent * PX, bottom - geometry.descent * PX, false],
+      ] as const) {
+        const part = pick(kind, i === 0);
+        if (!part) continue;
+        // Its content in one box, at the end of the header's room or the start of the footer's.
+        const el = doc.createElement("div");
+        el.className = kind;
+        const body = part.cloneNode(true) as HTMLElement;
+        body.className = "ts-marginal";
+        el.append(body);
+        Object.assign(el.style, {
+          position: "absolute",
+          left: `${left}px`,
+          top: `${y}px`,
+          width: `${width}px`,
+          height: `${Math.max(0, h)}px`,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: end ? "flex-end" : "flex-start",
+        });
+        const walker = doc.createTreeWalker(el, 4);
+        for (let t = walker.nextNode(); t; t = walker.nextNode()) {
+          const text = t as Text;
+          text.data = text.data.replaceAll(PAGE_NUMBER, String(i + 1)).replaceAll(PAGE_COUNT, String(count));
+        }
+        marginals.append(el);
+      }
+    }
+  };
+
+  /** Top of sheet `i` in the flow's own px. */
+  const sheetTop = (i: number): number => (sheet(i).offsetTop - sheet(0).offsetTop) / scale;
+  const pageHeight = () => (geometry.height ?? 0) * PX;
+  const contentTop = (i: number) => sheetTop(i) + geometry.margin[0] * PX;
+  const contentBottom = (i: number) => sheetTop(i) + pageHeight() - geometry.margin[2] * PX;
+
+  /** A rectangle's top and bottom in the flow's own px. */
+  const origin = () => flow.getBoundingClientRect().top;
+  const inFlow = (r: { top: number; bottom: number }, o: number) => ({ top: (r.top - o) / scale, bottom: (r.bottom - o) / scale });
+
+  // --- gaps --------------------------------------------------------------------------
+
+  /** A spacer before `node` (block-level when `block`, else a span that splits the line run it is in). */
+  const spacerBefore = (node: Node, block: boolean): Gap => {
+    const el = doc.createElement(block ? "div" : "span");
+    el.className = SPACER;
+    el.setAttribute("aria-hidden", "true");
+    el.style.display = "block";
+    el.style.height = "0px";
+    (node.parentNode as Node).insertBefore(el, node);
+    return {
+      set: (px) => {
+        el.style.height = `${Math.max(0, px)}px`;
+      },
+      remove: () => {
+        const parent = el.parentNode;
+        el.remove();
+        parent?.normalize();
+      },
+    };
+  };
+
+  /** Room above a grid row: a top margin on each of its cells. */
+  const rowGap = (cells: HTMLElement[]): Gap => ({
+    set: (px) => {
+      for (const c of cells) c.style.marginTop = `${Math.max(0, px)}px`;
+    },
+    remove: () => {
+      for (const c of cells) c.style.marginTop = "";
+    },
+  });
+
+  // --- units -------------------------------------------------------------------------
+
+  /** A unit for an element that doesn't break. */
+  const whole = (el: Element, sticky?: Element): Unit => ({
+    measure: () => inFlow(el.getBoundingClientRect(), origin()),
+    gap: () => spacerBefore(el, true),
+    ...(sticky ? { sticky } : {}),
+  });
+
+  /** Where the line at `top` starts in the inline run `nodes` (their first node or character on it). */
+  const lineStart = (nodes: Node[], top: number, o: number): Node | { text: Text; offset: number } | null => {
+    const range = doc.createRange();
+    for (const node of nodes) {
+      if (node.nodeType === 3) {
+        const text = node as Text;
+        const rects = (() => {
+          range.selectNodeContents(text);
+          return [...range.getClientRects()].map((r) => inFlow(r, o));
+        })();
+        if (!rects.some((r) => r.bottom > top + EPS)) continue;
+        // The first character whose box is on or below the line.
+        let lo = 0;
+        let hi = text.length;
+        while (lo < hi) {
+          const mid = (lo + hi) >> 1;
+          range.setStart(text, mid);
+          range.setEnd(text, mid + 1);
+          const r = range.getClientRects()[0];
+          if (r && inFlow(r, o).bottom > top + EPS) hi = mid;
+          else lo = mid + 1;
+        }
+        // Whitespace that ends the line before belongs to it.
+        while (lo < text.length && /\s/.test(text.data[lo] as string)) lo++;
+        return lo >= text.length ? null : { text, offset: lo };
+      }
+      const el = node as Element;
+      const rect = inFlow(el.getBoundingClientRect(), o);
+      if (rect.bottom <= top + EPS) continue;
+      if (el.matches(WHOLE) || view.getComputedStyle(el).display.startsWith("inline-")) return el;
+      const inner = lineStart([...el.childNodes], top, o);
+      if (inner) return inner;
+    }
+    return null;
+  };
+
+  /** The text nodes and inline atoms of an inline run, deep, with their boxes. */
+  const boxes = (nodes: Node[], o: number, out: { top: number; bottom: number }[]): void => {
+    const range = doc.createRange();
+    for (const node of nodes) {
+      if (node.nodeType === 3) {
+        if (!(node as Text).data.trim()) continue;
+        range.selectNodeContents(node);
+        for (const r of range.getClientRects()) if (r.height > 0) out.push(inFlow(r, o));
+      } else if (node.nodeType === 1) {
+        const el = node as Element;
+        if ((el as HTMLElement).classList?.contains(SPACER) || outOfFlow(el, view)) continue;
+        const display = view.getComputedStyle(el).display;
+        if (el.matches(WHOLE) || display.startsWith("inline-")) {
+          const r = el.getBoundingClientRect();
+          if (r.height > 0) out.push(inFlow(r, o));
+        } else boxes([...el.childNodes], o, out);
+      }
+    }
+  };
+
+  /** The lines of an inline run (the inline nodes between blocks of `parent`). */
+  const lines = (nodes: Node[], o: number, sticky: Element | undefined, out: Unit[]): void => {
+    const found: { top: number; bottom: number }[] = [];
+    boxes(nodes, o, found);
+    found.sort((a, b) => a.top - b.top);
+    const merged: { top: number; bottom: number }[] = [];
+    for (const r of found) {
+      const last = merged[merged.length - 1];
+      // On the same line when it overlaps the line's box by more than half its own height.
+      if (last && Math.min(last.bottom, r.bottom) - Math.max(last.top, r.top) > (r.bottom - r.top) / 2) {
+        last.top = Math.min(last.top, r.top);
+        last.bottom = Math.max(last.bottom, r.bottom);
+      } else merged.push({ ...r });
+    }
+    const units: Unit[] = [];
+    for (const [i, line] of merged.entries()) {
+      const height = line.bottom - line.top;
+      // The first line's gap goes before the run's first node; later ones at their first character.
+      const start = i === 0 ? null : lineStart(nodes, line.top, o);
+      if (i > 0 && !start) continue;
+      const first = nodes[0] as Node;
+      const unit: Unit = {
+        measure: () => {
+          const now = origin();
+          let top: number;
+          if (start && "text" in start) {
+            const range = doc.createRange();
+            range.setStart(start.text, start.offset);
+            range.setEnd(start.text, start.offset + 1);
+            top = inFlow(range.getClientRects()[0] ?? start.text.parentElement!.getBoundingClientRect(), now).top;
+          } else {
+            const at = (start as Element | null) ?? first;
+            const range = doc.createRange();
+            range.selectNode(at);
+            const rects = [...range.getClientRects()].filter((r) => r.height > 0);
+            top = rects.length ? inFlow(rects[0] as DOMRect, now).top : line.top;
+          }
+          // The line box can be taller than its first box (an inline-block further on).
+          return { top, bottom: top + height };
+        },
+        gap: () => {
+          if (start && "text" in start) {
+            const rest = start.offset > 0 ? start.text.splitText(start.offset) : start.text;
+            return spacerBefore(rest, false);
+          }
+          return spacerBefore((start as Node | null) ?? first, false);
+        },
+        ...(sticky ? { sticky } : {}),
+      };
+      units.push(unit);
+    }
+    for (const [index, unit] of units.entries()) unit.par = { index, lines: units };
+    out.push(...units);
+  };
+
+  /** The units of a grid's rows; a row of a table, or of a block that doesn't break, is one. */
+  const gridRows = (grid: Element, o: number, out: Unit[]): void => {
+    const cells = [...grid.querySelectorAll<HTMLElement>(":scope > .ts-cell, :scope > .ts-row > .ts-cell")];
+    const rows = new Map<number, HTMLElement[]>();
+    for (const cell of cells) {
+      const row = Number.parseInt(view.getComputedStyle(cell).gridRowStart, 10) || 0;
+      rows.set(row, [...(rows.get(row) ?? []), cell]);
+    }
+    const breakable = !grid.classList.contains("ts-table") && !grid.closest(".ts-whole");
+    for (const row of [...rows.keys()].sort((a, b) => a - b)) {
+      const these = rows.get(row) as HTMLElement[];
+      const measure = () => {
+        const now = origin();
+        const rects = these.map((c) => inFlow(c.getBoundingClientRect(), now));
+        return { top: Math.min(...rects.map((r) => r.top)), bottom: Math.max(...rects.map((r) => r.bottom)) };
+      };
+      const first: Unit = { measure, gap: () => rowGap(these) };
+      if (!breakable) {
+        out.push(first);
+        continue;
+      }
+      // A breakable row breaks inside its tallest cell; a break before its first line moves the whole row.
+      const tallest = these.reduce((a, b) => (b.offsetHeight > a.offsetHeight ? b : a));
+      const inner: Unit[] = [];
+      collect(tallest, o, inner);
+      if (inner.length <= 1) {
+        out.push(first);
+        continue;
+      }
+      // Its first unit's room goes above the whole row.
+      const head: Unit = { ...(inner[0] as Unit), gap: first.gap };
+      if (head.par) head.par.lines[head.par.index] = head;
+      out.push(head, ...inner.slice(1));
+    }
+  };
+
+  /** The units in `el`'s content, in order. */
+  const collect = (el: Element, o: number, out: Unit[], sticky?: Element): void => {
+    let run: Node[] = [];
+    const flush = () => {
+      if (run.some((n) => n.nodeType === 1 || (n as Text).data.trim())) lines(run, o, sticky, out);
+      run = [];
+    };
+    let force = false;
+    for (const node of [...el.childNodes]) {
+      if (node.nodeType === 3) {
+        run.push(node);
+        continue;
+      }
+      if (node.nodeType !== 1) continue;
+      const child = node as HTMLElement;
+      if (child.classList.contains(SPACER)) continue;
+      if (outOfFlow(child, view)) continue;
+      if (!isBlock(child, view) && view.getComputedStyle(child).display !== "contents") {
+        run.push(child);
+        continue;
+      }
+      flush();
+      const before = out.length;
+      if (child.classList.contains("ts-pagebreak")) {
+        force = true;
+        continue;
+      }
+      const stick = sticky ?? (child.matches(STICKY) ? child : undefined);
+      if (view.getComputedStyle(child).display === "contents") collect(child, o, out, stick);
+      else if (child.matches(WHOLE)) out.push(whole(child, stick));
+      else if (child.classList.contains("ts-grid") && !child.classList.contains("ts-list")) gridRows(child, o, out);
+      else if (child.classList.contains("ts-list"))
+        for (const body of child.querySelectorAll<HTMLElement>(":scope > li > .ts-item-body")) collect(body, o, out);
+      else collect(child, o, out, stick);
+      if (force && out.length > before) {
+        (out[before] as Unit).force = true;
+        force = false;
+      }
+    }
+    flush();
+  };
+
+  // --- breaking ----------------------------------------------------------------------
+
+  const clear = () => {
+    for (const gap of gaps) gap.remove();
+    gaps = [];
+  };
+
+  /** The unit to move to the next page when `units[i]` doesn't fit: Typst keeps orphans, widows and sticky blocks. */
+  const breakAt = (units: Unit[], i: number, top: number): number => {
+    let j = i;
+    const unit = units[j] as Unit;
+    const par = unit.par;
+    if (par && par.lines.length >= 2) {
+      const n = par.lines.length;
+      // Two lines at the start (orphans), two at the end (widows), all three of three.
+      const index = par.index === 1 || (n === 3 && par.index === 2) ? 0 : par.index === n - 1 && n >= 3 ? n - 2 : par.index;
+      j = units.indexOf(par.lines[index] as Unit);
+    }
+    // A sticky block goes with its first line onto the next page, unless it heads this one.
+    const prev = units[j - 1];
+    if (prev?.sticky && prev.sticky !== units[j]?.sticky) {
+      let k = j - 1;
+      while (k > 0 && (units[k - 1] as Unit).sticky === prev.sticky) k--;
+      if ((units[k] as Unit).measure().top > top + EPS) j = k;
+    }
+    // Nothing to gain from moving what already heads the page.
+    return j < i && (units[j] as Unit).measure().top <= top + EPS ? i : j;
+  };
+
+  const paginate = () => {
+    clear();
+    place();
+    if (geometry.height === null) {
+      // One page, as tall as the content.
+      sheet(0);
+      while (sheets.children.length > 1) sheets.lastElementChild?.remove();
+      count = 1;
+      sheet(0).style.height = `${flow.offsetHeight * scale}px`;
+      return;
+    }
+    sheet(0).style.height = "";
+    const units: Unit[] = [];
+    collect(flow, origin(), units);
+    let page = 0;
+    for (let i = 0; i < units.length; i++) {
+      const unit = units[i] as Unit;
+      let { top, bottom } = unit.measure();
+      if (unit.force) {
+        page++;
+        sheet(page);
+        place();
+      } else if (bottom <= contentBottom(page) + EPS || top <= contentTop(page) + EPS) continue;
+      else {
+        const j = unit.force ? i : breakAt(units, i, contentTop(page));
+        page++;
+        sheet(page);
+        place();
+        i = j;
+      }
+      const moved = units[i] as Unit;
+      const gap = moved.gap();
+      gaps.push(gap);
+      ({ top, bottom } = moved.measure());
+      gap.set(contentTop(page) - top);
+    }
+    count = page + 1;
+    while (sheets.children.length > count) sheets.lastElementChild?.remove();
+    drawMarginals();
+  };
+
+  let frame = 0;
+  const layoutSoon = () => {
+    if (frame) return;
+    frame = view.requestAnimationFrame(() => {
+      frame = 0;
+      paginate();
+    });
+  };
+  const resized = new view.ResizeObserver(layoutSoon);
+  resized.observe(root);
+
+  return {
+    flow,
+    setGeometry(next) {
+      if (JSON.stringify(next) === JSON.stringify(geometry)) return;
+      geometry = next;
+      layoutSoon();
+    },
+    setMarginals(nodes) {
+      const key = nodes.map((n) => (n.nodeType === 1 ? (n as Element).outerHTML : n.textContent)).join("");
+      if (key === partsKey) return;
+      partsKey = key;
+      parts = nodes;
+      layoutSoon();
+    },
+    layout: layoutSoon,
+    get count() {
+      return count;
+    },
+    dispose() {
+      if (frame) view.cancelAnimationFrame(frame);
+      resized.disconnect();
+      clear();
+      sheets.remove();
+      flow.remove();
+      marginals.remove();
+      root.classList.remove("typstream-pages");
+    },
+  };
+};

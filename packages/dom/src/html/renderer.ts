@@ -20,6 +20,7 @@ import {
 } from "./animate";
 import { injectCss } from "./css";
 import { directionOf } from "./dir";
+import { createHtmlPages, type PagesLayout, parseGeometry } from "./pages";
 import { createSanitizer, hideStyles, type Sanitizer } from "./sanitize";
 import { type Split, splitHtml } from "./split";
 import { htmlRendererCss } from "./styles";
@@ -59,6 +60,14 @@ export interface HtmlRendererOptions {
   islands?: IslandRenderers;
   /** What islands get as `IslandProps.file`: the document's files. Default: none. @beta */
   file?: (path: string) => FileContent | null;
+  /**
+   * How the document's pages are shown, as the paged view's layouts: `fixed` (default), its pages at their own
+   * size, scaled down to fit the element; `fit-width`, scaled to the element's width; `reflow`, pages as wide as
+   * the element (open the document with the paged view's `REFLOW_PREAMBLE` and `reflowInputs`, which html-compat
+   * reads). The document is laid out on sheets of its page size and margins and breaks across them where Typst
+   * breaks its pages.
+   */
+  layout?: PagesLayout;
 }
 
 /** Per-update options. @public */
@@ -126,6 +135,13 @@ interface Block {
 const SRC_ATTRIBUTE = "data-typstream-src";
 
 /**
+ * The page html-compat writes on the source anchors, and its header and footer inside them: the first block's
+ * anchor's (a document's pages are all alike). Anchors before it mark set rules (`#set page(..)`), which come out
+ * as nothing.
+ */
+const PAGE = /<typstream-anchor data-src="\d+" data-page="([^"]*)">([\s\S]*?)<\/typstream-anchor>(?!\s*<typstream-anchor)/;
+
+/**
  * Typst writes the document's language on `<html>`, first in its output, and
  * nothing about direction: it derives that from the language (`Lang::dir` in
  * typst-library's lang.rs), as the renderer does for its root.
@@ -165,43 +181,6 @@ const caretParent = (block: Element): Element => {
     if (!last || last.nodeType !== 1 || CARET_STOP.has((last as Element).localName)) return el;
     el = last as Element;
   }
-};
-
-// --- wide blocks ----------------------------------------------------------------------
-
-/**
- * On a box wider than the root, which the stylesheet makes scroll sideways (#95):
- * `1` on the scroll box the renderer put around it, empty on a box that scrolls itself.
- */
-const WIDE = "data-typstream-wide";
-
-/** Boxes the walk doesn't go into: they scroll whole. */
-const WHOLE = new Set(["table", "math"]);
-
-/** `el` is wider than `parent`'s content (a table, an equation, a block with a width). */
-const wider = (el: Element, parent: Element): boolean => el.getBoundingClientRect().width > parent.clientWidth + 0.5;
-
-/**
- * Collects in `found` the innermost boxes that make `el` overflow, if it does:
- * `el` is a box of its own (not inline, whose `clientWidth` is 0) in the flow,
- * not marked yet, and wider than `parent` or with content wider than itself (code). The
- * walk goes down to a table or an equation, or the box whose own lines
- * overflow. Scrolling only those leaves every other box as it was: a scroll
- * container is a formatting context, so margins inside it would stop
- * collapsing through it.
- */
-const findWide = (el: Element, parent: Element, found: Element[]): void => {
-  if (
-    !el.clientWidth ||
-    el.hasAttribute(WIDE) ||
-    (el.scrollWidth <= el.clientWidth && !wider(el, parent)) ||
-    // Out of flow (a placed box): a box around it wouldn't hold it.
-    getComputedStyle(el).position === "absolute"
-  )
-    return;
-  const before = found.length;
-  if (!WHOLE.has(el.localName)) for (const child of el.children) findWide(child, el, found);
-  if (found.length === before) found.push(el);
 };
 
 // --- renderer -------------------------------------------------------------------------
@@ -245,11 +224,17 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
     for (const css of [htmlRendererCss, ...plugins, ...(options.stylesheets ?? [])]) injectCss(root, css);
   }
 
+  const pages = createHtmlPages(root, options.layout ?? "fixed");
+  /** Where the document goes: the flow over the pages. */
+  const host = pages.flow;
+
   let shell: string | null = null;
+  /** The page's header and footer, as html-compat wrote them. */
+  let marginals = "";
   /** The last update's split, which the next one resumes from. */
   let lastSplit: Split | null = null;
-  /** Where blocks live: `root`, or the innermost wrapper of the shell. */
-  let container: Element = root;
+  /** Where blocks live: the flow, or the innermost wrapper of the shell. */
+  let container: Element = host;
   let blocks: Block[] = [];
   let caret: Element | null = null;
   const islands: Islands | null = options.islands
@@ -257,53 +242,6 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
     : null;
   /** The island markers parsed, with what their attributes said (the sanitizer drops them). */
   const markers = new WeakMap<Element, { name: string; raw: string; data: unknown }>();
-
-  /** Puts `to` in `from`'s place, in the DOM and among the blocks' nodes (a top-level table and its scroll box). */
-  const swap = (from: Element, to: Element): void => {
-    from.replaceWith(to);
-    for (const block of blocks) {
-      const i = block.nodes.indexOf(from);
-      if (i >= 0) block.nodes[i] = to;
-    }
-  };
-
-  /**
-   * Marks what is wider than the root, and unmarks what fits again, once laid
-   * out: after updates, and when the root's size changes (its width, or fonts
-   * that arrived). A marked box is focusable, so the keyboard can scroll it.
-   * It has no name of its own: what it holds (a table, an equation, code)
-   * is announced with it.
-   */
-  const fit = (): void => {
-    // By the measure that marked them: a scroll box's content is no longer wider than it, a box's lines fit.
-    const fits = [...root.querySelectorAll(`[${WIDE}]`)].filter((el) =>
-      el.getAttribute(WIDE) ? !wider(el.firstElementChild as Element, el) : el.scrollWidth <= el.clientWidth,
-    );
-    const wide: Element[] = [];
-    for (const child of container.children) findWide(child, container, wide);
-    for (const el of fits) {
-      if (el.getAttribute(WIDE)) swap(el, el.firstElementChild as Element);
-      el.removeAttribute(WIDE);
-      el.removeAttribute("tabindex");
-    }
-    for (const el of wide) {
-      let box = el;
-      // A box wider than its parent scrolls in a `div` as wide as the parent: browsers other than
-      // Chromium don't scroll a `math` element, a table would have to be made a block (another
-      // layout), and a box with a width of its own would only be cut narrower.
-      if (wider(el, el.parentElement as Element)) {
-        box = doc.createElement("div");
-        box.setAttribute(WIDE, "1");
-        swap(el, box);
-        box.append(el);
-      } else box.setAttribute(WIDE, "");
-      box.setAttribute("tabindex", "0");
-    }
-  };
-  // Before the next paint. An update and the resize it causes land in different frames: nothing to coalesce.
-  const refit = () => view.requestAnimationFrame(fit);
-  const resized = new view.ResizeObserver(refit);
-  resized.observe(root);
 
   /** Parses and sanitizes markup into nodes owned by the page's document. */
   const parse = (html: string): Node[] => {
@@ -332,9 +270,7 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
   const setSrc = (block: Block, src: number | null): void => {
     if (block.src === src) return;
     block.src = src;
-    // On the block's own element, not the scroll box the renderer may have put around it.
-    let el = firstElement(block.nodes);
-    if (el?.getAttribute(WIDE)) el = el.firstElementChild;
+    const el = firstElement(block.nodes);
     if (!el) return;
     if (src === null) el.removeAttribute(SRC_ATTRIBUTE);
     else el.setAttribute(SRC_ATTRIBUTE, String(src));
@@ -362,15 +298,15 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
   const buildShell = (start: readonly string[], end: readonly string[]): void => {
     for (const block of blocks) removeNodes(block);
     blocks = [];
-    if (container !== root) root.replaceChildren();
-    container = root;
+    if (container !== host) host.replaceChildren();
+    container = host;
     if (start.length === 0) return;
     const nodes = parse(start.join("") + end.join(""));
-    root.replaceChildren(...nodes);
+    host.replaceChildren(...nodes);
     // The innermost element along the chain of first elements.
     let el = firstElement(nodes);
     while (el?.firstElementChild) el = el.firstElementChild;
-    container = el ?? root;
+    container = el ?? host;
   };
 
   const update = (html: string, opts: HtmlUpdateOptions = {}): HtmlUpdateResult => {
@@ -385,6 +321,12 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
       shell = split.shell;
     }
     setLanguage(HTML_LANG.exec(html)?.[1]);
+    const page = PAGE.exec(html);
+    pages.setGeometry(parseGeometry(page?.[1]));
+    if ((page?.[2] ?? "") !== marginals) {
+      marginals = page?.[2] ?? "";
+      pages.setMarginals(marginals ? parse(marginals) : []);
+    }
     const next = split.blocks;
     const old = blocks;
 
@@ -470,7 +412,7 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
       caret.setAttribute("aria-hidden", "true");
       parent.append(caret);
     }
-    refit();
+    pages.layout();
 
     return { blocks: result.length, created: created.length, removed: removed.length, ms: view.performance.now() - t0 };
   };
@@ -509,10 +451,11 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
     caret = null;
     for (const block of blocks) removeNodes(block);
     blocks = [];
-    root.replaceChildren();
-    container = root;
+    host.replaceChildren();
+    container = host;
     shell = null;
     lastSplit = null;
+    pages.layout();
   };
 
   return {
@@ -535,7 +478,7 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
     dispose() {
       clear();
       islands?.destroy();
-      resized.disconnect();
+      pages.dispose();
       setLanguage(undefined);
       root.classList.remove("typstream");
       root.removeAttribute("data-typstream-theme");

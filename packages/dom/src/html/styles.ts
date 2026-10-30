@@ -105,11 +105,34 @@ export const htmlRendererCss: string = `${THEME_CSS}
   overflow: clip;
   clip-path: inset(0);
 }
-:where(.typstream [data-typstream-wide]) {
-  overflow: auto hidden;
+:where(.typstream-pages) {
+  color: #000;
+  color-scheme: light;
 }
-:where(.typstream math[display=block]) {
-  min-width: max-content;
+:where(.typstream-pages > .typstream-paged) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+:where(.typstream-pages > .typstream-paged:is([data-layout=fit-width], [data-layout=reflow])) {
+  align-items: stretch;
+}
+:where(.typstream-pages > .typstream-paged[data-layout=reflow]) {
+  gap: 0;
+}
+:where(.typstream-pages .typstream-page) {
+  position: relative;
+  max-width: 100%;
+  background: white;
+}
+:where(.typstream-flow) {
+  position: absolute;
+  box-sizing: border-box;
+  transform-origin: 0 0;
+}
+:where(.typstream-flow) > :first-child {
+  margin-block-start: 0;
 }
 :where(.typstream typstream-island) {
   position: relative;

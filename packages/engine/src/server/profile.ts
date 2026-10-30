@@ -1,8 +1,8 @@
 // typstream's layout profile (#129): the settings under which Word-like layout engines break lines and pages where
 // Typst does (#118's spike: LibreOffice equal on 122 Latin documents, ONLYOFFICE 99%), so the paged view, the PDF and
-// the DOCX export lay a document out alike. The worker puts it before every document's preamble when it compiles
-// pages or exports a PDF. Not for the HTML target, whose browser layout matches no DOCX: html-compat would carry its
-// spacing defaults into CSS.
+// the DOCX export lay a document out alike. The worker puts it before every document's preamble, for every compile:
+// in HTML its rules change nothing on their own (Typst's HTML export has no line boxes), but html-compat reads the
+// styles it sets and its CSS has the same defaults, so the HTML target looks like the pages too.
 //
 // - Lines: a constant pitch of 1.3em, close to Typst's default (14.39pt at 11pt), and a whole number of twips at
 //   Word's half-point text sizes. `leading` is 0 and the text's edges make a line box exactly the pitch, the
