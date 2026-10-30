@@ -229,8 +229,12 @@ export const ComponentBar = ({ view }: { view: EditorView }) => {
     if (!component) return null;
     const box = view.boxesOf(component.from, component.to)[0];
     if (!box) return undefined;
-    const top = box.top - BAR_HEIGHT - 6;
-    return { left: Math.max(8, box.left), top: top < 4 ? box.bottom + 6 : top };
+    // Above the component, below the fixed toolbar (sticky over the pages), or under the component.
+    const toolbar = view.element.closest(".tse-root")?.querySelector(".tse-fixed")?.getBoundingClientRect();
+    const floor = Math.max(4, (toolbar?.bottom ?? 0) + 4);
+    let top = box.top - BAR_HEIGHT - 6;
+    if (top < floor) top = box.bottom - BAR_HEIGHT > floor ? floor : box.bottom + 6;
+    return { left: Math.max(8, box.left), top };
   });
   if (!component || !style) return null;
   const table = spec?.controls === "table" ? tableAt(view.state, view.state.selection.head, view.schema) : null;

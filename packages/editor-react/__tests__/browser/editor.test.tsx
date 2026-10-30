@@ -82,7 +82,7 @@ describe("<TypstEditor>", () => {
     await waitFor(() => !!screen.queryByRole("button", { name: "Add a row below" }));
     await userEvent.click(screen.getByRole("button", { name: "Add a row below" }));
     await userEvent.click(screen.getByRole("button", { name: "Add a column right" }));
-    expect(view.state.text).toContain("columns: 4");
+    expect(view.state.text).toContain("columns: (1fr, 1fr, 1fr, 1fr)");
     expect(view.state.text.match(/\n {2}\[/g)?.length).toBe(3);
     await page.screenshot({ path: "screenshots/table.png" });
   });

@@ -131,11 +131,17 @@ export const writeTable = (table: TableModel): string => {
   return `#${table.name}(\n  ${named.join(",\n  ")},\n  ${rows.join("\n  ")}\n)`;
 };
 
-/** A table of `rows` × `columns` empty cells, the first row a header, as a template with the caret in the first cell. @beta */
+/**
+ * A table of `rows` × `columns` empty cells, the first row a header, as a template with the caret
+ * in the first cell. Its columns share the text's width (`1fr` each): empty `auto` columns would be
+ * a few points wide until typed into.
+ * @beta
+ */
 export const tableTemplate = (rows: number, columns: number): string => {
   const header = Array.from({ length: columns }, (_, i) => (i === 0 ? "[{{cursor}}]" : "[]")).join(", ");
   const body = Array.from({ length: Math.max(0, rows - 1) }, () => `  ${Array(columns).fill("[]").join(", ")},`);
-  return `#table(\n  columns: ${columns},\n  table.header(${header}),\n${body.join("\n")}\n)`;
+  const sizes = Array(columns).fill("1fr").join(", ");
+  return `#table(\n  columns: (${sizes}),\n  table.header(${header}),\n${body.join("\n")}\n)`;
 };
 
 /** Replaces the table by `next`, the caret in cell (`row`, `column`). */

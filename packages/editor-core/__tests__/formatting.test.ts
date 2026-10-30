@@ -199,7 +199,7 @@ describe("tables", () => {
 
   it("are inserted from a template", () => {
     expect(run("Text‸", insertBlock(tableTemplate(2, 2)))).toBe(
-      "Text\n\n#table(\n  columns: 2,\n  table.header([‸], []),\n  [], [],\n)",
+      "Text\n\n#table(\n  columns: (1fr, 1fr),\n  table.header([‸], []),\n  [], [],\n)",
     );
   });
 });

@@ -172,6 +172,11 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
   const pagesEl = paged.view.element;
 
   let state = new EditorState(options.text ?? doc.exportSource());
+  // The caret starts where text can be typed: the first character's place, not in a heading's marker or code.
+  {
+    const first = unitsAt(state, schema).find((u) => u.kind === "char" || u.kind === "space");
+    if (first) state = state.select({ anchor: first.from, head: first.from });
+  }
   // Edits are offsets into the document's input: it must be the editor's text.
   doc.set(state.text);
   doc.finish();
