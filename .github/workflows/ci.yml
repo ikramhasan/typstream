@@ -60,6 +60,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/engine-wasm
+      - uses: ./.github/actions/syntax
       - uses: ./.github/actions/pnpm
         with: { node: "${{ env.NODE }}" }
       - run: pnpm check-types $NOT_ENGINE
@@ -72,6 +73,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/oracle
       - uses: ./.github/actions/engine-wasm
+      - uses: ./.github/actions/syntax
       - uses: ./.github/actions/pnpm
         with: { node: "${{ env.NODE }}" }
       - run: pnpm build $NOT_ENGINE
@@ -112,6 +114,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/engine-wasm
+      - uses: ./.github/actions/syntax
       - uses: ./.github/actions/pnpm
         with: { node: "${{ env.NODE }}" }
       - name: Install LibreOffice and poppler
@@ -139,6 +142,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/engine-wasm
+      - uses: ./.github/actions/syntax
       - uses: ./.github/actions/pnpm
         with: { node: "${{ env.NODE }}" }
       - run: pnpm size $NOT_ENGINE
@@ -152,6 +156,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/engine-wasm
+      - uses: ./.github/actions/syntax
       - uses: ./.github/actions/pnpm
         with: { node: "${{ env.NODE }}" }
       - run: pnpm build $NOT_ENGINE
@@ -198,6 +203,7 @@ jobs:
       - uses: actions/checkout@v7
       - id: wasm
         uses: ./.github/actions/engine-wasm
+      - uses: ./.github/actions/syntax
       # Set up already when the action built dist/. Typst 0.15.1 needs Rust ≥ 1.92 (CLAUDE.md).
       - if: steps.wasm.outputs.cache-hit == 'true'
         uses: dtolnay/rust-toolchain@stable
@@ -220,6 +226,7 @@ jobs:
   # The engine worker in real browsers (packages/engine/__tests__/browser): protocol conformance, streaming through
   # client + worker + engine-wasm, and the watchdog. Then the renderers (packages/dom/__tests__/browser) and <Typstream>
   # (packages/react/__tests__/browser) against that worker, the mind map island (packages/mindmap/__tests__/browser),
+  # the visual editor on the pages (packages/editor-core and editor-react's __tests__/browser),
   # and examples/strict-csp: both targets and the island under a strict Content-Security-Policy, with no violation. One job per browser; Chromium's also runs examples/nextjs-ai-sdk, a
   # production Next.js build streaming an answer into <Typstream>, and tools/browser-suites' preview vs PDF check (#118:
   # every edu page painted in the document panel equals the PDF export's; all three browsers run it nightly), and the
@@ -237,6 +244,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/engine-wasm
+      - uses: ./.github/actions/syntax
       - uses: ./.github/actions/pnpm
         with: { node: "${{ env.NODE }}" }
       # Inside Playwright's image (tools/repo/playwright-docker.mjs; the first step pulls it): its browsers and their
@@ -246,6 +254,8 @@ jobs:
       - run: node tools/repo/playwright-docker.mjs pnpm --filter @typstream/dom test:browser
       - run: node tools/repo/playwright-docker.mjs pnpm --filter @typstream/react test:browser
       - run: node tools/repo/playwright-docker.mjs pnpm --filter @typstream/mindmap test:browser
+      - run: node tools/repo/playwright-docker.mjs pnpm --filter @typstream/editor-core test:browser
+      - run: node tools/repo/playwright-docker.mjs pnpm --filter @typstream/editor-react test:browser
       - run: node tools/repo/playwright-docker.mjs pnpm exec turbo run test --filter=@typstream/example-strict-csp
       - if: matrix.browser == 'chromium'
         run: node tools/repo/playwright-docker.mjs pnpm exec turbo run test --filter=@typstream/example-nextjs-ai-sdk
@@ -270,6 +280,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/engine-wasm
+      - uses: ./.github/actions/syntax
       - uses: ./.github/actions/pnpm
         with: { node: "${{ env.NODE }}" }
       - run: pnpm --filter @typstream/browser-suites test:visual
