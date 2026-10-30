@@ -107,14 +107,19 @@ const measure = (text: string): number => {
   return w;
 };
 
+/** A box on a page, in points: `[x, y, width, height]`. */
+export type Box = readonly [number, number, number, number];
+
 /**
  * Fills `layer` with spans for a page's text runs, inside spans for its
  * structure. Positions are in container query units of the page element
  * (`cqw`), so the layer follows the page's rendered size without script.
  * Styles are set through the CSSOM, which strict CSPs allow (inline `style`
- * attributes are not).
+ * attributes are not). Runs whose middle is in one of `covered` (islands
+ * mounted over their fallback, #28) are hidden from assistive technology:
+ * the island reads instead.
  */
-export const fillTextLayer = (layer: HTMLElement, page: PageUpdate): void => {
+export const fillTextLayer = (layer: HTMLElement, page: PageUpdate, covered: readonly Box[] = []): void => {
   // One unit: a point at the page's rendered width.
   const unit = 100 / page.width;
   const cqw = (pt: number) => `${(pt * unit).toFixed(4)}cqw`;
@@ -131,6 +136,9 @@ export const fillTextLayer = (layer: HTMLElement, page: PageUpdate): void => {
       const run = runs[placed] as LaidRun;
       const span = doc.createElement("span");
       span.textContent = run.text;
+      const [mx, my] = [run.x + run.width / 2, run.y - run.size / 3];
+      if (covered.some(([x, y, w, h]) => mx >= x && mx <= x + w && my >= y && my <= y + h))
+        span.setAttribute("aria-hidden", "true");
       attr(span, "lang", run.lang);
       attr(span, "dir", run.dir);
       const style = span.style;

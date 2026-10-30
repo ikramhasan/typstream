@@ -125,10 +125,9 @@ its own background over the drawing (`--typstream-island-background`, default `C
 
 ### Paged target
 
-In the HTML target the map mounts today. In the paged target the engine already reports where each map is on its page,
-and the paged view's overlay that mounts it comes with the canvas pages
-([#14](https://github.com/ikramhasan/typstream/issues/14), [#28](https://github.com/ikramhasan/typstream/issues/28));
-until then pages show the drawing.
+On pages (`target="paged"`), the map mounts in a box over its drawing on the page: as wide as the column and as tall as
+the drawing, scaled with the page. The page's canvas keeps the drawing, which is what prints and exports; the island
+covers it with white, the paper. A map that moves as text before it streams in, or onto the next page, stays mounted.
 
 ## Cost
 

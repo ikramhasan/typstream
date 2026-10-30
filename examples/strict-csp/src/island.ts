@@ -1,7 +1,8 @@
 // A render island under the same policy (#28): @typstream/react's <Typstream> with
-// @typstream/mindmap's interactive map, React Flow, over the map's Typst drawing. React sets
-// styles through the CSSOM and the map adopts its CSS as constructable stylesheets, so
-// `style-src 'self'` holds. Its status goes on the element as `data-status`, for smoke.mjs.
+// @typstream/mindmap's interactive map, React Flow, over the map's Typst drawing, in both
+// targets (on a page, over its canvas). React and the paged view set styles through the CSSOM
+// and the map adopts its CSS as constructable stylesheets, so `style-src 'self'` holds. Each
+// mount's status goes on its element as `data-status`, for smoke.mjs.
 
 import { createEngine, engineWorker } from "@typstream/engine";
 import { mindmap } from "@typstream/mindmap";
@@ -27,15 +28,18 @@ const MAP = `= The water cycle
 `;
 
 const engine = createEngine({ spawn: engineWorker() });
-const element = document.getElementById("island") as HTMLElement;
-createRoot(element).render(
-  createElement(Typstream, {
-    engine,
-    source: MAP,
-    plugins: [mindmap],
-    islands: mindmapIslands,
-    onStatusChange: (status) => {
-      element.dataset.status = status;
-    },
-  }),
-);
+for (const target of ["html", "paged"] as const) {
+  const element = document.getElementById(target === "html" ? "island" : "island-paged") as HTMLElement;
+  createRoot(element).render(
+    createElement(Typstream, {
+      engine,
+      source: MAP,
+      target,
+      plugins: [mindmap],
+      islands: mindmapIslands,
+      onStatusChange: (status) => {
+        element.dataset.status = status;
+      },
+    }),
+  );
+}

@@ -37,7 +37,7 @@ packages/mindmap  @typstream/mindmap: mind maps, the first render island (#28): 
 packages/dom      @typstream/dom: framework-free renderers. `src/html/`: HTML renderer (string block split, sanitizer, source
                   anchors, word fade-in, caret, theme CSS). `src/paged/`: pages painted on canvases from the engine's drawings, SVG for what they can't draw (changed pages, visible first, text layer).
                   `src/mount.ts`: `mountTypstream`, a document on an engine in an element (what the bindings wrap).
-                  `src/islands.ts`: render islands, components mounted over Typst markers (PLAN §8.4).
+                  `src/islands.ts`: render islands, components mounted over Typst markers (PLAN §8.4), in both renderers.
                   `src/export/`: `standaloneHtml`, a downloadable file from an HTML export (theme, CSS, CSP).
 packages/react    @typstream/react: <Typstream>, TypstreamProvider, useTypstream(); a thin layer over mountTypstream.
 packages/typstream  typstream: the convenience package (<Typstream> with html-compat, the math font and universe's packages; re-exports).
@@ -148,18 +148,20 @@ In `packages/mindmap`:
   the `///` doc comments, examples) and `src/react/xyflow-css.generated.ts` (React Flow's CSS; a test checks both).
 - `pnpm test`: the Typst package through engine-wasm and native `typst` (both targets, every healed stream prefix of the
   examples), the data's checks, the layout. `pnpm test:browser`: the island in `<Typstream>` on the real worker in
-  Chromium, Firefox and WebKit. `pnpm size`: plugin ≤ 10 KB, React entry ≤ 1 KB, the lazy React Flow chunk ≤ 66 KB.
+  Chromium, Firefox and WebKit, in both targets. `pnpm size`: plugin ≤ 10 KB, React entry ≤ 1 KB, the lazy React Flow
+  chunk ≤ 66 KB.
 - The marker (`typst/island.typ`) is the island contract other plugins copy (`apps/website/content/docs/guides/islands.mdx`).
-- The paged target's island overlay waits for #14's per-page overlay layer; until then pages show the drawing.
+- On pages, islands are DOM over the canvas (dom's paged view, a `.typstream-islands` layer per page), so the canvas,
+  print, exports and the pixel suites (`test:paged`, browser-suites' `pdf-raster`) keep the Typst drawing.
 
 In `packages/dom`:
 - `pnpm test`: node tests (the HTML block splitter, paged helpers). `pnpm test:browser`: the renderers in Chromium, Firefox and WebKit, fed by the real engine worker with html-compat and corpus documents (needs engine-wasm's `dist/`). `BROWSERS=chromium` runs one.
-- `pnpm size`: HTML renderer ≤ 10.7 KB gzipped (with its CSS), paged renderer ≤ 5.6 KB, standalone HTML export ≤ 2 KB.
+- `pnpm size`: HTML renderer ≤ 10.7 KB gzipped (with its CSS), paged renderer ≤ 6.8 KB, standalone HTML export ≤ 2 KB.
 - Its API report needs DOM types, so its `api-extractor.json` overrides the shared compiler settings.
 
 In `packages/react`:
 - `pnpm test`: Node tests (provider merging, the shared engine's lifetime). `pnpm test:browser`: `<Typstream>` with React Testing Library against the real engine worker in Chromium, Firefox and WebKit (StrictMode, lazy opening, worker cleanup). `BROWSERS=chromium` runs one. Needs engine-wasm's `dist/`.
-- `pnpm size`: ≤ 20.6 KB gzipped including `@typstream/dom` (React and the engine external).
+- `pnpm size`: ≤ 21.2 KB gzipped including `@typstream/dom` (React and the engine external).
 - Its bundle starts with `"use client"` (tsup banner), as does `typstream`'s, for Next.js's App Router.
 
 In `packages/ai`: `pnpm test` runs the helpers through AI SDK 7 itself (a devDependency): recorded `corpus/llm` streams
@@ -168,7 +170,7 @@ and a failed stream (a text part stays `"streaming"` then; only the chat's statu
 recorded documents and the recorded edit answers in `corpus/edits`. `pnpm size`: ≤ 4.5 KB gzipped (heal and core
 external). Change the edit prompt's rules (`editPromptRules`) only with a new measured `record-edits.mjs` run.
 
-In `examples/strict-csp`: `pnpm test` builds the pages (a worksheet in both targets, and a mind map island), serves them with the policy in `csp.mjs` and fails on any CSP violation or console error in Chromium, Firefox and WebKit (`BROWSERS=` picks some). Build the packages first (`pnpm turbo run build --filter=@typstream/example-strict-csp^...`). CI runs it in each browser's `Engine (<browser>)` job. Hostile documents go in `corpus/adversarial/hostile-*.typ` (category `hostile-…`); the engine's and the browser suites' `security.test.ts` run them all.
+In `examples/strict-csp`: `pnpm test` builds the pages (a worksheet in both targets, and a mind map island in both), serves them with the policy in `csp.mjs` and fails on any CSP violation or console error in Chromium, Firefox and WebKit (`BROWSERS=` picks some). Build the packages first (`pnpm turbo run build --filter=@typstream/example-strict-csp^...`). CI runs it in each browser's `Engine (<browser>)` job. Hostile documents go in `corpus/adversarial/hostile-*.typ` (category `hostile-…`); the engine's and the browser suites' `security.test.ts` run them all.
 
 In `examples/nextjs-ai-sdk`: deployed at https://typstream-ai-sdk.vercel.app with no `ANTHROPIC_API_KEY`, so when the server has none (`GET /api/chat`), the page asks for the visitor's key in a dialog, keeps it in memory only and sends it in a header (`app/api/chat/key.ts`); the smoke test declines it ("Replay a sample"). `pnpm test` builds the app (Turbopack) and streams an answer into `<Typstream>` in Chromium (pages), then an edit of it (HTML: the edit streams into the finished document, highlighted, then Undo), then the first answer's Edit button editing that document in place, failing on any error frame. Once there's a document, a request sends it in the user message's metadata and the route adds `editPrompt()`; the page applies the answer with `createEditSession`. The route prompts with edu's kit (with universe, google-fonts and mindmap) and the page renders with their plugins (mind maps as islands); the UI is shadcn/ui (AI Elements, Base UI, Tailwind 4) in `components/ui/`, added with the shadcn CLI. Without `ANTHROPIC_API_KEY` the route replays a worksheet (or, asked to edit, two `<edit>`s of it) that compiles at every prefix (a kit recording doesn't, and the test fails on any error frame); a key in `.env.local` reaches `next start` too, so run the test with `ANTHROPIC_API_KEY=` to keep it offline. Build the packages first (`pnpm turbo run build --filter=@typstream/example-nextjs-ai-sdk^...`). CI runs it in the `Engine (chromium)` job.
 

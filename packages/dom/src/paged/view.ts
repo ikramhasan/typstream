@@ -26,12 +26,29 @@
 //   accessibility tree (Chromium kept 2 of a 6-page report's 16 headings), and
 //   screen readers must reach every page's headings. A layer is cheap next to
 //   its SVG, and `contain: strict` keeps its relayout to itself.
+// - Render islands (PLAN §8.4, #28) are mounted over their fallback drawing in
+//   a layer of their own on top of each page, positioned in `cqw` of the page
+//   from the markers' points (`PagedArtifact.islands`), like the links: they
+//   follow the page's scale with no script, and a redrawn page leaves them be.
+//   They are DOM over the canvas, so the canvas, what prints and what the
+//   preview-vs-PDF checks compare, is Typst's drawing whatever mounts. Once
+//   an island has rendered, its host paints the paper over the drawing, and
+//   3 px past its box: the drawing's strokes reach past its block by half
+//   their width, and showed as hairlines around the island.
 
-import { type PagedArtifact, type PageUpdate, trustedHTML } from "@typstream/core";
+import {
+  type FileContent,
+  type PagedArtifact,
+  type PagedIsland,
+  type PageUpdate,
+  type TypstreamPlugin,
+  trustedHTML,
+} from "@typstream/core";
+import { createIslands, type IslandRenderers, MAX_ISLAND_DATA, type Marker, MOUNTED } from "../islands";
 import { isSafeHref, sanitizeLinks } from "./links";
 import { type Images, paint, sameDrawing } from "./paint";
 import { type Cancel, idle } from "./schedule";
-import { fillTextLayer, TEXT_LAYER_CSS } from "./text-layer";
+import { type Box, fillTextLayer, TEXT_LAYER_CSS } from "./text-layer";
 
 /** Options of {@link createPagedView}. @public */
 export interface PagedViewOptions {
@@ -51,6 +68,26 @@ export interface PagedViewOptions {
   rootMargin?: string;
   /** Called after each batch of drawing (telemetry, tests). @beta */
   onDraw?: (info: DrawInfo) => void;
+  /**
+   * Island renderers by name (PLAN §8.4): each island marker in an artifact's
+   * `islands` whose name a plugin in `plugins` declares is mounted over its
+   * fallback drawing, in a layer over its page. @beta
+   */
+  islands?: IslandRenderers;
+  /** The plugins whose `islands` declare which markers mount. @beta */
+  plugins?: readonly TypstreamPlugin[];
+  /** What islands get as `IslandProps.file`: the document's files. Default: none. @beta */
+  file?: (path: string) => FileContent | null;
+}
+
+/** Options of one {@link PagedView.render}. @public */
+export interface PagedRenderOptions {
+  /**
+   * While streaming, heal's stable offset (`stableOffset`): islands whose
+   * source starts at or after it are incomplete. Default: the document is complete.
+   * @beta
+   */
+  stable?: number | null;
 }
 
 /** One batch of drawing by a {@link PagedView}. @beta */
@@ -72,9 +109,10 @@ export interface PagedView {
   /**
    * Shows `artifact`. A complete artifact (`base: null`) or changed pages both
    * work: pages are matched by index and redrawn only when their hash differs.
-   * Pages past `pageCount` are removed.
+   * Pages past `pageCount` are removed. The artifact's islands are mounted,
+   * moved or unmounted to match its list.
    */
-  render(artifact: PagedArtifact): void;
+  render(artifact: PagedArtifact, options?: PagedRenderOptions): void;
   /** Pages and text layers waiting for idle time or the next frame. */
   readonly pending: number;
   /** Draws everything pending now (before printing, in tests). */
@@ -93,6 +131,10 @@ interface Slot {
   text: HTMLElement | null;
   /** `.typstream-links` over a drawn page. */
   links: HTMLElement | null;
+  /** `.typstream-islands`, last: the islands over the page. */
+  islands: HTMLElement | null;
+  /** Where mounted islands cover the page, in points. */
+  covered: Box[];
   /** The newest page for this index. */
   want: PageUpdate;
   /** Hash of the page shown (SVG put in, or drawing given to the canvas) and of the text layer. */
@@ -114,6 +156,11 @@ const CSS = `
 .typstream-page > div:first-child { content-visibility: auto; }
 .typstream-links { position: absolute; inset: 0; pointer-events: none; }
 .typstream-links a { position: absolute; pointer-events: auto; }
+.typstream-islands { position: absolute; inset: 0; pointer-events: none; }
+.typstream-island-box { position: absolute; --typstream-island-background: white; }
+.typstream-island-box > .typstream-island { position: absolute; inset: 0; }
+.typstream-island-box > .typstream-island:not(:empty) { pointer-events: auto; background: var(--typstream-island-background); box-shadow: 0 0 0 3px var(--typstream-island-background); }
+@media print { .typstream-islands { display: none; } }
 ${TEXT_LAYER_CSS}`;
 
 const SHEET = Symbol.for("typstream.paged.css");
@@ -140,6 +187,13 @@ const sameText = (a: PageUpdate, b: PageUpdate): boolean =>
   a.dir === b.dir &&
   (a.text === b.text || (a.text?.length === b.text?.length && JSON.stringify(a.text) === JSON.stringify(b.text))) &&
   JSON.stringify(a.structure) === JSON.stringify(b.structure);
+
+/** `pt` points on a page `width` points wide, in `cqw` of the page. */
+const cqw = (pt: number, width: number) => `${((pt * 100) / width).toFixed(4)}cqw`;
+
+/** Positions `el` over `box` (points) on a page `width` points wide. */
+const place = (el: HTMLElement, [x, y, w, h]: Box, width: number) =>
+  Object.assign(el.style, { left: cqw(x, width), top: cqw(y, width), width: cqw(w, width), height: cqw(h, width) });
 
 /** CSS px per point. */
 const PX_PER_PT = 4 / 3;
@@ -259,7 +313,8 @@ export const createPagedView = (container: HTMLElement, options: PagedViewOption
   /** The page's graphics: a canvas, or a host for an SVG shadow root, first in the page. */
   const graphics = (slot: Slot, canvas: boolean) => {
     if (canvas ? slot.canvas : slot.svg) return;
-    slot.el.firstElementChild?.remove();
+    // Not the first child as such: islands can come before the page is drawn.
+    (slot.canvas ?? slot.svg?.host)?.remove();
     slot.svg = null;
     slot.canvas = null;
     slot.painted = 0;
@@ -354,10 +409,8 @@ export const createPagedView = (container: HTMLElement, options: PagedViewOption
     if (!slot.links) {
       slot.links = doc.createElement("div");
       slot.links.className = "typstream-links";
-      slot.el.append(slot.links);
+      slot.el.insertBefore(slot.links, slot.islands);
     }
-    // In `cqw` of the page, like the text layer.
-    const cqw = (pt: number) => `${((pt * 100) / page.width).toFixed(4)}cqw`;
     slot.links.replaceChildren(
       ...links.map((link) => {
         const a = doc.createElement("a");
@@ -369,12 +422,8 @@ export const createPagedView = (container: HTMLElement, options: PagedViewOption
         // As the links in an SVG page, which is aria-hidden: the text layer holds their text.
         a.tabIndex = -1;
         a.setAttribute("aria-hidden", "true");
-        Object.assign(a.style, {
-          left: cqw(link.x),
-          top: cqw(link.y),
-          width: cqw(link.width),
-          height: cqw(link.height),
-        });
+        // In `cqw` of the page, like the text layer.
+        place(a, [link.x, link.y, link.width, link.height], page.width);
         return a;
       }),
     );
@@ -386,10 +435,10 @@ export const createPagedView = (container: HTMLElement, options: PagedViewOption
     if (!slot.text) {
       slot.text = doc.createElement("div");
       slot.text.className = "typstream-text-layer";
-      // Under the links.
-      slot.el.insertBefore(slot.text, slot.links);
+      // Under the links and the islands.
+      slot.el.insertBefore(slot.text, slot.links ?? slot.islands);
     }
-    fillTextLayer(slot.text, page);
+    fillTextLayer(slot.text, page, slot.covered);
     slot.texted = page.hash;
   };
 
@@ -460,6 +509,8 @@ export const createPagedView = (container: HTMLElement, options: PagedViewOption
       canvas: null,
       text: null,
       links: null,
+      islands: null,
+      covered: [],
       want: page,
       drawn: null,
       texted: null,
@@ -471,6 +522,67 @@ export const createPagedView = (container: HTMLElement, options: PagedViewOption
     io.observe(el);
     ro.observe(el);
     return slot;
+  };
+
+  const islands = options.islands
+    ? createIslands({ renderers: options.islands, plugins: options.plugins, target: "paged", file: options.file })
+    : null;
+  /** The box each island is mounted in, by its identity (name and ordinal, as `createIslands` keys them). */
+  let boxes = new Map<string, { el: HTMLElement; page: number; box: Box }>();
+
+  /**
+   * Mounts `list`'s islands over their pages, each in a box as big as its
+   * fallback, and hides the text they cover from assistive technology.
+   */
+  const syncIslands = (list: readonly PagedIsland[], stable: number | null) => {
+    if (!islands) return;
+    const markers: Marker[] = [];
+    const next: typeof boxes = new Map();
+    const counts = new Map<string, number>();
+    for (const island of list) {
+      const slot = slots[island.page];
+      if (!slot || !Object.hasOwn(options.islands as object, island.name)) continue;
+      const raw = JSON.stringify(island.data) ?? "";
+      if (raw.length > MAX_ISLAND_DATA) continue;
+      const index = counts.get(island.name) ?? 0;
+      counts.set(island.name, index + 1);
+      const key = `${island.name}\u0000${index}`;
+      let el = boxes.get(key)?.el;
+      boxes.delete(key);
+      if (!el) {
+        el = doc.createElement("div");
+        el.className = "typstream-island-box";
+      }
+      if (!slot.islands) {
+        slot.islands = doc.createElement("div");
+        slot.islands.className = "typstream-islands";
+        slot.el.append(slot.islands);
+      }
+      if (el.parentNode !== slot.islands) slot.islands.append(el);
+      const box: Box = [island.x, island.y, island.width, island.height];
+      place(el, box, slot.want.width);
+      next.set(key, { el, page: island.page, box });
+      markers.push({ name: island.name, data: island.data, raw, place: el, from: island.from });
+    }
+    islands.sync(markers, { stable });
+    for (const { el } of boxes.values()) el.remove();
+    // Only boxes with an island stay (at most MAX_ISLANDS): one whose marker kept its fallback is made again if needed.
+    for (const [key, b] of next) {
+      if (b.el.hasAttribute(MOUNTED)) continue;
+      b.el.remove();
+      next.delete(key);
+    }
+    boxes = next;
+    slots.forEach((slot, i) => {
+      const covered = [...boxes.values()].filter((b) => b.page === i).map((b) => b.box);
+      if (covered.join() === slot.covered.join()) return;
+      slot.covered = covered;
+      // Built already: again, with the runs under islands hidden (or not any more).
+      if (slot.texted !== null) {
+        slot.texted = null;
+        dirty.add(slot);
+      }
+    });
   };
 
   const flush = () => {
@@ -490,7 +602,7 @@ export const createPagedView = (container: HTMLElement, options: PagedViewOption
 
   return {
     element,
-    render(artifact) {
+    render(artifact, renderOptions) {
       if (destroyed) return;
       while (slots.length > artifact.pageCount) {
         const slot = slots.pop() as Slot;
@@ -533,6 +645,7 @@ export const createPagedView = (container: HTMLElement, options: PagedViewOption
         slot.want = page;
         dirty.add(slot);
       }
+      syncIslands(artifact.islands ?? [], renderOptions?.stable ?? null);
       if (dirty.size > 0) schedule();
     },
     get pending() {
@@ -554,6 +667,7 @@ export const createPagedView = (container: HTMLElement, options: PagedViewOption
       win.visualViewport?.removeEventListener("resize", onZoom);
       win.removeEventListener("beforeprint", beforePrint);
       win.removeEventListener("afterprint", afterPrint);
+      islands?.destroy();
       dirty.clear();
       slots.length = 0;
       element.remove();

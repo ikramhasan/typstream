@@ -2,7 +2,7 @@
 // policy in csp.mjs, and opens it in Chromium, Firefox and WebKit (BROWSERS=…
 // runs some). The worksheet must finish in both targets, with its layout, math,
 // lazily loaded font and package diagram, and a mind map island must mount (React,
-// React Flow), without a single CSP violation or console error. A last check proves the policy is enforced at all: an inline
+// React Flow) in both targets, without a single CSP violation or console error. A last check proves the policy is enforced at all: an inline
 // style the page adds itself is refused.
 
 import { spawn } from "node:child_process";
@@ -97,17 +97,26 @@ try {
       await page.goto(`http://localhost:${PORT}/island.html`);
       try {
         await page.waitForSelector('#island[data-status="done"]', { timeout: 120_000 });
-        // The centre, three branches, two leaves of the open ones; "Precipitation" closed.
-        await page.waitForFunction(() => document.querySelectorAll("#island .react-flow__node").length === 7, null, {
-          timeout: 60_000,
-        });
+        await page.waitForSelector('#island-paged[data-status="done"]', { timeout: 120_000 });
+        // The centre, three branches, two leaves of the open ones; "Precipitation" closed. In each target.
+        await page.waitForFunction(
+          () =>
+            document.querySelectorAll("#island .react-flow__node").length === 7 &&
+            document.querySelectorAll("#island-paged .typstream-island-box .react-flow__node").length === 7,
+          null,
+          { timeout: 60_000 },
+        );
         const island = await page.evaluate(() => ({
           edges: document.querySelectorAll("#island .react-flow__edge").length,
           fallbackHidden: document.querySelector("#island typstream-island > svg")?.getAttribute("aria-hidden"),
+          pagedEdges: document.querySelectorAll("#island-paged .react-flow__edge").length,
+          pagedBox: document.querySelector("#island-paged .typstream-island-box")?.getBoundingClientRect().height ?? 0,
           violations: window.__violations,
         }));
         if (island.edges !== 6) problems.push(`island: ${island.edges} edges`);
         if (island.fallbackHidden !== "true") problems.push("island: the drawing under the map isn't hidden from AT");
+        if (island.pagedEdges !== 6) problems.push(`paged island: ${island.pagedEdges} edges`);
+        if (island.pagedBox < 40) problems.push(`paged island: its box is ${island.pagedBox} px tall`);
         problems.push(...island.violations.map((v) => `island CSP: ${v}`));
       } catch (e) {
         problems.push(`island: ${e.message.split("\n")[0]}`);
