@@ -3,11 +3,11 @@
 // caret where Typst laid the text out, typing and the keyboard change the source, and the pages are
 // the page view's own (the same canvases). Run with `pnpm test:browser`.
 
+import { edu, eduExamples } from "@typstream/edu";
 import { createEngine, type DocumentState, type Engine, type EngineDocument, fromWorker } from "@typstream/engine";
 import { loadSyntax } from "@typstream/syntax";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
-import { edu, eduExamples } from "@typstream/edu";
 import { basicPlugins, createEditor, type EditorView, fromTypstreamPlugin, toggleMark } from "../../src/index";
 
 const spawn = () =>
@@ -162,7 +162,11 @@ describe("the editor on the pages", () => {
     const el = document.createElement("div");
     el.style.width = "820px";
     document.body.append(el);
-    const view = createEditor(el, { doc, text, plugins: [...basicPlugins, fromTypstreamPlugin(edu) as NonNullable<ReturnType<typeof fromTypstreamPlugin>>] });
+    const view = createEditor(el, {
+      doc,
+      text,
+      plugins: [...basicPlugins, fromTypstreamPlugin(edu) as NonNullable<ReturnType<typeof fromTypstreamPlugin>>],
+    });
     cleanups.push(() => {
       view.destroy();
       el.remove();
