@@ -1,7 +1,7 @@
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 
-// Two projects. `node` (pnpm test): nothing yet needs more than the browser one. `browser`
+// Two projects. `node` (pnpm test): what needs no DOM (the menus' items). `browser`
 // (pnpm test:browser): <TypstEditor> with React Testing Library in Chromium, Firefox and WebKit,
 // its previews compiled by the real engine worker, as @typstream/react's browser tests do.
 
@@ -24,7 +24,7 @@ export default defineConfig({
   resolve: { alias },
   test: {
     projects: [
-      { resolve: { alias }, test: { name: "node", include: ["__tests__/*.test.ts"], passWithNoTests: true } },
+      { resolve: { alias }, test: { name: "node", include: ["__tests__/*.test.ts"] } },
       {
         resolve: { alias },
         test: {
