@@ -132,7 +132,7 @@ export const htmlRendererCss: string = `${THEME_CSS}
   line-height: 0;
 }
 :where(.typstream-pages .typstream-t) {
-  line-height: normal;
+  line-height: 1.3;
 }
 :where(.typstream .typstream-row) {
   display: flex;
@@ -145,9 +145,11 @@ export const htmlRendererCss: string = `${THEME_CSS}
   position: absolute;
   box-sizing: border-box;
   transform-origin: 0 0;
+  overflow: clip;
   clip-path: inset(0);
 }
 :where(.typstream-marginals) {
+  overflow: visible;
   clip-path: none;
 }
 :where(.typstream-flow .typstream-island) {

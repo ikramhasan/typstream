@@ -107,6 +107,10 @@ interface Unit {
   sticky?: Element;
   /** A forced page break comes before it: `weak` when there is none at the top of a page. */
   force?: boolean | "weak";
+  /** Fits it to the room left on its page (px), before it is measured there: columns fill it as Typst's do. */
+  fit?(room: number): void;
+  /** Fractional spacing (html-compat's `.ts-vfill`): its share of the room its page's content leaves. */
+  fr?: HTMLElement;
 }
 
 const SPACER = "typstream-break";
@@ -301,7 +305,28 @@ export const createHtmlPages = (
     measure: () => inFlow(el.getBoundingClientRect(), origin()),
     gap: () => spacerBefore(el, true),
     ...(sticky ? { sticky } : {}),
+    ...(el.classList.contains("ts-columns") ? { fit: fill(el as HTMLElement) } : {}),
   });
+
+  /**
+   * Typst's columns don't balance: the first fills the room left on the page before the next starts (typst-layout's
+   * columns.rs), and they are as tall as the tallest. CSS columns given that height fill the same way; they are then
+   * cut to what they hold. Columns that don't fit in the room keep CSS's balanced height and move to the next page.
+   */
+  const fill = (el: HTMLElement) => (room: number) => {
+    el.style.columnFill = "auto";
+    el.style.height = `${Math.max(0, room)}px`;
+    const box = el.getBoundingClientRect();
+    const range = doc.createRange();
+    range.selectNodeContents(el);
+    const rects = [...range.getClientRects()].filter((r) => r.width || r.height);
+    if (rects.some((r) => r.right > box.right + 1)) {
+      el.style.columnFill = el.style.height = "";
+      return;
+    }
+    const bottom = Math.max(box.top, ...rects.map((r) => r.bottom));
+    el.style.height = `${(bottom - box.top) / scale}px`;
+  };
 
   /** Where the line at `top` starts in the inline run `nodes` (their first node or character on it). */
   const lineStart = (nodes: Node[], top: number, o: number): Node | { text: Text; offset: number } | null => {
@@ -495,6 +520,10 @@ export const createHtmlPages = (
       }
       flush();
       const before = out.length;
+      if (child.classList.contains("ts-vfill")) {
+        out.push({ measure: () => inFlow(child.getBoundingClientRect(), origin()), gap: () => spacerBefore(child, true), fr: child });
+        continue;
+      }
       if (child.classList.contains("ts-pagebreak")) {
         force = force === true || !child.classList.contains("ts-pagebreak-weak") ? true : "weak";
         continue;
@@ -597,20 +626,46 @@ export const createHtmlPages = (
       gaps.push(gap);
       gap.set(contentTop(0) - head.measure().top);
     }
+    /** The fractional spacing on the page being laid out. */
+    let fills: { index: number; el: HTMLElement }[] = [];
+    /** Gives the page's fractional spacing what its content leaves, the units before `end` being on it. */
+    const fill = (end: number) => {
+      const mine = fills.filter((f) => f.index < end);
+      fills = fills.filter((f) => f.index >= end);
+      if (!mine.length) return;
+      let last = end - 1;
+      while (last >= 0 && (units[last] as Unit).fr) last--;
+      const bottom = Math.max(contentTop(page), last >= 0 ? (units[last] as Unit).measure().bottom : 0);
+      const grow = (el: HTMLElement) => Number(el.style.flexGrow) || 1;
+      const total = mine.reduce((sum, f) => sum + grow(f.el), 0);
+      const room = Math.max(0, contentBottom(page) - bottom);
+      for (const f of mine) f.el.style.height = `${(room * grow(f.el)) / total}px`;
+    };
     for (let i = 0; i < units.length; i++) {
       const unit = units[i] as Unit;
       let { top, bottom } = unit.measure();
       // On a page kept as it was (the lines of a block before its break).
       if (start && top < contentTop(page) - EPS) continue;
+      if (unit.fr) {
+        unit.fr.style.height = "0px";
+        fills.push({ index: i, el: unit.fr });
+        continue;
+      }
       // A weak break where the page has nothing above yet is no break.
       if (unit.force === "weak" && top <= contentTop(page) + EPS) continue;
+      if (unit.fit && !unit.force) {
+        unit.fit(contentBottom(page) - top);
+        ({ top, bottom } = unit.measure());
+      }
       if (unit.force) {
+        fill(i);
         page++;
         sheet(page);
         place();
       } else if (bottom <= contentBottom(page) + EPS || top <= contentTop(page) + EPS) continue;
       else {
         const j = breakAt(units, i, contentTop(page));
+        fill(j);
         page++;
         sheet(page);
         place();
@@ -624,7 +679,9 @@ export const createHtmlPages = (
       gap.set(1);
       ({ top, bottom } = moved.measure());
       gap.set(1 + contentTop(page) - top);
+      moved.fit?.(contentBottom(page) - contentTop(page));
     }
+    fill(units.length);
     count = page + 1;
     while (sheets.children.length > count) sheets.lastElementChild?.remove();
     drawMarginals();

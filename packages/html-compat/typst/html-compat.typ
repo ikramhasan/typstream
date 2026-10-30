@@ -170,9 +170,18 @@
 /// An HTML element with a class and an optional style; unset attributes are left out. Needs
 /// context: inside an inline element (a box) a `div` would end the paragraph around it in
 /// the browser's parser, so it becomes a `span` with class `ts-b` (display: block).
+/// The text size where it is, as CSS, when it isn't the stylesheet's (11pt): an element's spacing in `em` (its
+/// margins, the spaces between its text's spans) is in its own text size, as Typst's is.
+#let _size() = {
+  let size = text.size.to-absolute()
+  if size != 11pt { _len(size) }
+}
+
 #let _el(tag, class, style: none, role: none, body) = {
   if tag == "div" and text.costs.widow == _inline { (tag, class) = ("span", class + " ts-b") }
   let attrs = (class: class)
+  let size = _size()
+  if size != none { style = (style, "font-size: " + size).filter(x => x != none).join("; ") }
   if style != none { attrs.insert("style", style) }
   if role != none { attrs.insert("role", role) }
   html.elem(tag, attrs: attrs, if body == none { [] } else { body })
@@ -657,7 +666,9 @@
     let b = it.body
     if b.func() == html.elem and b.at("tag", default: "") == "span" and b.attrs.at("class", default: "") == "ts-par" { return it }
     let body = _empty-lines(b)
-    if body == b { it } else { html.elem("span", attrs: (class: "ts-par"), body) }
+    let size = _size()
+    if size != none { html.elem("p", attrs: (style: "font-size: " + size), body) }
+    else if body == b { it } else { html.elem("span", attrs: (class: "ts-par"), body) }
   })
 
   // Text in a style the defaults don't have. Not in math, which MathML styles itself.
@@ -712,6 +723,10 @@
   // its collapsing would change.
   show v: html-only(it => {
     let h = _len(it.amount)
+    // Fractional spacing takes its share of what is left of the page: the renderer's pages give it.
+    if type(it.amount) == fraction {
+      return _el("div", "ts-v ts-vfill", style: "flex-grow: " + _num(it.amount / 1fr), none)
+    }
     _el("div", "ts-v" + if it.weak { " ts-v-weak" }, style: if h != none { "height: " + h }, none)
   })
   show h: html-only(it => {
@@ -756,8 +771,12 @@
     props.insert("width", _len(it.width))
     props.insert("height", _len(it.height))
     if it.clip { props.insert("overflow", "hidden") }
-    let shift = _len(it.baseline.shift)
-    if shift not in (none, "0pt") { props.insert("vertical-align", "calc(-1 * " + shift + ")") }
+    // Its baseline is a share of its height, which CSS's `vertical-align` takes of the line height: resolved here.
+    let b = it.baseline.shift
+    let (share, fixed) = if type(b) == ratio { (b, 0pt) } else if type(b) == relative { (b.ratio, b.length) } else { (0%, b) }
+    let height = if share == 0% { 0pt } else if type(it.height) == length { it.height } else if type(it.height) == relative and it.height.ratio == 0% { it.height.length } else { measure(it).height }
+    let shift = float(share) * height.to-absolute() + fixed.to-absolute()
+    if shift != 0pt { props.insert("vertical-align", "-" + _len(shift)) }
     _el("span", "ts-box" + _stroked(props) + if type(it.width) == fraction { " ts-fr" }, style: _style(props), _mark-inline(it.body))
   })
 
@@ -810,7 +829,8 @@
       [— #cite(it.attribution, form: "prose")]
     } else { [— #it.attribution] }
     let quoted = if it.quotes == true { quote(block: false, quotes: true, it.body) } else { it.body }
-    html.elem("blockquote", attrs: (class: "ts-quote ts-sp ts-sp-a ts-sp-b"), _el("div", "ts-quote-body", quoted) + if attribution != none {
+    let size = _size()
+    html.elem("blockquote", attrs: (class: "ts-quote ts-sp ts-sp-a ts-sp-b") + if size != none { (style: "font-size: " + size) } else { (:) }, _el("div", "ts-quote-body", quoted) + if attribution != none {
       _el("div", "ts-attribution", attribution)
     })
   })
@@ -823,7 +843,13 @@
     // Spacing other than the layout profile's (a template's `show heading: set block(..)`).
     let gap(s, profile) = if type(s) == length and s != profile { _len(s) }
     let (above, below) = (gap(block.above, 0.71em), gap(block.below, 0.3em))
-    let spacing = (if above != none { "--ts-above: " + above }, if below != none { "--ts-below: " + below }).filter(x => x != none)
+    // The stylesheet's size for the level (1.4em, 1.2em, 1em of 11pt), or the one Typst gives it.
+    let size = text.size.to-absolute()
+    let spacing = (
+      if calc.abs((size - (1.4, 1.2).at(level - 1, default: 1) * 11pt).pt()) > 0.01 { "font-size: " + _len(size) },
+      if above != none { "--ts-above: " + above },
+      if below != none { "--ts-below: " + below },
+    ).filter(x => x != none)
     if it.numbering == none or it.body == [] { return html.elem(tag, attrs: if spacing.len() > 0 { (style: spacing.join("; ")) } else { (:) }, it.body) }
     let number = counter(heading).display(it.numbering)
     let indent = measure(number).width + 0.3em.to-absolute()
@@ -884,6 +910,7 @@
     padding-inline-start: if it.indent != 0pt { _len(it.indent) },
     column-gap: if it.body-indent != 0.5em { _len(it.body-indent) },
     row-gap: _len(gutter(it)),
+    font-size: _size(),
   )
   let item(marker, body) = html.elem("li", html.elem("span", attrs: (class: "ts-marker", aria-hidden: "true"), marker) + _el("div", "ts-item-body", body))
   show list: html-only(it => {
@@ -913,6 +940,7 @@
       padding-inline-start: _len(it.indent + it.hanging-indent),
       text-indent: "-" + _len(it.hanging-indent),
       row-gap: _len(gutter(it)),
+      font-size: _size(),
     )
     html.elem("dl", attrs: (class: "ts-terms" + if it.tight { " ts-tight" }, style: props), for child in it.children {
       html.elem("div", attrs: (class: "ts-term"), html.elem("dt", strong(child.term)) + it.separator + html.elem("dd", child.description))

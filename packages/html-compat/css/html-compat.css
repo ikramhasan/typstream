@@ -14,16 +14,17 @@
 
 /* Typst's text, as the engine's layout profile (#129) sets it on pages: Libertinus Serif at 11pt, lines a constant
    1.3em apart, ragged right, no hyphenation. The fonts are the engine's own (dom's `registerTypstFonts`), registered
-   with the profile's line box as their ascent and descent (1.054em and 0.246em, no gap), so `line-height: normal`
-   makes every line box what Typst's is, in any font and size, with the baseline where Typst puts it. Text the base
-   font lacks falls back to the engine's script fonts, as in Typst. */
+   with the profile's line box as their ascent and descent (1.054em and 0.246em, no gap), so a line box 1.3em tall
+   has the baseline where Typst puts it, in any of them and any size. `line-height: normal` would be the same box,
+   but browsers round a font's ascent and descent to whole pixels: lines would drift from Typst's by a fraction of
+   a pixel each. Text the base font lacks falls back to the engine's script fonts, as in Typst. */
 :where(.typstream) {
   font-family:
     typstream-libertinus-serif, typstream-noto-naskh-arabic, typstream-noto-serif-bengali,
     typstream-noto-serif-devanagari, "Libertinus Serif", serif;
   font-size: 11pt;
   font-weight: 400;
-  line-height: normal;
+  line-height: 1.3;
   text-align: start;
   hyphens: manual;
   font-kerning: normal;
@@ -390,13 +391,20 @@
 /* Last, to win over the margins above. */
 /* Typst spaces blocks apart, not from the edges of what contains them. */
 :where(.typstream)
-  :is(.ts-cell, .ts-valign-body, .ts-align-body, .ts-block, .ts-shape, .ts-box, .ts-stack-item, .ts-place, .ts-align, .ts-pad, .ts-item-body, figure)
+  :is(.ts-cell, .ts-valign-body, .ts-align-body, .ts-block, .ts-shape, .ts-box, .ts-stack-item, .ts-place, .ts-align, .ts-pad, .ts-item-body, .ts-columns, figure)
   > :first-child {
   margin-block-start: 0;
 }
 :where(.typstream)
-  :is(.ts-cell, .ts-valign-body, .ts-align-body, .ts-block, .ts-shape, .ts-box, .ts-stack-item, .ts-place, .ts-align, .ts-pad, .ts-item-body, figure)
+  :is(.ts-cell, .ts-valign-body, .ts-align-body, .ts-block, .ts-shape, .ts-box, .ts-stack-item, .ts-place, .ts-align, .ts-pad, .ts-item-body, .ts-columns, figure)
   > :last-child {
+  margin-block-end: 0;
+}
+/* A column starts at its top, as a page does. */
+:where(.typstream) .ts-colbreak + * {
+  margin-block-start: 0;
+}
+:where(.typstream) :has(+ .ts-colbreak) {
   margin-block-end: 0;
 }
 /* Spacing between blocks collapses as Typst's does (typst-layout's flow, distribute.rs): the larger of two gaps wins,
@@ -417,11 +425,11 @@
   margin-block-end: 0;
 }
 /* Spacing (`v`): Typst adds it to the gap its neighbours' spacing collapses to (the larger of the two, here the one
-   above); weak spacing replaces that gap. */
+   above); weak spacing replaces that gap, as fractional spacing does (distribute.rs trims weak spacing next to it). */
 :where(.typstream .ts-v) + * {
   margin-block-start: 0;
 }
-:where(.typstream) :has(+ .ts-v-weak) {
+:where(.typstream) :has(+ :is(.ts-v-weak, .ts-vfill)) {
   margin-block-end: 0;
 }
 /* Typst drops the spacing above the first block of a page (the renderer's pages, below a break too). */

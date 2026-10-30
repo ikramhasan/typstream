@@ -134,7 +134,9 @@ describe(`<Typstream> in ${browser}`, () => {
     expect(r.last()).toBe("done");
     rerender(<Typstream engine={spy} target="html" source={FIVE_PAGES} {...r.props} />);
     await waitFor(() => expect(container.querySelector(".typstream")?.textContent).toContain("Section 11"), LONG);
-    expect(container.querySelector(".typstream-paged")).toBeNull();
+    // The paged view's canvases are gone: the HTML has pages of its own, sheets behind its text.
+    expect(container.querySelector(".typstream-page canvas")).toBeNull();
+    expect(container.querySelector(".typstream-pages .typstream-flow")).not.toBeNull();
     expect(docs).toHaveLength(1);
   }, 120_000);
 
