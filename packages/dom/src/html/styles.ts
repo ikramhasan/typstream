@@ -108,6 +108,8 @@ export const htmlRendererCss: string = `${THEME_CSS}
 :where(.typstream-pages) {
   color: #000;
   color-scheme: light;
+  overflow: visible;
+  clip-path: none;
 }
 :where(.typstream-pages > .typstream-paged) {
   display: flex;
@@ -136,6 +138,10 @@ export const htmlRendererCss: string = `${THEME_CSS}
   position: absolute;
   box-sizing: border-box;
   transform-origin: 0 0;
+  clip-path: inset(0);
+}
+:where(.typstream-marginals) {
+  clip-path: none;
 }
 :where(.typstream-flow .typstream-island) {
   inset: 0 auto auto 0;
@@ -143,6 +149,14 @@ export const htmlRendererCss: string = `${THEME_CSS}
   height: calc(100% * var(--typstream-scale, 1));
   transform: scale(calc(1 / var(--typstream-scale, 1)));
   transform-origin: 0 0;
+  font-family: var(--typstream-host-font);
+  font-size: var(--typstream-host-size);
+  font-weight: 400;
+  color: var(--typstream-host-color);
+  text-align: start;
+}
+:where(.typstream-flow .typstream-island, .typstream-flow .typstream-island *) {
+  line-height: var(--typstream-host-line, normal);
 }
 :where(.typstream-flow) > :first-child {
   margin-block-start: 0;

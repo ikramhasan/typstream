@@ -13,14 +13,14 @@ import { universe } from "@typstream/universe";
 /** The engine's copy of New Computer Modern Math, the font html-compat's CSS asks for in `<math>`. */
 const MATH_FONT = baseFonts.find((url) => url.pathname.includes("NewCMMath"));
 
-/** The families of the base fonts, which come without metadata, by file name. */
+/** The families of the base fonts, which come without metadata, by the start of their file's name. */
 const BASE_FAMILIES: Record<string, string> = {
   LibertinusSerif: "Libertinus Serif",
   NewCMMath: "New Computer Modern Math",
   DejaVuSansMono: "DejaVu Sans Mono",
 };
 
-/** A file's weight and style from its name (`LibertinusSerif-BoldItalic.ttf`). */
+/** A file's weight and style from its name (`LibertinusSerif-BoldItalic.ttf`, hashed or not). */
 const variant = (file: string): Pick<TypstFont, "weight" | "style"> => ({
   weight: /Semibold/.test(file) ? 600 : /Bold/.test(file) ? 700 : 400,
   style: /Italic|Oblique/.test(file) ? "italic" : "normal",
@@ -30,7 +30,10 @@ const variant = (file: string): Pick<TypstFont, "weight" | "style"> => ({
 const TYPST_FONTS: readonly TypstFont[] = [
   ...baseFonts.map((url) => {
     const file = url.pathname.split("/").pop() ?? "";
-    return { url, family: BASE_FAMILIES[file.split("-")[0] ?? ""] ?? "Libertinus Serif", ...variant(file) };
+    // By what the name starts with: bundlers add a hash to it (`DejaVuSansMono.1ejec9br.ttf`).
+    const family = Object.entries(BASE_FAMILIES).find(([name]) => file.startsWith(name))?.[1];
+    if (!family) throw new Error(`typstream: no family for the engine's font ${file}`);
+    return { url, family, ...variant(file) };
   }),
   ...[...extraFonts, ...scriptFonts].map(({ url, file, family }) => ({ url, family, ...variant(file) })),
 ];
