@@ -75,8 +75,11 @@ export interface HtmlPages {
    * page's), sanitized, put on every page with its number and the page count in place of html-compat's.
    */
   setMarginals(nodes: readonly Node[]): void;
-  /** Breaks the flow into pages again (after the document changed). */
-  layout(): void;
+  /**
+   * Breaks the flow into pages again (after the document changed): from the page `from` (the first node that
+   * changed) is on, the pages before it kept as they are; all of them without it.
+   */
+  layout(from?: Node | null): void;
   /** The sheets shown. */
   readonly count: number;
   dispose(): void;
@@ -86,6 +89,10 @@ export interface HtmlPages {
 interface Gap {
   set(px: number): void;
   remove(): void;
+  /** Where it is: the spacer, or a cell of the row it moves. */
+  node: Node;
+  /** The page it starts. */
+  page: number;
 }
 
 /** Something that doesn't break across pages: a line, a block that doesn't break, a table's row. */
@@ -98,8 +105,8 @@ interface Unit {
   par?: { index: number; lines: Unit[] };
   /** The sticky block (a heading) it belongs to. */
   sticky?: Element;
-  /** A forced page break comes before it. */
-  force?: boolean;
+  /** A forced page break comes before it: `weak` when there is none at the top of a page. */
+  force?: boolean | "weak";
 }
 
 const SPACER = "typstream-break";
@@ -260,6 +267,8 @@ export const createHtmlPages = (
     el.style.height = "0px";
     (node.parentNode as Node).insertBefore(el, node);
     return {
+      node: el,
+      page: 0,
       // Less than nothing pulls what follows up: spacing that Typst drops at the top of a page.
       set: (px) => {
         el.style.height = `${Math.max(0, px)}px`;
@@ -275,6 +284,8 @@ export const createHtmlPages = (
 
   /** Room above a grid row: a top margin on each of its cells. */
   const rowGap = (cells: HTMLElement[]): Gap => ({
+    node: cells[0] as Node,
+    page: 0,
     set: (px) => {
       for (const c of cells) c.style.marginTop = `${Math.max(0, px)}px`;
     },
@@ -460,15 +471,16 @@ export const createHtmlPages = (
     }
   };
 
-  /** The units in `el`'s content, in order. */
-  const collect = (el: Element, o: number, out: Unit[], sticky?: Element): void => {
+  /** The units in `el`'s content, in order (from its child `start` on). */
+  const collect = (el: Element, o: number, out: Unit[], sticky?: Element, start?: Node): void => {
     let run: Node[] = [];
     const flush = () => {
       if (run.some((n) => n.nodeType === 1 || (n as Text).data.trim())) lines(run, o, sticky, out);
       run = [];
     };
-    let force = false;
-    for (const node of [...el.childNodes]) {
+    let force: boolean | "weak" = false;
+    const nodes = [...el.childNodes];
+    for (const node of start ? nodes.slice(Math.max(0, nodes.indexOf(start as ChildNode))) : nodes) {
       if (node.nodeType === 3) {
         run.push(node);
         continue;
@@ -484,7 +496,7 @@ export const createHtmlPages = (
       flush();
       const before = out.length;
       if (child.classList.contains("ts-pagebreak")) {
-        force = true;
+        force = force === true || !child.classList.contains("ts-pagebreak-weak") ? true : "weak";
         continue;
       }
       const stick = sticky ?? (child.matches(STICKY) ? child : undefined);
@@ -495,7 +507,7 @@ export const createHtmlPages = (
         for (const body of child.querySelectorAll<HTMLElement>(":scope > li > .ts-item-body")) collect(body, o, out);
       else collect(child, o, out, stick);
       if (force && out.length > before) {
-        (out[before] as Unit).force = true;
+        (out[before] as Unit).force = force;
         force = false;
       }
     }
@@ -531,11 +543,24 @@ export const createHtmlPages = (
     return j < i && (units[j] as Unit).measure().top <= top + EPS ? i : j;
   };
 
-  const paginate = () => {
-    clear();
+  /** What the pages were last laid out for: a change lays them all out again. */
+  let laidOut = "";
+
+  /** The child of the flow that holds `node`. */
+  const topOf = (node: Node): Node | null => {
+    let at: Node | null = node;
+    while (at && at.parentNode !== flow) at = at.parentNode;
+    return at;
+  };
+
+  const paginate = (from: Node | null) => {
     place();
+    const key = JSON.stringify([geometry, pageWidth(), scale]);
+    if (key !== laidOut || geometry.height === null) from = null;
+    laidOut = key;
     if (geometry.height === null) {
       // One page, as tall as the content.
+      clear();
       sheet(0);
       while (sheets.children.length > 1) sheets.lastElementChild?.remove();
       count = 1;
@@ -543,13 +568,30 @@ export const createHtmlPages = (
       return;
     }
     sheet(0).style.height = "";
-    const units: Unit[] = [];
-    collect(flow, origin(), units);
+    // Pages before the change stay: the gaps before the block it is in, and the pages they start.
     let page = 0;
+    let start: Node | undefined;
+    const top = from ? topOf(from) : null;
+    if (top) {
+      const kept = gaps.filter((gap) => {
+        const at = topOf(gap.node);
+        return at && at !== top && at.compareDocumentPosition(top) & Node.DOCUMENT_POSITION_FOLLOWING;
+      });
+      for (const gap of gaps) if (!kept.includes(gap)) gap.remove();
+      gaps = kept;
+      const last = kept[kept.length - 1];
+      page = last?.page ?? 0;
+      start = (last && topOf(last.node)) || undefined;
+      // A block that came before the kept ones' (the page's first) has nothing to measure past them.
+      if (start && start !== top && !(start.compareDocumentPosition(top) & Node.DOCUMENT_POSITION_FOLLOWING))
+        start = undefined;
+    } else clear();
+    const units: Unit[] = [];
+    collect(flow, origin(), units, undefined, start);
     // Spacing above the first block collapses through to the top of the flow; Typst drops it.
     const head = units[0];
     const first = [...flow.children].find((c) => !c.classList.contains(SPACER));
-    if (head && first && !head.force && head.measure().top > contentTop(0) + EPS) {
+    if (!start && head && first && !head.force && head.measure().top > contentTop(0) + EPS) {
       const gap = spacerBefore(first, true);
       gaps.push(gap);
       gap.set(contentTop(0) - head.measure().top);
@@ -557,13 +599,17 @@ export const createHtmlPages = (
     for (let i = 0; i < units.length; i++) {
       const unit = units[i] as Unit;
       let { top, bottom } = unit.measure();
+      // On a page kept as it was (the lines of a block before its break).
+      if (start && top < contentTop(page) - EPS) continue;
+      // A weak break where the page has nothing above yet is no break.
+      if (unit.force === "weak" && top <= contentTop(page) + EPS) continue;
       if (unit.force) {
         page++;
         sheet(page);
         place();
       } else if (bottom <= contentBottom(page) + EPS || top <= contentTop(page) + EPS) continue;
       else {
-        const j = unit.force ? i : breakAt(units, i, contentTop(page));
+        const j = breakAt(units, i, contentTop(page));
         page++;
         sheet(page);
         place();
@@ -571,6 +617,7 @@ export const createHtmlPages = (
       }
       const moved = units[i] as Unit;
       const gap = moved.gap();
+      gap.page = page;
       gaps.push(gap);
       // Measured with some room already: margins stop collapsing across a spacer once it has height.
       gap.set(1);
@@ -592,10 +639,10 @@ export const createHtmlPages = (
   /** The page of each outline entry's target (html-compat's `.ts-outline-page`), now that the pages are known. */
   const numberOutline = () => {
     const tops = [...Array(count).keys()].map(sheetTop);
-    const scope = root.getRootNode() as Document | ShadowRoot;
     for (const span of flow.querySelectorAll(".ts-outline-page")) {
       const href = span.closest("a")?.getAttribute("href");
-      const target = href?.startsWith("#") ? scope.getElementById(decodeURIComponent(href.slice(1))) : null;
+      // In this document: another on the page can have the same ids.
+      const target = href?.startsWith("#") ? flow.querySelector(`[id="${CSS.escape(decodeURIComponent(href.slice(1)))}"]`) : null;
       if (!target) continue;
       const top = inFlow(target.getBoundingClientRect(), origin()).top;
       let page = 0;
@@ -604,16 +651,37 @@ export const createHtmlPages = (
     }
   };
 
+  // A first sheet right away: the element has a page's height before the first layout.
+  sheet(0);
+  place();
+
   let frame = 0;
-  const layoutSoon = () => {
+  /** Where the next layout starts: `null` lays every page out. */
+  let pending: Node | null | undefined;
+  const layoutSoon = (from: Node | null = null) => {
+    // The earlier of two changes; any whole layout wins.
+    if (pending === undefined) pending = from;
+    else if (pending && from && !(pending.compareDocumentPosition(from) & Node.DOCUMENT_POSITION_FOLLOWING)) pending = from;
+    else if (!from) pending = null;
     if (frame) return;
     frame = view.requestAnimationFrame(() => {
       frame = 0;
-      paginate();
+      const start = pending ?? null;
+      pending = undefined;
+      paginate(start && flow.contains(start) ? start : null);
     });
   };
-  const resized = new view.ResizeObserver(layoutSoon);
+  // Only the width matters: the sheets the layout adds change the height.
+  let width = -1;
+  const resized = new view.ResizeObserver(() => {
+    if (root.clientWidth === width) return;
+    width = root.clientWidth;
+    layoutSoon();
+  });
   resized.observe(root);
+  // Fonts that arrive change the lines: the engine's are registered to load on first use.
+  const fontsLoaded = () => layoutSoon();
+  doc.fonts.addEventListener("loadingdone", fontsLoaded);
 
   return {
     flow,
@@ -629,13 +697,14 @@ export const createHtmlPages = (
       parts = nodes;
       layoutSoon();
     },
-    layout: layoutSoon,
+    layout: (from) => layoutSoon(from ?? null),
     get count() {
       return count;
     },
     dispose() {
       if (frame) view.cancelAnimationFrame(frame);
       resized.disconnect();
+      doc.fonts.removeEventListener("loadingdone", fontsLoaded);
       clear();
       sheets.remove();
       flow.remove();

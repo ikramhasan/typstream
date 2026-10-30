@@ -129,7 +129,7 @@ describe(`font catalogues in the HTML target, in ${browser}`, () => {
       files: [{ path: bengali.file, style: "normal", weight: 400, url: fontUrl.href }],
     };
     await registerLoadedFont(font, root);
-    const [loaded, other] = [...root.querySelectorAll("span")];
+    const [loaded, other] = [...root.querySelectorAll("span[data-typstream-font]")];
     expect(family(loaded)).toBe("typstream-noto-serif-bengali");
     expect(drawnInWebFont(loaded as Element)).toBe(true);
     expect(family(other)).toBe(family(root));

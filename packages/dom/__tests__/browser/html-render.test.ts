@@ -7,17 +7,27 @@
 // - While a document streams, a block whose HTML didn't change keeps its DOM
 //   node, and the final DOM equals a fresh render of the final HTML.
 // - Main-thread time per update at 20 pages (PLAN §11.5).
-// - Tables and equations wider than the element scroll sideways inside it (#95).
+// - Pages: the document breaks across sheets where Typst breaks its pages.
 
 import type { DocumentState, Engine } from "@typstream/engine";
 import { htmlCompat, htmlCompatCss } from "@typstream/html-compat";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { commands, page, server, userEvent } from "vitest/browser";
+import { commands, server } from "vitest/browser";
+import { registerTypstFonts, type TypstFont } from "../../src/html/fonts";
 import { createHtmlRenderer, type HtmlRenderer } from "../../src/html/renderer";
 import { createSanitizer, hideStyles } from "../../src/html/sanitize";
 import { splitHtml } from "../../src/html/split";
 import { TYPST_MATH_CSS } from "../../src/html/styles";
-import { type CorpusDocument, compileHtml, openHtml, startEngine, stream, TWENTY_PAGES, tokens } from "../support/html";
+import {
+  type CorpusDocument,
+  compileHtml,
+  openHtml,
+  startEngine,
+  stream,
+  TWENTY_PAGES,
+  tokens,
+  until,
+} from "../support/html";
 
 const browser = server.browser;
 
@@ -50,11 +60,21 @@ const parseWhole = (html: string, idPrefix: string): string => {
   return body.innerHTML;
 };
 
+/** The document as the renderer shows it: its flow, without its own spans around text, page breaks and source offsets. */
 const withoutSrc = (root: HTMLElement): string => {
-  const clone = root.cloneNode(true) as HTMLElement;
+  const clone = (root.querySelector(".typstream-flow") as HTMLElement).cloneNode(true) as HTMLElement;
   for (const el of Array.from(clone.querySelectorAll("[data-typstream-src]"))) el.removeAttribute("data-typstream-src");
+  for (const el of Array.from(clone.querySelectorAll(".typstream-break"))) el.remove();
+  for (const el of Array.from(clone.querySelectorAll(".typstream-t"))) el.replaceWith(...el.childNodes);
+  clone.normalize();
   return clone.innerHTML;
 };
+
+/** The document's top-level blocks. */
+const blocksOf = (renderer: HtmlRenderer) =>
+  Array.from((renderer.root.querySelector(".typstream-flow") as HTMLElement).children).filter(
+    (el) => !el.classList.contains("typstream-break"),
+  );
 
 describe(`HTML renderer on corpus documents in ${browser}`, () => {
   it("renders every block as a parse of the whole document would", async () => {
@@ -139,101 +159,55 @@ describe(`HTML renderer on corpus documents in ${browser}`, () => {
   }, 300_000);
 });
 
-/** Two frames: the renderer marks wide blocks in the first after an update. */
+/** Two frames: the renderer lays its pages out at the next frame after an update. */
 const laidOut = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
-/** Where a box's content ends on screen: its last text. */
-const endOf = (el: Element): DOMRect => {
-  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
-  let last: Node | null = null;
-  for (let n = walker.nextNode(); n; n = walker.nextNode()) if (n.textContent?.trim()) last = n;
-  const range = document.createRange();
-  range.selectNodeContents(last as Node);
-  return range.getBoundingClientRect();
-};
+/** The engine's fonts, registered as the HTML target's (typstream registers them for apps). */
+const FONTS: TypstFont[] = [
+  ["LibertinusSerif-Regular.ttf", "Libertinus Serif", 400, "normal"],
+  ["LibertinusSerif-Bold.ttf", "Libertinus Serif", 700, "normal"],
+  ["LibertinusSerif-Italic.ttf", "Libertinus Serif", 400, "italic"],
+  ["DejaVuSansMono.ttf", "DejaVu Sans Mono", 400, "normal"],
+].map(([file, family, weight, style]) => ({
+  url: new URL(`../../../engine-wasm/dist/fonts/${file}`, import.meta.url),
+  family: family as string,
+  weight: weight as number,
+  style: style as "normal" | "italic",
+}));
 
-/** A narrow and a wide table, and a narrow and a wide display equation. */
-const WIDE = `= Wide blocks
-
-#table(columns: 2, [a], [b], [c], [d])
-
-#table(columns: 8, ..range(16).map(_ => [Thermodynamics]))
-
-$ a + b = c $
-
-#let terms = range(1, 25).map(i => $x_#i$).join($+$)
-$ #terms = y $
-
-The end.`;
-
-describe(`HTML renderer with blocks wider than its element in ${browser}`, () => {
-  let html = "";
-  beforeAll(async () => {
+describe(`HTML renderer's pages in ${browser}`, () => {
+  it("breaks a document across pages where Typst breaks it", async () => {
+    registerTypstFonts(FONTS);
+    await document.fonts.load("11pt typstream-libertinus-serif");
+    await document.fonts.load("bold 11pt typstream-libertinus-serif");
+    const source = TWENTY_PAGES.slice(0, 6000);
     const doc = openHtml(engine);
-    html = await compileHtml(doc, WIDE);
+    const html = await compileHtml(doc, source);
     doc.dispose();
-  });
-
-  it.for([360, 600])("scrolls them to their full width inside the element at %i px", async (width) => {
-    // Room for the element: the page itself never scrolls sideways.
-    await page.viewport(1000, 800);
+    const paged = engine.open({ target: "paged", text: source });
+    paged.finish();
+    const state = await until(paged, (st) => st.status === "done");
+    paged.dispose();
+    if (state.artifact?.target !== "paged") throw new Error("no pages");
     const renderer = mount();
-    const { root } = renderer;
-    root.style.width = `${width}px`;
+    renderer.root.style.width = "800px";
     renderer.update(html);
     await laidOut();
-    const [narrowTable, wideTable] = Array.from(root.querySelectorAll("table"));
-    const [narrowMath, wideMath] = Array.from(root.querySelectorAll('math[display="block"]'));
-    // Each wide one in a scroll box of the renderer's; the narrow ones as they were.
-    const boxes = Array.from(root.querySelectorAll("[data-typstream-wide]"));
-    expect(boxes.map((box) => box.firstElementChild)).toEqual([wideTable, wideMath]);
-    expect(narrowTable?.parentElement).toBe(root);
-    expect(narrowMath?.parentElement).toBe(root);
-    const box = root.getBoundingClientRect();
-    for (const el of boxes) {
-      // Focusable, so the keyboard can scroll it; inside the element, with more to the right.
-      expect(el.getAttribute("tabindex")).toBe("0");
-      const r = el.getBoundingClientRect();
-      expect(r.left).toBeGreaterThanOrEqual(box.left - 0.5);
-      expect(r.right).toBeLessThanOrEqual(box.right + 0.5);
-      expect(endOf(el).right).toBeGreaterThan(r.right + 50);
-      // Scrolled to the end, its last text shows inside it.
-      el.scrollLeft = el.scrollWidth;
-      const end = endOf(el);
-      expect(end.right).toBeLessThanOrEqual(r.right + 0.5);
-      expect(end.left).toBeGreaterThanOrEqual(r.left - 0.5);
-      el.scrollLeft = 0;
+    const sheets = Array.from(renderer.root.querySelectorAll<HTMLElement>(".typstream-page"));
+    expect(sheets.length).toBe(state.artifact.pageCount);
+    expect(sheets.length).toBeGreaterThan(1);
+    // Each page's first words open the same sheet in HTML.
+    for (const [i, pageUpdate] of state.artifact.pages.entries()) {
+      // Its first word of text (math is drawn, not text, in HTML).
+      const word = (pageUpdate.text ?? []).map((run) => /^[A-Za-z]{4,}/.exec(run.text.trim())?.[0]).find((w) => w);
+      if (!word) continue;
+      const sheet = (sheets[i] as HTMLElement).getBoundingClientRect();
+      const found = Array.from(renderer.root.querySelectorAll(".typstream-flow .typstream-t")).find((t) => {
+        const r = t.getBoundingClientRect();
+        return t.textContent?.includes(word) && r.top >= sheet.top && r.top < sheet.top + 140;
+      });
+      expect(found, `page ${i + 1} starts with ${word}`).toBeDefined();
     }
-    // Source offsets stay on the document's elements.
-    expect(wideTable?.hasAttribute("data-typstream-src")).toBe(true);
-    expect(renderer.sourceRange(wideTable as Element)?.from).toBe(
-      Number(wideTable?.getAttribute("data-typstream-src")),
-    );
-    // The keyboard scrolls the focused box.
-    const scroller = boxes[0] as HTMLElement;
-    scroller.focus();
-    expect(document.activeElement).toBe(scroller);
-    await userEvent.keyboard("{ArrowRight}");
-    await expect.poll(() => scroller.scrollLeft).toBeGreaterThan(0);
-    expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(innerWidth);
-    unmount(renderer);
-  });
-
-  it("leaves a document that fits as it is, and unmarks what fits again", async () => {
-    await page.viewport(1600, 800);
-    const renderer = mount();
-    const { root } = renderer;
-    root.style.width = "1500px";
-    renderer.update(html);
-    const before = root.innerHTML;
-    await laidOut();
-    expect(root.innerHTML).toBe(before);
-    // Narrowed, the wide blocks scroll; widened again, they are as they were.
-    root.style.width = "360px";
-    await laidOut();
-    await expect.poll(() => root.querySelectorAll("[data-typstream-wide]").length).toBe(2);
-    root.style.width = "1500px";
-    await expect.poll(() => root.innerHTML).toBe(before);
     unmount(renderer);
   });
 });
@@ -243,14 +217,15 @@ const watch = (renderer: HtmlRenderer) => {
   let previous: string[] = [];
   const stats = { updates: 0, created: 0, kept: 0, ms: [] as number[], violations: [] as string[] };
   const update = (html: string, s: DocumentState) => {
-    const before = new Set<Node>(Array.from(renderer.root.children));
+    const before = new Set<Node>(blocksOf(renderer));
     const result = renderer.update(html, { animate: false });
     stats.updates++;
     stats.created += result.created;
     stats.ms.push(result.ms);
     const blocks = splitHtml(html);
     const next = blocks.blocks.map((b) => b.html);
-    if (blocks.shell === "" && renderer.root.children.length === next.length) {
+    const shown = blocksOf(renderer);
+    if (blocks.shell === "" && shown.length === next.length) {
       // One element per block (true for these documents): map them by position.
       const available = new Map<string, number>();
       for (const key of previous) available.set(key, (available.get(key) ?? 0) + 1);
@@ -259,7 +234,7 @@ const watch = (renderer: HtmlRenderer) => {
         if (n === 0) return;
         available.set(key, n - 1);
         stats.kept++;
-        if (!before.has(renderer.root.children[i] as Element)) {
+        if (!before.has(shown[i] as Element)) {
           stats.violations.push(`re-created unchanged block ${i} at rev ${s.artifactRev}: ${key.slice(0, 60)}`);
         }
       });
@@ -296,9 +271,19 @@ describe(`HTML renderer while streaming in ${browser}`, () => {
 
       const fresh = mount({ idPrefix: "s-" });
       fresh.update(final.artifact?.target === "html" ? final.artifact.html : "");
-      // Both laid out: blocks wider than the root are marked once they are (#95).
+      // Both laid out on their pages (an outline's page numbers are written then), with the fonts they use.
+      await document.fonts.ready;
       await laidOut();
-      expect(renderer.root.innerHTML, name).toBe(fresh.root.innerHTML);
+      const [got, want] = [withoutSrc(renderer.root), withoutSrc(fresh.root)];
+      let at = 0;
+      while (at < got.length && got[at] === want[at]) at++;
+      const pages = (r: HtmlRenderer) => r.root.querySelectorAll(".typstream-page").length;
+      const breaks = (r: HtmlRenderer) =>
+        Array.from(r.root.querySelectorAll<HTMLElement>(".typstream-break"))
+          .map((b) => `${b.parentElement?.localName}:${b.style.height}`)
+          .join(" ");
+      expect(`${pages(renderer)} ${breaks(renderer)}`, name).toBe(`${pages(fresh)} ${breaks(fresh)}`);
+      expect(got.slice(Math.max(0, at - 150), at + 150), name).toBe(want.slice(Math.max(0, at - 150), at + 150));
       unmount(fresh);
       unmount(renderer);
     }
@@ -318,7 +303,7 @@ describe(`HTML renderer while streaming in ${browser}`, () => {
     const sorted = [...stats.ms].sort((a, b) => a - b);
     const at = (q: number) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * q))] as number;
     console.log(
-      `${browser}: ${stats.updates} updates, ${renderer.root.children.length} blocks; update p50 ${at(0.5).toFixed(2)} ms, ` +
+      `${browser}: ${stats.updates} updates, ${blocksOf(renderer).length} blocks; update p50 ${at(0.5).toFixed(2)} ms, ` +
         `p90 ${at(0.9).toFixed(2)} ms, max ${at(1).toFixed(2)} ms; ${stats.created} blocks created, ${stats.kept} kept`,
     );
     // PLAN §11.5: main-thread update ≤ 4 ms at 20 pages (Phase 0 level).

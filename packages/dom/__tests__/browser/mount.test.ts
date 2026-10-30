@@ -189,10 +189,10 @@ describe(`mountTypstream in ${browser}`, () => {
     }
   });
 
-  it("keeps an image's proportions when it is shrunk to fit or set to the full width", async () => {
+  it("keeps an image's proportions at its size or set to the full width, on its page", async () => {
     const el = host();
     el.style.width = "300px";
-    // 400 × 100 pt: wider than the element.
+    // 400 × 100 pt: wider than the element, narrower than the page's text (453.5 pt, 605 px), shown scaled.
     const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="100"/>';
     const options = (preamble?: string): TypstreamOptions => ({
       engine,
@@ -201,19 +201,20 @@ describe(`mountTypstream in ${browser}`, () => {
       ...(preamble ? { preamble } : {}),
       lazy: false,
     });
+    // In the page's own pixels: the page is scaled down to the element, not its images.
     const sizes = () => [...el.querySelectorAll("img")].map((i) => [i.offsetWidth, i.offsetHeight]);
     const view = mountTypstream(el, options());
     await until(view, (s) => s.status === "done");
     await expect.poll(sizes).toEqual([
-      [300, 75],
-      [150, 38],
+      [400, 100],
+      [302, 76],
     ]);
-    // Every image as wide as the page: a set rule in the preamble; a width the call gives still wins.
+    // Every image as wide as the page's text: a set rule in the preamble; a width the call gives still wins.
     view.update(options("#set image(width: 100%)"));
     await until(view, (s) => s.status === "done");
     await expect.poll(sizes).toEqual([
-      [300, 75],
-      [150, 38],
+      [605, 151],
+      [302, 76],
     ]);
     view.update({
       ...options("#set image(width: 100%)"),
@@ -221,7 +222,7 @@ describe(`mountTypstream in ${browser}`, () => {
       files: { "wide.svg": svg.replace('width="400" height="100"', 'width="100" height="25"') },
     });
     // A small image grows to the width, in proportion.
-    await expect.poll(sizes).toEqual([[300, 75]]);
+    await expect.poll(sizes).toEqual([[605, 151]]);
     view.destroy();
     el.remove();
   });
@@ -377,12 +378,11 @@ describe(`mountTypstream in ${browser}`, () => {
     });
     const state = await until(view, settled);
     expect(state.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
-    // edu's files, preamble, template and stylesheet…
-    const question = el.querySelector(".edu-question");
-    expect(question?.textContent).toContain("1/2");
-    expect(getComputedStyle(question as Element).display).toBe("grid");
-    // …and html-compat's preamble, sanitizer allowances and stylesheet.
-    expect(getComputedStyle(el.querySelector(".ts-grid") as Element).display).toBe("grid");
+    // edu's files, preamble and template, laid out by html-compat's preamble, sanitizer allowances and stylesheet:
+    // the question is a grid, as on pages.
+    const grids = [...el.querySelectorAll(".ts-grid")];
+    expect(grids.some((g) => g.textContent?.includes("1/2"))).toBe(true);
+    expect(getComputedStyle(grids[0] as Element).display).toBe("grid");
     view.destroy();
     el.remove();
   });

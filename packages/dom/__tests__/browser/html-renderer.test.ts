@@ -25,7 +25,11 @@ afterEach(() => {
   }
 });
 
-const children = (r: HtmlRenderer) => Array.from(r.root.children);
+/** Where the document is: the flow over the pages. */
+const flow = (r: HtmlRenderer) => r.root.querySelector(".typstream-flow") as HTMLElement;
+const children = (r: HtmlRenderer) => Array.from(flow(r).children);
+/** The flow's HTML without the spans the renderer puts around runs of text. */
+const html = (r: HtmlRenderer) => flow(r).innerHTML.replace(/<span class="typstream-t">([^<]*)<\/span>/g, "$1");
 
 describe("blocks", () => {
   it("keeps unchanged blocks and replaces changed ones", () => {
@@ -58,30 +62,30 @@ describe("blocks", () => {
   it("renders a document that doesn't split as one block", () => {
     const r = mount();
     r.update(doc("<p>a</p><div><p>b</p>"));
-    expect(r.root.innerHTML).toBe("<p>a</p><div><p>b</p></div>");
+    expect(html(r)).toBe("<p>a</p><div><p>b</p></div>");
   });
 
   it("clears and starts over", () => {
     const r = mount();
     r.update(doc("<p>a</p>"));
     r.clear();
-    expect(r.root.innerHTML).toBe("");
+    expect(html(r)).toBe("");
     r.update(doc("<p>b</p>"));
-    expect(r.root.innerHTML).toBe("<p>b</p>");
+    expect(html(r)).toBe("<p>b</p>");
   });
 
   it("splits inside a template's wrapper and rebuilds it when it changes", () => {
     const r = mount({ plugins: [{ key: "t", sanitize: { allowClasses: ["tpl", "other"] } }] });
     r.update(doc(`${anchor(0)}<div class="tpl">${anchor(10)}<p>a</p><p>b</p></div>`));
-    const wrapper = r.root.firstElementChild as Element;
+    const wrapper = flow(r).firstElementChild as Element;
     expect(wrapper.className).toBe("tpl");
     const [a] = Array.from(wrapper.children);
     r.update(doc(`${anchor(0)}<div class="tpl">${anchor(10)}<p>a</p><p>b</p><p>c</p></div>`));
-    expect(r.root.firstElementChild).toBe(wrapper);
+    expect(flow(r).firstElementChild).toBe(wrapper);
     expect(wrapper.firstElementChild).toBe(a);
     expect(wrapper.children).toHaveLength(3);
     r.update(doc(`<div class="other"><p>a</p><p>b</p></div>`));
-    expect(r.root.innerHTML).toBe('<div class="other"><p>a</p><p>b</p></div>');
+    expect(html(r)).toBe('<div class="other"><p>a</p><p>b</p></div>');
   });
 
   it("prefixes ids per renderer", () => {
@@ -275,7 +279,8 @@ describe("styles and theme", () => {
     expect(r.root.classList.contains("typstream")).toBe(true);
     expect(r.root.getAttribute("data-typstream-theme")).toBe("dark");
     expect(r.root.style.getPropertyValue("--typstream-duration")).toBe("99ms");
-    expect(getComputedStyle(r.root).colorScheme).toBe("dark");
+    // The document is on paper, as on pages: light whatever the theme.
+    expect(getComputedStyle(r.root).colorScheme).toBe("light");
     r.update(doc("<p>a</p>"));
     r.dispose();
     expect(r.root.innerHTML).toBe("");
@@ -283,7 +288,7 @@ describe("styles and theme", () => {
     expect(r.root.getAttribute("style")).toBeFalsy();
   });
 
-  it("keeps the document inside its element, whatever the page's CSS", () => {
+  it("keeps the document inside its element, whatever the page's CSS", async () => {
     // Utility classes as Tailwind writes them, and a page rule on an element a document can write.
     const page = document.createElement("style");
     page.textContent =
@@ -301,6 +306,8 @@ describe("styles and theme", () => {
           '<div style="transform: scale(100)">f</div>',
       ),
     );
+    // Laid out on its pages at the next frame.
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     try {
       expect(r.root.querySelector(".fixed")).toBeNull();
       const box = r.root.getBoundingClientRect();

@@ -97,7 +97,9 @@ describe(`islands in the HTML renderer in ${server.browser}`, () => {
     expect(counter?.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
     const host = counter?.querySelector(":scope > .typstream-island") as HTMLElement;
     expect(host).toBe(r.hosts[0]);
-    expect(host.getBoundingClientRect().toJSON()).toEqual((counter as Element).getBoundingClientRect().toJSON());
+    // Over its marker: laid out at the page's scale undone, so to a fraction of a pixel.
+    const [a, b] = [host.getBoundingClientRect(), (counter as Element).getBoundingClientRect()];
+    for (const k of ["left", "top", "width", "height"] as const) expect(a[k]).toBeCloseTo(b[k], 1);
     // No renderer for it: the fallback, as it is.
     expect(unknown?.hasAttribute("data-typstream-island")).toBe(false);
     expect(unknown?.querySelector("svg")?.hasAttribute("aria-hidden")).toBe(false);

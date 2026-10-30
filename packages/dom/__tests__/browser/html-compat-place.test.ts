@@ -235,9 +235,9 @@ afterAll(() => engine.dispose());
 describe(`html-compat's place against Typst's layout in ${browser}`, () => {
   it.each(CASES)("$name", async ({ source, labels }) => {
     const root = document.createElement("div");
-    // Typst's default text size, so em lengths match. Fonts differ (the browser's serif): a label's
-    // own width and cap height, hence the tolerances.
-    root.style.cssText = "width: 600px; font-size: 11pt";
+    // Wider than an A4 page, so the pages show at their own size and a CSS pixel is 3/4 of a point. Fonts differ
+    // (the browser's serif, no engine fonts registered): a label's own width and cap height, hence the tolerances.
+    root.style.cssText = "width: 800px";
     document.body.append(root);
     const renderer = createHtmlRenderer(root, { plugins: [htmlCompat], stylesheets: [htmlCompatCss] });
     try {

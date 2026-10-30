@@ -167,14 +167,17 @@ const wrapRuns = (root: ParentNode, doc: Document): void => {
  * The page html-compat writes on the source anchors, and its header and footer inside them: the last anchor's (a
  * document's pages are all alike). The first ones can come before the document's `#set page(..)`, or a template's.
  */
-const PAGES = /<typstream-anchor data-src="\d+" data-page="([^"]*)">([\s\S]*?)<\/typstream-anchor>/g;
+const PAGES = /<typstream-anchor data-src="\d+" data-page="([^"]*)">([\s\S]*?)<\/typstream-anchor>/y;
 
-/** The last match of `re` (global) in `s`. */
-const lastMatch = (re: RegExp, s: string): RegExpExecArray | null => {
-  re.lastIndex = 0;
-  let last: RegExpExecArray | null = null;
-  for (let m = re.exec(s); m; m = re.exec(s)) last = m;
-  return last;
+/** The last anchor's match of `PAGES` in `html`: found from the end, so a long document isn't scanned whole. */
+const lastPage = (html: string): RegExpExecArray | null => {
+  for (let at = html.lastIndexOf("<typstream-anchor "); at >= 0; at = html.lastIndexOf("<typstream-anchor ", at - 1)) {
+    PAGES.lastIndex = at;
+    const m = PAGES.exec(html);
+    if (m && m.index === at) return m;
+    if (at === 0) break;
+  }
+  return null;
 };
 
 /**
@@ -214,7 +217,14 @@ const caretParent = (block: Element): Element => {
     }
     let last = el.lastChild;
     while (last && last.nodeType === 3 && (last as Text).data.trim() === "") last = last.previousSibling;
-    if (!last || last.nodeType !== 1 || CARET_STOP.has((last as Element).localName)) return el;
+    // Not into a run of text (`typstream-t`): the caret goes after it, in what holds it.
+    if (
+      !last ||
+      last.nodeType !== 1 ||
+      CARET_STOP.has((last as Element).localName) ||
+      (last as Element).classList.contains("typstream-t")
+    )
+      return el;
     el = last as Element;
   }
 };
@@ -358,7 +368,7 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
       shell = split.shell;
     }
     setLanguage(HTML_LANG.exec(html)?.[1]);
-    const page = lastMatch(PAGES, html);
+    const page = lastPage(html);
     pages.setGeometry(parseGeometry(page?.[1]));
     if ((page?.[2] ?? "") !== marginals) {
       marginals = page?.[2] ?? "";
@@ -449,7 +459,12 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
       caret.setAttribute("aria-hidden", "true");
       parent.append(caret);
     }
-    pages.layout();
+    // Pages from the first block that changed (a stream changes the end); the caret's block changed too.
+    const fresh = new Set(created);
+    let changed = result.findIndex((block, i) => fresh.has(block) || block !== old[i]);
+    if (changed < 0) changed = result.length - 1;
+    const firstNode = result[changed]?.nodes[0] ?? null;
+    pages.layout(caret && firstNode && caret.compareDocumentPosition(firstNode) & 4 ? caret : firstNode);
 
     return { blocks: result.length, created: created.length, removed: removed.length, ms: view.performance.now() - t0 };
   };

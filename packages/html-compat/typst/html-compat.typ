@@ -661,7 +661,8 @@
   })
   show columns: html-only(it => _el("div", "ts-columns", style: _css(column-count: str(it.count), column-gap: _len(it.gutter)), it.body))
   show colbreak: html-only(it => _el("div", "ts-colbreak", none))
-  show pagebreak: html-only(it => _el("div", "ts-pagebreak", none))
+  // A weak page break (`.ts-pagebreak-weak`) breaks only where the page isn't empty yet.
+  show pagebreak: html-only(it => _el("div", "ts-pagebreak" + if it.weak { " ts-pagebreak-weak" }, none))
   show place: html-only(_place)
   show pad: html-only(it => _el("div", "ts-pad", style: _css(
     padding: ("top", "right", "bottom", "left").map(s => _len(it.at(s))).map(v => if v == none { "0" } else { v }).join(" "),
