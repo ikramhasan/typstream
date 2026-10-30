@@ -42,6 +42,7 @@ import { HangSearch } from "./hang";
 import { fileKey } from "./image-paths";
 import { applyPaged } from "./paged";
 import type { ResolvedDocumentOptions } from "./plugins";
+import { mapPositions } from "./positions";
 import { compileInterval, type ScheduleOptions, updateEma } from "./schedule";
 
 /**
@@ -93,6 +94,11 @@ export interface DocumentState {
   artifact: Artifact | null;
   /** Revision `artifact` was compiled from. */
   artifactRev: Revision | null;
+  /**
+   * The input `artifact` was compiled from: its `positions` are offsets into it (mapped back through
+   * healing), which edits since have moved. @beta
+   */
+  artifactInput: string | null;
   /**
    * Diagnostics of the latest compile, in input coordinates (offsets into the
    * text pushed so far, mapped back through healing), sorted.
@@ -503,6 +509,7 @@ export class DocumentImpl implements EngineDocument {
   private probing = false;
   private artifact: Artifact | null = null;
   private artifactRev: Revision | null = null;
+  private artifactInput: string | null = null;
   private diagnostics: Diagnostic[] = [];
   private failure: CompileFailure | null = null;
   private lastCompile: CompileResult | null = null;
@@ -941,7 +948,7 @@ export class DocumentImpl implements EngineDocument {
     if (this.disposed || !this.sent || n.params.rev !== this.sent.rev) return;
     // A probe for a hang compiles a prefix of the document, with the rest skipped.
     if (this.probing && this.compiling) return;
-    const { rev, heal } = this.sent;
+    const { rev, heal, input } = this.sent;
     if (n.method === "document/diagnostics") {
       if (n.params.target !== this.target) return;
       const toInput = (pos: number, assoc: 1 | -1) => heal.map.toInput(pos, assoc);
@@ -951,8 +958,12 @@ export class DocumentImpl implements EngineDocument {
       if (this.compiling) this.reported = true;
       else this.report(this.diagnosticsEvent(rev, this.final ? "final" : "streaming"));
     } else {
-      const { artifact } = n.params;
+      let { artifact } = n.params;
       if (artifact.target !== this.target) return;
+      if (artifact.target === "paged" && artifact.positions) {
+        const toInput = (pos: number) => heal.map.toInput(pos, 1);
+        artifact = { ...artifact, positions: artifact.positions.map((p) => mapPositions(p, toInput)) };
+      }
       if (artifact.target === "paged") {
         const prev = this.artifact?.target === "paged" ? this.artifact : null;
         const pages = applyPaged(prev, this.artifactRev, artifact);
@@ -968,6 +979,7 @@ export class DocumentImpl implements EngineDocument {
         this.artifact = artifact;
       }
       this.artifactRev = rev;
+      this.artifactInput = input;
     }
     // During a compile, `settle` publishes once for all of its output; output
     // the server sends on its own (a font arrived) is published now.
@@ -1188,6 +1200,7 @@ export class DocumentImpl implements EngineDocument {
       status: this.status(failure),
       artifact: this.artifact,
       artifactRev: this.artifactRev,
+      artifactInput: this.artifactInput,
       diagnostics: this.diagnostics,
       heal: this.healed,
       final: this.final,

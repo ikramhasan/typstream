@@ -66,7 +66,7 @@ import {
 import { anyArrives, type FontCatalogueOptions, FontCatalogues } from "./fonts";
 import { DocumentPackages, type PackageOptions, PackageStore } from "./packages";
 import { LAYOUT_PROFILE } from "./profile";
-import { mapPositions } from "./positions";
+import { mapPositions } from "../positions";
 import { RUNTIME, RUNTIME_IMPORT, RUNTIME_PATH } from "./runtime";
 
 /**
@@ -963,7 +963,9 @@ class Server implements EngineServer {
                   from: i.from === null || i.from < offset ? null : toOriginal(i.from - offset),
                 })),
               }),
-              ...(laid && { positions: laid.map((p) => mapPositions(p, (at) => (at < offset ? -1 : toOriginal(at - offset)))) }),
+              ...(laid && {
+                positions: laid.map((p) => mapPositions(p, (at) => (at < offset ? -1 : toOriginal(at - offset)), offset)),
+              }),
             },
           },
         });

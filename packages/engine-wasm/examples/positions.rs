@@ -26,12 +26,13 @@ fn main() {
             );
         }
         for e in &p.elements {
-            let src = String::from_utf16_lossy(&units[e.from as usize..(e.to as usize).min(units.len())]);
+            let (from, to) = e.covers.unwrap();
+            let src = String::from_utf16_lossy(&units[from as usize..(to as usize).min(units.len())]);
             let src: String = src.chars().take(40).collect();
+            let bbox = e.bbox.map(|b| (b.min.x.to_pt(), b.min.y.to_pt(), b.max.x.to_pt(), b.max.y.to_pt()));
             println!(
-                "elem {} [{},{}) {:?} at ({:.1},{:.1}) end {:?} cell {:?}",
-                e.kind, e.from, e.to, src, e.start.x.to_pt(), e.start.y.to_pt(),
-                e.end.map(|p| (p.x.to_pt(), p.y.to_pt())), e.cell
+                "{}{} [{from},{to}) node {:?} {:?} box {:.1?} cell {:?}",
+                "  ".repeat(e.depth), e.kind, e.node, src, bbox, e.cell
             );
         }
     }

@@ -518,20 +518,31 @@ export interface PageDrawing {
 }
 
 /**
- * Where an element the document made starts on a page, and where it ends if
- * that is on the same page, in points from the page's top left. @beta
+ * An element laid out on a page that shows some of the document (#36). Typst
+ * tags nearly every element it lays out, the ones a plugin's package makes
+ * included, so a component's box is that of the outermost element covering
+ * only its call's source. Points from the page's top left. @beta
  */
 export interface PageElement {
   /**
-   * Typst's name for the element (`heading`, `table`, `equation`, `par`), or
-   * `cell` for a table cell and `item-body` for a list item's body.
+   * Typst's name for the element (`heading`, `table`, `equation`, `par`,
+   * `context`), `cell` for a table or grid cell, `item-body` and `item-label`
+   * for a list item's body and its bullet or number.
    */
   kind: string;
-  /** Start of the element's source in the text the client sent (UTF-16). */
+  /**
+   * Start of the text it shows, in the text the client sent (UTF-16): its
+   * own source, if the document wrote it, and what the glyphs and elements
+   * inside it came from.
+   */
   from: number;
-  /** End of the element's source (exclusive). */
+  /** End of the text it shows (exclusive). */
   to: number;
-  /** Where it starts: its frame's top left (a cell's corner, a block's top). */
+  /** The element's own source (`[from, to)`), when the document made it rather than a package. */
+  node?: [number, number];
+  /** How many elements it is inside on this page. */
+  depth: number;
+  /** Where it starts: its first tag (a cell's corner, a block's top left). */
   x: number;
   /** See `x`. */
   y: number;
@@ -539,7 +550,9 @@ export interface PageElement {
   endX?: number;
   /** See `endX`. */
   endY?: number;
-  /** A table cell's column and row (from 0). */
+  /** `[x, y, width, height]` around everything drawn inside it, when anything is. */
+  box?: [number, number, number, number];
+  /** A table or grid cell's column and row (from 0), for table cells. */
   cell?: [number, number];
 }
 

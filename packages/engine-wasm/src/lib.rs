@@ -157,12 +157,27 @@ export type SvgChangedResult = CompileResult & {
  * Where a page's source was laid out (src/positions.rs), for an editor on the pages: `glyphs` holds a glyph cluster
  * per 8 little-endian 32-bit floats (x, baseline y, advance, ascent, descent, from, to, flags), `from`/`to` its
  * UTF-16 range in /main.typ or -1, `flags` 1 = exactly its characters (text or math in markup), 2 = math, 4 = shaped
- * right to left. `elements` are where elements /main.typ made start (`x`, `y`) and end on the page: `kind` is the
- * element function's name, `cell` for a table cell (with its column and row), `item-body` for a list item's body.
+ * right to left. `elements` are the elements laid out on the page that show some of /main.typ: `from`/`to` what they
+ * cover of it, `node` their own source if /main.typ made them, `depth` how many elements they are in, (`x`, `y`)
+ * where they start and (`endX`, `endY`) end, `box` around what is drawn inside them (x, y, width, height). `kind` is
+ * the element function's name, `cell` for a table or grid cell (`cell` its column and row), `item-body` and
+ * `item-label` for a list item's parts.
  */
 export type PagePositions = {
   glyphs: Uint8Array;
-  elements: { kind: string; from: number; to: number; x: number; y: number; endX?: number; endY?: number; cell?: [number, number] }[];
+  elements: {
+    kind: string;
+    from: number;
+    to: number;
+    node?: [number, number];
+    depth: number;
+    x: number;
+    y: number;
+    endX?: number;
+    endY?: number;
+    box?: [number, number, number, number];
+    cell?: [number, number];
+  }[];
 };
 /** A paged compile without export (`check_paged`). */
 export type CheckResult = CompileResult & { pageCount?: number };
