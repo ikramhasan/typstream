@@ -4,6 +4,12 @@
 
 import type { SyntaxKind, SyntaxNode } from "@typstream/syntax";
 
+/** The last element of `list` that `test` accepts (`Array.prototype.findLast` is ES2023). */
+export const findLast = <T>(list: readonly T[], test: (item: T) => boolean): T | undefined => {
+  for (let i = list.length - 1; i >= 0; i--) if (test(list[i] as T)) return list[i];
+  return undefined;
+};
+
 /** A node with its ancestors, innermost last: `path[0]` is the root. */
 export type Path = SyntaxNode[];
 
@@ -292,7 +298,7 @@ export const callArgs = (call: SyntaxNode, text: string): CallArgs | null => {
         named.set(text.slice(name.from, name.to), value);
         namedNodes.set(text.slice(name.from, name.to), c);
       }
-    } else if (c.kind === "ContentBlock" && close !== null) trailing.push(c);
+    } else if (c.kind === "ContentBlock" && (close !== null || open === null)) trailing.push(c);
     else if (c.kind !== "Comma" && c.kind !== "Space" && c.kind !== "LineComment" && c.kind !== "BlockComment")
       positional.push(c);
   }
@@ -342,7 +348,7 @@ export const itemAt = (root: SyntaxNode, text: string, offset: number): SyntaxNo
   while (at > 0 && (text[at - 1] === " " || text[at - 1] === "\t")) at--;
   if (at < offset) {
     const path = pathAt(root, at, -1);
-    const n = path.findLast((k) => ITEM_NODES.has(k.kind));
+    const n = findLast(path, (k) => ITEM_NODES.has(k.kind));
     if (n && n.to === at) return n;
   }
   return null;

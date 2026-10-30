@@ -5,9 +5,9 @@
 
 import type { TextEdit } from "@typstream/core";
 import type { SyntaxNode } from "@typstream/syntax";
-import { EditorState, mapThrough, type Selection, type Transaction } from "./state";
+import { type EditorState, mapThrough, type Selection, type Transaction } from "./state";
 import { atLineStart, escapeMarkup, isWordy } from "./text";
-import { type Block, blocksOf, calleeName, contentBlocksIn, isEmbedded, itemAt, markupOf, pathAt, type Path } from "./tree";
+import { type Block, blocksOf, calleeName, contentBlocksIn, findLast, isEmbedded, itemAt, markupOf, pathAt, type Path } from "./tree";
 import { step, type Unit, unitAfter, unitBefore, unitInside, unitsOf } from "./units";
 
 /**
@@ -423,7 +423,8 @@ export const splitBlock = (state: EditorState, schema: EditorSchema = DEFAULT_SC
       tr = { edits: [{ from: at, to: at, insert }], selection: caret(at + insert.length) };
     }
   } else {
-    const heading = path.findLast((n) => n.kind === "Heading") ?? pathAt(base.tree, at, 1).findLast((n) => n.kind === "Heading");
+    const isHeading = (n: SyntaxNode) => n.kind === "Heading";
+    const heading = findLast(path, isHeading) ?? findLast(pathAt(base.tree, at, 1), isHeading);
     const body = heading?.children.find((k) => k.kind === "Markup");
     if (heading && body && at <= body.from) {
       tr = { edits: [{ from: heading.from, to: heading.from, insert: "\n\n" }], selection: caret(at + 2) };
@@ -519,4 +520,3 @@ export const blockAtOffset = (state: EditorState, offset: number, schema: Editor
   return found;
 };
 
-export { EditorState };

@@ -135,13 +135,28 @@ export const mapThrough = (pos: number, edits: readonly TextEdit[], assoc: 1 | -
       shift += e.insert.length;
       continue;
     }
+    // At the start of a replaced range: before what replaces it.
+    if (pos === e.from) return e.from + shift;
     // Inside `[from, to)`.
     return e.from + shift + (assoc < 0 ? 0 : e.insert.length);
   }
   return pos + shift;
 };
 
-const mapSelection = (s: Selection, edits: TextEdit[]): Selection => ({
-  anchor: mapThrough(s.anchor, edits, s.anchor <= s.head ? -1 : 1),
-  head: mapThrough(s.head, edits, 1),
-});
+/**
+ * A selection through `edits`: a selection's ends stay around what it selected (its start past an
+ * insertion there, its end before one), a caret past an insertion at it.
+ * @beta
+ */
+export const mapSelection = (s: Selection, edits: readonly TextEdit[]): Selection => {
+  if (s.anchor === s.head) {
+    const at = mapThrough(s.head, edits, 1);
+    return { anchor: at, head: at };
+  }
+  const forward = s.anchor < s.head;
+  return {
+    anchor: mapThrough(s.anchor, edits, forward ? 1 : -1),
+    head: mapThrough(s.head, edits, forward ? -1 : 1),
+    ...(s.node && { node: true }),
+  };
+};

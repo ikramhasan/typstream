@@ -1,4 +1,8 @@
+export * from "./blocks";
 export * from "./commands";
+export * from "./components";
+export * from "./marks";
+export * from "./table";
 export { Layout, type CaretBox, type Glyph, type LaidElement, type Line, type PageRect, EXACT, MATH, RTL } from "./layout";
 export { EditorState, mapThrough, type Selection, type Transaction } from "./state";
 export { escapeMarkup, readString, typstString } from "./text";
