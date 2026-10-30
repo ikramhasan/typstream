@@ -93,9 +93,9 @@ try {
       { timeout: 30_000 },
     );
   }
-  // Edit the first answer in place: its Edit button asks what to change, and that document changes,
+  // Edit the first answer in place: its Edit with AI button asks what to change, and that document changes,
   // with no new answer below it. Then Keep.
-  await page.getByRole("button", { name: "Edit", exact: true }).first().click();
+  await page.getByRole("button", { name: "Edit with AI", exact: true }).first().click();
   await page.getByRole("textbox", { name: "Edit instruction" }).fill("Use a longer ladder in the worked example.");
   await page.getByRole("textbox", { name: "Edit instruction" }).press("Enter");
   const keep = page.getByRole("button", { name: "Keep", exact: true });
@@ -118,6 +118,24 @@ try {
     const nodes = await answers.nth(1).locator("typstream-island .react-flow__node").count();
     if (nodes !== 9) throw new Error(`the mind map island has ${nodes} nodes, not 9`);
   }
+  // Edit the first answer on its pages (#36): Edit shows the editor in place of the document, with its toolbar; what
+  // is typed goes into the document, and Done shows it in the page view again.
+  await page.getByRole("button", { name: "Edit", exact: true }).first().click();
+  const editor = page.locator(".typstream-editor").first();
+  await editor.locator(".typstream-page canvas").first().waitFor({ timeout: 30_000 });
+  await page.getByRole("toolbar", { name: "Formatting" }).waitFor();
+  await editor.locator(".typstream-editor-caret").waitFor({ timeout: 30_000 });
+  await page.keyboard.press("Control+End");
+  await page.keyboard.press("Enter");
+  await page.keyboard.type("Checked by the editor.");
+  await page.getByRole("button", { name: "Done", exact: true }).first().click();
+  // The page view renders near the viewport (`lazy`): the answer is above it after editing its end.
+  await answers.first().scrollIntoViewIfNeeded();
+  await page.waitForFunction(
+    (el) => el?.textContent.includes("Checked by the editor."),
+    await answers.first().locator(".typstream-host").elementHandle(),
+    { timeout: 30_000 },
+  );
   if (errors.length) throw new Error(`console errors:\n${errors.join("\n")}`);
   // The telemetry hooks (app/telemetry.tsx) reached the example's sink.
   const reached = () => /\[telemetry\] rendered \S+ rev \d+ \(final\)/.test(log);
@@ -126,7 +144,7 @@ try {
   if (!reached()) throw new Error(`no telemetry reached /api/telemetry:\n${log}`);
   if (process.argv.includes("--screenshot")) await page.screenshot({ path: "smoke.png", fullPage: true });
   console.log(
-    `ok: streamed an answer, an edit of it and an edit in place with no error frames (${text.length} characters in the first), and exported a ${docx.length}-byte DOCX`,
+    `ok: streamed an answer, an edit of it and an edit in place with no error frames (${text.length} characters in the first), edited it on its pages, and exported a ${docx.length}-byte DOCX`,
   );
 } finally {
   await browser.close();

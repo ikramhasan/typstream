@@ -375,6 +375,9 @@ importers:
       '@typstream/ai':
         specifier: workspace:*
         version: link:../../packages/ai
+      '@typstream/editor-react':
+        specifier: workspace:*
+        version: link:../../packages/editor-react
       '@typstream/edu':
         specifier: workspace:*
         version: link:../../packages/edu

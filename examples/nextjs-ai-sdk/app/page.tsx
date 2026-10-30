@@ -39,6 +39,7 @@ import {
   isStreaming,
   textOf,
 } from "@typstream/ai";
+import { TypstEditor } from "@typstream/editor-react";
 import { edu, SHOW_ANSWERS_INPUT } from "@typstream/edu";
 import { googleFonts } from "@typstream/google-fonts";
 import { mindmap } from "@typstream/mindmap";
@@ -56,6 +57,7 @@ import {
   LoaderCircleIcon,
   PencilIcon,
   RotateCwIcon,
+  SparklesIcon,
   SquareIcon,
   SquarePenIcon,
   Undo2Icon,
@@ -523,6 +525,8 @@ type AnswerProps = {
   onRetry: () => void;
   /** More of the footer: Edit, and an edit's Keep and Undo. */
   children?: ReactNode;
+  /** Editing on the pages (#36): the editor, shown in place of the document. */
+  editor?: ReactNode;
   /** Below the footer: what the model said about its edits, the field asking what to change. */
   after?: ReactNode;
 };
@@ -538,6 +542,7 @@ const Answer = ({
   onRetry,
   children,
   after,
+  editor,
 }: AnswerProps) => {
   const t = useTypstream();
   // Compiles that failed while streaming. The last good render stays on screen, so a reader never
@@ -554,6 +559,12 @@ const Answer = ({
   return (
     <Message>
       <MessageContent>
+        {editor ? (
+          // The editor shows the pages as the page view does, and edits them there.
+          <article className="answer editing px-4 pt-2 pb-8" data-target="paged">
+            {editor}
+          </article>
+        ) : (
         <article
           // HTML in a card; pages on their own, as sheets with shadows (app/globals.css), inset so the
           // chat's scroll area doesn't cut the shadows off at the sides.
@@ -595,6 +606,7 @@ const Answer = ({
             />
           </div>
         </article>
+        )}
         <MessageFooter className="gap-1 px-0">
           <CopySource target={target} text={text} exportHtml={t.exportHtml} disabled={streaming} />
           <Export
@@ -755,7 +767,7 @@ const EditField = ({ onSubmit, onCancel }: { onSubmit: (instruction: string) => 
   );
 };
 
-type DocumentAnswerProps = Omit<AnswerProps, "streamingRange" | "marks" | "children" | "after"> & {
+type DocumentAnswerProps = Omit<AnswerProps, "streamingRange" | "marks" | "children" | "after" | "editor"> & {
   /** The answer's message id: its edits made in place are kept under it. */
   id: string;
   /** For an answer to an edit request typed in the chat: its session, and the answer that feeds it. */
@@ -785,10 +797,14 @@ const DocumentAnswer = ({ id, text, streaming, answer, history, latest, ...props
   const [asking, setAsking] = useState(false);
   const [running, setRunning] = useState<AbortController | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
+  // Edited on the pages (#36): the teacher's text, until an edit with AI takes over from it.
+  const [editing, setEditing] = useState(false);
+  const [manual, setManual] = useState<string | null>(null);
 
   const edit = async (instruction: string) => {
     if (state?.phase === "review") session?.keep();
-    const document = state?.text ?? text;
+    const document = manual ?? state?.text ?? text;
+    setManual(null);
     const next = createEditSession(document);
     latest.set(id, next);
     setSession(next);
@@ -826,16 +842,36 @@ const DocumentAnswer = ({ id, text, streaming, answer, history, latest, ...props
   };
 
   const writing = streaming || running !== null || state?.phase === "streaming";
+  const current = manual ?? state?.text ?? text;
   const doing = state?.edits.find((e) => e.status === "quoting" || e.status === "writing");
   const feedback = state && state.phase !== "streaming" ? editFeedback(state.edits) : null;
   const failed = state?.edits.filter((e) => e.status === "failed").length ?? 0;
   return (
     <Answer
       {...props}
-      text={state?.text ?? text}
-      streaming={state ? state.streaming : streaming}
-      streamingRange={state?.streamingRange ?? null}
-      marks={state ? marksOf(state) : undefined}
+      text={current}
+      streaming={manual === null && state ? state.streaming : manual === null && streaming}
+      streamingRange={manual === null ? (state?.streamingRange ?? null) : null}
+      marks={manual === null && state ? marksOf(state) : undefined}
+      editor={
+        editing ? (
+          <TypstEditor
+            source={current}
+            onChange={setManual}
+            plugins={PLUGINS}
+            resolveImage={IMAGES}
+            inputs={props.answers ? ANSWERS : undefined}
+            layout="fit-width"
+            autoFocus
+            toolbarEnd={
+              <Button size="sm" onClick={() => setEditing(false)}>
+                <CheckIcon data-icon="inline-start" />
+                Done
+              </Button>
+            }
+          />
+        ) : undefined
+      }
       after={
         <>
           {state?.message && <p className="text-sm whitespace-pre-wrap text-muted-foreground">{state.message}</p>}
@@ -844,8 +880,25 @@ const DocumentAnswer = ({ id, text, streaming, answer, history, latest, ...props
         </>
       }
     >
-      <Action label="Edit" onClick={() => setAsking((open) => !open)} disabled={writing}>
-        <PencilIcon />
+      <Action
+        label={editing ? "Done editing" : "Edit"}
+        onClick={() => {
+          setAsking(false);
+          setEditing((on) => !on);
+        }}
+        disabled={writing}
+      >
+        {editing ? <CheckIcon /> : <PencilIcon />}
+      </Action>
+      <Action
+        label="Edit with AI"
+        onClick={() => {
+          setEditing(false);
+          setAsking((open) => !open);
+        }}
+        disabled={writing}
+      >
+        <SparklesIcon />
       </Action>
       {running && (
         <Button size="sm" variant="outline" className="ml-2" onClick={() => running.abort()}>
