@@ -242,8 +242,9 @@
   text-align: end;
 }
 
-/* Layout containers. Blocks inside an align() move like its text. Its paragraph, or a pad's, is spaced as one. */
-:where(.typstream) :is(.ts-align, .ts-pad) {
+/* Layout containers. Blocks inside an align() move like its text. An align() is spaced by what it holds (its
+   margins collapse through it); a pad's content, or what a vertical align() holds, is spaced as one paragraph. */
+:where(.typstream) :is(.ts-align-v, .ts-pad) {
   margin-block: 0.56em;
 }
 :where(.typstream .ts-align-center) > * {
@@ -290,12 +291,6 @@
 /* On the renderer's pages a page break is where a page ends, nothing to see. */
 :where(.typstream .typstream-flow .ts-pagebreak) {
   height: 0;
-}
-:where(.typstream .ts-marginal) > :first-child {
-  margin-block-start: 0;
-}
-:where(.typstream .ts-marginal) > :last-child {
-  margin-block-end: 0;
 }
 
 /* Boxes and blocks. Typst draws strokes centred on the edge and counts them in the size. */
@@ -404,12 +399,20 @@
 /* Last, to win over the margins above. */
 /* Typst spaces blocks apart, not from the edges of what contains them. */
 :where(.typstream)
-  :is(.ts-cell, .ts-valign-body, .ts-align-body, .ts-block, .ts-shape, .ts-box, .ts-stack-item, .ts-place, .ts-align, .ts-pad, .ts-item-body, .ts-columns, figure)
-  > :is(:first-child, .ts-place:first-child + *) {
+  :is(.ts-cell, .ts-valign-body, .ts-align-body, .ts-block, .ts-shape, .ts-box, .ts-stack-item, .ts-place, .ts-align-v, .ts-pad, .ts-item-body, .ts-columns, .ts-marginal, figure)
+  > :is(:first-child, .ts-place:first-child + *),
+:where(.typstream)
+  :is(.ts-cell, .ts-valign-body, .ts-align-body, .ts-block, .ts-shape, .ts-box, .ts-stack-item, .ts-place, .ts-align-v, .ts-pad, .ts-item-body, .ts-columns, .ts-marginal, figure)
+  > .ts-align:first-child
+  > :first-child {
   margin-block-start: 0;
 }
 :where(.typstream)
-  :is(.ts-cell, .ts-valign-body, .ts-align-body, .ts-block, .ts-shape, .ts-box, .ts-stack-item, .ts-place, .ts-align, .ts-pad, .ts-item-body, .ts-columns, figure)
+  :is(.ts-cell, .ts-valign-body, .ts-align-body, .ts-block, .ts-shape, .ts-box, .ts-stack-item, .ts-place, .ts-align-v, .ts-pad, .ts-item-body, .ts-columns, .ts-marginal, figure)
+  > :last-child,
+:where(.typstream)
+  :is(.ts-cell, .ts-valign-body, .ts-align-body, .ts-block, .ts-shape, .ts-box, .ts-stack-item, .ts-place, .ts-align-v, .ts-pad, .ts-item-body, .ts-columns, .ts-marginal, figure)
+  > .ts-align:last-child
   > :last-child {
   margin-block-end: 0;
 }
@@ -462,6 +465,7 @@
   margin-block-start: 0.56em;
 }
 /* Typst drops the spacing above the first block of a page (the renderer's pages, below a break too). */
-:where(.typstream .typstream-flow) > :first-child {
+:where(.typstream .typstream-flow) > :first-child,
+:where(.typstream .typstream-flow) > .ts-align:first-child > :first-child {
   margin-block-start: 0;
 }

@@ -177,6 +177,17 @@
   if size != 11pt { _len(size) }
 }
 
+/// Whether content is only inline: text and what goes in a line with it.
+#let _inline-only(c) = {
+  if type(c) == str { return true }
+  if type(c) != content { return false }
+  let f = c.func()
+  if f == [].func() { return c.children.all(_inline-only) }
+  if f == text(1pt)[].func() { return _inline-only(c.child) }
+  if f in (strong, emph, link, highlight, underline, strike, overline, sub, super, smallcaps) { return _inline-only(c.body) }
+  f in (text, [ ].func(), linebreak, box, h, smartquote) or (f in (raw, math.equation) and not c.block)
+}
+
 /// A list after a blank line isn't attached to the paragraph before it (typst-layout's LIST_RULE attaches a tight
 /// list only to a paragraph it follows directly), which the HTML can't tell: an empty `.ts-start` goes between them,
 /// as the renderer's `data-typstream-start` marks the document's top-level blocks.
@@ -688,7 +699,12 @@
     let indent = par.first-line-indent
     let (amount, all) = if type(indent) == dictionary { (indent.at("amount", default: 0pt), indent.at("all", default: false)) } else { (indent, false) }
     let amount = if amount == 0pt { none } else { _len(amount) }
-    let style = _css(..(font-size: _size(), text-indent: if all { amount }, "--ts-indent": if not all { amount }))
+    let style = _css(..(
+      font-size: _size(),
+      text-align: { let a = _text-align(align.alignment); if a != "start" { a } },
+      text-indent: if all { amount },
+      "--ts-indent": if not all { amount },
+    ))
     if style != none { html.elem("p", attrs: (style: style) + if amount != none and not all { (class: "ts-indent") } else { (:) }, body) }
     else if body == b { it } else { html.elem("span", attrs: (class: "ts-par"), body) }
   })
@@ -719,7 +735,16 @@
     let x = _text-align(it.alignment)
     let y = _vertical-align(it.alignment)
     let class = "ts-align" + if x != none { " ts-align-" + x } + if y != none { " ts-align-v" }
-    _el("div", class, style: _css(text-align: x, justify-content: y), if y == none { it.body } else { _el("div", "ts-align-body", it.body) })
+    // Text alone is a paragraph in Typst, spaced as one, in the size all its text has (which may not be the
+    // align's): a paragraph aligned (the `par` rule reads `align`), which Typst's HTML writes only if a paragraph
+    // break follows the text.
+    if y == none and _inline-only(it.body) and text.costs.widow != _inline {
+      // (A set rule styles what follows it in the block, not a returned value.)
+      set align(it.alignment)
+      it.body + parbreak()
+    } else {
+      _el("div", class, style: _css(text-align: x, justify-content: y), if y == none { it.body } else { _el("div", "ts-align-body", it.body) })
+    }
   })
   show stack: html-only(it => {
     let dir = (ltr: "row", rtl: "row-reverse", ttb: "column", btt: "column-reverse").at(repr(it.dir))
