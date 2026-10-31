@@ -77,9 +77,9 @@ export const standalonePages = async (html: string, options: StandalonePagesOpti
   const doc = options.document ?? document;
   const view = doc.defaultView as Window & typeof globalThis;
   if (options.typstFonts) registerTypstFonts(options.typstFonts, doc);
-  // Wide enough for any page at its size (a sheet is at most as wide as its container), and out of sight.
+  // As wide as its pages (their positions are the file's: from its left edge), and out of sight.
   const host = doc.createElement("div");
-  host.style.cssText = "position:absolute;left:-200000px;top:0;width:100000px;visibility:hidden;pointer-events:none";
+  host.style.cssText = "position:absolute;left:-200000px;top:0;width:max-content;visibility:hidden;pointer-events:none";
   host.setAttribute("aria-hidden", "true");
   const root = doc.createElement("div");
   host.append(root);

@@ -143,17 +143,39 @@ const STICKY = "h1, h2, h3, h4, h5, h6, .ts-sticky";
 const OWN_ABOVE = "h1, h2, h3, h4, h5, h6, .ts-sp-a";
 const OWN_BELOW = "h1, h2, h3, h4, h5, h6, .ts-sp-b";
 
-/** Spacing (`v`) between two blocks' own spacings: Typst adds it to the larger of the two (distribute.rs,
- * keep_spacing), which CSS can't pick, so html-compat's CSS leaves both and the smaller goes here. */
+/** What a block's margins were inline before `collapseSpacing` set them: put back before it measures again. */
+const inlineMargins = new WeakMap<HTMLElement, [string, string]>();
+
+/**
+ * Spacing (`v`) between two blocks whose spacings are alike (both their own, or both paragraph spacing): Typst adds
+ * it to the larger of the two (distribute.rs, keep_spacing), which CSS can't pick. html-compat's CSS leaves both
+ * while the `v` is `.ts-v-both`; here the larger stays, the other goes. (Unalike, the block's own wins: the CSS.)
+ */
 const collapseSpacing = (root: HTMLElement, view: Window) => {
+  const pairs: [HTMLElement, HTMLElement, HTMLElement][] = [];
   for (const v of root.querySelectorAll<HTMLElement>(".ts-v:not(.ts-v-weak, .ts-vfill)")) {
     const [before, after] = [v.previousElementSibling as HTMLElement | null, v.nextElementSibling as HTMLElement | null];
-    if (!before?.matches(OWN_BELOW) || !after?.matches(OWN_ABOVE)) continue;
-    before.style.marginBlockEnd = after.style.marginBlockStart = "";
-    const below = Number.parseFloat(view.getComputedStyle(before).marginBlockEnd) || 0;
-    const above = Number.parseFloat(view.getComputedStyle(after).marginBlockStart) || 0;
-    if (below < above) before.style.marginBlockEnd = "0px";
-    else after.style.marginBlockStart = "0px";
+    if (!before || !after || before.matches(OWN_BELOW) !== after.matches(OWN_ABOVE)) continue;
+    if (!isBlock(before, view) || !isBlock(after, view)) continue;
+    pairs.push([before, v, after]);
+  }
+  for (const [before, v, after] of pairs) {
+    v.classList.add("ts-v-both");
+    for (const el of [before, after]) {
+      const was = inlineMargins.get(el) ?? [el.style.marginBlockEnd, el.style.marginBlockStart];
+      inlineMargins.set(el, was);
+      [el.style.marginBlockEnd, el.style.marginBlockStart] = was;
+    }
+  }
+  const sizes = pairs.map(([before, , after]) => [
+    Number.parseFloat(view.getComputedStyle(before).marginBlockEnd) || 0,
+    Number.parseFloat(view.getComputedStyle(after).marginBlockStart) || 0,
+  ]);
+  for (const [i, [before, v, after]] of pairs.entries()) {
+    const [below, above] = sizes[i] as [number, number];
+    v.classList.remove("ts-v-both");
+    before.style.marginBlockEnd = `${below >= above ? below : 0}px`;
+    after.style.marginBlockStart = `${below >= above ? 0 : above}px`;
   }
 };
 
@@ -1250,9 +1272,49 @@ export const createHtmlPages = (
     root.dataset.baseline = baseline;
   };
 
+  /**
+   * Text in more than one size on a line: the browser puts the line's baseline where its largest text's rounded
+   * ascent does, so each text's own baseline correction (`--ts-x`, made for its size) misses for the smaller ones,
+   * which take the largest's. Only in blocks html-compat sized text in.
+   */
+  const alignMixedLines = () => {
+    for (const el of flow.querySelectorAll<HTMLElement>('.typstream-t[style*="--ts-x"]')) el.style.removeProperty("--ts-x");
+    if (!baseline || baseline === "exact") return;
+    const sized = new Set<Element>();
+    for (const el of flow.querySelectorAll('span[style*="font-size"]')) {
+      let block = el.parentElement;
+      while (block && block !== flow && !isBlock(block, view)) block = block.parentElement;
+      if (block && block !== flow) sized.add(block);
+    }
+    for (const block of sized) {
+      const texts = [...block.querySelectorAll<HTMLElement>(".typstream-t")].map((el) => {
+        const style = view.getComputedStyle(el);
+        const size = Number.parseFloat(style.fontSize);
+        const shift = Number.parseFloat(style.top) || 0;
+        const r = el.getClientRects()[0];
+        // The browser's baseline, near enough to tell lines apart: below the box by its descent, without the shift.
+        const at = r ? r.bottom / scale - shift - Math.round(0.246 * size) : Number.NaN;
+        return { el, size, shift, at };
+      });
+      if (new Set(texts.map((t) => t.size)).size < 2) continue;
+      const lines: (typeof texts)[] = [];
+      for (const t of texts) {
+        if (Number.isNaN(t.at)) continue;
+        const line = lines.find((l) => Math.abs((l[0] as (typeof texts)[number]).at - t.at) < 2);
+        if (line) line.push(t);
+        else lines.push([t]);
+      }
+      for (const line of lines) {
+        const largest = line.reduce((a, b) => (b.size > a.size ? b : a));
+        for (const t of line) if (t.size < largest.size) t.el.style.setProperty("--ts-x", `${largest.shift}px`);
+      }
+    }
+  };
+
   const paginate = (from: Node | null) => {
     place();
     findBaseline();
+    alignMixedLines();
     collapseSpacing(flow, view);
     fillLines(flow);
     // Footnotes: Typst's endnotes out of sight, their entries measured as the pages will show them.

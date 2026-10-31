@@ -737,6 +737,8 @@
 
 /// Applies html-compat to a document: `#show: html-compat`.
 #let html-compat(doc) = context if target() != "html" { doc } else {
+  // For what lays itself out as on the pages here (the engine's runtime library's error block).
+  state("typstream/html-compat").update(true)
   // In HTML only: a paged compile gets the document as it is, its pages unchanged. Inside `html.frame` the target is
   // "paged" again, where each rule leaves what it shows to Typst.
   // Show rules' functions see the styles where they apply, `target()` included: no `context` around what they leave

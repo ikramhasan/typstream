@@ -46,6 +46,8 @@ const until = (view: MountedTypstream, done: (s: DocumentState) => boolean, ms =
 
 const settled = (s: DocumentState) => s.status === "done" || s.status === "error";
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+/** The text a file shows. */
+const textOf = (file: string) => new DOMParser().parseFromString(file, "text/html").body.textContent ?? "";
 
 describe(`mountTypstream in ${browser}`, () => {
   it("follows a growing source, finishes it, and cleans up on destroy", async () => {
@@ -290,7 +292,11 @@ describe(`mountTypstream in ${browser}`, () => {
     const file = await view.exportHtml({ title: "Worksheet" });
     expect(file).toContain('<meta http-equiv="Content-Security-Policy"');
     expect(file).toContain(".marker { color: red }");
-    expect(file).toContain("<h2>Worksheet</h2>");
+    // Laid out as the pages: the renderer's sheets, the heading in them.
+    expect(file).toContain('class="typstream-page"');
+    expect(textOf(file)).toContain("Worksheet");
+    // Or Typst's HTML as it is.
+    expect(await view.exportHtml({ title: "Worksheet", pages: false })).toContain("<h2>Worksheet</h2>");
     expect(view.exportSource()).toBe(source);
     view.destroy();
     el.remove();
@@ -326,9 +332,9 @@ describe(`mountTypstream in ${browser}`, () => {
     expect(await size({ width: "400" })).toEqual([400, 200]);
     expect(await size()).toEqual([300, 200]);
     const file = await view.exportHtml({ inputs: { copy: "teacher" }, title: "Memo" });
-    expect(file).toContain("Copy: teacher, kind: memo");
+    expect(textOf(file)).toContain("Copy: teacher, kind: memo");
     expect(file).toContain("<title>Memo</title>");
-    expect(await view.exportHtml()).toContain("Copy: student, kind: memo");
+    expect(textOf(await view.exportHtml())).toContain("Copy: student, kind: memo");
     view.destroy();
     el.remove();
   });

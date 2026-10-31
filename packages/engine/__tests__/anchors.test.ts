@@ -10,7 +10,7 @@ import { type CorpusEntry, loadCorpus, streamOf } from "@typstream/corpus";
 import { anchorPoints, createHealer, heal, recognize } from "@typstream/heal";
 import { beforeAll, describe, expect, it } from "vitest";
 import type { AdapterDocument, EngineAdapter } from "../src/server/adapter";
-import { Anchors, anchorText, fromAnchored, insertAnchors } from "../src/server/anchors";
+import { Anchors, anchorText, fromAnchored, insertAnchors, pastRules } from "../src/server/anchors";
 import { LAYOUT_PROFILE } from "../src/server/profile";
 import { createServer } from "../src/server/server";
 import { nodeEngineWasm } from "./support/engine-wasm";
@@ -46,6 +46,38 @@ describe("anchorPoints", () => {
 
   it("ignores lines inside content blocks and text brackets", () => {
     expect(anchoredLines("#[\n\nInner\n]\n\nOuter [\n\nbracket]\n")).toEqual(["#[", "Outer ["]);
+  });
+});
+
+describe("pastRules", () => {
+  const moved = (text: string) => {
+    const { checkpoints } = recognize(text);
+    return pastRules(text, anchorPoints(text, checkpoints), checkpoints).map((p) =>
+      p === null ? null : text.slice(p, text.indexOf("\n", p) >>> 0),
+    );
+  };
+
+  it("moves an anchor past the set and show rules its block starts with", () => {
+    // In a template's output, and after `set page`: the page html-compat reports is the block's.
+    expect(moved("#set text(9pt)\n= Part A\n\n#set page(\n  margin: 1cm,\n)\n#set text(9pt)\nBody\n")).toEqual([
+      null,
+      "= Part A",
+      "Body",
+    ]);
+  });
+
+  it("gives a block of rules only none, and stays before a label", () => {
+    // A template's header, laid out in the template's page, comes before the next anchor.
+    expect(moved("#show: doc => [Header #doc]\n= Part A\n\n#set text(9pt)\n<intro>\n")).toEqual([
+      null,
+      "= Part A",
+      "#set text(9pt)",
+    ]);
+  });
+
+  it("names the block's start", () => {
+    const anchored = new Anchors().apply("#show: doc => doc\n#let x = 1\nBody\n");
+    expect(anchored.text).toBe(`#show: doc => doc\n${anchorText(0)}#let x = 1\nBody\n`);
   });
 });
 
@@ -135,7 +167,9 @@ describe("anchored compiles", () => {
       const compiler = adapter.open();
       compiler.setFiles(assets(entry));
       const count = await check(compiler, entry.source, entry.id);
-      expect(count, entry.id).toBe(points(entry.source).length);
+      // Every block start's but those of rules only (pastRules).
+      expect(count, entry.id).toBe(new Anchors().apply(entry.source).at.length);
+      expect(count, entry.id).toBeGreaterThan(points(entry.source).length / 2);
       compiler.close();
     }
   }, 120_000);

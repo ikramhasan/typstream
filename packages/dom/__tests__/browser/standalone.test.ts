@@ -6,11 +6,14 @@
 // redirect doesn't.
 
 import type { Engine } from "@typstream/engine";
-import { htmlCompatCss } from "@typstream/html-compat";
+import { htmlCompat, htmlCompatCss } from "@typstream/html-compat";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { commands, server } from "vitest/browser";
+import { standalonePages } from "../../src/export/pages";
 import { standaloneHtml } from "../../src/export/standalone";
-import { type CorpusDocument, compileHtml, openHtml, startEngine } from "../support/html";
+import { registerTypstFonts } from "../../src/html/fonts";
+import { createHtmlRenderer } from "../../src/html/renderer";
+import { type CorpusDocument, compileHtml, FONTS, openHtml, startEngine } from "../support/html";
 
 let engine: Engine;
 let corpus: CorpusDocument[];
@@ -54,6 +57,17 @@ const open = async (file: string): Promise<HTMLIFrameElement> => {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** Each line of text's top and left on its page, in px: the page it is on first. */
+const lines = (root: ParentNode): string[] => {
+  const pages = [...root.querySelectorAll(".typstream-page")].map((p) => p.getBoundingClientRect());
+  return [...root.querySelectorAll(".typstream-flow .typstream-t")].map((t) => {
+    const r = t.getBoundingClientRect();
+    const page = Math.max(0, pages.filter((p) => p.top <= r.top + 1).length - 1);
+    const p = pages[page] as DOMRect;
+    return `${page} ${Math.round(r.top - p.top)} ${Math.round(r.left - p.left)} ${t.textContent}`;
+  });
+};
+
 describe(`standalone HTML export in ${server.browser}`, () => {
   it("opens on its own with the theme, html-compat's CSS and the math font", async () => {
     const entry = corpus.find((e) => e.name === "exam-algebra-final");
@@ -74,6 +88,40 @@ describe(`standalone HTML export in ${server.browser}`, () => {
     expect(win.getComputedStyle(math as Element).fontFamily).toContain("New Computer Modern Math");
     await doc.fonts.load('16px "New Computer Modern Math"');
     expect(doc.fonts.check('16px "New Computer Modern Math"')).toBe(true);
+    frame.remove();
+  }, 120_000);
+
+  it("lays the export out as the pages, as the HTML renderer shows them, with their fonts", async () => {
+    const entry = corpus.find((e) => e.name === "exam-algebra-final");
+    if (!entry) throw new Error("no corpus entry exam-algebra-final");
+    const html = await exportHtml(entry.source, entry.files);
+    const file = await standalonePages(html, { plugins: [htmlCompat], typstFonts: FONTS });
+    expect(file).toContain('<meta http-equiv="Content-Security-Policy"');
+    expect(file).toMatch(/font-family: typstream-libertinus-serif;\n {2}src: url\("data:font\/(ttf|otf);base64,/);
+    expect(file).not.toContain('class="typstream-underlay"');
+    // The renderer, laid out here as the file was.
+    registerTypstFonts(FONTS);
+    const root = document.createElement("div");
+    root.style.cssText = "position: absolute; top: 0; left: 0; width: 2000px";
+    document.body.append(root);
+    const renderer = createHtmlRenderer(root, { plugins: [htmlCompat], layout: "fixed" });
+    (root.querySelector(".typstream-paged") as HTMLElement).style.gap = "0";
+    renderer.update(html);
+    for (let i = 0; i < 3; i++) {
+      await document.fonts.ready;
+      await sleep(100);
+    }
+    const frame = await open(file);
+    frame.style.width = "1000px";
+    const doc = frame.contentDocument as Document;
+    await doc.fonts.ready;
+    await sleep(100);
+    const shown = lines(root);
+    expect(shown.length).toBeGreaterThan(20);
+    expect(doc.querySelectorAll(".typstream-page").length).toBe(root.querySelectorAll(".typstream-page").length);
+    expect(lines(doc)).toEqual(shown);
+    renderer.dispose();
+    root.remove();
     frame.remove();
   }, 120_000);
 
