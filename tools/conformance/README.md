@@ -29,7 +29,7 @@ per set of `sys.inputs`).
 - **HTML target = paged view** (`src/html.ts`, in the `paged` project): each example mounted both ways in the document
   panel (`fit-width`), the HTML target with html-compat and Typst's fonts as `<Typstream>` mounts it. Every line of the
   pages' text (the paged artifact's runs) found in the HTML target's pages (each character's box, its baseline 0.246em
-  above the box's bottom) is on the same page, within 1 pt of where Typst set it, and at least 60% of them are found.
+  above the box's bottom) is on the same page, within 1 pt of where Typst set it, and at least half of them are found.
   Text the HTML draws as a picture (equations, drawings) isn't compared, nor a line's start when Typst's run begins
   with spaces (code's indentation). An example whose look the HTML target can't match yet names why in `htmlGap`, and
   the check skips it.
