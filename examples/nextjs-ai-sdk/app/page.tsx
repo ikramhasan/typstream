@@ -54,7 +54,15 @@ import {
   SquarePenIcon,
 } from "lucide-react";
 import { type FormEvent, type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { type DocumentState, fetchImages, Typstream, type TypstreamInfo, useTypstream } from "typstream";
+import {
+  type DocumentState,
+  fetchImages,
+  htmlCompat,
+  Typstream,
+  type TypstreamInfo,
+  universe,
+  useTypstream,
+} from "typstream";
 import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import { Button } from "@/components/ui/button";
 import {
@@ -98,6 +106,11 @@ const TARGETS = [
  * array would reopen every answer.
  */
 const PLUGINS = [edu, googleFonts, mindmap];
+/**
+ * The editor's: `typstream`'s <Typstream> adds html-compat and universe (CeTZ and the other packages) before
+ * the plugins it's given, and the editor must open the document with the same ones to draw the same pages.
+ */
+const EDITOR_PLUGINS = [htmlCompat, universe, ...PLUGINS];
 
 /**
  * The images the model's searches found: resized ones on thumb.wikimedia.org, small originals on
@@ -476,7 +489,7 @@ const Answer = ({ text: answered, streaming, target, answers, busy, onRetry }: A
             <TypstEditor
               source={text}
               onChange={setEdited}
-              plugins={PLUGINS}
+              plugins={EDITOR_PLUGINS}
               resolveImage={IMAGES}
               inputs={answers ? ANSWERS : undefined}
               layout="fit-width"

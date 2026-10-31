@@ -1,8 +1,10 @@
 // What the offline replay streams: a worksheet like the ones the instructions
 // ask for, written as a model writes Typst (headings, prose, inline and display
-// math, a table, lists, a mind map), and the same worksheet revised, as the
-// answer to a follow-up.
-export const WORKSHEET = `= The Pythagorean theorem
+// math, a CeTZ drawing, a table, lists, a mind map), and the same worksheet
+// revised, as the answer to a follow-up.
+export const WORKSHEET = `#import "@preview/cetz:0.5.3"
+
+= The Pythagorean theorem
 _Grade 8 · Worksheet 4 · 30 minutes_
 
 == Warm-up
@@ -13,6 +15,15 @@ $ a^2 + b^2 = c^2 $
 
 where $c$ is the hypotenuse and $a$ and $b$ are the legs. The converse holds too: if $a^2 + b^2 = c^2$
 for the sides of a triangle, the triangle has a right angle.
+
+#align(center, cetz.canvas({
+  import cetz.draw: *
+  line((0, 0), (4, 0), (4, 3), close: true)
+  rect((3.6, 0), (4, 0.4))
+  content((2, -0.4), [$a$])
+  content((4.4, 1.5), [$b$])
+  content((1.7, 1.8), [$c$])
+}))
 
 == At a glance
 #mindmap[

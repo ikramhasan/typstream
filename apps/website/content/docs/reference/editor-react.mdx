@@ -44,6 +44,18 @@ export function EditDocument({ initial }: { initial: string }) {
 ([`TypstreamProvider`](/docs/reference/react)), the plugins' files, packages and preambles, a `template`, `inputs`. Show
 the page view and the editor with the same props and they draw the same pages.
 
+<Callout type="warn" title="typstream's <Typstream> adds plugins">
+The `typstream` package's `<Typstream>` puts `htmlCompat` and `universe` before the plugins it's given. Pass them to
+the editor too, or a document that imports CeTZ (or any package universe allows) shows "package … is not allowed" in
+the editor:
+
+```tsx
+import { htmlCompat, universe } from "typstream";
+
+<TypstEditor source={source} onChange={setSource} plugins={[htmlCompat, universe, edu]} />;
+```
+</Callout>
+
 ## What it does
 
 - **Typing** goes into the source at the caret, escaped so it shows as typed. Enter starts a paragraph (a list item in a

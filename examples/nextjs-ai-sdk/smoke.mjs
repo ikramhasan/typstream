@@ -4,7 +4,8 @@
 // answer, the worksheet again with the change. It checks that both answers stream
 // into <Typstream> and finish, with no error frame, that the export downloads a
 // .docx, that the replay's mind map is interactive in the HTML answer (a render
-// island), and that telemetry reached the example's sink. Without
+// island), that the editor shows the first answer's pages as the view does (its
+// CeTZ drawing compiles there too), and that telemetry reached the example's sink. Without
 // ANTHROPIC_API_KEY the server replays a recorded worksheet and a revision of it,
 // so this runs offline.
 
@@ -92,6 +93,13 @@ try {
   await editor.locator(".typstream-page canvas").first().waitFor({ timeout: 30_000 });
   await page.getByRole("toolbar", { name: "Formatting" }).waitFor();
   await editor.locator(".typstream-editor-caret").waitFor({ timeout: 30_000 });
+  // The same pages as the view: the replay's CeTZ drawing compiles in the editor too (its plugins are the view's).
+  if (!process.env.ANTHROPIC_API_KEY) {
+    const layer = editor.locator(".typstream-text-layer").first();
+    await layer.filter({ hasText: "hypotenuse" }).waitFor({ timeout: 30_000 });
+    const edited = await layer.textContent();
+    if (/couldn.t be displayed/.test(edited)) throw new Error(`the editor's pages differ from the view's: ${edited}`);
+  }
   await page.keyboard.press("Control+End");
   await page.keyboard.press("Enter");
   await page.keyboard.type("Checked by the editor.");
