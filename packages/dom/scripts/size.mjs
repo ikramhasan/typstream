@@ -29,8 +29,10 @@ const ok = [
   // (#28: the marker's data read before sanitizing, one island per marker identity, their CSS; 0.8 KB); 10.7 KB until
   // the HTML target was laid out on pages as the paged view's (pages.ts: sheets, page breaks, headers and footers,
   // columns, fractional spacing, footnotes, repeated table headers, boxes broken across pages, the baseline
-  // correction; the inline-run passes; Typst's fonts; 8.5 KB) made it 19.2 KB.
-  await measure("@typstream/dom (HTML renderer, incl. its CSS)", "src/html/index.ts", 19.3 * 1024),
+  // correction; the inline-run passes; Typst's fonts; 8.5 KB) made it 19.2 KB; 19.3 KB until page runs (numbering,
+  // counter resets, binding), page columns, mixed-size lines, spacings around `v` and the descent borrow (2.8 KB)
+  // made it 22.1 KB.
+  await measure("@typstream/dom (HTML renderer, incl. its CSS)", "src/html/index.ts", 22.2 * 1024),
   // 4 KB until canvas pages (#14): the painter, the drawing's decoder, the link layer and pixel management, 1.8 KB;
   // 5.6 KB until render islands on pages (#28: the island manager the HTML renderer has too, 0.8 KB, and their layer
   // over each page, its CSS and the covered text hidden, 0.4 KB) made it 6.76 KB.

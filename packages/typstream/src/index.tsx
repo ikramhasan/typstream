@@ -102,6 +102,7 @@ export {
   type TypstreamDefaults,
   type TypstreamExportOptions,
   type TypstreamHandle,
+  type TypstreamHtmlExportOptions,
   type TypstreamInfo,
   TypstreamProvider,
   type TypstreamProviderProps,

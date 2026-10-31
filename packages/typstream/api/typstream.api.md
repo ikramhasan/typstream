@@ -33,6 +33,7 @@ import { TelemetryHooks } from '@typstream/react';
 import { TypstreamDefaults } from '@typstream/react';
 import { TypstreamExportOptions } from '@typstream/react';
 import { TypstreamHandle } from '@typstream/react';
+import { TypstreamHtmlExportOptions } from '@typstream/react';
 import { TypstreamInfo } from '@typstream/react';
 import { TypstreamProps as TypstreamProps_2 } from '@typstream/react';
 import { TypstreamProvider } from '@typstream/react';
@@ -101,6 +102,8 @@ export { TypstreamDefaults }
 export { TypstreamExportOptions }
 
 export { TypstreamHandle }
+
+export { TypstreamHtmlExportOptions }
 
 export { TypstreamInfo }
 

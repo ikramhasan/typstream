@@ -156,7 +156,11 @@ export const buildStandalone = (html: string, options: StandaloneHtmlOptions, la
     "form-action 'none'",
   ].join("; ");
   // `</style` would end the element early wherever it appears in the CSS.
-  const css = [fontFace, layout?.css ?? `${THEME_CSS}\n${PAGE_CSS}`, ...stylesheetsOf(options.plugins, options.stylesheets)]
+  const css = [
+    fontFace,
+    layout?.css ?? `${THEME_CSS}\n${PAGE_CSS}`,
+    ...stylesheetsOf(options.plugins, options.stylesheets),
+  ]
     .join("\n")
     .replace(/<\/(style)/gi, "<\\/$1");
 

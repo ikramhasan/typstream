@@ -126,7 +126,7 @@ export interface MountedTypstream {
     readonly element: HTMLElement;
     // @beta
     exportDocx(options?: TypstreamExportOptions): Promise<Uint8Array>;
-    exportHtml(options?: StandaloneHtmlOptions & TypstreamExportOptions): Promise<string>;
+    exportHtml(options?: TypstreamHtmlExportOptions): Promise<string>;
     exportPdf(options?: TypstreamExportOptions): Promise<Uint8Array>;
     exportSource(): string;
     getState(): DocumentState | null;
@@ -209,6 +209,15 @@ export interface StandaloneHtmlOptions {
 }
 
 // @public
+export const standalonePages: (html: string, options?: StandalonePagesOptions) => Promise<string>;
+
+// @public
+export interface StandalonePagesOptions extends StandaloneHtmlOptions {
+    document?: Document;
+    typstFonts?: readonly TypstFont[];
+}
+
+// @public
 export interface TypstFont {
     family: string;
     style?: "normal" | "italic";
@@ -219,6 +228,11 @@ export interface TypstFont {
 // @public
 export interface TypstreamExportOptions {
     inputs?: Record<string, string>;
+}
+
+// @public
+export interface TypstreamHtmlExportOptions extends StandaloneHtmlOptions, TypstreamExportOptions {
+    pages?: boolean;
 }
 
 // @public

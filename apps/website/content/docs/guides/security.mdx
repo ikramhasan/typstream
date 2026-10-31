@@ -113,7 +113,7 @@ Pages are typst-svg's output: glyphs as paths, images as `data:` URLs, and attri
 
 ### Standalone HTML exports
 
-Standalone HTML exports (`standaloneHtml` from `@typstream/dom`, which a mounted document's `exportHtml()` uses) aren't sanitized. A downloaded file carries its own Content-Security-Policy (no scripts, no network, no forms), which stops what the document wrote in Chromium, Firefox and WebKit. See [Exports](/docs/guides/exports).
+Standalone HTML exports (`standaloneHtml` from `@typstream/dom`) aren't sanitized. Files laid out as the pages (`standalonePages`, which a mounted document's `exportHtml()` uses) hold what the HTML renderer showed, sanitized, serialized again. Either file carries its own Content-Security-Policy (no scripts, no network, no forms), which stops what the document wrote in Chromium, Firefox and WebKit, and markup the serializer and a reader's parser would disagree about (mutation XSS) too. See [Exports](/docs/guides/exports).
 
 The engine's `doc.exportHtml()` (and `@typstream/node`'s `render(source, "html")`) return Typst's HTML as it is: unsanitized, and without that policy. Wrap it with `standaloneHtml` before you offer it as a file, and never insert it into your page.
 

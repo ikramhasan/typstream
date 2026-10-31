@@ -154,7 +154,10 @@ const inlineMargins = new WeakMap<HTMLElement, [string, string]>();
 const collapseSpacing = (root: HTMLElement, view: Window) => {
   const pairs: [HTMLElement, HTMLElement, HTMLElement][] = [];
   for (const v of root.querySelectorAll<HTMLElement>(".ts-v:not(.ts-v-weak, .ts-vfill)")) {
-    const [before, after] = [v.previousElementSibling as HTMLElement | null, v.nextElementSibling as HTMLElement | null];
+    const [before, after] = [
+      v.previousElementSibling as HTMLElement | null,
+      v.nextElementSibling as HTMLElement | null,
+    ];
     if (!before || !after || before.matches(OWN_BELOW) !== after.matches(OWN_ABOVE)) continue;
     if (!isBlock(before, view) || !isBlock(after, view)) continue;
     pairs.push([before, v, after]);
@@ -1278,7 +1281,8 @@ export const createHtmlPages = (
    * which take the largest's. Only in blocks html-compat sized text in.
    */
   const alignMixedLines = () => {
-    for (const el of flow.querySelectorAll<HTMLElement>('.typstream-t[style*="--ts-x"]')) el.style.removeProperty("--ts-x");
+    for (const el of flow.querySelectorAll<HTMLElement>('.typstream-t[style*="--ts-x"]'))
+      el.style.removeProperty("--ts-x");
     if (!baseline || baseline === "exact") return;
     const sized = new Set<Element>();
     for (const el of flow.querySelectorAll('span[style*="font-size"]')) {

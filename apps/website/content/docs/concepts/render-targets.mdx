@@ -62,10 +62,15 @@ The renderer's methods that read source anchors, `blockAt(offset)` and `sourceRa
 
 **Fonts.** Text is set in Typst's own fonts, registered with the engine's layout profile as their line box, so lines are as tall as Typst's. `typstream` registers them, and New Computer Modern Math for MathML; with `@typstream/react` or `@typstream/dom`, pass the engine's fonts as `fonts` and the math font as `mathFont` (or call `registerTypstFonts` and `registerMathFont`).
 
-What HTML can't show as the pages do yet:
+The HTML renderer lays the document out on pages as the paged view does: page columns, a second `set page(…)`
+mid-document (its numbering, margins and `counter(page).update`), inside and outside margins, headers, footers and
+footnotes included. What HTML still can't show as the pages do:
 
-- **Page columns** (`set page(columns: 2)`), a second `set page(…)` mid-document, and inside/outside margins.
 - **Drawings** are SVG: their text is in an `aria-label`, not selectable. fletcher diagrams stay empty.
+- **Text in a script no engine font covers** (CJK by default): the pages show boxes for it, the browser draws it in
+  a font of its own. Give the engine a font for it and register the same file for the HTML target (`fonts`); a
+  document that names it (`#set text(font: …)`) shows it in both. See
+  [Fonts and languages](/docs/guides/fonts-and-languages).
 
 Details: [`@typstream/html-compat`](/docs/reference/html-compat).
 

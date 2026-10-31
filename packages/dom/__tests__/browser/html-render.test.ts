@@ -72,6 +72,16 @@ const withoutSrc = (root: HTMLElement): string => {
   for (const el of Array.from(clone.querySelectorAll("[data-typstream-start]")))
     el.removeAttribute("data-typstream-start");
   for (const el of Array.from(clone.querySelectorAll(".typstream-break"))) el.remove();
+  // The pages' own: each block's page settings, and the corrections they make (spacings around `v`, the baseline
+  // of smaller text on a line).
+  for (const name of ["page", "numbering", "parts", "counter"])
+    for (const el of Array.from(clone.querySelectorAll(`[data-typstream-${name}]`)))
+      el.removeAttribute(`data-typstream-${name}`);
+  for (const v of Array.from(clone.querySelectorAll(".ts-v"))) {
+    (v.previousElementSibling as HTMLElement | null)?.style.removeProperty("margin-block-end");
+    (v.nextElementSibling as HTMLElement | null)?.style.removeProperty("margin-block-start");
+  }
+  for (const el of Array.from(clone.querySelectorAll<HTMLElement>(".typstream-t"))) el.style.removeProperty("--ts-x");
   // What the pages size: fractional spacing, columns.
   for (const el of Array.from(clone.querySelectorAll<HTMLElement>(".typstream-fill > .ts-hfill"))) el.style.width = "";
   for (const el of Array.from(clone.querySelectorAll<HTMLElement>(".ts-vfill"))) el.style.height = "";

@@ -85,6 +85,7 @@ export const standalonePages = async (html: string, options: StandalonePagesOpti
   host.append(root);
   doc.body.append(host);
   const renderer = createHtmlRenderer(root, {
+    ...(options.theme ? { theme: options.theme } : {}),
     ...(options.plugins ? { plugins: options.plugins } : {}),
     ...(options.stylesheets ? { stylesheets: options.stylesheets } : {}),
     layout: "fixed",

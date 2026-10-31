@@ -142,6 +142,8 @@ interface Block {
   start: boolean;
   /** Start times of words still fading in. */
   timings: Timings | null;
+  /** The page settings on its element (`setPage`), as one string. */
+  page?: string;
 }
 
 const SRC_ATTRIBUTE = "data-typstream-src";
@@ -329,10 +331,6 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
   const setPage = (block: Block, page: SplitPage | undefined): void => {
     const el = firstElement(block.nodes);
     if (!el) return;
-    const set = (name: string, value: string | undefined) => {
-      if (value === undefined) el.removeAttribute(`data-typstream-${name}`);
-      else el.setAttribute(`data-typstream-${name}`, value);
-    };
     let id: string | undefined;
     if (page?.parts !== undefined) {
       id = partsIds.get(page.parts);
@@ -341,6 +339,14 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
         partsIds.set(page.parts, id);
       }
     }
+    // Unchanged on most blocks of most updates: their attributes stay untouched (writing them restyles).
+    const key = page ? `${page.geometry}|${page.numbering}|${id}|${page.counter}` : "";
+    if (block.page === key) return;
+    block.page = key;
+    const set = (name: string, value: string | undefined) => {
+      if (value === undefined) el.removeAttribute(`data-typstream-${name}`);
+      else el.setAttribute(`data-typstream-${name}`, value);
+    };
     set("page", page?.geometry);
     set("numbering", page?.numbering);
     set("parts", id);

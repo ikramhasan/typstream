@@ -137,8 +137,26 @@ const file = standaloneHtml(await doc.exportHtml(), { plugins: doc.plugins, titl
 
 `doc.plugins` is the document's resolved plugin list, so the file gets the same plugin stylesheets as the preview.
 
-`MountedTypstream.exportHtml(options?)` and React's `exportHtml(options?)` do both steps, with the component's or
-mount's plugins, `stylesheets` and `theme`; `options` add to or override them, and can hold `inputs` too.
+That file is Typst's HTML in a reading layout. To download what the HTML target shows, laid out as the pages,
+use `standalonePages(html, options)` (in a browser). It lays the export out off-screen, as the HTML renderer does,
+and writes the result into the same kind of file: the same policy and stylesheets, the renderer's CSS, and the Typst
+fonts the pages use, embedded from `typstFonts` (pass the ones you give `registerTypstFonts`). The file runs no
+script, so the layout is done when you export: it shows the pages one under the other at their size and prints a page
+per sheet.
+
+<auto-type-table path="packages/dom/src/export/pages.ts" name="StandalonePagesOptions" />
+
+```ts
+import { standalonePages } from "@typstream/dom";
+
+const file = await standalonePages(await doc.exportHtml(), { plugins: doc.plugins, typstFonts });
+```
+
+`MountedTypstream.exportHtml(options?)` and React's `exportHtml(options?)` do both steps, laid out as the pages, with
+the component's or mount's plugins, `stylesheets`, `theme` and Typst fonts. `options` add to or override them, and
+can hold `inputs` too. `pages: false` gives `standaloneHtml`'s reading layout instead.
+
+<auto-type-table path="packages/dom/src/mount.ts" name="TypstreamHtmlExportOptions" />
 
 To embed the math font, fetch the engine's copy once:
 

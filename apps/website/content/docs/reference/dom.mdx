@@ -12,7 +12,8 @@ them on its own:
 - **The renderers**: `createHtmlRenderer` for the HTML target (sanitized, block-diffed Typst HTML with word fade-in
   and a caret) and `createPagedView` for the paged target (pages painted on canvases, or SVG, changed pages only,
   with a selectable text layer).
-- **`standaloneHtml`**, which makes an HTML export a file that opens on its own.
+- **`standaloneHtml`** and **`standalonePages`**, which make an HTML export a file that opens on its own: Typst's
+  HTML in a reading layout, or laid out as the pages.
 
 ## When to use it
 
@@ -94,9 +95,15 @@ Renders a streaming Typst document into `element` and keeps it up to date. The r
 
 #### `TypstreamExportOptions`
 
-What `exportPdf` and `exportHtml` take (`exportHtml` takes `StandaloneHtmlOptions` too).
+What `exportPdf` and `exportDocx` take.
 
 <auto-type-table path="packages/dom/src/mount.ts" name="TypstreamExportOptions" />
+
+#### `TypstreamHtmlExportOptions`
+
+What `exportHtml` takes: `TypstreamExportOptions`, `StandaloneHtmlOptions`, and `pages`.
+
+<auto-type-table path="packages/dom/src/mount.ts" name="TypstreamHtmlExportOptions" />
 
 The exports compile the document in final mode with the template's inputs, your `inputs` and the export's own
 (`exportPdf({ inputs })`, for that export only), without the reflow page size, so they come out at the document's
@@ -384,7 +391,7 @@ Makes an HTML export (`EngineDocument.exportHtml()`) a file that opens on its ow
 - `dir="rtl"` on `<html>` for a right-to-left language (Typst writes the language but no direction).
 
 It also removes `<meta http-equiv="refresh">`. It is a string transform, so it runs anywhere, including Node.
-`MountedTypstream.exportHtml()` calls it with the mount's plugins, stylesheets and theme.
+`MountedTypstream.exportHtml({ pages: false })` calls it with the mount's plugins, stylesheets and theme.
 
 ```ts
 const file = standaloneHtml(await doc.exportHtml(), { plugins: [htmlCompat], title: "Worksheet" });
@@ -394,6 +401,26 @@ const url = URL.createObjectURL(new Blob([file], { type: "text/html" }));
 #### `StandaloneHtmlOptions`
 
 <auto-type-table path="packages/dom/src/export/standalone.ts" name="StandaloneHtmlOptions" />
+
+### `standalonePages`
+
+```ts
+const standalonePages: (html: string, options?: StandalonePagesOptions) => Promise<string>;
+```
+
+Makes an HTML export a file laid out as the pages, as the HTML renderer shows them. It lays the export out in
+`document`, out of sight and at the pages' size, and writes the result in `standaloneHtml`'s file (its policy, the
+plugins' stylesheets, the title) with the renderer's CSS and the Typst fonts the pages use, embedded from
+`typstFonts`. The file runs no script: it shows the pages one under the other and prints a page per sheet. It needs a
+browser. `MountedTypstream.exportHtml()` calls it unless `pages: false`.
+
+```ts
+const file = await standalonePages(await doc.exportHtml(), { plugins: [htmlCompat], typstFonts });
+```
+
+#### `StandalonePagesOptions`
+
+<auto-type-table path="packages/dom/src/export/pages.ts" name="StandalonePagesOptions" />
 
 ## Class names and CSS variables
 

@@ -66,7 +66,7 @@ A known gap: fletcher 0.5.8 draws on a CeTZ 0.3.4 canvas that html-compat can't 
 </Accordion>
 <Accordion title="Headers, footers or page numbers are missing in the HTML target">
 
-`#set page(…)` has no HTML equivalent: headers, footers, page numbers, margins and page columns aren't in Typst's HTML output, and the outline has no page numbers. Text styling through `#text(size:, fill:, font:)` isn't carried over either. Use the paged target, or a PDF export, when the page layout matters. See [Render targets](/docs/concepts/render-targets).
+Typst's HTML output has no pages: html-compat writes their settings (headers, footers, numbering, margins, columns) for `@typstream/dom`'s HTML renderer, which lays the pages out. Check that the `htmlCompat` plugin is loaded (the `typstream` package loads it) and that you render with `<Typstream>`, `mountTypstream` or `createHtmlRenderer`, not Typst's HTML on its own. See [Render targets](/docs/concepts/render-targets).
 
 </Accordion>
 <Accordion title="Arabic, Bengali or Devanagari text shows boxes (tofu)">

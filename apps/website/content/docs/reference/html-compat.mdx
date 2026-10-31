@@ -91,9 +91,6 @@ browser close the paragraph and move everything after it out.
 
 ## Known gaps
 
-- **Page columns** (`set page(columns: 2)`): the HTML target's pages have one column (`columns()` in the text works).
-- **Pages that change mid-document**: a second `set page(...)` (another numbering style, `counter(page).update`) and
-  inside/outside margins apply the first page's settings to every page.
 - **Drawn content** (`.ts-frame`) is SVG: its text is in `aria-label`, not selectable. A drawing without text is hidden
   from assistive technology (`aria-hidden`), since there is nothing to read out.
 - **fletcher 0.5.8** diagrams stay empty in HTML. Its CeTZ 0.3.4 canvas calls `layout` inside `context`, within the
