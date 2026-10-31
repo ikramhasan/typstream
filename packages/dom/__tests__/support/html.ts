@@ -1,3 +1,4 @@
+import type { TypstFont } from "../../src/html/fonts";
 /// <reference lib="dom" />
 // The HTML renderer's browser tests: the real engine worker (as in
 // @typstream/engine's browser tests) with html-compat, and corpus documents.
@@ -114,3 +115,16 @@ export const TWENTY_PAGES = `#set heading(numbering: "1.")\n= A twenty page hand
 
 /** Splits text into token-sized chunks (words and the space before them). */
 export const tokens = (text: string): string[] => text.match(/\s*\S+|\s+$/g) ?? [];
+
+/** The engine's fonts, registered as the HTML target's (typstream registers them for apps). */
+export const FONTS: TypstFont[] = [
+  ["LibertinusSerif-Regular.ttf", "Libertinus Serif", 400, "normal"],
+  ["LibertinusSerif-Bold.ttf", "Libertinus Serif", 700, "normal"],
+  ["LibertinusSerif-Italic.ttf", "Libertinus Serif", 400, "italic"],
+  ["DejaVuSansMono.ttf", "DejaVu Sans Mono", 400, "normal"],
+].map(([file, family, weight, style]) => ({
+  url: new URL(`../../../engine-wasm/dist/fonts/${file}`, import.meta.url),
+  family: family as string,
+  weight: weight as number,
+  style: style as "normal" | "italic",
+}));

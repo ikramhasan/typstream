@@ -13,7 +13,7 @@ import type { DocumentState, Engine } from "@typstream/engine";
 import { htmlCompat, htmlCompatCss } from "@typstream/html-compat";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { commands, server } from "vitest/browser";
-import { registerTypstFonts, type TypstFont } from "../../src/html/fonts";
+import { registerTypstFonts } from "../../src/html/fonts";
 import { createHtmlRenderer, type HtmlRenderer } from "../../src/html/renderer";
 import { collapseSpaces, rowRuns } from "../../src/html/runs";
 import { createSanitizer, hideStyles } from "../../src/html/sanitize";
@@ -22,6 +22,7 @@ import { TYPST_MATH_CSS } from "../../src/html/styles";
 import {
   type CorpusDocument,
   compileHtml,
+  FONTS,
   openHtml,
   startEngine,
   stream,
@@ -174,19 +175,6 @@ describe(`HTML renderer on corpus documents in ${browser}`, () => {
 
 /** Two frames: the renderer lays its pages out at the next frame after an update. */
 const laidOut = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-
-/** The engine's fonts, registered as the HTML target's (typstream registers them for apps). */
-const FONTS: TypstFont[] = [
-  ["LibertinusSerif-Regular.ttf", "Libertinus Serif", 400, "normal"],
-  ["LibertinusSerif-Bold.ttf", "Libertinus Serif", 700, "normal"],
-  ["LibertinusSerif-Italic.ttf", "Libertinus Serif", 400, "italic"],
-  ["DejaVuSansMono.ttf", "DejaVu Sans Mono", 400, "normal"],
-].map(([file, family, weight, style]) => ({
-  url: new URL(`../../../engine-wasm/dist/fonts/${file}`, import.meta.url),
-  family: family as string,
-  weight: weight as number,
-  style: style as "normal" | "italic",
-}));
 
 describe(`HTML renderer's pages in ${browser}`, () => {
   it("repeats a table's header on each page it goes on to, as Typst does", async () => {

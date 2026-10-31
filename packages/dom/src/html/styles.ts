@@ -171,14 +171,14 @@ export const htmlRendererCss: string = `${THEME_CSS}
 :where(.typstream .typstream-fill > .ts-hfill) {
   display: inline-block;
 }
-:where(.typstream-flow) {
+:where(.typstream-flow, .typstream-underlay) {
   position: absolute;
   box-sizing: border-box;
   transform-origin: 0 0;
   overflow: clip;
   clip-path: inset(0);
 }
-:where(.typstream-marginals) {
+:where(.typstream-marginals, .typstream-underlay) {
   overflow: visible;
   clip-path: none;
 }

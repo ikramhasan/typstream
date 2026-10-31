@@ -10,8 +10,9 @@ import type { DocumentState, Engine, EngineDocument } from "@typstream/engine";
 import { htmlCompat, htmlCompatCss } from "@typstream/html-compat";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { server } from "vitest/browser";
+import { registerTypstFonts } from "../../src/html/fonts";
 import { createHtmlRenderer } from "../../src/html/renderer";
-import { compileHtml, openHtml, startEngine, until } from "../support/html";
+import { compileHtml, FONTS, openHtml, startEngine, until } from "../support/html";
 
 const browser = server.browser;
 
@@ -229,14 +230,16 @@ beforeAll(async () => {
   engine = startEngine();
   await engine.ready;
   html = openHtml(engine);
+  // The engine's fonts, as apps register them: the pages' line boxes are Typst's in them.
+  registerTypstFonts(FONTS);
+  await document.fonts.load("11pt typstream-libertinus-serif");
 }, 60_000);
 afterAll(() => engine.dispose());
 
 describe(`html-compat's place against Typst's layout in ${browser}`, () => {
   it.each(CASES)("$name", async ({ source, labels }) => {
     const root = document.createElement("div");
-    // Wider than an A4 page, so the pages show at their own size and a CSS pixel is 3/4 of a point. Fonts differ
-    // (the browser's serif, no engine fonts registered): a label's own width and cap height, hence the tolerances.
+    // Wider than an A4 page, so the pages show at their own size and a CSS pixel is 3/4 of a point.
     root.style.cssText = "width: 800px";
     document.body.append(root);
     const renderer = createHtmlRenderer(root, { plugins: [htmlCompat], stylesheets: [htmlCompatCss] });

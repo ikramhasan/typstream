@@ -161,7 +161,7 @@ export const createHtmlPages = (
   marginals.setAttribute("aria-hidden", "true");
   // Under the flow, placed and scaled as it is: the pieces of boxes broken across pages.
   const underlay = doc.createElement("div");
-  underlay.className = "typstream-flow typstream-marginals typstream-underlay";
+  underlay.className = "typstream-underlay";
   underlay.setAttribute("aria-hidden", "true");
   root.append(sheets, underlay, flow, marginals);
   let parts: readonly Node[] = [];
@@ -956,11 +956,16 @@ export const createHtmlPages = (
     const probe = doc.createElement("div");
     probe.style.cssText =
       "position:absolute;visibility:hidden;line-height:0;font-family:typstream-libertinus-serif;font-size:8pt";
-    probe.innerHTML =
-      '<span style="line-height:1.3">Hx<span style="display:inline-block;width:0;height:0"></span></span>';
+    // (Built, not parsed: a page may require Trusted Types for innerHTML.)
+    const text = doc.createElement("span");
+    text.style.lineHeight = "1.3";
+    const mark = doc.createElement("span");
+    mark.style.cssText = "display:inline-block;width:0;height:0";
+    text.append("Hx", mark);
+    probe.append(text);
     underlay.append(probe);
     const top = probe.getBoundingClientRect().top;
-    const at = ((probe.querySelector("span span") as Element).getBoundingClientRect().bottom - top) / scale;
+    const at = (mark.getBoundingClientRect().bottom - top) / scale;
     probe.remove();
     const size = (8 * 4) / 3;
     const [ascent, descent] = [Math.round(1.054 * size), Math.round(0.246 * size)];
@@ -1233,7 +1238,9 @@ export const createHtmlPages = (
       sheets.remove();
       flow.remove();
       marginals.remove();
+      underlay.remove();
       root.classList.remove("typstream-pages");
+      delete root.dataset.baseline;
     },
   };
 };
