@@ -57,14 +57,14 @@ const open = async (file: string): Promise<HTMLIFrameElement> => {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** Each line of text's top and left on its page, in px: the page it is on first. */
-const lines = (root: ParentNode): string[] => {
+/** Each text's page, its top and left on it in px, and the text. */
+const lines = (root: ParentNode): [number, number, number, string][] => {
   const pages = [...root.querySelectorAll(".typstream-page")].map((p) => p.getBoundingClientRect());
   return [...root.querySelectorAll(".typstream-flow .typstream-t")].map((t) => {
     const r = t.getBoundingClientRect();
     const page = Math.max(0, pages.filter((p) => p.top <= r.top + 1).length - 1);
     const p = pages[page] as DOMRect;
-    return `${page} ${Math.round(r.top - p.top)} ${Math.round(r.left - p.left)} ${t.textContent}`;
+    return [page, r.top - p.top, r.left - p.left, t.textContent ?? ""];
   });
 };
 
@@ -119,7 +119,15 @@ describe(`standalone HTML export in ${server.browser}`, () => {
     const shown = lines(root);
     expect(shown.length).toBeGreaterThan(20);
     expect(doc.querySelectorAll(".typstream-page").length).toBe(root.querySelectorAll(".typstream-page").length);
-    expect(lines(doc)).toEqual(shown);
+    // Where the renderer put them, to a pixel (positions in another document round apart).
+    const filed = lines(doc);
+    expect(filed.map(([page, , , text]) => `${page} ${text}`)).toEqual(
+      shown.map(([page, , , text]) => `${page} ${text}`),
+    );
+    for (const [i, [, top, left]] of filed.entries()) {
+      const [, wantTop, wantLeft] = shown[i] as [number, number, number, string];
+      expect(Math.abs(top - wantTop) + Math.abs(left - wantLeft), `text ${i}`).toBeLessThan(1);
+    }
     renderer.dispose();
     root.remove();
     frame.remove();

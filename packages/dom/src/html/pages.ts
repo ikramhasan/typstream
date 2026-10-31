@@ -169,12 +169,18 @@ const collapseSpacing = (root: HTMLElement, view: Window, scale: number) => {
     // Without height its margins collapse through it, with the blocks': the larger stays as it is.
     if (alike && v.offsetHeight > 0) pairs.push([before as HTMLElement, v, after as HTMLElement]);
   }
+  // In the flow's px, without the moves to their columns (`placeRegions`) a layout from a later block keeps.
+  const box = (el: HTMLElement) => {
+    const r = el.getBoundingClientRect();
+    const moved = Number.parseFloat(el.style.translate.split(" ")[1] ?? "") || 0;
+    return { top: r.top / scale - moved, bottom: r.bottom / scale - moved };
+  };
   const gaps = pairs.map(([before, v, after]) => {
-    const box = v.getBoundingClientRect();
-    return Math.min(box.top - before.getBoundingClientRect().bottom, after.getBoundingClientRect().top - box.bottom);
+    const at = box(v);
+    return Math.min(at.top - box(before).bottom, box(after).top - at.bottom);
   });
   for (const [i, [, v]] of pairs.entries()) {
-    const smaller = (gaps[i] as number) / scale;
+    const smaller = gaps[i] as number;
     if (smaller > 0) v.style.marginBlockEnd = `${-smaller}px`;
   }
 };

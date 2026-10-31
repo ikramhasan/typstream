@@ -347,11 +347,17 @@ describe(`HTML renderer while streaming in ${browser}`, () => {
       let at = 0;
       while (at < got.length && got[at] === want[at]) at++;
       const pages = (r: HtmlRenderer) => r.root.querySelectorAll(".typstream-page").length;
+      // Where the breaks are, and how much room each takes, to half a pixel (layouts from another block round apart).
       const breaks = (r: HtmlRenderer) =>
-        Array.from(r.root.querySelectorAll<HTMLElement>(".typstream-break"))
-          .map((b) => `${b.parentElement?.localName}:${Math.round(Number.parseFloat(b.style.height) * 10) / 10}`)
-          .join(" ");
-      expect(`${pages(renderer)} ${breaks(renderer)}`, name).toBe(`${pages(fresh)} ${breaks(fresh)}`);
+        Array.from(r.root.querySelectorAll<HTMLElement>(".typstream-break")).map(
+          (b) => [b.parentElement?.localName, Number.parseFloat(b.style.height)] as const,
+        );
+      const [shown, whole] = [breaks(renderer), breaks(fresh)];
+      expect(`${pages(renderer)} ${shown.map(([where]) => where)}`, name).toBe(
+        `${pages(fresh)} ${whole.map(([where]) => where)}`,
+      );
+      for (const [i, [, height]] of shown.entries())
+        expect(Math.abs(height - (whole[i]?.[1] ?? 0)), `${name}: break ${i}`).toBeLessThan(0.5);
       expect(got.slice(Math.max(0, at - 150), at + 150), name).toBe(want.slice(Math.max(0, at - 150), at + 150));
       unmount(fresh);
       unmount(renderer);
