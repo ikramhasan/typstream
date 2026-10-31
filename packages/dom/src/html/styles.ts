@@ -162,6 +162,10 @@ export const htmlRendererCss: string = `${THEME_CSS}
   overflow: visible;
   clip-path: none;
 }
+.typstream-pages .ts-place-text {
+  text-box: none;
+  padding-block: 0;
+}
 :where(.typstream-flow .typstream-split) {
   background: none !important;
 }

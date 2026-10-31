@@ -167,9 +167,6 @@
 #let _mark-math(body) = { set text(costs: (runt: _in-math)); body }
 #let _mark-inline(body) = { set text(costs: (widow: _inline)); body }
 
-/// An HTML element with a class and an optional style; unset attributes are left out. Needs
-/// context: inside an inline element (a box) a `div` would end the paragraph around it in
-/// the browser's parser, so it becomes a `span` with class `ts-b` (display: block).
 /// The text size where it is, as CSS, when it isn't the stylesheet's (11pt): an element's spacing in `em` (its
 /// margins, the spaces between its text's spans) is in its own text size, as Typst's is.
 #let _size() = {
@@ -206,6 +203,10 @@
   out.join()
 }
 
+/// An HTML element with a class and an optional style; unset attributes are left out. Needs
+/// context: inside an inline element (a box) a `div` would end the paragraph around it in
+/// the browser's parser, so it becomes a `span` with class `ts-b` (display: block). Its text
+/// size goes with it, and lists after blank lines in its body are marked (`_mark-starts`).
 #let _el(tag, class, style: none, role: none, body) = {
   if tag == "div" and text.costs.widow == _inline { (tag, class) = ("span", class + " ts-b") }
   let attrs = (class: class)
@@ -417,7 +418,10 @@
   let pick-at(c, name) = { let v = c.cell.fields().at(name, default: auto); if v == auto { _per-cell(it.at(name), c.x, c.y) } else { v } }
   let natural(c) = {
     let inset = _sides(pick-at(c, "inset"), default: 0pt)
-    let side(s) = { let v = inset.at(s); if type(v) == length { v.to-absolute() } else { 0pt } }
+    let side(s) = {
+      let v = inset.at(s)
+      if type(v) == length { v.to-absolute() } else if type(v) == relative and v.ratio == 0% { v.length.to-absolute() } else { 0pt }
+    }
     measure(c.cell.fields().body).width + side("left") + side("right")
   }
   let spanning = cells.filter(c => c.colspan > 1 and range(c.x, calc.min(c.x + c.colspan, ncols)).any(i => columns.at(i) == auto))
@@ -1072,9 +1076,26 @@
     }
     let eq = if it.numbering == none { it } else { math.equation(block: true, numbering: none, it.body) }
     let number = if it.numbering != none { counter(math.equation).display(it.numbering) }
+    // A one-line equation's number sits on its baseline, as Typst sets it (centred, it would sit lower beside a
+    // fraction); the baseline is found as an inline equation's (display style) depth.
+    let lines = it.body.func() == [].func() and it.body.children.any(c => c.func() == linebreak)
+    let lift = if number != none and not lines {
+      // Measured in frames, laid out as pages lay them out; a box holding the equation sits on its baseline.
+      let depth = measure(html.frame({
+        set text(top-edge: "baseline", bottom-edge: "baseline")
+        box(height: 100pt)
+        box(eq)
+      })).height - 100pt
+      // Above its baseline: the drawing's height less its depth.
+      measure(html.frame(eq)).height - depth - 1.054em.to-absolute()
+    }
     _el("div", "ts-equation ts-whole", {
       html.elem("div", attrs: (class: "ts-equation-body", aria-hidden: "true"), html.frame(eq))
-      if number != none { html.elem("span", attrs: (class: "ts-equation-number"), number) }
+      if number != none {
+        html.elem("span", attrs: (class: "ts-equation-number") + if lift != none and lift > 0pt {
+          (style: "align-self: start; margin-top: " + _len(lift))
+        } else { (:) }, number)
+      }
       mathml
     })
   })
