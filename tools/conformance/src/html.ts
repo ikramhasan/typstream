@@ -245,6 +245,8 @@ export const compareHtml = async (
       states.push({ el, s });
     }
     await document.fonts.ready;
+    // The HTML target's pages are laid out at the next frame, and again once the fonts they use have loaded.
+    for (let i = 0; i < 3; i++) await new Promise((resolve) => requestAnimationFrame(resolve));
     const [paged, html] = states as [(typeof states)[0], (typeof states)[0]];
     if (paged.s.artifact?.target !== "paged") throw new Error(`${example.name}: not paged`);
     const width = paged.s.artifact.pages[0]?.width ?? 595.28;

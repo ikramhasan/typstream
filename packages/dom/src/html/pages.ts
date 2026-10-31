@@ -872,7 +872,8 @@ export const createHtmlPages = (
         for (const r of rects)
           if (r.width && r.top <= at + EPS && r.bottom >= at - EPS) right = Math.max(right, r.right);
       }
-      return (row.getBoundingClientRect().right - right) / scale;
+      // A quarter of a pixel short: a line exactly full can break in layouts that round (Firefox's).
+      return (row.getBoundingClientRect().right - right) / scale - 0.25;
     });
     fills.forEach((h, i) => {
       h.style.width = `${Math.max(0, widths[i] as number)}px`;
