@@ -148,7 +148,7 @@ export const MATRIX: MatrixEntry[] = [
     // reading-comprehension-lighthouse's ¶ labels: Typst places inside the inset (#94).
     name: "place: inside an inset block",
     source: "#block(inset: (left: 2.2em))[#place(dx: -2.2em)[¶1] First paragraph of the passage.]",
-    html: /--ts-inset-left: 2\.2em.*class="ts-place[^"]*" style="left: var\(--ts-inset-left\); transform: translate\(-2\.2em, 0pt\)"/,
+    html: /--ts-inset-left: 24\.2pt.*class="ts-place[^"]*" style="left: var\(--ts-inset-left\); transform: translate\(-24\.2pt, 0pt\)"/,
     nativeDrops: true,
   },
   {
@@ -266,7 +266,7 @@ Body]`,
   },
 
   // Spacing and breaks
-  { name: "v", source: "Para one\n#v(2em)\nPara two", html: /height: 2em/, nativeDrops: true },
+  { name: "v", source: "Para one\n#v(2em)\nPara two", html: /height: 22pt/, nativeDrops: true },
   { name: "h", source: "Word #h(1em) word #h(1fr) end", html: /ts-hfill/, nativeDrops: true },
   { name: "pagebreak", source: "Page one #pagebreak() Page two", html: /ts-pagebreak/, nativeDrops: true },
 

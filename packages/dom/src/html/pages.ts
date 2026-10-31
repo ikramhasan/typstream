@@ -224,7 +224,12 @@ export const createHtmlPages = (
     for (let i = 0; i < count; i++) {
       for (const [kind, y, h, end] of [
         ["ts-page-header", sheetTop(i), top - geometry.ascent * PX, true],
-        ["ts-page-footer", sheetTop(i) + pageHeight() - bottom + geometry.descent * PX, bottom - geometry.descent * PX, false],
+        [
+          "ts-page-footer",
+          sheetTop(i) + pageHeight() - bottom + geometry.descent * PX,
+          bottom - geometry.descent * PX,
+          false,
+        ],
       ] as const) {
         const part = pick(kind, i === 0);
         if (!part) continue;
@@ -262,7 +267,10 @@ export const createHtmlPages = (
 
   /** A rectangle's top and bottom in the flow's own px. */
   const origin = () => flow.getBoundingClientRect().top;
-  const inFlow = (r: { top: number; bottom: number }, o: number) => ({ top: (r.top - o) / scale, bottom: (r.bottom - o) / scale });
+  const inFlow = (r: { top: number; bottom: number }, o: number) => ({
+    top: (r.top - o) / scale,
+    bottom: (r.bottom - o) / scale,
+  });
 
   // --- gaps --------------------------------------------------------------------------
 
@@ -525,13 +533,22 @@ export const createHtmlPages = (
       flush();
       const before = out.length;
       // Spacing after a page break starts the next page. Elsewhere Typst drops it where a page ends.
-      if (force && child.classList.contains("ts-v") && !child.classList.contains("ts-v-weak") && !child.classList.contains("ts-vfill")) {
+      if (
+        force &&
+        child.classList.contains("ts-v") &&
+        !child.classList.contains("ts-v-weak") &&
+        !child.classList.contains("ts-vfill")
+      ) {
         out.push({ ...whole(child), force });
         force = false;
         continue;
       }
       if (child.classList.contains("ts-vfill")) {
-        out.push({ measure: () => inFlow(child.getBoundingClientRect(), origin()), gap: () => spacerBefore(child, true), fr: child });
+        out.push({
+          measure: () => inFlow(child.getBoundingClientRect(), origin()),
+          gap: () => spacerBefore(child, true),
+          fr: child,
+        });
         continue;
       }
       if (child.classList.contains("ts-pagebreak")) {
@@ -575,7 +592,8 @@ export const createHtmlPages = (
     if (par && par.lines.length >= 2) {
       const n = par.lines.length;
       // Two lines at the start (orphans), two at the end (widows), all three of three.
-      const index = par.index === 1 || (n === 3 && par.index === 2) ? 0 : par.index === n - 1 && n >= 3 ? n - 2 : par.index;
+      const index =
+        par.index === 1 || (n === 3 && par.index === 2) ? 0 : par.index === n - 1 && n >= 3 ? n - 2 : par.index;
       j = units.indexOf(par.lines[index] as Unit);
     }
     // A sticky block goes with its first line onto the next page, unless it heads this one.
@@ -759,7 +777,9 @@ export const createHtmlPages = (
     for (const span of flow.querySelectorAll(".ts-outline-page")) {
       const href = span.closest("a")?.getAttribute("href");
       // In this document: another on the page can have the same ids.
-      const target = href?.startsWith("#") ? flow.querySelector(`[id="${CSS.escape(decodeURIComponent(href.slice(1)))}"]`) : null;
+      const target = href?.startsWith("#")
+        ? flow.querySelector(`[id="${CSS.escape(decodeURIComponent(href.slice(1)))}"]`)
+        : null;
       if (!target) continue;
       const top = inFlow(target.getBoundingClientRect(), origin()).top;
       let page = 0;
@@ -778,7 +798,8 @@ export const createHtmlPages = (
   const layoutSoon = (from: Node | null = null) => {
     // The earlier of two changes; any whole layout wins.
     if (pending === undefined) pending = from;
-    else if (pending && from && !(pending.compareDocumentPosition(from) & Node.DOCUMENT_POSITION_FOLLOWING)) pending = from;
+    else if (pending && from && !(pending.compareDocumentPosition(from) & Node.DOCUMENT_POSITION_FOLLOWING))
+      pending = from;
     else if (!from) pending = null;
     if (frame) return;
     frame = view.requestAnimationFrame(() => {

@@ -15,6 +15,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { commands, server } from "vitest/browser";
 import { registerTypstFonts, type TypstFont } from "../../src/html/fonts";
 import { createHtmlRenderer, type HtmlRenderer } from "../../src/html/renderer";
+import { collapseSpaces, rowRuns } from "../../src/html/runs";
 import { createSanitizer, hideStyles } from "../../src/html/sanitize";
 import { splitHtml } from "../../src/html/split";
 import { TYPST_MATH_CSS } from "../../src/html/styles";
@@ -57,6 +58,8 @@ const parseWhole = (html: string, idPrefix: string): string => {
   const body = new DOMParser().parseFromString(hideStyles(html), "text/html").body;
   for (const anchor of Array.from(body.querySelectorAll("typstream-anchor"))) anchor.remove();
   createSanitizer({ idPrefix, plugins: [htmlCompat] })(body);
+  collapseSpaces(body, document);
+  rowRuns(body, document);
   return body.innerHTML;
 };
 
@@ -64,7 +67,16 @@ const parseWhole = (html: string, idPrefix: string): string => {
 const withoutSrc = (root: HTMLElement): string => {
   const clone = (root.querySelector(".typstream-flow") as HTMLElement).cloneNode(true) as HTMLElement;
   for (const el of Array.from(clone.querySelectorAll("[data-typstream-src]"))) el.removeAttribute("data-typstream-src");
+  for (const el of Array.from(clone.querySelectorAll("[data-typstream-start]"))) el.removeAttribute("data-typstream-start");
   for (const el of Array.from(clone.querySelectorAll(".typstream-break"))) el.remove();
+  // What the pages size: fractional spacing, columns.
+  for (const el of Array.from(clone.querySelectorAll<HTMLElement>(".typstream-fill > .ts-hfill"))) el.style.width = "";
+  for (const el of Array.from(clone.querySelectorAll<HTMLElement>(".ts-vfill"))) el.style.height = "";
+  for (const el of Array.from(clone.querySelectorAll<HTMLElement>(".ts-columns"))) {
+    el.style.height = "";
+    el.style.columnFill = "";
+  }
+  for (const el of Array.from(clone.querySelectorAll("[style='']"))) el.removeAttribute("style");
   for (const el of Array.from(clone.querySelectorAll(".typstream-t"))) el.replaceWith(...el.childNodes);
   clone.normalize();
   return clone.innerHTML;
@@ -280,7 +292,7 @@ describe(`HTML renderer while streaming in ${browser}`, () => {
       const pages = (r: HtmlRenderer) => r.root.querySelectorAll(".typstream-page").length;
       const breaks = (r: HtmlRenderer) =>
         Array.from(r.root.querySelectorAll<HTMLElement>(".typstream-break"))
-          .map((b) => `${b.parentElement?.localName}:${b.style.height}`)
+          .map((b) => `${b.parentElement?.localName}:${Math.round(Number.parseFloat(b.style.height) * 10) / 10}`)
           .join(" ");
       expect(`${pages(renderer)} ${breaks(renderer)}`, name).toBe(`${pages(fresh)} ${breaks(fresh)}`);
       expect(got.slice(Math.max(0, at - 150), at + 150), name).toBe(want.slice(Math.max(0, at - 150), at + 150));
