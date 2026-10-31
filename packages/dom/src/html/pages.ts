@@ -124,9 +124,9 @@ const ENDNOTES = 'section[role="doc-endnotes"]';
 /** What html-compat writes for the page number in headers and footers. */
 const PAGE_NUMBER = "7777";
 
-/** Elements that don't break across pages. */
+/** Elements that don't break across pages. A closed `<details>` too: what it hides has no place to measure. */
 const WHOLE =
-  ".ts-whole, figure, img, svg, math, typstream-island, .ts-frame, .ts-shape, .ts-line, .ts-columns, pre, .typstream-island";
+  ".ts-whole, figure, img, svg, math, typstream-island, .ts-frame, .ts-shape, .ts-line, .ts-columns, pre, .typstream-island, details:not([open])";
 /** Sticky blocks: they move to the next page with what follows them. */
 const STICKY = "h1, h2, h3, h4, h5, h6, .ts-sticky";
 
@@ -940,7 +940,7 @@ export const createHtmlPages = (
         sheet(page);
         place();
       } else if (bottom <= contentBottom(page) - noteRoom(page, unit.notes) + EPS || top <= contentTop(page) + EPS) {
-        if (unit.notes) (pageNotes[page] ??= []).push(...unit.notes);
+        if (unit.notes) pageNotes[page] = [...(pageNotes[page] ?? []), ...unit.notes];
         continue;
       } else {
         const j = breakAt(units, i, contentTop(page));
@@ -962,9 +962,13 @@ export const createHtmlPages = (
       ({ top, bottom } = moved.measure());
       gap.set(1 + contentTop(page) - top);
       moved.fit?.(contentEnd(page) - contentTop(page));
-      if (moved.notes) (pageNotes[page] ??= []).push(...moved.notes);
+      if (moved.notes) pageNotes[page] = [...(pageNotes[page] ?? []), ...moved.notes];
     }
     fill(units.length);
+    // A layout from where the document changed that left its end past the last page's (a break before it missed):
+    // all of it again.
+    const end = units[units.length - 1]?.measure();
+    if (start && end && end.bottom > contentEnd(page) + EPS && end.top > contentTop(page) + EPS) return paginate(null);
     count = page + 1;
     while (sheets.children.length > count) sheets.lastElementChild?.remove();
     drawMarginals();

@@ -91,11 +91,21 @@ const rendered = (el: HTMLElement): string => {
         )
         .join("\n")
     : `${[...(root?.attributes ?? [])].map((a) => `${a.name}=${a.value}`).sort()}\n${root?.innerHTML}`;
-  // The HTML target's pages are laid out from where the document changed: room for page breaks and what the
-  // pages size (fractional spacing, columns) can differ by a fraction of a pixel from a layout of the whole.
-  return markup
-    .replace(/typstream-\d+-/g, "typstream-N-")
-    .replace(/(-?\d+\.\d+)px/g, (_, n: string) => `${Math.round(Number(n))}px`);
+  return markup.replace(/typstream-\d+-/g, "typstream-N-");
+};
+
+/**
+ * Whether two renders are the same. The HTML target's pages size what they lay out (room for page breaks, fractional
+ * spacing, columns) from where the layout started, a pixel apart at most: lengths in px compare to a pixel.
+ */
+const same = (a: string, b: string): boolean => {
+  const px = /(-?\d+(?:\.\d+)?)px/g;
+  const [na, nb] = [[...a.matchAll(px)], [...b.matchAll(px)]].map((m) => m.map((x) => Number(x[1])));
+  return (
+    a.replace(px, "#px") === b.replace(px, "#px") &&
+    na.length === nb.length &&
+    na.every((n, i) => Math.abs(n - (nb[i] as number)) <= 1)
+  );
 };
 
 /** Long documents and runaways: the watchdog's final budget is 10 s per compile. */
@@ -153,7 +163,8 @@ const compare = async (entry: CorpusDocument, target: Target) => {
       return { timedOut, problem: `${id}: artifacts differ${timedOut ? " (the watchdog acted on one side)" : ""}` };
     await shown(streamed, sa.artifact);
     await shown(oneShot, sb.artifact);
-    if (rendered(streamed) !== rendered(oneShot)) return { timedOut: false, problem: `${id}: rendered DOM differs` };
+    if (!same(rendered(streamed), rendered(oneShot)))
+      return { timedOut: false, problem: `${id}: rendered DOM differs` };
     return { timedOut: false, problem: null };
   } finally {
     a.destroy();
