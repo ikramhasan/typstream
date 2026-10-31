@@ -1,7 +1,7 @@
 // What the offline replay streams: a worksheet like the ones the instructions
 // ask for, written as a model writes Typst (headings, prose, inline and display
-// math, a table, lists, a mind map), and an edit of it, written as `editPrompt()`
-// asks.
+// math, a table, lists, a mind map), and the same worksheet revised, as the
+// answer to a follow-up.
 export const WORKSHEET = `= The Pythagorean theorem
 _Grade 8 · Worksheet 4 · 30 minutes_
 
@@ -53,36 +53,22 @@ Whole numbers with $a^2 + b^2 = c^2$ are called *Pythagorean triples*. Complete 
 `;
 
 /**
- * The offline answer to a request about the worksheet: two `<edit>`s, as a model writes them. The
- * first rewrites the worked example (whole blocks: it streams in, the rest stays); the second
- * changes words inside a list (replaced when its new text is complete).
+ * The offline answer to a follow-up: the whole worksheet again, as the kit asks for every answer, with
+ * a longer ladder in the worked example and whole numbers in the last practice question.
  */
-export const EDIT = `I rewrote the worked example with a longer ladder and gave the last practice question whole numbers.
-
-<edit>
-<old>
-A ladder $5$ m long leans against a wall with its foot $3$ m from the wall. How high does it reach?
+export const REVISED = WORKSHEET.replace(
+  `A ladder $5$ m long leans against a wall with its foot $3$ m from the wall. How high does it reach?
 
 $ h = sqrt(5^2 - 3^2) = sqrt(25 - 9) = sqrt(16) = 4 $
 
-So the ladder reaches $4$ m up the wall.
-</old>
-<new>
-A ladder $13$ m long leans against a wall with its foot $5$ m from the wall. How high does it reach?
+So the ladder reaches $4$ m up the wall.`,
+  `A ladder $13$ m long leans against a wall with its foot $5$ m from the wall. How high does it reach?
 The ladder is the hypotenuse, so we subtract the square of the other leg from its square.
 
 $ h = sqrt(13^2 - 5^2) = sqrt(169 - 25) = sqrt(144) = 12 $
 
-So the ladder reaches $12$ m up the wall: a 5, 12, 13 triangle.
-</new>
-</edit>
-
-<edit>
-<old>
-+ A square has a diagonal of $10$ cm. Find the length of its side.
-</old>
-<new>
-+ A square has sides of $5$ cm. Find the length of its diagonal, to one decimal place.
-</new>
-</edit>
-`;
+So the ladder reaches $12$ m up the wall: a 5, 12, 13 triangle.`,
+).replace(
+  "+ A square has a diagonal of $10$ cm. Find the length of its side.",
+  "+ A square has sides of $5$ cm. Find the length of its diagonal, to one decimal place.",
+);
