@@ -137,13 +137,15 @@ describe(`standalone HTML export in ${server.browser}`, () => {
       ].join("\n"),
     );
     expect(html).toContain("<script>");
-    const frame = await open(standaloneHtml(html));
-    const doc = frame.contentDocument as Document;
-    (doc.querySelector("a") as HTMLAnchorElement).click();
-    await sleep(300);
-    expect(window.__typstreamRan).toEqual([]);
-    // Still the export, not about:blank.
-    expect(frame.contentDocument?.body.textContent).toContain("Hostile");
-    frame.remove();
+    for (const file of [standaloneHtml(html), await standalonePages(html, { plugins: [htmlCompat] })]) {
+      const frame = await open(file);
+      const doc = frame.contentDocument as Document;
+      doc.querySelector<HTMLAnchorElement>("a")?.click();
+      await sleep(300);
+      expect(window.__typstreamRan).toEqual([]);
+      // Still the export, not about:blank.
+      expect(frame.contentDocument?.body.textContent).toContain("Hostile");
+      frame.remove();
+    }
   }, 120_000);
 });

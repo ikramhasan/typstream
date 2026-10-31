@@ -259,12 +259,24 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
   }
 
   // Headers and footers by the page they are for (html-compat's anchors hold them), parsed when a page needs them.
-  const partsIds = new Map<string, string>();
+  // Each by an id made from its HTML, so the same document gets the same ids however it arrived (streamed or whole).
+  const partsHtml = new Map<string, string>();
   const partsNodes = new Map<string, readonly Node[]>();
+  const partsIds = new Map<string, string>();
+  const partsId = (html: string): string => {
+    const known = partsIds.get(html);
+    if (known !== undefined) return known;
+    let hash = 0x811c9dc5;
+    for (let i = 0; i < html.length; i++) hash = Math.imul(hash ^ html.charCodeAt(i), 0x01000193);
+    const id = (hash >>> 0).toString(36);
+    partsHtml.set(id, html);
+    partsIds.set(html, id);
+    return id;
+  };
   const pages = createHtmlPages(root, options.layout ?? "fixed", options.onPages, (id) => {
     let nodes = partsNodes.get(id);
     if (!nodes) {
-      const html = [...partsIds].find(([, v]) => v === id)?.[0] ?? "";
+      const html = partsHtml.get(id) ?? "";
       nodes = html ? parse(html) : [];
       partsNodes.set(id, nodes);
     }
@@ -331,14 +343,7 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
   const setPage = (block: Block, page: SplitPage | undefined): void => {
     const el = firstElement(block.nodes);
     if (!el) return;
-    let id: string | undefined;
-    if (page?.parts !== undefined) {
-      id = partsIds.get(page.parts);
-      if (id === undefined) {
-        id = String(partsIds.size);
-        partsIds.set(page.parts, id);
-      }
-    }
+    const id = page?.parts === undefined ? undefined : partsId(page.parts);
     // Unchanged on most blocks of most updates: their attributes stay untouched (writing them restyles).
     const key = page ? `${page.geometry}|${page.numbering}|${id}|${page.counter}` : "";
     if (block.page === key) return;

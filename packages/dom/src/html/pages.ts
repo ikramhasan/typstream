@@ -154,10 +154,11 @@ const inlineMargins = new WeakMap<HTMLElement, [string, string]>();
 const collapseSpacing = (root: HTMLElement, view: Window) => {
   const pairs: [HTMLElement, HTMLElement, HTMLElement][] = [];
   for (const v of root.querySelectorAll<HTMLElement>(".ts-v:not(.ts-v-weak, .ts-vfill)")) {
-    const [before, after] = [
-      v.previousElementSibling as HTMLElement | null,
-      v.nextElementSibling as HTMLElement | null,
-    ];
+    // Past the pages' spacers: a layout from a later block keeps those before it.
+    let before = v.previousElementSibling as HTMLElement | null;
+    while (before?.classList.contains(SPACER)) before = before.previousElementSibling as HTMLElement | null;
+    let after = v.nextElementSibling as HTMLElement | null;
+    while (after?.classList.contains(SPACER)) after = after.nextElementSibling as HTMLElement | null;
     if (!before || !after || before.matches(OWN_BELOW) !== after.matches(OWN_ABOVE)) continue;
     if (!isBlock(before, view) || !isBlock(after, view)) continue;
     pairs.push([before, v, after]);
@@ -1284,13 +1285,17 @@ export const createHtmlPages = (
     for (const el of flow.querySelectorAll<HTMLElement>('.typstream-t[style*="--ts-x"]'))
       el.style.removeProperty("--ts-x");
     if (!baseline || baseline === "exact") return;
-    const sized = new Set<Element>();
-    for (const el of flow.querySelectorAll('span[style*="font-size"]')) {
+    // Each block's inline sizes: one, its own, is text in one size (html-compat writes a paragraph's size on it too).
+    const sized = new Map<HTMLElement, Set<string>>();
+    for (const el of flow.querySelectorAll<HTMLElement>('span[style*="font-size"]')) {
       let block = el.parentElement;
       while (block && block !== flow && !isBlock(block, view)) block = block.parentElement;
-      if (block && block !== flow) sized.add(block);
+      if (!block || block === flow) continue;
+      const sizes = sized.get(block) ?? new Set([block.style.fontSize]);
+      sized.set(block, sizes.add(el.style.fontSize));
     }
-    for (const block of sized) {
+    for (const [block, sizes] of sized) {
+      if (sizes.size < 2) continue;
       const texts = [...block.querySelectorAll<HTMLElement>(".typstream-t")].map((el) => {
         const style = view.getComputedStyle(el);
         const size = Number.parseFloat(style.fontSize);

@@ -194,7 +194,10 @@ describe(`accessibility in ${browser}`, () => {
 
       // What the HTML target reads out, the text layers must too (they may hold more: page numbers, headers).
       const html = await render(entry, "html");
-      const want = letters(html.el.textContent ?? "");
+      // What it reads out: not what it hides (the footnotes drawn at the foot of their pages; the endnotes read).
+      const exposed = html.el.cloneNode(true) as HTMLElement;
+      for (const hidden of exposed.querySelectorAll('[aria-hidden="true"]')) hidden.remove();
+      const want = letters(exposed.textContent ?? "");
       // And they have its headings.
       const htmlHeadings = headingsIn(html.el);
       if (HEADINGS_HTML_LOSES.has(entry.name)) {
