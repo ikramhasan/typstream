@@ -91,7 +91,11 @@ const rendered = (el: HTMLElement): string => {
         )
         .join("\n")
     : `${[...(root?.attributes ?? [])].map((a) => `${a.name}=${a.value}`).sort()}\n${root?.innerHTML}`;
-  return markup.replace(/typstream-\d+-/g, "typstream-N-");
+  // The HTML target's pages are laid out from where the document changed: room for page breaks and what the
+  // pages size (fractional spacing, columns) can differ by a fraction of a pixel from a layout of the whole.
+  return markup
+    .replace(/typstream-\d+-/g, "typstream-N-")
+    .replace(/(-?\d+\.\d+)px/g, (_, n: string) => `${Math.round(Number(n))}px`);
 };
 
 /** Long documents and runaways: the watchdog's final budget is 10 s per compile. */

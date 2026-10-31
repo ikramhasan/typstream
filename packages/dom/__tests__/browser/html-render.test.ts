@@ -288,7 +288,7 @@ const watch = (renderer: HtmlRenderer) => {
   const stats = { updates: 0, created: 0, kept: 0, ms: [] as number[], violations: [] as string[] };
   const update = (html: string, s: DocumentState) => {
     const before = new Set<Node>(blocksOf(renderer));
-    const result = renderer.update(html, { animate: false });
+    const result = renderer.update(html, { animate: false, stable: s.final ? null : s.heal.stableOffset });
     stats.updates++;
     stats.created += result.created;
     stats.ms.push(result.ms);

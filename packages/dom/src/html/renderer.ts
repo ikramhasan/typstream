@@ -87,6 +87,8 @@ export interface HtmlUpdateOptions {
   /**
    * While streaming, heal's stable offset (`stableOffset`): islands whose block
    * starts at or after it are incomplete. Default: the document is complete.
+   * `null` says the stream has ended: the pages, laid out from the first block
+   * that changed while it streamed, are then laid out again whole.
    * @beta
    */
   stable?: number | null;
@@ -454,7 +456,15 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
     let changed = result.findIndex((block, i) => fresh.has(block) || block !== old[i]);
     if (changed < 0) changed = result.length - 1;
     const firstNode = result[changed]?.nodes[0] ?? null;
-    pages.layout(caret && firstNode && caret.compareDocumentPosition(firstNode) & 4 ? caret : firstNode);
+    // Once the stream ends, all of them: a layout from where each update changed can come out otherwise where a
+    // block is taller than a page (a model's own boxes).
+    pages.layout(
+      opts.stable === null
+        ? null
+        : caret && firstNode && caret.compareDocumentPosition(firstNode) & 4
+          ? caret
+          : firstNode,
+    );
 
     return { blocks: result.length, created: created.length, removed: removed.length, ms: view.performance.now() - t0 };
   };
