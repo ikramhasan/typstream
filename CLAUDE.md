@@ -114,7 +114,7 @@ In `packages/engine-wasm` (Rust build, ~3 min cold):
 In `packages/engine`:
 - `pnpm test`: the `node` vitest project (client against a fake worker; server and protocol conformance against engine-wasm in-process). Needs engine-wasm's `dist/`.
 - `pnpm test:browser`: the `browser` project, the real worker in Chromium, Firefox and WebKit (vitest browser mode, Playwright). `BROWSERS=chromium` runs one.
-- `pnpm size`: main thread ≤ 9.6 KB, worker JS ≤ 40 KB, `@typstream/engine/websocket` and `@typstream/engine/images` ≤ 1.5 KB gzipped each, the DOCX writer the worker `import()`s ≤ 13.4 KB.
+- `pnpm size`: main thread ≤ 9.6 KB, worker JS ≤ 40 KB, `@typstream/engine/websocket` and `@typstream/engine/images` ≤ 1.5 KB gzipped each, the DOCX writer the worker `import()`s ≤ 14 KB.
 - Pages and PDFs follow the layout profile (#129): the server puts `LAYOUT_PROFILE` (`src/server/profile.ts`) before
   every paged compile's and PDF export's preamble (constant 1.3em pitch, ragged right, no hyphenation, unbreakable
   table rows), so a DOCX can match them; heal's `layout-profile` lint removes what would beat it. Not the HTML target.
@@ -202,7 +202,9 @@ DOCX checks (`tools/docx-check`, README there): `node tools/docx-check/check.mjs
 compares LibreOffice's layout with the PDF (`--scripts`: the Arabic, Bengali, Devanagari and Chinese documents instead,
 #134); `--validate <dll>` adds Microsoft's validator (`dotnet publish
 tools/docx-check/validator -c Release -o tools/docx-check/validator/out`), `--onlyoffice` uses ONLYOFFICE in Docker,
-`--native` takes the model from engine-wasm's native example (no wasm build), `--google-docs` (local only, the Composio
+`--native` takes the model from engine-wasm's native example (no wasm build), `--pages` (macOS, local only) lays them
+out in Apple's Pages through AppleScript, the engine's fonts installed in `~/Library/Fonts` for the run (Pages ignores
+embedded ones), `--google-docs` (local only, the Composio
 CLI with Google Drive) lays them out in Google Docs and fails on text over pictures or pictures missing (its lines
 and pages are only reported; ~3 requests a document, a Drive folder `typstream-docx-check` and
 `$TMPDIR/typstream-docx-check/google-docs` to delete afterwards). CI runs it with the validator and

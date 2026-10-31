@@ -607,6 +607,126 @@ describe("writeDocx", () => {
     expect(doc.slice(doc.indexOf("One"), doc.lastIndexOf("<w:tbl>"))).toContain("<w:pageBreakBefore/>");
   });
 
+  describe("for Pages, which reads no cell margins", () => {
+    const cell = (
+      col: number,
+      blocks: DocxBlock[],
+      margins = { top: 0, right: 0, bottom: 0, left: 0 },
+      extra = {},
+    ) => ({
+      col,
+      margins,
+      borders: {},
+      blocks,
+      ...extra,
+    });
+    const table = (columns: number[], rows: Extract<DocxBlock, { type: "table" }>["rows"], extra = {}): DocxBlock => ({
+      type: "table",
+      indent: 0,
+      columns,
+      rows,
+      ...extra,
+    });
+
+    it("holds the gap above a table in a paragraph of its own, not the paragraph before's space after", () => {
+      const doc = parts(
+        model([
+          p("Question", { pageBreak: true, heading: 2, before: 10 }),
+          table([100], [{ cantSplit: true, cells: [cell(0, [p("A")])] }], { before: 6 }),
+        ]),
+      ).xml("word/document.xml");
+      const paragraphs = doc.slice(0, doc.indexOf("<w:tbl>")).match(/<w:p>.*?<\/w:p>/g) ?? [];
+      expect(paragraphs).toHaveLength(2);
+      // Pages would set the table in a paragraph like the one before it: its spacing, page break and keep with next.
+      expect(paragraphs[0]).toContain('w:before="200" w:after="0"');
+      expect(paragraphs[1]).toContain('w:before="0" w:after="0" w:line="120" w:lineRule="exact"');
+      for (const property of ["<w:pageBreakBefore/>", "<w:keepNext/>"]) expect(paragraphs[1]).not.toContain(property);
+    });
+
+    it("writes a cell's margins past Pages' inset as its paragraphs' indents, its tab stops as much further", () => {
+      const doc = parts(
+        model([
+          table(
+            [200],
+            [
+              {
+                cantSplit: true,
+                cells: [
+                  cell(0, [p("Two lines", { lines: 2, fit: 20, tabs: [{ pos: 50, align: "end" }] })], {
+                    top: 0,
+                    right: 9,
+                    bottom: 0,
+                    left: 10,
+                  }),
+                ],
+              },
+            ],
+          ),
+        ]),
+      ).xml("word/document.xml");
+      // 4 points of margin on each side (a point of the right one given back as slack), the rest in the indents.
+      expect(doc).toContain('<w:left w:w="80" w:type="dxa"/>');
+      expect(doc).toContain('<w:right w:w="80" w:type="dxa"/>');
+      expect(doc).toContain('<w:ind w:left="120" w:right="80"/>');
+      expect(doc).toContain('w:pos="1120"');
+    });
+
+    it("gives a row the height Typst gave it less its margins and borders, at least", () => {
+      const doc = parts(
+        model([
+          table(
+            [100],
+            [
+              {
+                cantSplit: true,
+                height: 30,
+                cells: [
+                  cell(
+                    0,
+                    [p("A")],
+                    { top: 3, right: 0, bottom: 5, left: 0 },
+                    { borders: { top: { width: 1, color: "000000" } } },
+                  ),
+                ],
+              },
+            ],
+          ),
+        ]),
+      ).xml("word/document.xml");
+      expect(doc).toContain('<w:trPr><w:cantSplit/><w:trHeight w:val="420" w:hRule="atLeast"/></w:trPr>');
+    });
+
+    it("starts a column whose one-line cells Pages would wrap further left, into what the cell before spares", () => {
+      const blank = { type: "rule", thickness: 0.5, color: "787878", indent: { left: 0, right: 8 } } as const;
+      const fields = (indent: number) =>
+        parts(
+          model([
+            table(
+              [40, 100, 40],
+              [{ cantSplit: true, cells: [cell(0, [p("Name:")]), cell(1, [blank]), cell(2, [p("Date:")])] }],
+              {
+                indent,
+              },
+            ),
+          ]),
+        ).xml("word/document.xml");
+      const doc = fields(0);
+      // "Date:" fills its column: Pages needs its inset on each side and a point more, 9 points, of which the line
+      // before it has 8 to spare. Its cell's left margin is as much wider, so Word sets it where it was.
+      expect(doc).toContain('<w:gridCol w:w="800"/><w:gridCol w:w="1840"/><w:gridCol w:w="960"/>');
+      expect(doc).toMatch(
+        /<w:tcW w:w="960" w:type="dxa"\/><w:noWrap\/><w:tcMar><w:top w:w="0" w:type="dxa"\/><w:left w:w="160"/,
+      );
+      expect(doc).toContain('<w:ind w:left="0"/>');
+      // "Name:" is first, at the area's left: LibreOffice won't start a table further left. Indented, it takes from
+      // the indent.
+      expect(doc).toContain('<w:tblInd w:w="0" w:type="dxa"/>');
+      const indented = fields(20);
+      expect(indented).toContain('<w:tblInd w:w="220" w:type="dxa"/>');
+      expect(indented).toContain('<w:gridCol w:w="980"/><w:gridCol w:w="1840"/>');
+    });
+  });
+
   it("numbers list paragraphs from the list's numbering, its number in the hanging indent", () => {
     const doc = parts(
       model([p("First", { list: { id: 0, label: "1." } })], {

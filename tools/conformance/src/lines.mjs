@@ -349,10 +349,12 @@ const lcs = (a, b, equal) => {
  * How much of `ref` (Typst's lines) `got` reproduces: lines in order, and the lines pages start with. Lines are text, or
  * `scriptLinesOf`'s, compared by `sameLine`.
  */
-export const compare = (ref, got) => {
+export const compare = (ref, got, unmapped) => {
   // Whitespace aside: which words share a line doesn't depend on it. So are a leader's dots (an outline's, a tab's in
-  // Word): how many fit depends on the dots' spacing.
-  const key = (t) => (typeof t === "string" ? t.replace(/\s+/g, "").replace(/\.{3,}/g, "…") : t);
+  // Word): how many fit depends on the dots' spacing. And what `unmapped` matches, on both sides: glyphs the other
+  // PDF draws without text for them (Pages' ligatures).
+  const text = (t) => (unmapped ? t.replace(unmapped, "") : t).replace(/\s+/g, "").replace(/\.{3,}/g, "…");
+  const key = (t) => (typeof t === "string" ? text(t) : unmapped ? { ...t, text: text(t.text) } : t);
   const equal = (x, y) => (typeof x === "string" ? x === y : sameLine(x, y));
   const a = ref.map(([, t]) => key(t));
   const b = got.map(([, t]) => key(t));

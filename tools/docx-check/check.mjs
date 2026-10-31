@@ -4,7 +4,7 @@
 // Typst's. Pictures (#133) are compared pixel by pixel on their regions, and text drawn in them, which a DOCX has as
 // outlines, is left out of the lines.
 //
-//   node check.mjs [--native] [--onlyoffice | --google-docs [--google-docx]] [--scripts] [--fonts DIR]
+//   node check.mjs [--native] [--onlyoffice | --pages | --google-docs [--google-docx]] [--scripts] [--fonts DIR]
 //                  [--validate DLL] [--min-lines RATIO] [--min-math-lines RATIO] [--min-picture-lines RATIO]
 //                  [--min-pictures RATIO] [--ink] [--positions] [--colours] [filter...]
 //
@@ -23,6 +23,8 @@
 //
 // --onlyoffice: lay the files out with ONLYOFFICE (`x2t` in the onlyoffice/documentserver image, Docker) instead of
 // LibreOffice: a second engine written apart from Word and LibreOffice (nightly). It reads only installed fonts.
+// --pages: lay them out with Apple's Pages (pages.mjs; macOS only, local), the engine's fonts installed for the run
+// (Pages ignores embedded ones). Files and Pages' PDFs go in `$TMPDIR/typstream-docx-check/pages`.
 // --google-docs: lay them out with Google Docs (google-docs.mjs; local only, through the Composio CLI): each file
 // uploaded into Google Drive's `typstream-docx-check/<run>`, converted and exported as PDF, about 3 requests a
 // document. Everything local goes in `$TMPDIR/typstream-docx-check/google-docs/<run>`. Google Docs spaces lines as
@@ -51,12 +53,14 @@ import { heal } from "@typstream/heal";
 import { mindmapFiles, mindmapPreamble } from "@typstream/mindmap";
 import { render, renderDocxModel } from "@typstream/node";
 import { DRIVE_FOLDER, layOutWithGoogleDocs, requests, textOverPictures } from "./google-docs.mjs";
+import { layOutWithPages, PAGES_UNMAPPED } from "./pages.mjs";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
 const args = process.argv.slice(2);
 const native = args.includes("--native");
 const onlyoffice = args.includes("--onlyoffice");
 const googleDocs = args.includes("--google-docs");
+const pages = args.includes("--pages");
 const googleDocx = args.includes("--google-docx");
 const scripts = args.includes("--scripts");
 const option = (name) => {
@@ -82,7 +86,7 @@ const commit = () => {
   }
 };
 const run = googleDocs ? `${new Date().toISOString().slice(0, 19).replaceAll(":", "-")}-${commit()}` : undefined;
-const out = join(tmpdir(), "typstream-docx-check", ...(run ? ["google-docs", run] : []));
+const out = join(tmpdir(), "typstream-docx-check", ...(run ? ["google-docs", run] : pages ? ["pages"] : []));
 mkdirSync(out, { recursive: true });
 const fonts = option("--fonts") ?? join(root, "packages/engine-wasm/dist/fonts");
 const example = join(root, "packages/engine-wasm/target/release/examples/docx_model");
@@ -209,9 +213,14 @@ for (const doc of documents()) {
   docx.push({ doc, dir, file });
 }
 
-// LibreOffice, ONLYOFFICE (seeing only the engine's fonts and what the DOCX embeds) or Google Docs.
-const engine = googleDocs ? "Google Docs" : onlyoffice ? "ONLYOFFICE" : "LibreOffice";
-const laidOut = googleDocs
+// LibreOffice, ONLYOFFICE (seeing only the engine's fonts and what the DOCX embeds), Pages or Google Docs.
+const engine = googleDocs ? "Google Docs" : pages ? "Pages" : onlyoffice ? "ONLYOFFICE" : "LibreOffice";
+const laidOut = pages
+  ? layOutWithPages(
+      docx.map((d) => d.file),
+      { out: join(out, "pages"), fonts, log: (line) => console.log(line) },
+    )
+  : googleDocs
   ? await layOutWithGoogleDocs(
       docx.map((d) => d.file),
       { out: join(out, "google"), run, docx: googleDocx, log: (line) => console.log(line) },
@@ -231,7 +240,10 @@ for (const [i, { doc, dir, file }] of docx.entries()) {
   }
   // With equations, lines are compared by their text around them, and every equation's letters and digits must be
   // there (#132). Text in pictures is outlines in the DOCX: Typst's is left out.
-  const r = compareExport(join(dir, "typst.pdf"), pdf, doc.model, { scripts });
+  const r = compareExport(join(dir, "typst.pdf"), pdf, doc.model, {
+    scripts,
+    unmapped: pages ? PAGES_UNMAPPED : undefined,
+  });
   // Google Docs scales pictures and draws their PNGs, so they're checked for text over them instead of pixels, and
   // counted: a picture it dropped has no text over it.
   const google =

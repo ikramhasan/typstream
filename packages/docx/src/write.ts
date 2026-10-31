@@ -40,6 +40,36 @@ const twips = (pt: number): number => Math.round(pt * 20);
 const SLACK = 1;
 /** Slack stays this far under a paragraph's fit: engines measure some lines a hair narrower than Typst too. */
 const FIT_MARGIN = 1.0;
+/**
+ * Apple's Pages reads no cell margins: it sets a cell's text this far in from each side (it writes 80 twips in its own
+ * DOCX), takes no negative indent there, and gives a row the room above and below its text only with a row height (as
+ * that height and the margins). A cell's margins past it are written as its paragraphs' indents (`cell`), which every
+ * engine adds to them, and a row has the height Typst gave it, less its margins, as a least height (`table`).
+ */
+const PAGES_INSET = 4;
+/** Room Pages gets past a cell's line, in points: it measures text as Typst does, near enough. */
+const PAGES_SLACK = 1;
+
+/** A cell whose paragraphs Typst set on one line each. */
+const oneLine = (c: DocxCell): boolean =>
+  c.blocks.some((b) => b.type === "p") && c.blocks.every((b) => b.type !== "p" || b.lines <= 1);
+
+/** The room left on a cell's fullest line, in points (none known: none). */
+const roomIn = (c: DocxCell): number =>
+  c.blocks.reduce((r, b) => (b.type === "p" ? Math.min(r, b.room ?? 0) : r), Number.POSITIVE_INFINITY);
+
+/**
+ * What a cell can give up on its right, in points, without Word setting anything elsewhere: its right margin, and what
+ * all its blocks leave on their right (rules' and paragraphs' right indents); all but a point of an empty one.
+ */
+const spareRight = (c: DocxCell, width: number): number => {
+  if (c.blocks.length === 0) return Math.max(0, width - c.margins.left - 1);
+  // A right-to-left paragraph's right indent is its start's.
+  const indents = c.blocks.map((b) =>
+    b.type === "rule" ? b.indent.right : b.type === "p" && !b.rtl ? Math.max(0, b.indent.right ?? 0) : 0,
+  );
+  return c.margins.right + Math.min(...indents);
+};
 /** Marks where a section's properties go in the body, written once the headers' references are known. */
 const SECTION = "\u0001";
 const esc = (s: string): string =>
@@ -89,6 +119,8 @@ class Writer {
   mathFont?: string;
   /** Pictures written so far: they number their `wp:docPr`s. */
   drawings = 0;
+  /** The margins of the cell being written that its paragraphs' indents hold (`PAGES_INSET`), in points. */
+  shift = { left: 0, right: 0 };
 
   constructor(
     private readonly model: DocxModel,
@@ -219,8 +251,15 @@ class Writer {
         `w:hAnchor="page" w:vAnchor="page" w:x="${twips(o.frame.x)}" w:y="${twips(o.frame.y)}"/>`;
     if (o.num !== undefined) x += `<w:numPr><w:ilvl w:val="0"/><w:numId w:val="${o.num}"/></w:numPr>`;
     if (o.border) x += o.border;
+    // In a cell, what its margins hold in the indents: tab stops are from the margin, which is nearer. Right to left,
+    // the indents and tab stops are from the paragraph's start, on the right.
+    const shift = o.frame
+      ? { left: 0, right: 0 }
+      : o.bidi
+        ? { left: this.shift.right, right: this.shift.left }
+        : this.shift;
     if (o.tabs?.length)
-      x += `<w:tabs>${o.tabs.map((t) => `<w:tab w:val="${t.align === "end" ? "right" : t.align === "center" ? "center" : "left"}"${t.leader ? ` w:leader="${t.leader}"` : ""} w:pos="${twips(t.pos)}"/>`).join("")}</w:tabs>`;
+      x += `<w:tabs>${o.tabs.map((t) => `<w:tab w:val="${t.align === "end" ? "right" : t.align === "center" ? "center" : "left"}"${t.leader ? ` w:leader="${t.leader}"` : ""} w:pos="${twips(t.pos + shift.left)}"/>`).join("")}</w:tabs>`;
     // Right to left: `left` and `right` (alignment, indents, tabs) are the paragraph's start and end.
     if (o.bidi) x += "<w:bidi/>";
     const line = o.single
@@ -228,9 +267,10 @@ class Writer {
       : `w:line="${Math.max(1, twips(o.line))}" w:lineRule="${o.atLeast ? "atLeast" : "exact"}"`;
     x += `<w:spacing w:before="${Math.max(0, twips(o.before ?? 0))}" w:after="${Math.max(0, twips(o.after ?? 0))}" ${line}/>`;
     const first = o.firstLine ?? 0;
+    const right = (o.right ?? 0) + shift.right;
     const ind = [
-      `w:left="${twips(o.left ?? 0)}"`,
-      o.right ? `w:right="${twips(o.right)}"` : "",
+      `w:left="${twips((o.left ?? 0) + shift.left)}"`,
+      right ? `w:right="${twips(right)}"` : "",
       first > 0 ? `w:firstLine="${twips(first)}"` : first < 0 ? `w:hanging="${twips(-first)}"` : "",
     ].filter(Boolean);
     x += `<w:ind ${ind.join(" ")}/>`;
@@ -241,7 +281,7 @@ class Writer {
   }
 
   /** A paragraph; `lead` goes before its runs (pictures anchored in it). */
-  paragraph(p: DocxParagraph, part: Part, after?: number, lead = ""): string {
+  paragraph(p: DocxParagraph, part: Part, lead = ""): string {
     const list = p.list ? this.model.lists[p.list.id] : undefined;
     const first = (p.runs.find((r) => "text" in r) ?? p.runs.find((r) => "gap" in r)) as
       | DocxTextRun
@@ -289,7 +329,6 @@ class Writer {
       tabs: p.tabs,
       bidi: p.rtl,
       before: p.before,
-      after,
       line: p.pitch,
       atLeast: p.atLeast,
       left,
@@ -299,6 +338,17 @@ class Writer {
       outline: p.heading ? Math.min(9, p.heading) - 1 : undefined,
       rPr: mark,
     })}${content}</w:p>`;
+  }
+
+  /**
+   * The paragraph before a table, `height` tall (the gap above it). Pages sets a table in a paragraph made like the one
+   * before it: its space after, before and the larger of them below the table (Pages spaces paragraphs by the larger of
+   * the two, not their sum), its page break, which put the table a page after it, and its keep with next, which kept
+   * the table with what follows (tables and all, a page of them moved on). This one has none of them.
+   */
+  private beforeTable(height: number): string {
+    const line = Math.max(0.05, height);
+    return `<w:p>${this.pPr({ line, rPr: roomMark(line) })}</w:p>`;
   }
 
   /** A paragraph holding space: exact height, with nothing in it but `content` (anchored pictures). */
@@ -380,12 +430,65 @@ class Writer {
     return picture ? `<w:r>${TINY}${picture}</w:r>` : "";
   }
 
-  table(t: DocxTable, part: Part): string {
+  /**
+   * A table with room for Pages (`PAGES_INSET`): a column whose cells set on one line Pages would wrap (their text
+   * nearer its sides than its inset) starts further left, into what the cells before it can spare on their right
+   * (`spareRight`) or, the first, into the table's indent (LibreOffice won't start a table left of its area). Its cells'
+   * left margins are as much wider and the cells before them have as much less on their right, so Word sets everything
+   * where it did.
+   */
+  private widen(t: DocxTable): DocxTable {
+    const span = (c: DocxCell) => c.span ?? 1;
+    const width = (c: DocxCell) => t.columns.slice(c.col, c.col + span(c)).reduce((a, b) => a + b, 0);
+    const move = t.columns.map((_, k) => {
+      let need = 0;
+      let spare = k === 0 ? Math.max(0, t.indent) : Number.POSITIVE_INFINITY;
+      for (const row of t.rows) {
+        const cell = row.cells.find((c) => c.col === k);
+        if (cell && oneLine(cell)) {
+          const room = Math.min(roomIn(cell), Number.MAX_VALUE);
+          need = Math.max(need, 2 * PAGES_INSET + PAGES_SLACK - cell.margins.left - cell.margins.right - room);
+        }
+        const before = k > 0 ? row.cells.find((c) => c.col + span(c) === k) : undefined;
+        if (before) spare = Math.min(spare, spareRight(before, width(before)));
+      }
+      return Math.max(0, Math.min(need, spare));
+    });
+    if (move.every((m) => m < 0.05)) return t;
+    const columns = t.columns.map((w, k) => w + (move[k] ?? 0) - (move[k + 1] ?? 0));
+    const rows = t.rows.map((row) => ({
+      ...row,
+      cells: row.cells.map((c) => {
+        const gain = move[c.col] ?? 0;
+        const give = move[c.col + span(c)] ?? 0;
+        if (gain < 0.05 && give < 0.05) return c;
+        const margins = { ...c.margins, left: c.margins.left + gain };
+        // From the right margin first, then from every block's right indent.
+        const fromMargin = Math.min(give, margins.right);
+        margins.right -= fromMargin;
+        const rest = give - fromMargin;
+        const blocks =
+          rest < 0.005
+            ? c.blocks
+            : c.blocks.map((b): DocxBlock => {
+                if (b.type === "rule") return { ...b, indent: { ...b.indent, right: b.indent.right - rest } };
+                if (b.type === "p" && !b.rtl)
+                  return { ...b, indent: { ...b.indent, right: (b.indent.right ?? 0) - rest } };
+                return b;
+              });
+        return { ...c, margins, blocks };
+      }),
+    }));
+    return { ...t, indent: t.indent - (move[0] ?? 0), columns, rows };
+  }
+
+  table(table: DocxTable, part: Part): string {
+    const t = this.widen(table);
     // Widths rounded up (#118's spike): a column a hair narrower than Typst's would break its longest word.
     const cols = t.columns.map((w) => Math.max(20, Math.ceil(w * 20)));
     const total = cols.reduce((a, b) => a + b, 0);
     const pr =
-      `<w:tblPr><w:tblW w:w="${total}" w:type="dxa"/><w:tblInd w:w="${twips(t.indent)}" w:type="dxa"/>` +
+      `<w:tblPr><w:tblW w:w="${total}" w:type="dxa"/><w:tblInd w:w="${twips(t.indent + this.shift.left)}" w:type="dxa"/>` +
       '<w:tblLayout w:type="fixed"/>' +
       '<w:tblCellMar><w:top w:w="0" w:type="dxa"/><w:left w:w="0" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/><w:right w:w="0" w:type="dxa"/></w:tblCellMar>' +
       "</w:tblPr>";
@@ -419,7 +522,17 @@ class Writer {
           col += 1;
         }
       }
-      const trPr = `<w:trPr>${row.cantSplit ? "<w:cantSplit/>" : ""}${row.header ? "<w:tblHeader/>" : ""}</w:trPr>`;
+      // Typst's height less the row's margins and borders, at least: no more than its content, margins and borders in
+      // Word and LibreOffice, which count them in it; in Pages, which adds the margins to it, the height Typst gave the
+      // row, but for its borders (`PAGES_INSET`).
+      const ends = row.cells.filter((c) => (c.rowSpan ?? 1) <= 1);
+      const above = Math.max(0, ...row.cells.map((c) => c.margins.top + (c.borders.top?.width ?? 0)));
+      const below = Math.max(0, ...ends.map((c) => c.margins.bottom + (c.borders.bottom?.width ?? 0)));
+      const least = row.height === undefined ? 0 : Math.floor((row.height - above - below) * 20);
+      const trPr =
+        `<w:trPr>${row.cantSplit ? "<w:cantSplit/>" : ""}` +
+        (least > 0 ? `<w:trHeight w:val="${least}" w:hRule="atLeast"/>` : "") +
+        `${row.header ? "<w:tblHeader/>" : ""}</w:trPr>`;
       return `<w:tr>${trPr}${tcs}</w:tr>`;
     });
     return `<w:tbl>${pr}${grid}${rows.join("")}</w:tbl>`;
@@ -442,8 +555,8 @@ class Writer {
     // A column Typst sized to its widest content (`auto`) fits it exactly, and a Word-like engine measures text a
     // hair wider: a cell whose paragraphs Typst set on one line each doesn't wrap, and every cell has up to a point
     // of slack on its right, which its text doesn't reach.
-    const single = c.blocks.length > 0 && c.blocks.every((b) => b.type !== "p" || b.lines <= 1);
-    if (single && c.blocks.some((b) => b.type === "p")) pr += "<w:noWrap/>";
+    const single = oneLine(c);
+    if (single) pr += "<w:noWrap/>";
     const m = c.margins;
     // No more than the cell's paragraphs' fit, or an engine would set a word Typst moved down on the line before.
     const fit = c.blocks.reduce(
@@ -451,12 +564,23 @@ class Writer {
       SLACK,
     );
     const right = Math.max(0, m.right - Math.max(0, fit));
+    // Margins past Pages' inset in the paragraphs' indents (`PAGES_INSET`), so its lines are Word's; for a cell set on
+    // one line, only what Pages can spare with its line still fitting.
+    const shift = { left: Math.max(0, m.left - PAGES_INSET), right: Math.max(0, right - PAGES_INSET) };
+    if (single) {
+      const spare = m.left + m.right + Math.min(roomIn(c), Number.MAX_VALUE) - 2 * PAGES_INSET - PAGES_SLACK;
+      shift.left = Math.max(0, Math.min(shift.left, spare));
+      shift.right = Math.max(0, Math.min(shift.right, spare - shift.left));
+    }
     pr +=
-      `<w:tcMar><w:top w:w="${twips(m.top)}" w:type="dxa"/><w:left w:w="${twips(m.left)}" w:type="dxa"/>` +
-      `<w:bottom w:w="${twips(m.bottom)}" w:type="dxa"/><w:right w:w="${twips(right)}" w:type="dxa"/></w:tcMar>`;
+      `<w:tcMar><w:top w:w="${twips(m.top)}" w:type="dxa"/><w:left w:w="${twips(m.left - shift.left)}" w:type="dxa"/>` +
+      `<w:bottom w:w="${twips(m.bottom)}" w:type="dxa"/><w:right w:w="${twips(right - shift.right)}" w:type="dxa"/></w:tcMar>`;
     if (c.valign) pr += `<w:vAlign w:val="${c.valign}"/>`;
     // What the cell's paragraphs have between its margins, in points: a drawing's picture past it is anchored.
+    const outer = this.shift;
+    this.shift = shift;
     let body = this.blocks(c.blocks, part, width / 20 - m.left - right);
+    this.shift = outer;
     // A cell ends with a paragraph; after a table, one that takes no room. LibreOffice drops a cell's last paragraph
     // when it is empty and follows a table, as the paragraph Word requires there: a rule (an answer line under a
     // callout in a question) or a room would go, and the space it holds. One that takes no room after it instead.
@@ -468,7 +592,7 @@ class Writer {
 
   /**
    * Blocks in order, in a cell `width` points wide between its margins (none in the body). A table has no space
-   * before: the paragraph before it gets it after, or a spacer holds it.
+   * before: a spacer before it holds it (`beforeTable`).
    */
   blocks(blocks: readonly DocxBlock[], part: Part, width?: number): string {
     const out: string[] = [];
@@ -497,8 +621,6 @@ class Writer {
           out[last] = `${p.slice(0, at)}${marker}${p.slice(at)}`;
         } else out.push(`<w:p>${this.pPr({ line: 0.05, rPr: `<w:rPr><w:sz w:val="2"/></w:rPr>${marker}` })}</w:p>`);
       }
-      const next = blocks[i + 1];
-      const gapAfter = next?.type === "table" && b.type === "p" ? (next.before ?? 0) : undefined;
       // Anything else holds waiting pictures in a paragraph of its own, as small as a paragraph gets.
       if (lead && b.type !== "p" && b.type !== "drawing") {
         out.push(this.spacer(0.05, 0, false, 0, lead));
@@ -506,22 +628,24 @@ class Writer {
       }
       switch (b.type) {
         case "p":
-          out.push(this.paragraph(b, part, gapAfter, lead));
+          out.push(this.paragraph(b, part, lead));
           lead = "";
           break;
         case "table": {
           const prev = blocks[i - 1];
-          // Two tables in a row would merge into one: a paragraph between them, as tall as the gap.
-          if (prev && prev.type !== "p") out.push(this.spacer(Math.max(0.05, b.before ?? 0)));
-          else if (!prev && (b.before ?? 0) > 0.05) out.push(this.spacer(b.before ?? 0));
-          if (b.pageBreak) out.push(this.spacer(0.05, 0, true));
+          // The gap above it in a paragraph of its own, which also keeps two tables in a row from merging into one; on
+          // a new page, after the break's (Pages would give the table the break too).
+          if (b.pageBreak) {
+            if (prev && prev.type !== "p") out.push(this.spacer(Math.max(0.05, b.before ?? 0)));
+            out.push(this.spacer(0.05, 0, true), this.beforeTable(0.05));
+          } else if (prev || (b.before ?? 0) > 0.05) out.push(this.beforeTable(b.before ?? 0));
           // Word breaks a page before a paragraph, not a row: a row that starts a page splits the table there.
           const headers = b.rows.filter((r) => r.header);
           let from = 0;
           b.rows.forEach((row, k) => {
             if (!row.pageBreak || k === 0) return;
             out.push(this.table({ ...b, rows: [...(from > 0 ? headers : []), ...b.rows.slice(from, k)] }, part));
-            out.push(this.spacer(0.05, 0, true));
+            out.push(this.spacer(0.05, 0, true), this.beforeTable(0.05));
             from = k;
           });
           out.push(this.table({ ...b, rows: [...(from > 0 ? headers : []), ...b.rows.slice(from)] }, part));

@@ -24,6 +24,7 @@ export const OTHER_SCRIPT =
  * Typst's PDF and another layout's of the DOCX exported from `model` (its pictures say where text is outlines):
  * - `lines`, `same`, `pageStarts`, `pageStartsSame`, `first` (lines.mjs's `compare`): by text, by the text around
  *   equations when it has some (each engine sets math its own way, #132), or as `scriptLinesOf` reads them (`scripts`);
+ *   what `unmapped` matches left out on both sides (glyphs the other layout's PDF has no text for);
  * - `pages`: both page counts;
  * - `pictures`: each picture's pixels (pixels.mjs);
  * - `math`: how many of the equations' letters and digits came out (`chars`, `same`), when it has equations, and how
@@ -35,15 +36,15 @@ export const OTHER_SCRIPT =
  * - `colours`: the words whose paper or ink differ from Typst's (colour.mjs): a highlight or a text colour lost;
  *   equations' left out, and in other scripts their papers only.
  */
-export const compareExport = (typst, other, model, { scripts = false } = {}) => {
+export const compareExport = (typst, other, model, { scripts = false, unmapped } = {}) => {
   const regions = model.pictures ?? [];
   const math = JSON.stringify(model.sections).includes('"math":[');
   const plain = !scripts && !math && [linesOf(typst, regions), linesOf(other)];
   const lines = scripts
-    ? compare(scriptLinesOf(typst, regions), scriptLinesOf(other))
+    ? compare(scriptLinesOf(typst, regions), scriptLinesOf(other), unmapped)
     : math
-      ? compare(textLinesOf(typst, undefined, regions), textLinesOf(other, textFaces(typst)))
-      : compare(...plain);
+      ? compare(textLinesOf(typst, undefined, regions), textLinesOf(other, textFaces(typst)), unmapped)
+      : compare(...plain, unmapped);
   const chars = math ? [mathOf(typst, regions), mathOf(other)] : undefined;
   const ink = math
     ? null
