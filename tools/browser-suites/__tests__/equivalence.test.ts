@@ -100,7 +100,8 @@ const rendered = (el: HTMLElement): string => {
  */
 const same = (a: string, b: string): boolean => {
   const px = /(-?\d+(?:\.\d+)?)px/g;
-  const [na, nb] = [[...a.matchAll(px)], [...b.matchAll(px)]].map((m) => m.map((x) => Number(x[1])));
+  const numbers = (s: string) => [...s.matchAll(px)].map((x) => Number(x[1]));
+  const [na, nb] = [numbers(a), numbers(b)];
   return (
     a.replace(px, "#px") === b.replace(px, "#px") &&
     na.length === nb.length &&
