@@ -203,11 +203,18 @@
   margin: 0.56em 0;
   text-align: center;
 }
+/* A figure with its own gap to its caption (html-compat.typ's `.ts-figure`, around it) is spaced by that. */
+:where(.typstream .ts-figure) {
+  margin: 0.56em 0;
+}
+:where(.typstream .ts-figure) > figure {
+  margin: 0;
+}
 :where(.typstream) figure > :not(figcaption) {
   margin-inline: auto;
 }
 :where(.typstream) figcaption {
-  margin-block-start: 0.65em;
+  margin-block-start: var(--ts-gap, 0.65em);
   color: inherit;
 }
 

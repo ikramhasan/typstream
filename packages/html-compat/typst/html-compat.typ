@@ -1041,6 +1041,12 @@
   // depth below the baseline is measured beside a tall strut), its MathML beside it for screen readers. A display
   // equation is centred, its number at the end of the line (typst-layout's `layout_equation_block`).
   // MathML has no overline, but an accent; nor cancel, whose drawing is in the picture.
+  // A figure's gap to its caption other than Typst's default (0.65em, the stylesheet's).
+  show figure: html-only(it => {
+    let gap = it.gap.to-absolute()
+    if calc.abs((gap - 0.65em.to-absolute()).pt()) < 0.01 { return it }
+    html.elem("div", attrs: (class: "ts-figure", style: "--ts-gap: " + _len(gap)), it)
+  })
   show math.overline: html-only(it => math.accent(it.body, "‾"))
   show math.cancel: html-only(it => it.body)
   show math.equation: html-only(it => {
