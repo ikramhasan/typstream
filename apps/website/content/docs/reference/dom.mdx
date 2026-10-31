@@ -139,7 +139,8 @@ What the renderer does with the HTML:
 - **Lays it out on pages.** The document goes on sheets of its page size and margins (html-compat writes them),
   scaled as the paged view scales its pages (`layout`), and breaks across them where Typst breaks its pages: lines
   with Typst's orphans and widows, table rows, blocks that don't break, headings kept with what follows, forced and
-  weak page breaks. Headers and footers go on every sheet with its number. Columns fill as Typst's do, fractional
+  weak page breaks. Headers and footers go on every sheet with its number, and footnotes at the foot of the page their
+  reference is on (Typst's endnotes stay at the end for screen readers, out of sight). Columns fill as Typst's do, fractional
   spacing takes what its page or line leaves, and aligned blocks sit in the room their page leaves. With the
   engine's fonts registered (`registerTypstFonts`) and html-compat, a document looks as it does on the paged view's
   pages. It is laid out again when the root's width changes and when fonts finish loading; `onPages` hears the page

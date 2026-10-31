@@ -218,6 +218,34 @@ describe(`HTML renderer's pages in ${browser}`, () => {
     unmount(renderer);
   });
 
+  it("sets footnotes at the foot of their page, as Typst does", async () => {
+    registerTypstFonts(FONTS);
+    await document.fonts.load("11pt typstream-libertinus-serif");
+    const source = "Body text#footnote[A note here.] and more.\n\nSecond#footnote[Another note.]";
+    const doc = openHtml(engine);
+    const html = await compileHtml(doc, source);
+    doc.dispose();
+    const renderer = mount();
+    renderer.root.style.width = "800px";
+    renderer.update(html);
+    await laidOut();
+    const sheet = (renderer.root.querySelector(".typstream-page") as HTMLElement).getBoundingClientRect();
+    const notes = renderer.root.querySelector<HTMLElement>(".typstream-footnotes");
+    expect([...(notes?.querySelectorAll(".typstream-footnote") ?? [])].map((n) => n.textContent)).toEqual([
+      "1A note here.",
+      "2Another note.",
+    ]);
+    // The last entry ends at the foot of the page's text (Typst's default margin, 2.5/21 of A4's width).
+    const px = sheet.width / 595.28;
+    const bottom = (notes as HTMLElement).getBoundingClientRect().bottom;
+    expect(Math.abs(bottom - (sheet.bottom - ((595.28 * 2.5) / 21) * px))).toBeLessThan(2 * px);
+    // The endnotes stay in the document, for screen readers, out of sight.
+    expect(renderer.root.querySelector('section[role="doc-endnotes"]')?.classList.contains("typstream-endnotes")).toBe(
+      true,
+    );
+    unmount(renderer);
+  });
+
   it("breaks a document across pages where Typst breaks it", async () => {
     registerTypstFonts(FONTS);
     await document.fonts.load("11pt typstream-libertinus-serif");

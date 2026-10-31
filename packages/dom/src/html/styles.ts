@@ -162,6 +162,13 @@ export const htmlRendererCss: string = `${THEME_CSS}
   overflow: visible;
   clip-path: none;
 }
+:where(.typstream-flow .typstream-endnotes) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
 :where(.typstream-flow .typstream-island) {
   inset: 0 auto auto 0;
   width: calc(100% * var(--typstream-scale, 1));

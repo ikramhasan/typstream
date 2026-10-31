@@ -113,9 +113,14 @@ interface Unit {
   fr?: HTMLElement;
   /** The first unit of a block aligned in its page (html-compat's `.ts-align-v`): to its middle or its end. */
   align?: { el: Element; at: number };
+  /** The footnotes referenced in it (their entries in Typst's endnotes), which go at the foot of its page. */
+  notes?: HTMLElement[];
 }
 
 const SPACER = "typstream-break";
+/** A footnote's reference (typst-html's), and the endnotes it links into. */
+const NOTEREF = 'sup[role="doc-noteref"]';
+const ENDNOTES = 'section[role="doc-endnotes"]';
 /** What html-compat writes for the page number in headers and footers. */
 const PAGE_NUMBER = "7777";
 
@@ -312,11 +317,33 @@ export const createHtmlPages = (
 
   // --- units -------------------------------------------------------------------------
 
+  // --- footnotes ---------------------------------------------------------------------
+
+  /** Typst's endnotes' entries by id, for the pass being laid out. */
+  let entries = new Map<string, HTMLElement>();
+
+  /** The entry a footnote reference links to. */
+  const noteOf = (ref: Element): HTMLElement | undefined => {
+    const href = ref.querySelector("a")?.getAttribute("href");
+    return href?.startsWith("#") ? entries.get(href.slice(1)) : undefined;
+  };
+
+  /** The footnotes referenced in `els`, as a unit's `notes`. */
+  const withNotes = (els: Element[]): Pick<Unit, "notes"> => {
+    if (!entries.size) return {};
+    const notes = els
+      .flatMap((el) => [...(el.matches(NOTEREF) ? [el] : []), ...el.querySelectorAll(NOTEREF)])
+      .map(noteOf)
+      .filter((n): n is HTMLElement => !!n);
+    return notes.length ? { notes } : {};
+  };
+
   /** A unit for an element that doesn't break. */
   const whole = (el: Element, sticky?: Element): Unit => ({
     measure: () => inFlow(el.getBoundingClientRect(), origin()),
     gap: () => spacerBefore(el, true),
     ...(sticky ? { sticky } : {}),
+    ...withNotes([el]),
     ...(el.classList.contains("ts-columns") ? { fit: fill(el as HTMLElement) } : {}),
   });
 
@@ -411,6 +438,8 @@ export const createHtmlPages = (
       } else merged.push({ ...r });
     }
     const units: Unit[] = [];
+    /** The unit of each merged line (lines that don't start one have none). */
+    const lineUnits: (Unit | undefined)[] = [];
     for (const [i, line] of merged.entries()) {
       const height = line.bottom - line.top;
       // The first line's gap goes before the run's first node; later ones at their first character.
@@ -454,8 +483,23 @@ export const createHtmlPages = (
         ...(sticky ? { sticky } : {}),
       };
       units.push(unit);
+      lineUnits[i] = unit;
     }
     for (const [index, unit] of units.entries()) unit.par = { index, lines: units };
+    // Each footnote reference goes with the line it is on.
+    for (const node of nodes) {
+      if (node.nodeType !== 1) continue;
+      const el = node as Element;
+      for (const ref of [...(el.matches(NOTEREF) ? [el] : []), ...el.querySelectorAll(NOTEREF)]) {
+        const note = noteOf(ref);
+        if (!note) continue;
+        const r = inFlow(ref.getBoundingClientRect(), o);
+        const middle = (r.top + r.bottom) / 2;
+        const line = merged.findIndex((l) => middle >= l.top - EPS && middle <= l.bottom + EPS);
+        const unit = lineUnits[line] ?? units[units.length - 1];
+        if (unit) unit.notes = [...(unit.notes ?? []), note];
+      }
+    }
     out.push(...units);
   };
 
@@ -562,6 +606,7 @@ export const createHtmlPages = (
         measure,
         gap: () => (index > heads && heads > 0 ? headerGap(these, header, repeat) : rowGap(these)),
         ...(index < heads ? { sticky: grid } : {}),
+        ...withNotes(these),
       };
       if (!breakable) {
         out.push(first);
@@ -712,7 +757,8 @@ export const createHtmlPages = (
           range.selectNodeContents(node);
           rects = range.getClientRects();
         }
-        for (const r of rects) if (r.width && r.top <= at + EPS && r.bottom >= at - EPS) right = Math.max(right, r.right);
+        for (const r of rects)
+          if (r.width && r.top <= at + EPS && r.bottom >= at - EPS) right = Math.max(right, r.right);
       }
       return (row.getBoundingClientRect().right - right) / scale;
     });
@@ -721,11 +767,85 @@ export const createHtmlPages = (
     });
   };
 
+  /**
+   * Footnotes go at the foot of the page their reference is on, as Typst sets them (typst-layout's flow and
+   * `footnote.entry`'s defaults): 1em of room, a separator 30% of the text's width, then each entry 0.5em below what
+   * is above it, indented by 1em of its text. Typst's HTML writes them at the end of the document; that section stays
+   * there for screen readers, out of sight, and the pages show copies of its entries.
+   */
+  let pageNotes: HTMLElement[][] = [];
+  let noteHeights = new Map<HTMLElement, number>();
+  /** The flow's `em` (px), which footnotes' room and gaps are in. */
+  const em = () => Number.parseFloat(view.getComputedStyle(flow).fontSize) || 14.67;
+  const noteEntry = (li: HTMLElement): HTMLElement => {
+    const entry = doc.createElement("div");
+    entry.className = "typstream-footnote";
+    entry.style.paddingInlineStart = view.getComputedStyle(li.querySelector(".typstream-t") ?? li).fontSize;
+    for (const child of li.childNodes) entry.append(child.cloneNode(true));
+    for (const el of entry.querySelectorAll("[id]")) el.removeAttribute("id");
+    return entry;
+  };
+  /** The room footnotes take at the foot of `page`, with `more` added to them. */
+  const noteRoom = (page: number, more: readonly HTMLElement[] = []): number => {
+    const notes = [...(pageNotes[page] ?? []), ...more];
+    if (!notes.length) return 0;
+    return em() + notes.reduce((sum, li) => sum + em() / 2 + (noteHeights.get(li) ?? 0), 0);
+  };
+  /** Where the page's content ends: above its footnotes. */
+  const contentEnd = (page: number) => contentBottom(page) - noteRoom(page);
+  const drawNotes = () => {
+    const left = geometry.margin[3] * PX;
+    const width = pageWidth() - left - geometry.margin[1] * PX;
+    for (const [page, notes] of pageNotes.entries()) {
+      if (!notes?.length) continue;
+      const box = doc.createElement("div");
+      box.className = "typstream-footnotes";
+      Object.assign(box.style, {
+        position: "absolute",
+        left: `${left}px`,
+        width: `${width}px`,
+        top: `${contentEnd(page) + em()}px`,
+      });
+      // The separator's stroke centred on its line, as Typst draws it.
+      const separator = doc.createElement("div");
+      Object.assign(separator.style, { position: "absolute", top: "-0.25pt", width: "30%", borderTop: "0.5pt solid" });
+      box.append(separator);
+      for (const li of notes) {
+        const entry = noteEntry(li);
+        entry.style.marginTop = `${em() / 2}px`;
+        box.append(entry);
+      }
+      marginals.append(box);
+    }
+  };
+
   const paginate = (from: Node | null) => {
     place();
     fillLines(flow);
+    // Footnotes: Typst's endnotes out of sight, their entries measured as the pages will show them.
+    const endnotes = flow.querySelector<HTMLElement>(`:scope > ${ENDNOTES}`);
+    entries = new Map(
+      geometry.height === null || !endnotes
+        ? []
+        : [...endnotes.querySelectorAll<HTMLElement>("li[id]")].map((li) => [li.id, li] as const),
+    );
+    pageNotes = [];
+    noteHeights = new Map();
+    if (endnotes) endnotes.classList.toggle("typstream-endnotes", entries.size > 0);
+    if (entries.size) {
+      const probe = doc.createElement("div");
+      Object.assign(probe.style, {
+        position: "absolute",
+        visibility: "hidden",
+        width: `${pageWidth() - (geometry.margin[1] + geometry.margin[3]) * PX}px`,
+      });
+      const measured = [...entries.values()].map((li) => [li, probe.appendChild(noteEntry(li))] as const);
+      marginals.append(probe);
+      for (const [li, entry] of measured) noteHeights.set(li, entry.offsetHeight);
+      probe.remove();
+    }
     const key = JSON.stringify([geometry, pageWidth(), scale]);
-    if (key !== laidOut || geometry.height === null || shifts.length) from = null;
+    if (key !== laidOut || geometry.height === null || shifts.length || entries.size) from = null;
     laidOut = key;
     if (geometry.height === null) {
       // One page, as tall as the content.
@@ -783,7 +903,7 @@ export const createHtmlPages = (
       const bottom = Math.max(contentTop(page), last >= 0 ? (units[last] as Unit).measure().bottom : 0);
       const grow = (el: HTMLElement) => Number(el.style.flexGrow) || 1;
       const total = mine.reduce((sum, f) => sum + grow(f.el), 0);
-      const room = Math.max(0, contentBottom(page) - bottom);
+      const room = Math.max(0, contentEnd(page) - bottom);
       for (const f of mine) f.el.style.height = `${(room * grow(f.el)) / total}px`;
       if (mine.length) return;
       let ruler = 0;
@@ -811,7 +931,7 @@ export const createHtmlPages = (
       // A weak break where the page has nothing above yet is no break.
       if (unit.force === "weak" && top <= contentTop(page) + EPS) continue;
       if (unit.fit && !unit.force) {
-        unit.fit(contentBottom(page) - top);
+        unit.fit(contentEnd(page) - top);
         ({ top, bottom } = unit.measure());
       }
       if (unit.force) {
@@ -819,9 +939,14 @@ export const createHtmlPages = (
         page++;
         sheet(page);
         place();
-      } else if (bottom <= contentBottom(page) + EPS || top <= contentTop(page) + EPS) continue;
-      else {
+      } else if (bottom <= contentBottom(page) - noteRoom(page, unit.notes) + EPS || top <= contentTop(page) + EPS) {
+        if (unit.notes) (pageNotes[page] ??= []).push(...unit.notes);
+        continue;
+      } else {
         const j = breakAt(units, i, contentTop(page));
+        // Footnotes of what moves go with it.
+        const moving = new Set(units.slice(j, i).flatMap((u) => u.notes ?? []));
+        if (moving.size) pageNotes[page] = (pageNotes[page] ?? []).filter((li) => !moving.has(li));
         fill(j);
         page++;
         sheet(page);
@@ -836,12 +961,14 @@ export const createHtmlPages = (
       gap.set(1);
       ({ top, bottom } = moved.measure());
       gap.set(1 + contentTop(page) - top);
-      moved.fit?.(contentBottom(page) - contentTop(page));
+      moved.fit?.(contentEnd(page) - contentTop(page));
+      if (moved.notes) (pageNotes[page] ??= []).push(...moved.notes);
     }
     fill(units.length);
     count = page + 1;
     while (sheets.children.length > count) sheets.lastElementChild?.remove();
     drawMarginals();
+    drawNotes();
     fillLines(marginals);
     numberOutline();
     if (count !== told) {

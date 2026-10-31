@@ -134,7 +134,7 @@ export const htmlLines = (el: HTMLElement, pageWidth: number): Line[] => {
   for (let n = walker.nextNode(); n; n = walker.nextNode()) {
     const t = n as Text;
     const parent = t.parentElement;
-    if (!parent || parent.closest(".typstream-caret, .ts-sr, math, svg")) continue;
+    if (!parent || parent.closest(".typstream-caret, .ts-sr, math, svg, .typstream-endnotes")) continue;
     if (getComputedStyle(parent).visibility === "hidden") continue;
     const size = Number.parseFloat(getComputedStyle(parent).fontSize);
     const words = /\S+/g;
