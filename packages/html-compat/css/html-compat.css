@@ -318,14 +318,13 @@
   vertical-align: bottom;
 }
 /* repeat() fills its box in Typst: its copies stop at the box's edge (or the line's) instead of
-   spilling past it. Clipping moves an inline block's baseline to its bottom edge (WebKit's even
-   with `overflow: clip`), so it sits on the line's bottom, as a box(width: 1fr) does. */
+   spilling past it. Clipped by `clip-path`, which leaves its baseline on its text's, as Typst's;
+   `overflow` would move it to the box's bottom edge (WebKit's even with `overflow: clip`). */
 :where(.typstream .ts-repeat) {
   display: inline-block;
   max-width: 100%;
-  overflow: hidden;
+  clip-path: inset(0);
   white-space: nowrap;
-  vertical-align: bottom;
 }
 /* Empty shapes are drawings of a size; with content they size to it. */
 :where(.typstream .ts-shape:empty) {

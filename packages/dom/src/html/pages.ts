@@ -696,18 +696,24 @@ export const createHtmlPages = (
    * Fractional spacing alone in its run of text (the renderer's `.typstream-fill`) takes what its line leaves, as
    * Typst's does: nothing while lines break, then the rest of the line it is on.
    */
-  const fillLines = () => {
-    const fills = [...flow.querySelectorAll<HTMLElement>(".typstream-fill > .ts-hfill")];
+  const fillLines = (root: HTMLElement) => {
+    const fills = [...root.querySelectorAll<HTMLElement>(".typstream-fill > .ts-hfill")];
     for (const h of fills) h.style.width = "0px";
+    const range = doc.createRange();
     const widths = fills.map((h) => {
       const row = h.parentElement as HTMLElement;
-      const at = h.getBoundingClientRect();
-      const range = doc.createRange();
-      range.setStartAfter(h);
-      range.setEnd(row, row.childNodes.length);
-      let right = at.right;
-      for (const r of range.getClientRects())
-        if (r.width && r.top <= at.top + EPS && r.bottom >= at.top - EPS) right = Math.max(right, r.right);
+      // The baseline of its line (it is an empty inline block there): what follows on that line crosses it.
+      const at = h.getBoundingClientRect().top;
+      let right = h.getBoundingClientRect().right;
+      for (let node = h.nextSibling; node; node = node.nextSibling) {
+        let rects: DOMRectList;
+        if (node.nodeType === 1) rects = (node as Element).getClientRects();
+        else {
+          range.selectNodeContents(node);
+          rects = range.getClientRects();
+        }
+        for (const r of rects) if (r.width && r.top <= at + EPS && r.bottom >= at - EPS) right = Math.max(right, r.right);
+      }
       return (row.getBoundingClientRect().right - right) / scale;
     });
     fills.forEach((h, i) => {
@@ -717,7 +723,7 @@ export const createHtmlPages = (
 
   const paginate = (from: Node | null) => {
     place();
-    fillLines();
+    fillLines(flow);
     const key = JSON.stringify([geometry, pageWidth(), scale]);
     if (key !== laidOut || geometry.height === null || shifts.length) from = null;
     laidOut = key;
@@ -836,6 +842,7 @@ export const createHtmlPages = (
     count = page + 1;
     while (sheets.children.length > count) sheets.lastElementChild?.remove();
     drawMarginals();
+    fillLines(marginals);
     numberOutline();
     if (count !== told) {
       told = count;
