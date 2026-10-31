@@ -77,9 +77,9 @@ const withoutSrc = (root: HTMLElement): string => {
   for (const name of ["page", "numbering", "parts", "counter"])
     for (const el of Array.from(clone.querySelectorAll(`[data-typstream-${name}]`)))
       el.removeAttribute(`data-typstream-${name}`);
-  for (const v of Array.from(clone.querySelectorAll(".ts-v"))) {
-    (v.previousElementSibling as HTMLElement | null)?.style.removeProperty("margin-block-end");
-    (v.nextElementSibling as HTMLElement | null)?.style.removeProperty("margin-block-start");
+  for (const v of Array.from(clone.querySelectorAll<HTMLElement>(".ts-v-both"))) {
+    v.classList.remove("ts-v-both");
+    v.style.removeProperty("margin-block-end");
   }
   for (const el of Array.from(clone.querySelectorAll<HTMLElement>(".typstream-t"))) el.style.removeProperty("--ts-x");
   // What the pages size: fractional spacing, columns.

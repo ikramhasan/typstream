@@ -143,15 +143,14 @@ const STICKY = "h1, h2, h3, h4, h5, h6, .ts-sticky";
 const OWN_ABOVE = "h1, h2, h3, h4, h5, h6, .ts-sp-a";
 const OWN_BELOW = "h1, h2, h3, h4, h5, h6, .ts-sp-b";
 
-/** What a block's margins were inline before `collapseSpacing` set them: put back before it measures again. */
-const inlineMargins = new WeakMap<HTMLElement, [string, string]>();
-
 /**
  * Spacing (`v`) between two blocks whose spacings are alike (both their own, or both paragraph spacing): Typst adds
- * it to the larger of the two (distribute.rs, keep_spacing), which CSS can't pick. html-compat's CSS leaves both
- * while the `v` is `.ts-v-both`; here the larger stays, the other goes. (Unalike, the block's own wins: the CSS.)
+ * it to the larger of the two (distribute.rs, keep_spacing), which CSS can't pick. Such a `v` is `.ts-v-both`, where
+ * html-compat's CSS keeps both spacings, and a negative bottom margin as large as the smaller takes it back (margins
+ * collapse: the larger stays). The spacings are measured as the gaps around the `v`, so a first or last child's
+ * margin that collapses through its block counts. (Unalike, the block's own wins: the CSS.)
  */
-const collapseSpacing = (root: HTMLElement, view: Window) => {
+const collapseSpacing = (root: HTMLElement, view: Window, scale: number) => {
   const pairs: [HTMLElement, HTMLElement, HTMLElement][] = [];
   for (const v of root.querySelectorAll<HTMLElement>(".ts-v:not(.ts-v-weak, .ts-vfill)")) {
     // Past the pages' spacers: a layout from a later block keeps those before it.
@@ -159,27 +158,24 @@ const collapseSpacing = (root: HTMLElement, view: Window) => {
     while (before?.classList.contains(SPACER)) before = before.previousElementSibling as HTMLElement | null;
     let after = v.nextElementSibling as HTMLElement | null;
     while (after?.classList.contains(SPACER)) after = after.nextElementSibling as HTMLElement | null;
-    if (!before || !after || before.matches(OWN_BELOW) !== after.matches(OWN_ABOVE)) continue;
-    if (!isBlock(before, view) || !isBlock(after, view)) continue;
-    pairs.push([before, v, after]);
+    const alike =
+      !!before &&
+      !!after &&
+      before.matches(OWN_BELOW) === after.matches(OWN_ABOVE) &&
+      isBlock(before, view) &&
+      isBlock(after, view);
+    v.classList.toggle("ts-v-both", alike);
+    v.style.marginBlockEnd = "";
+    // Without height its margins collapse through it, with the blocks': the larger stays as it is.
+    if (alike && v.offsetHeight > 0) pairs.push([before as HTMLElement, v, after as HTMLElement]);
   }
-  for (const [before, v, after] of pairs) {
-    v.classList.add("ts-v-both");
-    for (const el of [before, after]) {
-      const was = inlineMargins.get(el) ?? [el.style.marginBlockEnd, el.style.marginBlockStart];
-      inlineMargins.set(el, was);
-      [el.style.marginBlockEnd, el.style.marginBlockStart] = was;
-    }
-  }
-  const sizes = pairs.map(([before, , after]) => [
-    Number.parseFloat(view.getComputedStyle(before).marginBlockEnd) || 0,
-    Number.parseFloat(view.getComputedStyle(after).marginBlockStart) || 0,
-  ]);
-  for (const [i, [before, v, after]] of pairs.entries()) {
-    const [below, above] = sizes[i] as [number, number];
-    v.classList.remove("ts-v-both");
-    before.style.marginBlockEnd = `${below >= above ? below : 0}px`;
-    after.style.marginBlockStart = `${below >= above ? 0 : above}px`;
+  const gaps = pairs.map(([before, v, after]) => {
+    const box = v.getBoundingClientRect();
+    return Math.min(box.top - before.getBoundingClientRect().bottom, after.getBoundingClientRect().top - box.bottom);
+  });
+  for (const [i, [, v]] of pairs.entries()) {
+    const smaller = (gaps[i] as number) / scale;
+    if (smaller > 0) v.style.marginBlockEnd = `${-smaller}px`;
   }
 };
 
@@ -1324,7 +1320,7 @@ export const createHtmlPages = (
     place();
     findBaseline();
     alignMixedLines();
-    collapseSpacing(flow, view);
+    collapseSpacing(flow, view, scale);
     fillLines(flow);
     // Footnotes: Typst's endnotes out of sight, their entries measured as the pages will show them.
     const endnotes = flow.querySelector<HTMLElement>(`:scope > ${ENDNOTES}`);

@@ -521,8 +521,8 @@
 :where(.typstream) :is(h1, h2, h3, h4, h5, h6, .ts-sp-b) + .ts-v + :not(h1, h2, h3, h4, h5, h6, .ts-sp-a) {
   margin-block-start: 0;
 }
-/* Between two blocks' own spacings both stay here, and between two paragraph spacings while the renderer measures
-   them (`.ts-v-both`): Typst's is the larger, which @typstream/dom's pages keep (`collapseSpacing`). */
+/* Between two blocks' own spacings both stay here, and between two paragraph spacings where the renderer marks the
+   `v` (`.ts-v-both`): Typst's is the larger, which @typstream/dom's pages keep (`collapseSpacing`). */
 :where(.typstream) :not(h1, h2, h3, h4, h5, h6, .ts-sp-b):has(+ .ts-v + :is(h1, h2, h3, h4, h5, h6, .ts-sp-a)) {
   margin-block-end: 0;
 }
