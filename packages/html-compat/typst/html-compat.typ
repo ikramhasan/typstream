@@ -508,7 +508,13 @@
 }
 
 #let _place(it) = {
-  if it.float { return _el("div", "ts-place ts-float", it.body) }
+  // A float stays in the flow, its content aligned as placed, with its clearance from the flow after it. One
+  // across the page's columns (`scope: "parent"`) is the pages' to put over them (`.ts-float-parent`).
+  if it.float {
+    let x = _text-align(it.alignment)
+    let style = _css(text-align: if x != none and x != "start" { x }, margin-block-end: _len(it.clearance))
+    return _el("div", "ts-place ts-float" + if it.scope == "parent" { " ts-float-parent" }, style: style, it.body)
+  }
   let a = it.alignment
   let (x, y) = if a == auto { (start, none) } else if a.axis() == "horizontal" { (a, none) } else if a.axis() == "vertical" { (start, a) } else { (a.x, a.y) }
   // Inside the container's inset, as Typst places: its sides are custom properties (`_inset-vars`).
@@ -676,9 +682,12 @@
   let pt(l) = _num(l.pt())
   let (top, bottom) = (pick("top", y, "y"), pick("bottom", y, "y"))
   let rel(r, of) = float(r.ratio) * of + r.length.to-absolute()
+  // Page columns (`set page(columns: n)`): how many, and their gutter (`columns.gutter`, of the text's width).
+  let gutter = columns.gutter
+  let gutter = if type(gutter) == relative { rel(gutter, size.x - left - right) } else if type(gutter) == ratio { float(gutter) * (size.x - left - right) } else { gutter.to-absolute() }
   (
     pt(size.x), if h == auto { "auto" } else { pt(size.y) }, pt(top), pt(right), pt(bottom), pt(left), fill,
-    pt(rel(page.header-ascent, top)), pt(rel(page.footer-descent, bottom)),
+    pt(rel(page.header-ascent, top)), pt(rel(page.footer-descent, bottom)), str(page.columns), pt(gutter),
   ).join(" ")
 }
 

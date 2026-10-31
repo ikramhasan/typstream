@@ -186,6 +186,9 @@ export const htmlRendererCss: string = `${THEME_CSS}
   text-box: none;
   padding-block: 0;
 }
+:where(.typstream-flow .ts-float-parent) {
+  width: var(--typstream-text-width, auto);
+}
 :where(.typstream-flow .typstream-split) {
   background: none !important;
 }

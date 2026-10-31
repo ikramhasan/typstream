@@ -26,6 +26,9 @@ export interface PageGeometry {
   /** How far above the top margin's end the header ends, and below the bottom margin's start the footer starts. */
   ascent: number;
   descent: number;
+  /** Its columns (`set page(columns: n)`) and the gutter between them, in points. */
+  columns?: number;
+  gutter?: number;
 }
 
 /** A4 with Typst's default margins (2.5/21 of the shorter side). */
@@ -38,7 +41,7 @@ export const A4: PageGeometry = {
   descent: 21.26,
 };
 
-/** html-compat's `data-page`: `width height top right bottom left fill ascent descent`. */
+/** html-compat's `data-page`: `width height top right bottom left fill ascent descent columns gutter`. */
 export const parseGeometry = (attr: string | null | undefined): PageGeometry => {
   const parts = attr?.trim().split(/\s+/) ?? [];
   const n = parts.slice(0, 6).map(Number);
@@ -53,6 +56,7 @@ export const parseGeometry = (attr: string | null | undefined): PageGeometry => 
     fill,
     ascent: Number.isFinite(ascent) ? (ascent as number) : top * 0.3,
     descent: Number.isFinite(descent) ? (descent as number) : bottom * 0.3,
+    ...(Number(parts[9]) > 1 ? { columns: Number(parts[9]), gutter: Number(parts[10]) || 0 } : {}),
   };
 };
 
@@ -106,7 +110,7 @@ interface Unit {
   /** The sticky block (a heading) it belongs to. */
   sticky?: Element;
   /** A forced page break comes before it: `weak` when there is none at the top of a page. */
-  force?: boolean | "weak";
+  force?: boolean | "weak" | "column";
   /** Fits it to the room left on its page (px), before it is measured there: columns fill it as Typst's do. */
   fit?(room: number): void;
   /** Fractional spacing (html-compat's `.ts-vfill`): its share of the room its page's content leaves. */
@@ -128,7 +132,7 @@ const PAGE_NUMBER = "7777";
 
 /** Elements that don't break across pages. A closed `<details>` too: what it hides has no place to measure. */
 const WHOLE =
-  ".ts-whole, figure, img, svg, math, typstream-island, .ts-frame, .ts-shape, .ts-line, .ts-columns, pre, .typstream-island, details:not([open])";
+  ".ts-whole, figure, img, svg, math, typstream-island, .ts-frame, .ts-shape, .ts-line, .ts-columns, pre, .typstream-island, details:not([open]), .ts-float-parent";
 /** Sticky blocks: they move to the next page with what follows them. */
 const STICKY = "h1, h2, h3, h4, h5, h6, .ts-sticky";
 
@@ -221,6 +225,11 @@ export const createHtmlPages = (
         top: `${at.top}px`,
         transform: scale === 1 ? "" : `scale(${scale})`,
       });
+    // Page columns: the flow is one column wide (its box the page's, so what moves to the next column shows).
+    if (columns() > 1) {
+      flow.style.paddingRight = `${right + (width - left - right) - columnWidth()}px`;
+      flow.style.setProperty("--typstream-text-width", `${width - left - right}px`);
+    } else flow.style.removeProperty("--typstream-text-width");
   };
 
   /** Each page's header and footer, its number and the count written in. */
@@ -278,8 +287,104 @@ export const createHtmlPages = (
   const sheetTop = (i: number): number =>
     (sheet(i).getBoundingClientRect().top - sheet(0).getBoundingClientRect().top) / scale;
   const pageHeight = () => (geometry.height ?? 0) * PX;
-  const contentTop = (i: number) => sheetTop(i) + geometry.margin[0] * PX;
-  const contentBottom = (i: number) => sheetTop(i) + pageHeight() - geometry.margin[2] * PX;
+
+  // Page columns (`set page(columns: n)`): the flow, one column wide, is laid out in regions, a column each, one
+  // under the other a page apart; region r is column r % n of page r / n, where its content is moved
+  // (`placeRegions`) as Typst sets it there, the first filled before the next (no balancing).
+  const columns = () => (geometry.height === null ? 1 : Math.max(1, geometry.columns ?? 1));
+  const columnWidth = () => {
+    const [, right, , left] = geometry.margin.map((m) => m * PX) as [number, number, number, number];
+    const n = columns();
+    return (pageWidth() - left - right - (n - 1) * (geometry.gutter ?? 0) * PX) / n;
+  };
+  /** Pages apart, in the flow's px: what the sheets are. */
+  const pitch = () => {
+    if (sheets.children.length > 1) return sheetTop(1);
+    const gap = Number.parseFloat(view.getComputedStyle(sheets).rowGap) || 0;
+    return (sheet(0).getBoundingClientRect().height + gap) / scale;
+  };
+  /** The sheet region `r` (a page, or a column of one) is on. */
+  const sheetOf = (r: number) => Math.floor(r / columns());
+  /** Where region `r` is laid out in the flow. */
+  const regionTop = (r: number) => (columns() > 1 ? r * pitch() : sheetTop(r));
+  /** Room a float across a page's columns takes at its top, by page: its columns start below it. */
+  let floats: number[] = [];
+  const contentTop = (i: number) =>
+    regionTop(i) + geometry.margin[0] * PX + (i % columns() > 0 ? (floats[sheetOf(i)] ?? 0) : 0);
+  const contentBottom = (i: number) => regionTop(i) + pageHeight() - geometry.margin[2] * PX;
+
+  /** What was moved to its column: blocks (`translate`) and inline runs wrapped to move. */
+  let regions: { el: HTMLElement; wrap: boolean }[] = [];
+  const clearRegions = () => {
+    for (const { el, wrap } of regions) {
+      if (!wrap) {
+        el.style.translate = "";
+        continue;
+      }
+      const parent = el.parentNode;
+      el.replaceWith(...el.childNodes);
+      parent?.normalize();
+    }
+    regions = [];
+    flow.style.height = "";
+  };
+  /**
+   * Moves what is laid out in each region to its column on its page: the nodes between the room before the region
+   * and the room before the next, the outermost wholly there. A block moves (`translate`, drawing only); inline
+   * content, which can't, is wrapped in a span moved relative to its place.
+   */
+  const placeRegions = (starts: Node[]) => {
+    const n = columns();
+    if (n < 2) return;
+    const step = columnWidth() + (geometry.gutter ?? 0) * PX;
+    const range = doc.createRange();
+    const index = (node: Node) => Array.prototype.indexOf.call((node.parentNode as Node).childNodes, node) as number;
+    for (const [r, start] of starts.entries()) {
+      const region = r + 1;
+      const dx = (region % n) * step;
+      const dy = (sheetOf(region) - region) * pitch();
+      if (!dx && !dy) continue;
+      range.setStartBefore(start);
+      const end = starts[r + 1];
+      if (end) range.setEndBefore(end);
+      else range.setEnd(flow, flow.childNodes.length);
+      const move = (node: Node) => {
+        if (node.nodeType === 3) {
+          if (!(node as Text).data.trim()) return;
+        } else if (node.nodeType !== 1) return;
+        const el = node as HTMLElement;
+        if (node.nodeType === 1) {
+          const display = view.getComputedStyle(el).display;
+          if (display === "contents") return walk(el);
+          if (outOfFlow(el, view)) return;
+          if (!display.startsWith("inline")) {
+            el.style.translate = `${dx}px ${dy}px`;
+            regions.push({ el, wrap: false });
+            return;
+          }
+        }
+        const wrap = doc.createElement("span");
+        wrap.className = "typstream-region";
+        wrap.style.cssText = `position:relative;left:${dx}px;top:${dy}px`;
+        (node.parentNode as Node).insertBefore(wrap, node);
+        wrap.append(node);
+        regions.push({ el: wrap, wrap: true });
+      };
+      const walk = (parent: Node) => {
+        for (const child of [...parent.childNodes]) {
+          if (!range.intersectsNode(child)) continue;
+          const i = index(child);
+          const whole =
+            range.comparePoint(child.parentNode as Node, i) >= 0 && range.comparePoint(child.parentNode as Node, i + 1) <= 0;
+          if (whole) move(child);
+          else walk(child);
+        }
+      };
+      walk(flow);
+    }
+    // The flow as tall as its pages: what was laid out further down shows moved up.
+    flow.style.height = `${count * pitch()}px`;
+  };
 
   /** A rectangle's top and bottom in the flow's own px. */
   const origin = () => flow.getBoundingClientRect().top;
@@ -655,7 +760,7 @@ export const createHtmlPages = (
       if (run.some((n) => n.nodeType === 1 || (n as Text).data.trim())) lines(run, o, sticky, out);
       run = [];
     };
-    let force: boolean | "weak" = false;
+    let force: boolean | "weak" | "column" = false;
     const nodes = [...el.childNodes];
     for (const node of start ? nodes.slice(Math.max(0, nodes.indexOf(start as ChildNode))) : nodes) {
       if (node.nodeType === 3) {
@@ -689,6 +794,11 @@ export const createHtmlPages = (
           gap: () => spacerBefore(child, true),
           fr: child,
         });
+        continue;
+      }
+      // A column break between the page's columns (`set page(columns: n)`).
+      if (el === flow && columns() > 1 && child.classList.contains("ts-colbreak")) {
+        force = force === true ? true : "column";
         continue;
       }
       if (child.classList.contains("ts-pagebreak")) {
@@ -809,6 +919,7 @@ export const createHtmlPages = (
   // --- breaking ----------------------------------------------------------------------
 
   const clear = () => {
+    clearRegions();
     for (const gap of [...gaps, ...shifts]) gap.remove();
     gaps = [];
     shifts = [];
@@ -992,6 +1103,7 @@ export const createHtmlPages = (
     );
     pageNotes = [];
     noteHeights = new Map();
+    floats = [];
     if (endnotes) endnotes.classList.toggle("typstream-endnotes", entries.size > 0);
     if (entries.size) {
       const probe = doc.createElement("div");
@@ -1006,7 +1118,8 @@ export const createHtmlPages = (
       probe.remove();
     }
     const key = JSON.stringify([geometry, pageWidth(), scale]);
-    if (key !== laidOut || geometry.height === null || shifts.length || entries.size || splits.size) from = null;
+    if (key !== laidOut || geometry.height === null || shifts.length || entries.size || splits.size || columns() > 1)
+      from = null;
     laidOut = key;
     if (geometry.height === null) {
       // One page, as tall as the content.
@@ -1091,6 +1204,12 @@ export const createHtmlPages = (
         continue;
       }
       if (unit.align) aligns.push({ index: i, ...unit.align });
+      // A float across the page's columns: as wide as their text, the next columns starting below it.
+      const float = unit.host as HTMLElement | undefined;
+      if (columns() > 1 && float?.classList?.contains("ts-float-parent")) {
+        const below = Number.parseFloat(view.getComputedStyle(float).marginBottom) || 0;
+        floats[sheetOf(page)] = bottom + below - contentTop(page);
+      }
       // A weak break where the page has nothing above yet is no break.
       if (unit.force === "weak" && top <= contentTop(page) + EPS) continue;
       if (unit.fit && !unit.force) {
@@ -1099,8 +1218,9 @@ export const createHtmlPages = (
       }
       if (unit.force) {
         fill(i);
-        page++;
-        sheet(page);
+        // A page break goes to the next page's first column, a column break to the next column.
+        page = unit.force === "column" ? page + 1 : (sheetOf(page) + 1) * columns();
+        sheet(sheetOf(page));
         place();
       } else if (
         bottom + insetBelow(unit) <= contentBottom(page) - noteRoom(page, unit.notes) + EPS ||
@@ -1115,7 +1235,7 @@ export const createHtmlPages = (
         if (moving.size) pageNotes[page] = (pageNotes[page] ?? []).filter((li) => !moving.has(li));
         fill(j);
         page++;
-        sheet(page);
+        sheet(sheetOf(page));
         place();
         i = j;
       }
@@ -1147,8 +1267,14 @@ export const createHtmlPages = (
     // all of it again.
     const end = units[units.length - 1]?.measure();
     if (start && end && end.bottom > contentEnd(page) + EPS && end.top > contentTop(page) + EPS) return paginate(null);
-    count = page + 1;
+    count = sheetOf(page) + 1;
     while (sheets.children.length > count) sheets.lastElementChild?.remove();
+    placeRegions(
+      gaps
+        .filter((g) => g.page > 0)
+        .sort((a, b) => a.page - b.page)
+        .map((g) => g.node),
+    );
     drawSplits();
     drawMarginals();
     drawNotes();
