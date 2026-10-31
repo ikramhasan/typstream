@@ -725,6 +725,18 @@ describe("writeDocx", () => {
       expect(indented).toContain('<w:tblInd w:w="220" w:type="dxa"/>');
       expect(indented).toContain('<w:gridCol w:w="980"/><w:gridCol w:w="1840"/>');
     });
+
+    it("leaves the cell before a widened column the slack on its right", () => {
+      const insets = { top: 0, right: 3, bottom: 0, left: 3 };
+      const doc = parts(
+        model([
+          table([40, 40], [{ cantSplit: true, cells: [cell(0, [p("Name:")], insets), cell(1, [p("Date:")], insets)] }]),
+        ]),
+      ).xml("word/document.xml");
+      // "Name:" keeps its point of slack (40 - 3 - 3 + 1 = 35 points for its text): it gives 2 of its 3 points.
+      expect(doc).toContain('<w:gridCol w:w="760"/><w:gridCol w:w="840"/>');
+      expect(doc).toMatch(/<w:tcW w:w="760" w:type="dxa"\/>.*?<w:left w:w="60" w:type="dxa"\/>.*?<w:right w:w="0"/);
+    });
   });
 
   it("numbers list paragraphs from the list's numbering, its number in the hanging indent", () => {

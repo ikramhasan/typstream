@@ -120,7 +120,9 @@ What Pages does with a DOCX, measured (and what the writer does about it, `PAGES
   whose margins are under its inset (a data table's) is still taller in Pages.
 - It spaces paragraphs by the larger of one's space after and the next's space before, not their sum, and sets a
   table in a paragraph made like the one before it (its spacing, page break and keep with next), so the gap above a
-  table is a spacer of its own.
+  table is a spacer of its own. The spacer has no keep with next, so in Word a heading before a table keeps only with
+  the spacer, and can end a page whose table starts the next. Given to the spacer, Pages kept the table with what
+  follows: 5 of 126 documents came out a page longer.
 - Its equations are its own (STIX), wider than Typst's: lines with inline math break elsewhere.
 
 **Microsoft's validator** (`validator/`, the Open XML SDK's `OpenXmlValidator` for Microsoft 365): any error is one

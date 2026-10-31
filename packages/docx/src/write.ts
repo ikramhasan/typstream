@@ -59,8 +59,9 @@ const roomIn = (c: DocxCell): number =>
   c.blocks.reduce((r, b) => (b.type === "p" ? Math.min(r, b.room ?? 0) : r), Number.POSITIVE_INFINITY);
 
 /**
- * What a cell can give up on its right, in points, without Word setting anything elsewhere: its right margin, and what
- * all its blocks leave on their right (rules' and paragraphs' right indents); all but a point of an empty one.
+ * What a cell can give up on its right, in points, without Word setting anything elsewhere: its right margin but the
+ * slack `cell` gives back from it, and what all its blocks leave on their right (rules' and paragraphs' right indents);
+ * all but a point of an empty one.
  */
 const spareRight = (c: DocxCell, width: number): number => {
   if (c.blocks.length === 0) return Math.max(0, width - c.margins.left - 1);
@@ -68,7 +69,7 @@ const spareRight = (c: DocxCell, width: number): number => {
   const indents = c.blocks.map((b) =>
     b.type === "rule" ? b.indent.right : b.type === "p" && !b.rtl ? Math.max(0, b.indent.right ?? 0) : 0,
   );
-  return c.margins.right + Math.min(...indents);
+  return Math.max(0, c.margins.right - SLACK) + Math.min(...indents);
 };
 /** Marks where a section's properties go in the body, written once the headers' references are known. */
 const SECTION = "\u0001";
@@ -344,7 +345,8 @@ class Writer {
    * The paragraph before a table, `height` tall (the gap above it). Pages sets a table in a paragraph made like the one
    * before it: its space after, before and the larger of them below the table (Pages spaces paragraphs by the larger of
    * the two, not their sum), its page break, which put the table a page after it, and its keep with next, which kept
-   * the table with what follows (tables and all, a page of them moved on). This one has none of them.
+   * the table with what follows (tables and all, a page of them moved on). This one has none of them: a heading before
+   * a table keeps with it in Word no longer, as given to this paragraph it put pages of tables a page further in Pages.
    */
   private beforeTable(height: number): string {
     const line = Math.max(0.05, height);
@@ -463,8 +465,8 @@ class Writer {
         const give = move[c.col + span(c)] ?? 0;
         if (gain < 0.05 && give < 0.05) return c;
         const margins = { ...c.margins, left: c.margins.left + gain };
-        // From the right margin first, then from every block's right indent.
-        const fromMargin = Math.min(give, margins.right);
+        // From the right margin first, but its slack (`cell`), then from every block's right indent.
+        const fromMargin = Math.min(give, Math.max(0, margins.right - SLACK));
         margins.right -= fromMargin;
         const rest = give - fromMargin;
         const blocks =
