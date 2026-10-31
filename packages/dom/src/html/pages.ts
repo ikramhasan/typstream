@@ -363,9 +363,16 @@ export const createHtmlPages = (
     el.style.columnFill = "auto";
     el.style.height = `${Math.max(0, room)}px`;
     const box = el.getBoundingClientRect();
+    // What the columns hold, in their flow: its boxes, not what is placed out of it (the MathML that screen readers
+    // read, which overflows its own box).
     const range = doc.createRange();
-    range.selectNodeContents(el);
-    const rects = [...range.getClientRects()].filter((r) => r.width || r.height);
+    const rects = [...el.childNodes]
+      .flatMap((n) => {
+        if (n.nodeType === 1) return outOfFlow(n as Element, view) ? [] : [...(n as Element).getClientRects()];
+        range.selectNodeContents(n);
+        return [...range.getClientRects()];
+      })
+      .filter((r) => r.width || r.height);
     if (rects.some((r) => r.right > box.right + 1)) {
       el.style.columnFill = el.style.height = "";
       return;
@@ -1067,7 +1074,7 @@ export const createHtmlPages = (
       ({ top, bottom } = moved.measure());
       // Room before a block that the unit opens: the block (its inset, its stroke) starts the page, not its line.
       const opened = (gap.node as Element).classList?.contains(SPACER) ? (gap.node as Element).nextElementSibling : null;
-      if (opened && opened !== moved.host) top = Math.min(top, inFlow(opened.getBoundingClientRect(), origin()).top);
+      if (opened) top = inFlow(opened.getBoundingClientRect(), origin()).top;
       // The boxes this breaks (begun on a page before): their pieces here start with their top insets, and the
       // pieces before end with their bottom insets after what is above the break.
       const broken = boxesAround(gap.node).filter((b) => inFlow(b.getBoundingClientRect(), origin()).top < top - EPS);

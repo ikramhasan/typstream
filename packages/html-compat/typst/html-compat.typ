@@ -381,6 +381,20 @@
   (cells, hlines, vlines)
 }
 
+/// Whether content takes the whole width it is given, wherever it is: a grid or a table with fractional or
+/// relative columns, something given a relative width, fractional spacing. A block around it is as wide as its
+/// region in Typst, where CSS would shrink it to its content (`width: fit-content`) and collapse those columns.
+#let _expands(c) = _find(c, e => {
+  let f = e.fields()
+  let rel(w) = type(w) in (ratio, relative, fraction)
+  if e.func() in (grid, table) {
+    let cols = f.at("columns", default: ())
+    type(cols) == array and cols.any(rel)
+  } else if e.func() in (block, box, rect, square, line, image) { rel(f.at("width", default: f.at("length", default: auto))) }
+  else if e.func() == h { type(f.amount) == fraction }
+  else { false }
+})
+
 /// A grid or a table as a CSS grid with Typst's tracks, gutters and cell placement. A table keeps its semantics
 /// through ARIA roles: its rows are `display: contents`, so their cells are the grid's items.
 #let _grid(it, table: false) = {
@@ -396,8 +410,41 @@
   let (col-tracks, row-tracks) = (cg.dedup().len() > 1, rg.dedup().len() > 1)
   let interleave(tracks, gaps) = tracks.enumerate().map(((i, t)) => if i < gaps.len() { (t, _len(gaps.at(i))) } else { (t,) }).flatten()
   let row-track(i) = if rows.len() == 0 { auto } else { rows.at(calc.min(i, rows.len() - 1)) }
+  // A cell spanning auto columns that needs more room than they have: Typst gives what is missing to the last auto
+  // column it spans (typst-layout's grid, measure_auto_columns), where CSS would share it out. That column is given
+  // at least its own widest cell and what is missing (`minmax(…, auto)`); the others stay `auto`, as wide as the
+  // browser sets their text.
+  let pick-at(c, name) = { let v = c.cell.fields().at(name, default: auto); if v == auto { _per-cell(it.at(name), c.x, c.y) } else { v } }
+  let natural(c) = {
+    let inset = _sides(pick-at(c, "inset"), default: 0pt)
+    let side(s) = { let v = inset.at(s); if type(v) == length { v.to-absolute() } else { 0pt } }
+    measure(c.cell.fields().body).width + side("left") + side("right")
+  }
+  let spanning = cells.filter(c => c.colspan > 1 and range(c.x, calc.min(c.x + c.colspan, ncols)).any(i => columns.at(i) == auto))
+  let widths = columns.map(_ => 0pt)
+  let least = columns.map(_ => none)
+  if spanning.len() > 0 {
+    for c in cells {
+      if c.colspan == 1 and columns.at(c.x) == auto and not _expands(c.cell.fields().body) {
+        widths.at(c.x) = calc.max(widths.at(c.x), natural(c))
+      }
+    }
+    for c in spanning {
+      let spanned = range(c.x, calc.min(c.x + c.colspan, ncols))
+      if spanned.any(i => columns.at(i) != auto and type(columns.at(i)) != length) or _expands(c.cell.fields().body) { continue }
+      let have = spanned.map(i => if columns.at(i) == auto { widths.at(i) } else { columns.at(i).to-absolute() }).sum()
+      have += range(c.x, spanned.last()).map(i => cg.at(i, default: 0pt)).sum(default: 0pt)
+      let last = spanned.filter(i => columns.at(i) == auto).last()
+      let need = natural(c) - have
+      if need > 0pt {
+        widths.at(last) += need
+        least.at(last) = widths.at(last)
+      }
+    }
+  }
+  let tracks = columns.enumerate().map(((i, t)) => if least.at(i) != none { "minmax(" + _len(least.at(i)) + ", auto)" } else { _track(t) })
   let container = _css(
-    grid-template-columns: if col-tracks { interleave(columns.map(_track), cg).join(" ") } else { columns.map(_track).join(" ") },
+    grid-template-columns: if col-tracks { interleave(tracks, cg).join(" ") } else { tracks.join(" ") },
     grid-template-rows: if row-tracks { interleave(range(nrows).map(i => _track(row-track(i))), rg).join(" ") } else if rows.len() > 0 { rows.map(_track).join(" ") },
     // Typst's auto columns take their natural width and don't stretch to fill: the grid is as wide as they are.
     justify-content: if columns.all(t => type(t) != fraction) { "start" },
@@ -544,19 +591,6 @@
   out.join()
 }
 
-/// Whether content takes the whole width it is given, wherever it is: a grid or a table with fractional or
-/// relative columns, something given a relative width, fractional spacing. A block around it is as wide as its
-/// region in Typst, where CSS would shrink it to its content (`width: fit-content`) and collapse those columns.
-#let _expands(c) = _find(c, e => {
-  let f = e.fields()
-  let rel(w) = type(w) in (ratio, relative, fraction)
-  if e.func() in (grid, table) {
-    let cols = f.at("columns", default: ())
-    type(cols) == array and cols.any(rel)
-  } else if e.func() in (block, box, rect, square, line, image) { rel(f.at("width", default: f.at("length", default: auto))) }
-  else if e.func() == h { type(f.amount) == fraction }
-  else { false }
-})
 
 /// The current text's line box when its edges aren't the layout profile's (1.054em above the baseline, 0.246em below):
 /// how far it reaches above and below the baseline, measured. `none` with the profile's. Needs context.
