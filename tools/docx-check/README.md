@@ -95,6 +95,34 @@ Typst's PDF and model, Google's PDF in `google/`, `results.json`). Nothing is de
 `typstream-docx-check` and the local `google-docs` folder to clean up every run. The run prints how many Composio
 requests it made.
 
+**Apple's Pages** (`--pages`, macOS only, local): each DOCX is opened in Pages (`open -a Pages`, as Pages is sandboxed
+and reads only what Launch Services hands it) and exported as PDF through AppleScript (`pages.mjs`), about 3 seconds a
+document, Pages coming to the front for each. Pages ignores the fonts a DOCX embeds (a family it hasn't is Helvetica,
+whatever the font table's `altName`, `panose1` or `family` say, and equations are always STIX), so the run installs
+the engine's fonts in `~/Library/Fonts` (as `typstream-docx-check-*.ttf`) and removes them when it ends; a run that
+didn't get to removes them first. Pages' PDFs have no text for Libertinus' ligatures and Q (`PAGES_UNMAPPED`), which
+the line comparison leaves out on both sides. Files go to `$TMPDIR/typstream-docx-check/pages`.
+
+```bash
+node tools/docx-check/check.mjs --pages                 # the Latin corpus, about 10 minutes
+node tools/docx-check/check.mjs --pages quiz-mcq        # documents whose id contains a filter
+```
+
+What Pages does with a DOCX, measured (and what the writer does about it, `PAGES_INSET` in `packages/docx/src/write.ts`):
+- It reads no cell margins: a cell's text is 4 points in from each side (its own DOCX says 80 twips), whatever the
+  margins, and it won't take a negative indent there. So a cell's margins past 4 points are its paragraphs' indents,
+  which every engine adds to the margins, and a column whose one-line cells Pages would wrap starts further left, into
+  what the cell before it spares (Word sees wider margins there). A column sized to its text with nothing to spare
+  before it (the first label of edu's `student-info`, at the margin: LibreOffice won't start a table left of its area)
+  still wraps in Pages.
+- It gives a row the room above and below its text only through a row height, as that height plus the margins:
+  each row has the height Typst gave it less its margins and borders, at least (less than Word's own height). A row
+  whose margins are under its inset (a data table's) is still taller in Pages.
+- It spaces paragraphs by the larger of one's space after and the next's space before, not their sum, and sets a
+  table in a paragraph made like the one before it (its spacing, page break and keep with next), so the gap above a
+  table is a spacer of its own.
+- Its equations are its own (STIX), wider than Typst's: lines with inline math break elsewhere.
+
 **Microsoft's validator** (`validator/`, the Open XML SDK's `OpenXmlValidator` for Microsoft 365): any error is one
 Word would report as unreadable content.
 

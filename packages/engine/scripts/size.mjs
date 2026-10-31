@@ -45,8 +45,10 @@ const ok = [
   // 12.5 KB until #135 underlined blanks in their line's colour and kept a trailing one underlined (44 bytes over);
   // 12.6 KB until drawings became inline pictures where they can, for Google Docs (#149, 107 bytes over); 12.8 KB until
   // #118's last ink fixes raised blanks to their stroke, anchored lowered pictures to their line and made a cell's room
-  // before a moved block breakable (14 bytes over).
-  await measure("@typstream/docx (loaded on a DOCX export)", "../docx/src/index.ts", 13.4 * 1024, []),
+  // before a moved block breakable (14 bytes over); 13.4 KB until cells' margins moved into indents and neighbours'
+  // margins, rows' heights and spacers before tables, for Apple's Pages (0.66 KB in CI's Node 24, whose zlib makes
+  // this 0.16 KB larger than Node 25's).
+  await measure("@typstream/docx (loaded on a DOCX export)", "../docx/src/index.ts", 14.1 * 1024, []),
   await measure("@typstream/engine/websocket", "src/websocket.ts", 1.5 * 1024, []),
   await measure("@typstream/engine/images", "src/images.ts", 1.5 * 1024, []),
 ];
