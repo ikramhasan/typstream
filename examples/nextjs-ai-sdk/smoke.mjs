@@ -4,7 +4,8 @@
 // answer, the worksheet again with the change. It checks that both answers stream
 // into <Typstream> and finish, with no error frame, that the export downloads a
 // .docx, that the replay's mind map is interactive in the HTML answer (a render
-// island), and that telemetry reached the example's sink. Without
+// island), that the editor shows the first answer's pages as the view does (its
+// CeTZ drawing compiles there too), and that telemetry reached the example's sink. Without
 // ANTHROPIC_API_KEY the server replays a recorded worksheet and a revision of it,
 // so this runs offline.
 
@@ -85,6 +86,31 @@ try {
     const nodes = await answers.nth(1).locator("typstream-island .react-flow__node").count();
     if (nodes !== 9) throw new Error(`the mind map island has ${nodes} nodes, not 9`);
   }
+  // Edit the first answer on its pages (#36): Edit shows the editor in place of the document, with its toolbar; what
+  // is typed goes into the document, and Done shows it in the view again.
+  await page.getByRole("button", { name: "Edit", exact: true }).first().click();
+  const editor = page.locator(".typstream-editor").first();
+  await editor.locator(".typstream-page canvas").first().waitFor({ timeout: 30_000 });
+  await page.getByRole("toolbar", { name: "Formatting" }).waitFor();
+  await editor.locator(".typstream-editor-caret").waitFor({ timeout: 30_000 });
+  // The same pages as the view: the replay's CeTZ drawing compiles in the editor too (its plugins are the view's).
+  if (!process.env.ANTHROPIC_API_KEY) {
+    const layer = editor.locator(".typstream-text-layer").first();
+    await layer.filter({ hasText: "hypotenuse" }).waitFor({ timeout: 30_000 });
+    const edited = await layer.textContent();
+    if (/couldn.t be displayed/.test(edited)) throw new Error(`the editor's pages differ from the view's: ${edited}`);
+  }
+  await page.keyboard.press("Control+End");
+  await page.keyboard.press("Enter");
+  await page.keyboard.type("Checked by the editor.");
+  await page.getByRole("button", { name: "Done", exact: true }).first().click();
+  // The view renders near the viewport (`lazy`): the answer is above it after editing its end.
+  await answers.first().scrollIntoViewIfNeeded();
+  await page.waitForFunction(
+    (el) => el?.textContent.includes("Checked by the editor."),
+    await answers.first().locator(".typstream-host").elementHandle(),
+    { timeout: 30_000 },
+  );
   if (errors.length) throw new Error(`console errors:\n${errors.join("\n")}`);
   // The telemetry hooks (app/telemetry.tsx) reached the example's sink.
   const reached = () => /\[telemetry\] rendered \S+ rev \d+ \(final\)/.test(log);
@@ -93,7 +119,7 @@ try {
   if (!reached()) throw new Error(`no telemetry reached /api/telemetry:\n${log}`);
   if (process.argv.includes("--screenshot")) await page.screenshot({ path: "smoke.png", fullPage: true });
   console.log(
-    `ok: streamed an answer and a revision of it with no error frames (${text.length} and ${revised.length} characters), and exported a ${docx.length}-byte DOCX`,
+    `ok: streamed an answer and a revision of it with no error frames (${text.length} and ${revised.length} characters), edited the first on its pages, and exported a ${docx.length}-byte DOCX`,
   );
 } finally {
   await browser.close();

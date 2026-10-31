@@ -308,6 +308,11 @@ export interface CompileParams extends DocumentParams {
    */
   pageFormat?: PageFormat;
   /**
+   * Paged only: also send where the source was laid out on every page
+   * ({@link PagedArtifact.positions}), for an editor on the pages. @beta
+   */
+  positions?: boolean;
+  /**
    * What the server may show when the text doesn't compile even after its
    * fixes (Layer 4, PLAN §5.6). Without it a failed compile publishes no
    * artifact and the client keeps its last good one.
@@ -512,6 +517,65 @@ export interface PageDrawing {
   links: PageLink[];
 }
 
+/**
+ * An element laid out on a page that shows some of the document (#36). Typst
+ * tags nearly every element it lays out, the ones a plugin's package makes
+ * included, so a component's box is that of the outermost element covering
+ * only its call's source. Points from the page's top left. @beta
+ */
+export interface PageElement {
+  /**
+   * Typst's name for the element (`heading`, `table`, `equation`, `par`,
+   * `context`), `cell` for a table or grid cell, `item-body` and `item-label`
+   * for a list item's body and its bullet or number.
+   */
+  kind: string;
+  /**
+   * Start of the text it shows, in the text the client sent (UTF-16): its
+   * own source, if the document wrote it, and what the glyphs and elements
+   * inside it came from.
+   */
+  from: number;
+  /** End of the text it shows (exclusive). */
+  to: number;
+  /** The element's own source (`[from, to)`), when the document made it rather than a package. */
+  node?: [number, number];
+  /** How many elements it is inside on this page. */
+  depth: number;
+  /** Where it starts: its first tag (a cell's corner, a block's top left). */
+  x: number;
+  /** See `x`. */
+  y: number;
+  /** Where it ends, when it ends on this page. */
+  endX?: number;
+  /** See `endX`. */
+  endY?: number;
+  /** `[x, y, width, height]` around everything drawn inside it, when anything is. */
+  box?: [number, number, number, number];
+  /** A table or grid cell's column and row (from 0), for table cells. */
+  cell?: [number, number];
+}
+
+/**
+ * Where the document's source was laid out on a page (#36): what an editor
+ * that edits on the pages puts its caret, selection and clicks on.
+ * @beta
+ */
+export interface PagePositions {
+  /**
+   * A glyph cluster per 8 little-endian 32-bit floats: `x` (its left edge),
+   * baseline `y`, advance, ascent, descent (in points), `from` and `to` (the
+   * UTF-16 range of the text the client sent that it shows, `-1` when it
+   * isn't from that text: a template's words, a numbering, the preamble) and
+   * flags: 1 when the range is exactly the characters drawn (text and math in
+   * markup) rather than a whole syntax node (a space, a quote, a string), 2
+   * for math, 4 for text shaped right to left.
+   */
+  glyphs: Uint8Array;
+  /** Elements the document made that start on the page, in the order they start. */
+  elements: PageElement[];
+}
+
 /** One rendered page of a paged artifact. Sizes in Typst points. @public */
 export interface PageUpdate {
   /** Zero-based page index. */
@@ -563,6 +627,13 @@ export interface PagedArtifact {
    * and their islands show as their fallback. @beta
    */
   islands?: PagedIsland[];
+  /**
+   * Where the source was laid out on each page, every page whichever changed
+   * (an edit moves the offsets of the text after it on pages that look the
+   * same), when the compile asked for them ({@link CompileParams.positions}).
+   * @beta
+   */
+  positions?: PagePositions[];
 }
 
 /**

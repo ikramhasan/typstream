@@ -42,6 +42,7 @@ import { HangSearch } from "./hang";
 import { fileKey } from "./image-paths";
 import { applyPaged } from "./paged";
 import type { ResolvedDocumentOptions } from "./plugins";
+import { mapPositions } from "./positions";
 import { compileInterval, type ScheduleOptions, updateEma } from "./schedule";
 
 /**
@@ -94,6 +95,11 @@ export interface DocumentState {
   /** Revision `artifact` was compiled from. */
   artifactRev: Revision | null;
   /**
+   * The input `artifact` was compiled from: its `positions` are offsets into it (mapped back through
+   * healing), which edits since have moved. @beta
+   */
+  artifactInput: string | null;
+  /**
    * Diagnostics of the latest compile, in input coordinates (offsets into the
    * text pushed so far, mapped back through healing), sorted.
    */
@@ -132,6 +138,11 @@ export interface DocumentOptions {
    * draw come as SVG either way.
    */
   pageFormat?: PageFormat;
+  /**
+   * Paged compiles also send where the source was laid out on every page
+   * (`PagedArtifact.positions`), for an editor on the pages. Default false. @beta
+   */
+  positions?: boolean;
   /** `sys.inputs`. */
   inputs?: Record<string, string>;
   /** Typst evaluated before the document (theme, imports); fixed for the document's lifetime. */
@@ -226,6 +237,8 @@ export interface EngineDocument {
   setTarget(target: CompileTarget): void;
   /** Paged compiles send pages as `format` from now on (see {@link DocumentOptions.pageFormat}); recompiles if it changed. */
   setPageFormat(format: PageFormat): void;
+  /** Paged compiles send positions from now on, or stop (see {@link DocumentOptions.positions}); recompiles if it changed. @beta */
+  setPositions(positions: boolean): void;
   /** Replaces `sys.inputs` and recompiles if they changed. */
   setInputs(inputs: Record<string, string>): void;
   /** Writes (or, with `null`, deletes) files the document reads. */
@@ -436,6 +449,7 @@ export class DocumentImpl implements EngineDocument {
   private healed: HealResult;
   private target: CompileTarget;
   private pageFormat: PageFormat;
+  private positions: boolean;
   private inputs: Record<string, string> | undefined;
   private files: FileDelta;
   private pendingFiles: FileDelta | null = null;
@@ -495,6 +509,7 @@ export class DocumentImpl implements EngineDocument {
   private probing = false;
   private artifact: Artifact | null = null;
   private artifactRev: Revision | null = null;
+  private artifactInput: string | null = null;
   private diagnostics: Diagnostic[] = [];
   private failure: CompileFailure | null = null;
   private lastCompile: CompileResult | null = null;
@@ -515,6 +530,7 @@ export class DocumentImpl implements EngineDocument {
         : this.healer.result();
     this.target = options.target ?? "html";
     this.pageFormat = options.pageFormat ?? "svg";
+    this.positions = options.positions ?? false;
     this.inputs = options.inputs;
     this.preamble = options.preamble;
     this.fallback = options.fallback !== false;
@@ -621,6 +637,13 @@ export class DocumentImpl implements EngineDocument {
     if (this.disposed || format === this.pageFormat) return;
     // The worker sends every page again, in the new format (an HTML document just compiles once more).
     this.pageFormat = format;
+    this.needsCompile = true;
+    this.update();
+  }
+
+  setPositions(positions: boolean): void {
+    if (this.disposed || positions === this.positions) return;
+    this.positions = positions;
     this.needsCompile = true;
     this.update();
   }
@@ -795,6 +818,7 @@ export class DocumentImpl implements EngineDocument {
     this.fullPages = false;
     // Paged only; HTML compiles ignore it.
     params.pageFormat = this.pageFormat;
+    if (this.positions) params.positions = true;
     const { watchdog } = this.host;
     let budgetMs = this.final ? watchdog.finalMs : watchdog.streamingMs;
     this.probing = false;
@@ -924,7 +948,7 @@ export class DocumentImpl implements EngineDocument {
     if (this.disposed || !this.sent || n.params.rev !== this.sent.rev) return;
     // A probe for a hang compiles a prefix of the document, with the rest skipped.
     if (this.probing && this.compiling) return;
-    const { rev, heal } = this.sent;
+    const { rev, heal, input } = this.sent;
     if (n.method === "document/diagnostics") {
       if (n.params.target !== this.target) return;
       const toInput = (pos: number, assoc: 1 | -1) => heal.map.toInput(pos, assoc);
@@ -934,8 +958,12 @@ export class DocumentImpl implements EngineDocument {
       if (this.compiling) this.reported = true;
       else this.report(this.diagnosticsEvent(rev, this.final ? "final" : "streaming"));
     } else {
-      const { artifact } = n.params;
+      let { artifact } = n.params;
       if (artifact.target !== this.target) return;
+      if (artifact.target === "paged" && artifact.positions) {
+        const toInput = (pos: number) => heal.map.toInput(pos, 1);
+        artifact = { ...artifact, positions: artifact.positions.map((p) => mapPositions(p, toInput)) };
+      }
       if (artifact.target === "paged") {
         const prev = this.artifact?.target === "paged" ? this.artifact : null;
         const pages = applyPaged(prev, this.artifactRev, artifact);
@@ -951,6 +979,7 @@ export class DocumentImpl implements EngineDocument {
         this.artifact = artifact;
       }
       this.artifactRev = rev;
+      this.artifactInput = input;
     }
     // During a compile, `settle` publishes once for all of its output; output
     // the server sends on its own (a font arrived) is published now.
@@ -1171,6 +1200,7 @@ export class DocumentImpl implements EngineDocument {
       status: this.status(failure),
       artifact: this.artifact,
       artifactRev: this.artifactRev,
+      artifactInput: this.artifactInput,
       diagnostics: this.diagnostics,
       heal: this.healed,
       final: this.final,

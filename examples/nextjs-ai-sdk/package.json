@@ -16,6 +16,7 @@
     "@base-ui/react": "^1.9.0",
     "@shadcn/react": "^0.3.1",
     "@typstream/ai": "workspace:*",
+    "@typstream/editor-react": "workspace:*",
     "@typstream/edu": "workspace:*",
     "@typstream/google-fonts": "workspace:*",
     "@typstream/mindmap": "workspace:*",

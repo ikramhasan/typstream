@@ -3,7 +3,7 @@
 // documents look right in both targets. The browser side is a stylesheet for that HTML
 // (css/edu.css). This module packages both as a typstream plugin, with the prompt catalogue
 // generated from the package's doc comments.
-import type { FunctionDoc, PromptExample, TemplateSpec, TypstreamPlugin } from "@typstream/core";
+import type { EditorComponentSpec, FunctionDoc, PromptExample, TemplateSpec, TypstreamPlugin } from "@typstream/core";
 import { CATALOGUE, CSS_SOURCE, EXAMPLES, FILES } from "./assets.generated";
 
 export { buildSystemPrompt, type SystemPromptOptions, typstPromptRules } from "./prompt";
@@ -74,9 +74,216 @@ export const eduTemplates: TemplateSpec[] = (
   ] as const
 ).map(([name, title, description]) => ({ name, title, description, preamble: `#show: ${name}\n` }));
 
+const content = (name: string, label: string, help?: string) => ({
+  name,
+  label,
+  type: "content" as const,
+  ...(help && { help }),
+});
+
+/**
+ * edu's components as the visual editor offers them (#36): in its insert menu, with a form for
+ * their arguments. Their text (a question's body, a callout's, the options of a multiple choice)
+ * is edited on the page.
+ * @beta
+ */
+export const eduComponents: EditorComponentSpec[] = [
+  {
+    name: "question",
+    label: "Question",
+    description: "A numbered question with its points",
+    group: "Questions",
+    icon: "circle-help",
+    keywords: ["exercise", "problem", "points"],
+    template: "#question(points: 1)[\n  {{cursor}}Question text\n]",
+    params: [{ name: "points", label: "Points", type: "number", min: 0, step: 0.5, help: "Empty: no points shown." }],
+  },
+  {
+    name: "mcq",
+    label: "Multiple choice",
+    description: "Options to choose from, one correct",
+    group: "Questions",
+    icon: "list-checks",
+    keywords: ["choice", "options", "quiz"],
+    template: "#mcq([First option], [Second option], [Third option], answer: 1)",
+    params: [
+      {
+        name: "answer",
+        label: "Correct option",
+        type: "number",
+        min: 1,
+        step: 1,
+        help: "1 is the first option. Shown in the answer key only.",
+      },
+      { name: "columns", label: "Columns", type: "number", min: 1, max: 6, step: 1, help: "Empty: as many as fit." },
+    ],
+  },
+  {
+    name: "true-false",
+    label: "True or false",
+    description: "A statement to mark true or false",
+    group: "Questions",
+    icon: "circle-help",
+    template: "#true-false(answer: true)[{{cursor}}The statement]",
+    params: [
+      {
+        name: "answer",
+        label: "Answer",
+        type: "choice",
+        options: [
+          { value: "true", label: "True" },
+          { value: "false", label: "False" },
+        ],
+      },
+    ],
+  },
+  {
+    name: "blank",
+    label: "Blank",
+    description: "A gap in the text to fill in",
+    group: "Answers",
+    icon: "text-cursor-input",
+    inline: true,
+    keywords: ["gap", "fill in", "cloze"],
+    template: "#blank(answer: [answer])",
+    params: [
+      content("answer", "Answer", "Shown in the answer key only."),
+      { name: "width", label: "Width", type: "length", default: "4em" },
+    ],
+  },
+  {
+    name: "answer-lines",
+    label: "Answer lines",
+    description: "Ruled lines to write the answer on",
+    group: "Answers",
+    icon: "notebook-pen",
+    template: "#answer-lines(count: 3)",
+    params: [
+      { name: "count", label: "Lines", type: "number", min: 1, max: 30, step: 1, default: "3" },
+      content("answer", "Answer", "Shown in the answer key only."),
+    ],
+  },
+  {
+    name: "answer-space",
+    label: "Answer space",
+    description: "Empty room to work in",
+    group: "Answers",
+    icon: "square",
+    template: "#answer-space(height: 4em)",
+    params: [
+      { name: "height", label: "Height", type: "length", default: "4em" },
+      { name: "boxed", label: "Framed", type: "boolean", default: "false" },
+      content("answer", "Answer", "Shown in the answer key only."),
+    ],
+  },
+  {
+    name: "answer",
+    label: "Answer",
+    description: "A worked answer, in the answer key only",
+    group: "Answers",
+    icon: "book-open-check",
+    template: "#answer[{{cursor}}The answer]",
+  },
+  {
+    name: "callout",
+    label: "Callout",
+    description: "A note, tip, warning or definition in a box",
+    group: "Blocks",
+    icon: "info",
+    keywords: ["note", "tip", "warning", "definition", "box"],
+    template: '#callout(kind: "note")[{{cursor}}Something to note.]',
+    params: [
+      {
+        name: "kind",
+        label: "Kind",
+        type: "choice",
+        default: '"note"',
+        options: ["note", "tip", "warning", "definition", "example", "remember"].map((k) => ({
+          value: `"${k}"`,
+          label: k[0]?.toUpperCase() + k.slice(1),
+        })),
+      },
+      content("title", "Title", "Empty: the kind's name."),
+    ],
+  },
+  {
+    name: "instructions",
+    label: "Instructions",
+    description: "Instructions for students, in a box",
+    group: "Blocks",
+    icon: "clipboard-list",
+    template: "#instructions[{{cursor}}Answer all questions.]",
+  },
+  {
+    name: "learning-objectives",
+    label: "Learning objectives",
+    description: "What students will learn",
+    group: "Blocks",
+    icon: "list-checks",
+    template: "#learning-objectives[\n  - {{cursor}}First objective\n]",
+  },
+  {
+    name: "student-info",
+    label: "Student fields",
+    description: "Name, class and date to fill in",
+    group: "Blocks",
+    icon: "pen-line",
+    template: "#student-info()",
+  },
+  {
+    name: "rubric",
+    label: "Rubric",
+    description: "Criteria and levels in a table",
+    group: "Blocks",
+    icon: "table",
+    template:
+      "#rubric(\n  ([Content], [Complete and accurate], [Mostly accurate], [Some errors], [Missing]),\n  ([Presentation], [Clear], [Mostly clear], [Unclear], [Missing]),\n)",
+  },
+  {
+    name: "number-line",
+    label: "Number line",
+    description: "A number line with ticks and labels",
+    group: "Drawings",
+    icon: "minus",
+    template: "#number-line(from: 0, to: 10)",
+    params: [
+      { name: "from", label: "From", type: "number", default: "0" },
+      { name: "to", label: "To", type: "number", default: "10" },
+      { name: "step", label: "Step", type: "number", default: "1", min: 0 },
+      { name: "length", label: "Length", type: "length", default: "12cm" },
+    ],
+  },
+  {
+    name: "graph-paper",
+    label: "Graph paper",
+    description: "A grid to draw on",
+    group: "Drawings",
+    icon: "table",
+    template: "#graph-paper(cols: 30, rows: 10)",
+    params: [
+      { name: "cols", label: "Columns", type: "number", default: "30", min: 1, step: 1 },
+      { name: "rows", label: "Rows", type: "number", default: "10", min: 1, step: 1 },
+    ],
+  },
+  {
+    name: "coordinate-plane",
+    label: "Coordinate plane",
+    description: "Axes and a grid",
+    group: "Drawings",
+    icon: "plus",
+    template: "#coordinate-plane()",
+    params: [
+      { name: "unit", label: "Unit", type: "length", default: "7mm" },
+      { name: "grid", label: "Grid", type: "boolean", default: "true" },
+      { name: "labels", label: "Labels", type: "boolean", default: "true" },
+    ],
+  },
+];
+
 /**
  * edu as a typstream plugin: its files and preamble for the engine, templates, prompt kit, the
- * classes the sanitizer keeps, and its stylesheet for the HTML renderer and standalone exports.
+ * classes the sanitizer keeps, its stylesheet for the HTML renderer and standalone exports, and
+ * its components for the visual editor.
  */
 export const edu: TypstreamPlugin = {
   key: "edu",
@@ -86,4 +293,5 @@ export const edu: TypstreamPlugin = {
   prompt: { catalogue: eduCatalogue, rules: eduPromptRules, examples: eduExamples },
   sanitize: { allowClasses: ["edu-*"] },
   stylesheets: [eduCss],
+  editor: { components: eduComponents, inline: ["blank", "ce"] },
 };

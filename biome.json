@@ -19,6 +19,7 @@
       "!**/next-env.d.ts",
       "!**/node_modules",
       "!**/target",
+      "!packages/syntax/wasm",
       "!**/*.generated.ts",
       "!packages/google-fonts/catalogue.json",
       "!**/.stryker-tmp",

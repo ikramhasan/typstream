@@ -90,7 +90,7 @@ Call one of them once per thread before creating an `Engine`.
 | `remove_file(path)` | `void` | Removes a source or binary file. `/main.typ` can't be removed. |
 | `set_inputs(inputs)` | `void` | Sets `sys.inputs`. Throws unless every value is a string, as with the CLI's `--input key=value`. |
 | `compile_html()` | `HtmlResult` | Compiles with the HTML target. |
-| `compile_svg_changed(drawings?)` | `SvgChangedResult` | Compiles paged and exports SVG for the pages whose content changed since the last successful call. With `drawings`, pages come as drawings for a canvas instead, except those it can't draw (gradients, tilings, colour glyphs). |
+| `compile_svg_changed(drawings?, positions?)` | `SvgChangedResult` | Compiles paged and exports SVG for the pages whose content changed since the last successful call. With `drawings`, pages come as drawings for a canvas instead, except those it can't draw (gradients, tilings, colour glyphs). With `positions`, the result also has every page's `PagePositions` (below). |
 | `reset_pages()` | `void` | Forgets the page hashes, so the next `compile_svg_changed` sends every page (a new document, or the renderer lost its DOM). |
 | `check_paged()` | `CheckResult` | Compiles paged without exporting: diagnostics and the page count, for validation. Leaves the changed-page baseline alone. |
 | `compile_pdf()` | `PdfResult` | Compiles paged and exports PDF. |
@@ -108,7 +108,7 @@ Every compile returns a `CompileResult`, extended per method:
 | --- | --- |
 | `CompileResult` | `ok: boolean`, `diagnostics: Diagnostic[]`, `ms: number` (time in the call: compile, export and cache eviction), `missingFonts: number[]` (see [Lazy fonts](#lazy-fonts)) |
 | `HtmlResult` | `CompileResult` and `html?: string`, the document when `ok` |
-| `SvgChangedResult` | `CompileResult` and `pageCount?: number`, `changed?: ChangedPage[]`, `islands?: IslandMarker[]`, `compileMs: number`, `exportMs: number` |
+| `SvgChangedResult` | `CompileResult` and `pageCount?: number`, `changed?: ChangedPage[]`, `islands?: IslandMarker[]`, `positions?: PagePositions[]`, `compileMs: number`, `exportMs: number` |
 | `CheckResult` | `CompileResult` and `pageCount?: number` |
 | `PdfResult` | `CompileResult` and `pdf?: Uint8Array`, `pageCount?: number` |
 | `DocxModelResult` | `CompileResult` and `model?: string` (the document model as JSON), `fonts?: Uint8Array[]` (the data of the faces it names), `pictures?: DocxPictureData[]` (the pictures it refers to), `pageCount?: number` |
@@ -146,6 +146,13 @@ pages are drawn.
 | `x`, `y` | `number` | The marker's point, in points from the page's top left. |
 | `value` | `string` | The marker's value as JSON, without its `source`. |
 | `from` | `number \| null` | UTF-16 offset in `/main.typ` of the value's `source`, content the document wrote; `null` without one. |
+
+`PagePositions` say where `/main.typ` was laid out on a page, for an editor on the pages (#36; the engine sends them as
+core's `PagePositions`, in the client's text): `glyphs` holds 8 little-endian 32-bit floats per glyph cluster (x,
+baseline y, advance, ascent, descent, the UTF-16 range in `/main.typ` it shows or -1, and flags: 1 exact characters,
+2 math, 4 right to left), and `elements` the elements on the page that show some of `/main.typ`, with what they cover,
+their own node's range, how deep they are, where their tags are and the box around what they draw (`cell` for a
+table cell's column and row). The native example `positions` dumps them.
 
 | `TextRun` field | Type | Meaning |
 | --- | --- | --- |

@@ -18,7 +18,9 @@ mod draw;
 pub mod fonts;
 mod islands;
 mod js;
-mod text;
+#[doc(hidden)]
+pub mod positions;
+pub(crate) mod text;
 #[doc(hidden)]
 pub mod world;
 
@@ -146,8 +148,36 @@ export type SvgChangedResult = CompileResult & {
   pageCount?: number;
   changed?: ChangedPage[];
   islands?: IslandMarker[];
+  /** With `positions`: every page's, changed or not. */
+  positions?: PagePositions[];
   compileMs: number;
   exportMs: number;
+};
+/**
+ * Where a page's source was laid out (src/positions.rs), for an editor on the pages: `glyphs` holds a glyph cluster
+ * per 8 little-endian 32-bit floats (x, baseline y, advance, ascent, descent, from, to, flags), `from`/`to` its
+ * UTF-16 range in /main.typ or -1, `flags` 1 = exactly its characters (text or math in markup), 2 = math, 4 = shaped
+ * right to left. `elements` are the elements laid out on the page that show some of /main.typ: `from`/`to` what they
+ * cover of it, `node` their own source if /main.typ made them, `depth` how many elements they are in, (`x`, `y`)
+ * where they start and (`endX`, `endY`) end, `box` around what is drawn inside them (x, y, width, height). `kind` is
+ * the element function's name, `cell` for a table or grid cell (`cell` its column and row), `item-body` and
+ * `item-label` for a list item's parts.
+ */
+export type PagePositions = {
+  glyphs: Uint8Array;
+  elements: {
+    kind: string;
+    from: number;
+    to: number;
+    node?: [number, number];
+    depth: number;
+    x: number;
+    y: number;
+    endX?: number;
+    endY?: number;
+    box?: [number, number, number, number];
+    cell?: [number, number];
+  }[];
 };
 /** A paged compile without export (`check_paged`). */
 export type CheckResult = CompileResult & { pageCount?: number };
@@ -339,8 +369,12 @@ impl Engine {
     /// With `drawings`, a page comes as a `drawing` for a canvas instead (its
     /// `svg` empty), unless it has something the drawing can't express
     /// (gradients, tilings, colour glyphs): that page is still SVG.
+    ///
+    /// With `positions`, the result also says where the source was laid out on
+    /// every page, changed or not (positions.rs): an edit moves the offsets of
+    /// the text after it, on pages that look the same.
     #[wasm_bindgen(unchecked_return_type = "SvgChangedResult")]
-    pub fn compile_svg_changed(&mut self, drawings: Option<bool>) -> JsValue {
+    pub fn compile_svg_changed(&mut self, drawings: Option<bool>, positions: Option<bool>) -> JsValue {
         let t0 = perf_now();
         self.world.begin_compile();
         let Warned { output, warnings } =
@@ -386,6 +420,22 @@ impl Engine {
                 set(&obj, "pageCount", doc.pages().len() as f64);
                 set(&obj, "changed", changed);
                 set(&obj, "islands", islands::islands(&self.world, &doc));
+                if positions.unwrap_or(false) {
+                    let all: js_sys::Array = doc
+                        .pages()
+                        .iter()
+                        .map(|page| {
+                            let p = positions::page_positions(&self.world, page);
+                            let entry = js_sys::Object::new();
+                            let bytes: Vec<u8> = p.glyphs.iter().flat_map(|v| v.to_le_bytes()).collect();
+                            set(&entry, "glyphs", js_sys::Uint8Array::from(bytes.as_slice()));
+                            let elements: js_sys::Array = p.elements.iter().map(|e| e.to_js()).collect();
+                            set(&entry, "elements", elements);
+                            JsValue::from(entry)
+                        })
+                        .collect();
+                    set(&obj, "positions", all);
+                }
                 set(&obj, "exportMs", perf_now() - t1);
                 obj
             }

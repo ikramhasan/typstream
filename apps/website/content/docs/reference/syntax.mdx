@@ -1,0 +1,69 @@
+---
+title: "@typstream/syntax"
+description: Typst's syntax tree in JavaScript (beta). typst-syntax 0.15.1, the parser Typst itself uses, compiled to wasm (about 76 KB brotli); lossless, with UTF-16 offsets.
+icon: Package
+---
+
+<Callout type="warn" title="Beta">
+New with the visual editor (#36); may change before the first stable release.
+</Callout>
+
+`@typstream/syntax` parses Typst the way Typst does: it is typst-syntax 0.15.1, the crate the Typst compiler parses
+with, compiled to wasm. The tree is lossless (the leaves' text is the document, comments and spaces included) and its
+offsets are UTF-16, JavaScript string indices. Malformed parts are `Error` nodes, never exceptions. The
+[visual editor](/docs/reference/editor-react) reads documents with it.
+
+## Install
+
+```npm
+npm install @typstream/syntax
+```
+
+## Example
+
+```ts
+import { loadSyntax, parse, walk } from "@typstream/syntax";
+
+await loadSyntax(); // once: fetches syntax_bg.wasm next to the module (bundlers emit it)
+const tree = parse("= Hello\n*world* $x^2$");
+walk(tree, (node) => {
+  if (node.kind === "Strong") console.log("strong at", node.from, node.to);
+});
+```
+
+In Node, pass the bytes: `loadSyntax(readFileSync(require.resolve("@typstream/syntax/syntax_bg.wasm")))`.
+
+## API
+
+### `loadSyntax` and `loadSyntaxSync`
+
+```ts
+function loadSyntax(wasm?: SyntaxWasmInput | Promise<SyntaxWasmInput>): Promise<void>;
+function loadSyntaxSync(wasm: BufferSource | WebAssembly.Module): void;
+function isSyntaxLoaded(): boolean;
+```
+
+Load the parser once; later calls return the same promise. A `SyntaxWasmInput` is a URL, a fetch `Response`, the
+bytes or a compiled module.
+
+### `parse`
+
+```ts
+function parse(text: string): SyntaxNode;
+```
+
+The document's tree: a `Markup` root spanning the whole text. Synchronous once loaded.
+
+<auto-type-table path="packages/syntax/src/index.ts" name="SyntaxNode" />
+
+`SyntaxKind` is one of `SYNTAX_KINDS`, typst-syntax's kinds by their Rust names (`Markup`, `Strong`, `FuncCall`, …).
+
+### `walk` and `hasErrors`
+
+```ts
+function walk(node: SyntaxNode, visit: (node: SyntaxNode, parent: SyntaxNode | null) => unknown): void;
+function hasErrors(node: SyntaxNode): boolean;
+```
+
+`walk` visits parents before children; return `false` to skip a node's children. `hasErrors` tells whether a tree
+has an `Error` node anywhere.

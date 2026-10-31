@@ -16,6 +16,11 @@
 // you stay at the bottom and lets you scroll away from it. As pages, an answer
 // is cut off below the text being written, so that bottom is the text.
 //
+// An answer can be edited on its pages (#36): Edit shows it in
+// @typstream/editor-react's <TypstEditor>, the same pages, with a toolbar, and
+// Done shows the edited document again (here, for exports; the chat itself is
+// never rewritten).
+//
 // A follow-up ("make it harder") gets a new answer: the document again, with
 // the changes. The chat goes to the route as it is, and nothing in it is ever
 // rewritten (app/api/chat/route.ts says why).
@@ -27,6 +32,7 @@
 
 import { useChat } from "@ai-sdk/react";
 import { isStreaming, textOf } from "@typstream/ai";
+import { TypstEditor } from "@typstream/editor-react";
 import { edu, SHOW_ANSWERS_INPUT } from "@typstream/edu";
 import { googleFonts } from "@typstream/google-fonts";
 import { mindmap } from "@typstream/mindmap";
@@ -42,12 +48,21 @@ import {
   ImageIcon,
   KeyRoundIcon,
   LoaderCircleIcon,
+  PencilIcon,
   RotateCwIcon,
   SquareIcon,
   SquarePenIcon,
 } from "lucide-react";
 import { type FormEvent, type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { type DocumentState, fetchImages, Typstream, type TypstreamInfo, useTypstream } from "typstream";
+import {
+  type DocumentState,
+  fetchImages,
+  htmlCompat,
+  Typstream,
+  type TypstreamInfo,
+  universe,
+  useTypstream,
+} from "typstream";
 import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import { Button } from "@/components/ui/button";
 import {
@@ -91,6 +106,11 @@ const TARGETS = [
  * array would reopen every answer.
  */
 const PLUGINS = [edu, googleFonts, mindmap];
+/**
+ * The editor's: `typstream`'s <Typstream> adds html-compat and universe (CeTZ and the other packages) before
+ * the plugins it's given, and the editor must open the document with the same ones to draw the same pages.
+ */
+const EDITOR_PLUGINS = [htmlCompat, universe, ...PLUGINS];
 
 /**
  * The images the model's searches found: resized ones on thumb.wikimedia.org, small originals on
@@ -449,8 +469,12 @@ type AnswerProps = {
   onRetry: () => void;
 };
 
-const Answer = ({ text, streaming, target, answers, busy, onRetry }: AnswerProps) => {
+const Answer = ({ text: answered, streaming, target, answers, busy, onRetry }: AnswerProps) => {
   const t = useTypstream();
+  // Edited on its pages: the teacher's text, shown and exported in place of the answer's.
+  const [editing, setEditing] = useState(false);
+  const [edited, setEdited] = useState<string | null>(null);
+  const text = streaming ? answered : (edited ?? answered);
   // Compiles that failed while streaming. The last good render stays on screen, so a reader never
   // sees them; the smoke test checks there were none.
   const [stale, setStale] = useState(0);
@@ -459,52 +483,74 @@ const Answer = ({ text, streaming, target, answers, busy, onRetry }: AnswerProps
   return (
     <Message>
       <MessageContent>
-        <article
-          // HTML in a card; pages on their own, as sheets with shadows (app/globals.css), inset so the
-          // chat's scroll area doesn't cut the shadows off at the sides.
-          className={
-            target === "paged" ? "answer px-4 pt-2 pb-8" : "answer rounded-xl border bg-card px-8 py-6 shadow-xs"
-          }
-          data-status={t.status}
-          data-stale={stale}
-          data-target={target}
-        >
-          <div
-            ref={host}
-            // Clipped vertically only: the pages' shadows stay at their sides while the answer streams.
-            className={clip === null ? undefined : "overflow-y-clip"}
-            style={clip === null ? undefined : { height: clip }}
-          >
-            <Typstream
-              ref={t.ref}
+        {editing ? (
+          // The editor shows the pages as the page view does, and edits them there.
+          <article className="answer editing px-4 pt-2 pb-8" data-target="paged">
+            <TypstEditor
               source={text}
-              isStreaming={streaming}
-              target={target}
-              plugins={PLUGINS}
-              // A mind map is interactive in the HTML target (pan, zoom, open and close branches): React Flow,
-              // loaded the first time an answer has one. Pages show its drawing.
-              islands={mindmapIslands}
+              onChange={setEdited}
+              plugins={EDITOR_PLUGINS}
               resolveImage={IMAGES}
               inputs={answers ? ANSWERS : undefined}
               layout="fit-width"
-              animated
-              caret
-              onRendered={measure}
-              onStatusChange={(status) => {
-                if (status === "stale" || status === "error") setStale((n) => n + 1);
-              }}
+              autoFocus
+              toolbarEnd={
+                <Button size="sm" onClick={() => setEditing(false)}>
+                  <CheckIcon data-icon="inline-start" />
+                  Done
+                </Button>
+              }
             />
-          </div>
-        </article>
+          </article>
+        ) : (
+          <article
+            // HTML in a card; pages on their own, as sheets with shadows (app/globals.css), inset so the
+            // chat's scroll area doesn't cut the shadows off at the sides.
+            className={
+              target === "paged" ? "answer px-4 pt-2 pb-8" : "answer rounded-xl border bg-card px-8 py-6 shadow-xs"
+            }
+            data-status={t.status}
+            data-stale={stale}
+            data-target={target}
+          >
+            <div
+              ref={host}
+              // Clipped vertically only: the pages' shadows stay at their sides while the answer streams.
+              className={clip === null ? undefined : "overflow-y-clip"}
+              style={clip === null ? undefined : { height: clip }}
+            >
+              <Typstream
+                ref={t.ref}
+                source={text}
+                isStreaming={streaming}
+                target={target}
+                plugins={PLUGINS}
+                // A mind map is interactive in the HTML target (pan, zoom, open and close branches): React Flow,
+                // loaded the first time an answer has one. Pages show its drawing.
+                islands={mindmapIslands}
+                resolveImage={IMAGES}
+                inputs={answers ? ANSWERS : undefined}
+                layout="fit-width"
+                animated
+                caret
+                onRendered={measure}
+                onStatusChange={(status) => {
+                  if (status === "stale" || status === "error") setStale((n) => n + 1);
+                }}
+              />
+            </div>
+          </article>
+        )}
         <MessageFooter className="gap-1 px-0">
-          <CopySource target={target} text={text} exportHtml={t.exportHtml} disabled={streaming} />
+          {/* Exports compile the page view's document, which isn't mounted while the editor shows. */}
+          <CopySource target={target} text={text} exportHtml={t.exportHtml} disabled={streaming || editing} />
           <Export
             format={target === "html" ? "html" : "pdf"}
             exportPdf={t.exportPdf}
             exportHtml={t.exportHtml}
             exportDocx={t.exportDocx}
             source={text}
-            disabled={streaming}
+            disabled={streaming || editing}
           >
             <FileDownIcon />
           </Export>
@@ -514,10 +560,17 @@ const Answer = ({ text, streaming, target, answers, busy, onRetry }: AnswerProps
             exportHtml={t.exportHtml}
             exportDocx={t.exportDocx}
             source={text}
-            disabled={streaming}
+            disabled={streaming || editing}
           >
             <FileTypeIcon />
           </Export>
+          <Action
+            label={editing ? "Done editing" : "Edit"}
+            onClick={() => setEditing((on) => !on)}
+            disabled={streaming}
+          >
+            {editing ? <CheckIcon /> : <PencilIcon />}
+          </Action>
           <Action label="Retry" onClick={onRetry} disabled={busy}>
             <RotateCwIcon />
           </Action>

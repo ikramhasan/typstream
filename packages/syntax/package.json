@@ -1,0 +1,31 @@
+{
+  "name": "@typstream/syntax",
+  "version": "0.0.0",
+  "description": "Typst's syntax tree in JavaScript: typst-syntax 0.15.1, the parser Typst uses, compiled to wasm.",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./syntax_bg.wasm": "./dist/syntax_bg.wasm"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "./build.sh",
+    "test": "vitest run",
+    "size": "node scripts/size.mjs",
+    "check-types": "tsc -p tsconfig.json",
+    "check:api": "api-extractor run",
+    "api:update": "api-extractor run --local",
+    "check:package": "publint --strict --pack npm && attw --pack . --profile esm-only --exclude-entrypoints ./syntax_bg.wasm"
+  },
+  "devDependencies": {
+    "@typstream/corpus": "workspace:*"
+  }
+}

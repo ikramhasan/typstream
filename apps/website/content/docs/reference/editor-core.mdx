@@ -1,0 +1,130 @@
+---
+title: "@typstream/editor-core"
+description: The editor without a framework (beta). A Typst document edited on its own pages, the commands that turn what the teacher does into minimal edits of the source, and the plugin contract.
+icon: PenTool
+---
+
+<Callout type="warn" title="Beta">
+New with the visual editor (#36); may change before the first stable release.
+</Callout>
+
+`@typstream/editor-core` is the editor under [`@typstream/editor-react`](/docs/reference/editor-react), with no
+framework. It edits a document on the pages the engine lays out:
+
+- **The view** (`createEditor`) mounts [`@typstream/dom`](/docs/reference/dom)'s page view on an engine document and
+  draws a caret, a selection and component outlines over the pages, from where the engine laid the source out
+  (`PagedArtifact.positions`, [`@typstream/core`](/docs/reference/core)). Clicks, arrow keys and Home/End are answered
+  against the same layout, so the caret lands where Typst put the text. Keys go to a hidden textarea, so IMEs and
+  screen keyboards work.
+- **Commands** read Typst's syntax tree ([`@typstream/syntax`](/docs/reference/syntax)) and return the edits that
+  make a change, leaving everything else in the source as it was. Every change reaches the engine as one `TextEdit`.
+- **Plugins** add shortcuts, toolbar items, insert items, input rules and components.
+
+The source is the document ([PLAN §10.1](https://github.com/ikramhasan/typstream/blob/main/PLAN.md)): there is no
+second model to keep in step, and AI edits, streaming and the editor all edit the same text.
+
+## Install
+
+```npm
+npm install @typstream/editor-core
+```
+
+## Example
+
+```ts
+import { createEngine, engineWorker } from "@typstream/engine";
+import { basicPlugins, createEditor, fromTypstreamPlugin, toggleMark } from "@typstream/editor-core";
+import { loadSyntax } from "@typstream/syntax";
+import { edu } from "@typstream/edu";
+
+await loadSyntax();
+const engine = createEngine({ spawn: engineWorker() });
+const text = "= Quiz\n\n#question(points: 2)[What is 2 + 2?]";
+const doc = engine.open({ target: "paged", plugins: [edu], text });
+const view = createEditor(document.querySelector("#editor")!, {
+  doc,
+  text,
+  plugins: [...basicPlugins, fromTypstreamPlugin(edu)!],
+  onChange: (source) => save(source),
+});
+view.select({ anchor: 2, head: 6 });
+view.run(toggleMark({ name: "strong" })); // = Quiz → *Quiz*
+```
+
+## The view
+
+```ts
+function createEditor(container: HTMLElement, options: EditorOptions): EditorView;
+```
+
+<auto-type-table path="packages/editor-core/src/view.ts" name="EditorOptions" />
+
+<auto-type-table path="packages/editor-core/src/view.ts" name="EditorView" />
+
+## State and transactions
+
+`EditorState` holds the source, its syntax tree (parsed on first use) and the `Selection`. Commands return a
+`Transaction`: edits to the old text and the selection after them. `mapThrough` and `mapSelection` carry offsets
+through edits; `History` is the undo history the view keeps (typing within a second joins one entry).
+
+<auto-type-table path="packages/editor-core/src/state.ts" name="Selection" />
+
+<auto-type-table path="packages/editor-core/src/state.ts" name="Transaction" />
+
+## Commands
+
+Each is `(state, schema) => Transaction | null` (an `EditorCommand`); `null` where it doesn't apply. The
+`EditorSchema` says which functions are marks (text styling, stepped over like `*`) and which are set inline;
+`DEFAULT_SCHEMA` has Typst's, `schemaOf` adds the plugins'.
+
+| Command | What it does |
+| --- | --- |
+| `insertText(text)` | Types `text` over the selection, escaped (`escapeMarkup`) so it shows as typed. `canType` says whether text can go at an offset (not in code or math). |
+| `deleteChar(dir)`, `deleteSelection` | Backspace and Delete: a character, the break between paragraphs, a heading's or item's marker first; an equation or component is selected, then deleted. A selection goes structurally: constructs only partly in it keep their delimiters. |
+| `splitBlock`, `insertLineBreak` | Enter and Shift+Enter. |
+| `moveChar`, `snap` | Where the caret goes one character on, and the nearest place a caret can be. |
+| `toggleMark(mark)`, `setMark(mark, value)` | Bold, italic, underline (a `Mark`: a function, and for colours and sizes an argument); `isMarked` and `markValue` read them at the selection. |
+| `setLink(url)`, `linkAt` | A `#link("…")[…]` around the selection, its URL changed, or links taken off with `null`. |
+| `setBlockType(type)`, `blockType` | Paragraph, heading levels, list items (`BlockType`). `toggleList` and `indentItems` for lists. |
+| `setAlignment(align)`, `alignmentAt` | An `#align(…)[…]` around the blocks (`Alignment`). |
+| `insertBlock(template)`, `insertInline(template)` | Inserts Typst as a block after the caret's, or at the caret; `CURSOR` (`{{cursor}}`) marks where the caret goes. |
+| `componentAt`, `componentsAt`, `componentIn`, `componentsIn` | The calls that are components (`Component`): not marks. `argumentOf` and `setArgument` read and write their named arguments. |
+| `tableAt`, `cellAt`, `addRow`, `addColumn`, `deleteRow`, `deleteColumn`, `deleteTable`, `tableTemplate` | Tables as rows and columns (`TableModel`). |
+
+`typstString` and `readString` write and read Typst string literals. `unitsOf` lists what a caret steps over
+(`Unit`: characters, spaces, paragraph breaks, atoms, and edges, a component's own code).
+
+## Layout
+
+`Layout` reads a paged artifact's positions: its `Glyph`s grouped into `Line`s, and the `LaidElement`s with their
+boxes. It answers where a caret goes (`CaretBox`), what a click hits, the rectangles of a selection and the boxes of a
+component (`PageRect`), in points on a page.
+
+## Plugins
+
+```ts
+interface EditorPlugin {
+  key: string;
+  marks?: string[];
+  inline?: string[];
+  shortcuts?: Record<string, EditorCommand>;
+  toolbar?: ToolbarItem[];
+  floating?: ToolbarItem[];
+  insert?: InsertItem[];
+  inputRules?: InputRule[];
+  components?: ComponentSpec[];
+}
+```
+
+`createEditorPlugin` type-checks one. `basicPlugins` are the editor's own: `blocksPlugin` (block types, lists,
+alignment, Markdown-like shortcuts), `marksPlugin` (marks, colours from `COLORS` and `HIGHLIGHTS`, sizes) and
+`insertPlugin` (tables, equations, a divider, a page break). `fromTypstreamPlugin` makes one from a typstream
+plugin's `editor` facet: its components in the insert menu, with forms.
+
+<auto-type-table path="packages/editor-core/src/plugin.ts" name="ToolbarItem" />
+
+<auto-type-table path="packages/editor-core/src/plugin.ts" name="InsertItem" />
+
+<auto-type-table path="packages/editor-core/src/plugin.ts" name="InputRule" />
+
+<auto-type-table path="packages/editor-core/src/plugin.ts" name="ComponentSpec" />
