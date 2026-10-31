@@ -149,7 +149,6 @@ export const htmlLines = (el: HTMLElement, pageWidth: number): Line[] => {
     range.setEnd(t, Math.min(1, t.length));
     const first = [...range.getClientRects()].find((q) => q.height > 0);
     const descent = first ? first.bottom - baseline : 0;
-    const size = Number.parseFloat(getComputedStyle(parent).fontSize);
     const words = /\S+/g;
     for (let m = words.exec(t.data); m; m = words.exec(t.data)) {
       // Each character, so a word broken across lines lands on both.
