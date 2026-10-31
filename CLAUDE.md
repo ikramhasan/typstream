@@ -114,7 +114,7 @@ In `packages/engine-wasm` (Rust build, ~3 min cold):
 In `packages/engine`:
 - `pnpm test`: the `node` vitest project (client against a fake worker; server and protocol conformance against engine-wasm in-process). Needs engine-wasm's `dist/`.
 - `pnpm test:browser`: the `browser` project, the real worker in Chromium, Firefox and WebKit (vitest browser mode, Playwright). `BROWSERS=chromium` runs one.
-- `pnpm size`: main thread ≤ 9.6 KB, worker JS ≤ 40 KB, `@typstream/engine/websocket` and `@typstream/engine/images` ≤ 1.5 KB gzipped each, the DOCX writer the worker `import()`s ≤ 14 KB.
+- `pnpm size`: main thread ≤ 9.6 KB, worker JS ≤ 40 KB, `@typstream/engine/websocket` and `@typstream/engine/images` ≤ 1.5 KB gzipped each, the DOCX writer the worker `import()`s ≤ 14.1 KB.
 - Pages and PDFs follow the layout profile (#129): the server puts `LAYOUT_PROFILE` (`src/server/profile.ts`) before
   every paged compile's and PDF export's preamble (constant 1.3em pitch, ragged right, no hyphenation, unbreakable
   table rows), so a DOCX can match them; heal's `layout-profile` lint removes what would beat it. Not the HTML target.
