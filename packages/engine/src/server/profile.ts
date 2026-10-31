@@ -22,7 +22,7 @@
 // the larger of two gaps, which the exporter writes as one.
 
 /**
- * The layout profile the worker puts before every document (and its preamble) for pages and PDFs: constant line
+ * The layout profile the worker puts before every document (and its preamble), in every target: constant line
  * pitch, ragged right without hyphenation, table rows that don't split (#129). Typst source.
  * @public
  */

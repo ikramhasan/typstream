@@ -73,7 +73,10 @@ export interface HtmlRendererOptions {
     injectStyles?: boolean;
     // @beta
     islands?: IslandRenderers;
+    layout?: "fixed" | "fit-width" | "reflow";
     linkTarget?: string | null;
+    // @beta
+    onPages?: (count: number) => void;
     plugins?: readonly TypstreamPlugin[];
     stylesheets?: readonly string[];
     theme?: "auto" | "light" | "dark";
@@ -189,6 +192,9 @@ export const registerLoadedFont: (font: LoadedFontFamily, root: Node) => Promise
 export const registerMathFont: (url: string | URL, doc?: Document) => Promise<void>;
 
 // @public
+export const registerTypstFonts: (fonts: readonly TypstFont[], doc?: Document) => void;
+
+// @public
 export const standaloneHtml: (html: string, options?: StandaloneHtmlOptions) => string;
 
 // @public
@@ -203,6 +209,14 @@ export interface StandaloneHtmlOptions {
 }
 
 // @public
+export interface TypstFont {
+    family: string;
+    style?: "normal" | "italic";
+    url: string | URL;
+    weight?: number;
+}
+
+// @public
 export interface TypstreamExportOptions {
     inputs?: Record<string, string>;
 }
@@ -213,6 +227,7 @@ export interface TypstreamOptions {
     caret?: boolean;
     engine: Engine;
     files?: FileDelta;
+    fonts?: readonly TypstFont[];
     heal?: DocumentOptions["heal"];
     inputs?: Record<string, string>;
     // @beta

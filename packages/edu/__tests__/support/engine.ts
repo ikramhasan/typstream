@@ -81,7 +81,10 @@ export const htmlText = (html: string): string =>
   html
     .replace(/<head>[\s\S]*?<\/head>/, "")
     // Blocks end words; inline elements (html-compat's spans of styled text) don't.
-    .replace(/<\/?(?:p|div|li|ul|ol|dl|dt|dd|h[1-6]|br|table|tr|td|th|figure|figcaption|nav|section|header|blockquote)\b[^>]*>/g, " ")
+    .replace(
+      /<\/?(?:p|div|li|ul|ol|dl|dt|dd|h[1-6]|br|table|tr|td|th|figure|figcaption|nav|section|header|blockquote)\b[^>]*>/g,
+      " ",
+    )
     .replace(/<[^>]+>/g, "")
     .replace(/&#x([0-9a-f]+);/gi, (_, hex: string) => String.fromCodePoint(Number.parseInt(hex, 16)))
     .replace(/&lt;/g, "<")
@@ -95,5 +98,7 @@ export const htmlText = (html: string): string =>
  */
 export const problems = (diagnostics: Diagnostic[]): string[] =>
   diagnostics
-    .filter((d) => !/html export is under active development/.test(d.message) && !KNOWN_HTML_WARNINGS.includes(d.message))
+    .filter(
+      (d) => !/html export is under active development/.test(d.message) && !KNOWN_HTML_WARNINGS.includes(d.message),
+    )
     .map((d) => `${d.severity}: ${d.message}`);

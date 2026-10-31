@@ -93,7 +93,11 @@ describe("matching", () => {
     .split('<div class="ts-cell')
     .slice(1)
     // Without the word joiner that puts a blank on a text line.
-    .map((cell) => htmlText(cell.slice(cell.indexOf(">") + 1)).replace(/\u2060/g, "").trim());
+    .map((cell) =>
+      htmlText(cell.slice(cell.indexOf(">") + 1))
+        .replace(/\u2060/g, "")
+        .trim(),
+    );
   const rows = Array.from({ length: pairs.length }, (_, i) => cells.slice(i * 5, i * 5 + 5));
 
   it("shuffles the right column and keys every pair to its match", () => {

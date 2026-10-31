@@ -399,19 +399,79 @@
 /* Last, to win over the margins above. */
 /* Typst spaces blocks apart, not from the edges of what contains them. */
 :where(.typstream)
-  :is(.ts-cell, .ts-valign-body, .ts-align-body, .ts-block, .ts-shape, .ts-box, .ts-stack-item, .ts-place, .ts-align-v, .ts-pad, .ts-item-body, .ts-columns, .ts-marginal, figure)
+  :is(
+    .ts-cell,
+    .ts-valign-body,
+    .ts-align-body,
+    .ts-block,
+    .ts-shape,
+    .ts-box,
+    .ts-stack-item,
+    .ts-place,
+    .ts-align-v,
+    .ts-pad,
+    .ts-item-body,
+    .ts-columns,
+    .ts-marginal,
+    figure
+  )
   > :is(:first-child, .ts-place:first-child + *),
 :where(.typstream)
-  :is(.ts-cell, .ts-valign-body, .ts-align-body, .ts-block, .ts-shape, .ts-box, .ts-stack-item, .ts-place, .ts-align-v, .ts-pad, .ts-item-body, .ts-columns, .ts-marginal, figure)
+  :is(
+    .ts-cell,
+    .ts-valign-body,
+    .ts-align-body,
+    .ts-block,
+    .ts-shape,
+    .ts-box,
+    .ts-stack-item,
+    .ts-place,
+    .ts-align-v,
+    .ts-pad,
+    .ts-item-body,
+    .ts-columns,
+    .ts-marginal,
+    figure
+  )
   > .ts-align:first-child
   > :first-child {
   margin-block-start: 0;
 }
 :where(.typstream)
-  :is(.ts-cell, .ts-valign-body, .ts-align-body, .ts-block, .ts-shape, .ts-box, .ts-stack-item, .ts-place, .ts-align-v, .ts-pad, .ts-item-body, .ts-columns, .ts-marginal, figure)
+  :is(
+    .ts-cell,
+    .ts-valign-body,
+    .ts-align-body,
+    .ts-block,
+    .ts-shape,
+    .ts-box,
+    .ts-stack-item,
+    .ts-place,
+    .ts-align-v,
+    .ts-pad,
+    .ts-item-body,
+    .ts-columns,
+    .ts-marginal,
+    figure
+  )
   > :last-child,
 :where(.typstream)
-  :is(.ts-cell, .ts-valign-body, .ts-align-body, .ts-block, .ts-shape, .ts-box, .ts-stack-item, .ts-place, .ts-align-v, .ts-pad, .ts-item-body, .ts-columns, .ts-marginal, figure)
+  :is(
+    .ts-cell,
+    .ts-valign-body,
+    .ts-align-body,
+    .ts-block,
+    .ts-shape,
+    .ts-box,
+    .ts-stack-item,
+    .ts-place,
+    .ts-align-v,
+    .ts-pad,
+    .ts-item-body,
+    .ts-columns,
+    .ts-marginal,
+    figure
+  )
   > .ts-align:last-child
   > :last-child {
   margin-block-end: 0;
@@ -435,7 +495,9 @@
 /* A tight list right after a paragraph (or text) is attached to it: its items' gap, `par.leading`, 0 on pages,
    replaces the spacing between them (typst-layout's LIST_RULE, an attached weak `v`). Not after a blank line, which
    ends the paragraph first: the renderer marks the blocks that start there (`data-typstream-start`). */
-:where(.typstream) :is(p, span, strong, em, b, i, a, code, mark, sub, sup, u, s) + .ts-tight:not([data-typstream-start]) {
+:where(.typstream)
+  :is(p, span, strong, em, b, i, a, code, mark, sub, sup, u, s)
+  + .ts-tight:not([data-typstream-start]) {
   margin-block-start: 0;
 }
 :where(.typstream) p:has(+ .ts-tight:not([data-typstream-start])) {
@@ -461,7 +523,9 @@
 }
 /* Text that isn't in a paragraph element (a tight list item's, the renderer's `.typstream-t`) is one in Typst, spaced
    from spacing after it as a paragraph is. */
-:where(.typstream) :is(.typstream-t, span, strong, em, b, i, a, code, mark, sub, sup, u, s) + .ts-v:not(.ts-v-weak, .ts-vfill) {
+:where(.typstream)
+  :is(.typstream-t, span, strong, em, b, i, a, code, mark, sub, sup, u, s)
+  + .ts-v:not(.ts-v-weak, .ts-vfill) {
   margin-block-start: 0.56em;
 }
 /* Typst drops the spacing above the first block of a page (the renderer's pages, below a break too). */

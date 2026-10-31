@@ -67,7 +67,8 @@ const parseWhole = (html: string, idPrefix: string): string => {
 const withoutSrc = (root: HTMLElement): string => {
   const clone = (root.querySelector(".typstream-flow") as HTMLElement).cloneNode(true) as HTMLElement;
   for (const el of Array.from(clone.querySelectorAll("[data-typstream-src]"))) el.removeAttribute("data-typstream-src");
-  for (const el of Array.from(clone.querySelectorAll("[data-typstream-start]"))) el.removeAttribute("data-typstream-start");
+  for (const el of Array.from(clone.querySelectorAll("[data-typstream-start]")))
+    el.removeAttribute("data-typstream-start");
   for (const el of Array.from(clone.querySelectorAll(".typstream-break"))) el.remove();
   // What the pages size: fractional spacing, columns.
   for (const el of Array.from(clone.querySelectorAll<HTMLElement>(".typstream-fill > .ts-hfill"))) el.style.width = "";

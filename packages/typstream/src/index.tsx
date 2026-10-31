@@ -7,7 +7,7 @@
 
 import { baseFonts, extraFonts, scriptFonts } from "@typstream/engine-wasm/fonts";
 import { htmlCompat } from "@typstream/html-compat";
-import { type TypstFont, type TypstreamProps as BaseProps, Typstream as BaseTypstream } from "@typstream/react";
+import { type TypstreamProps as BaseProps, Typstream as BaseTypstream, type TypstFont } from "@typstream/react";
 import { universe } from "@typstream/universe";
 
 /** The engine's copy of New Computer Modern Math, the font html-compat's CSS asks for in `<math>`. */

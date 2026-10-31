@@ -287,13 +287,25 @@ Body]`,
   { name: "layout", source: "#layout(size => [Width is #size.width])", nativeDrops: true },
 
   // Semantic elements HTML export handles natively
-  { name: "headings, numbered", source: '#set heading(numbering: "1.1")\n= Intro\n== Sub', html: /<h2[^>]*><span class="ts-heading-number"[^>]*>.*>1<\/span><\/span>.*Intro/ },
-  { name: "lists and terms", source: "- one\n- two\n+ first\n+ second\n/ Term: Definition", html: /<dl class="ts-terms/ },
+  {
+    name: "headings, numbered",
+    source: '#set heading(numbering: "1.1")\n= Intro\n== Sub',
+    html: /<h2[^>]*><span class="ts-heading-number"[^>]*>.*>1<\/span><\/span>.*Intro/,
+  },
+  {
+    name: "lists and terms",
+    source: "- one\n- two\n+ first\n+ second\n/ Term: Definition",
+    html: /<dl class="ts-terms/,
+  },
   {
     name: "enum: explicit numbers, start, reversed",
     source: "4. four\n5. five\n\n#enum(start: 7, [seven])\n\n#enum(reversed: true, [b], [a])",
   },
-  { name: "enum: numbering pattern", source: '#set enum(numbering: "a)")\n+ alpha\n+ beta', html: /ts-marker" aria-hidden="true">a\)/ },
+  {
+    name: "enum: numbering pattern",
+    source: '#set enum(numbering: "a)")\n+ alpha\n+ beta',
+    html: /ts-marker" aria-hidden="true">a\)/,
+  },
   {
     name: "quote",
     source: "#quote(block: true, attribution: [Someone])[Quoted words] and #quote[inline]",

@@ -20,7 +20,7 @@ import {
 } from "./animate";
 import { injectCss } from "./css";
 import { directionOf } from "./dir";
-import { createHtmlPages, type PagesLayout, parseGeometry } from "./pages";
+import { createHtmlPages, parseGeometry } from "./pages";
 import { collapseSpaces, rowRuns, wrapRuns } from "./runs";
 import { createSanitizer, hideStyles, type Sanitizer } from "./sanitize";
 import { type Split, type SplitBlock, splitHtml } from "./split";
@@ -68,7 +68,7 @@ export interface HtmlRendererOptions {
    * reads). The document is laid out on sheets of its page size and margins and breaks across them where Typst
    * breaks its pages.
    */
-  layout?: PagesLayout;
+  layout?: "fixed" | "fit-width" | "reflow";
   /**
    * Called when the number of pages changes. A document whose headers or footers show the page count
    * (`counter(page).final()`) reads it from the input `typstream-page-count` (html-compat): `mountTypstream` sets it

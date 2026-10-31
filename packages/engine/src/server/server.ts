@@ -455,12 +455,7 @@ class Server implements EngineServer {
    * runtime library's import. Anchors name offsets in the client's text
    * (`toOriginal`). The next `sync` writes the document's own text again.
    */
-  private writeFixed(
-    doc: Doc,
-    text: string,
-    anchors: boolean,
-    toOriginal: (pos: number) => number,
-  ): void {
+  private writeFixed(doc: Doc, text: string, anchors: boolean, toOriginal: (pos: number) => number): void {
     doc.anchored = anchors ? doc.fixedAnchors.apply(text, toOriginal) : null;
     const prefix = this.head(doc) + RUNTIME_IMPORT;
     doc.compiler.setFiles({ [MAIN]: prefix + (doc.anchored?.text ?? text) });
@@ -752,7 +747,6 @@ class Server implements EngineServer {
       if (!this.adapter.targets.includes(target)) this.unsupported(`the ${target} target`);
       const fallback = fallbackOf(params.fallback, doc.text.length);
       const anchors = target === "html" && params.anchors !== false;
-      const paged = target === "paged";
       // Imported packages load first, within the fix budget; any later arrival compiles again.
       const waiting = await doc.packages.prepare(doc.prefix + doc.text, received + FIX_BUDGET_MS[mode]);
       if (waiting) this.recompile(waiting.loading, params);

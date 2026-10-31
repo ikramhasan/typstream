@@ -86,11 +86,15 @@ export const TYPST_MATH_CSS = `:where(.typstream) mtable.right-align mtd,
  * the page scroll, and `position: relative` (html-compat's too) puts absolute
  * boxes under it. None starts a formatting context (`contain: paint` and
  * `overflow: auto` would), so margins still collapse through the root and
- * layout is as before. What reaches past the element (a table wider than it)
- * scrolls sideways instead: the renderer marks it once laid out (#95), and
- * vertically it overflows by box edges only (taller glyph boxes in equations).
- * A display equation is as wide as its content (Firefox's and WebKit's are
- * otherwise as wide as their container, with the content overflowing them).
+ * layout is as before. On pages (`.typstream-pages`) the document is in its
+ * flow, over the sheets, which clips the same way, its box the pages' text and
+ * margins; the root doesn't, so the sheets' shadows show.
+ *
+ * Pages: the sheets are laid out from the page html-compat writes and scaled to
+ * the element as the paged view's pages; the flow, as wide as a page, is
+ * scaled with them and broken across them (pages.ts). Every element has no line
+ * box of its own (`line-height: 0`) but text (`.typstream-t`), so a line is as
+ * tall as its text, as Typst's, not at least a strut of its block's size.
  *
  * Word fade-in: durations and easing are set on the root, each word has its own
  * delay. `::marker` can't be wrapped and ignores opacity, so a list item's marker
