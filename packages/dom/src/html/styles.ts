@@ -162,6 +162,16 @@ export const htmlRendererCss: string = `${THEME_CSS}
   overflow: visible;
   clip-path: none;
 }
+:where(.typstream-flow .typstream-split) {
+  background: none !important;
+}
+:where(.typstream-flow .typstream-split)::before {
+  display: none !important;
+}
+:where(.typstream-underlay .typstream-piece) {
+  position: absolute !important;
+  box-sizing: border-box;
+}
 :where(.typstream-flow .typstream-endnotes) {
   position: absolute;
   width: 1px;

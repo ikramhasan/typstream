@@ -31,8 +31,10 @@ export const LAYOUT_PROFILE: string = `// typstream's layout profile: what a DOC
 #show par: set par(leading: 0pt, justify: false, linebreaks: "simple")
 #show table: set table.cell(breakable: false)
 // A line holding only an equation is as tall as the equation, while Word gives every line of a paragraph with math
-// at least the pitch: a zero-width strut of one line box makes Typst's line that tall too.
-#show math.equation.where(block: false): it => box(height: 1.3em, baseline: 0.246em) + it
+// at least the pitch: a zero-width strut of one line box makes Typst's line that tall too. (Not in the pieces after
+// the first html-compat cuts an equation into where it breaks, which mark themselves by a hyphenation cost no document
+// sets: the strut is on the equation's first line only.)
+#show math.equation.where(block: false): it => if text.costs.hyphenation == 100.0003% { it } else { box(height: 1.3em, baseline: 0.246em) + it }
 // The rows of a display equation with line breaks are par.leading apart: Typst's default, which 0 would make touch.
 // (Not inline ones: a paragraph setting inside a line ends the paragraph there.)
 #show math.equation.where(block: true): set par(leading: 0.65em)

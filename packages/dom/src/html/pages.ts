@@ -115,6 +115,8 @@ interface Unit {
   align?: { el: Element; at: number };
   /** The footnotes referenced in it (their entries in Typst's endnotes), which go at the foot of its page. */
   notes?: HTMLElement[];
+  /** A node it is in: the boxes around it inset it from a page's end (`insetBelow`). */
+  host?: Node;
 }
 
 const SPACER = "typstream-break";
@@ -157,7 +159,11 @@ export const createHtmlPages = (
   const marginals = doc.createElement("div");
   marginals.className = "typstream-flow typstream-marginals";
   marginals.setAttribute("aria-hidden", "true");
-  root.append(sheets, flow, marginals);
+  // Under the flow, placed and scaled as it is: the pieces of boxes broken across pages.
+  const underlay = doc.createElement("div");
+  underlay.className = "typstream-flow typstream-marginals typstream-underlay";
+  underlay.setAttribute("aria-hidden", "true");
+  root.append(sheets, underlay, flow, marginals);
   let parts: readonly Node[] = [];
   let partsKey = "";
   root.classList.add("typstream-pages");
@@ -203,7 +209,7 @@ export const createHtmlPages = (
       flow.style.setProperty("--typstream-host-line", host.lineHeight);
       flow.style.setProperty("--typstream-host-color", host.color);
     }
-    for (const el of [flow, marginals])
+    for (const el of [flow, marginals, underlay])
       Object.assign(el.style, {
         width: `${width}px`,
         padding: `${top}px ${right}px ${bottom}px ${left}px`,
@@ -340,6 +346,7 @@ export const createHtmlPages = (
 
   /** A unit for an element that doesn't break. */
   const whole = (el: Element, sticky?: Element): Unit => ({
+    host: el,
     measure: () => inFlow(el.getBoundingClientRect(), origin()),
     gap: () => spacerBefore(el, true),
     ...(sticky ? { sticky } : {}),
@@ -481,6 +488,7 @@ export const createHtmlPages = (
           return spacerBefore(start, false);
         },
         ...(sticky ? { sticky } : {}),
+        host: first,
       };
       units.push(unit);
       lineUnits[i] = unit;
@@ -607,6 +615,7 @@ export const createHtmlPages = (
         gap: () => (index > heads && heads > 0 ? headerGap(these, header, repeat) : rowGap(these)),
         ...(index < heads ? { sticky: grid } : {}),
         ...withNotes(these),
+        host: grid,
       };
       if (!breakable) {
         out.push(first);
@@ -695,12 +704,103 @@ export const createHtmlPages = (
     flush();
   };
 
+  // --- boxes broken across pages ------------------------------------------------------
+
+  /**
+   * The boxes (blocks with an inset: html-compat's padding) around `node`, innermost first. Typst insets each piece of
+   * a box broken across pages (typst-layout's block, its frames per region): a line goes on a page only if the
+   * boxes' bottom insets fit under it, and the piece on the next page starts below their top insets.
+   */
+  const boxesAround = (node: Node | undefined): HTMLElement[] => {
+    const out: HTMLElement[] = [];
+    for (let at = node?.parentElement; at && at !== flow; at = at.parentElement) {
+      const style = view.getComputedStyle(at);
+      if (style.display.startsWith("inline") || style.display === "contents") continue;
+      if (Number.parseFloat(style.paddingTop) || Number.parseFloat(style.paddingBottom)) out.push(at);
+    }
+    return out;
+  };
+  const inset = (el: HTMLElement, side: "Top" | "Bottom") =>
+    Number.parseFloat(view.getComputedStyle(el)[`padding${side}`]) || 0;
+  /** The insets of the boxes around a unit, below it: room it leaves at a page's end. */
+  const insetBelow = (unit: Unit) =>
+    unit.host && unit.host !== flow ? boxesAround(unit.host).reduce((sum, b) => sum + inset(b, "Bottom"), 0) : 0;
+
+  /** Boxes broken across pages: where each break is (the spacer before it, the page it starts, the insets ending it). */
+  let splits = new Map<HTMLElement, { at: number; page: number; spacer: Node }[]>();
+
+  /**
+   * Draws each broken box as its pieces, as Typst draws one per page: the box itself draws nothing
+   * (`.typstream-split`) and is clipped to its pieces, so nothing of it shows between the pages, and each piece
+   * (`.typstream-piece`) is a box of the same fill, corners and stroke behind its content.
+   */
+  const drawSplits = () => {
+    underlay.replaceChildren();
+    // Outer boxes first, under the inner ones.
+    const boxes = [...splits].sort(([a], [b]) => (a.contains(b) ? -1 : b.contains(a) ? 1 : 0));
+    for (const [box, cuts] of boxes) {
+      const o = origin();
+      const rect = box.getBoundingClientRect();
+      const top = inFlow(rect, o).top;
+      const left = (rect.left - flow.getBoundingClientRect().left) / scale;
+      const height = rect.height / scale;
+      const width = rect.width / scale;
+      // Where each piece starts and ends, in the box.
+      const pieces: [number, number][] = [];
+      let from = 0;
+      for (const cut of cuts) {
+        const end = inFlow((cut.spacer as Element).getBoundingClientRect(), o).top - top + cut.at;
+        pieces.push([from, end]);
+        from = contentTop(cut.page) - top;
+      }
+      pieces.push([from, height]);
+      const style = view.getComputedStyle(box);
+      for (const [start, end] of pieces) {
+        const piece = doc.createElement("div");
+        piece.className = `typstream-piece${box.classList.contains("ts-stroked") ? " ts-stroked" : ""}`;
+        piece.setAttribute("aria-hidden", "true");
+        Object.assign(piece.style, {
+          top: `${top + start}px`,
+          left: `${left}px`,
+          width: `${width}px`,
+          height: `${Math.max(0, end - start)}px`,
+          background: style.background,
+          borderRadius: style.borderRadius,
+        });
+        for (const k of ["bt", "br", "bb", "bl", "wt", "wr", "wb", "wl"]) {
+          const v = style.getPropertyValue(`--ts-${k}`);
+          if (v) piece.style.setProperty(`--ts-${k}`, v);
+        }
+        underlay.append(piece);
+      }
+      // Nothing of the box between its pieces: a comb of them, joined along its left edge.
+      const [x0, x1] = [-20, width + 20];
+      const points = [`${x0}px -20px`, `${x1}px -20px`];
+      for (const [i, [, end]] of pieces.slice(0, -1).entries()) {
+        const next = (pieces[i + 1] as [number, number])[0];
+        points.push(`${x1}px ${end}px`, `${x0}px ${end}px`, `${x0}px ${next}px`, `${x1}px ${next}px`);
+      }
+      points.push(`${x1}px ${height + 20}px`, `${x0}px ${height + 20}px`);
+      box.style.clipPath = `polygon(${points.join(", ")})`;
+      box.classList.add("typstream-split");
+    }
+  };
+  const clearSplits = () => {
+    for (const box of splits.keys()) {
+      box.classList.remove("typstream-split");
+      box.style.clipPath = "";
+    }
+    underlay.replaceChildren();
+    splits = new Map();
+  };
+
   // --- breaking ----------------------------------------------------------------------
 
   const clear = () => {
     for (const gap of [...gaps, ...shifts]) gap.remove();
     gaps = [];
     shifts = [];
+    clearSplits();
   };
 
   /** The unit to move to the next page when `units[i]` doesn't fit: Typst keeps orphans, widows and sticky blocks. */
@@ -845,7 +945,7 @@ export const createHtmlPages = (
       probe.remove();
     }
     const key = JSON.stringify([geometry, pageWidth(), scale]);
-    if (key !== laidOut || geometry.height === null || shifts.length || entries.size) from = null;
+    if (key !== laidOut || geometry.height === null || shifts.length || entries.size || splits.size) from = null;
     laidOut = key;
     if (geometry.height === null) {
       // One page, as tall as the content.
@@ -880,7 +980,9 @@ export const createHtmlPages = (
     // Spacing above the first block collapses through to the top of the flow; Typst drops it.
     const head = units[0];
     const first = [...flow.children].find((c) => !c.classList.contains(SPACER));
-    if (!start && head && first && !head.force && head.measure().top > contentTop(0) + EPS) {
+    // Not spacing itself (a `v` that starts the document): Typst keeps that.
+    const spacing = first?.matches(".ts-v:not(.ts-v-weak)");
+    if (!start && head && first && !spacing && !head.force && head.measure().top > contentTop(0) + EPS) {
       const gap = spacerBefore(first, true);
       gaps.push(gap);
       gap.set(contentTop(0) - head.measure().top);
@@ -939,7 +1041,10 @@ export const createHtmlPages = (
         page++;
         sheet(page);
         place();
-      } else if (bottom <= contentBottom(page) - noteRoom(page, unit.notes) + EPS || top <= contentTop(page) + EPS) {
+      } else if (
+        bottom + insetBelow(unit) <= contentBottom(page) - noteRoom(page, unit.notes) + EPS ||
+        top <= contentTop(page) + EPS
+      ) {
         if (unit.notes) pageNotes[page] = [...(pageNotes[page] ?? []), ...unit.notes];
         continue;
       } else {
@@ -960,7 +1065,17 @@ export const createHtmlPages = (
       // Measured with some room already: margins stop collapsing across a spacer once it has height.
       gap.set(1);
       ({ top, bottom } = moved.measure());
-      gap.set(1 + contentTop(page) - top);
+      // Room before a block that the unit opens: the block (its inset, its stroke) starts the page, not its line.
+      const opened = (gap.node as Element).classList?.contains(SPACER) ? (gap.node as Element).nextElementSibling : null;
+      if (opened && opened !== moved.host) top = Math.min(top, inFlow(opened.getBoundingClientRect(), origin()).top);
+      // The boxes this breaks (begun on a page before): their pieces here start with their top insets, and the
+      // pieces before end with their bottom insets after what is above the break.
+      const broken = boxesAround(gap.node).filter((b) => inFlow(b.getBoundingClientRect(), origin()).top < top - EPS);
+      for (const [i, b] of broken.entries()) {
+        const below = broken.slice(0, i + 1).reduce((sum, x) => sum + inset(x, "Bottom"), 0);
+        splits.set(b, [...(splits.get(b) ?? []), { at: below, page, spacer: gap.node }]);
+      }
+      gap.set(1 + contentTop(page) - top + broken.reduce((sum, b) => sum + inset(b, "Top"), 0));
       moved.fit?.(contentEnd(page) - contentTop(page));
       if (moved.notes) pageNotes[page] = [...(pageNotes[page] ?? []), ...moved.notes];
     }
@@ -971,6 +1086,7 @@ export const createHtmlPages = (
     if (start && end && end.bottom > contentEnd(page) + EPS && end.top > contentTop(page) + EPS) return paginate(null);
     count = page + 1;
     while (sheets.children.length > count) sheets.lastElementChild?.remove();
+    drawSplits();
     drawMarginals();
     drawNotes();
     fillLines(marginals);

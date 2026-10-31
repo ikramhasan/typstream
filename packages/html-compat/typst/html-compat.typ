@@ -681,7 +681,9 @@
 #let html-compat(doc) = context if target() != "html" { doc } else {
   // In HTML only: a paged compile gets the document as it is, its pages unchanged. Inside `html.frame` the target is
   // "paged" again, where each rule leaves what it shows to Typst.
-  let html-only(rule) = it => context if target() == "html" { rule(it) } else { it }
+  // Show rules' functions see the styles where they apply, `target()` included: no `context` around what they leave
+  // alone, which in an equation's drawing (a paged frame) would make math text a box of its own and change its size.
+  let html-only(rule) = it => if target() == "html" { context rule(it) } else { it }
 
   // The source anchors the engine writes before each top-level block (PLAN §10.2) carry the page they are on.
   show html.elem.where(tag: "typstream-anchor"): it => {
@@ -1011,7 +1013,12 @@
       let pieces = _math-pieces(it.body)
       let last = pieces.len() - 1
       return pieces.enumerate().map(((i, piece)) => {
-        let eq = if last == 0 { it } else {
+        // The pieces after the first don't get the layout profile's strut (the hyphenation cost marks them): Typst
+        // puts it before the equation, on its first line.
+        let eq = if last == 0 { it } else if i == 0 {
+          math.equation(block: false, (piece + (text(""),)).join())
+        } else {
+          set text(costs: (hyphenation: 100.0003%))
           math.equation(block: false, (piece + if i < last { (text(""),) } else { () }).join())
         }
         let depth = measure({
