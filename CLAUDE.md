@@ -161,12 +161,12 @@ In `packages/mindmap`:
 
 In `packages/dom`:
 - `pnpm test`: node tests (the HTML block splitter, paged helpers). `pnpm test:browser`: the renderers in Chromium, Firefox and WebKit, fed by the real engine worker with html-compat and corpus documents (needs engine-wasm's `dist/`). `BROWSERS=chromium` runs one.
-- `pnpm size`: HTML renderer ≤ 22.2 KB gzipped (with its CSS), paged renderer ≤ 6.8 KB, standalone HTML export ≤ 2 KB.
+- `pnpm size`: HTML renderer ≤ 22.4 KB gzipped (with its CSS), paged renderer ≤ 6.8 KB, standalone HTML export ≤ 2 KB.
 - Its API report needs DOM types, so its `api-extractor.json` overrides the shared compiler settings.
 
 In `packages/react`:
 - `pnpm test`: Node tests (provider merging, the shared engine's lifetime). `pnpm test:browser`: `<Typstream>` with React Testing Library against the real engine worker in Chromium, Firefox and WebKit (StrictMode, lazy opening, worker cleanup). `BROWSERS=chromium` runs one. Needs engine-wasm's `dist/`.
-- `pnpm size`: ≤ 33.7 KB gzipped including `@typstream/dom` (React and the engine external).
+- `pnpm size`: ≤ 33.8 KB gzipped including `@typstream/dom` (React and the engine external).
 - Its bundle starts with `"use client"` (tsup banner), as does `typstream`'s, for Next.js's App Router.
 
 In `packages/ai`: `pnpm test` runs the helpers through AI SDK 7 itself (a devDependency): recorded `corpus/llm` streams
