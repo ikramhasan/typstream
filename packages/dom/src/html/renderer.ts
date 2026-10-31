@@ -21,7 +21,7 @@ import {
 import { injectCss } from "./css";
 import { directionOf } from "./dir";
 import { createHtmlPages, parseGeometry } from "./pages";
-import { collapseSpaces, rowRuns, wrapRuns } from "./runs";
+import { collapseSpaces, rowRuns, styleSpaces, wrapRuns } from "./runs";
 import { createSanitizer, hideStyles, type Sanitizer } from "./sanitize";
 import { type Split, type SplitBlock, splitHtml } from "./split";
 import { htmlRendererCss } from "./styles";
@@ -293,6 +293,7 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
     }
     sanitize(content);
     collapseSpaces(content, inert);
+    styleSpaces(content, inert);
     rowRuns(content, inert);
     wrapRuns(content, inert);
     // Moving the cleaned nodes adopts them into the page's document.

@@ -15,7 +15,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { commands, server } from "vitest/browser";
 import { registerTypstFonts } from "../../src/html/fonts";
 import { createHtmlRenderer, type HtmlRenderer } from "../../src/html/renderer";
-import { collapseSpaces, rowRuns } from "../../src/html/runs";
+import { collapseSpaces, rowRuns, styleSpaces } from "../../src/html/runs";
 import { createSanitizer, hideStyles } from "../../src/html/sanitize";
 import { splitHtml } from "../../src/html/split";
 import { TYPST_MATH_CSS } from "../../src/html/styles";
@@ -60,6 +60,7 @@ const parseWhole = (html: string, idPrefix: string): string => {
   for (const anchor of Array.from(body.querySelectorAll("typstream-anchor"))) anchor.remove();
   createSanitizer({ idPrefix, plugins: [htmlCompat] })(body);
   collapseSpaces(body, document);
+  styleSpaces(body, document);
   rowRuns(body, document);
   return body.innerHTML;
 };

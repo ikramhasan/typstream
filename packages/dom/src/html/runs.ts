@@ -117,6 +117,25 @@ export const rowRuns = (root: ParentNode, doc: Document): void => {
 };
 
 /**
+ * A space between two spans of the same style (html-compat's text styles: a size, a font) takes their style, as
+ * Typst's has it: in HTML it is outside them, in the size and font around them.
+ */
+export const styleSpaces = (root: ParentNode, doc: Document): void => {
+  const walker = doc.createTreeWalker(root, 4);
+  const spaces: Text[] = [];
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) if (!(n as Text).data.trim()) spaces.push(n as Text);
+  for (const space of spaces) {
+    const [prev, next] = [space.previousSibling, space.nextSibling] as [Element | null, Element | null];
+    if (prev?.nodeType !== 1 || next?.nodeType !== 1 || prev.localName !== "span" || next.localName !== "span") continue;
+    const style = prev.getAttribute("style");
+    if (!style || style !== next.getAttribute("style") || prev.className !== next.className) continue;
+    const span = prev.cloneNode(false) as Element;
+    space.replaceWith(span);
+    span.append(space);
+  }
+};
+
+/**
  * Wraps text in spans (`typstream-t`): with the pages' CSS, only they have a line box (Typst's 1.3em, the engine's
  * fonts putting the baseline where Typst does) and every element around them has none, so a line is as tall as the text
  * on it, as in Typst, not at least as tall as a strut of its block's or a `<strong>`'s size. Whitespace alone is left
