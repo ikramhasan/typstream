@@ -139,10 +139,14 @@ export const htmlRendererCss: string = `${THEME_CSS}
   line-height: 1.3;
 }
 :where(.typstream-pages[data-baseline=round]) :is(.typstream-t, .ts-math) {
-  --ts-x: calc(1.054em - round(1.054em, 1px) - (1.3em - round(1.054em, 1px) - round(0.246em, 1px)) / 2);
+  --ts-x: calc(1.054em - round(1.054em, 1px) - (1.3em - round(1.054em, 1px) - round(0.246em, 1px)) / 2 + var(--ts-borrow, 0px));
 }
 :where(.typstream-pages[data-baseline=floor]) :is(.typstream-t, .ts-math) {
-  --ts-x: calc(1.054em - round(1.054em, 1px) - round(down, (1.3em - round(1.054em, 1px) - round(0.246em, 1px)) / 2, 1px));
+  --ts-x: calc(1.054em - round(1.054em, 1px) - round(down, (1.3em - round(1.054em, 1px) - round(0.246em, 1px)) / 2, 1px) + var(--ts-borrow, 0px));
+}
+/* A pixel the ascent gives the descent when the descent rounds down (Chrome on Linux): 1px then, else 0. */
+:where(.typstream-pages[data-baseline-borrow]) :is(.typstream-t, .ts-math) {
+  --ts-borrow: clamp(0px, (0.246em - round(0.246em, 1px)) * 100000, 1px);
 }
 :where(.typstream-pages[data-baseline] .typstream-t) {
   position: relative;
@@ -156,7 +160,7 @@ export const htmlRendererCss: string = `${THEME_CSS}
 }
 .typstream-pages[data-baseline] .ts-math.ts-flat svg {
   vertical-align: text-bottom;
-  margin-block-end: calc(var(--ts-lift, 0px) - var(--ts-x, 0px) - 0.246em + round(0.246em, 1px));
+  margin-block-end: calc(var(--ts-lift, 0px) - var(--ts-x, 0px) - 0.246em + round(0.246em, 1px) + var(--ts-borrow, 0px));
 }
 :where(.typstream .typstream-row) {
   display: flex;
@@ -222,6 +226,12 @@ export const htmlRendererCss: string = `${THEME_CSS}
   line-height: var(--typstream-host-line, normal);
 }
 :where(.typstream-flow) > :first-child {
+  margin-block-start: 0;
+}
+/* Below spacing (\`v\`) that starts a page, a block's spacing above goes too: Typst keeps weak spacing only after
+   something laid out in the region (distribute.rs, keep_spacing). */
+:where(.typstream-flow) > .ts-v:first-child + *,
+:where(.typstream-flow .typstream-break) + .ts-v + * {
   margin-block-start: 0;
 }
 :where(.typstream typstream-island) {

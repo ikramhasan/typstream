@@ -126,7 +126,8 @@ export const styleSpaces = (root: ParentNode, doc: Document): void => {
   for (let n = walker.nextNode(); n; n = walker.nextNode()) if (!(n as Text).data.trim()) spaces.push(n as Text);
   for (const space of spaces) {
     const [prev, next] = [space.previousSibling, space.nextSibling] as [Element | null, Element | null];
-    if (prev?.nodeType !== 1 || next?.nodeType !== 1 || prev.localName !== "span" || next.localName !== "span") continue;
+    if (prev?.nodeType !== 1 || next?.nodeType !== 1 || prev.localName !== "span" || next.localName !== "span")
+      continue;
     const style = prev.getAttribute("style");
     if (!style || style !== next.getAttribute("style") || prev.className !== next.className) continue;
     const span = prev.cloneNode(false) as Element;

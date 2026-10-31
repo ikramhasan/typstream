@@ -23,7 +23,7 @@ import { directionOf } from "./dir";
 import { createHtmlPages, parseGeometry } from "./pages";
 import { collapseSpaces, rowRuns, styleSpaces, wrapRuns } from "./runs";
 import { createSanitizer, hideStyles, type Sanitizer } from "./sanitize";
-import { type Split, type SplitBlock, splitHtml } from "./split";
+import { type Split, type SplitBlock, type SplitPage, splitHtml } from "./split";
 import { htmlRendererCss } from "./styles";
 
 /** Options for {@link createHtmlRenderer}. @public */
@@ -152,7 +152,8 @@ const START_ATTRIBUTE = "data-typstream-start";
  * The page html-compat writes on the source anchors, and its header and footer inside them: the last anchor's (a
  * document's pages are all alike). The first ones can come before the document's `#set page(..)`, or a template's.
  */
-const PAGES = /<typstream-anchor data-src="\d+" data-page="([^"]*)">([\s\S]*?)<\/typstream-anchor>/y;
+const PAGES =
+  /<typstream-anchor data-src="\d+" data-page="([^"]*)"(?: data-numbering(?:="[^"]*")?)?>([\s\S]*?)<\/typstream-anchor>/y;
 
 /** The last anchor's match of `PAGES` in `html`: found from the end, so a long document isn't scanned whole. */
 const lastPage = (html: string): RegExpExecArray | null => {
@@ -255,7 +256,18 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
     for (const css of [htmlRendererCss, ...plugins, ...(options.stylesheets ?? [])]) injectCss(root, css);
   }
 
-  const pages = createHtmlPages(root, options.layout ?? "fixed", options.onPages);
+  // Headers and footers by the page they are for (html-compat's anchors hold them), parsed when a page needs them.
+  const partsIds = new Map<string, string>();
+  const partsNodes = new Map<string, readonly Node[]>();
+  const pages = createHtmlPages(root, options.layout ?? "fixed", options.onPages, (id) => {
+    let nodes = partsNodes.get(id);
+    if (!nodes) {
+      const html = [...partsIds].find(([, v]) => v === id)?.[0] ?? "";
+      nodes = html ? parse(html) : [];
+      partsNodes.set(id, nodes);
+    }
+    return nodes;
+  });
   /** Where the document goes: the flow over the pages. */
   const host = pages.flow;
 
@@ -311,6 +323,28 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
     if (src === null) el.removeAttribute(SRC_ATTRIBUTE);
     else el.setAttribute(SRC_ATTRIBUTE, String(src));
     el.toggleAttribute(START_ATTRIBUTE, start);
+  };
+
+  /** A block's page (html-compat's anchor before it), on its first element, for the pages to follow. */
+  const setPage = (block: Block, page: SplitPage | undefined): void => {
+    const el = firstElement(block.nodes);
+    if (!el) return;
+    const set = (name: string, value: string | undefined) => {
+      if (value === undefined) el.removeAttribute(`data-typstream-${name}`);
+      else el.setAttribute(`data-typstream-${name}`, value);
+    };
+    let id: string | undefined;
+    if (page?.parts !== undefined) {
+      id = partsIds.get(page.parts);
+      if (id === undefined) {
+        id = String(partsIds.size);
+        partsIds.set(page.parts, id);
+      }
+    }
+    set("page", page?.geometry);
+    set("numbering", page?.numbering);
+    set("parts", id);
+    set("counter", page?.counter === undefined ? undefined : String(page.counter));
   };
 
   const removeNodes = (block: Block): void => {
@@ -403,6 +437,7 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
         created.push(block);
       }
       setSrc(block, item.src, item.start === true);
+      setPage(block, item.page);
       result.push(block);
     }
     const reused = new Set(result);

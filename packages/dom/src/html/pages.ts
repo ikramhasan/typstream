@@ -29,6 +29,8 @@ export interface PageGeometry {
   /** Its columns (`set page(columns: n)`) and the gutter between them, in points. */
   columns?: number;
   gutter?: number;
+  /** How far the text moves on even pages (inside and outside margins), in points. */
+  binding?: number;
 }
 
 /** A4 with Typst's default margins (2.5/21 of the shorter side). */
@@ -41,7 +43,7 @@ export const A4: PageGeometry = {
   descent: 21.26,
 };
 
-/** html-compat's `data-page`: `width height top right bottom left fill ascent descent columns gutter`. */
+/** html-compat's `data-page`: `width height top right bottom left fill ascent descent columns gutter binding`. */
 export const parseGeometry = (attr: string | null | undefined): PageGeometry => {
   const parts = attr?.trim().split(/\s+/) ?? [];
   const n = parts.slice(0, 6).map(Number);
@@ -57,6 +59,7 @@ export const parseGeometry = (attr: string | null | undefined): PageGeometry => 
     ascent: Number.isFinite(ascent) ? (ascent as number) : top * 0.3,
     descent: Number.isFinite(descent) ? (descent as number) : bottom * 0.3,
     ...(Number(parts[9]) > 1 ? { columns: Number(parts[9]), gutter: Number(parts[10]) || 0 } : {}),
+    ...(Number(parts[11]) ? { binding: Number(parts[11]) } : {}),
   };
 };
 
@@ -128,13 +131,31 @@ const SPACER = "typstream-break";
 const NOTEREF = 'sup[role="doc-noteref"]';
 const ENDNOTES = 'section[role="doc-endnotes"]';
 /** What html-compat writes for the page number in headers and footers. */
-const PAGE_NUMBER = "7777";
+const PAGE_NUMBER = 3999;
 
 /** Elements that don't break across pages. A closed `<details>` too: what it hides has no place to measure. */
 const WHOLE =
   ".ts-whole, figure, img, svg, math, typstream-island, .ts-frame, .ts-shape, .ts-line, .ts-columns, pre, .typstream-island, details:not([open]), .ts-float-parent";
 /** Sticky blocks: they move to the next page with what follows them. */
 const STICKY = "h1, h2, h3, h4, h5, h6, .ts-sticky";
+
+/** Blocks with spacing of their own above and below (headings; html-compat's `.ts-sp-a`, `.ts-sp-b`). */
+const OWN_ABOVE = "h1, h2, h3, h4, h5, h6, .ts-sp-a";
+const OWN_BELOW = "h1, h2, h3, h4, h5, h6, .ts-sp-b";
+
+/** Spacing (`v`) between two blocks' own spacings: Typst adds it to the larger of the two (distribute.rs,
+ * keep_spacing), which CSS can't pick, so html-compat's CSS leaves both and the smaller goes here. */
+const collapseSpacing = (root: HTMLElement, view: Window) => {
+  for (const v of root.querySelectorAll<HTMLElement>(".ts-v:not(.ts-v-weak, .ts-vfill)")) {
+    const [before, after] = [v.previousElementSibling as HTMLElement | null, v.nextElementSibling as HTMLElement | null];
+    if (!before?.matches(OWN_BELOW) || !after?.matches(OWN_ABOVE)) continue;
+    before.style.marginBlockEnd = after.style.marginBlockStart = "";
+    const below = Number.parseFloat(view.getComputedStyle(before).marginBlockEnd) || 0;
+    const above = Number.parseFloat(view.getComputedStyle(after).marginBlockStart) || 0;
+    if (below < above) before.style.marginBlockEnd = "0px";
+    else after.style.marginBlockStart = "0px";
+  }
+};
 
 const isBlock = (el: Element, view: Window): boolean => {
   const display = view.getComputedStyle(el).display;
@@ -151,6 +172,8 @@ export const createHtmlPages = (
   root: HTMLElement,
   layout: PagesLayout = "fixed",
   onCount?: (count: number) => void,
+  /** The header and footer html-compat wrote on a block's anchor (`data-typstream-parts`), parsed. */
+  partsOf?: (id: string) => readonly Node[],
 ): HtmlPages => {
   const doc = root.ownerDocument;
   const view = doc.defaultView as Window & typeof globalThis;
@@ -232,12 +255,101 @@ export const createHtmlPages = (
     } else flow.style.removeProperty("--typstream-text-width");
   };
 
+  // --- page runs: each page's number, numbering, header and footer --------------------
+
+  /** A block's page settings that start a page when they change: its geometry and numbering. */
+  const runKey = (el: HTMLElement) => `${el.dataset.typstreamPage}|${el.dataset.typstreamNumbering}`;
+  const runKeys = () => new Set([...flow.querySelectorAll<HTMLElement>("[data-typstream-page]")].map(runKey));
+
+  /** A number in a numbering's counting symbol (Typst's `1`, `a`, `A`, `i`, `I`). */
+  const formatNumber = (n: number, symbol: string): string => {
+    if (symbol === "i" || symbol === "I") {
+      const table: [number, string][] = [
+        [1000, "M"],
+        [900, "CM"],
+        [500, "D"],
+        [400, "CD"],
+        [100, "C"],
+        [90, "XC"],
+        [50, "L"],
+        [40, "XL"],
+        [10, "X"],
+        [9, "IX"],
+        [5, "V"],
+        [4, "IV"],
+        [1, "I"],
+      ];
+      let out = "";
+      let rest = n;
+      for (const [v, r] of table)
+        while (rest >= v) {
+          out += r;
+          rest -= v;
+        }
+      return symbol === "i" ? out.toLowerCase() : out;
+    }
+    if (symbol === "a" || symbol === "A") {
+      let out = "";
+      for (let rest = n; rest > 0; rest = Math.floor((rest - 1) / 26))
+        out = String.fromCharCode(97 + ((rest - 1) % 26)) + out;
+      return symbol === "A" ? out.toUpperCase() : out;
+    }
+    return String(n);
+  };
+  const symbolOf = (numbering: string) => /[1aAiI]/.exec(numbering)?.[0] ?? "1";
+
+  /**
+   * Each page's number as Typst counts it (up by one a page, from where the document sets the page counter:
+   * html-compat's marks, `data-typstream-counter`), its numbering's counting symbol, and the header and footer it
+   * shows (those of its first block's page settings).
+   */
+  let pageInfo: { number: number; symbol: string; parts: string | null }[] = [];
+  /** What `el` starts: a page break (`.ts-pagebreak`, at the foot of the page before) or nothing to see starts what
+   * comes after it. */
+  const startOf = (el: Element): Element => {
+    let at: Element | null = el;
+    while (at && (at.matches(`.ts-pagebreak, .${SPACER}`) || !(at as HTMLElement).offsetHeight))
+      at = at.nextElementSibling;
+    return at ?? el;
+  };
+  const numberPages = () => {
+    const tops = [...Array(count).keys()].map(sheetTop);
+    const pageOf = (el: Element) => {
+      const top = inFlow(el.getBoundingClientRect(), origin()).top;
+      let p = 0;
+      while (p + 1 < tops.length && (tops[p + 1] as number) <= top + EPS) p++;
+      return p;
+    };
+    const resets = new Map<number, number>();
+    for (const el of flow.querySelectorAll<HTMLElement>("[data-typstream-counter]"))
+      resets.set(pageOf(startOf(el)), Number(el.dataset.typstreamCounter));
+    const first: (HTMLElement | undefined)[] = [];
+    const marks = [...flow.querySelectorAll<HTMLElement>("[data-typstream-page]")];
+    const at = marks.map((m) => {
+      const p = pageOf(startOf(m));
+      first[p] ??= m;
+      return p;
+    });
+    pageInfo = [];
+    let number = 1;
+    let governing: HTMLElement | undefined;
+    for (let p = 0; p < count; p++) {
+      number = resets.get(p) ?? (p === 0 ? 1 : number + 1);
+      governing = first[p] ?? marks.filter((_, i) => (at[i] as number) < p).pop() ?? governing;
+      pageInfo.push({
+        number,
+        symbol: symbolOf(governing?.dataset.typstreamNumbering ?? "1"),
+        parts: governing?.dataset.typstreamParts ?? null,
+      });
+    }
+  };
+
   /** Each page's header and footer, its number and the count written in. */
   const drawMarginals = () => {
     marginals.replaceChildren();
-    if (!parts.length || geometry.height === null) return;
-    const pick = (kind: string, first: boolean) =>
-      (parts.find(
+    if (geometry.height === null) return;
+    const pick = (kind: string, first: boolean, from: readonly Node[]) =>
+      (from.find(
         (n) =>
           n.nodeType === 1 &&
           (n as Element).classList.contains(kind) &&
@@ -246,6 +358,9 @@ export const createHtmlPages = (
     const [top, , bottom, left] = geometry.margin.map((m) => m * PX) as [number, number, number, number];
     const width = pageWidth() - left - geometry.margin[1] * PX;
     for (let i = 0; i < count; i++) {
+      const info = pageInfo[i];
+      const own = info?.parts && partsOf ? partsOf(info.parts) : parts;
+      if (!own.length) continue;
       for (const [kind, y, h, end] of [
         ["ts-page-header", sheetTop(i), top - geometry.ascent * PX, true],
         [
@@ -255,7 +370,7 @@ export const createHtmlPages = (
           false,
         ],
       ] as const) {
-        const part = pick(kind, i === 0);
+        const part = pick(kind, (info?.number ?? i + 1) === 1, own);
         if (!part) continue;
         // Its content in one box, at the end of the header's room or the start of the footer's.
         const el = doc.createElement("div");
@@ -265,7 +380,7 @@ export const createHtmlPages = (
         el.append(body);
         Object.assign(el.style, {
           position: "absolute",
-          left: `${left}px`,
+          left: `${left + binding(i)}px`,
           top: `${y}px`,
           width: `${width}px`,
           height: `${Math.max(0, h)}px`,
@@ -273,10 +388,14 @@ export const createHtmlPages = (
           flexDirection: "column",
           justifyContent: end ? "flex-end" : "flex-start",
         });
+        // html-compat's page number (3999), in the numbering's symbols, becomes this page's.
+        const n = info?.number ?? i + 1;
+        const symbols = [...new Set(["1", info?.symbol ?? "1"])];
         const walker = doc.createTreeWalker(el, 4);
         for (let t = walker.nextNode(); t; t = walker.nextNode()) {
           const text = t as Text;
-          text.data = text.data.replaceAll(PAGE_NUMBER, String(i + 1));
+          for (const symbol of symbols)
+            text.data = text.data.replaceAll(formatNumber(PAGE_NUMBER, symbol), formatNumber(n, symbol));
         }
         marginals.append(el);
       }
@@ -333,16 +452,18 @@ export const createHtmlPages = (
    * and the room before the next, the outermost wholly there. A block moves (`translate`, drawing only); inline
    * content, which can't, is wrapped in a span moved relative to its place.
    */
+  /** How far the text moves on page `p` (even pages, with inside and outside margins). */
+  const binding = (p: number) => (p % 2 === 1 ? (geometry.binding ?? 0) * PX : 0);
   const placeRegions = (starts: Node[]) => {
     const n = columns();
-    if (n < 2) return;
+    if (n < 2 && !geometry.binding) return;
     const step = columnWidth() + (geometry.gutter ?? 0) * PX;
     const range = doc.createRange();
     const index = (node: Node) => Array.prototype.indexOf.call((node.parentNode as Node).childNodes, node) as number;
     for (const [r, start] of starts.entries()) {
       const region = r + 1;
-      const dx = (region % n) * step;
-      const dy = (sheetOf(region) - region) * pitch();
+      const dx = (region % n) * step + binding(sheetOf(region));
+      const dy = n > 1 ? (sheetOf(region) - region) * pitch() : 0;
       if (!dx && !dy) continue;
       range.setStartBefore(start);
       const end = starts[r + 1];
@@ -375,7 +496,8 @@ export const createHtmlPages = (
           if (!range.intersectsNode(child)) continue;
           const i = index(child);
           const whole =
-            range.comparePoint(child.parentNode as Node, i) >= 0 && range.comparePoint(child.parentNode as Node, i + 1) <= 0;
+            range.comparePoint(child.parentNode as Node, i) >= 0 &&
+            range.comparePoint(child.parentNode as Node, i + 1) <= 0;
           if (whole) move(child);
           else walk(child);
         }
@@ -383,7 +505,7 @@ export const createHtmlPages = (
       walk(flow);
     }
     // The flow as tall as its pages: what was laid out further down shows moved up.
-    flow.style.height = `${count * pitch()}px`;
+    if (n > 1) flow.style.height = `${count * pitch()}px`;
   };
 
   /** A rectangle's top and bottom in the flow's own px. */
@@ -527,6 +649,25 @@ export const createHtmlPages = (
     return null;
   };
 
+  /**
+   * How far below its line's top a text's box is (flow px): the browser's box starts its rounded ascent above its
+   * baseline, which the baseline correction (`data-baseline`) moves to Typst's, 1.054em below the line's top.
+   */
+  const textDrop = (text: Text): number => {
+    const el = text.parentElement;
+    if (!el || !baseline || baseline === "exact" || !el.closest(".typstream-t") || el.closest(".ts-edges")) return 0;
+    const size = Number.parseFloat(view.getComputedStyle(el).fontSize);
+    const descent = 0.246 * size;
+    const borrow = root.dataset.baselineBorrow !== undefined && Math.round(descent) < descent ? 1 : 0;
+    return 1.054 * size - Math.round(1.054 * size) + borrow;
+  };
+  /** A text's box (`r`, a client rect of it) as its line's, in the flow. */
+  const textBox = (text: Text, r: DOMRect, o: number) => {
+    const box = inFlow(r, o);
+    const drop = textDrop(text);
+    return { top: box.top - drop, bottom: box.bottom - drop };
+  };
+
   /** The text nodes and inline atoms of an inline run, deep, with their boxes. */
   const boxes = (nodes: Node[], o: number, out: { top: number; bottom: number }[]): void => {
     const range = doc.createRange();
@@ -534,7 +675,7 @@ export const createHtmlPages = (
       if (node.nodeType === 3) {
         if (!(node as Text).data.trim()) continue;
         range.selectNodeContents(node);
-        for (const r of range.getClientRects()) if (r.height > 0) out.push(inFlow(r, o));
+        for (const r of range.getClientRects()) if (r.height > 0) out.push(textBox(node as Text, r, o));
       } else if (node.nodeType === 1) {
         const el = node as Element;
         if ((el as HTMLElement).classList?.contains(SPACER) || outOfFlow(el, view)) continue;
@@ -578,8 +719,10 @@ export const createHtmlPages = (
           else {
             range.setStart(start.text, start.offset);
             range.setEnd(start.text, start.offset + 1);
-            const r = range.getClientRects()[0] ?? (start.text.parentElement as Element).getBoundingClientRect();
-            return inFlow(r, now).top;
+            const r = range.getClientRects()[0];
+            return r
+              ? textBox(start.text, r, now).top
+              : inFlow((start.text.parentElement as Element).getBoundingClientRect(), now).top;
           }
         } else range.selectNode(start ?? first);
         const rects = [...range.getClientRects()].filter((r) => r.height > 0);
@@ -761,6 +904,7 @@ export const createHtmlPages = (
       run = [];
     };
     let force: boolean | "weak" | "column" = false;
+    let pageRun: string | null = null;
     const nodes = [...el.childNodes];
     for (const node of start ? nodes.slice(Math.max(0, nodes.indexOf(start as ChildNode))) : nodes) {
       if (node.nodeType === 3) {
@@ -795,6 +939,12 @@ export const createHtmlPages = (
           fr: child,
         });
         continue;
+      }
+      // A page's settings changing (`set page(..)`): Typst starts a page with them.
+      if (el === flow && child.dataset.typstreamPage !== undefined) {
+        const key = runKey(child);
+        if (pageRun !== null && key !== pageRun && !force) force = true;
+        pageRun = key;
       }
       // A column break between the page's columns (`set page(columns: n)`).
       if (el === flow && columns() > 1 && child.classList.contains("ts-colbreak")) {
@@ -1026,7 +1176,7 @@ export const createHtmlPages = (
       box.className = "typstream-footnotes";
       Object.assign(box.style, {
         position: "absolute",
-        left: `${left}px`,
+        left: `${left + binding(sheetOf(page))}px`,
         width: `${width}px`,
         top: `${contentEnd(page) + em()}px`,
       });
@@ -1064,35 +1214,46 @@ export const createHtmlPages = (
       loading = true;
       return;
     }
-    const probe = doc.createElement("div");
-    probe.style.cssText =
-      "position:absolute;visibility:hidden;line-height:0;font-family:typstream-libertinus-serif;font-size:8pt";
-    // (Built, not parsed: a page may require Trusted Types for innerHTML.)
-    const text = doc.createElement("span");
-    text.style.lineHeight = "1.3";
-    const mark = doc.createElement("span");
-    mark.style.cssText = "display:inline-block;width:0;height:0";
-    text.append("Hx", mark);
-    probe.append(text);
-    underlay.append(probe);
-    const top = probe.getBoundingClientRect().top;
-    const at = (mark.getBoundingClientRect().bottom - top) / scale;
-    probe.remove();
-    const size = (8 * 4) / 3;
-    const [ascent, descent] = [Math.round(1.054 * size), Math.round(0.246 * size)];
-    const half = (1.3 * size - ascent - descent) / 2;
-    const candidates: [string, number][] = [
-      ["floor", Math.floor(half) + ascent],
-      ["round", half + ascent],
-    ];
-    const found = candidates.find(([, v]) => Math.abs(v - at) < 0.05 && Math.abs(v - 1.054 * size) > 0.05);
-    baseline = found ? found[0] : "exact";
+    /** Where the baseline of a line of text `pt` big is, from its top. */
+    const measure = (pt: number) => {
+      const probe = doc.createElement("div");
+      probe.style.cssText = `position:absolute;visibility:hidden;line-height:0;font-family:typstream-libertinus-serif;font-size:${pt}pt`;
+      // (Built, not parsed: a page may require Trusted Types for innerHTML.)
+      const text = doc.createElement("span");
+      text.style.lineHeight = "1.3";
+      const mark = doc.createElement("span");
+      mark.style.cssText = "display:inline-block;width:0;height:0";
+      text.append("Hx", mark);
+      probe.append(text);
+      underlay.append(probe);
+      const top = probe.getBoundingClientRect().top;
+      const at = (mark.getBoundingClientRect().bottom - top) / scale;
+      probe.remove();
+      return at;
+    };
+    const expect = (rule: string, pt: number) => {
+      const size = (pt * 4) / 3;
+      const [ascent, descent] = [Math.round(1.054 * size), Math.round(0.246 * size)];
+      const half = (1.3 * size - ascent - descent) / 2;
+      return rule === "floor" ? Math.floor(half) + ascent : rule === "round" ? half + ascent : 1.054 * size;
+    };
+    const at = measure(8);
+    const found = ["floor", "round"].find(
+      (rule) => Math.abs(expect(rule, 8) - at) < 0.05 && Math.abs(expect(rule, 8) - expect("exact", 8)) > 0.05,
+    );
+    baseline = found ?? "exact";
+    // Chrome on Linux rounds a descent that it rounds down up instead, a pixel taken from the ascent (Blink's
+    // AscentDescentWithHacks): at 13.2pt (17.6px) the descent, 4.33px, would be 4.
+    if (baseline !== "exact" && Math.abs(expect(baseline, 13.2) - 1 - measure(13.2)) < 0.05)
+      root.dataset.baselineBorrow = "";
+    else delete root.dataset.baselineBorrow;
     root.dataset.baseline = baseline;
   };
 
   const paginate = (from: Node | null) => {
     place();
     findBaseline();
+    collapseSpacing(flow, view);
     fillLines(flow);
     // Footnotes: Typst's endnotes out of sight, their entries measured as the pages will show them.
     const endnotes = flow.querySelector<HTMLElement>(`:scope > ${ENDNOTES}`);
@@ -1118,7 +1279,16 @@ export const createHtmlPages = (
       probe.remove();
     }
     const key = JSON.stringify([geometry, pageWidth(), scale]);
-    if (key !== laidOut || geometry.height === null || shifts.length || entries.size || splits.size || columns() > 1)
+    if (
+      key !== laidOut ||
+      geometry.height === null ||
+      shifts.length ||
+      entries.size ||
+      splits.size ||
+      columns() > 1 ||
+      geometry.binding ||
+      runKeys().size > 1
+    )
       from = null;
     laidOut = key;
     if (geometry.height === null) {
@@ -1276,6 +1446,7 @@ export const createHtmlPages = (
         .map((g) => g.node),
     );
     drawSplits();
+    numberPages();
     drawMarginals();
     drawNotes();
     fillLines(marginals);
@@ -1298,10 +1469,11 @@ export const createHtmlPages = (
         ? flow.querySelector(`[id="${CSS.escape(decodeURIComponent(href.slice(1)))}"]`)
         : null;
       if (!target) continue;
-      const top = inFlow(target.getBoundingClientRect(), origin()).top;
+      const top = inFlow(startOf(target).getBoundingClientRect(), origin()).top;
       let page = 0;
       while (page + 1 < tops.length && (tops[page + 1] as number) <= top + EPS) page++;
-      span.textContent = String(page + 1);
+      const info = pageInfo[page];
+      span.textContent = info ? formatNumber(info.number, info.symbol) : String(page + 1);
     }
   };
 

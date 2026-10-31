@@ -36,8 +36,18 @@ export interface TypstFont {
   style?: "normal" | "italic";
 }
 
-/** Fonts registered per document, by URL. */
-const typstFonts = new WeakMap<Document, Set<string>>();
+/** Fonts registered per document, by URL, with their faces. */
+const typstFonts = new WeakMap<Document, Map<string, { font: TypstFont; face: FontFace }>>();
+
+/** Typst's fonts registered in `doc` that its text has used (loaded): what a standalone file of it needs. */
+export const usedTypstFonts = (doc: Document): TypstFont[] =>
+  [...(typstFonts.get(doc)?.values() ?? [])].filter(({ face }) => face.status === "loaded").map(({ font }) => font);
+
+/** CSS for a font file as `registerTypstFonts` registers it, from `src` (a URL, `data:` included). */
+export const typstFontCss = (font: TypstFont, src: string): string =>
+  `@font-face {\n  font-family: ${familyName(font.family)};\n  src: url(${JSON.stringify(src)});\n` +
+  `  font-weight: ${font.weight ?? 400};\n  font-style: ${font.style ?? "normal"};\n  ascent-override: ` +
+  `${PROFILE_METRICS.ascentOverride};\n  descent-override: ${PROFILE_METRICS.descentOverride};\n  line-gap-override: 0%;\n}\n`;
 
 /**
  * Registers Typst's fonts as web fonts in `doc`, so the HTML target sets its text as the pages do: each under
@@ -50,17 +60,17 @@ const typstFonts = new WeakMap<Document, Set<string>>();
 export const registerTypstFonts = (fonts: readonly TypstFont[], doc: Document = document): void => {
   const view = doc.defaultView as (Window & typeof globalThis) | null;
   if (!view) return;
-  const done = typstFonts.get(doc) ?? new Set<string>();
+  const done = typstFonts.get(doc) ?? new Map();
   typstFonts.set(doc, done);
   for (const font of fonts) {
     const url = String(font.url);
     if (done.has(url)) continue;
-    done.add(url);
     const face = new view.FontFace(familyName(font.family), `url(${JSON.stringify(url)})`, {
       weight: String(font.weight ?? 400),
       style: font.style ?? "normal",
       ...PROFILE_METRICS,
     });
+    done.set(url, { font, face });
     doc.fonts.add(face);
   }
 };

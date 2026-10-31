@@ -19,6 +19,16 @@ export interface SplitBlock {
   src: number | null;
   /** The anchor is right before it: it starts a block of the source (after a blank line, or a heading). */
   start?: boolean;
+  /** The page it is on, as html-compat writes it on the anchor: geometry, page counter, numbering, header and footer. */
+  page?: SplitPage;
+}
+
+/** A block's page settings (html-compat's anchor attributes and content), and the page counter set before it. */
+export interface SplitPage {
+  geometry?: string;
+  numbering?: string;
+  parts?: string;
+  counter?: number;
 }
 
 export interface Split {
@@ -74,7 +84,10 @@ const WRAPPERS = new Set(["div", "section", "article", "main"]);
  * An anchor. html-compat adds the page it is on (`data-page`) and the page's header and footer inside it, which the
  * renderer reads from the HTML itself.
  */
-const ANCHOR = /^<typstream-anchor data-src="(\d+)"(?: data-page="[^"]*")?>[\s\S]*<\/typstream-anchor>$/;
+const ANCHOR =
+  /^<typstream-anchor data-src="(\d+)"(?: data-page="([^"]*)")?(?: data-numbering(?:="([^"]*)")?)?>([\s\S]*)<\/typstream-anchor>$/;
+/** html-compat's mark where a document sets the page counter, and the value. */
+const COUNTER = /^<typstream-counter value="(-?\d+)"><\/typstream-counter>$/;
 /** Typst writes footnotes after the last block; no anchor belongs to them. */
 const ENDNOTES = '<section role="doc-endnotes"';
 
@@ -196,19 +209,35 @@ const collect = (
 ): void => {
   let prev = from;
   let start = false;
+  let page: SplitPage | undefined;
   for (const item of items) {
     if (item.tag === "typstream-anchor") {
       const anchor = ANCHOR.exec(html.slice(item.start, item.end));
       if (anchor) {
         src = Number(anchor[1]);
         start = true;
+        if (anchor[2] !== undefined)
+          page = { ...page, geometry: anchor[2], numbering: anchor[3] ?? "", parts: anchor[4] ?? "" };
+        continue;
+      }
+    }
+    if (item.tag === "typstream-counter") {
+      const counter = COUNTER.exec(html.slice(item.start, item.end));
+      if (counter) {
+        page = { ...page, counter: Number(counter[1]) };
         continue;
       }
     }
     const segment = copy(html.slice(prev, item.end));
     const own = segment.slice(item.start - prev);
-    blocks.push({ html: own, src: own.startsWith(ENDNOTES) ? null : src, ...(start ? { start } : {}) });
+    blocks.push({
+      html: own,
+      src: own.startsWith(ENDNOTES) ? null : src,
+      ...(start ? { start } : {}),
+      ...(page ? { page } : {}),
+    });
     start = false;
+    page = undefined;
     reuse.segments.push(item.tag === null ? null : segment);
     reuse.srcAfter.push(src);
     prev = item.end;
@@ -237,6 +266,7 @@ const full = (html: string, from: number, to: number): Split => {
     let anchored = false;
     let inside: number | null = src;
     for (const item of items) {
+      if (item.tag === "typstream-counter" && COUNTER.test(html.slice(item.start, item.end))) continue;
       const anchor = item.tag === "typstream-anchor" ? ANCHOR.exec(html.slice(item.start, item.end)) : null;
       if (anchor) {
         inside = Number(anchor[1]);

@@ -678,6 +678,8 @@
   }
   let left = pick("left", sides.at("inside", default: x), "x")
   let right = pick("right", sides.at("outside", default: x), "x")
+  // Inside and outside margins swap on even pages (a left-to-right binding): how far the text moves there.
+  let binding = if "inside" in sides or "outside" in sides { right - left } else { 0pt }
   let fill = if page.fill in (auto, none) { "none" } else { _paint(page.fill, gradients: false) }
   let pt(l) = _num(l.pt())
   let (top, bottom) = (pick("top", y, "y"), pick("bottom", y, "y"))
@@ -688,20 +690,26 @@
   (
     pt(size.x), if h == auto { "auto" } else { pt(size.y) }, pt(top), pt(right), pt(bottom), pt(left), fill,
     pt(rel(page.header-ascent, top)), pt(rel(page.footer-descent, bottom)), str(page.columns), pt(gutter),
+    pt(binding),
   ).join(" ")
 }
 
 /// What stands for the page number in a page's header and footer: the renderer writes each page's own in its place.
-#let _page-number = 7777
+/// Under 4000, which Typst writes in Roman numerals without overlines.
+#let _page-number = 3999
 
 /// The page's header and footer, for the renderer to put on each page (typst-layout's pages/run.rs): as on the first
 /// page and as on the others, the page number `_page-number` there. `none` when the page has neither. Needs context.
 #let _page-parts() = {
   let marginal = if page.numbering == none { none } else {
     let both = type(page.numbering) != str or page.numbering.matches(regex("[1aAiI]")).len() >= 2
-    let display = counter(page).display(page.numbering, both: both)
-    let x = page.number-align.x
-    if x == none { display } else { align(x, display) }
+    // In a context of its own: after `part`'s counter update (a context's `display` reads the counter where it is).
+    // The `align` inside it, so it aligns the number's text (a paragraph), not a context.
+    let (numbering, x) = (page.numbering, page.number-align.x)
+    context {
+      let display = counter(page).display(numbering, both: both)
+      if x == none { display } else { align(x, display) }
+    }
   }
   let top = page.number-align.y == top
   let header = if page.header == auto { if top { marginal } } else { page.header }
@@ -711,6 +719,9 @@
     counter(page).update(n)
     _el("div", class, body)
   }
+  // Marked (a hyphenation cost no document sets) so the page counter's updates here aren't taken for the
+  // document's (the `counter-update` rule).
+  set text(costs: (hyphenation: 100.0004%))
   {
     part("ts-page-header ts-first", header, 1)
     part("ts-page-header", header, _page-number)
@@ -733,9 +744,20 @@
   let html-only(rule) = it => if target() == "html" { context rule(it) } else { it }
 
   // The source anchors the engine writes before each top-level block (PLAN §10.2) carry the page they are on.
+  // Each block's page: its geometry, numbering, header and footer.
   show html.elem.where(tag: "typstream-anchor"): it => {
     if "data-page" in it.attrs { return it }
-    context html.elem("typstream-anchor", attrs: it.attrs + (data-page: _page-geometry()), _page-parts())
+    context html.elem("typstream-anchor", attrs: it.attrs + (
+      data-page: _page-geometry(),
+      data-numbering: if page.numbering == none { "" } else if type(page.numbering) == str { page.numbering } else { "1" },
+    ), _page-parts())
+  }
+  // Where the document sets the page counter (`counter(page).update(..)`), its value then: the renderer's pages
+  // count on from it.
+  show counter(page).update(0).func(): it => {
+    if target() != "html" or text.costs.hyphenation == 100.0004% or it.fields().at("key", default: none) != page { return it }
+    it
+    context html.elem("typstream-counter", attrs: (value: str(counter(page).get().first())))
   }
 
   // A paragraph's empty lines (`_empty-lines`) need its body in a span (`.ts-par`), whose own paragraph, this rule's,
@@ -1118,7 +1140,10 @@
   doc
   // The page count a header or footer shows (`counter(page).final()`): the renderer's, which it gives the document
   // as an input once it has laid the pages out.
-  counter(page).update(int(sys.inputs.at("typstream-page-count", default: "1")))
+  {
+    set text(costs: (hyphenation: 100.0004%))
+    counter(page).update(int(sys.inputs.at("typstream-page-count", default: "1")))
+  }
 }
 
 /// `layout` in HTML calls `func` with `compat-size` (there is no page to measure), so its
