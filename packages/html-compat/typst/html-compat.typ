@@ -992,7 +992,8 @@
       font-size: _size(),
     )
     html.elem("dl", attrs: (class: "ts-terms" + if it.tight { " ts-tight" }, style: props), for child in it.children {
-      html.elem("div", attrs: (class: "ts-term"), html.elem("dt", strong(child.term)) + it.separator + html.elem("dd", child.description))
+      // The separator in the term: a `dl`'s groups hold only terms and descriptions.
+      html.elem("div", attrs: (class: "ts-term"), html.elem("dt", strong(child.term) + it.separator) + html.elem("dd", child.description))
     })
   })
 

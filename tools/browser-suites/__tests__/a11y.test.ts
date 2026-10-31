@@ -83,6 +83,11 @@ const KNOWN: { rule: string; where: (el: Element) => boolean; why: string }[] = 
     where: (el) => !!el.closest("pre"),
     why: "Typst's syntax highlighting colors (its default theme, written inline) on the document's code background",
   },
+  {
+    rule: "color-contrast",
+    where: (el) => !!el.closest('.typstream-pages [style*="color"]'),
+    why: "a colour the document gives its text (html-compat writes it), the same on the paged view's pages",
+  },
 ];
 
 const audit = async (el: HTMLElement): Promise<string[]> => {
@@ -229,9 +234,11 @@ describe(`accessibility in ${browser}`, () => {
         if (equations && el.querySelectorAll("math").length === 0) at("no MathML for its equations");
         for (const m of el.querySelectorAll("math"))
           if (m.namespaceURI !== "http://www.w3.org/1998/Math/MathML") at("<math> outside the MathML namespace");
-        // Every `table.header` is a row of header cells.
+        // Every `table.header` is a row of header cells (html-compat's tables are ARIA tables).
         const headers = entry.source.match(/table\.header\(/g)?.length ?? 0;
-        const withTh = [...el.querySelectorAll("table")].filter((t) => t.querySelector("th")).length;
+        const withTh = [...el.querySelectorAll('table, [role="table"]')].filter((t) =>
+          t.querySelector('th, [role="columnheader"]'),
+        ).length;
         if (withTh < headers) at(`${headers} table headers in the source, ${withTh} tables with <th>`);
         done();
       }

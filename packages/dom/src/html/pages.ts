@@ -421,12 +421,14 @@ export const createHtmlPages = (
       const firstTop = (now: number): number => {
         const range = doc.createRange();
         if (start && "text" in start) {
-          range.setStart(start.text, start.offset);
-          range.setEnd(start.text, start.offset + 1);
-          const r = range.getClientRects()[0] ?? (start.text.parentElement as Element).getBoundingClientRect();
-          return inFlow(r, now).top;
-        }
-        range.selectNode((start as Element | null) ?? first);
+          if (start.offset >= start.text.length) range.selectNode(start.text);
+          else {
+            range.setStart(start.text, start.offset);
+            range.setEnd(start.text, start.offset + 1);
+            const r = range.getClientRects()[0] ?? (start.text.parentElement as Element).getBoundingClientRect();
+            return inFlow(r, now).top;
+          }
+        } else range.selectNode(start ?? first);
         const rects = [...range.getClientRects()].filter((r) => r.height > 0);
         return rects.length ? inFlow(rects[0] as DOMRect, now).top : line.top;
       };
@@ -440,6 +442,9 @@ export const createHtmlPages = (
         gap: () => {
           if (start && "text" in start) {
             const rest = start.offset > 0 ? start.text.splitText(start.offset) : start.text;
+            // The line starts the text after the split now.
+            start.text = rest;
+            start.offset = 0;
             return spacerBefore(rest, false);
           }
           // A paragraph's first line: room before the paragraph (and what it starts), where its own indent stays.
