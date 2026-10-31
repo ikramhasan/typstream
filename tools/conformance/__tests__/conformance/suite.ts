@@ -154,6 +154,7 @@ Inline \`raw text\` in a sentence.
     },
     {
       name: "columns",
+      htmlGap: "page columns (`set page(columns: 2)`): the HTML target's pages have one",
       source: `#set page(columns: 2)
 = Two columns
 #lorem(150)

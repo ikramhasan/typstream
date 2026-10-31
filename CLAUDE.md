@@ -54,7 +54,7 @@ tools/docx-check  DOCX exports against Typst's PDF (#131): the Latin corpus thro
                   ONLYOFFICE's) lines and page starts compared with the PDF's, pictures pixel by pixel, rules and borders
                   (tools/conformance's modules), Microsoft's Open XML validator (validator/).
 tools/conformance The plugin conformance suite (#135): a plugin's examples, its paged view against Typst's PDF (pixels, in a
-                  browser) and its DOCX export against the PDF (validator, LibreOffice's lines and where they are,
+                  browser), its HTML target against the paged view (lines) and its DOCX export against the PDF (validator, LibreOffice's lines and where they are,
                   pictures, rules, words' colours). edu, mindmap and universe run it from `__tests__/conformance/`
                   (`pnpm test:paged`, `test:docx`); they import it by path (a dependency would make a turbo cycle
                   through the engine's tests). Its own `__tests__/conformance/` is Typst's elements without a plugin.
@@ -197,7 +197,8 @@ rates and classes, `node src/promote.mjs <label>` copies recordings into `corpus
 documents; `loadEditAnswers()`).
 
 Plugin conformance (`tools/conformance`, README there, #135): in edu, mindmap and universe, `pnpm test:paged` runs
-their examples' pages against the PDF in Chromium (`BROWSERS=` for others), `pnpm test:docx` their DOCX exports against
+their examples' pages against the PDF, and their HTML target's lines against the pages', in Chromium (`BROWSERS=` for
+others), `pnpm test:docx` their DOCX exports against
 the PDF in LibreOffice (needs `@typstream/node` built, poppler, and the validator where built; `TYPSTREAM_DOCX_ENGINE=
 onlyoffice` for ONLYOFFICE). CI runs the paged half in the `Engine (chromium)` job and the DOCX half in the DOCX job.
 A plugin component Word can't draw the same fails there: change the component (#130), not the suite.

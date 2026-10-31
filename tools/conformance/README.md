@@ -1,13 +1,13 @@
 # Plugin conformance (#135)
 
 A document looks the same in the paged view, in Typst's PDF and in the DOCX export, whatever plugin it is written with
-(#118). Plugins prove it with this suite, run on their own examples: edu's catalogue entries, template specs and
+(#118), and the same in the HTML target as on the paged view. Plugins prove it with this suite, run on their own examples: edu's catalogue entries, template specs and
 prompt examples (answers hidden and shown), mindmap's examples, and a few documents using Universe's packages. The
 plugin guide (`apps/website/content/docs/guides/writing-a-plugin.mdx`, "Matching the PDF and Word") says what that
 asks of a plugin's Typst and how to add a suite.
 
 ```bash
-pnpm --filter @typstream/edu test:paged        # pages against the PDF, in Chromium (BROWSERS=firefox, webkit)
+pnpm --filter @typstream/edu test:paged        # pages against the PDF, the HTML target against the pages, in Chromium (BROWSERS=firefox, webkit)
 pnpm --filter @typstream/edu test:docx         # DOCX against the PDF, in LibreOffice (soffice and poppler on PATH)
 TYPSTREAM_DOCX_ENGINE=onlyoffice pnpm ...      # in ONLYOFFICE instead (Docker, onlyoffice/documentserver)
 ```
@@ -26,6 +26,13 @@ per set of `sys.inputs`).
   the mount's `exportPdf()`: the same pages, as big, and no more than 3 differing pixels touching. A pixel differs when
   no pixel of the other image within one device pixel is close to it in colour. tools/browser-suites' PDF raster suite
   (#119) runs the same comparison on the edu corpus.
+- **HTML target = paged view** (`src/html.ts`, in the `paged` project): each example mounted both ways in the document
+  panel (`fit-width`), the HTML target with html-compat and Typst's fonts as `<Typstream>` mounts it. Every line of the
+  pages' text (the paged artifact's runs) found in the HTML target's pages (each character's box, its baseline 0.246em
+  above the box's bottom) is on the same page, within 1 pt of where Typst set it, and at least 60% of them are found.
+  Text the HTML draws as a picture (equations, drawings) isn't compared, nor a line's start when Typst's run begins
+  with spaces (code's indentation). An example whose look the HTML target can't match yet names why in `htmlGap`, and
+  the check skips it.
 - **DOCX = PDF** (`src/docx.mjs`, vitest in Node): each example healed in final mode and exported by
   `@typstream/node` to PDF and DOCX (the plugins' preambles, files and packages, as an engine mounts them), the DOCX
   laid out by LibreOffice, then (`src/compare.mjs`):

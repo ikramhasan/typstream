@@ -20,6 +20,7 @@ export const conformanceProjects = (alias) => {
       ["core", "heal", "engine", "docx", "dom"].map((n) => [`@typstream/${n}`, `${root}${n}/src/index.ts`]),
     ),
     "@typstream/conformance/paged": `${suite}paged.ts`,
+    "@typstream/conformance/html": `${suite}html.ts`,
     "@typstream/conformance/docx": `${suite}docx.mjs`,
     "@typstream/conformance": `${suite}suite.ts`,
     ...alias,
