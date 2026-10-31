@@ -189,6 +189,35 @@ const FONTS: TypstFont[] = [
 }));
 
 describe(`HTML renderer's pages in ${browser}`, () => {
+  it("repeats a table's header on each page it goes on to, as Typst does", async () => {
+    registerTypstFonts(FONTS);
+    await document.fonts.load("11pt typstream-libertinus-serif");
+    await document.fonts.load("bold 11pt typstream-libertinus-serif");
+    const rows = Array.from({ length: 60 }, (_, i) => `[${i + 1}], [Row ${i + 1}],`).join("\n");
+    const source = `#table(columns: (auto, 1fr), table.header([*No.*], [*Name*]),\n${rows}\n)`;
+    const doc = openHtml(engine);
+    const html = await compileHtml(doc, source);
+    doc.dispose();
+    const renderer = mount();
+    renderer.root.style.width = "800px";
+    renderer.update(html);
+    await laidOut();
+    const sheets = Array.from(renderer.root.querySelectorAll<HTMLElement>(".typstream-page"));
+    expect(sheets.length).toBe(2);
+    // The copies (hidden from screen readers) start the second page, at its text's top; the row after them follows.
+    const copies = Array.from(renderer.root.querySelectorAll<HTMLElement>(".ts-head[aria-hidden]"));
+    expect(copies.map((c) => c.textContent)).toEqual(["No.", "Name"]);
+    const second = (sheets[1] as HTMLElement).getBoundingClientRect();
+    const top = (copies[0] as HTMLElement).getBoundingClientRect().top;
+    expect(top).toBeGreaterThan(second.top);
+    expect(top).toBeLessThan(second.top + 100);
+    const next = Array.from(renderer.root.querySelectorAll(".ts-cell")).find(
+      (c) => !c.matches(".ts-head") && c.getBoundingClientRect().top > second.top,
+    );
+    expect(next?.getBoundingClientRect().top).toBeCloseTo((copies[0] as HTMLElement).getBoundingClientRect().bottom, 0);
+    unmount(renderer);
+  });
+
   it("breaks a document across pages where Typst breaks it", async () => {
     registerTypstFonts(FONTS);
     await document.fonts.load("11pt typstream-libertinus-serif");

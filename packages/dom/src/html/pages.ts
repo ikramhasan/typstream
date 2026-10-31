@@ -478,6 +478,54 @@ export const createHtmlPages = (
   };
 
   /** The units of a grid's rows; a row of a table, or of a block that doesn't break, is one. */
+  /**
+   * Room above a table's row that starts a page, with its header repeated in it as Typst repeats a `table.header`:
+   * copies of the header's cells (`aria-hidden`), placed in the row's track above it.
+   */
+  const headerGap = (cells: HTMLElement[], header: HTMLElement[], repeat: { height: number }): Gap => {
+    const tops = header.map((c) => c.getBoundingClientRect().top);
+    const top = Math.min(...tops);
+    const height = (Math.max(...header.map((c) => c.getBoundingClientRect().bottom)) - top) / scale;
+    const row = view.getComputedStyle(cells[0] as HTMLElement).gridRowStart;
+    let copies: HTMLElement[] = [];
+    const clear = () => {
+      for (const c of copies) c.remove();
+      copies = [];
+    };
+    return {
+      node: cells[0] as Node,
+      page: 0,
+      set: (px) => {
+        const room = Math.max(0, px);
+        repeat.height = height;
+        for (const c of cells) c.style.marginTop = `${room + height}px`;
+        clear();
+        copies = header.map((cell, i) => {
+          const copy = cell.cloneNode(true) as HTMLElement;
+          copy.setAttribute("aria-hidden", "true");
+          copy.removeAttribute("role");
+          for (const el of [copy, ...copy.querySelectorAll("[id]")]) el.removeAttribute("id");
+          Object.assign(copy.style, {
+            position: "absolute",
+            gridRow: row,
+            top: `${room + ((tops[i] as number) - top) / scale}px`,
+            left: "0",
+            right: "0",
+            height: `${cell.offsetHeight}px`,
+            margin: "0",
+          });
+          (cell.parentNode as Node).appendChild(copy);
+          return copy;
+        });
+      },
+      remove: () => {
+        repeat.height = 0;
+        for (const c of cells) c.style.marginTop = "";
+        clear();
+      },
+    };
+  };
+
   const gridRows = (grid: Element, o: number, out: Unit[]): void => {
     const cells = [...grid.querySelectorAll<HTMLElement>(":scope > .ts-cell, :scope > .ts-row > .ts-cell")];
     const rows = new Map<number, HTMLElement[]>();
@@ -486,14 +534,35 @@ export const createHtmlPages = (
       rows.set(row, [...(rows.get(row) ?? []), cell]);
     }
     const breakable = !grid.classList.contains("ts-table") && !grid.closest(".ts-whole");
-    for (const row of [...rows.keys()].sort((a, b) => a - b)) {
+    // A table's header: its first rows, all header cells (html-compat's `.ts-head`). It goes with the first row after
+    // it to the next page, and comes again above a row that starts one.
+    const order = [...rows.keys()].sort((a, b) => a - b);
+    let heads = 0;
+    while (
+      heads < order.length &&
+      (rows.get(order[heads] as number) as HTMLElement[]).every((c) => c.matches(".ts-head"))
+    )
+      heads++;
+    if (heads === order.length) heads = 0;
+    const header = order.slice(0, heads).flatMap((r) => rows.get(r) as HTMLElement[]);
+    if (header.length) (grid as HTMLElement).style.position ||= "relative";
+    for (const [index, row] of order.entries()) {
       const these = rows.get(row) as HTMLElement[];
+      // While the header is repeated above it, the row starts at the copies' top.
+      const repeat = { height: 0 };
       const measure = () => {
         const now = origin();
         const rects = these.map((c) => inFlow(c.getBoundingClientRect(), now));
-        return { top: Math.min(...rects.map((r) => r.top)), bottom: Math.max(...rects.map((r) => r.bottom)) };
+        return {
+          top: Math.min(...rects.map((r) => r.top)) - repeat.height,
+          bottom: Math.max(...rects.map((r) => r.bottom)),
+        };
       };
-      const first: Unit = { measure, gap: () => rowGap(these) };
+      const first: Unit = {
+        measure,
+        gap: () => (index > heads && heads > 0 ? headerGap(these, header, repeat) : rowGap(these)),
+        ...(index < heads ? { sticky: grid } : {}),
+      };
       if (!breakable) {
         out.push(first);
         continue;
