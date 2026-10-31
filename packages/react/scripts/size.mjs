@@ -19,9 +19,9 @@ const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
 // range's end, 0.16 KB) left it 148 bytes over; 20.5 KB until standalone exports' math font with its own media type
 // (#118's TrueType fonts: `fontType`, read from the file's first bytes) left it 2 bytes over; 20.6 KB until islands
 // on pages (#28: their layer over each page, covered text hidden, 0.55 KB) made it 21.15 KB; 21.2 KB until the HTML
-// target was laid out on pages as the paged view's (dom's pages, inline-run passes and Typst's fonts, 7.1 KB) made
-// it 28.3 KB.
-const BUDGET = 28.4 * 1024;
+// target was laid out on pages as the paged view's (dom's pages, inline-run passes and Typst's fonts, 8.6 KB) made
+// it 29.8 KB.
+const BUDGET = 29.9 * 1024;
 
 const result = await build({
   entryPoints: ["src/index.ts"],
