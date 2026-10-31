@@ -209,12 +209,16 @@ export const createHtmlPages = (
       flow.style.setProperty("--typstream-host-line", host.lineHeight);
       flow.style.setProperty("--typstream-host-color", host.color);
     }
+    // Where the first sheet is in the root, to the fraction of a pixel (offsetTop rounds it).
+    const box = root.getBoundingClientRect();
+    const sheetBox = first.getBoundingClientRect();
+    const at = { left: sheetBox.left - box.left - root.clientLeft, top: sheetBox.top - box.top - root.clientTop };
     for (const el of [flow, marginals, underlay])
       Object.assign(el.style, {
         width: `${width}px`,
         padding: `${top}px ${right}px ${bottom}px ${left}px`,
-        left: `${first.offsetLeft}px`,
-        top: `${first.offsetTop}px`,
+        left: `${at.left}px`,
+        top: `${at.top}px`,
         transform: scale === 1 ? "" : `scale(${scale})`,
       });
   };
@@ -271,7 +275,8 @@ export const createHtmlPages = (
   };
 
   /** Top of sheet `i` in the flow's own px. */
-  const sheetTop = (i: number): number => (sheet(i).offsetTop - sheet(0).offsetTop) / scale;
+  const sheetTop = (i: number): number =>
+    (sheet(i).getBoundingClientRect().top - sheet(0).getBoundingClientRect().top) / scale;
   const pageHeight = () => (geometry.height ?? 0) * PX;
   const contentTop = (i: number) => sheetTop(i) + geometry.margin[0] * PX;
   const contentBottom = (i: number) => sheetTop(i) + pageHeight() - geometry.margin[2] * PX;
@@ -926,8 +931,51 @@ export const createHtmlPages = (
     }
   };
 
+  /**
+   * Where the browser puts text's baseline in a line 1.3em tall, which Typst puts 1.054em below its top: WebKit
+   * there, Firefox after rounding the font's ascent and descent to pixels (`round`), Chromium after flooring the
+   * half-leading too (`floor`). Found once, on the engine's font, and written on the root (`data-baseline`): the
+   * pages' CSS moves text by the difference, which `round()` computes (only how it is drawn, not its line).
+   */
+  let baseline = "";
+  let loading = false;
+  const findBaseline = () => {
+    if (baseline) return;
+    const font = "8pt typstream-libertinus-serif";
+    if (!doc.fonts.check(font)) {
+      // Loaded for this (a document may have no text in it), then laid out again.
+      if (!loading)
+        doc.fonts.load(font).then(
+          () => layoutSoon(),
+          () => {},
+        );
+      loading = true;
+      return;
+    }
+    const probe = doc.createElement("div");
+    probe.style.cssText =
+      "position:absolute;visibility:hidden;line-height:0;font-family:typstream-libertinus-serif;font-size:8pt";
+    probe.innerHTML =
+      '<span style="line-height:1.3">Hx<span style="display:inline-block;width:0;height:0"></span></span>';
+    underlay.append(probe);
+    const top = probe.getBoundingClientRect().top;
+    const at = ((probe.querySelector("span span") as Element).getBoundingClientRect().bottom - top) / scale;
+    probe.remove();
+    const size = (8 * 4) / 3;
+    const [ascent, descent] = [Math.round(1.054 * size), Math.round(0.246 * size)];
+    const half = (1.3 * size - ascent - descent) / 2;
+    const candidates: [string, number][] = [
+      ["floor", Math.floor(half) + ascent],
+      ["round", half + ascent],
+    ];
+    const found = candidates.find(([, v]) => Math.abs(v - at) < 0.05 && Math.abs(v - 1.054 * size) > 0.05);
+    baseline = found ? found[0] : "exact";
+    root.dataset.baseline = baseline;
+  };
+
   const paginate = (from: Node | null) => {
     place();
+    findBaseline();
     fillLines(flow);
     // Footnotes: Typst's endnotes out of sight, their entries measured as the pages will show them.
     const endnotes = flow.querySelector<HTMLElement>(`:scope > ${ENDNOTES}`);
@@ -1073,7 +1121,9 @@ export const createHtmlPages = (
       gap.set(1);
       ({ top, bottom } = moved.measure());
       // Room before a block that the unit opens: the block (its inset, its stroke) starts the page, not its line.
-      const opened = (gap.node as Element).classList?.contains(SPACER) ? (gap.node as Element).nextElementSibling : null;
+      const opened = (gap.node as Element).classList?.contains(SPACER)
+        ? (gap.node as Element).nextElementSibling
+        : null;
       if (opened) top = inFlow(opened.getBoundingClientRect(), origin()).top;
       // The boxes this breaks (begun on a page before): their pieces here start with their top insets, and the
       // pieces before end with their bottom insets after what is above the break.

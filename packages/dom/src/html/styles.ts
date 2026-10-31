@@ -138,6 +138,26 @@ export const htmlRendererCss: string = `${THEME_CSS}
 :where(.typstream-pages .typstream-t) {
   line-height: 1.3;
 }
+:where(.typstream-pages[data-baseline=round]) :is(.typstream-t, .ts-math) {
+  --ts-x: calc(1.054em - round(1.054em, 1px) - (1.3em - round(1.054em, 1px) - round(0.246em, 1px)) / 2);
+}
+:where(.typstream-pages[data-baseline=floor]) :is(.typstream-t, .ts-math) {
+  --ts-x: calc(1.054em - round(1.054em, 1px) - round(down, (1.3em - round(1.054em, 1px) - round(0.246em, 1px)) / 2, 1px));
+}
+:where(.typstream-pages[data-baseline] .typstream-t) {
+  position: relative;
+  top: var(--ts-x, 0px);
+}
+:where(.typstream-pages .ts-edges .typstream-t) {
+  top: 0;
+}
+.typstream-pages[data-baseline] .ts-math svg {
+  vertical-align: calc(var(--ts-depth, 0px) - var(--ts-x, 0px));
+}
+.typstream-pages[data-baseline] .ts-math.ts-flat svg {
+  vertical-align: text-bottom;
+  margin-block-end: calc(var(--ts-lift, 0px) - var(--ts-x, 0px) - 0.246em + round(0.246em, 1px));
+}
 :where(.typstream .typstream-row) {
   display: flex;
   align-items: baseline;

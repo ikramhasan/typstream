@@ -87,7 +87,9 @@ export const pagedLines = (a: PagedArtifact, skip: Box[] = []): Line[] =>
       (p.text ?? [])
         .filter(
           (r) =>
-            !skip.some((b) => b.page === page && r.x >= b.x0 - 1 && r.x <= b.x1 + 1 && r.y >= b.y0 - 1 && r.y <= b.y1 + 1),
+            !skip.some(
+              (b) => b.page === page && r.x >= b.x0 - 1 && r.x <= b.x1 + 1 && r.y >= b.y0 - 1 && r.y <= b.y1 + 1,
+            ),
         )
         .map((r) => ({ text: r.text, x: r.x, y: r.y, page, ...(/^\s/.test(r.text) ? { indented: true } : {}) })),
     ),
@@ -136,6 +138,17 @@ export const htmlLines = (el: HTMLElement, pageWidth: number): Line[] => {
     const parent = t.parentElement;
     if (!parent || parent.closest(".typstream-caret, .ts-sr, math, svg, .typstream-endnotes")) continue;
     if (getComputedStyle(parent).visibility === "hidden") continue;
+    // The baseline, exactly: an empty inline block before the text sits on it. Each character's box is the font's,
+    // its bottom the descent below the baseline, which the browser rounds to a pixel.
+    const mark = document.createElement("span");
+    mark.style.cssText = "display:inline-block;width:0;height:0";
+    parent.insertBefore(mark, t);
+    const baseline = mark.getBoundingClientRect().bottom;
+    mark.remove();
+    range.setStart(t, 0);
+    range.setEnd(t, Math.min(1, t.length));
+    const first = [...range.getClientRects()].find((q) => q.height > 0);
+    const descent = first ? first.bottom - baseline : 0;
     const size = Number.parseFloat(getComputedStyle(parent).fontSize);
     const words = /\S+/g;
     for (let m = words.exec(t.data); m; m = words.exec(t.data)) {
@@ -153,8 +166,7 @@ export const htmlLines = (el: HTMLElement, pageWidth: number): Line[] => {
         }
         const { page, sheet } = at(r);
         const x = (r.left - sheet.left) * pt;
-        // The baseline: 0.246em above the bottom of the character's box, which is the profile's line box.
-        items.push({ text: m[0][k] as string, x, y: (r.bottom - sheet.top) * pt - 0.246 * size * 0.75, page });
+        items.push({ text: m[0][k] as string, x, y: (r.bottom - descent - sheet.top) * pt, page });
       }
     }
   }

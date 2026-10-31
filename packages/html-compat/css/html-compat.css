@@ -531,8 +531,12 @@
    from spacing after it as a paragraph is. */
 :where(.typstream)
   :is(.typstream-t, span, strong, em, b, i, a, code, mark, sub, sup, u, s)
-  + .ts-v:not(.ts-v-weak, .ts-vfill) {
+  + .ts-v:not(.ts-v-weak, .ts-vfill, :last-child) {
   margin-block-start: 0.56em;
+}
+/* Spacing that ends what holds it: the weak spacing before it goes, as at the end of any region. */
+:where(.typstream) :has(+ .ts-v:last-child) {
+  margin-block-end: 0;
 }
 /* Typst drops the spacing above the first block of a page (the renderer's pages, below a break too). */
 :where(.typstream .typstream-flow) > :first-child,
