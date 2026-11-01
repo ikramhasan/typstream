@@ -8,6 +8,7 @@ import {
   insertBreak,
   insertText,
   join,
+  keepCode,
   markOf,
   sequential,
   setBlock,
@@ -165,6 +166,26 @@ describe("blocks", () => {
   it("sets it before the delimiters a block's text starts with, and not inside a call on a line of code", () => {
     expect(applyEdits("*Bold* start", setBlock("*Bold* start", 1, "h1") ?? [])).toBe("= *Bold* start");
     expect(setBlock("#question(points: 2)[What", 21, "h1")).toBeNull();
+  });
+});
+
+describe("code beside text it shows", () => {
+  it("ends an embedded expression before what would go on with it", () => {
+    const source = '#let who = "Ada"\nHello #who, and #who is.';
+    const at = source.indexOf(", and");
+    const typedAfter = after(source, keepCode(source, insertText(source, at, "x")));
+    expect(typedAfter.text).toContain("#who;x, and");
+    expect(typedAfter.errors).toEqual([]);
+    expect(textOf(typedAfter.body)).toContain("Hello Adax, and Ada is.");
+    // A space between them deleted.
+    const space = source.lastIndexOf(" is");
+    const joined = after(source, keepCode(source, [{ from: space, to: space + 1, insert: "" }]));
+    expect(joined.text).toContain("#who;is.");
+    expect(textOf(joined.body)).toContain("Adais.");
+    // What doesn't go on with it, or isn't code, stays as it is.
+    expect(keepCode(source, insertText(source, at, " !"))[0]?.insert).toBe(" !");
+    expect(keepCode("\\#who", [{ from: 5, to: 5, insert: "x" }])[0]?.insert).toBe("x");
+    expect(keepCode("#f(1)", [{ from: 5, to: 5, insert: ".x" }])[0]?.insert).toBe(";.x");
   });
 });
 

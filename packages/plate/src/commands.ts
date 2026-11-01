@@ -192,6 +192,26 @@ export const blockOf = (source: string, at: number): BlockKind => {
   return "paragraph";
 };
 
+// --- code around edits ------------------------------------------------------------------
+
+/** An embedded expression ending here: `#name`, `#a.b`, `#f(x)` (not an escaped `\#`). */
+const CODE_END = /(?:^|[^\\])#[\p{L}_][\p{L}\p{N}_-]*(?:\.[\p{L}_][\p{L}\p{N}_-]*)*(?:\([^()\n]*\))?$/u;
+/** What would go on with an expression before it: an identifier's characters, a field, a call. */
+const CONTINUES = /^[\p{L}\p{N}_\-.(]/u;
+
+/**
+ * `edits` that leave an embedded expression (`#who`) followed by what would go on with it (`#whox`, `#who.`, after a
+ * space between them was deleted) end it first with `;`, which Typst takes as its end and doesn't show. Text the code
+ * shows has no source of its own, so typing beside it lands just after the expression.
+ */
+export const keepCode = (source: string, edits: readonly TextEdit[]): TextEdit[] =>
+  edits.map((e) => {
+    const next = e.insert || source.slice(e.to, e.to + 1);
+    if (!CONTINUES.test(next) || !CODE_END.test(source.slice(Math.max(0, e.from - 200), e.from))) return e;
+    // Another edit right after this one could still be what follows: only an edit's own text or the source after it.
+    return { ...e, insert: `;${e.insert}` };
+  });
+
 // --- applying ---------------------------------------------------------------------------
 
 /** `edits` (in the text's order, not overlapping) applied to `source`. */

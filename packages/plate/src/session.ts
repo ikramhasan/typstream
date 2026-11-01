@@ -10,7 +10,7 @@ import { diffEdit, type FileDelta, mapPosition, type TextEdit, type TypstreamPlu
 import { createHtmlRenderer, type HtmlRenderer, registerTypstFonts, type TypstFont } from "@typstream/dom";
 import type { DocumentOptions, DocumentState, Engine, EngineDocument } from "@typstream/engine";
 import { NODE_TO_KEY } from "slate-dom";
-import { applyEdits, sequential } from "./commands";
+import { applyEdits, keepCode, sequential } from "./commands";
 import { createSpans } from "./spans";
 import type { TextPart, TypstBlock, TypstText } from "./types";
 import { readValue, share } from "./value";
@@ -367,9 +367,19 @@ export class Session {
    * in the value itself (Slate's own change to a text, made by the caller); without it the value is stale until the
    * next one, whose caret goes to `caret`.
    */
-  apply(edits: readonly TextEdit[], options: { local?: () => void; caret?: number | null; undo?: false } = {}): void {
-    if (edits.length === 0) return;
+  apply(given: readonly TextEdit[], how: { local?: () => void; caret?: number | null; undo?: false } = {}): void {
+    if (given.length === 0) return;
+    let edits = given;
+    let options = how;
     const before = this.source;
+    // Never into the code beside text it shows: an edit that would go on with an expression ends it first.
+    const kept = keepCode(before, edits);
+    if (kept.some((e, i) => e !== edits[i])) {
+      const last = kept[kept.length - 1] as TextEdit;
+      const shift = kept.reduce((n, e) => n + e.insert.length - (e.to - e.from), 0);
+      options = { ...options, local: undefined, caret: options.caret != null ? options.caret + 1 : last.to + shift };
+      edits = kept;
+    }
     const seq = sequential(edits);
     const after = applyEdits(before, edits);
     if (after === before) return;

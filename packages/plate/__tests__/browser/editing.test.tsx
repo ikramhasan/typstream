@@ -168,6 +168,23 @@ describe("TypstPlateEditor", () => {
     expect(state.source).toContain('#let who = "Ada"');
   });
 
+  it("types after text code shows without going on with the code", async () => {
+    const source = '#let who = "Ada"\n\nAdd the simplify. Hello #who, and #who is.\n';
+    const { state, flow, settled } = await open(source);
+    // Right after "Ada": the start of ", and".
+    caret(flow(), "Ada, and", 3);
+    await tick();
+    await userEvent.keyboard("x");
+    await until("the edit", () => state.source.includes("Hello #who;x, and"));
+    await settled("Adax, and");
+    // Before the space after the second: the space's edge is after the code too.
+    caret(flow(), "Ada is", 3);
+    await tick();
+    await userEvent.keyboard("y");
+    await until("the second edit", () => state.source.includes("#who;y is."));
+    await settled("Aday is");
+  });
+
   it("deletes a word across marks, keeping the markup", async () => {
     const { state, flow } = await open();
     // From inside "fractions" to inside "carefully": the text goes, `*…*` stays around what's left of it.
