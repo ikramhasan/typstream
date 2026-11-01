@@ -16,6 +16,7 @@ const alias = {
   "@typstream/edu": new URL("../edu/src/index.ts", import.meta.url).pathname,
   "@typstream/mindmap": new URL("../mindmap/src/index.ts", import.meta.url).pathname,
   "@typstream/corpus": new URL("../../corpus/src/index.ts", import.meta.url).pathname,
+  "@typstream/html-compat": new URL("../html-compat/src/index.ts", import.meta.url).pathname,
 };
 
 export default defineConfig({
