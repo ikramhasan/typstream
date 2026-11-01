@@ -7,6 +7,7 @@ import { act, cleanup, render, screen, within } from "@testing-library/react";
 import type { EditorView } from "@typstream/editor-core";
 import { edu } from "@typstream/edu";
 import { createEngine, type Engine, fromWorker } from "@typstream/engine";
+import { htmlCompat } from "@typstream/html-compat";
 import { mindmap } from "@typstream/mindmap";
 import { useState } from "react";
 import { afterEach, describe, expect, it } from "vitest";
@@ -31,7 +32,7 @@ const waitFor = async (check: () => boolean, ms = 10_000, what = "") => {
 };
 
 /** Renders the editor and waits for its pages; returns its view and the last source it reported. */
-const mount = async (source: string, plugins = [edu]) => {
+const mount = async (source: string, plugins = [htmlCompat, edu]) => {
   const engine = createEngine({ spawn: spawn() });
   engines.push(engine);
   let view: EditorView | null = null;
@@ -112,7 +113,7 @@ describe("<TypstEditor>", () => {
   });
 
   it("edits a mind map's topics on the page", async () => {
-    const { view } = await mount("#mindmap[\n  Plants\n  - Roots\n  - Leaves\n]", [edu, mindmap]);
+    const { view } = await mount("#mindmap[\n  Plants\n  - Roots\n  - Leaves\n]", [htmlCompat, edu, mindmap]);
     const at = view.state.text.indexOf("Leaves") + "Leaves".length;
     const g = view.layout?.glyphs.find((g) => g.to === at);
     expect(g).toBeDefined();

@@ -18,6 +18,7 @@ export {
   deleteChar,
   deleteSelection,
   type EditorSchema,
+  exitBlock,
   insertLineBreak,
   insertText,
   moveChar,

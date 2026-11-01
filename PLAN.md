@@ -1128,7 +1128,7 @@ Budgets checked in CI with a report comment on PRs (like streamdown's `scripts/b
 | Compiler wasm (brotli) | ≤ 6.32 MB for `engine-wasm` (HTML+SVG+PDF, #14's page drawings, 9.9 KB, #131/#132's DOCX model and equations, #133's pictures with typst-render's rasterizer, 23 KB, #134's scripts, 4.5 KB, #118's last ink fixes, 3 KB, and HTML's shared glyph outlines, within brotli's noise; measured 6.302–6.31 MB (CI's build, whose paths differ, over 6.31 MB); 6.300 MB before those; 6.296 MB before the scripts; 6.27 MB before the pictures; 6.22 MB before the DOCX model; 6.20 MB before them, 5.85 MB without PDF, #18); 4.29 MB + PDF with trimmed data (#26); alert on +3% |
 | Renderer wasm (brotli) | ≤ 400 KB (typst.ts renderer 0.8.0-rc3 is 372 KB) |
 | Syntax wasm (`@typstream/syntax`, gz) | ≤ 300 KB; never loaded by the renderer-only path. As built (#36): ≤ 80 KB brotli (measured 74 KB), its JS ≤ 3 KB |
-| `@typstream/editor-core` (engine, dom and syntax external) | ≤ 24 KB (measured 23.5 KB, #36): loaded when editing starts, not with the page view |
+| `@typstream/editor-core` (engine, dom and syntax external) | ≤ 24.6 KB (measured 24.4 KB with a word processor's list keys, the caret on an empty item and Ctrl+Enter out of a component, 0.4 KB, 2026-11-02; 24 KB until then, measured 23.5 KB, #36): loaded when editing starts, not with the page view |
 | `@typstream/editor-react` (editor-core, React and the renderers external) | ≤ 16.4 KB (measured 16.2 KB, #36: toolbars, menus, component bars, their CSS, lucide's icons) |
 | Base font payload | ≤ 1.5 MB (brotli), lazy script fonts tracked individually |
 | `@typstream/edu` Typst package | ≤ 30 KB gzipped (measured 16 KB, #23; `package.test.ts`) |

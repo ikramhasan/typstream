@@ -190,7 +190,7 @@ In `packages/editor-core` and `packages/editor-react` (#36):
 - `pnpm test`: the commands against Typst's parser (`__tests__/support.ts` marks a state with `‸` or `«…»` and checks
   the result parses). `pnpm test:browser`: the view and `<TypstEditor>` on the real worker in Chromium, Firefox and
   WebKit (Playwright clicks and keys); editor-react's tests write screenshots to `__tests__/browser/screenshots/`
-  (ignored) for a look. `pnpm size`: editor-core ≤ 24 KB, editor-react ≤ 16.4 KB gzipped.
+  (ignored) for a look. `pnpm size`: editor-core ≤ 24.6 KB, editor-react ≤ 16.4 KB gzipped.
 - A plugin's components for the editor are plain data in its `editor` facet (`EditorComponentSpec`: a template with
   `{{cursor}}`, form fields); edu's are `eduComponents`. A new one's icon must be one
   `packages/editor-react/src/icons.tsx` draws (a test checks).

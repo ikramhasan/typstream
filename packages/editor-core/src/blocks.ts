@@ -7,7 +7,7 @@ import type { TextEdit } from "@typstream/core";
 import type { SyntaxNode } from "@typstream/syntax";
 import { blocksAround, DEFAULT_SCHEMA, type EditorSchema } from "./commands";
 import { type EditorState, mapThrough, type Selection, type Transaction } from "./state";
-import { type Block, callArgs, calleeName, pathAt } from "./tree";
+import { type Block, callArgs, calleeName, itemAt, pathAt } from "./tree";
 
 /**
  * What a block is: a paragraph, a heading (level 1–6), or an item of a bulleted (`list`), numbered
@@ -201,6 +201,11 @@ export const indentItems =
 
 /** List, enum and term items the selection touches, outermost. */
 const itemsInSelection = (state: EditorState): SyntaxNode[] => {
+  // A caret: the item holding it, an empty one too (`- ` ends at its marker; the space is outside).
+  if (state.empty) {
+    const item = itemAt(state.tree, state.text, state.selection.head);
+    return item && item.kind !== "Heading" ? [item] : [];
+  }
   const out: SyntaxNode[] = [];
   const visit = (node: SyntaxNode) => {
     for (const c of node.children) {

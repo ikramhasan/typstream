@@ -5,6 +5,7 @@
 
 import { edu, eduExamples } from "@typstream/edu";
 import { createEngine, type DocumentState, type Engine, type EngineDocument, fromWorker } from "@typstream/engine";
+import { htmlCompat } from "@typstream/html-compat";
 import { loadSyntax } from "@typstream/syntax";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
@@ -139,6 +140,58 @@ describe("the editor on the pages", () => {
     expect(view.state.selection.head).toBe(2);
   });
 
+  it("ends a list with Enter on an empty item, the caret drawn after its bullet (#36)", async () => {
+    const { view, doc } = await open("- one");
+    view.select({ anchor: 5, head: 5 });
+    view.focus();
+    const caret = () => view.element.querySelector(".typstream-editor-caret")?.getBoundingClientRect() as DOMRect;
+    /** The client box of the glyph showing `text[offset]`. */
+    const glyph = (offset: number) => {
+      const g = view.layout?.glyphs.find((g) => g.from === offset) as NonNullable<EditorView["layout"]>["glyphs"][0];
+      const page = view.element.querySelector(".typstream-page")?.getBoundingClientRect() as DOMRect;
+      const k = page.width / (view.layout?.pages[0]?.width ?? 1);
+      return {
+        left: page.left + g.x * k,
+        top: page.top + (g.y - g.ascent) * k,
+        bottom: page.top + (g.y + g.descent) * k,
+      };
+    };
+    await userEvent.keyboard("{Enter}two{Enter}");
+    expect(view.state.text).toBe("- one\n- two\n- ");
+    await settled(view, doc);
+    // On the new item's line, below "two", where the items' text starts.
+    const two = glyph(view.state.text.indexOf("two"));
+    expect(caret().top).toBeGreaterThan(two.bottom - 1);
+    expect(Math.abs(caret().left - two.left)).toBeLessThan(2);
+    await userEvent.keyboard("{Enter}");
+    expect(view.state.text).toBe("- one\n- two\n\n");
+    await settled(view, doc);
+    await userEvent.keyboard("After the list.");
+    expect(view.state.text).toBe("- one\n- two\n\nAfter the list.");
+    // Nested: an empty item goes up a level first; Backspace at an item's start too.
+    view.select({ anchor: 11, head: 11 });
+    await userEvent.keyboard("{Enter}{Tab}");
+    expect(view.state.text).toBe("- one\n- two\n  - \n\nAfter the list.");
+    await userEvent.keyboard("{Enter}");
+    expect(view.state.text).toBe("- one\n- two\n- \n\nAfter the list.");
+    await userEvent.keyboard("{Tab}three");
+    await settled(view, doc);
+    await userEvent.keyboard("{Home}{Backspace}");
+    expect(view.state.text).toBe("- one\n- two\n- three\n\nAfter the list.");
+    await settled(view, doc);
+    expect(doc.getState().diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+  });
+
+  it("leaves a component with Ctrl+Enter (#36)", async () => {
+    const { view } = await open("#table(columns: 2, [a], [b])");
+    view.select({ anchor: 20, head: 20 });
+    view.focus();
+    await userEvent.keyboard("{Control>}{Enter}{/Control}");
+    if (view.state.text.endsWith(")")) await userEvent.keyboard("{Meta>}{Enter}{/Meta}");
+    await userEvent.keyboard("After.");
+    expect(view.state.text).toBe("#table(columns: 2, [a], [b])\n\nAfter.");
+  });
+
   it("selects a component from its own drawing, and types into a table's cell", async () => {
     const text = "#table(columns: 2, [a], [], [c], [d])";
     const { view, doc } = await open(text);
@@ -158,7 +211,13 @@ describe("the editor on the pages", () => {
     const text = exam as string;
     const engine = createEngine({ spawn: spawn() });
     engines.push(engine);
-    const doc = engine.open({ target: "paged", plugins: [edu], text, positions: true, pageFormat: "drawing" });
+    const doc = engine.open({
+      target: "paged",
+      plugins: [htmlCompat, edu],
+      text,
+      positions: true,
+      pageFormat: "drawing",
+    });
     const el = document.createElement("div");
     el.style.width = "820px";
     document.body.append(el);

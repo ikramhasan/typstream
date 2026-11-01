@@ -6,7 +6,7 @@
 
 import type { EditorComponentSpec, EditorParamSpec, TypstreamPlugin } from "@typstream/core";
 import { alignmentAt, blockType, indentItems, setAlignment, setBlockType, toggleList } from "./blocks";
-import { DEFAULT_SCHEMA, type EditorSchema } from "./commands";
+import { DEFAULT_SCHEMA, type EditorSchema, exitBlock } from "./commands";
 import { insertBlock, insertInline } from "./components";
 import { isMarked, linkAt, markValue, setLink, setMark, toggleMark } from "./marks";
 import type { EditorState, Transaction } from "./state";
@@ -369,6 +369,8 @@ export const blocksPlugin: EditorPlugin = createEditorPlugin({
     ),
     "Mod-Shift-8": toggleList("list"),
     "Mod-Shift-7": toggleList("enum"),
+    "Mod-Enter": exitBlock(1),
+    "Mod-Shift-Enter": exitBlock(-1),
     "Mod-Shift-e": setAlignment("center"),
     "Mod-Shift-l": setAlignment("left"),
     "Mod-Shift-r": setAlignment("right"),
@@ -415,8 +417,9 @@ export const blocksPlugin: EditorPlugin = createEditorPlugin({
   ],
   floating: [turnInto],
   inputRules: [
-    // The editor escapes what it types (`- ` comes in as `\- `): these make it Typst's markers.
-    { match: /^(\s*)\\-[ ~]$/, run: marker(() => "- ") },
+    // The editor escapes what it types (`- ` comes in as `\- `): these make it Typst's markers. `* `
+    // is Markdown's bullet; `1. ` is Typst's own numbered item already.
+    { match: /^(\s*)\\[-*][ ~]$/, run: marker(() => "- ") },
     { match: /^(\s*)\\\+[ ~]$/, run: marker(() => "+ ") },
     // `# ` and `## ` as in Markdown, `= ` and `== ` as in Typst: headings.
     { match: /^(\s*)((?:\\#)+)[ ~]$/, run: marker((m) => `${"=".repeat((m[2] as string).length / 2)} `) },
@@ -526,8 +529,8 @@ export const matchesShortcut = (shortcut: string, event: KeyboardEvent, apple: b
   if (mods.has("shift") !== event.shiftKey) return false;
   if (mods.has("alt") !== event.altKey) return false;
   if (!mods.has("mod") && (apple ? event.ctrlKey : event.metaKey)) return false;
-  const k = event.key.length === 1 ? event.key.toLowerCase() : event.key;
-  if (k === key.toLowerCase()) return true;
+  // Named keys (`Enter`, `Tab`) as written, by any case.
+  if (event.key.toLowerCase() === key.toLowerCase()) return true;
   // Shift and Alt change `event.key` (Shift-8 is `*`, Alt-1 on a Mac `¡`): compare the physical key.
   const code = event.code;
   if (/^[0-9]$/.test(key)) return code === `Digit${key}`;

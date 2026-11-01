@@ -84,7 +84,7 @@ export const PACKAGES = {
     name: "@typstream/editor-core",
     layer: 5,
     deps: ["core", "syntax", "engine", "dom"],
-    testDeps: ["engine-wasm", "edu", "mindmap"],
+    testDeps: ["engine-wasm", "edu", "mindmap", "html-compat"],
   },
   "editor-react": {
     name: "@typstream/editor-react",

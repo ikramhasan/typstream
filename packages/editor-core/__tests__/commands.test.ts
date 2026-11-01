@@ -3,16 +3,20 @@
 import { parse } from "@typstream/syntax";
 import { beforeAll, describe, expect, it } from "vitest";
 import {
+  blocksPlugin,
+  DEFAULT_SCHEMA,
   deleteChar,
   EditorState,
   escapeMarkup,
+  exitBlock,
+  indentItems,
   insertLineBreak,
   insertText,
   moveChar,
   splitBlock,
   unitsOf,
 } from "../src/index";
-import { load, run } from "./support";
+import { load, run, state } from "./support";
 
 beforeAll(load);
 
@@ -159,6 +163,73 @@ describe("Backspace and Delete", () => {
   });
 });
 
+describe("Backspace at the start of a block (#36)", () => {
+  it("turns an empty item or heading into an empty paragraph, with no marker or space left", () => {
+    expect(run("- one\n- ‸", deleteChar(-1))).toBe("- one\n\n‸");
+    expect(run("+ one\n+ ‸\n+ two", deleteChar(-1))).toBe("+ one\n\n‸\n+ two");
+    expect(run("= ‸", deleteChar(-1))).toBe("‸");
+  });
+
+  it("Tab nests an item, an empty one too; Shift+Tab takes it back", () => {
+    expect(run("- one\n- ‸", indentItems(1))).toBe("- one\n  - ‸");
+    expect(run("- one\n- tw‸o\n  - three", indentItems(1))).toBe("- one\n  - tw‸o\n    - three");
+    expect(run("- one\n  - ‸", indentItems(-1))).toBe("- one\n- ‸");
+  });
+
+  it("moves a nested item up a level", () => {
+    expect(run("- one\n  - ‸two", deleteChar(-1))).toBe("- one\n- ‸two");
+    expect(run("- one\n  - ‸", deleteChar(-1))).toBe("- one\n- ‸");
+    expect(run("- one\n  - ‸two\n    - three", deleteChar(-1))).toBe("- one\n- ‸two\n  - three");
+  });
+
+  it("turns a top-level item into a paragraph, then joins it to the item before", () => {
+    expect(run("Para\n\n- ‸one", deleteChar(-1))).toBe("Para\n\n‸one");
+    expect(run("- one\n\n‸", deleteChar(-1))).toBe("- one‸");
+  });
+});
+
+describe("Markdown shortcuts (#36)", () => {
+  const typed = (marked: string, keys: string) => {
+    let s = state(marked);
+    for (const ch of keys) {
+      s = s.apply(insertText(ch)(s) as NonNullable<ReturnType<ReturnType<typeof insertText>>>).state;
+      const head = s.selection.head;
+      const lineStart = s.text.lastIndexOf("\n", head - 1) + 1;
+      const line = s.text.slice(lineStart, head);
+      for (const rule of blocksPlugin.inputRules ?? []) {
+        const m = rule.match.exec(line);
+        const tr = m && rule.run(s, { from: lineStart, to: head, match: m }, DEFAULT_SCHEMA);
+        if (tr) {
+          s = s.apply(tr).state;
+          break;
+        }
+      }
+    }
+    return s.text;
+  };
+
+  it("make bullets from `- ` and `* `, numbers from `+ ` and `1. `", () => {
+    expect(typed("‸", "- a")).toBe("- a");
+    expect(typed("‸", "* a")).toBe("- a");
+    expect(typed("Intro.\n\n‸", "+ a")).toBe("Intro.\n\n+ a");
+    expect(typed("‸", "1. a")).toBe("1. a");
+    expect(typed("‸", "a * b")).toBe("a \\* b");
+  });
+});
+
+describe("Ctrl+Enter: out of a component (#36)", () => {
+  it("starts a paragraph after the top-level block the caret is in", () => {
+    expect(run("#question[\n  Wh‸at?\n]\n\nNext.", exitBlock(1))).toBe("#question[\n  What?\n]\n\n‸\n\nNext.");
+    expect(run("#table(columns: 2, [a‸], [b])", exitBlock(1))).toBe("#table(columns: 2, [a], [b])\n\n‸");
+    expect(run("- one\n  - tw‸o\n- three", exitBlock(1))).toBe("- one\n  - two\n- three\n\n‸");
+  });
+
+  it("before it with Shift", () => {
+    expect(run("Intro.\n\n#question[Wh‸at?]", exitBlock(-1))).toBe("Intro.\n\n‸\n\n#question[What?]");
+    expect(run("#question[Wh‸at?]", exitBlock(-1))).toBe("‸\n\n#question[What?]");
+  });
+});
+
 describe("Enter and Shift+Enter", () => {
   it("start a new paragraph", () => {
     expect(run("Hello ‸world", splitBlock)).toBe("Hello \n\n‸world");
@@ -168,6 +239,13 @@ describe("Enter and Shift+Enter", () => {
     expect(run("- one‸\n- two", splitBlock)).toBe("- one\n- ‸\n- two");
     expect(run("- one\n- ‸", splitBlock)).toBe("- one\n\n‸");
     expect(run("+ one‸", splitBlock)).toBe("+ one\n+ ‸");
+  });
+
+  it("move an empty nested item up a level, and end the list from the top level (#36)", () => {
+    expect(run("- one\n  - two\n  - ‸", splitBlock)).toBe("- one\n  - two\n- ‸");
+    expect(run("- one\n  - two\n- ‸", splitBlock)).toBe("- one\n  - two\n\n‸");
+    expect(run("+ one\n    + two\n    + ‸\n+ three", splitBlock)).toBe("+ one\n    + two\n+ ‸\n+ three");
+    expect(run("#question[\n  - one\n  - ‸\n]", splitBlock)).toBe("#question[\n  - one\n\n  ‸\n]");
   });
 
   it("put a new paragraph before a heading from its start", () => {

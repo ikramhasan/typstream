@@ -291,6 +291,11 @@ export const deleteChar =
       const item = itemAt(state.tree, state.text, at);
       const body = item?.children.find((k) => k.kind === "Markup");
       if (item && (!body || body.from === body.to || body.from >= at)) {
+        // At an item's start, as in a word processor: a nested item goes up a level, an empty one
+        // becomes an empty paragraph after the list, and one with text a paragraph.
+        const up = outdentItem(state, item, at);
+        if (up) return up;
+        if (item.kind !== "Heading" && isEmptyItem(state.text, item)) return leaveList(state.text, item);
         const edits = unmark(state, item);
         return { edits, selection: caret(mapThrough(at, edits, -1)) };
       }
@@ -318,8 +323,10 @@ export const deleteChar =
 /** Edits that turn a heading or list item into a paragraph: its marker goes, and it stays a block of its own. */
 const unmark = (state: EditorState, item: SyntaxNode): TextEdit[] => {
   const body = item.children.find((k) => k.kind === "Markup");
-  const end = body?.from ?? item.to;
   const text = state.text;
+  // An empty one (`= `): the space after its marker goes too, or the paragraph would start with it.
+  let end = body?.from ?? item.to;
+  if (!body || body.from === body.to) while (text[end] === " " || text[end] === "\t") end++;
   const edits: TextEdit[] = [{ from: item.from, to: end, insert: "" }];
   const lineStart = text.lastIndexOf("\n", item.from - 1);
   // The text before on the previous line would run into it: a blank line keeps them apart.
@@ -471,13 +478,9 @@ export const splitBlock = (state: EditorState, schema: EditorSchema = DEFAULT_SC
   if (item && item.from < at) {
     const marker = item.children[0] as SyntaxNode;
     const body = item.children.find((k) => k.kind === "Markup");
-    const empty = !body || text.slice(body.from, body.to).trim() === "";
-    if (empty) {
-      // An empty item ends the list: it becomes an empty paragraph after it.
-      const lineStart = text.lastIndexOf("\n", item.from - 1) + 1;
-      let end = item.to;
-      while (text[end] === " " || text[end] === "\t") end++;
-      tr = { edits: [{ from: lineStart, to: end, insert: "\n" }], selection: caret(lineStart + 1) };
+    if (isEmptyItem(text, item)) {
+      // An empty item goes up a level, and from the top level ends the list.
+      tr = outdentItem(base, item, at) ?? leaveList(text, item);
     } else if (body && at <= body.from) {
       // At the start of the item's text: an empty item before it.
       const indent = " ".repeat(column(text, item.from));
@@ -512,6 +515,78 @@ export const splitBlock = (state: EditorState, schema: EditorSchema = DEFAULT_SC
   if (pre.length === 0) return tr;
   return chain(state, base, tr);
 };
+
+const LIST_ITEMS = new Set(["ListItem", "EnumItem", "TermItem"]);
+
+/** Whether a list item (or heading) has no text. */
+const isEmptyItem = (text: string, item: SyntaxNode): boolean => {
+  const body = item.children.find((k) => k.kind === "Markup");
+  return !body || text.slice(body.from, body.to).trim() === "";
+};
+
+/** An empty item turned into an empty paragraph after the list (at the item's indentation, in a content block). */
+const leaveList = (text: string, item: SyntaxNode): Transaction => {
+  const lineStart = text.lastIndexOf("\n", item.from - 1) + 1;
+  let end = item.to;
+  while (text[end] === " " || text[end] === "\t") end++;
+  const insert = `\n${" ".repeat(column(text, item.from))}`;
+  return { edits: [{ from: lineStart, to: end, insert }], selection: caret(lineStart + insert.length) };
+};
+
+/**
+ * A nested list item moved up a level: it and the lines under it (its text, its own items) lose
+ * the indentation it has beyond the item it is nested in. `null` for an item at the top level.
+ */
+const outdentItem = (state: EditorState, item: SyntaxNode, at: number): Transaction | null => {
+  if (!LIST_ITEMS.has(item.kind)) return null;
+  const text = state.text;
+  const parent = findLast(
+    pathAt(state.tree, item.from, 1),
+    (n) => LIST_ITEMS.has(n.kind) && n.from < item.from && item.to <= n.to,
+  );
+  if (!parent) return null;
+  const delta = column(text, item.from) - column(text, parent.from);
+  if (delta <= 0) return null;
+  const edits: TextEdit[] = [];
+  for (let line = text.lastIndexOf("\n", item.from - 1) + 1; line <= item.to; ) {
+    let n = 0;
+    while (n < delta && text[line + n] === " ") n++;
+    if (n) edits.push({ from: line, to: line + n, insert: "" });
+    const next = text.indexOf("\n", line);
+    if (next < 0) break;
+    line = next + 1;
+  }
+  return { edits, selection: caret(mapThrough(at, edits, 1)) };
+};
+
+/**
+ * Ctrl+Enter (and Ctrl+Shift+Enter, `dir` -1): an empty paragraph after (before) the top-level
+ * block the caret is in, so the teacher can write after a component, a table or a list (a list
+ * whole, its items together) without leaving them by hand. Plate's "exit break".
+ * @beta
+ */
+export const exitBlock =
+  (dir: 1 | -1) =>
+  (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): Transaction | null => {
+    const at = state.selection.head;
+    const blocks = blocksOf(state.tree, state.text, (name) => schema.inline.has(name));
+    let i = blocks.findIndex((b) => b.from <= at && at <= b.to);
+    for (let k = blocks.length - 1; i < 0 && k >= 0; k--) if ((blocks[k] as Block).to <= at) i = k;
+    if (i < 0) return null;
+    const isList = (b: Block | undefined) => b?.kind === "list" || b?.kind === "enum" || b?.kind === "term";
+    let [first, last] = [i, i];
+    if (isList(blocks[i])) {
+      const kind = (blocks[i] as Block).kind;
+      while (blocks[first - 1]?.kind === kind) first--;
+      while (blocks[last + 1]?.kind === kind) last++;
+    }
+    if (dir > 0) {
+      const end = (blocks[last] as Block).to;
+      return { edits: [{ from: end, to: end, insert: "\n\n" }], selection: caret(end + 2) };
+    }
+    const start = (blocks[first] as Block).from;
+    return { edits: [{ from: start, to: start, insert: "\n\n" }], selection: caret(start) };
+  };
 
 /** How far the line at `offset` is indented (content blocks written over several lines keep it). */
 const indentOf = (text: string, offset: number): number => {

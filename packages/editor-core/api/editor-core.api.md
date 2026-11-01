@@ -205,6 +205,9 @@ export interface EditorView {
 export const escapeMarkup: (text: string, before?: string, after?: string) => string;
 
 // @beta
+export const exitBlock: (dir: 1 | -1) => (state: EditorState, schema?: EditorSchema) => Transaction | null;
+
+// @beta
 export const fromTypstreamPlugin: (plugin: TypstreamPlugin) => EditorPlugin | null;
 
 // @beta

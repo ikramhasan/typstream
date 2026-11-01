@@ -30,7 +30,7 @@ import {
 } from "./commands";
 import { type Component, componentIn, componentsAt, componentsIn } from "./components";
 import { History } from "./history";
-import { type CaretBox, type Layout, Layout as LayoutClass, type Line, type PageRect } from "./layout";
+import { type CaretBox, type Glyph, type Layout, Layout as LayoutClass, type Line, type PageRect } from "./layout";
 import { basicPlugins, type EditorCommand, type EditorPlugin, matchesShortcut, schemaOf } from "./plugin";
 import { EditorState, mapThrough, type Selection, type Transaction } from "./state";
 import { escapeMarkup } from "./text";
@@ -133,6 +133,9 @@ const ensureStyles = (doc: Document) => {
 
 /** Whether the platform's shortcuts use ⌘. */
 const isApple = (win: Window) => /Mac|iPhone|iPad|iPod/.test(win.navigator.platform || win.navigator.userAgent);
+
+/** A line holding a list item's marker and nothing else (`- `, `+ `, `1. `, `/ `). */
+const EMPTY_ITEM = /^[ \t]*(?:[-+/]|\d+\.)[ \t]*$/;
 
 /** Percent of `total`, for positions inside a page element. */
 const pct = (v: number, total: number) => `${((v / total) * 100).toFixed(4)}%`;
@@ -259,6 +262,8 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
       return { page: cell.page, x: cell.x + inset, top: cell.y + inset, bottom: cell.y + inset + size * 1.3 };
     }
     const { prev, next } = layout.neighbors(at);
+    const item = emptyItemCaret(at, prev);
+    if (item) return item;
     if (prev) {
       const between = lt.slice(prev.to, at);
       const lines = between.split("\n").length - 1;
@@ -278,6 +283,44 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
     if (!page) return null;
     const margin = Math.min(page.width, page.height) * 0.119;
     return { page: 0, x: margin, top: margin, bottom: margin + 14 };
+  };
+
+  /**
+   * A caret in an empty list item: after its bullet or number. Typst lays the item out as its
+   * marker alone, glyphs that show no source, on a line of its own after the text before; the
+   * caret goes where the item's text would start, as in the item before it.
+   */
+  const emptyItemCaret = (at: number, prev: Glyph | null): CaretBox | null => {
+    if (!layout) return null;
+    const lt = layoutText ?? state.text;
+    const lineStart = lt.lastIndexOf("\n", at - 1) + 1;
+    const lineEnd = lt.indexOf("\n", at);
+    if (!EMPTY_ITEM.test(lt.slice(lineStart, at)) || lt.slice(at, lineEnd < 0 ? lt.length : lineEnd).trim())
+      return null;
+    // Empty items in a row are lines of markers alone: this one is the nth after the text before.
+    const lines = lt
+      .slice(prev ? prev.to : 0, lineStart)
+      .split("\n")
+      .slice(prev ? 1 : 0);
+    let nth = lines.filter((l) => EMPTY_ITEM.test(l)).length;
+    for (let i = prev ? prev.line + 1 : 0; i < layout.lines.length; i++) {
+      const line = layout.lines[i] as Line;
+      const glyphs = layout.glyphs.slice(line.first, line.last + 1);
+      if (glyphs.some((g) => g.from >= 0)) return null;
+      if (nth-- > 0) continue;
+      const marker = glyphs[glyphs.length - 1] as Glyph;
+      const end = marker.x + marker.width;
+      // The gap between a marker and its text, from the item before when its line starts with one.
+      let gap = (marker.ascent + marker.descent) * 0.45;
+      const above = prev ? layout.glyphs.slice((layout.lines[prev.line] as Line).first) : [];
+      const text = above.findIndex((g) => g.from >= 0);
+      if (text > 0 && (above[0] as Glyph).from < 0) {
+        const m = above[text - 1] as Glyph;
+        gap = (above[text] as Glyph).x - (m.x + m.width);
+      }
+      return { page: marker.page, x: end + gap, top: marker.y - marker.ascent, bottom: marker.y + marker.descent };
+    }
+    return null;
   };
 
   /** The left edge of the lines of the paragraph `line` is in: the leftmost of the lines above it that stack. */

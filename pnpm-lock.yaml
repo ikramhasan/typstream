@@ -571,6 +571,9 @@ importers:
       '@typstream/engine-wasm':
         specifier: workspace:*
         version: link:../engine-wasm
+      '@typstream/html-compat':
+        specifier: workspace:*
+        version: link:../html-compat
       '@typstream/mindmap':
         specifier: workspace:*
         version: link:../mindmap

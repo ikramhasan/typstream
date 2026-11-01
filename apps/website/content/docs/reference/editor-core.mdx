@@ -36,11 +36,13 @@ import { createEngine, engineWorker } from "@typstream/engine";
 import { basicPlugins, createEditor, fromTypstreamPlugin, toggleMark } from "@typstream/editor-core";
 import { loadSyntax } from "@typstream/syntax";
 import { edu } from "@typstream/edu";
+import { htmlCompat } from "@typstream/html-compat";
 
 await loadSyntax();
 const engine = createEngine({ spawn: engineWorker() });
 const text = "= Quiz\n\n#question(points: 2)[What is 2 + 2?]";
-const doc = engine.open({ target: "paged", plugins: [edu], text });
+// edu needs html-compat (its dependency) loaded too.
+const doc = engine.open({ target: "paged", plugins: [htmlCompat, edu], text, positions: true });
 const view = createEditor(document.querySelector("#editor")!, {
   doc,
   text,
@@ -80,8 +82,9 @@ Each is `(state, schema) => Transaction | null` (an `EditorCommand`); `null` whe
 | Command | What it does |
 | --- | --- |
 | `insertText(text)` | Types `text` over the selection, escaped (`escapeMarkup`) so it shows as typed. `canType` says whether text can go at an offset (not in code or math). |
-| `deleteChar(dir)`, `deleteSelection` | Backspace and Delete: a character, the break between paragraphs, a heading's or item's marker first; an equation or component is selected, then deleted. A selection goes structurally: constructs only partly in it keep their delimiters. |
-| `splitBlock`, `insertLineBreak` | Enter and Shift+Enter. |
+| `deleteChar(dir)`, `deleteSelection` | Backspace and Delete: a character, the break between paragraphs, a heading's or item's marker first (a nested item goes up a level instead); an equation or component is selected, then deleted. A selection goes structurally: constructs only partly in it keep their delimiters. |
+| `splitBlock`, `insertLineBreak` | Enter and Shift+Enter. In a list, a new item; on an empty one, the item up a level, or out of the list from the top level. |
+| `exitBlock(dir)` | Ctrl+Enter and Ctrl+Shift+Enter: an empty paragraph after (`1`) or before (`-1`) the top-level block the caret is in (a component, a table, a whole list). |
 | `moveChar`, `snap` | Where the caret goes one character on, and the nearest place a caret can be. |
 | `toggleMark(mark)`, `setMark(mark, value)` | Bold, italic, underline (a `Mark`: a function, and for colours and sizes an argument); `isMarked` and `markValue` read them at the selection. |
 | `setLink(url)`, `linkAt` | A `#link("…")[…]` around the selection, its URL changed, or links taken off with `null`. |
