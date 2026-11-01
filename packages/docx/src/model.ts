@@ -155,6 +155,8 @@ export interface DocxParagraph extends DocxBlockBase {
   lines: number;
   /** How far the next line's first word missed a line Typst broke, at its narrowest: more room would set it there. */
   fit?: number;
+  /** In a cell, the room left on its fullest line: how much narrower its area could be with every line as it is. */
+  room?: number;
   /**
    * Placed out of the flow (Typst's `place`): a frame at this position on the page, in points from its top left
    * corner, which takes no room.
@@ -390,6 +392,8 @@ export interface DocxRow {
   header?: boolean;
   /** Starts a page: the table is split there, a page break between, its header rows repeated. */
   pageBreak?: boolean;
+  /** How tall Typst made the row, margins and the gutter below it in, when it is on one page. */
+  height?: number;
   cells: DocxCell[];
 }
 
