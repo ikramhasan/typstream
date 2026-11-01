@@ -107,7 +107,17 @@ const withAttr = (attrs: string, name: string, value: string, append = false): s
  * ```
  * @public
  */
-export const standaloneHtml = (html: string, options: StandaloneHtmlOptions = {}): string => {
+export const standaloneHtml = (html: string, options: StandaloneHtmlOptions = {}): string =>
+  buildStandalone(html, options);
+
+/** What `standalonePages` puts in the file instead: the pages laid out (`body`), their CSS and fonts (`css`). */
+export interface StandaloneLayout {
+  body: string;
+  css: string;
+}
+
+/** {@link standaloneHtml}, with the body and page CSS of `layout` when given. */
+export const buildStandalone = (html: string, options: StandaloneHtmlOptions, layout?: StandaloneLayout): string => {
   const theme = options.theme ?? "light";
   const { mathFont } = options;
   let fontSrc = "data:";
@@ -146,7 +156,11 @@ export const standaloneHtml = (html: string, options: StandaloneHtmlOptions = {}
     "form-action 'none'",
   ].join("; ");
   // `</style` would end the element early wherever it appears in the CSS.
-  const css = [fontFace, THEME_CSS, PAGE_CSS, ...stylesheetsOf(options.plugins, options.stylesheets)]
+  const css = [
+    fontFace,
+    layout?.css ?? `${THEME_CSS}\n${PAGE_CSS}`,
+    ...stylesheetsOf(options.plugins, options.stylesheets),
+  ]
     .join("\n")
     .replace(/<\/(style)/gi, "<\\/$1");
 
@@ -167,6 +181,12 @@ export const standaloneHtml = (html: string, options: StandaloneHtmlOptions = {}
   else out = `<head>\n${head}\n</head>\n${out}`;
   out = out.replace(/<\/head>/i, `<style>\n${css}</style>\n</head>`);
 
+  if (layout) {
+    // The pages in place of what Typst wrote: their root is the `.typstream` element.
+    const body = /<body\b[^>]*>[\s\S]*<\/body>/i;
+    const pages = `<body class="typstream-file">\n${layout.body}\n</body>`;
+    return body.test(out) ? out.replace(body, () => pages) : out.replace(/<\/html>/i, () => `${pages}</html>`);
+  }
   return out.replace(/<body\b([^>]*)>/i, (_, attrs: string) => {
     let a = withAttr(attrs, "class", "typstream", true);
     if (theme !== "auto") a = withAttr(a, "data-typstream-theme", theme);

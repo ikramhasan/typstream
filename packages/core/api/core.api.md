@@ -285,6 +285,7 @@ export type ExportFormat = "pdf" | "html" | "docx";
 
 // @public
 export interface ExportParams extends DocumentParams {
+    anchors?: boolean;
     inputs?: Record<string, string>;
 }
 

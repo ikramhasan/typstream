@@ -73,7 +73,10 @@ export interface HtmlRendererOptions {
     injectStyles?: boolean;
     // @beta
     islands?: IslandRenderers;
+    layout?: "fixed" | "fit-width" | "reflow";
     linkTarget?: string | null;
+    // @beta
+    onPages?: (count: number) => void;
     plugins?: readonly TypstreamPlugin[];
     stylesheets?: readonly string[];
     theme?: "auto" | "light" | "dark";
@@ -123,7 +126,7 @@ export interface MountedTypstream {
     readonly element: HTMLElement;
     // @beta
     exportDocx(options?: TypstreamExportOptions): Promise<Uint8Array>;
-    exportHtml(options?: StandaloneHtmlOptions & TypstreamExportOptions): Promise<string>;
+    exportHtml(options?: TypstreamHtmlExportOptions): Promise<string>;
     exportPdf(options?: TypstreamExportOptions): Promise<Uint8Array>;
     exportSource(): string;
     getState(): DocumentState | null;
@@ -189,6 +192,9 @@ export const registerLoadedFont: (font: LoadedFontFamily, root: Node) => Promise
 export const registerMathFont: (url: string | URL, doc?: Document) => Promise<void>;
 
 // @public
+export const registerTypstFonts: (fonts: readonly TypstFont[], doc?: Document) => void;
+
+// @public
 export const standaloneHtml: (html: string, options?: StandaloneHtmlOptions) => string;
 
 // @public
@@ -203,8 +209,31 @@ export interface StandaloneHtmlOptions {
 }
 
 // @public
+export const standalonePages: (html: string, options?: StandalonePagesOptions) => Promise<string>;
+
+// @public
+export interface StandalonePagesOptions extends StandaloneHtmlOptions {
+    document?: Document;
+    onPages?: (count: number) => void;
+    typstFonts?: readonly TypstFont[];
+}
+
+// @public
+export interface TypstFont {
+    family: string;
+    style?: "normal" | "italic";
+    url: string | URL;
+    weight?: number;
+}
+
+// @public
 export interface TypstreamExportOptions {
     inputs?: Record<string, string>;
+}
+
+// @public
+export interface TypstreamHtmlExportOptions extends StandaloneHtmlOptions, TypstreamExportOptions {
+    pages?: boolean;
 }
 
 // @public
@@ -213,6 +242,7 @@ export interface TypstreamOptions {
     caret?: boolean;
     engine: Engine;
     files?: FileDelta;
+    fonts?: readonly TypstFont[];
     heal?: DocumentOptions["heal"];
     inputs?: Record<string, string>;
     // @beta

@@ -18,8 +18,11 @@ const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
 // streaming ranges in the mount (#34: a finished document streaming into a range again, and the edit typed at the
 // range's end, 0.16 KB) left it 148 bytes over; 20.5 KB until standalone exports' math font with its own media type
 // (#118's TrueType fonts: `fontType`, read from the file's first bytes) left it 2 bytes over; 20.6 KB until islands
-// on pages (#28: their layer over each page, covered text hidden, 0.55 KB) made it 21.15 KB.
-const BUDGET = 21.2 * 1024;
+// on pages (#28: their layer over each page, covered text hidden, 0.55 KB) made it 21.15 KB; 21.2 KB until the HTML
+// target was laid out on pages as the paged view's (dom's pages, inline-run passes and Typst's fonts, 8.6 KB) made
+// it 29.8 KB; 29.9 KB until the pages' runs, columns and line corrections (2.9 KB) and standalone files laid out as
+// the pages (`standalonePages`, 0.8 KB) made it 33.6 KB, and the renderer's header and footer ids 33.7 KB.
+const BUDGET = 35.0 * 1024;
 
 const result = await build({
   entryPoints: ["src/index.ts"],

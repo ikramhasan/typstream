@@ -51,7 +51,8 @@ jobs:
         with: { node: "${{ env.NODE }}" }
       - name: Install poppler
         timeout-minutes: 6
-        run: sudo apt-get install -y --no-install-recommends poppler-utils
+        # The runner image's package lists go stale: a security update removes the version they name (404).
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends poppler-utils
       - run: docker pull onlyoffice/documentserver
       - run: pnpm turbo run build --filter=@typstream/docx-check^...
       - run: dotnet publish tools/docx-check/validator -c Release -o tools/docx-check/validator/out

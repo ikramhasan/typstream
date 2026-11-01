@@ -259,7 +259,7 @@ export interface EngineDocument {
    */
   exportPdf(options?: ExportOptions): Promise<Uint8Array>;
   /**
-   * Exports the document as Typst's HTML, without source anchors: a complete,
+   * Exports the document as Typst's HTML, without source anchors unless `anchors` asks for them: a complete,
    * unsanitized HTML document. `@typstream/dom`'s `standaloneHtml` makes it a
    * file that opens on its own. Otherwise as {@link EngineDocument.exportPdf}.
    */
@@ -304,6 +304,11 @@ export interface ExportOptions {
    * document's own page size.
    */
   inputs?: Record<string, string>;
+  /**
+   * HTML only: keep the source anchors a preview has, on which html-compat writes each block's page settings, header
+   * and footer: for laying the export out as pages (`@typstream/dom`'s `standalonePages`). Default false.
+   */
+  anchors?: boolean;
 }
 
 /**
@@ -397,6 +402,7 @@ export interface ExportJob {
   doc: DocumentImpl;
   format: ExportFormat;
   inputs: Record<string, string> | undefined;
+  anchors?: boolean;
   resolve(data: Uint8Array | string): void;
   reject(error: ExportError): void;
 }
@@ -692,7 +698,15 @@ export class DocumentImpl implements EngineDocument {
     return new Promise((resolve, reject) => {
       if (this.disposed) reject(new ExportError("engine", "The document was disposed."));
       else if (this.tooLong !== null) reject(new ExportError("too-large", this.tooLargeMessage()));
-      else this.host.export({ doc: this, format, inputs: options.inputs ?? this.inputs, resolve, reject });
+      else
+        this.host.export({
+          doc: this,
+          format,
+          inputs: options.inputs ?? this.inputs,
+          ...(format === "html" && options.anchors ? { anchors: true } : {}),
+          resolve,
+          reject,
+        });
     });
   }
 

@@ -43,8 +43,9 @@ export const RUNTIME = `// typstream runtime library: placeholders for what a st
 }
 
 /// A top-level block that doesn't compile, in its place: a note, the error,
-/// and the block's source (folded away in HTML).
-#let error-block(source, message) = context if target() == "html" {
+/// and the block's source (folded away in HTML). With html-compat, which lays
+/// HTML out as the pages, as on them.
+#let error-block(source, message) = context if target() == "html" and not state("typstream/html-compat", false).get() {
   html.elem("div", attrs: (
     class: "typstream-error-block",
     role: "note",

@@ -173,8 +173,8 @@ export interface SanitizeOptions {
   linkTarget?: string | null;
 }
 
-/** Cleans a tree in place. @internal */
-export type Sanitizer = (root: ParentNode) => void;
+/** Cleans a tree in place; elements in `clean` (cleaned already, by this sanitizer) are left as they are. @internal */
+export type Sanitizer = (root: ParentNode, clean?: WeakSet<Node>) => void;
 
 const ELEMENT = 1;
 const TEXT = 3;
@@ -321,10 +321,10 @@ export const createSanitizer = (options: SanitizeOptions): Sanitizer => {
     }
   };
 
-  return (root) => {
+  return (root, clean) => {
     let node: Node | null = root.firstChild;
     while (node) {
-      if (node.nodeType === TEXT) {
+      if (node.nodeType === TEXT || clean?.has(node)) {
         node = after(node, root);
         continue;
       }

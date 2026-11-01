@@ -61,6 +61,8 @@ try {
         failures.push(`${name}:\n  ${[e.message.split("\n")[0], ...why].join("\n  ")}`);
         continue;
       }
+      // Pages are painted when they're in view, and the HTML target's page above pushes them below it.
+      await page.locator("#paged").scrollIntoViewIfNeeded();
       // Lazy fonts and packages arrive after the first compile, which then runs again: let it settle.
       await page.waitForTimeout(2000);
       const report = await page.evaluate(() => {

@@ -10,7 +10,7 @@ import { type CorpusEntry, loadCorpus, streamOf } from "@typstream/corpus";
 import { anchorPoints, createHealer, heal, recognize } from "@typstream/heal";
 import { beforeAll, describe, expect, it } from "vitest";
 import type { AdapterDocument, EngineAdapter } from "../src/server/adapter";
-import { Anchors, anchorText, fromAnchored, insertAnchors } from "../src/server/anchors";
+import { Anchors, anchorText, fromAnchored, insertAnchors, pastRules } from "../src/server/anchors";
 import { LAYOUT_PROFILE } from "../src/server/profile";
 import { createServer } from "../src/server/server";
 import { nodeEngineWasm } from "./support/engine-wasm";
@@ -46,6 +46,38 @@ describe("anchorPoints", () => {
 
   it("ignores lines inside content blocks and text brackets", () => {
     expect(anchoredLines("#[\n\nInner\n]\n\nOuter [\n\nbracket]\n")).toEqual(["#[", "Outer ["]);
+  });
+});
+
+describe("pastRules", () => {
+  const moved = (text: string) => {
+    const { checkpoints } = recognize(text);
+    return pastRules(text, anchorPoints(text, checkpoints), checkpoints).map((p) =>
+      p === null ? null : text.slice(p, text.indexOf("\n", p) >>> 0),
+    );
+  };
+
+  it("moves an anchor past the set and show rules its block starts with", () => {
+    // In a template's output, and after `set page`: the page html-compat reports is the block's.
+    expect(moved("#set text(9pt)\n= Part A\n\n#set page(\n  margin: 1cm,\n)\n#set text(9pt)\nBody\n")).toEqual([
+      null,
+      "= Part A",
+      "Body",
+    ]);
+  });
+
+  it("gives a block of rules only none, and stays before a label", () => {
+    // A template's header, laid out in the template's page, comes before the next anchor.
+    expect(moved("#show: doc => [Header #doc]\n= Part A\n\n#set text(9pt)\n<intro>\n")).toEqual([
+      null,
+      "= Part A",
+      "#set text(9pt)",
+    ]);
+  });
+
+  it("names the block's start", () => {
+    const anchored = new Anchors().apply("#show: doc => doc\n#let x = 1\nBody\n");
+    expect(anchored.text).toBe(`#show: doc => doc\n${anchorText(0)}#let x = 1\nBody\n`);
   });
 });
 
@@ -135,7 +167,9 @@ describe("anchored compiles", () => {
       const compiler = adapter.open();
       compiler.setFiles(assets(entry));
       const count = await check(compiler, entry.source, entry.id);
-      expect(count, entry.id).toBe(points(entry.source).length);
+      // Every block start's but those of rules only (pastRules).
+      expect(count, entry.id).toBe(new Anchors().apply(entry.source).at.length);
+      expect(count, entry.id).toBeGreaterThan(points(entry.source).length / 2);
       compiler.close();
     }
   }, 120_000);
@@ -222,12 +256,12 @@ describe("server", () => {
     await send("export/html", { uri, rev: 1 });
     await send("document/edit", { uri, rev: 2, edits: [{ from: 10, to: 10, insert: "\nMore\n" }] });
     await send("compile", { uri, rev: 2, target: "html" });
-    const prefix = "#let x = 1\n";
+    // Every compile has the layout profile in front (#129), HTML too, which html-compat reads.
+    const prefix = `${LAYOUT_PROFILE}#let x = 1\n`;
     expect(compiled).toEqual([
       { kind: "html", main: `${prefix}${anchorText(0)}= A\n\n${anchorText(5)}Body\n` },
       { kind: "html", main: `${prefix}= A\n\nBody\n` },
-      // Pages have the layout profile in front (#129).
-      { kind: "paged", main: `${LAYOUT_PROFILE}${prefix}= A\n\nBody\n` },
+      { kind: "paged", main: `${prefix}= A\n\nBody\n` },
       { kind: "export", main: `${prefix}= A\n\nBody\n` },
       { kind: "html", main: `${prefix}${anchorText(0)}= A\n\n${anchorText(5)}Body\n\n${anchorText(11)}More\n` },
     ]);

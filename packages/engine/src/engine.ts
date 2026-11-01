@@ -523,6 +523,7 @@ class EngineImpl implements Engine, DocumentHost {
     }
     const params: ExportParams = { uri: job.doc.uri, rev: synced.rev };
     if (job.inputs) params.inputs = job.inputs;
+    if (job.anchors) params.anchors = true;
     const { result } =
       job.format === "pdf"
         ? slot.conn.request("export/pdf", params)

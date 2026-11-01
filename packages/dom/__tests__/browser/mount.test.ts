@@ -46,6 +46,8 @@ const until = (view: MountedTypstream, done: (s: DocumentState) => boolean, ms =
 
 const settled = (s: DocumentState) => s.status === "done" || s.status === "error";
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+/** The text a file shows. */
+const textOf = (file: string) => new DOMParser().parseFromString(file, "text/html").body.textContent ?? "";
 
 describe(`mountTypstream in ${browser}`, () => {
   it("follows a growing source, finishes it, and cleans up on destroy", async () => {
@@ -189,10 +191,10 @@ describe(`mountTypstream in ${browser}`, () => {
     }
   });
 
-  it("keeps an image's proportions when it is shrunk to fit or set to the full width", async () => {
+  it("keeps an image's proportions at its size or set to the full width, on its page", async () => {
     const el = host();
     el.style.width = "300px";
-    // 400 × 100 pt: wider than the element.
+    // 400 × 100 pt: wider than the element, narrower than the page's text (453.5 pt, 605 px), shown scaled.
     const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="100"/>';
     const options = (preamble?: string): TypstreamOptions => ({
       engine,
@@ -201,19 +203,20 @@ describe(`mountTypstream in ${browser}`, () => {
       ...(preamble ? { preamble } : {}),
       lazy: false,
     });
+    // In the page's own pixels: the page is scaled down to the element, not its images.
     const sizes = () => [...el.querySelectorAll("img")].map((i) => [i.offsetWidth, i.offsetHeight]);
     const view = mountTypstream(el, options());
     await until(view, (s) => s.status === "done");
     await expect.poll(sizes).toEqual([
-      [300, 75],
-      [150, 38],
+      [400, 100],
+      [302, 76],
     ]);
-    // Every image as wide as the page: a set rule in the preamble; a width the call gives still wins.
+    // Every image as wide as the page's text: a set rule in the preamble; a width the call gives still wins.
     view.update(options("#set image(width: 100%)"));
     await until(view, (s) => s.status === "done");
     await expect.poll(sizes).toEqual([
-      [300, 75],
-      [150, 38],
+      [605, 151],
+      [302, 76],
     ]);
     view.update({
       ...options("#set image(width: 100%)"),
@@ -221,7 +224,7 @@ describe(`mountTypstream in ${browser}`, () => {
       files: { "wide.svg": svg.replace('width="400" height="100"', 'width="100" height="25"') },
     });
     // A small image grows to the width, in proportion.
-    await expect.poll(sizes).toEqual([[300, 75]]);
+    await expect.poll(sizes).toEqual([[605, 151]]);
     view.destroy();
     el.remove();
   });
@@ -289,11 +292,56 @@ describe(`mountTypstream in ${browser}`, () => {
     const file = await view.exportHtml({ title: "Worksheet" });
     expect(file).toContain('<meta http-equiv="Content-Security-Policy"');
     expect(file).toContain(".marker { color: red }");
-    expect(file).toContain("<h2>Worksheet</h2>");
+    // Laid out as the pages: the renderer's sheets, the heading in them.
+    expect(file).toContain('class="typstream-page"');
+    expect(textOf(file)).toContain("Worksheet");
+    // Or Typst's HTML as it is.
+    expect(await view.exportHtml({ title: "Worksheet", pages: false })).toContain("<h2>Worksheet</h2>");
     expect(view.exportSource()).toBe(source);
     view.destroy();
     el.remove();
   });
+
+  it("exports HTML laid out as pages with the count it was laid out on, from a paged view too", async () => {
+    const el = host();
+    const source =
+      "#set page(height: 160pt, header: [Head])\n#lorem(300)\n\nPages: #context counter(page).final().first().";
+    const view = mountTypstream(el, { engine, source, target: "paged", plugins: [htmlCompat], lazy: false });
+    await until(view, settled);
+    const file = await view.exportHtml();
+    const pages = new DOMParser().parseFromString(file, "text/html").querySelectorAll(".typstream-page").length;
+    expect(pages).toBeGreaterThan(1);
+    expect(textOf(file)).toContain(`Pages: ${pages}.`);
+    // The page settings and header the anchors bring: pages 160 pt tall, a header on each.
+    expect(file).toContain("aspect-ratio: 595.276 / 160");
+    expect(file.split(">Head<").length - 1).toBe(pages);
+    view.destroy();
+    el.remove();
+  }, 60_000);
+
+  it("stops compiling a document whose length depends on its page count", async () => {
+    const el = host();
+    const source = "#context if counter(page).final().first() > 1 [Short.] else [#lorem(900)]";
+    const view = mountTypstream(el, { engine, source, target: "html", plugins: [htmlCompat], lazy: false });
+    let compiles = 0;
+    let last: unknown = null;
+    view.subscribe(() => {
+      const c = view.getState()?.lastCompile;
+      if (c && c !== last) {
+        last = c;
+        compiles++;
+      }
+    });
+    await until(view, settled);
+    // It flips between one page and several: a few compiles, then none.
+    await sleep(3000);
+    const after = compiles;
+    await sleep(2000);
+    expect(compiles).toBe(after);
+    expect(after).toBeLessThan(15);
+    view.destroy();
+    el.remove();
+  }, 60_000);
 
   it("exports with an export's own inputs over the template's and the mount's", async () => {
     const el = host();
@@ -325,9 +373,9 @@ describe(`mountTypstream in ${browser}`, () => {
     expect(await size({ width: "400" })).toEqual([400, 200]);
     expect(await size()).toEqual([300, 200]);
     const file = await view.exportHtml({ inputs: { copy: "teacher" }, title: "Memo" });
-    expect(file).toContain("Copy: teacher, kind: memo");
+    expect(textOf(file)).toContain("Copy: teacher, kind: memo");
     expect(file).toContain("<title>Memo</title>");
-    expect(await view.exportHtml()).toContain("Copy: student, kind: memo");
+    expect(textOf(await view.exportHtml())).toContain("Copy: student, kind: memo");
     view.destroy();
     el.remove();
   });
@@ -377,12 +425,11 @@ describe(`mountTypstream in ${browser}`, () => {
     });
     const state = await until(view, settled);
     expect(state.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
-    // edu's files, preamble, template and stylesheet…
-    const question = el.querySelector(".edu-question");
-    expect(question?.textContent).toContain("1/2");
-    expect(getComputedStyle(question as Element).display).toBe("grid");
-    // …and html-compat's preamble, sanitizer allowances and stylesheet.
-    expect(getComputedStyle(el.querySelector(".ts-grid") as Element).display).toBe("grid");
+    // edu's files, preamble and template, laid out by html-compat's preamble, sanitizer allowances and stylesheet:
+    // the question is a grid, as on pages.
+    const grids = [...el.querySelectorAll(".ts-grid")];
+    expect(grids.some((g) => g.textContent?.includes("1/2"))).toBe(true);
+    expect(getComputedStyle(grids[0] as Element).display).toBe("grid");
     view.destroy();
     el.remove();
   });

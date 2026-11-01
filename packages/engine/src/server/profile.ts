@@ -1,8 +1,8 @@
 // typstream's layout profile (#129): the settings under which Word-like layout engines break lines and pages where
 // Typst does (#118's spike: LibreOffice equal on 122 Latin documents, ONLYOFFICE 99%), so the paged view, the PDF and
-// the DOCX export lay a document out alike. The worker puts it before every document's preamble when it compiles
-// pages or exports a PDF. Not for the HTML target, whose browser layout matches no DOCX: html-compat would carry its
-// spacing defaults into CSS.
+// the DOCX export lay a document out alike. The worker puts it before every document's preamble, for every compile:
+// in HTML its rules change nothing on their own (Typst's HTML export has no line boxes), but html-compat reads the
+// styles it sets and its CSS has the same defaults, so the HTML target looks like the pages too.
 //
 // - Lines: a constant pitch of 1.3em, close to Typst's default (14.39pt at 11pt), and a whole number of twips at
 //   Word's half-point text sizes. `leading` is 0 and the text's edges make a line box exactly the pitch, the
@@ -22,7 +22,7 @@
 // the larger of two gaps, which the exporter writes as one.
 
 /**
- * The layout profile the worker puts before every document (and its preamble) for pages and PDFs: constant line
+ * The layout profile the worker puts before every document (and its preamble), in every target: constant line
  * pitch, ragged right without hyphenation, table rows that don't split (#129). Typst source.
  * @public
  */
@@ -31,8 +31,10 @@ export const LAYOUT_PROFILE: string = `// typstream's layout profile: what a DOC
 #show par: set par(leading: 0pt, justify: false, linebreaks: "simple")
 #show table: set table.cell(breakable: false)
 // A line holding only an equation is as tall as the equation, while Word gives every line of a paragraph with math
-// at least the pitch: a zero-width strut of one line box makes Typst's line that tall too.
-#show math.equation.where(block: false): it => box(height: 1.3em, baseline: 0.246em) + it
+// at least the pitch: a zero-width strut of one line box makes Typst's line that tall too. (Not in the pieces after
+// the first html-compat cuts an equation into where it breaks, which mark themselves by a hyphenation cost no document
+// sets: the strut is on the equation's first line only.)
+#show math.equation.where(block: false): it => if text.costs.hyphenation == 100.0003% { it } else { box(height: 1.3em, baseline: 0.246em) + it }
 // The rows of a display equation with line breaks are par.leading apart: Typst's default, which 0 would make touch.
 // (Not inline ones: a paragraph setting inside a line ends the paragraph there.)
 #show math.equation.where(block: true): set par(leading: 0.65em)

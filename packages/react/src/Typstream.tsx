@@ -8,8 +8,8 @@ import {
   type MountedTypstream,
   mountTypstream,
   registerMathFont,
-  type StandaloneHtmlOptions,
   type TypstreamExportOptions,
+  type TypstreamHtmlExportOptions,
   type TypstreamOptions,
 } from "@typstream/dom";
 import type { DocumentState, EngineDocument } from "@typstream/engine";
@@ -70,13 +70,14 @@ export interface TypstreamHandle {
    */
   exportPdf(options?: TypstreamExportOptions): Promise<Uint8Array>;
   /**
-   * Exports the document as an HTML file that opens on its own (see
-   * `standaloneHtml` in `@typstream/dom`), with the component's plugins,
-   * `stylesheets` and `theme`. `options` add to or override them (a `mathFont`,
-   * a `title`). Otherwise as {@link TypstreamHandle.exportPdf}, `options.inputs`
-   * included.
+   * Exports the document as an HTML file that opens on its own, laid out as
+   * the pages (see `standalonePages` in `@typstream/dom`; `pages: false` for
+   * `standaloneHtml`'s reading layout), with the component's plugins,
+   * `stylesheets`, `theme` and Typst fonts. `options` add to or override them
+   * (a `mathFont`, a `title`). Otherwise as {@link TypstreamHandle.exportPdf},
+   * `options.inputs` included.
    */
-  exportHtml(options?: StandaloneHtmlOptions & TypstreamExportOptions): Promise<string>;
+  exportHtml(options?: TypstreamHtmlExportOptions): Promise<string>;
   /**
    * Exports the document as an editable DOCX file that Word lays out as the PDF (#131). Otherwise as
    * {@link TypstreamHandle.exportPdf}, `options.inputs` included. @beta

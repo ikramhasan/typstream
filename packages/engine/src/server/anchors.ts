@@ -125,6 +125,42 @@ export class Anchors {
       this.text = text;
       this.changedFrom = null;
     }
-    return insertAnchors(text, anchorPoints(text, this.checkpoints), label);
+    const points = anchorPoints(text, this.checkpoints);
+    const named = new Map<number, number>();
+    for (const [i, at] of pastRules(text, points, this.checkpoints).entries())
+      if (at !== null) named.set(at, points[i] as number);
+    return insertAnchors(text, [...named.keys()], (at) => {
+      const point = named.get(at) ?? at;
+      return label ? label(point) : point;
+    });
   }
 }
+
+/** A line that is a set or show rule. */
+const RULE = /^#(set|show)\b/;
+
+/**
+ * Anchor points moved past the set and show rules their blocks start with (still naming the block's start): the page
+ * an anchor reports (html-compat's `data-page`) is the one at its position, and what its block shows is laid out
+ * after the rules, `#set page(..)`'s or a template's (`#show: worksheet`). A block of rules only gets none: what it
+ * shows, if anything, is a template's, laid out as what follows. Not onto a line starting with `<` (a label there
+ * would attach to the anchor). `null` for a point that gets no anchor.
+ */
+export const pastRules = (
+  text: string,
+  points: readonly number[],
+  checkpoints: readonly Checkpoint[],
+): (number | null)[] => {
+  const lines = checkpoints.filter((cp) => cp.nesting === 0).map((cp) => text.lastIndexOf("\n", cp.offset - 1) + 1);
+  return points.map((point, i) => {
+    const next = points[i + 1] ?? text.length;
+    let at = point;
+    for (;;) {
+      if (!RULE.test(text.slice(at, at + 6))) return at;
+      const after = lines.find((line) => line > at);
+      if (after === undefined || after >= next) return null;
+      if (text[after] === "<") return at;
+      at = after;
+    }
+  });
+};

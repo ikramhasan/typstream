@@ -292,7 +292,7 @@ export interface CompileParams extends DocumentParams {
   settledFrom?: number;
   /**
    * HTML only: insert source anchors at top-level blocks (PLAN §10.2).
-   * Default true; exports never contain anchors.
+   * Default true; exports contain them only when they ask (`ExportParams.anchors`).
    */
   anchors?: boolean;
   /**
@@ -676,6 +676,11 @@ export type Artifact = HtmlArtifact | PagedArtifact;
 export interface ExportParams extends DocumentParams {
   /** `sys.inputs` for the export (e.g. the answer-key toggle). */
   inputs?: Record<string, string>;
+  /**
+   * HTML only: with the source anchors of a preview (PLAN §10.2), on which html-compat writes each block's page
+   * settings, header and footer, for an export laid out as pages (`@typstream/dom`'s `standalonePages`). Default false.
+   */
+  anchors?: boolean;
 }
 
 /**

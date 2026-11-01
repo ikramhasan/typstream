@@ -20,8 +20,10 @@ import {
 } from "./animate";
 import { injectCss } from "./css";
 import { directionOf } from "./dir";
+import { createHtmlPages, parseGeometry } from "./pages";
+import { collapseSpaces, rowRuns, styleSpaces, wrapRuns } from "./runs";
 import { createSanitizer, hideStyles, type Sanitizer } from "./sanitize";
-import { type Split, splitHtml } from "./split";
+import { type Split, type SplitBlock, type SplitPage, splitHtml } from "./split";
 import { htmlRendererCss } from "./styles";
 
 /** Options for {@link createHtmlRenderer}. @public */
@@ -59,6 +61,21 @@ export interface HtmlRendererOptions {
   islands?: IslandRenderers;
   /** What islands get as `IslandProps.file`: the document's files. Default: none. @beta */
   file?: (path: string) => FileContent | null;
+  /**
+   * How the document's pages are shown, as the paged view's layouts: `fixed` (default), its pages at their own
+   * size, scaled down to fit the element; `fit-width`, scaled to the element's width; `reflow`, pages as wide as
+   * the element (open the document with the paged view's `REFLOW_PREAMBLE` and `reflowInputs`, which html-compat
+   * reads). The document is laid out on sheets of its page size and margins and breaks across them where Typst
+   * breaks its pages.
+   */
+  layout?: "fixed" | "fit-width" | "reflow";
+  /**
+   * Called when the number of pages changes. A document whose headers or footers show the page count
+   * (`counter(page).final()`) reads it from the input `typstream-page-count` (html-compat): `mountTypstream` sets it
+   * and compiles again.
+   * @beta
+   */
+  onPages?: (count: number) => void;
 }
 
 /** Per-update options. @public */
@@ -70,6 +87,8 @@ export interface HtmlUpdateOptions {
   /**
    * While streaming, heal's stable offset (`stableOffset`): islands whose block
    * starts at or after it are incomplete. Default: the document is complete.
+   * `null` says the stream has ended: the pages, laid out from the first block
+   * that changed while it streamed, are then laid out again whole.
    * @beta
    */
   stable?: number | null;
@@ -119,11 +138,35 @@ interface Block {
   key: string;
   nodes: Node[];
   src: number | null;
+  /** Its element has {@link START_ATTRIBUTE}. */
+  start: boolean;
   /** Start times of words still fading in. */
   timings: Timings | null;
+  /** The page settings on its element (`setPage`), as one string. */
+  page?: string;
 }
 
 const SRC_ATTRIBUTE = "data-typstream-src";
+/** On a block right after its anchor: one the source starts after a blank line (html-compat's CSS reads it). */
+const START_ATTRIBUTE = "data-typstream-start";
+
+/**
+ * The page html-compat writes on the source anchors, and its header and footer inside them: the last anchor's (a
+ * document's pages are all alike). The first ones can come before the document's `#set page(..)`, or a template's.
+ */
+const PAGES =
+  /<typstream-anchor data-src="\d+" data-page="([^"]*)"(?: data-numbering(?:="[^"]*")?)?>([\s\S]*?)<\/typstream-anchor>/y;
+
+/** The last anchor's match of `PAGES` in `html`: found from the end, so a long document isn't scanned whole. */
+const lastPage = (html: string): RegExpExecArray | null => {
+  for (let at = html.lastIndexOf("<typstream-anchor "); at >= 0; at = html.lastIndexOf("<typstream-anchor ", at - 1)) {
+    PAGES.lastIndex = at;
+    const m = PAGES.exec(html);
+    if (m && m.index === at) return m;
+    if (at === 0) break;
+  }
+  return null;
+};
 
 /**
  * Typst writes the document's language on `<html>`, first in its output, and
@@ -144,6 +187,56 @@ const lastElement = (nodes: readonly Node[]): Element | null => {
 
 // --- caret ----------------------------------------------------------------------------
 
+/**
+ * A glyph's outline in a picture of Typst's (`html.frame`, html-compat's equations), named by a hash of the glyph
+ * (typst-svg's `DedupId`: hex digits without leading zeros). The engine sends each once, in the first picture that draws it (engine-wasm's glyphs.rs); other engines' HTML may
+ * repeat them in every picture.
+ */
+const GLYPH = /<symbol id="(g[0-9A-F]{1,32})"[^>]*>[\s\S]*?<\/symbol>/g;
+const SYMBOL = '<symbol id="g';
+/** `GLYPH` where an outline starts, and only there. */
+const GLYPH_AT = new RegExp(GLYPH.source, "y");
+
+/** A picture of Typst's (typst-svg declares the `h5` namespace on each), up to its end: they don't nest. */
+const PICTURE = /<svg [^>]*xmlns:h5="http:\/\/www\.w3\.org\/1999\/xhtml"[^>]*>[\s\S]*?<\/svg>/g;
+
+/** How many sanitized pictures a renderer keeps for markup that repeats. */
+const MAX_PICTURES = 2000;
+
+/** A glyph in such a picture: a group that places it around a `<use>` of its outline. */
+const GLYPH_USE =
+  /<g transform="(matrix\([^")]*\))"><use (xlink:href="#g[0-9A-F]{1,32}") x="0" y="0" (fill="[^"]*") fill-rule="nonzero"\/><\/g>/g;
+
+/**
+ * Typst's pictures with their glyphs as one `<use>` each, placed by its own `transform`: drawn the same, with half the
+ * elements to parse and sanitize. @internal
+ */
+export const compactGlyphs = (html: string): string =>
+  html.includes("<use ") ? html.replace(GLYPH_USE, '<use $2 transform="$1" $3/>') : html;
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+/**
+ * A picture Typst sizes 0 across one way (a line: `height: 0em`, its `viewBox` 1pt tall) given its `viewBox`'s size
+ * that way, and as much negative margin: a box of 0 would scale the drawing to nothing, and this one takes no more
+ * room. @internal
+ */
+export const unflatten = (svg: SVGElement): void => {
+  const box = (svg.getAttribute("viewBox") ?? "").split(" ").map(Number);
+  const { style } = svg;
+  // The size that may be 0, the other, the margin that takes the room back, and the first's place in the viewBox.
+  for (const [zero, other, margin, i] of [
+    ["height", "width", "marginBottom", 3],
+    ["width", "height", "marginRight", 2],
+  ] as const) {
+    const scale = Number.parseFloat(style[other]) / (box[5 - i] as number);
+    if (Number.parseFloat(style[zero]) === 0 && scale > 0) {
+      style[zero] = `${(box[i] as number) * scale}em`;
+      style[margin] = `-${style[zero]}`;
+    }
+  }
+};
+
 /** Elements the caret doesn't go into: it goes after them. */
 const CARET_STOP = new Set(["math", "svg", "pre", "img", "hr", "br", "wbr", ISLAND_MARKER]);
 
@@ -162,46 +255,16 @@ const caretParent = (block: Element): Element => {
     }
     let last = el.lastChild;
     while (last && last.nodeType === 3 && (last as Text).data.trim() === "") last = last.previousSibling;
-    if (!last || last.nodeType !== 1 || CARET_STOP.has((last as Element).localName)) return el;
+    // Not into a run of text (`typstream-t`): the caret goes after it, in what holds it.
+    if (
+      !last ||
+      last.nodeType !== 1 ||
+      CARET_STOP.has((last as Element).localName) ||
+      (last as Element).classList.contains("typstream-t")
+    )
+      return el;
     el = last as Element;
   }
-};
-
-// --- wide blocks ----------------------------------------------------------------------
-
-/**
- * On a box wider than the root, which the stylesheet makes scroll sideways (#95):
- * `1` on the scroll box the renderer put around it, empty on a box that scrolls itself.
- */
-const WIDE = "data-typstream-wide";
-
-/** Boxes the walk doesn't go into: they scroll whole. */
-const WHOLE = new Set(["table", "math"]);
-
-/** `el` is wider than `parent`'s content (a table, an equation, a block with a width). */
-const wider = (el: Element, parent: Element): boolean => el.getBoundingClientRect().width > parent.clientWidth + 0.5;
-
-/**
- * Collects in `found` the innermost boxes that make `el` overflow, if it does:
- * `el` is a box of its own (not inline, whose `clientWidth` is 0) in the flow,
- * not marked yet, and wider than `parent` or with content wider than itself (code). The
- * walk goes down to a table or an equation, or the box whose own lines
- * overflow. Scrolling only those leaves every other box as it was: a scroll
- * container is a formatting context, so margins inside it would stop
- * collapsing through it.
- */
-const findWide = (el: Element, parent: Element, found: Element[]): void => {
-  if (
-    !el.clientWidth ||
-    el.hasAttribute(WIDE) ||
-    (el.scrollWidth <= el.clientWidth && !wider(el, parent)) ||
-    // Out of flow (a placed box): a box around it wouldn't hold it.
-    getComputedStyle(el).position === "absolute"
-  )
-    return;
-  const before = found.length;
-  if (!WHOLE.has(el.localName)) for (const child of el.children) findWide(child, el, found);
-  if (found.length === before) found.push(el);
 };
 
 // --- renderer -------------------------------------------------------------------------
@@ -226,8 +289,9 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
   // Markup is parsed in a document with no browsing context: nothing in it runs or loads.
   const inert = doc.implementation.createHTMLDocument("");
   const template = inert.createElement("template");
+  const idPrefix = options.idPrefix ?? `typstream-${id}-`;
   const sanitize: Sanitizer = createSanitizer({
-    idPrefix: options.idPrefix ?? `typstream-${id}-`,
+    idPrefix,
     ...(options.plugins ? { plugins: options.plugins } : {}),
     ...(options.linkTarget !== undefined ? { linkTarget: options.linkTarget } : {}),
   });
@@ -245,11 +309,40 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
     for (const css of [htmlRendererCss, ...plugins, ...(options.stylesheets ?? [])]) injectCss(root, css);
   }
 
+  // Headers and footers by the page they are for (html-compat's anchors hold them), parsed when a page needs them.
+  // Each by an id made from its HTML, so the same document gets the same ids however it arrived (streamed or whole).
+  const partsHtml = new Map<string, string>();
+  const partsNodes = new Map<string, readonly Node[]>();
+  const partsIds = new Map<string, string>();
+  const partsId = (html: string): string => {
+    const known = partsIds.get(html);
+    if (known !== undefined) return known;
+    let hash = 0x811c9dc5;
+    for (let i = 0; i < html.length; i++) hash = Math.imul(hash ^ html.charCodeAt(i), 0x01000193);
+    const id = (hash >>> 0).toString(36);
+    partsHtml.set(id, html);
+    partsIds.set(html, id);
+    return id;
+  };
+  const pages = createHtmlPages(root, options.layout ?? "fixed", options.onPages, (id) => {
+    let nodes = partsNodes.get(id);
+    if (!nodes) {
+      const html = partsHtml.get(id) ?? "";
+      nodes = html ? parse(html) : [];
+      partsNodes.set(id, nodes);
+    }
+    return nodes;
+  });
+  /** Where the document goes: the flow over the pages. */
+  const host = pages.flow;
+
   let shell: string | null = null;
+  /** The page's header and footer, as html-compat wrote them. */
+  let marginals = "";
   /** The last update's split, which the next one resumes from. */
   let lastSplit: Split | null = null;
-  /** Where blocks live: `root`, or the innermost wrapper of the shell. */
-  let container: Element = root;
+  /** Where blocks live: the flow, or the innermost wrapper of the shell. */
+  let container: Element = host;
   let blocks: Block[] = [];
   let caret: Element | null = null;
   const islands: Islands | null = options.islands
@@ -258,58 +351,98 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
   /** The island markers parsed, with what their attributes said (the sanitizer drops them). */
   const markers = new WeakMap<Element, { name: string; raw: string; data: unknown }>();
 
-  /** Puts `to` in `from`'s place, in the DOM and among the blocks' nodes (a top-level table and its scroll box). */
-  const swap = (from: Element, to: Element): void => {
-    from.replaceWith(to);
-    for (const block of blocks) {
-      const i = block.nodes.indexOf(from);
-      if (i >= 0) block.nodes[i] = to;
+  /**
+   * Glyph outlines, one of each, out of sight in the root (the pictures' `<use>`s find them there): by id, the markup
+   * each came in. Kept there, an outline stays when the block that brought it goes (an edit, a stream's last block
+   * changing) and later blocks use it; and one that comes again isn't parsed again.
+   */
+  const glyphs = new Map<string, string>();
+  let glyphSheet: SVGSVGElement | null = null;
+
+  /**
+   * Takes the outlines in `html` the root doesn't have, sanitized, to the root. From the whole document, before any of
+   * it is parsed: the engine sends each once, where it first appears, which can be a header in an anchor (parsed only
+   * when a page draws it) as well as a block.
+   */
+  const takeGlyphs = (html: string): void => {
+    const fresh = new Map<string, string>();
+    // The first of each: the one the document's `<use>`s find. By `indexOf`, the markup only of those that are new:
+    // this runs on every update, over the whole document.
+    for (let at = html.indexOf(SYMBOL); at !== -1; at = html.indexOf(SYMBOL, at + 1)) {
+      const id = html.slice(at + SYMBOL.length - 1, html.indexOf('"', at + SYMBOL.length));
+      if (glyphs.has(id) || fresh.has(id)) continue;
+      GLYPH_AT.lastIndex = at;
+      const match = GLYPH_AT.exec(html);
+      if (match?.[1] === id) fresh.set(id, match[0]);
     }
+    if (fresh.size === 0) return;
+    template.innerHTML = trustedHTML(`<svg>${[...fresh.values()].join("")}</svg>`);
+    sanitize(template.content);
+    for (const symbol of Array.from(template.content.querySelectorAll("symbol[id]"))) {
+      const glyph = symbol.id.slice(idPrefix.length);
+      const markup = fresh.get(glyph);
+      if (markup === undefined || !symbol.id.startsWith(idPrefix) || glyphs.has(glyph)) continue;
+      if (!glyphSheet) {
+        glyphSheet = doc.createElementNS(SVG_NS, "svg");
+        glyphSheet.setAttribute("class", "typstream-glyphs");
+        glyphSheet.setAttribute("aria-hidden", "true");
+      }
+      glyphSheet.append(symbol);
+      glyphs.set(glyph, markup);
+    }
+    if (glyphSheet && glyphSheet.parentNode !== root) root.append(glyphSheet);
   };
 
   /**
-   * Marks what is wider than the root, and unmarks what fits again, once laid
-   * out: after updates, and when the root's size changes (its width, or fonts
-   * that arrived). A marked box is focusable, so the keyboard can scroll it.
-   * It has no name of its own: what it holds (a table, an equation, code)
-   * is announced with it.
+   * Typst's pictures, sanitized, by their markup: a block a stream changes is parsed again on every update with the
+   * same equations, and documents repeat equations ($x$, $n$). A picture is a copy of the one parsed first.
    */
-  const fit = (): void => {
-    // By the measure that marked them: a scroll box's content is no longer wider than it, a box's lines fit.
-    const fits = [...root.querySelectorAll(`[${WIDE}]`)].filter((el) =>
-      el.getAttribute(WIDE) ? !wider(el.firstElementChild as Element, el) : el.scrollWidth <= el.clientWidth,
-    );
-    const wide: Element[] = [];
-    for (const child of container.children) findWide(child, container, wide);
-    for (const el of fits) {
-      if (el.getAttribute(WIDE)) swap(el, el.firstElementChild as Element);
-      el.removeAttribute(WIDE);
-      el.removeAttribute("tabindex");
+  const pictures = new Map<string, DocumentFragment>();
+  const pictureTemplate = inert.createElement("template");
+  /** In the placeholders' name, so a document's own elements can't stand for a picture. */
+  const nonce = `p${Math.random().toString(36).slice(2)}`;
+
+  /** A picture's markup as nodes, sanitized: copied from the one parsed first. */
+  const picture = (markup: string): DocumentFragment => {
+    let nodes = pictures.get(markup);
+    if (!nodes) {
+      pictureTemplate.innerHTML = trustedHTML(hideStyles(markup));
+      nodes = pictureTemplate.content;
+      sanitize(nodes);
+      const svg = nodes.firstElementChild;
+      if (svg?.namespaceURI === SVG_NS) unflatten(svg as SVGElement);
+      nodes = inert.importNode(nodes, true);
+      if (pictures.size >= MAX_PICTURES) pictures.clear();
+      pictures.set(markup, nodes);
     }
-    for (const el of wide) {
-      let box = el;
-      // A box wider than its parent scrolls in a `div` as wide as the parent: browsers other than
-      // Chromium don't scroll a `math` element, a table would have to be made a block (another
-      // layout), and a box with a width of its own would only be cut narrower.
-      if (wider(el, el.parentElement as Element)) {
-        box = doc.createElement("div");
-        box.setAttribute(WIDE, "1");
-        swap(el, box);
-        box.append(el);
-      } else box.setAttribute(WIDE, "");
-      box.setAttribute("tabindex", "0");
-    }
+    return nodes.cloneNode(true) as DocumentFragment;
   };
-  // Before the next paint. An update and the resize it causes land in different frames: nothing to coalesce.
-  const refit = () => view.requestAnimationFrame(fit);
-  const resized = new view.ResizeObserver(refit);
-  resized.observe(root);
 
   /** Parses and sanitizes markup into nodes owned by the page's document. */
   const parse = (html: string): Node[] => {
+    // Outlines the root has aren't parsed again; only those the same as its (a document's own `<symbol id="g…">`
+    // stays where it is).
+    const markup = compactGlyphs(
+      html.includes("<symbol") ? html.replace(GLYPH, (all, id: string) => (glyphs.get(id) === all ? "" : all)) : html,
+    );
+    // Pictures stand aside as placeholders, parsed and sanitized on their own (or copied: see `pictures`).
+    const found: string[] = [];
+    const rest = markup.includes("xmlns:h5")
+      ? markup.replace(PICTURE, (svg) => `<typstream-${nonce} n="${found.push(svg) - 1}"></typstream-${nonce}>`)
+      : markup;
     // Under Trusted Types (#70) through typstream's policy: the template is inert, and sanitized next.
-    template.innerHTML = trustedHTML(hideStyles(html));
+    template.innerHTML = trustedHTML(hideStyles(rest));
     const content = template.content;
+    const clean = new WeakSet<Node>();
+    if (found.length > 0) {
+      for (const placeholder of Array.from(content.querySelectorAll(`typstream-${nonce}`))) {
+        const svg = found[Number(placeholder.getAttribute("n"))];
+        if (svg === undefined) continue;
+        const nodes = picture(svg);
+        for (const node of Array.from(nodes.childNodes)) clean.add(node);
+        placeholder.replaceWith(nodes);
+      }
+    }
     if (islands) {
       for (const el of content.querySelectorAll(ISLAND_MARKER)) {
         const name = el.getAttribute("name");
@@ -322,22 +455,45 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
         }
       }
     }
-    sanitize(content);
+    sanitize(content, clean);
+    collapseSpaces(content, inert);
+    styleSpaces(content, inert);
+    rowRuns(content, inert);
+    wrapRuns(content, inert);
     // Moving the cleaned nodes adopts them into the page's document.
     const fragment = doc.createDocumentFragment();
     fragment.append(...Array.from(content.childNodes));
     return Array.from(fragment.childNodes);
   };
 
-  const setSrc = (block: Block, src: number | null): void => {
-    if (block.src === src) return;
+  const setSrc = (block: Block, src: number | null, start: boolean): void => {
+    if (block.src === src && block.start === start) return;
     block.src = src;
-    // On the block's own element, not the scroll box the renderer may have put around it.
-    let el = firstElement(block.nodes);
-    if (el?.getAttribute(WIDE)) el = el.firstElementChild;
+    block.start = start;
+    const el = firstElement(block.nodes);
     if (!el) return;
     if (src === null) el.removeAttribute(SRC_ATTRIBUTE);
     else el.setAttribute(SRC_ATTRIBUTE, String(src));
+    el.toggleAttribute(START_ATTRIBUTE, start);
+  };
+
+  /** A block's page (html-compat's anchor before it), on its first element, for the pages to follow. */
+  const setPage = (block: Block, page: SplitPage | undefined): void => {
+    const el = firstElement(block.nodes);
+    if (!el) return;
+    const id = page?.parts === undefined ? undefined : partsId(page.parts);
+    // Unchanged on most blocks of most updates: their attributes stay untouched (writing them restyles).
+    const key = page ? `${page.geometry}|${page.numbering}|${id}|${page.counter}` : "";
+    if (block.page === key) return;
+    block.page = key;
+    const set = (name: string, value: string | undefined) => {
+      if (value === undefined) el.removeAttribute(`data-typstream-${name}`);
+      else el.setAttribute(`data-typstream-${name}`, value);
+    };
+    set("page", page?.geometry);
+    set("numbering", page?.numbering);
+    set("parts", id);
+    set("counter", page?.counter === undefined ? undefined : String(page.counter));
   };
 
   const removeNodes = (block: Block): void => {
@@ -362,21 +518,22 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
   const buildShell = (start: readonly string[], end: readonly string[]): void => {
     for (const block of blocks) removeNodes(block);
     blocks = [];
-    if (container !== root) root.replaceChildren();
-    container = root;
+    if (container !== host) host.replaceChildren();
+    container = host;
     if (start.length === 0) return;
     const nodes = parse(start.join("") + end.join(""));
-    root.replaceChildren(...nodes);
+    host.replaceChildren(...nodes);
     // The innermost element along the chain of first elements.
     let el = firstElement(nodes);
     while (el?.firstElementChild) el = el.firstElementChild;
-    container = el ?? root;
+    container = el ?? host;
   };
 
   const update = (html: string, opts: HtmlUpdateOptions = {}): HtmlUpdateResult => {
     const t0 = view.performance.now();
     caret?.remove();
     caret = null;
+    takeGlyphs(html);
 
     const split = splitHtml(html, lastSplit);
     lastSplit = split;
@@ -385,6 +542,12 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
       shell = split.shell;
     }
     setLanguage(HTML_LANG.exec(html)?.[1]);
+    const page = lastPage(html);
+    pages.setGeometry(parseGeometry(page?.[1]));
+    if ((page?.[2] ?? "") !== marginals) {
+      marginals = page?.[2] ?? "";
+      pages.setMarginals(marginals ? parse(marginals) : []);
+    }
     const next = split.blocks;
     const old = blocks;
 
@@ -414,16 +577,17 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
     const result: Block[] = [];
     const created: Block[] = [];
     for (let i = 0; i < next.length; i++) {
-      const item = next[i] as { html: string; src: number | null };
+      const item = next[i] as SplitBlock;
       let block: Block | undefined;
       if (i < head) block = old[i];
       else if (i >= next.length - tail) block = old[old.length - (next.length - i)];
       else block = byKey.get(item.html)?.shift();
       if (!block) {
-        block = { key: item.html, nodes: parse(item.html), src: null, timings: null };
+        block = { key: item.html, nodes: parse(item.html), src: null, start: false, timings: null };
         created.push(block);
       }
-      setSrc(block, item.src);
+      setSrc(block, item.src, item.start === true);
+      setPage(block, item.page);
       result.push(block);
     }
     const reused = new Set(result);
@@ -449,7 +613,10 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
       const { nodes } = result[i] as Block;
       if (nodes.length === 0) continue;
       const last = nodes[nodes.length - 1] as Node;
-      if (last.parentNode !== container || last.nextSibling !== after) {
+      // Past the pages' breaks between blocks (pages.ts), which aren't blocks.
+      let next = last.nextSibling;
+      while (next && (next as Element).classList?.contains("typstream-break")) next = next.nextSibling;
+      if (last.parentNode !== container || next !== after) {
         for (const node of nodes) container.insertBefore(node, after);
       }
       after = nodes[0] as Node;
@@ -470,7 +637,20 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
       caret.setAttribute("aria-hidden", "true");
       parent.append(caret);
     }
-    refit();
+    // Pages from the first block that changed (a stream changes the end); the caret's block changed too.
+    const fresh = new Set(created);
+    let changed = result.findIndex((block, i) => fresh.has(block) || block !== old[i]);
+    if (changed < 0) changed = result.length - 1;
+    const firstNode = result[changed]?.nodes[0] ?? null;
+    // Once the stream ends, all of them: a layout from where each update changed can come out otherwise where a
+    // block is taller than a page (a model's own boxes).
+    pages.layout(
+      opts.stable === null
+        ? null
+        : caret && firstNode && caret.compareDocumentPosition(firstNode) & 4
+          ? caret
+          : firstNode,
+    );
 
     return { blocks: result.length, created: created.length, removed: removed.length, ms: view.performance.now() - t0 };
   };
@@ -509,10 +689,11 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
     caret = null;
     for (const block of blocks) removeNodes(block);
     blocks = [];
-    root.replaceChildren();
-    container = root;
+    host.replaceChildren();
+    container = host;
     shell = null;
     lastSplit = null;
+    pages.layout();
   };
 
   return {
@@ -535,7 +716,8 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
     dispose() {
       clear();
       islands?.destroy();
-      resized.disconnect();
+      pages.dispose();
+      glyphSheet?.remove();
       setLanguage(undefined);
       root.classList.remove("typstream");
       root.removeAttribute("data-typstream-theme");

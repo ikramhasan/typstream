@@ -214,6 +214,7 @@ export class ExportError extends Error {
 
 // @public
 export interface ExportOptions {
+    anchors?: boolean;
     inputs?: Record<string, string>;
 }
 

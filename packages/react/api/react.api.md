@@ -23,7 +23,9 @@ import { ReactNode } from 'react';
 import { Ref } from 'react';
 import { RenderedEvent } from '@typstream/core';
 import { StandaloneHtmlOptions } from '@typstream/dom';
+import { TypstFont } from '@typstream/dom';
 import { TypstreamExportOptions } from '@typstream/dom';
+import { TypstreamHtmlExportOptions } from '@typstream/dom';
 import { TypstreamOptions } from '@typstream/dom';
 import { WatchdogEvent } from '@typstream/core';
 
@@ -66,11 +68,13 @@ export { StandaloneHtmlOptions }
 // @public
 export type TelemetryHooks = Pick<TypstreamOptions, "onRendered" | "onFallback" | "onWatchdog" | "onDiagnostics">;
 
+export { TypstFont }
+
 // @public
 export const Typstream: (input: TypstreamProps) => react.JSX.Element;
 
 // @public
-export interface TypstreamDefaults extends Pick<TypstreamOptions, "target" | "layout" | "pageHeight" | "preamble" | "template" | "inputs" | "files" | "resolveImage" | "heal" | "schedule" | "plugins" | "stylesheets" | "animated" | "caret" | "theme" | "linkTarget" | "textLayer" | "renderer" | "lazy">, TelemetryHooks {
+export interface TypstreamDefaults extends Pick<TypstreamOptions, "target" | "layout" | "pageHeight" | "preamble" | "template" | "inputs" | "files" | "resolveImage" | "heal" | "schedule" | "plugins" | "stylesheets" | "animated" | "caret" | "theme" | "fonts" | "linkTarget" | "textLayer" | "renderer" | "lazy">, TelemetryHooks {
     engine?: Engine;
     // @beta
     islands?: IslandComponents;
@@ -85,12 +89,14 @@ export interface TypstreamHandle {
     readonly element: HTMLElement | null;
     // @beta
     exportDocx(options?: TypstreamExportOptions): Promise<Uint8Array>;
-    exportHtml(options?: StandaloneHtmlOptions & TypstreamExportOptions): Promise<string>;
+    exportHtml(options?: TypstreamHtmlExportOptions): Promise<string>;
     exportPdf(options?: TypstreamExportOptions): Promise<Uint8Array>;
     exportSource(): string;
     getState(): DocumentState | null;
     subscribe(listener: () => void): () => void;
 }
+
+export { TypstreamHtmlExportOptions }
 
 // @public
 export interface TypstreamInfo {
@@ -98,7 +104,7 @@ export interface TypstreamInfo {
     document: EngineDocument | null;
     // @beta
     exportDocx(options?: TypstreamExportOptions): Promise<Uint8Array>;
-    exportHtml(options?: StandaloneHtmlOptions & TypstreamExportOptions): Promise<string>;
+    exportHtml(options?: TypstreamHtmlExportOptions): Promise<string>;
     exportPdf(options?: TypstreamExportOptions): Promise<Uint8Array>;
     exportSource(): string;
     handle: TypstreamHandle | null;

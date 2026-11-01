@@ -89,8 +89,8 @@ const FORBIDDEN = new Set(
 /** Attributes nothing may keep, besides `on*` handlers and `data-*` (except the renderers' own, below). */
 const FORBIDDEN_ATTRS = new Set("srcdoc srcset ping formaction action is name autofocus background poster".split(" "));
 
-/** `data-*` attributes the renderers set: the HTML renderer's, and the paged view's on its pages. */
-const RENDERER_DATA = /^data-(?:typstream-|layout$|page$)/;
+/** `data-*` attributes the renderers set: the HTML renderer's (its root's baseline rule too), and the paged view's. */
+const RENDERER_DATA = /^data-(?:typstream-|layout$|page$|baseline(?:-borrow)?$)/;
 
 /** Where a link may go, and where an image may come from (PLAN §9). */
 const SAFE_HREF = /^(?:https?:|mailto:|#)/i;

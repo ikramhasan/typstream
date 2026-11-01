@@ -3,7 +3,7 @@ title: Render targets
 description: The two ways typstream shows a document, semantic HTML or pages, how each one renders and updates, and which to pick.
 ---
 
-Typst compiles one source to two kinds of output, and typstream renders both. **HTML** is Typst's HTML export: semantic elements and MathML that reflow like a web page. **Paged** is pages, laid out exactly as the document prints. You choose with `target`:
+Typst compiles one source to two kinds of output, and typstream renders both. **HTML** is Typst's HTML export: semantic elements and MathML, laid out on pages that look like the paged view's. **Paged** is pages, laid out exactly as the document prints. You choose with `target`:
 
 ```tsx
 <Typstream source={text} isStreaming={streaming} target="paged" />
@@ -36,9 +36,9 @@ $ 6 "CO"_2 + 6 "H"_2"O" -> "C"_6"H"_12"O"_6 + 6 "O"_2 $
 | | HTML (`"html"`) | Paged (`"paged"`) |
 |---|---|---|
 | Output | Semantic HTML (`h2`, `p`, `table`, `figure`) and MathML | One canvas per page (SVG with `renderer: "svg"`) |
-| Layout | Reflows to the element's width | As printed: the document's page size, margins, headers and footers |
-| Fidelity | Close; some layout needs html-compat, and page furniture is missing | Identical to Typst's own output and the PDF |
-| Theme | Light, dark or the page's `color-scheme`; CSS custom properties | Pages look like paper |
+| Layout | Pages as the paged view's: the document's page size, margins, headers and footers, lines and page breaks where Typst puts them | As printed: the document's page size, margins, headers and footers |
+| Fidelity | The paged view's, with html-compat and Typst's fonts (a few gaps below) | Identical to Typst's own output and the PDF |
+| Theme | Pages look like paper | Pages look like paper |
 | Text | Real text: selectable, searchable, read by screen readers | An invisible text layer over each page does the same |
 | Updates | Only changed blocks are replaced | Only changed pages are redrawn, visible ones first |
 | Streaming effects | Word fade-in, caret | None |
@@ -46,7 +46,7 @@ $ 6 "CO"_2 + 6 "H"_2"O" -> "C"_6"H"_12"O"_6 + 6 "O"_2 $
 
 ## HTML
 
-The HTML target shows Typst's HTML export: headings, paragraphs, lists, tables, figures with captions, resolved references, footnotes and MathML. It reads like part of your page: it wraps at any width, takes your theme, and its text is ordinary text.
+The HTML target shows Typst's HTML export: headings, paragraphs, lists, tables, figures with captions, resolved references, footnotes and MathML. Its text is ordinary text, in your page's DOM. With html-compat, the renderer lays it out on pages, as the paged view shows the document: the same fonts, sizes, line breaks, spacing and page breaks, so switching between the targets changes nothing you can see.
 
 **Sanitized.** The HTML comes from a document a model wrote, so the renderer treats it as untrusted. Each block is parsed in an inert template, cleaned against an allowlist, and those same nodes are moved into the page (nothing is serialized again). Scripts, forms, event handlers and `data-*` attributes are removed; links may only be `http(s)`, `mailto` or `#fragment`, and external ones open in a new tab (`linkTarget`); images may only be `data:` or `blob:` URLs; CSS that loads anything or uses `position: fixed` is dropped. Ids get a prefix per renderer, so two documents on one page don't clash. See [Security](/docs/guides/security).
 
@@ -58,16 +58,19 @@ The HTML target shows Typst's HTML export: headings, paragraphs, lists, tables, 
 The renderer's methods that read source anchors, `blockAt(offset)` and `sourceRange(node)`, are `@beta` and may change.
 </Callout>
 
-**Layout needs html-compat.** Typst 0.15.1's HTML export drops layout elements it can't express, and the text inside them: `#grid`, `#align`, `#rect`, `#place`, `#stack`, `#columns` come out empty. `@typstream/html-compat` is a Typst prelude that maps each one to HTML and CSS (grids become CSS grids, shapes become styled boxes) and draws what only a drawing can express (curves, polygons, CeTZ canvases) as inline SVG. The `typstream` package includes it; with `@typstream/react` or `@typstream/dom`, add the `htmlCompat` plugin. It doesn't change paged output.
+**Layout needs html-compat.** Typst 0.15.1's HTML export drops layout elements it can't express, and the text inside them: `#grid`, `#align`, `#rect`, `#place`, `#stack`, `#columns` come out empty. `@typstream/html-compat` is a Typst prelude that writes the layout Typst gives them on pages (grids placed as Typst places cells, spacing as Typst's flow collapses it, text styles, page geometry, headers and footers) and draws what only a drawing can express (curves, polygons, CeTZ canvases, equations) as inline SVG. The `typstream` package includes it; with `@typstream/react` or `@typstream/dom`, add the `htmlCompat` plugin. It doesn't change paged output.
 
-**Math needs a math font.** Browsers can't stretch delimiters or set math italics well without one. `typstream` registers New Computer Modern Math for MathML; with `@typstream/react`, pass its URL as `mathFont`, and with `@typstream/dom`, call `registerMathFont(url)`.
+**Fonts.** Text is set in Typst's own fonts, registered with the engine's layout profile as their line box, so lines are as tall as Typst's. `typstream` registers them, and New Computer Modern Math for MathML; with `@typstream/react` or `@typstream/dom`, pass the engine's fonts as `fonts` and the math font as `mathFont` (or call `registerTypstFonts` and `registerMathFont`).
 
-What HTML can't show, even with html-compat:
+The HTML renderer lays the document out on pages as the paged view does: page columns, a second `set page(…)`
+mid-document (its numbering, margins and `counter(page).update`), inside and outside margins, headers, footers and
+footnotes included. What HTML still can't show as the pages do:
 
-- **Page furniture**: `#set page(…)` has no HTML equivalent, so headers, footers, page numbers and margins are missing, and the outline has no page numbers.
-- **Text styling** set with `text(size:, weight:, fill:, font:)` isn't carried over; `strong`, `emph`, `underline`, `highlight`, sub- and superscripts are.
-- **Fractional spacing** (`h(1fr)`) becomes a small fixed gap, and vertical alignment inside `align`, `box` and `block` is dropped.
 - **Drawings** are SVG: their text is in an `aria-label`, not selectable. fletcher diagrams stay empty.
+- **Text in a script no engine font covers** (CJK by default): the pages show boxes for it, the browser draws it in
+  a font of its own. Give the engine a font for it and register the same file for the HTML target (`fonts`); a
+  document that names it (`#set text(font: …)`) shows it in both. See
+  [Fonts and languages](/docs/guides/fonts-and-languages).
 
 Details: [`@typstream/html-compat`](/docs/reference/html-compat).
 

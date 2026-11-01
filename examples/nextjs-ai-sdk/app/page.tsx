@@ -435,10 +435,10 @@ function streamPosition(state: DocumentState | null): { page: number; y: number;
 const BELOW = 36;
 
 /**
- * While an answer streams as pages, the height to cut it off at: just below the text being written.
- * Typst adds a whole page as soon as it starts one, mostly blank, and the scroller follows the bottom
- * of the content; cut off, the bottom is the text, and the page grows as it's written. `null` shows
- * everything (HTML, or the answer is complete).
+ * While an answer streams, the height to cut it off at: just below the text being written. A page is
+ * there whole as soon as it starts, mostly blank, and the scroller follows the bottom of the content;
+ * cut off, the bottom is the text, and the page grows as it's written. `null` shows everything (the
+ * answer is complete).
  */
 function useStreamClip(state: DocumentState | null, streaming: boolean, target: Target) {
   const host = useRef<HTMLDivElement>(null);
@@ -447,7 +447,17 @@ function useStreamClip(state: DocumentState | null, streaming: boolean, target: 
   latest.current = state;
   const measure = useCallback(() => {
     const el = host.current;
-    if (!el || !streaming || target !== "paged") return setClip(null);
+    if (!el || !streaming) return setClip(null);
+    if (target === "html") {
+      // HTML is laid out on pages too: cut it off below the caret, which follows the text being written.
+      const caret = el.querySelector(".typstream-caret");
+      const flow = el.querySelector<HTMLElement>(".typstream-flow");
+      if (!caret || !flow) return setClip((clip) => clip ?? 48);
+      // BELOW is in points, 4/3 px each in the flow, which is scaled as its pages are.
+      const scale = flow.getBoundingClientRect().width / flow.offsetWidth;
+      const y = caret.getBoundingClientRect().bottom - el.getBoundingClientRect().top + BELOW * (4 / 3) * scale;
+      return setClip(Math.ceil(y));
+    }
     const position = streamPosition(latest.current);
     const page = position && el.querySelector(`.typstream-page[data-page="${position.page + 1}"]`);
     // No text yet: show the top of the first page, not a blank sheet.
@@ -484,7 +494,8 @@ const Answer = ({ text: answered, streaming, target, answers, busy, onRetry }: A
     <Message>
       <MessageContent>
         {editing ? (
-          // The editor shows the pages as the page view does, and edits them there.
+          // The editor shows the pages as the page view does (either target: HTML is laid out on the same
+          // pages), and edits them there.
           <article className="answer editing px-4 pt-2 pb-8" data-target="paged">
             <TypstEditor
               source={text}
@@ -504,11 +515,9 @@ const Answer = ({ text: answered, streaming, target, answers, busy, onRetry }: A
           </article>
         ) : (
           <article
-            // HTML in a card; pages on their own, as sheets with shadows (app/globals.css), inset so the
-            // chat's scroll area doesn't cut the shadows off at the sides.
-            className={
-              target === "paged" ? "answer px-4 pt-2 pb-8" : "answer rounded-xl border bg-card px-8 py-6 shadow-xs"
-            }
+            // Pages on their own, as sheets with shadows (app/globals.css), inset so the chat's scroll area doesn't
+            // cut the shadows off at the sides. HTML is laid out on the same pages, so it looks the same.
+            className="answer px-4 pt-2 pb-8"
             data-status={t.status}
             data-stale={stale}
             data-target={target}

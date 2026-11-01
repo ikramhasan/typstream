@@ -976,9 +976,15 @@ importers:
       '@typstream/engine':
         specifier: workspace:*
         version: link:../../packages/engine
+      '@typstream/engine-wasm':
+        specifier: workspace:*
+        version: link:../../packages/engine-wasm
       '@typstream/heal':
         specifier: workspace:*
         version: link:../../packages/heal
+      '@typstream/html-compat':
+        specifier: workspace:*
+        version: link:../../packages/html-compat
       '@typstream/node':
         specifier: workspace:*
         version: link:../../packages/node

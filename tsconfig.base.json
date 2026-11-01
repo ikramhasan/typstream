@@ -36,6 +36,9 @@
       "@typstream/conformance/paged": [
         "./tools/conformance/src/paged.ts"
       ],
+      "@typstream/conformance/html": [
+        "./tools/conformance/src/html.ts"
+      ],
       "@typstream/conformance/mount": [
         "./tools/conformance/src/mount.ts"
       ],

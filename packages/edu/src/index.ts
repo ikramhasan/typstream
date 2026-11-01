@@ -288,6 +288,8 @@ export const eduComponents: EditorComponentSpec[] = [
 export const edu: TypstreamPlugin = {
   key: "edu",
   version: EDU_VERSION,
+  // Its HTML is html-compat's of the same Typst as its pages.
+  dependencies: ["html-compat"],
   engine: { files: eduFiles, preamble: eduPreamble },
   templates: eduTemplates,
   prompt: { catalogue: eduCatalogue, rules: eduPromptRules, examples: eduExamples },

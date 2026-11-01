@@ -37,10 +37,10 @@ Inside a box (an inline element), the prelude writes `span.ts-b` instead of `div
 
 ## Known gaps
 
-- **Page furniture.** `#set page(...)` has no HTML equivalent. Its header, footer, page numbers, margins and columns are not in the output, and Typst warns ("page set rule was ignored during HTML export", listed in `KNOWN_HTML_WARNINGS`). The outline has no page numbers either.
-- **Text styling.** `text(size:, weight:, fill:, font:)` is not carried over (Typst's HTML export ignores it; a `show text` rule would run on every word). `strong`, `emph`, `underline`, `highlight`, `sub`/`super` and `smallcaps` are native.
-- **Fractional spacing** (`h(1fr)`, `box(width: 1fr)`, `v(1fr)`) has no HTML equivalent and becomes a small fixed gap.
-- **Vertical alignment** inside `align`, `box` and `block` is dropped. Grid cells keep it.
+- **Pages need @typstream/dom.** The prelude writes each block's page settings (size, margins, columns, binding,
+  numbering, header and footer) on the engine's source anchors, and marks where the page counter is set; dom's HTML
+  renderer lays the pages out from them. Typst still warns ("page set rule was ignored during HTML export", listed in
+  `KNOWN_HTML_WARNINGS`).
 - **Drawn content** (`.ts-frame`) is SVG: its text is in `aria-label`, not selectable. A drawing without text is hidden from assistive technology (`aria-hidden`): there is nothing to read out.
 - `enum(full: true)` with a pattern shows plain numbers; the `augment` line of a matrix is dropped by Typst's MathML export.
 - **Table** strokes other than the default or `none`, and `table.hline`/`table.vline`, are not drawn.
