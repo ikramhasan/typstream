@@ -74,7 +74,9 @@ export const finished = (s: DocumentState) => s.status === "done" || s.status ==
 export const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 export const frame = () => new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)));
 
-export const pageEls = (el: HTMLElement) => [...el.querySelectorAll<HTMLElement>(".typstream-page")];
+export const pageEls = (el: HTMLElement) =>
+  // Not the sheets the HTML target's pages are drawn on (`.typstream-pages`): they hold no text.
+  [...el.querySelectorAll<HTMLElement>(".typstream-page")].filter((p) => !p.closest(".typstream-pages"));
 /** A page's SVG, when it came as SVG (in a shadow root). */
 export const svgOf = (page: HTMLElement) =>
   page.firstElementChild?.shadowRoot?.firstElementChild as SVGSVGElement | null | undefined;

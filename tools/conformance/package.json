@@ -7,6 +7,7 @@
   "exports": {
     ".": "./src/suite.ts",
     "./paged": "./src/paged.ts",
+    "./html": "./src/html.ts",
     "./mount": "./src/mount.ts",
     "./docx": {
       "types": "./src/docx.d.mts",
@@ -33,7 +34,9 @@
     "@typstream/docx": "workspace:*",
     "@typstream/dom": "workspace:*",
     "@typstream/engine": "workspace:*",
+    "@typstream/engine-wasm": "workspace:*",
     "@typstream/heal": "workspace:*",
+    "@typstream/html-compat": "workspace:*",
     "@typstream/node": "workspace:*",
     "@vitest/browser-playwright": "4.1.12",
     "pdfjs-dist": "^6.4.299",

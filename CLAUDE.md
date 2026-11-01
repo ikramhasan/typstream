@@ -35,7 +35,8 @@ packages/edu      @typstream/edu: the Typst vocabulary for teachers' documents (
 packages/mindmap  @typstream/mindmap: mind maps, the first render island (#28): a Typst package drawing a map written as a
                   list, its prompt kit, the island's spec, and `./react` (React Flow, loaded lazily). Bindings layer.
 packages/dom      @typstream/dom: framework-free renderers. `src/html/`: HTML renderer (string block split, sanitizer, source
-                  anchors, word fade-in, caret, theme CSS). `src/paged/`: pages painted on canvases from the engine's drawings, SVG for what they can't draw (changed pages, visible first, text layer).
+                  anchors, word fade-in, caret, theme CSS, Typst's fonts, and the document laid out on pages as the
+                  paged view's: `pages.ts`, page breaks, headers and footers, columns, fractional spacing). `src/paged/`: pages painted on canvases from the engine's drawings, SVG for what they can't draw (changed pages, visible first, text layer).
                   `src/mount.ts`: `mountTypstream`, a document on an engine in an element (what the bindings wrap).
                   `src/islands.ts`: render islands, components mounted over Typst markers (PLAN §8.4), in both renderers.
                   `src/export/`: `standaloneHtml`, a downloadable file from an HTML export (theme, CSS, CSP).
@@ -53,7 +54,7 @@ tools/docx-check  DOCX exports against Typst's PDF (#131): the Latin corpus thro
                   ONLYOFFICE's) lines and page starts compared with the PDF's, pictures pixel by pixel, rules and borders
                   (tools/conformance's modules), Microsoft's Open XML validator (validator/).
 tools/conformance The plugin conformance suite (#135): a plugin's examples, its paged view against Typst's PDF (pixels, in a
-                  browser) and its DOCX export against the PDF (validator, LibreOffice's lines and where they are,
+                  browser), its HTML target against the paged view (lines) and its DOCX export against the PDF (validator, LibreOffice's lines and where they are,
                   pictures, rules, words' colours). edu, mindmap and universe run it from `__tests__/conformance/`
                   (`pnpm test:paged`, `test:docx`); they import it by path (a dependency would make a turbo cycle
                   through the engine's tests). Its own `__tests__/conformance/` is Typst's elements without a plugin.
@@ -105,7 +106,7 @@ pnpm coverage          # line and branch coverage of the TypeScript packages, No
 
 In `packages/engine-wasm` (Rust build, ~3 min cold):
 - `pnpm build`: `build.sh` → `dist/` (glue, `.d.ts`, `wasm-opt -Oz` wasm, Typst's 17 bundled faces from typst-assets, the CFF ones converted to TrueType outlines (output SHA-256 pinned, #118): 5 base fonts and 12 lazy `extraFonts`, the same files `@typstream/node` serves (#128), and the lazily loaded script fonts, downloaded from notofonts at a pinned commit and SHA-256 checked, with their `FontInfo` registry written by `scripts/fonts.mjs`). It skips the build when `dist/` came from the same inputs (`FORCE=1` rebuilds). The root `pnpm test` / `pnpm check-types` (turbo) build it first; run inside the package, `pnpm test` uses the existing `dist/`.
-- `pnpm size`: wasm budget, 6.31 MB brotli (HTML, SVG and PDF in one build since #18, and the DOCX model).
+- `pnpm size`: wasm budget, 6.32 MB brotli (HTML, SVG and PDF in one build since #18, and the DOCX model).
 - Native tools in `examples/` (`cargo run --release --example …`, the font store is thread-local, so they compile on
   the calling thread): `frames` dumps a document's laid-out frames (items, positions, tags), `docx_model` writes its
   DOCX model, fonts and PDF. Both take `--packages DIR` (laid out as `--package-path`) and `--input k=v`.
@@ -115,9 +116,10 @@ In `packages/engine`:
 - `pnpm test`: the `node` vitest project (client against a fake worker; server and protocol conformance against engine-wasm in-process). Needs engine-wasm's `dist/`.
 - `pnpm test:browser`: the `browser` project, the real worker in Chromium, Firefox and WebKit (vitest browser mode, Playwright). `BROWSERS=chromium` runs one.
 - `pnpm size`: main thread ≤ 9.6 KB, worker JS ≤ 40 KB, `@typstream/engine/websocket` and `@typstream/engine/images` ≤ 1.5 KB gzipped each, the DOCX writer the worker `import()`s ≤ 14.1 KB.
-- Pages and PDFs follow the layout profile (#129): the server puts `LAYOUT_PROFILE` (`src/server/profile.ts`) before
-  every paged compile's and PDF export's preamble (constant 1.3em pitch, ragged right, no hyphenation, unbreakable
-  table rows), so a DOCX can match them; heal's `layout-profile` lint removes what would beat it. Not the HTML target.
+- Every compile follows the layout profile (#129): the server puts `LAYOUT_PROFILE` (`src/server/profile.ts`) before
+  every compile's and export's preamble (constant 1.3em pitch, ragged right, no hyphenation, unbreakable table rows),
+  so a DOCX can match the pages; heal's `layout-profile` lint removes what would beat it. In HTML compiles it changes
+  nothing itself, but html-compat reads the styles it sets, so the HTML target is laid out as the pages are.
 - Four API reports: `api/engine.api.md` (main entry), `api/engine-server.api.md` (`@typstream/engine/server`), `api/engine-websocket.api.md` (`@typstream/engine/websocket`, `fromWebSocket`, the transport to a remote engine) and `api/engine-images.api.md` (`@typstream/engine/images`, `fetchImages`).
 
 In `packages/html-compat`:
@@ -138,6 +140,8 @@ In `packages/google-fonts`:
   browser tests (`__tests__/browser/fonts.test.ts`) do too, on a worker with the base fonts only.
 
 In `packages/edu`:
+- One code path for both targets: edu's Typst has no HTML branches, html-compat (a dependency) makes its HTML look
+  like its pages.
 - Edit `typst/*.typ`, `css/edu.css` or `examples/*.typ`, then `pnpm embed` to regenerate `src/assets.generated.ts` (the files, CSS, the prompt catalogue from the `///` doc comments of the names `lib.typ` imports, and the examples; a test checks it). Every public function needs a doc comment with an `example` block.
 - Answers must produce no output unless `sys.inputs.showAnswers` is `"true"`; every parameter needs a default and must accept what a stream cut leaves (`(2` is the number 2, `5em` arrives as `5`). Its tests compile with engine-wasm and native `typst`, so they run in CI's `Engine (wasm, html-compat, edu)` job; the compile oracle streams `examples/`.
 - Every catalogue example, template and example, answers hidden and shown, is in the conformance suite (`pnpm test:paged`,
@@ -157,12 +161,12 @@ In `packages/mindmap`:
 
 In `packages/dom`:
 - `pnpm test`: node tests (the HTML block splitter, paged helpers). `pnpm test:browser`: the renderers in Chromium, Firefox and WebKit, fed by the real engine worker with html-compat and corpus documents (needs engine-wasm's `dist/`). `BROWSERS=chromium` runs one.
-- `pnpm size`: HTML renderer ≤ 10.7 KB gzipped (with its CSS), paged renderer ≤ 6.8 KB, standalone HTML export ≤ 2 KB.
+- `pnpm size`: HTML renderer ≤ 23.3 KB gzipped (with its CSS), paged renderer ≤ 6.8 KB, standalone HTML export ≤ 2 KB.
 - Its API report needs DOM types, so its `api-extractor.json` overrides the shared compiler settings.
 
 In `packages/react`:
 - `pnpm test`: Node tests (provider merging, the shared engine's lifetime). `pnpm test:browser`: `<Typstream>` with React Testing Library against the real engine worker in Chromium, Firefox and WebKit (StrictMode, lazy opening, worker cleanup). `BROWSERS=chromium` runs one. Needs engine-wasm's `dist/`.
-- `pnpm size`: ≤ 21.2 KB gzipped including `@typstream/dom` (React and the engine external).
+- `pnpm size`: ≤ 35.0 KB gzipped including `@typstream/dom` (React and the engine external).
 - Its bundle starts with `"use client"` (tsup banner), as does `typstream`'s, for Next.js's App Router.
 
 In `packages/ai`: `pnpm test` runs the helpers through AI SDK 7 itself (a devDependency): recorded `corpus/llm` streams
@@ -193,7 +197,8 @@ rates and classes, `node src/promote.mjs <label>` copies recordings into `corpus
 documents; `loadEditAnswers()`).
 
 Plugin conformance (`tools/conformance`, README there, #135): in edu, mindmap and universe, `pnpm test:paged` runs
-their examples' pages against the PDF in Chromium (`BROWSERS=` for others), `pnpm test:docx` their DOCX exports against
+their examples' pages against the PDF, and their HTML target's lines against the pages', in Chromium (`BROWSERS=` for
+others), `pnpm test:docx` their DOCX exports against
 the PDF in LibreOffice (needs `@typstream/node` built, poppler, and the validator where built; `TYPSTREAM_DOCX_ENGINE=
 onlyoffice` for ONLYOFFICE). CI runs the paged half in the `Engine (chromium)` job and the DOCX half in the DOCX job.
 A plugin component Word can't draw the same fails there: change the component (#130), not the suite.

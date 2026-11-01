@@ -67,8 +67,9 @@ describe(`the mind map island in ${server.browser}`, () => {
     const drawing = marker.querySelector(":scope > svg") as SVGElement;
     expect(drawing.getAttribute("aria-hidden")).toBe("true");
     // The island covers the drawing exactly: nothing around it moved.
+    // To a fraction of a pixel: the island undoes the page's scale.
     const [a, b] = [host.getBoundingClientRect(), marker.getBoundingClientRect()];
-    expect([a.left, a.top, a.width, a.height]).toEqual([b.left, b.top, b.width, b.height]);
+    for (const k of ["left", "top", "width", "height"] as const) expect(a[k]).toBeCloseTo(b[k], 1);
     expect(b.height).toBeGreaterThan(40);
     // No attribution link in a teacher's document.
     expect(container.querySelector(".react-flow__attribution")).toBeNull();

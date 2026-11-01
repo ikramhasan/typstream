@@ -24,9 +24,10 @@ import type {
   WatchdogEvent,
 } from "@typstream/core";
 import type { DocumentOptions, DocumentState, DocumentStatus, Engine, EngineDocument } from "@typstream/engine";
+import { standalonePages } from "./export/pages";
 import { type StandaloneHtmlOptions, standaloneHtml } from "./export/standalone";
 import type { AnimateOptions } from "./html/animate";
-import { registerLoadedFont } from "./html/fonts";
+import { registerLoadedFont, registerTypstFonts, type TypstFont } from "./html/fonts";
 import { createHtmlRenderer, type HtmlRenderer } from "./html/renderer";
 import type { IslandRenderers } from "./islands";
 import { REFLOW_PREAMBLE, reflowInputs } from "./paged/mount";
@@ -41,6 +42,18 @@ export interface TypstreamExportOptions {
    * shows the student's.
    */
   inputs?: Record<string, string>;
+}
+
+/**
+ * How {@link MountedTypstream.exportHtml} makes the file.
+ * @public
+ */
+export interface TypstreamHtmlExportOptions extends StandaloneHtmlOptions, TypstreamExportOptions {
+  /**
+   * Laid out as the pages, as the HTML target shows them ({@link standalonePages}, the mount's Typst fonts
+   * embedded). Default true; `false` gives Typst's HTML in a reading layout ({@link standaloneHtml}).
+   */
+  pages?: boolean;
 }
 
 /** Options of {@link mountTypstream}. @public */
@@ -124,6 +137,11 @@ export interface TypstreamOptions {
   animated?: boolean | AnimateOptions;
   /** Show a caret after the last text while streaming (HTML target). Default false. */
   caret?: boolean;
+  /**
+   * HTML target: Typst's fonts, registered as web fonts so the text is set as on the pages (`registerTypstFonts`).
+   * The `typstream` package passes the engine's.
+   */
+  fonts?: readonly TypstFont[];
   /** HTML target: `auto` (default) follows the page's `color-scheme`. */
   theme?: "auto" | "light" | "dark";
   /** `target` of external links; `null` keeps them in the same tab. Default `_blank`. */
@@ -193,13 +211,14 @@ export interface MountedTypstream {
    */
   exportPdf(options?: TypstreamExportOptions): Promise<Uint8Array>;
   /**
-   * Exports the document as an HTML file that opens on its own
-   * ({@link standaloneHtml}), with the mount's plugins, `stylesheets`, `theme`
-   * and the fonts it uses from the engine's font catalogues;
+   * Exports the document as an HTML file that opens on its own, laid out as
+   * the pages ({@link standalonePages}; `pages: false` for {@link standaloneHtml}'s
+   * reading layout), with the mount's plugins, `stylesheets`, `theme`, its
+   * Typst fonts and the fonts it uses from the engine's font catalogues;
    * `options` add to or override them (a `mathFont`, a `title`). Otherwise as
    * {@link MountedTypstream.exportPdf}, `options.inputs` included.
    */
-  exportHtml(options?: StandaloneHtmlOptions & TypstreamExportOptions): Promise<string>;
+  exportHtml(options?: TypstreamHtmlExportOptions): Promise<string>;
   /**
    * Exports the document as an editable DOCX file that Word lays out as the PDF (#131): its paragraphs, lists and
    * tables, Typst's fonts embedded. Equations, images and drawings hold their place as empty space for now.
@@ -234,6 +253,8 @@ const equal = (a: unknown, b: unknown): boolean => {
 const LAZY_MARGIN = "50%";
 /** Wait this long after the element's width last changed before recompiling reflowed pages (ms). */
 const RESIZE_DEBOUNCE = 150;
+/** How many page counts the HTML view compiles with for one source and inputs (Typst lays a document out 5 times at most). */
+const MAX_PAGE_COUNTS = 5;
 
 /** How the document is opened: a change to any of these opens a new one. */
 interface OpenKey {
@@ -343,6 +364,11 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
   let visible = false;
   let exporting = false;
   let widthInputs: Record<string, string> | null = null;
+  // HTML: how many pages the renderer laid the document out on, which html-compat gives `counter(page).final()`.
+  let pageCount = 1;
+  // How many times it changed for the source and inputs `counted` names.
+  let counts = 0;
+  let counted = "";
   let io: IntersectionObserver | null = null;
   let ro: ResizeObserver | null = null;
   let resizeTimer: ReturnType<typeof setTimeout> | undefined;
@@ -402,11 +428,12 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
   /** `doc`'s plugins as the engine resolved them: dependencies first, each key once. */
   const htmlRenderer = (plugins: readonly TypstreamPlugin[]): HtmlRenderer => {
     const animation = typeof opts.animated === "object" ? opts.animated : undefined;
-    const want = [opts.theme, animation, plugins, opts.stylesheets, opts.linkTarget, opts.islands];
+    const want = [opts.theme, animation, plugins, opts.stylesheets, opts.linkTarget, opts.islands, opts.layout];
     if (html && equal(html.key, want)) return html.renderer;
     dropHtml();
     const root = element.ownerDocument.createElement("div");
     element.append(root);
+    if (opts.fonts) registerTypstFonts(opts.fonts, element.ownerDocument);
     const renderer = createHtmlRenderer(root, {
       ...(opts.theme ? { theme: opts.theme } : {}),
       ...(animation ? { animation } : {}),
@@ -414,6 +441,21 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
       ...(opts.stylesheets ? { stylesheets: opts.stylesheets } : {}),
       ...(opts.linkTarget !== undefined ? { linkTarget: opts.linkTarget } : {}),
       ...(opts.islands ? { islands: opts.islands, file: (path: string) => doc?.file(path) ?? null } : {}),
+      ...(opts.layout ? { layout: opts.layout } : {}),
+      onPages: (count) => {
+        if (count === pageCount) return;
+        // A document whose length depends on its page count (`#if counter(page).final().first() > 1 [short] else
+        // [long]`) would compile again for ever: as Typst stops after 5 layouts, a few counts per source and
+        // inputs, then the last stays.
+        const revision = `${reading ? reading.state.text : (opts.source ?? "")}\u0000${JSON.stringify([exportInputs(), widthInputs])}`;
+        if (revision !== counted) {
+          counted = revision;
+          counts = 0;
+        }
+        if (++counts > MAX_PAGE_COUNTS) return;
+        pageCount = count;
+        sync();
+      },
     });
     html = { renderer, root, key: want };
     shown = null;
@@ -500,7 +542,8 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
     key = null;
   };
 
-  const reflow = () => opts.target === "paged" && opts.layout === "reflow";
+  // Both targets: HTML is laid out on pages too, whose size html-compat reads from reflow's inputs.
+  const reflow = () => opts.layout === "reflow";
 
   /** The document's inputs without reflow's page size: what exports compile with, plus an export's own. */
   const exportInputs = (extra?: Record<string, string>): Record<string, string> => ({
@@ -561,7 +604,11 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
 
     const target = opts.target ?? "html";
     const pageFormat = opts.renderer === "svg" ? "svg" : "drawing";
-    const inputs = { ...exportInputs(), ...widthInputs };
+    const inputs = {
+      ...exportInputs(),
+      ...widthInputs,
+      ...(target === "html" && pageCount > 1 ? { "typstream-page-count": String(pageCount) } : {}),
+    };
     const files = opts.files ?? {};
     const text = reading ? reading.state.text : (opts.source ?? "");
     const final = !streaming();
@@ -673,16 +720,44 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
     },
     exportPdf: async (options) => exportDoc().exportPdf({ inputs: exportInputs(options?.inputs) }),
     exportDocx: async (options) => exportDoc().exportDocx({ inputs: exportInputs(options?.inputs) }),
-    async exportHtml({ inputs, ...options } = {}) {
+    async exportHtml({ inputs, pages = true, ...options } = {}) {
       const exported = exportDoc();
-      const html = await exported.exportHtml({ inputs: exportInputs(inputs) });
-      return standaloneHtml(html, {
+      const compile = (count: number) =>
+        exported.exportHtml({
+          inputs: { ...exportInputs(inputs), ...(count > 1 ? { "typstream-page-count": String(count) } : {}) },
+          // Laid out as pages: with the anchors html-compat writes each block's page settings on.
+          ...(pages ? { anchors: true } : {}),
+        });
+      // The HTML view's count to begin with, when it shows this document: then one compile is usually enough.
+      let count = pages && (opts.target ?? "html") === "html" ? pageCount : 1;
+      let html = await compile(count);
+      const file = {
         ...(opts.theme ? { theme: opts.theme } : {}),
         ...options,
         plugins: [...exported.plugins, ...(options.plugins ?? [])],
         stylesheets: [...(opts.stylesheets ?? []), ...(options.stylesheets ?? [])],
         fonts: [...(opts.engine.fonts ?? []), ...(options.fonts ?? [])],
-      });
+      };
+      if (!pages) return standaloneHtml(html, file);
+      // Laid out, then compiled again with the count it was laid out on (`counter(page).final()`, an exam's "2 / 3"),
+      // until the count holds; a few times at most, as the view does.
+      let laidOut = count;
+      const layOut = () =>
+        standalonePages(html, {
+          ...file,
+          ...(opts.fonts ? { typstFonts: opts.fonts } : {}),
+          document: element.ownerDocument,
+          onPages: (n) => {
+            laidOut = n;
+          },
+        });
+      let out = await layOut();
+      for (let i = 1; i < MAX_PAGE_COUNTS && laidOut !== count; i++) {
+        count = laidOut;
+        html = await compile(count);
+        out = await layOut();
+      }
+      return out;
     },
     exportSource: () => exportDoc().exportSource(),
     destroy() {

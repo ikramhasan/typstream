@@ -68,12 +68,12 @@ export interface Assembled {
 
 /**
  * `/main.typ` for a document, as `@typstream/engine`'s protocol server writes it:
- * for `paged` output (pages, a PDF, a check of them) the layout profile (#129)
- * first, then the preamble, so their set and show rules apply to the text, then
- * a newline so the text starts on a line of its own.
+ * the layout profile (#129) first, for pages and HTML alike, then the preamble,
+ * so their set and show rules apply to the text, then a newline so the text
+ * starts on a line of its own.
  */
-export const assemble = (text: string, preamble: string | undefined, paged: boolean): Assembled => {
-  const profile = paged ? LAYOUT_PROFILE : "";
+export const assemble = (text: string, preamble: string | undefined, _paged: boolean): Assembled => {
+  const profile = LAYOUT_PROFILE;
   const prefix = profile + (preamble ? `${preamble}\n` : "");
   return { main: prefix + text, offset: prefix.length, preambleAt: profile.length };
 };

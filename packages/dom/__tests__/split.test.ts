@@ -109,6 +109,21 @@ describe("splitHtml", () => {
     expect(blocks(doc("<p>a</p></div><p>b</p>"))).toEqual([["<p>a</p></div><p>b</p>", null]]);
   });
 
+  it("reads html-compat's page settings, and where the page counter is set", () => {
+    const geometry = "595.276 841.89 70.866 70.866 70.866 70.866 none 21.26 21.26 1 18.142 0";
+    const footer = '<div class="ts-page-footer"><p>3999</p></div>';
+    const html = doc(
+      `<typstream-anchor data-src="0" data-page="${geometry}" data-numbering="i">${footer}</typstream-anchor><p>a</p>` +
+        // Typst writes an empty attribute without its value: no numbering.
+        `<typstream-anchor data-src="5" data-page="${geometry}" data-numbering></typstream-anchor>` +
+        '<typstream-counter value="1"></typstream-counter><p>b</p>',
+    );
+    const pages = splitHtml(html).blocks.map((b) => b.page);
+    expect(pages[0]).toMatchObject({ geometry, numbering: "i", parts: footer });
+    expect(pages[1]).toMatchObject({ geometry, counter: 1 });
+    expect(pages[1]?.numbering ?? "").toBe("");
+  });
+
   it("keeps text at the top level as a block", () => {
     expect(blocks(doc("text<p>p</p>"))).toEqual([
       ["text", null],

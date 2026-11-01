@@ -4,12 +4,14 @@
 // mount.ts puts either on an engine document: what the framework bindings wrap.
 
 export * from "./export";
+export { type StandalonePagesOptions, standalonePages } from "./export/pages";
 export * from "./html";
 export type { IslandInstance, IslandRenderer, IslandRenderers } from "./islands";
 export {
   type MountedTypstream,
   mountTypstream,
   type TypstreamExportOptions,
+  type TypstreamHtmlExportOptions,
   type TypstreamOptions,
 } from "./mount";
 export * from "./paged";

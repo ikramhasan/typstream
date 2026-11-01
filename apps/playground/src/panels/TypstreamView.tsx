@@ -14,7 +14,7 @@ import { mindmapIslands } from "@typstream/mindmap/react";
 import { type RenderedEvent, Typstream, type TypstreamInfo } from "@typstream/react";
 import { useCallback, useRef, useState } from "react";
 import { sharedEngine } from "../engine";
-import { MATH_FONT } from "../fonts";
+import { MATH_FONT, TYPST_FONTS } from "../fonts";
 import { RenderStatus } from "./RenderStatus";
 import { ms } from "./Section";
 
@@ -79,6 +79,7 @@ export const TypstreamView = ({ typstream, docKey, input, final, target, compat,
           plugins={compat ? COMPAT_PLUGINS : PLUGINS}
           islands={mindmapIslands}
           {...(MATH_FONT ? { mathFont: MATH_FONT } : {})}
+          fonts={TYPST_FONTS}
           animated
           caret
           lazy={false}

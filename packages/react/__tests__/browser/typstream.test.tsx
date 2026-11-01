@@ -134,7 +134,9 @@ describe(`<Typstream> in ${browser}`, () => {
     expect(r.last()).toBe("done");
     rerender(<Typstream engine={spy} target="html" source={FIVE_PAGES} {...r.props} />);
     await waitFor(() => expect(container.querySelector(".typstream")?.textContent).toContain("Section 11"), LONG);
-    expect(container.querySelector(".typstream-paged")).toBeNull();
+    // The paged view's canvases are gone: the HTML has pages of its own, sheets behind its text.
+    expect(container.querySelector(".typstream-page canvas")).toBeNull();
+    expect(container.querySelector(".typstream-pages .typstream-flow")).not.toBeNull();
     expect(docs).toHaveLength(1);
   }, 120_000);
 
@@ -348,7 +350,11 @@ describe(`<Typstream> in ${browser}`, () => {
       expect(file).toContain("<title>Worksheet</title>");
       expect(file).toContain(".marker { color: red }");
       expect(file).toContain('data-typstream-theme="dark"');
-      expect(file).toContain("<h2>Worksheet</h2>");
+      // Laid out as the pages, or Typst's HTML as it is.
+      expect(file).toContain('class="typstream-page"');
+      expect(new DOMParser().parseFromString(file, "text/html").body.textContent).toContain("Worksheet");
+      const plain = await (info.current as TypstreamInfo).exportHtml({ title: "Worksheet", pages: false });
+      expect(plain).toContain("<h2>Worksheet</h2>");
     }, 60_000);
 
     it("exports the healed source", async () => {

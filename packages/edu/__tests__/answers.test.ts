@@ -51,28 +51,22 @@ describe("answers", () => {
     for (const text of [pagedText(shown.paged), htmlText(shown.html.html)]) {
       for (const word of WRITTEN) expect(text).toContain(word);
     }
-    // The correct option and the true/false choice are marked.
-    expect(shown.html.html).toMatch(/<li class="edu-correct"><span class="edu-marker">\(b\)<\/span> Persimmon<\/li>/);
-    expect(shown.html.html).toMatch(/<span class="edu-choice edu-correct">False<\/span>/);
+    // The correct option and the true/false choice are marked, bold in the accent colour, as on pages.
+    const accent = (text: string) => new RegExp(`color: #c0392b; font-weight: 700[^>]*>(?:<[^>]+>)*${text}`);
+    expect(shown.html.html).toMatch(accent("\\(b\\)"));
+    expect(shown.html.html).toMatch(accent("False"));
   });
 
   it("are listed by answer-key() under their question's number", () => {
-    const section = shown.html.html.slice(shown.html.html.indexOf('class="edu-key"'));
-    const key = htmlText(section);
+    const text = htmlText(shown.html.html).replace(/\s+/g, " ");
+    const key = text.slice(text.indexOf("Answer key"));
     expect(key).toContain("Answer key");
-    // One paragraph per question.
-    const lines = [...section.matchAll(/<p>(.*?)<\/p>/g)].map((m) =>
-      htmlText(m[1] ?? "")
-        .replace(/\s+/g, " ")
-        .trim(),
-    );
-    const line = (n: number): string => lines.find((l) => l.startsWith(`${n}.`)) ?? "";
-    expect(line(1)).toContain("Zanzibar");
-    expect(line(2)).toContain("Quixotic");
-    expect(line(3)).toContain("Xylophone");
-    expect(line(4)).toContain("Wobbly");
-    expect(line(5)).toMatch(/5\.\s*b/);
-    expect(line(6)).toMatch(/6\.\s*False/);
+    expect(key).toMatch(/1\.\s*Zanzibar/);
+    expect(key).toMatch(/2\.\s*Quixotic/);
+    expect(key).toMatch(/3\.\s*Xylophone/);
+    expect(key).toMatch(/4\.\s*Wobbly/);
+    expect(key).toMatch(/5\.\s*b/);
+    expect(key).toMatch(/6\.\s*False/);
     expect(key).toMatch(/7\.\s*1–[ab], 2–[ab]/);
     expect(key).toContain("Jabberwock");
     expect(pagedText(shown.paged)).toContain("Answer key");
@@ -94,10 +88,16 @@ describe("matching", () => {
   ];
   const source = `#matching(${pairs.map(([l, r]) => `([${l}], [${r}])`).join(", ")})`;
   const { html } = compileHtml(engine, source, { answers: true });
-  // Each row: number, left, the answer letter, marker, right.
-  const cells = [...html.matchAll(/<span(?: class="([^"]*)")?>(.*?)<\/span>(?=<span|<\/div>)/g)].map((m) =>
-    htmlText(m[2] ?? "").trim(),
-  );
+  // Each row: number, left, the answer letter, marker, right: the grid's cells, in order.
+  const cells = html
+    .split('<div class="ts-cell')
+    .slice(1)
+    // Without the word joiner that puts a blank on a text line.
+    .map((cell) =>
+      htmlText(cell.slice(cell.indexOf(">") + 1))
+        .replace(/\u2060/g, "")
+        .trim(),
+    );
   const rows = Array.from({ length: pairs.length }, (_, i) => cells.slice(i * 5, i * 5 + 5));
 
   it("shuffles the right column and keys every pair to its match", () => {

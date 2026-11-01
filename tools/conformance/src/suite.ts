@@ -12,6 +12,8 @@ export interface ConformanceExample {
   files?: Record<string, string | Uint8Array>;
   /** `sys.inputs` (edu's `showAnswers`). */
   inputs?: Record<string, string>;
+  /** Why the HTML target can't show it as the pages do yet: the HTML check skips it (./html). */
+  htmlGap?: string;
 }
 
 /** The plugins documents are written with, and the examples. */

@@ -4,7 +4,7 @@
 // callback ref instead of reading one: `<Typstream ref={t.ref} />`.
 
 import type { Diagnostic } from "@typstream/core";
-import type { StandaloneHtmlOptions, TypstreamExportOptions } from "@typstream/dom";
+import type { TypstreamExportOptions, TypstreamHtmlExportOptions } from "@typstream/dom";
 import type { DocumentState, DocumentStatus, EngineDocument } from "@typstream/engine";
 import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import { createHandle, type TypstreamHandle } from "./Typstream";
@@ -46,7 +46,7 @@ export interface TypstreamInfo {
    * component's plugins, `stylesheets` and `theme`; `options` add to or
    * override them. See {@link TypstreamHandle.exportHtml}.
    */
-  exportHtml(options?: StandaloneHtmlOptions & TypstreamExportOptions): Promise<string>;
+  exportHtml(options?: TypstreamHtmlExportOptions): Promise<string>;
   /** The healed source the exports compile. Throws when no `<Typstream>` is mounted. */
   exportSource(): string;
 }

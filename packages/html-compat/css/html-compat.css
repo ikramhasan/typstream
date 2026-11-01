@@ -18,52 +18,268 @@
   display: block;
 }
 
+/* Typst's text, as the engine's layout profile (#129) sets it on pages: Libertinus Serif at 11pt, lines a constant
+   1.3em apart, ragged right, no hyphenation. The fonts are the engine's own (dom's `registerTypstFonts`), registered
+   with the profile's line box as their ascent and descent (1.054em and 0.246em, no gap), so a line box 1.3em tall
+   has the baseline where Typst puts it, in any of them and any size. `line-height: normal` would be the same box,
+   but browsers round a font's ascent and descent to whole pixels: lines would drift from Typst's by a fraction of
+   a pixel each. Text the base font lacks falls back to the engine's script fonts, as in Typst. */
+:where(.typstream) {
+  font-family:
+    typstream-libertinus-serif, typstream-noto-naskh-arabic, typstream-noto-serif-bengali,
+    typstream-noto-serif-devanagari, "Libertinus Serif", serif;
+  font-size: 11pt;
+  font-weight: 400;
+  line-height: 1.3;
+  text-align: start;
+  hyphens: manual;
+  font-kerning: normal;
+  font-synthesis: none;
+  text-rendering: geometricPrecision;
+}
+:where(.typstream) p {
+  margin-block: 0.56em;
+}
+/* `par.first-line-indent` without `all`: only a paragraph right after another is indented. */
+:where(.typstream) p + p.ts-indent {
+  text-indent: var(--ts-indent);
+}
+:where(.typstream) :is(h1, h2, h3, h4, h5, h6) {
+  font-size: 1em;
+  font-weight: 700;
+  margin-block: var(--ts-above, 0.71em) var(--ts-below, 0.3em);
+}
+/* A block's own spacing (html-compat.typ's `.ts-sp`), reset for what it holds. */
+:where(.typstream) :is(h1, h2, h3, h4, h5, h6) > *,
+:where(.typstream .ts-sp) > * {
+  --ts-above: initial;
+  --ts-below: initial;
+}
+:where(.typstream .ts-sp) {
+  margin-block: var(--ts-above, 0.56em) var(--ts-below, 0.56em);
+}
+:where(.typstream) h2 {
+  font-size: 1.4em;
+}
+:where(.typstream) h3 {
+  font-size: 1.2em;
+}
+:where(.typstream) :is(code, pre, kbd, samp) {
+  font-family: typstream-dejavu-sans-mono, "DejaVu Sans Mono", monospace;
+  font-size: 0.8em;
+}
+:where(.typstream) pre {
+  margin-block: 0.56em;
+  white-space: pre;
+}
+/* Text with its own line box (html-compat.typ's `.ts-edges`): a strut as tall, its letters with none of theirs. */
+:where(.typstream .ts-strut) {
+  display: inline-block;
+  width: 0;
+}
+:where(.typstream .ts-edges) .typstream-t {
+  line-height: 0;
+}
+
+/* Text decorations from the font, as Typst draws them. */
+:where(.typstream) :is(u, s, [style*="text-decoration"]) {
+  text-decoration-thickness: from-font;
+  text-underline-offset: from-font;
+}
+/* Typst sets super- and subscripts with the font's own glyphs where it has them (Libertinus Serif does). */
+:where(.typstream) :is(sup, sub) {
+  font-size: 1em;
+  vertical-align: baseline;
+}
+:where(.typstream) sup {
+  font-variant-position: super;
+}
+:where(.typstream) sub {
+  font-variant-position: sub;
+}
+/* A highlight covers the font's ascender to its descender: the line box less 0.16em at the top. */
+:where(.typstream) mark {
+  background: linear-gradient(transparent 0.16em, var(--ts-mark, #fffd11a1) 0.16em);
+  color: inherit;
+}
+/* Links look like the text around them, as on pages. */
+:where(.typstream) a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Lists (html-compat.typ): a marker column as wide as the widest marker, the bodies after it; the items' gap is on
+   the list. */
+:where(.typstream .ts-list) {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: 0.5em;
+  margin-block: 0.56em;
+  padding: 0;
+  list-style: none;
+}
+:where(.typstream .ts-list) > li {
+  display: contents;
+}
+:where(.typstream .ts-list) > li > .ts-marker {
+  justify-self: end;
+}
+:where(.typstream .ts-terms) {
+  display: grid;
+  margin-block: 0.56em;
+}
+:where(.typstream .ts-terms) :is(dt, dd) {
+  display: inline;
+  margin: 0;
+}
+
 /* Math: Typst's own math font. Without a math font, browsers can't stretch delimiters
    and fall back to whatever has the math alphanumerics (PLAN.md §6.5). */
 :where(.typstream) math {
   /* biome-ignore lint/a11y/useGenericFontNames: `math` is the generic family (CSS Fonts 4). */
   font-family: "New Computer Modern Math", math;
 }
-:where(.typstream) math[display="block"] {
-  margin: 0.65em 0;
+/* Equations (html-compat.typ) are Typst's drawings; their MathML is for screen readers only. A display equation is
+   centred on its line, its number at the end, both vertically centred. */
+:where(.typstream .ts-sr) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+/* Typst writes `display: block` on a frame it finds at a block's start; an equation is in its line. */
+:where(.typstream .ts-math) svg {
+  display: inline !important;
+  /* Its bottom edge is its baseline: the equation's depth below the text's (html-compat.typ measures it). */
+  vertical-align: var(--ts-depth, baseline);
+}
+/* An equation no deeper than the line: from the bottom of the text's line box, as Typst's line holds it, raised by
+   what the line is deeper (0.246em less its depth). From the baseline, it would stick out of a line as tall as it:
+   browsers round the font's ascent and descent to pixels, which moves the baseline in the line box. */
+:where(.typstream .ts-math.ts-flat) svg {
+  vertical-align: text-bottom;
+  margin-block-end: var(--ts-lift);
 }
 :where(.typstream .ts-equation) {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: 1em;
+  margin-block: 0.56em;
+  padding-top: 0.02px;
 }
-:where(.typstream .ts-equation) > math {
-  flex: 1;
+:where(.typstream .ts-equation-body) {
+  grid-column: 2;
 }
-:where(.typstream .ts-equation) > p {
+:where(.typstream .ts-equation-number) {
+  grid-column: 3;
+  justify-self: end;
+}
+
+/* Strokes (html-compat.typ's `_box-props`): centred on the element's edge, half outside, taking no room, as Typst
+   draws them. Each side's border and width come from custom properties, reset on every stroked element so they
+   aren't inherited from one around it. */
+:where(.typstream .ts-stroked) {
+  --ts-bt: none;
+  --ts-br: none;
+  --ts-bb: none;
+  --ts-bl: none;
+  --ts-wt: 0pt;
+  --ts-wr: 0pt;
+  --ts-wb: 0pt;
+  --ts-wl: 0pt;
+  position: relative;
+}
+:where(.typstream .ts-stroked)::before {
+  content: "";
+  position: absolute;
+  inset: calc(var(--ts-wt) / -2) calc(var(--ts-wr) / -2) calc(var(--ts-wb) / -2) calc(var(--ts-wl) / -2);
+  border-top: var(--ts-bt);
+  border-right: var(--ts-br);
+  border-bottom: var(--ts-bb);
+  border-left: var(--ts-bl);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* Figures: centred, their caption 0.65em under them (`figure.gap`), as on pages. */
+:where(.typstream) figure {
+  margin: 0.56em 0;
+  text-align: center;
+}
+/* A figure with its own gap to its caption (html-compat.typ's `.ts-figure`, around it) is spaced by that. */
+:where(.typstream .ts-figure) {
+  margin: 0.56em 0;
+}
+:where(.typstream .ts-figure) > figure {
   margin: 0;
 }
-
-/* Tables: Typst's defaults are a 1pt black stroke on every cell, start/top alignment and no
-   bold header. The cell's own padding, fill and alignment are on its .ts-cell. */
-:where(.typstream) table {
-  border-collapse: collapse;
+:where(.typstream) figure > :not(figcaption) {
+  margin-inline: auto;
 }
-:where(.typstream) :is(td, th) {
-  border: 1pt solid currentColor;
-  padding: 0;
-  vertical-align: top;
-  text-align: start;
-  font-weight: inherit;
-}
-:where(.typstream) :is(td, th):has(> .ts-no-stroke) {
-  border: none;
+:where(.typstream) figcaption {
+  margin-block-start: var(--ts-gap, 0.65em);
+  color: inherit;
 }
 
-/* Layout containers. Blocks inside an align() move like its text. */
+/* An outline (html-compat.typ): a line per entry, its dots filling the room to the page number. */
+:where(.typstream .ts-outline-entry) {
+  display: flex;
+  align-items: baseline;
+}
+:where(.typstream .ts-outline-entry) > a {
+  display: contents;
+}
+:where(.typstream .ts-outline-prefix) {
+  flex-shrink: 0;
+}
+:where(.typstream .ts-outline-fill) {
+  flex: 1 1 0;
+  min-width: 1em;
+  margin-inline: 0.25em;
+  overflow: hidden;
+  white-space: nowrap;
+  letter-spacing: 0.15em;
+  text-align: justify;
+  text-align-last: justify;
+}
+
+/* A block quote (html-compat.typ): padded by 1em, 2.4em above and 1.8em below, its attribution 0.9em under it. */
+:where(.typstream .ts-quote) {
+  margin: 2.4em 1em 1.8em;
+}
+:where(.typstream .ts-attribution) {
+  margin-block-start: 0.9em;
+  text-align: end;
+}
+
+/* Layout containers. Blocks inside an align() move like its text. An align() is spaced by what it holds (its
+   margins collapse through it); a pad's content, or what a vertical align() holds, is spaced as one paragraph. */
+:where(.typstream) :is(.ts-align-v, .ts-pad) {
+  margin-block: 0.56em;
+}
 :where(.typstream .ts-align-center) > * {
   margin-inline: auto;
 }
 :where(.typstream) :is(.ts-align-end, .ts-align-right) > * {
   margin-inline-start: auto;
 }
+:where(.typstream .ts-align-v) {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
 :where(.typstream .ts-grid) {
   display: grid;
+}
+/* A table's rows hold its semantics (ARIA roles); its cells are the grid's items. Tables are spaced as blocks. */
+:where(.typstream .ts-row) {
+  display: contents;
+}
+:where(.typstream) :is(.ts-grid, .ts-columns, .ts-stack) {
+  margin-block: 0.56em;
 }
 :where(.typstream .ts-cell) {
   min-width: 0;
@@ -84,8 +300,10 @@
 }
 :where(.typstream .ts-pagebreak) {
   break-after: page;
-  border-top: 1px dashed color-mix(in srgb, currentColor 25%, transparent);
-  margin: 1.5em 0;
+}
+/* On the renderer's pages a page break is where a page ends, nothing to see. */
+:where(.typstream .typstream-flow .ts-pagebreak) {
+  height: 0;
 }
 
 /* Boxes and blocks. Typst draws strokes centred on the edge and counts them in the size. */
@@ -94,18 +312,11 @@
 }
 :where(.typstream) :is(.ts-block, .ts-shape) {
   position: relative;
-  margin-block: 0.6em;
+  margin-block: var(--ts-above, 0.56em) var(--ts-below, 0.56em);
 }
-/* Typst spaces blocks apart, not from the edges of what contains them. */
-:where(.typstream)
-  :is(.ts-cell, .ts-block, .ts-shape, .ts-box, .ts-stack-item, .ts-place, .ts-align, figure)
-  > :first-child {
-  margin-block-start: 0;
-}
-:where(.typstream)
-  :is(.ts-cell, .ts-block, .ts-shape, .ts-box, .ts-stack-item, .ts-place, .ts-align, figure)
-  > :last-child {
-  margin-block-end: 0;
+/* A block is as wide as its content unless it has a width. */
+:where(.typstream .ts-block) {
+  width: fit-content;
 }
 :where(.typstream .ts-box) {
   display: inline-block;
@@ -120,14 +331,13 @@
   vertical-align: bottom;
 }
 /* repeat() fills its box in Typst: its copies stop at the box's edge (or the line's) instead of
-   spilling past it. Clipping moves an inline block's baseline to its bottom edge (WebKit's even
-   with `overflow: clip`), so it sits on the line's bottom, as a box(width: 1fr) does. */
+   spilling past it. Clipped by `clip-path`, which leaves its baseline on its text's, as Typst's;
+   `overflow` would move it to the box's bottom edge (WebKit's even with `overflow: clip`). */
 :where(.typstream .ts-repeat) {
   display: inline-block;
   max-width: 100%;
-  overflow: hidden;
+  clip-path: inset(0);
   white-space: nowrap;
-  vertical-align: bottom;
 }
 /* Empty shapes are drawings of a size; with content they size to it. */
 :where(.typstream .ts-shape:empty) {
@@ -135,7 +345,13 @@
 }
 :where(.typstream .ts-line) {
   height: 0;
-  margin: 0.6em 0;
+  margin: 0.56em 0;
+  /* Not empty: Typst spaces it from both neighbours, where CSS would collapse its margins through it. */
+  padding-top: 0.02px;
+}
+:where(.typstream .ts-empty-line) {
+  display: block;
+  height: 0.658em;
 }
 :where(.typstream .ts-transform) {
   width: fit-content;
@@ -174,20 +390,11 @@
 :where(.typstream .ts-h) {
   display: inline-block;
 }
+/* h(1fr) takes the rest of the line: the renderer's pages give one in a run of inline content
+   (`.typstream-fill`) what its line leaves, and make a run with more a row of its pieces (`.typstream-row`,
+   `.typstream-seg`), the spacing growing between them. */
 :where(.typstream .ts-hfill) {
-  display: inline-block;
-  width: 2em;
-}
-
-/* Enumerations with a numbering pattern carry their markers as text. */
-:where(.typstream .ts-enum) {
-  list-style: none;
-  padding-inline-start: 1.5em;
-}
-:where(.typstream .ts-enum) > li > .ts-marker {
-  display: inline-block;
-  min-width: 1.5em;
-  margin-inline-start: -1.5em;
+  flex-basis: 0;
 }
 
 /* Drawings (html.frame): inline SVG, scaled down to fit narrow containers. */
@@ -195,15 +402,157 @@
   max-width: 100%;
   height: auto;
 }
+/* Typst writes `display: block` on every picture's SVG (typst-html's make_block_level); one in a line (a box, a
+   polygon) sits on the baseline as on pages, and the line's alignment moves it. */
+:where(.typstream) span.ts-frame:not(.ts-b) {
+  display: inline-block;
+}
 :where(.typstream) :is(div.ts-frame, span.ts-frame.ts-b) {
   width: fit-content;
-  margin-block: 0.6em;
+  margin-block: 0.56em;
+  padding-top: 0.02px;
 }
 
-/* What the renderer scrolls in a box of its own (a wide equation or block, #95) leaves its margins
-   out: inside the box they would no longer collapse with its neighbours'. Last, and naming math,
-   to win over the margins above. */
-:where(.typstream) [data-typstream-wide="1"] > math,
-:where(.typstream) [data-typstream-wide="1"] > * {
-  margin-block: 0;
+/* Last, to win over the margins above. */
+/* Typst spaces blocks apart, not from the edges of what contains them. */
+:where(.typstream)
+  :is(
+    .ts-cell,
+    .ts-valign-body,
+    .ts-align-body,
+    .ts-block,
+    .ts-shape,
+    .ts-box,
+    .ts-stack-item,
+    .ts-place,
+    .ts-align-v,
+    .ts-pad,
+    .ts-item-body,
+    .ts-columns,
+    .ts-marginal,
+    figure
+  )
+  > :is(:first-child, .ts-place:first-child + *),
+:where(.typstream)
+  :is(
+    .ts-cell,
+    .ts-valign-body,
+    .ts-align-body,
+    .ts-block,
+    .ts-shape,
+    .ts-box,
+    .ts-stack-item,
+    .ts-place,
+    .ts-align-v,
+    .ts-pad,
+    .ts-item-body,
+    .ts-columns,
+    .ts-marginal,
+    figure
+  )
+  > .ts-align:first-child
+  > :first-child {
+  margin-block-start: 0;
+}
+:where(.typstream)
+  :is(
+    .ts-cell,
+    .ts-valign-body,
+    .ts-align-body,
+    .ts-block,
+    .ts-shape,
+    .ts-box,
+    .ts-stack-item,
+    .ts-place,
+    .ts-align-v,
+    .ts-pad,
+    .ts-item-body,
+    .ts-columns,
+    .ts-marginal,
+    figure
+  )
+  > :last-child,
+:where(.typstream)
+  :is(
+    .ts-cell,
+    .ts-valign-body,
+    .ts-align-body,
+    .ts-block,
+    .ts-shape,
+    .ts-box,
+    .ts-stack-item,
+    .ts-place,
+    .ts-align-v,
+    .ts-pad,
+    .ts-item-body,
+    .ts-columns,
+    .ts-marginal,
+    figure
+  )
+  > .ts-align:last-child
+  > :last-child {
+  margin-block-end: 0;
+}
+/* A column starts at its top, as a page does. */
+:where(.typstream) .ts-colbreak + * {
+  margin-block-start: 0;
+}
+:where(.typstream) :has(+ .ts-colbreak) {
+  margin-block-end: 0;
+}
+/* Spacing between blocks collapses as Typst's does (typst-layout's flow, distribute.rs): the larger of two gaps wins,
+   unless one is stronger. A block's own `above` and `below` (a heading's; html-compat.typ's `.ts-sp-a`, `.ts-sp-b`)
+   beat the paragraph spacing that blocks get by default (`auto`), even when smaller. */
+:where(.typstream) :is(h1, h2, h3, h4, h5, h6, .ts-sp-b) + :not(h1, h2, h3, h4, h5, h6, .ts-sp-a) {
+  margin-block-start: 0;
+}
+:where(.typstream) :not(h1, h2, h3, h4, h5, h6, .ts-sp-b):has(+ :is(h1, h2, h3, h4, h5, h6, .ts-sp-a)) {
+  margin-block-end: 0;
+}
+/* A tight list right after a paragraph (or text) is attached to it: its items' gap, `par.leading`, 0 on pages,
+   replaces the spacing between them (typst-layout's LIST_RULE, an attached weak `v`). Not after a blank line, which
+   ends the paragraph first: the renderer marks the blocks that start there (`data-typstream-start`). */
+:where(.typstream)
+  :is(p, span, strong, em, b, i, a, code, mark, sub, sup, u, s)
+  + .ts-tight:not([data-typstream-start]) {
+  margin-block-start: 0;
+}
+:where(.typstream) p:has(+ .ts-tight:not([data-typstream-start])) {
+  margin-block-end: 0;
+}
+/* In a container, html-compat.typ marks the blank line itself (`.ts-start`). */
+:where(.typstream .ts-start) {
+  display: none;
+}
+/* Spacing (`v`): Typst adds it to the gap its neighbours' spacing collapses to (distribute.rs, keep_spacing): the
+   stronger of the spacing below the block before it and above the one after (a block's own, a heading's, beats
+   paragraph spacing), or, when they are alike, the larger (here the one before). Weak spacing replaces that gap, as
+   fractional spacing does (distribute.rs trims weak spacing next to it). */
+:where(.typstream) .ts-v:not(.ts-v-both) + :not(h1, h2, h3, h4, h5, h6, .ts-sp-a),
+:where(.typstream) :is(h1, h2, h3, h4, h5, h6, .ts-sp-b) + .ts-v + :not(h1, h2, h3, h4, h5, h6, .ts-sp-a) {
+  margin-block-start: 0;
+}
+/* Between two blocks' own spacings both stay here, and between two paragraph spacings where the renderer marks the
+   `v` (`.ts-v-both`): Typst's is the larger, which @typstream/dom's pages keep (`collapseSpacing`). */
+:where(.typstream) :not(h1, h2, h3, h4, h5, h6, .ts-sp-b):has(+ .ts-v + :is(h1, h2, h3, h4, h5, h6, .ts-sp-a)) {
+  margin-block-end: 0;
+}
+:where(.typstream) :has(+ :is(.ts-v-weak, .ts-vfill)) {
+  margin-block-end: 0;
+}
+/* Text that isn't in a paragraph element (a tight list item's, the renderer's `.typstream-t`) is one in Typst, spaced
+   from spacing after it as a paragraph is. */
+:where(.typstream)
+  :is(.typstream-t, span, strong, em, b, i, a, code, mark, sub, sup, u, s)
+  + .ts-v:not(.ts-v-weak, .ts-vfill, :last-child) {
+  margin-block-start: 0.56em;
+}
+/* Spacing that ends what holds it: the weak spacing before it goes, as at the end of any region. */
+:where(.typstream) :has(+ .ts-v:last-child) {
+  margin-block-end: 0;
+}
+/* Typst drops the spacing above the first block of a page (the renderer's pages, below a break too). */
+:where(.typstream .typstream-flow) > :first-child,
+:where(.typstream .typstream-flow) > .ts-align:first-child > :first-child {
+  margin-block-start: 0;
 }

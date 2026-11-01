@@ -11,10 +11,11 @@ import {
   type HtmlRenderer,
   type PagedView,
   registerMathFont,
+  registerTypstFonts,
 } from "@typstream/dom";
 import { htmlCompat } from "@typstream/html-compat";
 import { useLayoutEffect, useRef, useState } from "react";
-import { MATH_FONT } from "../fonts";
+import { MATH_FONT, TYPST_FONTS } from "../fonts";
 import type { RawEngine } from "../rawEngine";
 import { RenderStatus } from "./RenderStatus";
 import { ms } from "./Section";
@@ -68,6 +69,7 @@ const DomHtml = ({ html, compat, caret, follow, onReport }: HtmlProps) => {
   useLayoutEffect(() => {
     const root = document.createElement("div");
     scroller.current?.append(root);
+    registerTypstFonts(TYPST_FONTS);
     const created = createHtmlRenderer(root, {
       plugins: compat ? [htmlCompat] : [],
     });

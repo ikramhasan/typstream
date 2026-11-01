@@ -90,8 +90,44 @@ const rendered = (el: HTMLElement): string => {
             `${graphics(p)}\n${p.querySelector(".typstream-links")?.outerHTML ?? ""}\n${textLayerOf(p)?.outerHTML ?? ""}`,
         )
         .join("\n")
-    : `${[...(root?.attributes ?? [])].map((a) => `${a.name}=${a.value}`).sort()}\n${root?.innerHTML}`;
+    : `${[...(root?.attributes ?? [])].map((a) => `${a.name}=${a.value}`).sort()}\n${root ? withGlyphsSorted(root) : ""}`;
   return markup.replace(/typstream-\d+-/g, "typstream-N-");
+};
+
+/**
+ * The HTML renderer's markup with its glyph outlines (the root's `.typstream-glyphs`, kept in the order they arrived,
+ * with those of blocks gone) as the ones the document uses, by id; none, if it uses none.
+ */
+const withGlyphsSorted = (root: Element): string => {
+  const clone = root.cloneNode(true) as Element;
+  const sheet = clone.querySelector(":scope > .typstream-glyphs");
+  if (sheet) {
+    const used = new Set(
+      [...clone.querySelectorAll("use")].map((u) =>
+        (u.getAttribute("xlink:href") ?? u.getAttribute("href") ?? "").slice(1),
+      ),
+    );
+    const symbols = [...sheet.children].filter((s) => used.has(s.id)).sort((a, b) => (a.id < b.id ? -1 : 1));
+    // Only outlines that a stream's earlier drafts used: as if none had come.
+    if (symbols.length === 0) sheet.remove();
+    else sheet.replaceChildren(...symbols);
+  }
+  return clone.innerHTML;
+};
+
+/**
+ * Whether two renders are the same. The HTML target's pages size what they lay out (room for page breaks, fractional
+ * spacing, columns) from where the layout started, a pixel apart at most: lengths in px compare to a pixel.
+ */
+const same = (a: string, b: string): boolean => {
+  const px = /(-?\d+(?:\.\d+)?)px/g;
+  const numbers = (s: string) => [...s.matchAll(px)].map((x) => Number(x[1]));
+  const [na, nb] = [numbers(a), numbers(b)];
+  return (
+    a.replace(px, "#px") === b.replace(px, "#px") &&
+    na.length === nb.length &&
+    na.every((n, i) => Math.abs(n - (nb[i] as number)) <= 1)
+  );
 };
 
 /** Long documents and runaways: the watchdog's final budget is 10 s per compile. */
@@ -149,7 +185,8 @@ const compare = async (entry: CorpusDocument, target: Target) => {
       return { timedOut, problem: `${id}: artifacts differ${timedOut ? " (the watchdog acted on one side)" : ""}` };
     await shown(streamed, sa.artifact);
     await shown(oneShot, sb.artifact);
-    if (rendered(streamed) !== rendered(oneShot)) return { timedOut: false, problem: `${id}: rendered DOM differs` };
+    if (!same(rendered(streamed), rendered(oneShot)))
+      return { timedOut: false, problem: `${id}: rendered DOM differs` };
     return { timedOut: false, problem: null };
   } finally {
     a.destroy();

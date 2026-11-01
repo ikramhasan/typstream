@@ -54,7 +54,7 @@ export const MATRIX: MatrixEntry[] = [
   {
     name: "grid: hline and vline",
     source: "#grid(columns: 2, [Aa], grid.vline(), [Bb], grid.hline(), [Cc], [Dd])",
-    html: /border-top/,
+    html: /--ts-bt: /,
     nativeDrops: true,
   },
   {
@@ -72,23 +72,23 @@ export const MATRIX: MatrixEntry[] = [
   },
 
   // Tables (native HTML tables; the prelude adds cell styling)
-  { name: "table", source: "#table(columns: 3, [*A*], [*B*], [*C*], [1], [2], [3])", html: /<table>/ },
+  { name: "table", source: "#table(columns: 3, [*A*], [*B*], [*C*], [1], [2], [3])", html: /role="table"/ },
   {
     name: "table: header and footer",
     source: "#table(columns: 2, table.header([H1], [H2]), [b1], [b2], table.footer([F1], [F2]))",
-    html: /<thead>/,
+    html: /role="columnheader"/,
   },
   {
     name: "table: colspan and rowspan",
     source:
       "#table(columns: 3, table.cell(colspan: 2)[Wide], [Cc], table.cell(rowspan: 2)[Tall], [Dd], [Ee], [Ff], [Gg])",
-    html: /colspan="2"/,
+    html: /span 1 \/ span 2/,
   },
   {
     name: "table: fill, align, stroke none",
     source:
       "#table(columns: 2, stroke: none, fill: (x, y) => if y == 0 { gray }, align: (left, right), [Aa], [Bb], [Cc], [Dd])",
-    html: /ts-no-stroke.*text-align: right/,
+    html: /text-align: right/,
   },
   {
     name: "table: hline and vline",
@@ -101,20 +101,20 @@ export const MATRIX: MatrixEntry[] = [
   {
     name: "block",
     source: "#block(fill: luma(230), inset: 8pt, radius: 4pt, stroke: (bottom: 1pt + blue))[Block body]",
-    html: /ts-block.*border-bottom/,
+    html: /ts-block ts-stroked.*--ts-bb: /,
   },
   { name: "block: width", source: "#block(width: 50%, breakable: false, stroke: 1pt)[Block body]", html: /width: 50%/ },
   { name: "box", source: "Text #box(fill: yellow, inset: 2pt, baseline: 20%)[Boxed] text", html: /ts-box/ },
   {
     name: "box: answer blank",
     source: "Name: #box(width: 3cm, stroke: (bottom: 0.5pt))",
-    html: /width: 85\.039pt; |border-bottom/,
+    html: /width: 85\.039pt; |--ts-bb: /,
   },
   {
     name: "blocks inside a box stay inside its paragraph",
     source: "Text #box(width: 4cm, height: 2cm)[#place(center)[#rect[In rect]] #align(right)[Right]] after",
     // A <div> inside the box's <span> would make the browser close the <p> early.
-    html: /<p>Text <span class="ts-box"[^>]*><span class="ts-place ts-b"[^>]*><span class="ts-shape ts-rect ts-b"/,
+    html: /<p>Text <span class="ts-box"[^>]*><span class="ts-place ts-b"[^>]*><span class="ts-shape ts-rect ts-stroked ts-b"/,
   },
   {
     name: "stack",
@@ -148,7 +148,7 @@ export const MATRIX: MatrixEntry[] = [
     // reading-comprehension-lighthouse's ¶ labels: Typst places inside the inset (#94).
     name: "place: inside an inset block",
     source: "#block(inset: (left: 2.2em))[#place(dx: -2.2em)[¶1] First paragraph of the passage.]",
-    html: /--ts-inset-left: 2\.2em.*class="ts-place[^"]*" style="left: var\(--ts-inset-left\); transform: translate\(-2\.2em, 0pt\)"/,
+    html: /--ts-inset-left: 24\.2pt.*class="ts-place[^"]*" style="left: var\(--ts-inset-left\); transform: translate\(-24\.2pt, 0pt\)"/,
     nativeDrops: true,
   },
   {
@@ -186,8 +186,15 @@ Body]`,
   },
   {
     name: "line",
+    // As long as its container: a picture, laid out with nothing around it, would be 0 long.
     source: 'Above\n#line(length: 100%, stroke: (dash: "dashed"))\nBelow',
-    html: /ts-line.*dashed/,
+    html: /ts-line[^>]*1pt dashed/,
+    nativeDrops: true,
+  },
+  {
+    name: "line: dashed (drawn)",
+    source: 'Above\n#line(length: 3cm, stroke: (dash: "dashed"))\nBelow',
+    html: /ts-frame/,
     nativeDrops: true,
   },
   {
@@ -266,7 +273,7 @@ Body]`,
   },
 
   // Spacing and breaks
-  { name: "v", source: "Para one\n#v(2em)\nPara two", html: /height: 2em/, nativeDrops: true },
+  { name: "v", source: "Para one\n#v(2em)\nPara two", html: /height: 22pt/, nativeDrops: true },
   { name: "h", source: "Word #h(1em) word #h(1fr) end", html: /ts-hfill/, nativeDrops: true },
   { name: "pagebreak", source: "Page one #pagebreak() Page two", html: /ts-pagebreak/, nativeDrops: true },
 
@@ -287,17 +294,29 @@ Body]`,
   { name: "layout", source: "#layout(size => [Width is #size.width])", nativeDrops: true },
 
   // Semantic elements HTML export handles natively
-  { name: "headings, numbered", source: '#set heading(numbering: "1.1")\n= Intro\n== Sub', html: /<h2>1 Intro/ },
-  { name: "lists and terms", source: "- one\n- two\n+ first\n+ second\n/ Term: Definition", html: /<dl>/ },
+  {
+    name: "headings, numbered",
+    source: '#set heading(numbering: "1.1")\n= Intro\n== Sub',
+    html: /<h2[^>]*><span class="ts-heading-number"[^>]*>.*>1<\/span><\/span>.*Intro/,
+  },
+  {
+    name: "lists and terms",
+    source: "- one\n- two\n+ first\n+ second\n/ Term: Definition",
+    html: /<dl class="ts-terms/,
+  },
   {
     name: "enum: explicit numbers, start, reversed",
     source: "4. four\n5. five\n\n#enum(start: 7, [seven])\n\n#enum(reversed: true, [b], [a])",
   },
-  { name: "enum: numbering pattern", source: '#set enum(numbering: "a)")\n+ alpha\n+ beta', html: /ts-marker">a\)/ },
+  {
+    name: "enum: numbering pattern",
+    source: '#set enum(numbering: "a)")\n+ alpha\n+ beta',
+    html: /ts-marker" aria-hidden="true">a\)/,
+  },
   {
     name: "quote",
     source: "#quote(block: true, attribution: [Someone])[Quoted words] and #quote[inline]",
-    html: /<blockquote>/,
+    html: /<blockquote class="ts-quote/,
   },
   { name: "raw", source: "`inline` and\n```py\nprint(1)\n```", html: /<pre>/ },
   {
@@ -336,12 +355,10 @@ Body]`,
     name: "outline",
     source: '#outline()\n#set heading(numbering: "1.")\n= First\n== Second',
     html: /doc-toc/,
-    missing: { chars: "11", why: "outline page numbers: HTML has no pages" },
   },
   {
     name: "outline of figures",
     source: "#outline(target: figure.where(kind: table))\n#figure(table([Aa]), caption: [Tcap])",
-    missing: { chars: "1", why: "outline page numbers: HTML has no pages" },
   },
   { name: "footnote", source: "Text#footnote[Note body] more.", html: /doc-endnotes/ },
   {
@@ -355,12 +372,12 @@ Body]`,
   {
     name: "math: inline and block",
     source: "Inline $a^2 + b^2 = c^2$ and\n$ sum_(k=0)^n k = (n(n+1))/2 $",
-    html: /<math display="block">/,
+    html: /ts-equation.*<math display="block">/s,
   },
   {
     name: "math: equation numbering",
     source: '#set math.equation(numbering: "(1)")\n$ x = 1 $ <eq>\n$ y = 2 $\nSee @eq.',
-    html: /ts-equation-number">\(2\)/,
+    html: /ts-equation-number">.*\(2\)/s,
     nativeDrops: true,
   },
   {
@@ -370,6 +387,6 @@ Body]`,
   },
   { name: "math: alignment", source: "$ a &= b + c \\\\ &= d $", html: /aligned/ },
   { name: "math: overline (as accent)", source: "$ overline(a b) $", html: /<mover accent="true">/ },
-  { name: "math: cancel (drawn)", source: "$ cancel(x) + y $", html: /ts-frame/ },
+  { name: "math: cancel (drawn)", source: "$ cancel(x) + y $", html: /ts-equation.*<svg/s },
   { name: "math: box inside an equation", source: "$ x + #box(stroke: 1pt)[y] $" },
 ];

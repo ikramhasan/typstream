@@ -86,11 +86,15 @@ export const TYPST_MATH_CSS = `:where(.typstream) mtable.right-align mtd,
  * the page scroll, and `position: relative` (html-compat's too) puts absolute
  * boxes under it. None starts a formatting context (`contain: paint` and
  * `overflow: auto` would), so margins still collapse through the root and
- * layout is as before. What reaches past the element (a table wider than it)
- * scrolls sideways instead: the renderer marks it once laid out (#95), and
- * vertically it overflows by box edges only (taller glyph boxes in equations).
- * A display equation is as wide as its content (Firefox's and WebKit's are
- * otherwise as wide as their container, with the content overflowing them).
+ * layout is as before. On pages (`.typstream-pages`) the document is in its
+ * flow, over the sheets, which clips the same way, its box the pages' text and
+ * margins; the root doesn't, so the sheets' shadows show.
+ *
+ * Pages: the sheets are laid out from the page html-compat writes and scaled to
+ * the element as the paged view's pages; the flow, as wide as a page, is
+ * scaled with them and broken across them (pages.ts). Every element has no line
+ * box of its own (`line-height: 0`) but text (`.typstream-t`), so a line is as
+ * tall as its text, as Typst's, not at least a strut of its block's size.
  *
  * Word fade-in: durations and easing are set on the root, each word has its own
  * delay. `::marker` can't be wrapped and ignores opacity, so a list item's marker
@@ -105,11 +109,133 @@ export const htmlRendererCss: string = `${THEME_CSS}
   overflow: clip;
   clip-path: inset(0);
 }
-:where(.typstream [data-typstream-wide]) {
-  overflow: auto hidden;
+:where(.typstream-pages) {
+  color: #000;
+  color-scheme: light;
+  overflow: visible;
+  clip-path: none;
 }
-:where(.typstream math[display=block]) {
-  min-width: max-content;
+:where(.typstream-pages > .typstream-paged) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+:where(.typstream-pages > .typstream-paged:is([data-layout=fit-width], [data-layout=reflow])) {
+  align-items: stretch;
+}
+:where(.typstream-pages > .typstream-paged[data-layout=reflow]) {
+  gap: 0;
+}
+:where(.typstream-pages .typstream-page) {
+  position: relative;
+  max-width: 100%;
+  background: white;
+}
+:where(.typstream-pages *) {
+  line-height: 0;
+}
+:where(.typstream-pages .typstream-t) {
+  line-height: 1.3;
+}
+:where(.typstream-pages[data-baseline=round]) :is(.typstream-t, .ts-math) {
+  --ts-x: calc(1.054em - round(1.054em, 1px) - (1.3em - round(1.054em, 1px) - round(0.246em, 1px)) / 2 + var(--ts-borrow, 0px));
+}
+:where(.typstream-pages[data-baseline=floor]) :is(.typstream-t, .ts-math) {
+  --ts-x: calc(1.054em - round(1.054em, 1px) - round(down, (1.3em - round(1.054em, 1px) - round(0.246em, 1px)) / 2, 1px) + var(--ts-borrow, 0px));
+}
+/* A pixel the ascent gives the descent when the descent rounds down (Chrome on Linux): 1px then, else 0. */
+:where(.typstream-pages[data-baseline-borrow]) :is(.typstream-t, .ts-math) {
+  --ts-borrow: clamp(0px, (0.246em - round(0.246em, 1px)) * 100000, 1px);
+}
+:where(.typstream-pages[data-baseline] .typstream-t) {
+  position: relative;
+  top: var(--ts-x, 0px);
+}
+:where(.typstream-pages .ts-edges .typstream-t) {
+  top: 0;
+}
+.typstream-pages[data-baseline] .ts-math svg {
+  vertical-align: calc(var(--ts-depth, 0px) - var(--ts-x, 0px));
+}
+.typstream-pages[data-baseline] .ts-math.ts-flat svg {
+  vertical-align: text-bottom;
+  margin-block-end: calc(var(--ts-lift, 0px) - var(--ts-x, 0px) - 0.246em + round(0.246em, 1px) + var(--ts-borrow, 0px));
+}
+:where(.typstream .typstream-row) {
+  display: flex;
+  align-items: baseline;
+}
+:where(.typstream .typstream-seg:empty) {
+  display: none;
+}
+:where(.typstream .typstream-fill) {
+  display: block;
+}
+:where(.typstream .typstream-fill > .ts-hfill) {
+  display: inline-block;
+}
+/* Glyph outlines the pictures use (renderer.ts): drawn only where they're used. */
+.typstream .typstream-glyphs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+:where(.typstream-flow, .typstream-underlay) {
+  position: absolute;
+  box-sizing: border-box;
+  transform-origin: 0 0;
+  overflow: clip;
+  clip-path: inset(0);
+}
+.typstream-pages .ts-place-text {
+  text-box: none;
+  padding-block: 0;
+}
+:where(.typstream-flow .ts-float-parent) {
+  width: var(--typstream-text-width, auto);
+}
+:where(.typstream-flow .typstream-split) {
+  background: none !important;
+}
+:where(.typstream-flow .typstream-split)::before {
+  display: none !important;
+}
+:where(.typstream-underlay .typstream-piece) {
+  position: absolute !important;
+  box-sizing: border-box;
+}
+:where(.typstream-flow .typstream-endnotes) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+:where(.typstream-flow .typstream-island) {
+  inset: 0 auto auto 0;
+  width: calc(100% * var(--typstream-scale, 1));
+  height: calc(100% * var(--typstream-scale, 1));
+  transform: scale(calc(1 / var(--typstream-scale, 1)));
+  transform-origin: 0 0;
+  font-family: var(--typstream-host-font);
+  font-size: var(--typstream-host-size);
+  font-weight: 400;
+  color: var(--typstream-host-color);
+  text-align: start;
+}
+:where(.typstream-flow .typstream-island, .typstream-flow .typstream-island *) {
+  line-height: var(--typstream-host-line, normal);
+}
+:where(.typstream-flow) > :first-child {
+  margin-block-start: 0;
+}
+/* Below spacing (\`v\`) that starts a page, a block's spacing above goes too: Typst keeps weak spacing only after
+   something laid out in the region (distribute.rs, keep_spacing). */
+:where(.typstream-flow) > .ts-v:first-child + *,
+:where(.typstream-flow .typstream-break) + .ts-v + * {
+  margin-block-start: 0;
 }
 :where(.typstream typstream-island) {
   position: relative;

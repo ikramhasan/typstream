@@ -245,7 +245,8 @@ Why the latest compile produced no artifact. Set while the status is `stale` or 
 
 `EngineDocument.exportPdf()` and `exportHtml()` compile `exportSource()` (the healed input) in final mode with the
 document's preamble and files, by the same engine as the preview. They run before compiles that are waiting, under the
-final watchdog budget. Call `finish()` first to export the finished document. HTML exports have no source anchors and
+final watchdog budget. Call `finish()` first to export the finished document. HTML exports have no source anchors
+unless `anchors` asks for them (to lay the export out as pages, with the page settings html-compat writes on them), and
 are not sanitized; [`standaloneHtml`](/docs/reference/dom#standalonehtml) makes them a safe file. See
 [Exports](/docs/guides/exports).
 

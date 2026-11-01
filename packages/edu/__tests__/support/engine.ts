@@ -7,7 +7,7 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import type { Diagnostic, TextRun } from "@typstream/engine-wasm";
 import { Engine, initSync } from "@typstream/engine-wasm";
-import { HTML_COMPAT_PATH, htmlCompatPreamble, htmlCompatSource } from "@typstream/html-compat";
+import { HTML_COMPAT_PATH, htmlCompatPreamble, htmlCompatSource, KNOWN_HTML_WARNINGS } from "@typstream/html-compat";
 import { eduFiles, eduPreamble, SHOW_ANSWERS_INPUT } from "../../src/index";
 import { fonts } from "./fonts";
 
@@ -27,13 +27,13 @@ export const newEngine = (): Engine => {
 export interface CompileOptions {
   /** Show answers (`sys.inputs.showAnswers`). Default false. */
   answers?: boolean;
-  /** Put html-compat's preamble before edu's. Default false. */
+  /** Put html-compat's preamble before edu's, which edu's HTML needs (a plugin dependency). Default true. */
   compat?: boolean;
 }
 
 const prepare = (engine: Engine, source: string, options: CompileOptions): void => {
   engine.set_inputs(options.answers ? { [SHOW_ANSWERS_INPUT]: "true" } : {});
-  engine.set_source("/main.typ", (options.compat ? htmlCompatPreamble : "") + eduPreamble + source);
+  engine.set_source("/main.typ", (options.compat === false ? "" : htmlCompatPreamble) + eduPreamble + source);
 };
 
 export interface HtmlOutput {
@@ -80,15 +80,25 @@ export const pagedText = (out: PagedOutput): string => out.pages.flatMap((p) => 
 export const htmlText = (html: string): string =>
   html
     .replace(/<head>[\s\S]*?<\/head>/, "")
-    .replace(/<[^>]+>/g, " ")
+    // Blocks end words; inline elements (html-compat's spans of styled text) don't.
+    .replace(
+      /<\/?(?:p|div|li|ul|ol|dl|dt|dd|h[1-6]|br|table|tr|td|th|figure|figcaption|nav|section|header|blockquote)\b[^>]*>/g,
+      " ",
+    )
+    .replace(/<[^>]+>/g, "")
     .replace(/&#x([0-9a-f]+);/gi, (_, hex: string) => String.fromCodePoint(Number.parseInt(hex, 16)))
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&amp;/g, "&");
 
-/** Errors and warnings, except HTML export's standing "under active development" warning. */
+/**
+ * Errors and warnings, except HTML export's standing "under active development" warning and the ones html-compat
+ * expects (a template's page rule, which it reads for the renderer's pages).
+ */
 export const problems = (diagnostics: Diagnostic[]): string[] =>
   diagnostics
-    .filter((d) => !/html export is under active development/.test(d.message))
+    .filter(
+      (d) => !/html export is under active development/.test(d.message) && !KNOWN_HTML_WARNINGS.includes(d.message),
+    )
     .map((d) => `${d.severity}: ${d.message}`);

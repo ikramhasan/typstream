@@ -30,7 +30,7 @@ const KNOWN_GAPS: Record<string, { chars: string; why: string[] }> = {
   "multilingual-arabic-rtl-quiz": { chars: "ي", why: [PDF_ARTIFACT] },
   "multilingual-hindi-science": { chars: "वववववववववववववववववव१", why: [PAGE_NUMBERS, PDF_ARTIFACT] },
   "quiz-mcq-geography": { chars: "12", why: [PAGE_NUMBERS] },
-  "report-climate-change": { chars: "1112222223333344445566iiiiiiiv", why: [PAGE_NUMBERS, "outline page numbers"] },
+  "report-climate-change": { chars: "2222223333344445566iiiiiiiv", why: [PAGE_NUMBERS] },
   "table-periodic-elements": { chars: "1", why: [PAGE_NUMBERS] },
   "worksheet-linear-equations": {
     chars: "122222AAEEIILLPPUUaaaaaaaabbeeeeeeffggggiiiiiillnnnnnnooooqqrrrrssttttuu",

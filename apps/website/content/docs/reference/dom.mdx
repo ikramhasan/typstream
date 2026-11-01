@@ -12,7 +12,8 @@ them on its own:
 - **The renderers**: `createHtmlRenderer` for the HTML target (sanitized, block-diffed Typst HTML with word fade-in
   and a caret) and `createPagedView` for the paged target (pages painted on canvases, or SVG, changed pages only,
   with a selectable text layer).
-- **`standaloneHtml`**, which makes an HTML export a file that opens on its own.
+- **`standaloneHtml`** and **`standalonePages`**, which make an HTML export a file that opens on its own: Typst's
+  HTML in a reading layout, or laid out as the pages.
 
 ## When to use it
 
@@ -94,9 +95,15 @@ Renders a streaming Typst document into `element` and keeps it up to date. The r
 
 #### `TypstreamExportOptions`
 
-What `exportPdf` and `exportHtml` take (`exportHtml` takes `StandaloneHtmlOptions` too).
+What `exportPdf` and `exportDocx` take.
 
 <auto-type-table path="packages/dom/src/mount.ts" name="TypstreamExportOptions" />
+
+#### `TypstreamHtmlExportOptions`
+
+What `exportHtml` takes: `TypstreamExportOptions`, `StandaloneHtmlOptions`, and `pages`.
+
+<auto-type-table path="packages/dom/src/mount.ts" name="TypstreamHtmlExportOptions" />
 
 The exports compile the document in final mode with the template's inputs, your `inputs` and the export's own
 (`exportPdf({ inputs })`, for that export only), without the reflow page size, so they come out at the document's
@@ -135,11 +142,16 @@ What the renderer does with the HTML:
 - **Scopes ids.** Ids and the links to them get a prefix (`idPrefix`), so documents on one page don't collide.
 - **Opens external links in a new tab** (`linkTarget`, default `_blank`).
 - **Marks source anchors.** Each top-level block's first element gets `data-typstream-src`, its offset in the
-  compiled source.
-- **Scrolls what is too wide.** Once laid out, and again when the root's size changes, a table, an equation or code
-  wider than `root` scrolls sideways inside it instead of being cut off: code scrolls itself, a table or an equation
-  in a `div` the renderer puts around it. Both get `data-typstream-wide` and `tabindex="0"`, so the keyboard can
-  scroll them. Blocks that fit aren't touched.
+  compiled source, and `data-typstream-start` when the block starts in the source (after a blank line, or a heading).
+- **Lays it out on pages.** The document goes on sheets of its page size and margins (html-compat writes them),
+  scaled as the paged view scales its pages (`layout`), and breaks across them where Typst breaks its pages: lines
+  with Typst's orphans and widows, table rows, blocks that don't break, headings kept with what follows, forced and
+  weak page breaks. Headers and footers go on every sheet with its number, and footnotes at the foot of the page their
+  reference is on (Typst's endnotes stay at the end for screen readers, out of sight). Columns fill as Typst's do, fractional
+  spacing takes what its page or line leaves, and aligned blocks sit in the room their page leaves. With the
+  engine's fonts registered (`registerTypstFonts`) and html-compat, a document looks as it does on the paged view's
+  pages. It is laid out again when the root's width changes and when fonts finish loading; `onPages` hears the page
+  count.
 - **Sets the language and direction** on `root` from the document's `lang`, so right-to-left documents order lists
   and tables correctly.
 
@@ -202,6 +214,20 @@ Registers New Computer Modern Math as a web font in `doc` (default `document`), 
 browsers can't stretch delimiters. Pass the URL of the engine's copy (from `@typstream/engine-wasm/fonts`) or your
 own. It uses the FontFace API, so no `font-src` exception for inline CSS is needed, and it does nothing if the family
 is already registered. The `typstream` package does this for you.
+
+### `registerTypstFonts`
+
+```ts
+const registerTypstFonts: (fonts: readonly TypstFont[], doc?: Document) => void;
+```
+
+Registers Typst's fonts (the engine's, from `@typstream/engine-wasm/fonts`) as web fonts in `doc` (default
+`document`), under the names html-compat's CSS asks for, with the layout profile's line box as their ascent and
+descent: the HTML target's lines are then as tall as the paged view's, their baselines where Typst puts them. Pass
+them as `fonts` to `mountTypstream`, which registers them when it shows an HTML document; the `typstream` package
+does this for you. Registering a family twice does nothing.
+
+<auto-type-table path="packages/dom/src/html/fonts.ts" name="TypstFont" />
 
 ### `registerLoadedFont` (beta)
 
@@ -365,7 +391,7 @@ Makes an HTML export (`EngineDocument.exportHtml()`) a file that opens on its ow
 - `dir="rtl"` on `<html>` for a right-to-left language (Typst writes the language but no direction).
 
 It also removes `<meta http-equiv="refresh">`. It is a string transform, so it runs anywhere, including Node.
-`MountedTypstream.exportHtml()` calls it with the mount's plugins, stylesheets and theme.
+`MountedTypstream.exportHtml({ pages: false })` calls it with the mount's plugins, stylesheets and theme.
 
 ```ts
 const file = standaloneHtml(await doc.exportHtml(), { plugins: [htmlCompat], title: "Worksheet" });
@@ -376,6 +402,26 @@ const url = URL.createObjectURL(new Blob([file], { type: "text/html" }));
 
 <auto-type-table path="packages/dom/src/export/standalone.ts" name="StandaloneHtmlOptions" />
 
+### `standalonePages`
+
+```ts
+const standalonePages: (html: string, options?: StandalonePagesOptions) => Promise<string>;
+```
+
+Makes an HTML export a file laid out as the pages, as the HTML renderer shows them. It lays the export out in
+`document`, out of sight and at the pages' size, and writes the result in `standaloneHtml`'s file (its policy, the
+plugins' stylesheets, the title) with the renderer's CSS and the Typst fonts the pages use, embedded from
+`typstFonts`. The file runs no script: it shows the pages one under the other and prints a page per sheet. It needs a
+browser. `MountedTypstream.exportHtml()` calls it unless `pages: false`.
+
+```ts
+const file = await standalonePages(await doc.exportHtml({ anchors: true }), { plugins: [htmlCompat], typstFonts });
+```
+
+#### `StandalonePagesOptions`
+
+<auto-type-table path="packages/dom/src/export/pages.ts" name="StandalonePagesOptions" />
+
 ## Class names and CSS variables
 
 Use these to theme the output; [Theming](/docs/guides/theming) has the details.
@@ -385,7 +431,9 @@ Use these to theme the output; [Theming](/docs/guides/theming) has the details.
 | `.typstream` | The HTML renderer's root. `data-typstream-theme="light"` or `"dark"` when the theme is forced. |
 | `.typstream-caret` | The caret after the last text while streaming (`aria-hidden`). |
 | `[data-typstream-src]` | A top-level block's first element; the value is its offset in the compiled source. |
-| `[data-typstream-wide]` | A box wider than the root, which scrolls sideways (`1` on a `div` the renderer put around a table or an equation). |
+| `[data-typstream-start]` | A top-level block that starts in the source (after a blank line, or a heading). |
+| `.typstream-pages` | The HTML renderer's root: its sheets (`.typstream-paged > .typstream-page`), the document over them (`.typstream-flow`), and headers and footers (`.typstream-marginals`). |
+| `.typstream-break` | Room the HTML renderer puts where a page ends (`aria-hidden`). |
 | `[data-typstream-animate]` | A word fading in. |
 | `.typstream-paged` | The paged view, with `data-layout="fixed"`, `"fit-width"` or `"reflow"`. |
 | `.typstream-page` | One page, with `data-page` (1-based). |
