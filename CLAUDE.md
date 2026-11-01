@@ -106,7 +106,7 @@ pnpm coverage          # line and branch coverage of the TypeScript packages, No
 
 In `packages/engine-wasm` (Rust build, ~3 min cold):
 - `pnpm build`: `build.sh` → `dist/` (glue, `.d.ts`, `wasm-opt -Oz` wasm, Typst's 17 bundled faces from typst-assets, the CFF ones converted to TrueType outlines (output SHA-256 pinned, #118): 5 base fonts and 12 lazy `extraFonts`, the same files `@typstream/node` serves (#128), and the lazily loaded script fonts, downloaded from notofonts at a pinned commit and SHA-256 checked, with their `FontInfo` registry written by `scripts/fonts.mjs`). It skips the build when `dist/` came from the same inputs (`FORCE=1` rebuilds). The root `pnpm test` / `pnpm check-types` (turbo) build it first; run inside the package, `pnpm test` uses the existing `dist/`.
-- `pnpm size`: wasm budget, 6.31 MB brotli (HTML, SVG and PDF in one build since #18, and the DOCX model).
+- `pnpm size`: wasm budget, 6.32 MB brotli (HTML, SVG and PDF in one build since #18, and the DOCX model).
 - Native tools in `examples/` (`cargo run --release --example …`, the font store is thread-local, so they compile on
   the calling thread): `frames` dumps a document's laid-out frames (items, positions, tags), `docx_model` writes its
   DOCX model, fonts and PDF. Both take `--packages DIR` (laid out as `--package-path`) and `--input k=v`.
@@ -161,12 +161,12 @@ In `packages/mindmap`:
 
 In `packages/dom`:
 - `pnpm test`: node tests (the HTML block splitter, paged helpers). `pnpm test:browser`: the renderers in Chromium, Firefox and WebKit, fed by the real engine worker with html-compat and corpus documents (needs engine-wasm's `dist/`). `BROWSERS=chromium` runs one.
-- `pnpm size`: HTML renderer ≤ 23.1 KB gzipped (with its CSS), paged renderer ≤ 6.8 KB, standalone HTML export ≤ 2 KB.
+- `pnpm size`: HTML renderer ≤ 23.3 KB gzipped (with its CSS), paged renderer ≤ 6.8 KB, standalone HTML export ≤ 2 KB.
 - Its API report needs DOM types, so its `api-extractor.json` overrides the shared compiler settings.
 
 In `packages/react`:
 - `pnpm test`: Node tests (provider merging, the shared engine's lifetime). `pnpm test:browser`: `<Typstream>` with React Testing Library against the real engine worker in Chromium, Firefox and WebKit (StrictMode, lazy opening, worker cleanup). `BROWSERS=chromium` runs one. Needs engine-wasm's `dist/`.
-- `pnpm size`: ≤ 34.8 KB gzipped including `@typstream/dom` (React and the engine external).
+- `pnpm size`: ≤ 35.0 KB gzipped including `@typstream/dom` (React and the engine external).
 - Its bundle starts with `"use client"` (tsup banner), as does `typstream`'s, for Next.js's App Router.
 
 In `packages/ai`: `pnpm test` runs the helpers through AI SDK 7 itself (a devDependency): recorded `corpus/llm` streams

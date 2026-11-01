@@ -638,7 +638,8 @@ export const createHtmlPages = (
       return;
     }
     const bottom = Math.max(box.top, ...rects.map((r) => r.bottom));
-    el.style.height = `${(bottom - box.top) / scale}px`;
+    // Up to the next 1/64 px, browsers' layout unit: rounded down, the last line wouldn't fit and would move over.
+    el.style.height = `${Math.ceil(((bottom - box.top) / scale) * 64) / 64}px`;
   };
 
   /** Where the line at `top` starts in the inline run `nodes` (their first node or character on it). */

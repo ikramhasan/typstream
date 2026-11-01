@@ -924,9 +924,11 @@
   show line: html-only(it => {
     if it.angle != 0deg or it.end != none or it.start != (0% + 0pt, 0% + 0pt) { return _frame(it) }
     // A dashed line is drawn by Typst (its dashes aren't CSS's); a solid one is a block of no height whose
-    // stroke is centred on it.
+    // stroke is centred on it. So is a dashed one as long as what holds it (`100%`): a picture is laid out with
+    // nothing around it, where that is 0.
     let s = if it.stroke == auto { stroke(1pt + black) } else { stroke(it.stroke) }
-    if s.dash not in (auto, none) { return _frame(it) }
+    let relative = type(it.length) == ratio or (type(it.length) == relative and it.length.ratio != 0%)
+    if s.dash not in (auto, none) and not relative { return _frame(it) }
     let props = _box-props(stroke: (top: it.stroke), stroke-default: 1pt + black)
     props.insert("width", _len(it.length))
     _el("div", "ts-line ts-stroked", style: _style(props), none)

@@ -186,7 +186,14 @@ Body]`,
   },
   {
     name: "line",
+    // As long as its container: a picture, laid out with nothing around it, would be 0 long.
     source: 'Above\n#line(length: 100%, stroke: (dash: "dashed"))\nBelow',
+    html: /ts-line[^>]*1pt dashed/,
+    nativeDrops: true,
+  },
+  {
+    name: "line: dashed (drawn)",
+    source: 'Above\n#line(length: 3cm, stroke: (dash: "dashed"))\nBelow',
     html: /ts-frame/,
     nativeDrops: true,
   },

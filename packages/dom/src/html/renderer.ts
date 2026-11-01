@@ -216,6 +216,27 @@ export const compactGlyphs = (html: string): string =>
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
+/**
+ * A picture Typst sizes 0 across one way (a line: `height: 0em`, its `viewBox` 1pt tall) given its `viewBox`'s size
+ * that way, and as much negative margin: a box of 0 would scale the drawing to nothing, and this one takes no more
+ * room. @internal
+ */
+export const unflatten = (svg: SVGElement): void => {
+  const box = (svg.getAttribute("viewBox") ?? "").split(" ").map(Number);
+  const { style } = svg;
+  // The size that may be 0, the other, the margin that takes the room back, and the first's place in the viewBox.
+  for (const [zero, other, margin, i] of [
+    ["height", "width", "marginBottom", 3],
+    ["width", "height", "marginRight", 2],
+  ] as const) {
+    const scale = Number.parseFloat(style[other]) / (box[5 - i] as number);
+    if (Number.parseFloat(style[zero]) === 0 && scale > 0) {
+      style[zero] = `${(box[i] as number) * scale}em`;
+      style[margin] = `-${style[zero]}`;
+    }
+  }
+};
+
 /** Elements the caret doesn't go into: it goes after them. */
 const CARET_STOP = new Set(["math", "svg", "pre", "img", "hr", "br", "wbr", ISLAND_MARKER]);
 
@@ -388,6 +409,8 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
       pictureTemplate.innerHTML = trustedHTML(hideStyles(markup));
       nodes = pictureTemplate.content;
       sanitize(nodes);
+      const svg = nodes.firstElementChild;
+      if (svg?.namespaceURI === SVG_NS) unflatten(svg as SVGElement);
       nodes = inert.importNode(nodes, true);
       if (pictures.size >= MAX_PICTURES) pictures.clear();
       pictures.set(markup, nodes);

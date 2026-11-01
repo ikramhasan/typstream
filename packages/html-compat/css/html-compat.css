@@ -12,6 +12,12 @@
   position: relative;
 }
 
+/* Block elements inside a box are spans (a div would end the paragraph); this makes them blocks.
+   Rules below that set another display (grid, flex) come later and win. */
+:where(.typstream .ts-b) {
+  display: block;
+}
+
 /* Typst's text, as the engine's layout profile (#129) sets it on pages: Libertinus Serif at 11pt, lines a constant
    1.3em apart, ragged right, no hyphenation. The fonts are the engine's own (dom's `registerTypstFonts`), registered
    with the profile's line box as their ascent and descent (1.054em and 0.246em, no gap), so a line box 1.3em tall
@@ -395,6 +401,11 @@
 :where(.typstream .ts-frame) svg {
   max-width: 100%;
   height: auto;
+}
+/* Typst writes `display: block` on every picture's SVG (typst-html's make_block_level); one in a line (a box, a
+   polygon) sits on the baseline as on pages, and the line's alignment moves it. */
+:where(.typstream) span.ts-frame:not(.ts-b) {
+  display: inline-block;
 }
 :where(.typstream) :is(div.ts-frame, span.ts-frame.ts-b) {
   width: fit-content;

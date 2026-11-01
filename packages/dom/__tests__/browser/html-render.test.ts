@@ -14,7 +14,7 @@ import { htmlCompat, htmlCompatCss } from "@typstream/html-compat";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { commands, server } from "vitest/browser";
 import { registerTypstFonts } from "../../src/html/fonts";
-import { compactGlyphs, createHtmlRenderer, type HtmlRenderer } from "../../src/html/renderer";
+import { compactGlyphs, createHtmlRenderer, type HtmlRenderer, unflatten } from "../../src/html/renderer";
 import { collapseSpaces, rowRuns, styleSpaces } from "../../src/html/runs";
 import { createSanitizer, hideStyles } from "../../src/html/sanitize";
 import { splitHtml } from "../../src/html/split";
@@ -59,6 +59,8 @@ const parseWhole = (html: string, idPrefix: string): string => {
   const body = new DOMParser().parseFromString(hideStyles(compactGlyphs(html)), "text/html").body;
   for (const anchor of Array.from(body.querySelectorAll("typstream-anchor"))) anchor.remove();
   createSanitizer({ idPrefix, plugins: [htmlCompat] })(body);
+  // Pictures as the renderer sizes them.
+  for (const svg of Array.from(body.querySelectorAll("svg"))) if (!svg.parentElement?.closest("svg")) unflatten(svg);
   collapseSpaces(body, document);
   styleSpaces(body, document);
   rowRuns(body, document);
@@ -310,6 +312,39 @@ describe(`HTML renderer's pages in ${browser}`, () => {
       (c) => !c.matches(".ts-head") && c.getBoundingClientRect().top > second.top,
     );
     expect(next?.getBoundingClientRect().top).toBeCloseTo((copies[0] as HTMLElement).getBoundingClientRect().bottom, 0);
+    unmount(renderer);
+  });
+
+  it("draws shapes in boxes, pictures in lines and lines across, where the pages do", async () => {
+    registerTypstFonts(FONTS);
+    await document.fonts.load("11pt typstream-libertinus-serif");
+    // From the corpus (geometry-shapes-area, exam-physics-mechanics, quiz-mcq-chemistry).
+    const source = [
+      "#box(height: 3cm, align(horizon, circle(radius: 1cm, fill: blue)))",
+      "#align(center, polygon(fill: red, (0cm, 2cm), (3cm, 2cm), (1cm, 0cm)))",
+      '#line(length: 100%, stroke: (dash: "dashed"))',
+      '#line(length: 3cm, stroke: (dash: "dashed"))',
+    ].join("\n\n");
+    const doc = openHtml(engine);
+    const html = await compileHtml(doc, source);
+    doc.dispose();
+    const renderer = mount();
+    renderer.root.style.width = "800px";
+    renderer.update(html);
+    await laidOut();
+    const pt = (renderer.root.querySelector(".typstream-page") as HTMLElement).getBoundingClientRect().width / 595.28;
+    const rect = (sel: string) => (renderer.root.querySelector(sel) as Element).getBoundingClientRect();
+    // A shape in a box is a block (a span that html-compat's CSS makes one), as big as Typst's.
+    expect(rect(".ts-circle").height / pt).toBeCloseTo(56.69, 0);
+    // A picture in a line is centred by its line (the page's centre, its margins alike).
+    const text = rect(".typstream-flow");
+    const polygon = rect("span.ts-frame svg");
+    expect(Math.abs(polygon.left + polygon.width / 2 - (text.left + text.width / 2))).toBeLessThan(pt);
+    // Lines are drawn as long as on pages: across the text (A4's, 453.54pt), or 3cm (a picture, whose box isn't 0 tall).
+    expect(rect(".ts-line").width / pt).toBeCloseTo(453.54, 0);
+    const picture = renderer.root.querySelector("div.ts-frame svg") as SVGSVGElement;
+    expect(picture.getBoundingClientRect().height).toBeGreaterThan(0);
+    expect(picture.getBoundingClientRect().width / pt).toBeCloseTo(85.04, 0);
     unmount(renderer);
   });
 
