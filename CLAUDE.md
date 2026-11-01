@@ -175,7 +175,7 @@ In `packages/react`:
 
 In `packages/plate`: `pnpm test`: the commands' edits compiled by engine-wasm (Node). `pnpm test:browser`: every edu
 corpus document and edu example in the editor against `<Typstream>`'s HTML target (each word within 0.5 px), editing
-with real key presses, and the spans taken off as dom parses, in Chromium, Firefox and WebKit. `pnpm size`: ≤ 11.5 KB
+with real key presses, and the spans taken off as dom parses, in Chromium, Firefox and WebKit. `pnpm size`: ≤ 12 KB
 gzipped, ≤ 170 KB with Plate. The editor's DOM must stay the renderer's: anything Slate adds inside an element (its
 void spacer, a zero-width text) changes what CSS's `:empty`, `:first-child` and sibling rules match.
 

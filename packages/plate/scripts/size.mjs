@@ -5,7 +5,8 @@ import { gzipSync } from "node:zlib";
 import { build } from "esbuild";
 
 const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
-const OWN = 11.5 * 1024;
+// 11.5 KB until #159's review fixes (code beside text it shows, props after mount: 0.3 KB) made it 11.6 KB.
+const OWN = 12 * 1024;
 // Plate's core (platejs: Slate, slate-react, its plugin system) is most of it: 156 KB.
 const WITH_PLATE = 170 * 1024;
 
