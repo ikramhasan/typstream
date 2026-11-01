@@ -3,7 +3,7 @@
 // DOM over the same sheets, and every change is an edit of the Typst (session.ts, plugin.tsx).
 
 import type { FileDelta, TypstreamPlugin } from "@typstream/core";
-import type { TypstFont } from "@typstream/dom";
+import { registerTypstFonts, type TypstFont } from "@typstream/dom";
 import type { DocumentOptions, Engine } from "@typstream/engine";
 import { type TypstreamDefaults, useTypstreamDefaults, useTypstreamEngine } from "@typstream/react";
 import type { SlateEditor } from "platejs";
@@ -101,6 +101,8 @@ export const TypstPlateEditor = (props: TypstPlateEditorProps) => {
   const [, update] = useReducer((n: number) => n + 1, 0);
   const latest = useRef(props);
   latest.current = props;
+  const latestDefaults = useRef(defaults);
+  latestDefaults.current = defaults;
 
   const plugins = useMemo(
     () => [htmlCompat, universe, ...(defaults.plugins ?? []), ...(props.plugins ?? [])],
@@ -112,12 +114,16 @@ export const TypstPlateEditor = (props: TypstPlateEditorProps) => {
     [defaults.stylesheets, props.stylesheets],
   );
   const fonts = props.fonts ?? defaults.fonts ?? typstFonts;
+  const resolveImage = props.resolveImage ?? defaults.resolveImage;
+  // What the document is opened with: a change opens it again. Files, fonts and the image resolver follow the props
+  // into the open document instead (below).
   const key = JSON.stringify([
     plugins.map((p) => p.key),
     inputs,
     props.preamble ?? defaults.preamble ?? "",
     props.layout ?? "fit-width",
-    stylesheets.length,
+    stylesheets,
+    !!resolveImage,
   ]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: the session starts over when what `key` names changes
@@ -132,8 +138,12 @@ export const TypstPlateEditor = (props: TypstPlateEditorProps) => {
       plugins,
       inputs,
       ...(latest.current.files ? { files: latest.current.files } : {}),
-      ...((latest.current.resolveImage ?? defaults.resolveImage)
-        ? { resolveImage: latest.current.resolveImage ?? defaults.resolveImage }
+      // The latest resolver, whichever it is now.
+      ...(resolveImage
+        ? {
+            resolveImage: (path: string, options: Parameters<NonNullable<typeof resolveImage>>[1]) =>
+              (latest.current.resolveImage ?? latestDefaults.current.resolveImage)?.(path, options) ?? null,
+          }
         : {}),
       ...((props.preamble ?? defaults.preamble) ? { preamble: props.preamble ?? defaults.preamble } : {}),
       fonts,
@@ -150,6 +160,14 @@ export const TypstPlateEditor = (props: TypstPlateEditorProps) => {
       setSession(null);
     };
   }, [engine, editor, key]);
+
+  // Files given later (images fetched, an asset added) and other fonts, into the open document.
+  useEffect(() => {
+    session?.setFiles(props.files ?? {});
+  }, [session, props.files]);
+  useEffect(() => {
+    if (session) registerTypstFonts(fonts, session.root.ownerDocument);
+  }, [session, fonts]);
 
   // A document from outside: the editor starts over with it.
   useEffect(() => {

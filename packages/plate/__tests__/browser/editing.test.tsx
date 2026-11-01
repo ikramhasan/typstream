@@ -154,6 +154,20 @@ describe("TypstPlateEditor", () => {
     await until("undone", () => state.source === DOC);
   });
 
+  it("never edits the code that writes text the document shows", async () => {
+    const source = '#let who = "Ada"\n\nAdd the simplify. Hello #who, and more.\n';
+    const { state, flow } = await open(source);
+    // In "Ada" (no source of its own, beside the text around it): typing goes before it, deleting does nothing.
+    caret(flow(), "Ada", 1);
+    await tick();
+    await userEvent.keyboard("{Backspace}");
+    await tick();
+    expect(state.source).toBe(source);
+    await userEvent.keyboard("x");
+    await until("the edit", () => state.source.includes("Hello x#who, and more."));
+    expect(state.source).toContain('#let who = "Ada"');
+  });
+
   it("deletes a word across marks, keeping the markup", async () => {
     const { state, flow } = await open();
     // From inside "fractions" to inside "carefully": the text goes, `*…*` stays around what's left of it.

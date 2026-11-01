@@ -92,6 +92,8 @@ export class Session {
   private frame = 0;
   private shown: unknown = null;
   private pageCount = 1;
+  /** The files the document was given last. */
+  private files: FileDelta;
   private composing = false;
   private disposed = false;
   private readonly stop: () => void;
@@ -100,6 +102,7 @@ export class Session {
     this.options = options;
     this.editor = options.editor;
     this.source = options.source;
+    this.files = options.files ?? {};
     const doc = options.host.ownerDocument;
     this.root = doc.createElement("div");
     options.host.append(this.root);
@@ -432,6 +435,15 @@ export class Session {
     const edit = diffEdit(this.source, text);
     if (!edit) return;
     this.apply([edit], { caret: caret ?? edit.from + edit.insert.length, undo: false });
+  }
+
+  /** The document's files are `files` now: what changed goes to the engine document. */
+  setFiles(files: FileDelta): void {
+    const delta: FileDelta = {};
+    for (const [path, content] of Object.entries(files)) if (this.files[path] !== content) delta[path] = content;
+    for (const path of Object.keys(this.files)) if (!(path in files)) delta[path] = null;
+    this.files = files;
+    if (Object.keys(delta).length) this.doc.setFiles(delta);
   }
 
   /** Starts over with `text`: what an app gives as the document. */

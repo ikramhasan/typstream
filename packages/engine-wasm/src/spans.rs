@@ -12,9 +12,12 @@
 //!
 //! Text in markup is a `Text` node, which typst-html cuts at whitespace into
 //! pieces with the node's span (convert.rs, `handle_text`): a piece's range is
-//! where it is in its node, found from where the last piece ended. Anything
-//! else (a space, a smart quote, a shorthand, a string in code) has its whole
-//! node's range; the editor tells which ranges show their text exactly.
+//! where it is in its node, found from where the last piece ended. A space, a
+//! smart quote, a shorthand or an escape has its whole node's range; the editor
+//! tells which ranges show their text exactly. Text that code or math shows
+//! (`#name`, a string, a loop's body, `$x$`) has no range: its span is the
+//! expression that made it, and typing there would edit the code, so the editor
+//! shows it without editing it.
 
 use std::collections::HashMap;
 
@@ -26,6 +29,15 @@ use crate::world::MemWorld;
 
 /// Elements whose text is raw (CSS, scripts) or not shown: their text stays as it is.
 const RAW: [&str; 5] = ["style", "script", "textarea", "title", "head"];
+
+/// The syntax nodes whose text markup shows: as written (`Text`), or as Typst makes it (the rest).
+const MARKUP_TEXT: [SyntaxKind; 5] = [
+    SyntaxKind::Text,
+    SyntaxKind::Space,
+    SyntaxKind::SmartQuote,
+    SyntaxKind::Shorthand,
+    SyntaxKind::Escape,
+];
 
 struct Marker<'a> {
     world: &'a MemWorld,
@@ -55,6 +67,13 @@ impl Marker<'_> {
             return None;
         }
         let node = self.source.find(span)?;
+        // Only text markup writes: not what a code expression or an equation shows.
+        if !MARKUP_TEXT.contains(&node.kind())
+            || std::iter::successors(node.parent().cloned(), |n| n.parent().cloned())
+                .any(|n| n.kind() == SyntaxKind::Equation)
+        {
+            return None;
+        }
         let range = node.range();
         if node.kind() == SyntaxKind::Text {
             let cursor = self.cursors.entry(span).or_insert(0);

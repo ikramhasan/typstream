@@ -92,6 +92,18 @@ describe("engine-wasm's spans", () => {
     expect(of("quote")).toMatchObject({ from: 3, to: 8 });
     compiler.close();
   });
+
+  it("give none to text code or math shows: its span is the expression", async () => {
+    const compiler = adapter.open();
+    const source = '#let who = "Ada"\n#let xs = ("one", "two")\nHello #who, #for x in xs [#x ] #"str" $y$ end.';
+    compiler.setFiles({ "/main.typ": source });
+    const html = (await compiler.compileHtml({ spans: true })).html ?? "";
+    const texts = pieces(html, source).all.map((p) => p.text);
+    for (const shown of ["Ada", "one", "two", "str", "𝑦"]) expect(texts, shown).not.toContain(shown);
+    expect(texts).toContain("Hello");
+    expect(texts).toContain("end.");
+    compiler.close();
+  });
 });
 
 const done = (doc: EngineDocument) =>

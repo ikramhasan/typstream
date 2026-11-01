@@ -59,6 +59,18 @@ describe("typed text", () => {
     }
   });
 
+  it("escapes a marker typed one key at a time", () => {
+    // `1`, then `.`: an enum marker by the second key.
+    expect(typed("Text\n\n1", 7, ".")).toBe("\\.");
+    expect(typed("Text\n\n  12", 10, ".")).toBe("\\.");
+    expect(typed("Text 1", 6, ".")).toBe(".");
+    expect(typed("Text\n\n", 6, "-")).toBe("\\-");
+    const source = "Text\n\n1";
+    const r = after(source, insertText(source, source.length, ". item"));
+    expect(r.body).not.toContain("<ol");
+    expect(textOf(r.body)).toContain("1. item");
+  });
+
   it("makes lines after the first paragraphs of their own (a paste)", () => {
     expect(typed("", 0, "one\ntwo\r\n\r\nthree")).toBe("one\n\ntwo\n\nthree");
     const r = after("", insertText("", 0, "one\ntwo"));

@@ -6,16 +6,17 @@ import type { TextEdit } from "@typstream/core";
 
 /** Characters with a meaning in markup wherever they are (Typst's lexer, `markup`): escaped when typed. */
 const SPECIAL = /[\\#*_$`<@[\]~]/;
-/** What starts a block at the start of a line: a heading, a list or enum item, a term. */
-const LINE_START = /^(?:=|-|\+|\/|\d+\.)/;
+/** What starts a block at the start of a line: a heading, a list item, an enum item, a term. */
+const LINE_START = /^[=\-+/]/;
 
 const lineStart = (source: string, at: number): number => source.lastIndexOf("\n", at - 1) + 1;
 
-/** Only spaces between the start of `at`'s line and `at`. */
-const atLineStart = (source: string, at: number): boolean => /^[ \t]*$/.test(source.slice(lineStart(source, at), at));
-
-/** One line of typed text as markup at `at`: what has a meaning escaped, so it shows as typed. */
-const escapeLine = (source: string, at: number, line: string, startsLine: boolean): string => {
+/**
+ * One line of typed text as markup at `at`: what has a meaning escaped, so it shows as typed. `lead` is what its line
+ * has before it (`null` for a line of its own): a marker at the line's start, or a `.` after only digits there (`1.`,
+ * typed one key at a time as much as at once), would start a block.
+ */
+const escapeLine = (source: string, at: number, line: string, lead: string | null): string => {
   let out = "";
   for (let i = 0; i < line.length; i++) {
     const c = line[i] as string;
@@ -23,10 +24,10 @@ const escapeLine = (source: string, at: number, line: string, startsLine: boolea
     const after = i === line.length - 1 ? source[at] : line[i + 1];
     // A line comment or a block comment's start.
     const comment = c === "/" && (before === "/" || after === "/" || after === "*");
-    out += SPECIAL.test(c) || comment ? `\\${c}` : c;
+    const head = lead === null ? line.slice(0, i) : lead + line.slice(0, i);
+    const marker = /^[ \t]*$/.test(head) ? LINE_START.test(c) : c === "." && /^[ \t]*\d+$/.test(head);
+    out += SPECIAL.test(c) || comment || marker ? `\\${c}` : c;
   }
-  // A heading, a list item, an enum item (`1.`) or a term where the line starts.
-  if (startsLine && LINE_START.test(out)) out = /^\d/.test(out) ? out.replace(/^(\d+)\./, "$1\\.") : `\\${out}`;
   return out;
 };
 
@@ -37,7 +38,7 @@ export const typed = (source: string, at: number, text: string): string =>
   text
     .replace(/\r\n?/g, "\n")
     .split(/\n+/)
-    .map((line, i) => escapeLine(source, at, line, i === 0 ? atLineStart(source, at) : true))
+    .map((line, i) => escapeLine(source, at, line, i === 0 ? source.slice(lineStart(source, at), at) : null))
     .join("\n\n");
 
 /** Typing `text` at `at`. */

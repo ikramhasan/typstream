@@ -19,8 +19,8 @@ An experiment towards the visual editor (#36): its API may change before the fir
 - A teacher corrects or rewords a generated worksheet before printing it.
 - You want the document to look the same in the editor as in the preview and in its exports.
 
-Text a template or a numbering writes, equations, pictures and other plugins' drawings show but aren't edited: they
-are what the Typst makes of the source, not text in it.
+Text a template, a numbering or the document's own code writes (`#name`, a loop over an array), equations, pictures
+and other plugins' drawings show but aren't edited: they are what the Typst makes of the source, not text in it.
 
 ## Install
 
@@ -47,10 +47,11 @@ export function EditAnswer({ answer }: { answer: string }) {
 ## How it works
 
 1. The document compiles to HTML with **source spans** (`DocumentOptions.spans` on `@typstream/engine`): every text
-   node the document wrote says which characters of the source it shows, and elements from its markup (a `*strong*`,
-   a heading, a list item) the node they came from.
-2. `@typstream/dom`'s HTML renderer lays it out on pages where nobody sees it (`sourceSpans` takes the spans off, so
-   the DOM is the one `<Typstream>` has), and the editor reads that DOM back as Plate's value: each element with its
+   node its markup wrote says which characters of the source it shows, and elements from its markup (a `*strong*`,
+   a heading, a list item) the node they came from. Text that code or math shows (`#name`, a loop's body) has none,
+   so it isn't editable: typing there would edit the code.
+2. `@typstream/dom`'s HTML renderer lays it out on pages where nobody sees it (the editor takes the spans off in its
+   `onParse`, so the DOM is the one `<Typstream>` has), and the editor reads that DOM back as Plate's value: each element with its
    tag and attributes, each text with the pieces of source it shows. Plate renders it over the same sheets, under the
    same CSS.
 3. A change in Plate becomes a `TextEdit` of the source: typed text escaped so it shows as typed (a `*` stays a star),
