@@ -549,8 +549,9 @@ const outdentItem = (state: EditorState, item: SyntaxNode, at: number): Transact
   if (delta <= 0) return null;
   const edits: TextEdit[] = [];
   for (let line = text.lastIndexOf("\n", item.from - 1) + 1; line <= item.to; ) {
+    // A tab is one column, as `column` and Typst's nesting count it.
     let n = 0;
-    while (n < delta && text[line + n] === " ") n++;
+    while (n < delta && (text[line + n] === " " || text[line + n] === "\t")) n++;
     if (n) edits.push({ from: line, to: line + n, insert: "" });
     const next = text.indexOf("\n", line);
     if (next < 0) break;

@@ -179,6 +179,8 @@ describe("Backspace at the start of a block (#36)", () => {
   it("moves a nested item up a level", () => {
     expect(run("- one\n  - ‸two", deleteChar(-1))).toBe("- one\n- ‸two");
     expect(run("- one\n  - ‸", deleteChar(-1))).toBe("- one\n- ‸");
+    expect(run("- one\n\t- ‸two", deleteChar(-1))).toBe("- one\n- ‸two");
+    expect(run("- one\n\t- ‸", splitBlock)).toBe("- one\n- ‸");
     expect(run("- one\n  - ‸two\n    - three", deleteChar(-1))).toBe("- one\n- ‸two\n  - three");
   });
 
