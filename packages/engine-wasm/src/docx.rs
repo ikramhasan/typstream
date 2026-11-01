@@ -1175,6 +1175,18 @@ struct Line {
     rtl: bool,
 }
 
+/// Room left on a line: on its right (its left in right-to-left text), or on both sides when it is centered.
+fn room_on(line: &Line, area: Area) -> f64 {
+    let centered = ((line.left - area.left) - (area.right - line.right)).abs() < 1.0;
+    if centered {
+        (area.right - area.left) - (line.right - line.left)
+    } else if line.rtl {
+        line.left - area.left
+    } else {
+        area.right - line.right
+    }
+}
+
 struct Builder {
     items: std::rc::Rc<Vec<Item>>,
     geometry: Vec<(Size, Sides<f64>)>,
@@ -1415,6 +1427,10 @@ impl Builder {
             // Lines that fill the text width: engines that measure a hair wider (LibreOffice rounds each glyph's
             // advance to twips) need room past it, less than any next word missed the line by. Cells have theirs in
             // their margins.
+            // A cell's paragraphs' room is for the writer; the body's isn't needed.
+            if body {
+                b.json.remove("room");
+            }
             if let Some(fit) = b.json.remove("fit").and_then(|f| f.as_f64()) {
                 let slack = (3.0 * SLACK).min(fit - FIT_MARGIN);
                 if body && slack > 0.05 {
@@ -2106,6 +2122,7 @@ impl Builder {
             b.json.insert("align".into(), json!("start"));
             b.json.remove("tabs");
             b.json.remove("fit");
+            b.json.remove("room");
             b.json.insert(
                 "frame".into(),
                 json!({ "x": round(x0), "y": round(top), "width": round(x1 - x0 + 2.0 * SLACK), "height": round(bottom - top) }),
@@ -2813,14 +2830,29 @@ impl Builder {
     }
 
     /// Paragraphs from items: one, or one per run of lines Typst was told to break (`\`) when their pitches
-    /// differ, as Word's exact spacing is one pitch per paragraph; lines of one pitch get a line break.
+    /// differ, as Word's exact spacing is one pitch per paragraph; lines of one pitch get a line break. Each has the
+    /// room left on its fullest line (`room`): a cell's, in Pages, must fit in less than Word's (the writer's
+    /// `PAGES_INSET`).
     fn paragraphs(&mut self, ids: &[usize], area: Area, heading: Option<usize>) -> Vec<Block> {
         let lines = self.lines(ids);
+        let least = lines
+            .iter()
+            .map(|l| room_on(l, area))
+            .fold(f64::MAX, f64::min);
+        let with_room = |mut blocks: Vec<Block>| {
+            if least < f64::MAX {
+                for b in &mut blocks {
+                    b.json.insert("room".into(), json!(round(least.max(0.0))));
+                }
+            }
+            blocks
+        };
         if lines.len() < 2 {
-            return self
-                .paragraph_of(lines, ids, area, heading)
-                .into_iter()
-                .collect();
+            return with_room(
+                self.paragraph_of(lines, ids, area, heading)
+                    .into_iter()
+                    .collect(),
+            );
         }
         let width = area.right - area.left;
         let mut groups: Vec<Vec<Line>> = vec![Vec::new()];
@@ -2833,16 +2865,8 @@ impl Builder {
         // can use.
         let mut fit = f64::MAX;
         while let Some(line) = iter.next() {
-            // Room left on the line: on its right (its left in right-to-left text), or on both sides when it is
-            // centered.
             let centered = ((line.left - area.left) - (area.right - line.right)).abs() < 1.0;
-            let room = if centered {
-                width - (line.right - line.left)
-            } else if line.rtl {
-                line.left - area.left
-            } else {
-                area.right - line.right
-            };
+            let room = room_on(&line, area);
             let forced = match iter.peek() {
                 // The next line's first word would have fitted after this one: Typst didn't choose to break. Or the
                 // line ends in a word without the space Typst keeps where it breaks a line (Latin text breaks at
@@ -2917,7 +2941,7 @@ impl Builder {
         for b in &mut out {
             b.json.insert("fit".into(), json!(fit));
         }
-        out
+        with_room(out)
     }
 
     /// A paragraph from its lines.
@@ -3836,6 +3860,8 @@ impl Builder {
             inset.top = 0.0;
             inset.bottom = 0.0;
         }
+        // Its height between the borders, which engines add (the table's row height, as `table` records one).
+        let height = (rect.h - thickness("top") - thickness("bottom")).max(0.05);
         let mut cell = Map::new();
         cell.insert("col".into(), json!(0));
         cell.insert("blocks".into(), Json::Array(blocks));
@@ -3851,7 +3877,7 @@ impl Builder {
         json.insert("columns".into(), json!([round(rect.w)]));
         json.insert(
             "rows".into(),
-            json!([{ "cantSplit": true, "cells": [Json::Object(cell)] }]),
+            json!([{ "cantSplit": true, "height": round(height), "cells": [Json::Object(cell)] }]),
         );
         Some(Block {
             page,
@@ -4469,6 +4495,14 @@ impl Builder {
                 });
                 if breaks_page(r) {
                     row["pageBreak"] = json!(true);
+                }
+                // How tall Typst made a row on one page, the gutter below it in (as in its bottom margin): Pages takes
+                // no cell margins but a row height's.
+                if let Some((p, top)) = row_top[r] {
+                    let (q, end) = row_end(r);
+                    if q == p && end > top {
+                        row["height"] = json!(round(end - top + gutter_below(r)));
+                    }
                 }
                 row
             })

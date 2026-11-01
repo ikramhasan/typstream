@@ -322,6 +322,7 @@ export interface DocxParagraph extends DocxBlockBase {
         label: string;
     };
     pitch: number;
+    room?: number;
     rtl?: boolean;
     // (undocumented)
     runs: DocxRun[];
@@ -356,6 +357,7 @@ export interface DocxRow {
     // (undocumented)
     cells: DocxCell[];
     header?: boolean;
+    height?: number;
     pageBreak?: boolean;
 }
 
