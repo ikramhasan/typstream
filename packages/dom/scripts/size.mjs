@@ -32,7 +32,7 @@ const ok = [
   // correction; the inline-run passes; Typst's fonts; 8.5 KB) made it 19.2 KB; 19.3 KB until page runs (numbering,
   // counter resets, binding), page columns, mixed-size lines, spacings around `v` and the descent borrow (2.8 KB)
   // made it 22.1 KB, and header and footer ids from their HTML and spacings measured around `v` 22.3 KB.
-  await measure("@typstream/dom (HTML renderer, incl. its CSS)", "src/html/index.ts", 22.4 * 1024),
+  await measure("@typstream/dom (HTML renderer, incl. its CSS)", "src/html/index.ts", 23.1 * 1024),
   // 4 KB until canvas pages (#14): the painter, the drawing's decoder, the link layer and pixel management, 1.8 KB;
   // 5.6 KB until render islands on pages (#28: the island manager the HTML renderer has too, 0.8 KB, and their layer
   // over each page, its CSS and the covered text hidden, 0.4 KB) made it 6.76 KB.

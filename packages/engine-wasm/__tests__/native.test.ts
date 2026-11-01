@@ -36,3 +36,22 @@ describe.each(Object.entries(DOCUMENTS))("%s", (_name, source) => {
     expect(result.html).toBe(nativeHtml(source));
   });
 });
+
+describe("pictures (html.frame)", () => {
+  it("have native typst's HTML with each glyph outline once, the first", () => {
+    const source = "#html.frame($x^2 + y^2$) and #html.frame($x^2 + y^2 = z^2$)\n\n#html.frame[$x + y$]";
+    engine.set_source("/main.typ", source);
+    const result = engine.compile_html();
+    expect(result.ok).toBe(true);
+    const native = nativeHtml(source);
+    const seen = new Set<string>();
+    const once = native.replace(/<symbol id="(g[0-9A-F]+)"[^>]*>[\s\S]*?<\/symbol>/g, (symbol, id: string) => {
+      if (seen.has(id)) return "";
+      seen.add(id);
+      return symbol;
+    });
+    // The pictures repeat outlines natively, or this checks nothing.
+    expect(once.length).toBeLessThan(native.length);
+    expect(result.html).toBe(once);
+  });
+});

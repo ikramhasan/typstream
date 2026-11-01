@@ -175,6 +175,13 @@ export const htmlRendererCss: string = `${THEME_CSS}
 :where(.typstream .typstream-fill > .ts-hfill) {
   display: inline-block;
 }
+/* Glyph outlines the pictures use (renderer.ts): drawn only where they're used. */
+.typstream .typstream-glyphs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
 :where(.typstream-flow, .typstream-underlay) {
   position: absolute;
   box-sizing: border-box;

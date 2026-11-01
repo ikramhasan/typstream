@@ -116,7 +116,8 @@ jobs:
         with: { node: "${{ env.NODE }}" }
       - name: Install LibreOffice and poppler
         timeout-minutes: 6
-        run: sudo apt-get install -y --no-install-recommends libreoffice-writer-nogui libreoffice-math-nogui poppler-utils
+        # The runner image's package lists go stale: a security update removes the version they name (404).
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libreoffice-writer-nogui libreoffice-math-nogui poppler-utils
       - run: pnpm turbo run build --filter=@typstream/docx-check^...
       - run: dotnet publish tools/docx-check/validator -c Release -o tools/docx-check/validator/out
       # --ink: every document without equations laid out as Typst's draws its rules, borders and shading where

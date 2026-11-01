@@ -90,8 +90,29 @@ const rendered = (el: HTMLElement): string => {
             `${graphics(p)}\n${p.querySelector(".typstream-links")?.outerHTML ?? ""}\n${textLayerOf(p)?.outerHTML ?? ""}`,
         )
         .join("\n")
-    : `${[...(root?.attributes ?? [])].map((a) => `${a.name}=${a.value}`).sort()}\n${root?.innerHTML}`;
+    : `${[...(root?.attributes ?? [])].map((a) => `${a.name}=${a.value}`).sort()}\n${root ? withGlyphsSorted(root) : ""}`;
   return markup.replace(/typstream-\d+-/g, "typstream-N-");
+};
+
+/**
+ * The HTML renderer's markup with its glyph outlines (the root's `.typstream-glyphs`, kept in the order they arrived,
+ * with those of blocks gone) as the ones the document uses, by id; none, if it uses none.
+ */
+const withGlyphsSorted = (root: Element): string => {
+  const clone = root.cloneNode(true) as Element;
+  const sheet = clone.querySelector(":scope > .typstream-glyphs");
+  if (sheet) {
+    const used = new Set(
+      [...clone.querySelectorAll("use")].map((u) =>
+        (u.getAttribute("xlink:href") ?? u.getAttribute("href") ?? "").slice(1),
+      ),
+    );
+    const symbols = [...sheet.children].filter((s) => used.has(s.id)).sort((a, b) => (a.id < b.id ? -1 : 1));
+    // Only outlines that a stream's earlier drafts used: as if none had come.
+    if (symbols.length === 0) sheet.remove();
+    else sheet.replaceChildren(...symbols);
+  }
+  return clone.innerHTML;
 };
 
 /**

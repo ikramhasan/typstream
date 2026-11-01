@@ -14,7 +14,7 @@ import { htmlCompat, htmlCompatCss } from "@typstream/html-compat";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { commands, server } from "vitest/browser";
 import { registerTypstFonts } from "../../src/html/fonts";
-import { createHtmlRenderer, type HtmlRenderer } from "../../src/html/renderer";
+import { compactGlyphs, createHtmlRenderer, type HtmlRenderer } from "../../src/html/renderer";
 import { collapseSpaces, rowRuns, styleSpaces } from "../../src/html/runs";
 import { createSanitizer, hideStyles } from "../../src/html/sanitize";
 import { splitHtml } from "../../src/html/split";
@@ -56,13 +56,33 @@ const unmount = (renderer: HtmlRenderer) => {
 /** The whole body parsed at once, without anchors, sanitized as the renderer does. */
 const parseWhole = (html: string, idPrefix: string): string => {
   // As the renderer parses: inline styles applied through the CSSOM (sanitize.ts).
-  const body = new DOMParser().parseFromString(hideStyles(html), "text/html").body;
+  const body = new DOMParser().parseFromString(hideStyles(compactGlyphs(html)), "text/html").body;
   for (const anchor of Array.from(body.querySelectorAll("typstream-anchor"))) anchor.remove();
   createSanitizer({ idPrefix, plugins: [htmlCompat] })(body);
   collapseSpaces(body, document);
   styleSpaces(body, document);
   rowRuns(body, document);
+  // Glyph outlines go to the renderer's root, once each (checked below).
+  for (const symbol of Array.from(body.querySelectorAll("symbol"))) if (GLYPH_ID.test(symbol.id)) symbol.remove();
   return body.innerHTML;
+};
+
+/** typst-svg's glyph ids, prefixed by the renderer. */
+const GLYPH_ID = /^[a-z]+-g[0-9A-F]{32}$/;
+
+/** Every `<use>` in the flow finds its glyph in the root's outlines, which hold each once. */
+const glyphProblems = (root: HTMLElement): string[] => {
+  const sheet = root.querySelector(":scope > .typstream-glyphs");
+  const ids = Array.from(sheet?.children ?? []).map((el) => el.id);
+  const problems = ids.filter((id, i) => ids.indexOf(id) !== i).map((id) => `twice: ${id}`);
+  const flow = root.querySelector(".typstream-flow") as HTMLElement;
+  for (const use of Array.from(flow.querySelectorAll("use"))) {
+    const target = (use.getAttribute("xlink:href") ?? use.getAttribute("href") ?? "").slice(1);
+    if (GLYPH_ID.test(target) && !ids.includes(target)) problems.push(`missing: ${target}`);
+  }
+  for (const symbol of Array.from(flow.querySelectorAll("symbol")))
+    if (GLYPH_ID.test(symbol.id)) problems.push(`in the flow: ${symbol.id}`);
+  return problems;
 };
 
 /** The document as the renderer shows it: its flow, without its own spans around text, page breaks and source offsets. */
@@ -111,9 +131,36 @@ describe(`HTML renderer on corpus documents in ${browser}`, () => {
       const result = renderer.update(html);
       expect(result.blocks, entry.name).toBeGreaterThan(1);
       expect(withoutSrc(renderer.root), entry.name).toBe(parseWhole(html, "t-"));
+      expect(glyphProblems(renderer.root), entry.name).toEqual([]);
       unmount(renderer);
     }
   }, 300_000);
+
+  it("keeps one outline of each glyph the equations draw, and leaves a document's own symbols where they are", async () => {
+    const doc = openHtml(engine);
+    const html = await compileHtml(doc, "Let $x^2 + y^2$ be.\n\n$ x^2 + y^2 = z^2 $\n\nAnd $x + y$.");
+    doc.dispose();
+    const renderer = mount({ idPrefix: "t-" });
+    renderer.update(html);
+    expect(glyphProblems(renderer.root)).toEqual([]);
+    const sheet = renderer.root.querySelector(".typstream-glyphs") as SVGSVGElement;
+    const ids = Array.from(sheet.children).map((el) => el.id);
+    // One of each glyph the three equations draw (x, y, z, 2, +, =).
+    expect(ids.length).toBe(6);
+    const flow = renderer.root.querySelector(".typstream-flow") as HTMLElement;
+    // Drawn where they're used, and not where they're kept.
+    const use = flow.querySelector("use") as SVGUseElement;
+    expect(use.getBoundingClientRect().width).toBeGreaterThan(0);
+    expect(sheet.getBoundingClientRect().width).toBe(0);
+    // Markup with a glyph's id but other content isn't an outline the root has: it stays in its block.
+    const id = (ids[0] as string).slice(2);
+    const own = `<symbol id="${id}" overflow="visible"><path d="M 0 0h 9v 9h -9Z"/></symbol>`;
+    renderer.update(html.replace("</body>", `<svg><defs>${own}</defs><use xlink:href="#${id}"/></svg></body>`));
+    expect(flow.querySelectorAll(`symbol[id="t-${id}"]`).length).toBe(1);
+    expect(sheet.children.length).toBe(6);
+    unmount(renderer);
+    expect(document.querySelector(".typstream-glyphs")).toBeNull();
+  });
 
   it("ships the MathML rules Typst writes into <head>", async () => {
     const doc = openHtml(engine);
@@ -359,6 +406,7 @@ describe(`HTML renderer while streaming in ${browser}`, () => {
       for (const [i, [, height]] of shown.entries())
         expect(Math.abs(height - (whole[i]?.[1] ?? 0)), `${name}: break ${i}`).toBeLessThan(0.5);
       expect(got.slice(Math.max(0, at - 150), at + 150), name).toBe(want.slice(Math.max(0, at - 150), at + 150));
+      expect(glyphProblems(renderer.root), name).toEqual([]);
       unmount(fresh);
       unmount(renderer);
     }

@@ -7,6 +7,7 @@
 //! ends with `comemo::evict(2)` (§6.3).
 
 mod diagnostics;
+mod glyphs;
 #[doc(hidden)]
 pub mod docx;
 pub mod math;
@@ -312,7 +313,7 @@ impl Engine {
         Ok(())
     }
 
-    /// Compiles with the HTML target.
+    /// Compiles with the HTML target, each glyph outline once (glyphs.rs).
     #[wasm_bindgen(unchecked_return_type = "HtmlResult")]
     pub fn compile_html(&mut self) -> JsValue {
         let t0 = perf_now();
@@ -323,7 +324,7 @@ impl Engine {
         {
             Ok(html) => {
                 let obj = self.result(true, &[], &warnings);
-                set(&obj, "html", html);
+                set(&obj, "html", glyphs::share_glyphs(html));
                 obj
             }
             Err(errors) => self.result(false, &errors, &warnings),
