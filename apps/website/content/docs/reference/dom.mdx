@@ -168,6 +168,13 @@ What the renderer does with the HTML:
 compiled (healed) source, without the preamble; map them to the raw stream with heal's `map.toInput`.
 </Callout>
 
+#### `onParse` (beta)
+
+`HtmlRendererOptions.onParse` gets each piece of markup the renderer parses, before it sanitizes it: for markup only
+your documents have. [`@typstream/plate`](/docs/reference/plate)'s editor opens its document with `spans`
+(`DocumentOptions.spans`), whose HTML says where each text came from, and takes those marks off there, so the DOM is
+the one the HTML target has without them. Leave what isn't yours as it is: it is sanitized next.
+
 #### `HtmlUpdateOptions`
 
 <auto-type-table path="packages/dom/src/html/renderer.ts" name="HtmlUpdateOptions" />

@@ -22,6 +22,8 @@ import { ServerMessage } from '@typstream/core';
 // @public
 export interface AdapterCompileOptions {
     mode?: CompileMode;
+    // @beta
+    spans?: boolean;
 }
 
 // @public

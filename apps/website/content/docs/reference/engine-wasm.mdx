@@ -89,7 +89,7 @@ Call one of them once per thread before creating an `Engine`.
 | `set_file(path, bytes)` | `void` | Sets a binary file: images, data, a package's `typst.toml` or wasm plugins. |
 | `remove_file(path)` | `void` | Removes a source or binary file. `/main.typ` can't be removed. |
 | `set_inputs(inputs)` | `void` | Sets `sys.inputs`. Throws unless every value is a string, as with the CLI's `--input key=value`. |
-| `compile_html()` | `HtmlResult` | Compiles with the HTML target. |
+| `compile_html(spans?)` | `HtmlResult` | Compiles with the HTML target. With `spans`, text and elements from `/main.typ` say which range of it they came from (`<typstream-text data-src>`, `data-typstream-span`), for an editor over the HTML. |
 | `compile_svg_changed(drawings?)` | `SvgChangedResult` | Compiles paged and exports SVG for the pages whose content changed since the last successful call. With `drawings`, pages come as drawings for a canvas instead, except those it can't draw (gradients, tilings, colour glyphs). |
 | `reset_pages()` | `void` | Forgets the page hashes, so the next `compile_svg_changed` sends every page (a new document, or the renderer lost its DOM). |
 | `check_paged()` | `CheckResult` | Compiles paged without exporting: diagnostics and the page count, for validation. Leaves the changed-page baseline alone. |

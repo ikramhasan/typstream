@@ -27,6 +27,8 @@ export type MaybePromise<T> = T | Promise<T>;
 export interface AdapterCompileOptions {
   /** `streaming` while the document arrives, `final` once it's complete and for exports. Absent means `streaming`. */
   mode?: CompileMode;
+  /** HTML only: wrap the document's text and mark its elements with their source ranges (`CompileParams.spans`). @beta */
+  spans?: boolean;
 }
 
 /**

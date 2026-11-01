@@ -220,7 +220,8 @@ jobs:
 
   # The engine worker in real browsers (packages/engine/__tests__/browser): protocol conformance, streaming through
   # client + worker + engine-wasm, and the watchdog. Then the renderers (packages/dom/__tests__/browser) and <Typstream>
-  # (packages/react/__tests__/browser) against that worker, the mind map island (packages/mindmap/__tests__/browser),
+  # (packages/react/__tests__/browser) against that worker, the Plate editor (packages/plate/__tests__/browser: every edu
+  # document as the HTML target shows it, and editing), the mind map island (packages/mindmap/__tests__/browser),
   # and examples/strict-csp: both targets and the island under a strict Content-Security-Policy, with no violation. One job per browser; Chromium's also runs examples/nextjs-ai-sdk, a
   # production Next.js build streaming an answer into <Typstream>, and tools/browser-suites' preview vs PDF check (#118:
   # every edu page painted in the document panel equals the PDF export's; all three browsers run it nightly), and the
@@ -246,6 +247,7 @@ jobs:
       - run: node tools/repo/playwright-docker.mjs pnpm --filter @typstream/engine test:browser
       - run: node tools/repo/playwright-docker.mjs pnpm --filter @typstream/dom test:browser
       - run: node tools/repo/playwright-docker.mjs pnpm --filter @typstream/react test:browser
+      - run: node tools/repo/playwright-docker.mjs pnpm --filter @typstream/plate test:browser
       - run: node tools/repo/playwright-docker.mjs pnpm --filter @typstream/mindmap test:browser
       - run: node tools/repo/playwright-docker.mjs pnpm exec turbo run test --filter=@typstream/example-strict-csp
       - if: matrix.browser == 'chromium'

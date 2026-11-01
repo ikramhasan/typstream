@@ -13,6 +13,7 @@ pub mod docx;
 pub mod math;
 pub mod picture;
 mod raster;
+mod spans;
 mod draw;
 // Public for native tools (`examples/`), not part of the wasm API.
 #[doc(hidden)]
@@ -313,15 +314,21 @@ impl Engine {
         Ok(())
     }
 
-    /// Compiles with the HTML target, each glyph outline once (glyphs.rs).
+    /// Compiles with the HTML target, each glyph outline once (glyphs.rs). With
+    /// `spans`, text and elements from `/main.typ` say where they came from
+    /// (spans.rs), for an editor over the HTML.
     #[wasm_bindgen(unchecked_return_type = "HtmlResult")]
-    pub fn compile_html(&mut self) -> JsValue {
+    pub fn compile_html(&mut self, spans: Option<bool>) -> JsValue {
         let t0 = perf_now();
         self.world.begin_compile();
         let Warned { output, warnings } = typst::compile::<typst_html::HtmlDocument>(&self.world);
-        let obj = match output
-            .and_then(|doc| typst_html::html(&doc, &typst_html::HtmlOptions::default()))
-        {
+        let world = &self.world;
+        let obj = match output.and_then(|mut doc| {
+            if spans == Some(true) {
+                spans::mark(world, doc.root_mut());
+            }
+            typst_html::html(&doc, &typst_html::HtmlOptions::default())
+        }) {
             Ok(html) => {
                 let obj = self.result(true, &[], &warnings);
                 set(&obj, "html", glyphs::share_glyphs(html));

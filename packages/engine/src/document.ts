@@ -132,6 +132,12 @@ export interface DocumentOptions {
    * draw come as SVG either way.
    */
   pageFormat?: PageFormat;
+  /**
+   * HTML compiles mark where the document's text came from (`CompileParams.spans`), for an editor over the HTML
+   * (`@typstream/plate`). Offsets are in the healed source, as anchors' are. Fixed for the document's lifetime.
+   * Default false. @beta
+   */
+  spans?: boolean;
   /** `sys.inputs`. */
   inputs?: Record<string, string>;
   /** Typst evaluated before the document (theme, imports); fixed for the document's lifetime. */
@@ -442,6 +448,7 @@ export class DocumentImpl implements EngineDocument {
   private healed: HealResult;
   private target: CompileTarget;
   private pageFormat: PageFormat;
+  private readonly spans: boolean;
   private inputs: Record<string, string> | undefined;
   private files: FileDelta;
   private pendingFiles: FileDelta | null = null;
@@ -521,6 +528,7 @@ export class DocumentImpl implements EngineDocument {
         : this.healer.result();
     this.target = options.target ?? "html";
     this.pageFormat = options.pageFormat ?? "svg";
+    this.spans = options.spans === true;
     this.inputs = options.inputs;
     this.preamble = options.preamble;
     this.fallback = options.fallback !== false;
@@ -809,6 +817,7 @@ export class DocumentImpl implements EngineDocument {
     this.fullPages = false;
     // Paged only; HTML compiles ignore it.
     params.pageFormat = this.pageFormat;
+    if (this.spans && this.target === "html") params.spans = true;
     const { watchdog } = this.host;
     let budgetMs = this.final ? watchdog.finalMs : watchdog.streamingMs;
     this.probing = false;

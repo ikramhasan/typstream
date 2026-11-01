@@ -50,6 +50,9 @@
       ],
       "@typstream/*": [
         "./packages/*/src/index.ts"
+      ],
+      "typstream": [
+        "./packages/typstream/src/index.tsx"
       ]
     }
   }

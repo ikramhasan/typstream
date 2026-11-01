@@ -1,0 +1,92 @@
+---
+title: "@typstream/plate"
+description: A visual editor for Typst documents on Plate (beta). The document looks as the HTML target shows it, on its pages with Typst's fonts and spacing, and every change is an edit of the Typst.
+icon: Package
+---
+
+`@typstream/plate` edits a Typst document where it is shown. `<TypstPlateEditor>` lays the document out as
+`<Typstream>`'s HTML target does (pages, Typst's fonts and line spacing, html-compat's layout, a plugin's components)
+and renders that very DOM in a [Plate](https://platejs.org) editor. Typing, deleting, Enter, marks, headings and lists
+become edits of the Typst source, which compiles again; the source stays the document, so the PDF and Word exports
+come from what the teacher edited.
+
+<Callout type="warn" title="Beta">
+An experiment towards the visual editor (#36): its API may change before the first stable release.
+</Callout>
+
+## When to use it
+
+- A teacher corrects or rewords a generated worksheet before printing it.
+- You want the document to look the same in the editor as in the preview and in its exports.
+
+Text a template or a numbering writes, equations, pictures and other plugins' drawings show but aren't edited: they
+are what the Typst makes of the source, not text in it.
+
+## Install
+
+```npm
+npm install @typstream/plate
+```
+
+React 19 is a peer dependency. The editor compiles with the same engine as `<Typstream>`: the provider's, or the page's
+shared worker.
+
+## Example
+
+```tsx
+import { TypstPlateEditor } from "@typstream/plate";
+import { edu } from "@typstream/edu";
+import { useState } from "react";
+
+export function EditAnswer({ answer }: { answer: string }) {
+  const [source, setSource] = useState(answer);
+  return <TypstPlateEditor value={source} onChange={setSource} plugins={[edu]} />;
+}
+```
+
+## How it works
+
+1. The document compiles to HTML with **source spans** (`DocumentOptions.spans` on `@typstream/engine`): every text
+   node the document wrote says which characters of the source it shows, and elements from its markup (a `*strong*`,
+   a heading, a list item) the node they came from.
+2. `@typstream/dom`'s HTML renderer lays it out on pages where nobody sees it (`sourceSpans` takes the spans off, so
+   the DOM is the one `<Typstream>` has), and the editor reads that DOM back as Plate's value: each element with its
+   tag and attributes, each text with the pieces of source it shows. Plate renders it over the same sheets, under the
+   same CSS.
+3. A change in Plate becomes a `TextEdit` of the source: typed text escaped so it shows as typed (a `*` stays a star),
+   Enter a blank line or a new list item, Backspace at a block's start a join, a mark `*…*` or `#strong[…]`, a heading
+   or a list a marker at the start of the line. Typing shows at once; what changes the structure shows when the
+   compile comes back.
+
+## API
+
+### `TypstPlateEditor`
+
+```ts
+const TypstPlateEditor: (props: TypstPlateEditorProps) => JSX.Element;
+```
+
+The editor: a fixed toolbar (undo and redo, block type, bold, italic, underline, strikethrough, lists, the document's
+status), a floating toolbar over a selection, and the pages. Shortcuts: ⌘B, ⌘I, ⌘U, ⌘⇧X, ⌘Z and ⌘⇧Z (Ctrl elsewhere).
+It adds html-compat and universe, as `typstream`'s `<Typstream>` does, and the provider's plugins.
+
+### `TypstPlateEditorProps`
+
+<auto-type-table path="packages/plate/src/TypstPlateEditor.tsx" name="TypstPlateEditorProps" />
+
+### `plateCss`
+
+The editor's stylesheet (its toolbars, on shadcn/ui's CSS variables where the app has them). The editor injects it as
+a constructable stylesheet, so a strict Content-Security-Policy needs no `style-src 'unsafe-inline'`.
+
+## Not yet
+
+Inserting a plugin's components (an edu question), tables' rows and columns, links, images, and render islands (a mind
+map shows its Typst drawing while editing). Selections across blocks delete the text in them and join paragraphs and
+items, never the code between them.
+
+## See also
+
+- [`@typstream/react`](/docs/reference/react)
+- [`@typstream/dom`](/docs/reference/dom)
+- [Next.js and the AI SDK](/docs/getting-started/nextjs-ai-sdk)
