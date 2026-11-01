@@ -189,10 +189,6 @@ export const htmlRendererCss: string = `${THEME_CSS}
   overflow: clip;
   clip-path: inset(0);
 }
-:where(.typstream-marginals, .typstream-underlay) {
-  overflow: visible;
-  clip-path: none;
-}
 .typstream-pages .ts-place-text {
   text-box: none;
   padding-block: 0;

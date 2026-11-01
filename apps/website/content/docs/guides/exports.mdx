@@ -149,12 +149,18 @@ per sheet.
 ```ts
 import { standalonePages } from "@typstream/dom";
 
-const file = await standalonePages(await doc.exportHtml(), { plugins: doc.plugins, typstFonts });
+const file = await standalonePages(await doc.exportHtml({ anchors: true }), { plugins: doc.plugins, typstFonts });
 ```
 
+Export with `anchors: true`: html-compat writes each block's page settings, header and footer on the source anchors,
+so without them the pages are A4 with none. A document that writes its page count (`counter(page).final()`, an exam's
+"2 / 3") needs it as the input `typstream-page-count`: `onPages` gives the count the export was laid out on, to export
+again with.
+
 `MountedTypstream.exportHtml(options?)` and React's `exportHtml(options?)` do both steps, laid out as the pages, with
-the component's or mount's plugins, `stylesheets`, `theme` and Typst fonts. `options` add to or override them, and
-can hold `inputs` too. `pages: false` gives `standaloneHtml`'s reading layout instead.
+the component's or mount's plugins, `stylesheets`, `theme` and Typst fonts, compiling again with the page count until
+it holds. `options` add to or override them, and can hold `inputs` too. `pages: false` gives `standaloneHtml`'s
+reading layout instead.
 
 <auto-type-table path="packages/dom/src/mount.ts" name="TypstreamHtmlExportOptions" />
 

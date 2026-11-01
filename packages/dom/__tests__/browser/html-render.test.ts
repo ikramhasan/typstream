@@ -68,7 +68,7 @@ const parseWhole = (html: string, idPrefix: string): string => {
 };
 
 /** typst-svg's glyph ids, prefixed by the renderer. */
-const GLYPH_ID = /^[a-z]+-g[0-9A-F]{32}$/;
+const GLYPH_ID = /^[a-z]+-g[0-9A-F]{1,32}$/;
 
 /** Every `<use>` in the flow finds its glyph in the root's outlines, which hold each once. */
 const glyphProblems = (root: HTMLElement): string[] => {
@@ -158,8 +158,28 @@ describe(`HTML renderer on corpus documents in ${browser}`, () => {
     renderer.update(html.replace("</body>", `<svg><defs>${own}</defs><use xlink:href="#${id}"/></svg></body>`));
     expect(flow.querySelectorAll(`symbol[id="t-${id}"]`).length).toBe(1);
     expect(sheet.children.length).toBe(6);
+    // typst-svg's ids drop leading zeros: shorter ones are outlines too.
+    const short = '<symbol id="gA1" overflow="visible"><path d="M 0 0h 9v 9h -9Z"/></symbol>';
+    renderer.update(html.replace("</body>", `<p><svg><defs>${short}</defs><use xlink:href="#gA1"/></svg></p></body>`));
+    expect(sheet.querySelector('[id="t-gA1"]')).not.toBeNull();
+    expect(glyphProblems(renderer.root)).toEqual([]);
     unmount(renderer);
     expect(document.querySelector(".typstream-glyphs")).toBeNull();
+  });
+
+  it("keeps the outlines a header brings, which the engine sends there first, for the equations below", async () => {
+    // A page as tall as its content draws no header, so the anchor that holds it is never parsed for a page.
+    const doc = openHtml(engine);
+    const html = await compileHtml(doc, "#set page(height: auto, header: [$x + y$])\n\nFirst.\n\nThen $y + x$.");
+    doc.dispose();
+    const body = html.slice(html.indexOf("<p>Then"));
+    expect(body).toContain("<use");
+    // The engine sent the outlines with the header, before the body.
+    expect(body).not.toContain("<symbol");
+    const renderer = mount({ idPrefix: "t-" });
+    renderer.update(html);
+    expect(glyphProblems(renderer.root)).toEqual([]);
+    unmount(renderer);
   });
 
   it("ships the MathML rules Typst writes into <head>", async () => {
@@ -235,6 +255,35 @@ describe(`HTML renderer on corpus documents in ${browser}`, () => {
 const laidOut = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
 describe(`HTML renderer's pages in ${browser}`, () => {
+  it("keeps headers, footers and footnotes inside the pages, however far they reach (#69)", async () => {
+    const doc = openHtml(engine);
+    const html = await compileHtml(
+      doc,
+      "#set page(height: 200pt, header: box(width: 3000pt, height: 3000pt, fill: red)," +
+        " footer: move(dx: -1500pt, dy: 1500pt, box(width: 3000pt, height: 300pt, fill: blue)))\n" +
+        "Text#footnote[#place(dx: -1000pt, dy: 1000pt, box(width: 3000pt, height: 3000pt, fill: green))]",
+    );
+    doc.dispose();
+    const renderer = mount();
+    renderer.root.style.cssText += "width: 300px; margin: 100px";
+    renderer.update(html);
+    await laidOut();
+    await laidOut();
+    const box = renderer.root.getBoundingClientRect();
+    const escaped: string[] = [];
+    for (let x = 2; x < innerWidth; x += 10)
+      for (let y = 2; y < innerHeight; y += 10) {
+        if (x >= box.left - 1 && x <= box.right + 1 && y >= box.top - 1 && y <= box.bottom + 1) continue;
+        const hit = document.elementFromPoint(x, y);
+        if (hit && renderer.root.contains(hit)) escaped.push(`${x},${y} ${hit.className}`);
+      }
+    expect(escaped.slice(0, 5)).toEqual([]);
+    // They are there, on the page.
+    expect(renderer.root.querySelector(".ts-page-header")).not.toBeNull();
+    expect(renderer.root.querySelector(".typstream-footnotes")).not.toBeNull();
+    unmount(renderer);
+  });
+
   it("repeats a table's header on each page it goes on to, as Typst does", async () => {
     registerTypstFonts(FONTS);
     await document.fonts.load("11pt typstream-libertinus-serif");

@@ -214,6 +214,7 @@ export const standalonePages: (html: string, options?: StandalonePagesOptions) =
 // @public
 export interface StandalonePagesOptions extends StandaloneHtmlOptions {
     document?: Document;
+    onPages?: (count: number) => void;
     typstFonts?: readonly TypstFont[];
 }
 

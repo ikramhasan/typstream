@@ -23,6 +23,11 @@ export interface StandalonePagesOptions extends StandaloneHtmlOptions {
   typstFonts?: readonly TypstFont[];
   /** The document to lay the pages out in. Default `document`. */
   document?: Document;
+  /**
+   * Called with the number of pages the export was laid out on: what `counter(page).final()` should be, through the
+   * input `typstream-page-count` (`MountedTypstream.exportHtml()` compiles again with it).
+   */
+  onPages?: (count: number) => void;
 }
 
 /** The screen around the pages, and printing a page per sheet. */
@@ -62,14 +67,14 @@ const dataUrl = async (url: string, view: Window & typeof globalThis): Promise<s
 };
 
 /**
- * Makes an HTML export (`EngineDocument.exportHtml()`) a file laid out as the pages, as the HTML renderer shows
- * them: it lays the export out in `document`, out of sight and at the pages' size, and writes the result in the file
+ * Makes an HTML export (`EngineDocument.exportHtml({ anchors: true })`: html-compat writes the page settings on the
+ * anchors) a file laid out as the pages, as the HTML renderer shows them: it lays the export out in `document`, out of sight and at the pages' size, and writes the result in the file
  * of {@link standaloneHtml} (its policy, plugins' stylesheets, title), with the renderer's CSS and the Typst fonts the
  * pages use, embedded. The file shows the pages one under the other and prints a page per sheet. Needs a browser.
  *
  * @example
  * ```ts
- * const file = await standalonePages(await doc.exportHtml(), { plugins: doc.plugins, typstFonts });
+ * const file = await standalonePages(await doc.exportHtml({ anchors: true }), { plugins: doc.plugins, typstFonts });
  * ```
  * @public
  */
@@ -101,6 +106,7 @@ export const standalonePages = async (html: string, options: StandalonePagesOpti
       await frame(view);
       await frame(view);
     }
+    options.onPages?.(root.querySelectorAll(".typstream-page").length);
     const copy = root.cloneNode(true) as HTMLElement;
     for (const el of copy.querySelectorAll(".typstream-underlay")) el.remove();
     const first = root.querySelector<HTMLElement>(".typstream-page");

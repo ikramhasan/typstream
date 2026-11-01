@@ -253,6 +253,8 @@ const equal = (a: unknown, b: unknown): boolean => {
 const LAZY_MARGIN = "50%";
 /** Wait this long after the element's width last changed before recompiling reflowed pages (ms). */
 const RESIZE_DEBOUNCE = 150;
+/** How many page counts the HTML view compiles with for one source and inputs (Typst lays a document out 5 times at most). */
+const MAX_PAGE_COUNTS = 5;
 
 /** How the document is opened: a change to any of these opens a new one. */
 interface OpenKey {
@@ -364,6 +366,9 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
   let widthInputs: Record<string, string> | null = null;
   // HTML: how many pages the renderer laid the document out on, which html-compat gives `counter(page).final()`.
   let pageCount = 1;
+  // How many times it changed for the source and inputs `counted` names.
+  let counts = 0;
+  let counted = "";
   let io: IntersectionObserver | null = null;
   let ro: ResizeObserver | null = null;
   let resizeTimer: ReturnType<typeof setTimeout> | undefined;
@@ -439,6 +444,15 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
       ...(opts.layout ? { layout: opts.layout } : {}),
       onPages: (count) => {
         if (count === pageCount) return;
+        // A document whose length depends on its page count (`#if counter(page).final().first() > 1 [short] else
+        // [long]`) would compile again for ever: as Typst stops after 5 layouts, a few counts per source and
+        // inputs, then the last stays.
+        const revision = `${reading ? reading.state.text : (opts.source ?? "")}\u0000${JSON.stringify([exportInputs(), widthInputs])}`;
+        if (revision !== counted) {
+          counted = revision;
+          counts = 0;
+        }
+        if (++counts > MAX_PAGE_COUNTS) return;
         pageCount = count;
         sync();
       },
@@ -708,7 +722,15 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
     exportDocx: async (options) => exportDoc().exportDocx({ inputs: exportInputs(options?.inputs) }),
     async exportHtml({ inputs, pages = true, ...options } = {}) {
       const exported = exportDoc();
-      const html = await exported.exportHtml({ inputs: exportInputs(inputs) });
+      const compile = (count: number) =>
+        exported.exportHtml({
+          inputs: { ...exportInputs(inputs), ...(count > 1 ? { "typstream-page-count": String(count) } : {}) },
+          // Laid out as pages: with the anchors html-compat writes each block's page settings on.
+          ...(pages ? { anchors: true } : {}),
+        });
+      // The HTML view's count to begin with, when it shows this document: then one compile is usually enough.
+      let count = pages && (opts.target ?? "html") === "html" ? pageCount : 1;
+      let html = await compile(count);
       const file = {
         ...(opts.theme ? { theme: opts.theme } : {}),
         ...options,
@@ -717,11 +739,25 @@ export const mountTypstream = (element: HTMLElement, initial: TypstreamOptions):
         fonts: [...(opts.engine.fonts ?? []), ...(options.fonts ?? [])],
       };
       if (!pages) return standaloneHtml(html, file);
-      return standalonePages(html, {
-        ...file,
-        ...(opts.fonts ? { typstFonts: opts.fonts } : {}),
-        document: element.ownerDocument,
-      });
+      // Laid out, then compiled again with the count it was laid out on (`counter(page).final()`, an exam's "2 / 3"),
+      // until the count holds; a few times at most, as the view does.
+      let laidOut = count;
+      const layOut = () =>
+        standalonePages(html, {
+          ...file,
+          ...(opts.fonts ? { typstFonts: opts.fonts } : {}),
+          document: element.ownerDocument,
+          onPages: (n) => {
+            laidOut = n;
+          },
+        });
+      let out = await layOut();
+      for (let i = 1; i < MAX_PAGE_COUNTS && laidOut !== count; i++) {
+        count = laidOut;
+        html = await compile(count);
+        out = await layOut();
+      }
+      return out;
     },
     exportSource: () => exportDoc().exportSource(),
     destroy() {

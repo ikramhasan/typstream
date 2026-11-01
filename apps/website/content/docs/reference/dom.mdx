@@ -415,7 +415,7 @@ plugins' stylesheets, the title) with the renderer's CSS and the Typst fonts the
 browser. `MountedTypstream.exportHtml()` calls it unless `pages: false`.
 
 ```ts
-const file = await standalonePages(await doc.exportHtml(), { plugins: [htmlCompat], typstFonts });
+const file = await standalonePages(await doc.exportHtml({ anchors: true }), { plugins: [htmlCompat], typstFonts });
 ```
 
 #### `StandalonePagesOptions`

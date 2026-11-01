@@ -427,8 +427,8 @@ class Server implements EngineServer {
   /**
    * Brings the compiler's `/main.typ` and `sys.inputs` up to date, for pages,
    * a PDF or HTML alike. With `anchors`, `/main.typ` holds the
-   * document with source anchors (HTML previews only; paged output and exports
-   * never have them).
+   * document with source anchors (HTML previews, and HTML exports that ask for
+   * them to be laid out as pages; paged output never has them).
    */
   private sync(doc: Doc, inputs: Record<string, string> | undefined, anchors = false): void {
     const key = inputsKey(inputs);
@@ -977,11 +977,11 @@ class Server implements EngineServer {
       return result;
     },
 
-    "export/html": async ({ uri, rev, inputs }: ExportParams): Promise<ExportResult<string>> => {
+    "export/html": async ({ uri, rev, inputs, anchors }: ExportParams): Promise<ExportResult<string>> => {
       const doc = this.current(uri, rev);
       if (!this.adapter.exports.includes("html")) this.unsupported("HTML export");
       await doc.packages.prepare(doc.prefix + doc.text, performance.now() + FIX_BUDGET_MS.final);
-      this.sync(doc, inputs);
+      this.sync(doc, inputs, anchors === true);
       const r = await this.exportOnce(doc, () => doc.compiler.compileHtml({ mode: "final" }));
       const diagnostics = this.diagnostics(doc, r.diagnostics);
       return r.html === null

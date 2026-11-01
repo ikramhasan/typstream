@@ -1,6 +1,6 @@
 // Document templates: page setup, a title block with student fields, page numbers. Applied as
-// the document's first line, `#show: worksheet.with(title: …)`. In HTML there are no pages, so
-// a template writes a <header> and no page rules (no "page set rule was ignored" warning).
+// the document's first line, `#show: worksheet.with(title: …)`. The same rules in both targets:
+// in HTML, html-compat writes the page settings for the renderer, which lays the pages out.
 #import "util.typ": _array, _config, _half, _rule, _underline
 #import "i18n.typ": _points-text, _word
 #import "blocks.typ": instructions as _instructions, student-info

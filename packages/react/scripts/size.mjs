@@ -22,7 +22,7 @@ const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
 // target was laid out on pages as the paged view's (dom's pages, inline-run passes and Typst's fonts, 8.6 KB) made
 // it 29.8 KB; 29.9 KB until the pages' runs, columns and line corrections (2.9 KB) and standalone files laid out as
 // the pages (`standalonePages`, 0.8 KB) made it 33.6 KB, and the renderer's header and footer ids 33.7 KB.
-const BUDGET = 34.5 * 1024;
+const BUDGET = 34.8 * 1024;
 
 const result = await build({
   entryPoints: ["src/index.ts"],

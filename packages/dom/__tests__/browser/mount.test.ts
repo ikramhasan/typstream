@@ -302,6 +302,47 @@ describe(`mountTypstream in ${browser}`, () => {
     el.remove();
   });
 
+  it("exports HTML laid out as pages with the count it was laid out on, from a paged view too", async () => {
+    const el = host();
+    const source =
+      "#set page(height: 160pt, header: [Head])\n#lorem(300)\n\nPages: #context counter(page).final().first().";
+    const view = mountTypstream(el, { engine, source, target: "paged", plugins: [htmlCompat], lazy: false });
+    await until(view, settled);
+    const file = await view.exportHtml();
+    const pages = new DOMParser().parseFromString(file, "text/html").querySelectorAll(".typstream-page").length;
+    expect(pages).toBeGreaterThan(1);
+    expect(textOf(file)).toContain(`Pages: ${pages}.`);
+    // The page settings and header the anchors bring: pages 160 pt tall, a header on each.
+    expect(file).toContain("aspect-ratio: 595.276 / 160");
+    expect(file.split(">Head<").length - 1).toBe(pages);
+    view.destroy();
+    el.remove();
+  }, 60_000);
+
+  it("stops compiling a document whose length depends on its page count", async () => {
+    const el = host();
+    const source = "#context if counter(page).final().first() > 1 [Short.] else [#lorem(900)]";
+    const view = mountTypstream(el, { engine, source, target: "html", plugins: [htmlCompat], lazy: false });
+    let compiles = 0;
+    let last: unknown = null;
+    view.subscribe(() => {
+      const c = view.getState()?.lastCompile;
+      if (c && c !== last) {
+        last = c;
+        compiles++;
+      }
+    });
+    await until(view, settled);
+    // It flips between one page and several: a few compiles, then none.
+    await sleep(3000);
+    const after = compiles;
+    await sleep(2000);
+    expect(compiles).toBe(after);
+    expect(after).toBeLessThan(15);
+    view.destroy();
+    el.remove();
+  }, 60_000);
+
   it("exports with an export's own inputs over the template's and the mount's", async () => {
     const el = host();
     const source = [

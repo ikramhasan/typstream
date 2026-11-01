@@ -1371,6 +1371,7 @@ export const createHtmlPages = (
       while (sheets.children.length > 1) sheets.lastElementChild?.remove();
       count = 1;
       sheet(0).style.height = `${flow.offsetHeight * scale}px`;
+      clipToPages(flow.offsetHeight);
       return;
     }
     sheet(0).style.height = "";
@@ -1524,6 +1525,7 @@ export const createHtmlPages = (
     drawNotes();
     fillLines(marginals);
     numberOutline();
+    clipToPages(sheetTop(count - 1) + pageHeight());
     if (count !== told) {
       told = count;
       onCount?.(count);
@@ -1531,6 +1533,14 @@ export const createHtmlPages = (
   };
   /** The page count `onCount` was last given. */
   let told = 1;
+
+  /**
+   * Headers, footers, footnotes and the pieces of split boxes are the document's too: cut off where the pages end,
+   * as the flow is (#69), their layers as tall as the pages (`height` in the flow's px, from the first sheet's top).
+   */
+  const clipToPages = (height: number) => {
+    for (const el of [marginals, underlay]) el.style.height = `${height}px`;
+  };
 
   /** The page of each outline entry's target (html-compat's `.ts-outline-page`), now that the pages are known. */
   const numberOutline = () => {

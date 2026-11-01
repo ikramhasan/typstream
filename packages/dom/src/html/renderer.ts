@@ -188,11 +188,14 @@ const lastElement = (nodes: readonly Node[]): Element | null => {
 // --- caret ----------------------------------------------------------------------------
 
 /**
- * A glyph's outline in a picture of Typst's (`html.frame`, html-compat's equations), named by a hash of the glyph.
- * The engine sends each once, in the first picture that draws it (engine-wasm's glyphs.rs); other engines' HTML may
+ * A glyph's outline in a picture of Typst's (`html.frame`, html-compat's equations), named by a hash of the glyph
+ * (typst-svg's `DedupId`: hex digits without leading zeros). The engine sends each once, in the first picture that draws it (engine-wasm's glyphs.rs); other engines' HTML may
  * repeat them in every picture.
  */
-const GLYPH = /<symbol id="(g[0-9A-F]{32})"[^>]*>[\s\S]*?<\/symbol>/g;
+const GLYPH = /<symbol id="(g[0-9A-F]{1,32})"[^>]*>[\s\S]*?<\/symbol>/g;
+const SYMBOL = '<symbol id="g';
+/** `GLYPH` where an outline starts, and only there. */
+const GLYPH_AT = new RegExp(GLYPH.source, "y");
 
 /** A picture of Typst's (typst-svg declares the `h5` namespace on each), up to its end: they don't nest. */
 const PICTURE = /<svg [^>]*xmlns:h5="http:\/\/www\.w3\.org\/1999\/xhtml"[^>]*>[\s\S]*?<\/svg>/g;
@@ -202,7 +205,7 @@ const MAX_PICTURES = 2000;
 
 /** A glyph in such a picture: a group that places it around a `<use>` of its outline. */
 const GLYPH_USE =
-  /<g transform="(matrix\([^")]*\))"><use (xlink:href="#g[0-9A-F]{32}") x="0" y="0" (fill="[^"]*") fill-rule="nonzero"\/><\/g>/g;
+  /<g transform="(matrix\([^")]*\))"><use (xlink:href="#g[0-9A-F]{1,32}") x="0" y="0" (fill="[^"]*") fill-rule="nonzero"\/><\/g>/g;
 
 /**
  * Typst's pictures with their glyphs as one `<use>` each, placed by its own `transform`: drawn the same, with half the
@@ -335,13 +338,29 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
   const glyphs = new Map<string, string>();
   let glyphSheet: SVGSVGElement | null = null;
 
-  /** Moves the outlines in `fresh` from `nodes`, sanitized, to the root. */
-  const takeGlyphs = (nodes: ParentNode, fresh: Map<string, string>): void => {
-    for (const symbol of Array.from(nodes.querySelectorAll("symbol[id]"))) {
+  /**
+   * Takes the outlines in `html` the root doesn't have, sanitized, to the root. From the whole document, before any of
+   * it is parsed: the engine sends each once, where it first appears, which can be a header in an anchor (parsed only
+   * when a page draws it) as well as a block.
+   */
+  const takeGlyphs = (html: string): void => {
+    const fresh = new Map<string, string>();
+    // The first of each: the one the document's `<use>`s find. By `indexOf`, the markup only of those that are new:
+    // this runs on every update, over the whole document.
+    for (let at = html.indexOf(SYMBOL); at !== -1; at = html.indexOf(SYMBOL, at + 1)) {
+      const id = html.slice(at + SYMBOL.length - 1, html.indexOf('"', at + SYMBOL.length));
+      if (glyphs.has(id) || fresh.has(id)) continue;
+      GLYPH_AT.lastIndex = at;
+      const match = GLYPH_AT.exec(html);
+      if (match?.[1] === id) fresh.set(id, match[0]);
+    }
+    if (fresh.size === 0) return;
+    template.innerHTML = trustedHTML(`<svg>${[...fresh.values()].join("")}</svg>`);
+    sanitize(template.content);
+    for (const symbol of Array.from(template.content.querySelectorAll("symbol[id]"))) {
       const glyph = symbol.id.slice(idPrefix.length);
       const markup = fresh.get(glyph);
-      if (markup === undefined || !symbol.id.startsWith(idPrefix)) continue;
-      fresh.delete(glyph);
+      if (markup === undefined || !symbol.id.startsWith(idPrefix) || glyphs.has(glyph)) continue;
       if (!glyphSheet) {
         glyphSheet = doc.createElementNS(SVG_NS, "svg");
         glyphSheet.setAttribute("class", "typstream-glyphs");
@@ -363,13 +382,12 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
   const nonce = `p${Math.random().toString(36).slice(2)}`;
 
   /** A picture's markup as nodes, sanitized: copied from the one parsed first. */
-  const picture = (markup: string, fresh: Map<string, string>): DocumentFragment => {
+  const picture = (markup: string): DocumentFragment => {
     let nodes = pictures.get(markup);
     if (!nodes) {
       pictureTemplate.innerHTML = trustedHTML(hideStyles(markup));
       nodes = pictureTemplate.content;
       sanitize(nodes);
-      takeGlyphs(nodes, fresh);
       nodes = inert.importNode(nodes, true);
       if (pictures.size >= MAX_PICTURES) pictures.clear();
       pictures.set(markup, nodes);
@@ -379,17 +397,10 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
 
   /** Parses and sanitizes markup into nodes owned by the page's document. */
   const parse = (html: string): Node[] => {
-    // Outlines already in the root aren't parsed again; only those the same as the root's (a hostile document's own
-    // `<symbol id="g…">` stays where it is).
-    const fresh = new Map<string, string>();
+    // Outlines the root has aren't parsed again; only those the same as its (a document's own `<symbol id="g…">`
+    // stays where it is).
     const markup = compactGlyphs(
-      html.includes("<symbol")
-        ? html.replace(GLYPH, (all, id: string) => {
-            if ((glyphs.get(id) ?? fresh.get(id)) === all) return "";
-            if (!glyphs.has(id) && !fresh.has(id)) fresh.set(id, all);
-            return all;
-          })
-        : html,
+      html.includes("<symbol") ? html.replace(GLYPH, (all, id: string) => (glyphs.get(id) === all ? "" : all)) : html,
     );
     // Pictures stand aside as placeholders, parsed and sanitized on their own (or copied: see `pictures`).
     const found: string[] = [];
@@ -404,7 +415,7 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
       for (const placeholder of Array.from(content.querySelectorAll(`typstream-${nonce}`))) {
         const svg = found[Number(placeholder.getAttribute("n"))];
         if (svg === undefined) continue;
-        const nodes = picture(svg, fresh);
+        const nodes = picture(svg);
         for (const node of Array.from(nodes.childNodes)) clean.add(node);
         placeholder.replaceWith(nodes);
       }
@@ -426,8 +437,6 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
     styleSpaces(content, inert);
     rowRuns(content, inert);
     wrapRuns(content, inert);
-    // New outlines outside pictures, sanitized, go to the root.
-    if (fresh.size > 0) takeGlyphs(content, fresh);
     // Moving the cleaned nodes adopts them into the page's document.
     const fragment = doc.createDocumentFragment();
     fragment.append(...Array.from(content.childNodes));
@@ -501,6 +510,7 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
     const t0 = view.performance.now();
     caret?.remove();
     caret = null;
+    takeGlyphs(html);
 
     const split = splitHtml(html, lastSplit);
     lastSplit = split;
