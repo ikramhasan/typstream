@@ -42,6 +42,10 @@ packages/dom      @typstream/dom: framework-free renderers. `src/html/`: HTML re
                   `src/export/`: `standaloneHtml`, a downloadable file from an HTML export (theme, CSS, CSP).
 packages/react    @typstream/react: <Typstream>, TypstreamProvider, useTypstream(); a thin layer over mountTypstream.
 packages/typstream  typstream: the convenience package (<Typstream> with html-compat, the math font and universe's packages; re-exports).
+packages/plate    @typstream/plate: a visual editor on Plate (beta, #36's experiment): the HTML target laid out as
+                  `<Typstream>` shows it (dom's renderer, unseen), read back as Plate's value (`value.ts`) with each
+                  text's source spans (`spans.ts`, engine-wasm's `src/spans.rs`), Slate's changes made edits of the
+                  Typst (`commands.ts`, `plugin.tsx`, `session.ts`).
 packages/ai       @typstream/ai: typstream with AI SDKs. Generation: an assistant message as a document (`textOf`, `isStreaming`,
                   `textStream`), read structurally, so no `ai` dependency. Streaming edits: `<edit>`s that quote what they
                   replace (`parseEdits`, `findQuote`), applied as they stream by `createEditSession`, and `editPrompt()`.
@@ -169,6 +173,12 @@ In `packages/react`:
 - `pnpm size`: ≤ 35.0 KB gzipped including `@typstream/dom` (React and the engine external).
 - Its bundle starts with `"use client"` (tsup banner), as does `typstream`'s, for Next.js's App Router.
 
+In `packages/plate`: `pnpm test`: the commands' edits compiled by engine-wasm (Node). `pnpm test:browser`: every edu
+corpus document and edu example in the editor against `<Typstream>`'s HTML target (each word within 0.5 px), editing
+with real key presses, and the spans taken off as dom parses, in Chromium, Firefox and WebKit. `pnpm size`: ≤ 12 KB
+gzipped, ≤ 170 KB with Plate. The editor's DOM must stay the renderer's: anything Slate adds inside an element (its
+void spacer, a zero-width text) changes what CSS's `:empty`, `:first-child` and sibling rules match.
+
 In `packages/ai`: `pnpm test` runs the helpers through AI SDK 7 itself (a devDependency): recorded `corpus/llm` streams
 sent as UI message streams, read back by `readUIMessageStream`, `DefaultChatTransport` and a `Chat`, including `stop()`
 and a failed stream (a text part stays `"streaming"` then; only the chat's status changes), and the edit session over
@@ -177,7 +187,7 @@ external). Change the edit prompt's rules (`editPromptRules`) only with a new me
 
 In `examples/strict-csp`: `pnpm test` builds the pages (a worksheet in both targets, and a mind map island in both), serves them with the policy in `csp.mjs` and fails on any CSP violation or console error in Chromium, Firefox and WebKit (`BROWSERS=` picks some). Build the packages first (`pnpm turbo run build --filter=@typstream/example-strict-csp^...`). CI runs it in each browser's `Engine (<browser>)` job. Hostile documents go in `corpus/adversarial/hostile-*.typ` (category `hostile-…`); the engine's and the browser suites' `security.test.ts` run them all.
 
-In `examples/nextjs-ai-sdk`: deployed at https://typstream-ai-sdk.vercel.app with no `ANTHROPIC_API_KEY`, so when the server has none (`GET /api/chat`), the page asks for the visitor's key in a dialog, keeps it in memory only and sends it in a header (`app/api/chat/key.ts`); the smoke test declines it ("Replay a sample"). `pnpm test` builds the app (Turbopack) and streams an answer into `<Typstream>` in Chromium (pages), then a follow-up's answer (HTML: the document again, changed), failing on any error frame. A follow-up gets a whole new document: the route sends the chat as `useChat` posted it, with the same instructions every request, and must never rewrite an earlier message (Anthropic rejects a request whose content before an answer's thinking changed: "Invalid `signature` in `thinking` block"). The route prompts with edu's kit (with universe, google-fonts and mindmap) and the page renders with their plugins (mind maps as islands); the UI is shadcn/ui (AI Elements, Base UI, Tailwind 4) in `components/ui/`, added with the shadcn CLI. Without `ANTHROPIC_API_KEY` the route replays a worksheet (or, for a follow-up, the worksheet revised) that compiles at every prefix (a kit recording doesn't, and the test fails on any error frame); a key in `.env.local` reaches `next start` too, so run the test with `ANTHROPIC_API_KEY=` to keep it offline. Build the packages first (`pnpm turbo run build --filter=@typstream/example-nextjs-ai-sdk^...`). CI runs it in the `Engine (chromium)` job.
+In `examples/nextjs-ai-sdk`: deployed at https://typstream-ai-sdk.vercel.app with no `ANTHROPIC_API_KEY`, so when the server has none (`GET /api/chat`), the page asks for the visitor's key in a dialog, keeps it in memory only and sends it in a header (`app/api/chat/key.ts`); the smoke test declines it ("Replay a sample"). `pnpm test` builds the app (Turbopack) and streams an answer into `<Typstream>` in Chromium (pages), edits it in `@typstream/plate`'s editor (an answer's Edit; Done shows the edited document, which copy and export take, and the chat stays as it was), then a follow-up's answer (HTML: the document again, changed), failing on any error frame. A follow-up gets a whole new document: the route sends the chat as `useChat` posted it, with the same instructions every request, and must never rewrite an earlier message (Anthropic rejects a request whose content before an answer's thinking changed: "Invalid `signature` in `thinking` block"). The route prompts with edu's kit (with universe, google-fonts and mindmap) and the page renders with their plugins (mind maps as islands); the UI is shadcn/ui (AI Elements, Base UI, Tailwind 4) in `components/ui/`, added with the shadcn CLI. Without `ANTHROPIC_API_KEY` the route replays a worksheet (or, for a follow-up, the worksheet revised) that compiles at every prefix (a kit recording doesn't, and the test fails on any error frame); a key in `.env.local` reaches `next start` too, so run the test with `ANTHROPIC_API_KEY=` to keep it offline. Build the packages first (`pnpm turbo run build --filter=@typstream/example-nextjs-ai-sdk^...`). CI runs it in the `Engine (chromium)` job.
 
 In `packages/heal`:
 - `pnpm test:long`: 20,000-run property campaign (minutes).

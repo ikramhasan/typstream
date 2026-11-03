@@ -30,6 +30,7 @@ import * as react from 'react';
 import { RenderedEvent } from '@typstream/react';
 import { StandaloneHtmlOptions } from '@typstream/react';
 import { TelemetryHooks } from '@typstream/react';
+import { TypstFont } from '@typstream/react';
 import { TypstreamDefaults } from '@typstream/react';
 import { TypstreamExportOptions } from '@typstream/react';
 import { TypstreamHandle } from '@typstream/react';
@@ -93,6 +94,9 @@ export { RenderedEvent }
 export { StandaloneHtmlOptions }
 
 export { TelemetryHooks }
+
+// @beta
+export const typstFonts: readonly TypstFont[];
 
 // @public
 export const Typstream: (input: TypstreamProps) => react.JSX.Element;

@@ -70,6 +70,13 @@ export interface HtmlRendererOptions {
    */
   layout?: "fixed" | "fit-width" | "reflow";
   /**
+   * Called with each piece of markup the renderer parses (blocks, a header), before it sanitizes it: for markup only
+   * the caller's documents have, such as the source spans an editor asks for (`@typstream/plate`). Leave the rest as
+   * it is: it is sanitized next.
+   * @beta
+   */
+  onParse?: (content: DocumentFragment) => void;
+  /**
    * Called when the number of pages changes. A document whose headers or footers show the page count
    * (`counter(page).final()`) reads it from the input `typstream-page-count` (html-compat): `mountTypstream` sets it
    * and compiles again.
@@ -455,6 +462,7 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
         }
       }
     }
+    options.onParse?.(content);
     sanitize(content, clean);
     collapseSpaces(content, inert);
     styleSpaces(content, inert);

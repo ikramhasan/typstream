@@ -225,8 +225,8 @@ export const engineWasm = (options: EngineWasmOptions = {}): EngineAdapter => {
           }
         },
         setInputs: (inputs) => engine.set_inputs(inputs),
-        compileHtml() {
-          const r = engine.compile_html();
+        compileHtml(options) {
+          const r = engine.compile_html(options?.spans === true);
           // `ms` covers compile, export and eviction; HTML export has no separate timing.
           const result = { html: r.ok ? (r.html ?? "") : null, diagnostics: r.diagnostics, compileMs: r.ms };
           return withPending(result, r.missingFonts);

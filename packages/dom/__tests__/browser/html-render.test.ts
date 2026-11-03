@@ -518,3 +518,26 @@ describe(`HTML renderer while streaming in ${browser}`, () => {
     unmount(renderer);
   }, 300_000);
 });
+
+describe(`HTML renderer's onParse in ${browser}`, () => {
+  it("gets each piece of markup before it is sanitized, and what it changes stays", () => {
+    const seen: string[] = [];
+    const renderer = mount({
+      onParse: (content) => {
+        // Markup of the caller's own the sanitizer would drop, taken off first.
+        for (const el of Array.from(content.querySelectorAll("x-mine"))) {
+          seen.push(el.getAttribute("data-n") ?? "");
+          el.replaceWith(...Array.from(el.childNodes));
+        }
+      },
+    });
+    renderer.update(
+      '<!DOCTYPE html><html><body><p><x-mine data-n="1">One</x-mine> and <x-mine data-n="2">two</x-mine></p><p><script>alert(1)</script>Three</p></body></html>',
+    );
+    expect(seen).toEqual(["1", "2"]);
+    const flow = renderer.root.querySelector(".typstream-flow") as Element;
+    expect(flow.querySelectorAll("p")[0]?.textContent).toBe("One and two");
+    expect(flow.querySelector("script")).toBeNull();
+    unmount(renderer);
+  });
+});

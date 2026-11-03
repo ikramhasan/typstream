@@ -296,6 +296,15 @@ export interface CompileParams extends DocumentParams {
    */
   anchors?: boolean;
   /**
+   * HTML only: mark where the document's text came from, for an editor over the HTML. Each text node its markup
+   * writes is wrapped in `<typstream-text data-src="from to">` (the UTF-16 range of the document's text it shows:
+   * exactly its characters for text, else the whole syntax node, a smart quote or a space; text code or math shows has
+   * none), and each element from the document has `data-typstream-span="from to"`, its syntax node's range. Offsets
+   * are in the document's text, as anchors' are. Take them off before `@typstream/dom`'s renderer sanitizes them
+   * (`HtmlRendererOptions.onParse`, as `@typstream/plate` does). Default false. @beta
+   */
+  spans?: boolean;
+  /**
    * Paged only: send every page, not just changed ones (the client lost or
    * dropped its pages, e.g. after remounting).
    */
