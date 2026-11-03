@@ -203,14 +203,29 @@ const CONTINUES = /^[\p{L}\p{N}_\-.(]/u;
  * `edits` that leave an embedded expression (`#who`) followed by what would go on with it (`#whox`, `#who.`, after a
  * space between them was deleted) end it first with `;`, which Typst takes as its end and doesn't show. Text the code
  * shows has no source of its own, so typing beside it lands just after the expression.
+ *
+ * Edits that touch are judged together: a range's deletion comes as an edit per piece, and typing over a selection is
+ * an insertion where the deletion starts, so what follows the expression is all their text and the source after the
+ * last. The first of them gets the `;`, once.
  */
-export const keepCode = (source: string, edits: readonly TextEdit[]): TextEdit[] =>
-  edits.map((e) => {
-    const next = e.insert || source.slice(e.to, e.to + 1);
-    if (!CONTINUES.test(next) || !CODE_END.test(source.slice(Math.max(0, e.from - 200), e.from))) return e;
-    // Another edit right after this one could still be what follows: only an edit's own text or the source after it.
-    return { ...e, insert: `;${e.insert}` };
-  });
+export const keepCode = (source: string, edits: readonly TextEdit[]): TextEdit[] => {
+  // In the order their text will have: by place, an insertion before a deletion from the same place (`applyEdits`).
+  const order = [...edits].sort((a, b) => a.from - b.from || a.to - b.to);
+  const ended = new Set<TextEdit>();
+  for (let i = 0; i < order.length; ) {
+    const first = order[i] as TextEdit;
+    let last = first;
+    let text = first.insert;
+    for (i++; i < order.length && (order[i] as TextEdit).from === last.to; i++) {
+      last = order[i] as TextEdit;
+      text += last.insert;
+    }
+    const next = text || source.slice(last.to, last.to + 1);
+    if (CONTINUES.test(next) && CODE_END.test(source.slice(Math.max(0, first.from - 200), first.from)))
+      ended.add(first);
+  }
+  return edits.map((e) => (ended.has(e) ? { ...e, insert: `;${e.insert}` } : e));
+};
 
 // --- applying ---------------------------------------------------------------------------
 

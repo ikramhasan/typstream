@@ -187,6 +187,29 @@ describe("code beside text it shows", () => {
     expect(keepCode("\\#who", [{ from: 5, to: 5, insert: "x" }])[0]?.insert).toBe("x");
     expect(keepCode("#f(1)", [{ from: 5, to: 5, insert: ".x" }])[0]?.insert).toBe(";.x");
   });
+
+  it("judges edits that touch together: what follows is all their text", () => {
+    const source = '#let who = "Ada"\nHello #who, and more.';
+    const at = source.indexOf(", and");
+    // `, and ` deleted as a range: one edit per piece (`,`, ` `, `and`, ` `).
+    const pieces = [
+      { from: at, to: at + 1, insert: "" },
+      { from: at + 1, to: at + 2, insert: "" },
+      { from: at + 2, to: at + 5, insert: "" },
+      { from: at + 5, to: at + 6, insert: "" },
+    ];
+    const deleted = after(source, keepCode(source, pieces));
+    expect(deleted.text).toContain("#who;more.");
+    expect(deleted.errors).toEqual([]);
+    expect(textOf(deleted.body)).toContain("Hello Adamore.");
+    // Typing over it: an insertion where the deletion starts, listed after it; one `;`.
+    const typed = after(source, keepCode(source, [...pieces, { from: at, to: at, insert: "x" }]));
+    expect(typed.text).toContain("#who;xmore.");
+    expect(textOf(typed.body)).toContain("Hello Adaxmore.");
+    // What follows them doesn't go on with it: nothing added.
+    const comma = keepCode(source, [{ from: at + 1, to: at + 2, insert: "" }, ...pieces.slice(2)]);
+    expect(comma.map((e) => e.insert)).toEqual(["", "", ""]);
+  });
 });
 
 describe("applying", () => {

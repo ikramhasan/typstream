@@ -377,7 +377,17 @@ export class Session {
     if (kept.some((e, i) => e !== edits[i])) {
       const last = kept[kept.length - 1] as TextEdit;
       const shift = kept.reduce((n, e) => n + e.insert.length - (e.to - e.from), 0);
-      options = { ...options, local: undefined, caret: options.caret != null ? options.caret + 1 : last.to + shift };
+      // The caret (in the text the given edits leave) moves past each `;` added at or before it.
+      const ends = kept.flatMap((e, i) => {
+        if (e === edits[i]) return [];
+        const before = edits.filter((o) => o.to <= e.from && o !== edits[i]);
+        return [e.from + before.reduce((n, o) => n + o.insert.length - (o.to - o.from), 0)];
+      });
+      const caret =
+        options.caret != null
+          ? options.caret + ends.filter((at) => at <= (options.caret as number)).length
+          : last.to + shift;
+      options = { ...options, local: undefined, caret };
       edits = kept;
     }
     const seq = sequential(edits);
