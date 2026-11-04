@@ -80,8 +80,9 @@ bundler puts assets elsewhere).
 
 ### Without the worker
 
-A server that runs no client modules (`@typstream/node`, `clientFixers: false`) ignores the plugin's
-`generatorModules`, and documents show their blocks as code. Give the server the generator itself:
+A server that runs no client modules (`clientFixers: false`, as `@typstream/node` sets) ignores the plugin's
+`generatorModules`, and documents show their blocks as code. `@typstream/node` can't run generators yet; a server
+built on `createServer` can be given the generator itself:
 
 ```ts
 import mermaidGenerator from "@typstream/mermaid/generator";

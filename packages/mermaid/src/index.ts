@@ -27,7 +27,7 @@ export const mermaidPreamble: string = `#import "${MERMAID_ROOT}": mermaid-diagr
 
 /**
  * The URL of the file generator module, which the worker imports: pele and the code that draws
- * with it, one self-contained ES module (about 240 KB gzipped) that bundlers emit as an asset.
+ * with it, one self-contained ES module (about 276 KB gzipped) that bundlers emit as an asset.
  * The worker loads it when a document with this plugin opens, never on the main thread.
  */
 export const MERMAID_GENERATOR: string = new URL("../generator/mermaid.js", import.meta.url).href;
