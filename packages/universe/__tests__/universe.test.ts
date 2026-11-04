@@ -58,14 +58,28 @@ describe("vendored packages", () => {
     }
     expect([...missing]).toEqual([]);
   });
+
+  it("list the packages they import, so the engine fetches them alongside", () => {
+    for (const p of vendored) {
+      const imported = new Set<string>();
+      for (const [path, bytes] of p.files) {
+        if (!path.endsWith(".typ")) continue;
+        for (const [, spec] of bytes.toString("utf8").matchAll(/"(@[a-z0-9-]+\/[a-z0-9-]+:\d+\.\d+\.\d+)"/g)) {
+          imported.add(spec as string);
+        }
+      }
+      expect(p.imports, spec(p)).toEqual([...imported].sort());
+    }
+  });
 });
 
 describe("universe plugin", () => {
-  it("allows every vendored package, with its URL and integrity", () => {
+  it("allows every vendored package, with its URL, integrity and imports", () => {
     expect(universe.engine.packages.map(spec)).toEqual(UNIVERSE_PACKAGES.map(spec));
-    for (const p of universe.engine.packages) {
+    for (const [i, p] of universe.engine.packages.entries()) {
       expect(p.url).toMatch(/\.tar\.gz$/);
       expect(p.integrity).toMatch(/^sha256-/);
+      expect(p.imports, spec(p)).toEqual(UNIVERSE_PACKAGES[i]?.imports);
     }
   });
 

@@ -67,7 +67,11 @@ export interface EngineOptions {
    * and stays flat. Default 256 MiB; `Infinity` disables recycling.
    */
   recycleBytes?: number;
-  /** Keep an initialized spare worker so replacing the active one is instant. Default true, or the `spawn`'s own. */
+  /**
+   * Keep an initialized spare worker so replacing the active one is instant,
+   * started once the active one has answered a compile (at once when a spare
+   * takes over). Default true, or the `spawn`'s own.
+   */
   spare?: boolean;
   /** Default schedule of every document. */
   schedule?: Partial<ScheduleOptions>;
@@ -357,9 +361,6 @@ class EngineImpl implements Engine, DocumentHost {
         if (this.disposed || !conn.alive) return;
         slot.isReady = true;
         this.emit({ type: "ready", info });
-        // Warm the next spare only once the active worker is up, so they don't
-        // compete for the first compile.
-        if (slot === this.active && this.useSpare && !this.spare) this.spare = this.trySpawn();
       },
       (e) => {
         if (slot === this.active && conn.alive) this.fail(asError(e));
@@ -428,9 +429,20 @@ class EngineImpl implements Engine, DocumentHost {
       return;
     }
     this.active = next;
-    // A promoted spare is already up; start its own spare now. A new worker
-    // starts its spare when it is ready (spawn).
-    if (next.isReady && this.useSpare) this.spare = this.trySpawn();
+    // A promoted spare is past the first download and compile, which a new spare starts from (the module is
+    // shared): its own starts now, so another runaway compile doesn't wait for a cold worker.
+    if (next.isReady) this.warmSpare(next);
+  }
+
+  /**
+   * Starts the spare once `slot`, the active worker, has answered a compile or
+   * an export: not before, so it doesn't compete with the first one for the
+   * network and the CPU, and the first render comes as soon as it can.
+   */
+  private warmSpare(slot: Slot): void {
+    if (this.useSpare && !this.spare && slot === this.active && slot.conn.alive && !this.disposed && !this.broken) {
+      this.spare = this.trySpawn();
+    }
   }
 
   private fail(error: Error): void {
@@ -513,6 +525,7 @@ class EngineImpl implements Engine, DocumentHost {
       disarm();
     }
     doc.settle(outcome);
+    this.warmSpare(slot);
   }
 
   private async runExport(slot: Slot, job: ExportJob): Promise<void> {
@@ -547,6 +560,7 @@ class EngineImpl implements Engine, DocumentHost {
       disarm();
     }
     job.doc.settleExport(job, synced, outcome);
+    this.warmSpare(slot);
   }
 
   /**

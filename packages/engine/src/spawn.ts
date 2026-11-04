@@ -5,6 +5,7 @@
 
 import { trustedScriptURL } from "@typstream/core";
 import { fromWorker, type SpawnEngine, type WorkerLike } from "./connection";
+import { type CompiledWasm, wasmMessage, wasmOf } from "./shared-wasm";
 
 type WorkerConstructor = new (url: URL | string, options: { type: "module"; name?: string }) => WorkerLike;
 
@@ -45,6 +46,27 @@ const trusted = (spawn: () => WorkerLike): WorkerLike => {
  * @public
  */
 export const engineWorker = (): SpawnEngine =>
-  fromWorker(() =>
-    trusted(() => new Worker(new URL("./worker.js", import.meta.url), { type: "module", name: "typstream-engine" })),
+  fromWorker(
+    sharingWasm(() =>
+      trusted(() => new Worker(new URL("./worker.js", import.meta.url), { type: "module", name: "typstream-engine" })),
+    ),
   );
+
+/** The engine a worker compiled, shared by every worker started after it, of any engine on the page. */
+let compiled: CompiledWasm | undefined;
+
+/**
+ * `create` with the default worker's compiled engine shared (./shared-wasm.ts): the first worker compiles it and
+ * sends it here, and every one after it is given it before anything else.
+ */
+export const sharingWasm =
+  (create: () => WorkerLike): (() => WorkerLike) =>
+  () => {
+    const worker = create();
+    if (compiled) worker.postMessage(wasmMessage(compiled));
+    else
+      worker.addEventListener("message", (event) => {
+        compiled ??= wasmOf(event.data);
+      });
+    return worker;
+  };
