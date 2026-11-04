@@ -35,7 +35,7 @@ export interface WorkerScope {
 export const serve = (
   adapter: EngineAdapter,
   scope?: WorkerScope,
-  options: Pick<ServerOptions, "fixers" | "packages" | "fontCatalogues"> = {},
+  options: Pick<ServerOptions, "fixers" | "packages" | "fontCatalogues" | "generators"> = {},
 ): EngineServer => {
   const self = scope ?? (globalThis as unknown as WorkerScope);
   const server = createServer(adapter, (message) => self.postMessage(message), {
@@ -62,7 +62,7 @@ export const serve = (
 export const inProcess =
   (
     createAdapter: () => EngineAdapter,
-    options: Pick<ServerOptions, "fixers" | "packages" | "fontCatalogues"> = {},
+    options: Pick<ServerOptions, "fixers" | "packages" | "fontCatalogues" | "generators" | "clientFixers"> = {},
   ): SpawnEngine =>
   (events) => {
     let alive = true;

@@ -24,3 +24,6 @@ reports/
 
 # Vercel CLI: linked project settings, pulled env files and `vercel build` output (.github/workflows/deploy.yml)
 .vercel/
+
+# @typstream/mermaid: the worker module its build writes outside dist/
+packages/mermaid/generator/

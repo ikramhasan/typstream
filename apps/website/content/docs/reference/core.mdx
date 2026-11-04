@@ -54,7 +54,7 @@ The exports fall into six groups:
 | --- | --- |
 | [Text edits and positions](#text-edits-and-positions) | `TextEdit`, `applyEdit`, `mapPosition`, `diffEdit`, `SourceMap`, `Patch`, `Range` |
 | [Diagnostics](#diagnostics) | `Diagnostic`, `formatDiagnostic`, `mapDiagnostic`, `normalizeDiagnostics`, `lineColumn` |
-| [Plugins](#plugins) | `TypstreamPlugin`, `definePlugin`, `resolvePlugins`, `HealHandler`, `DiagnosticFixer`, `TemplateSpec` |
+| [Plugins](#plugins) | `TypstreamPlugin`, `definePlugin`, `resolvePlugins`, `HealHandler`, `DiagnosticFixer`, `FileGenerator`, `TemplateSpec` |
 | [Telemetry events](#telemetry-events) | `DocumentEvent`, `CompiledEvent`, `RenderedEvent`, `FallbackEvent`, `WatchdogEvent`, `FallbackLevel` |
 | [Protocol](#protocol) | `PROTOCOL_VERSION`, `RequestMap`, `CompileParams`, `CompileResult`, `Artifact`, `ProtocolError` |
 | [Serialization](#serialization) | `serializeMessage`, `deserializeMessage` |
@@ -237,14 +237,14 @@ reads only the facets it understands, so new facets never break old plugins. `@t
 ### `TypstreamPlugin`
 
 Everything except `heal.handlers` and islands' `parse` is plain data. The `engine` facet is sent to the worker, which can't receive
-functions, so worker-side code is referenced by module URL (`fixerModules`).
+functions, so worker-side code is referenced by module URL (`fixerModules`, `generatorModules`).
 
 <auto-type-table path="packages/core/src/plugin.ts" name="TypstreamPlugin" />
 
 | Facet | Read by | What it holds |
 | --- | --- | --- |
 | `heal` | `@typstream/heal` | Heal handlers, and overrides of built-in lint rules by id (`{ "currency-dollar": "fix" }`). |
-| `engine` | `@typstream/engine` | Fixer module URLs, files (such as a local Typst package), allowed packages and fonts (beta), and a preamble. |
+| `engine` | `@typstream/engine` | Fixer and file generator (beta) module URLs, files (such as a local Typst package), allowed packages and fonts (beta), and a preamble. |
 | `templates` | `mountTypstream` (`template` option) | Named document setups: a preamble and default `sys.inputs`. |
 | `prompt` | Prompt builders (`@typstream/edu`'s `buildSystemPrompt`) | A function catalogue, rules and few-shot examples for the model. |
 | `sanitize` | The HTML renderer | Extra tags, attributes (by tag, `"*"` for every HTML element) and classes to let through. |
@@ -327,6 +327,32 @@ export default {
 #### `FixContext`
 
 <auto-type-table path="packages/core/src/plugin.ts" name="FixContext" />
+
+### `FileGenerator`
+
+Beta. Files a plugin makes from a document's source in the worker, before every compile and export: what Typst can't
+compute itself, such as a diagram drawn by a JavaScript library (`@typstream/mermaid`'s), for the plugin's Typst to
+read. Plugins ship them as ES modules (`engine.generatorModules`) whose default export is a generator or an array of
+them; each document gets its own `DocumentFileGenerator` from `open()`. The worker writes only the files that changed
+since the last run and removes those no longer returned, so returning the same files costs Typst nothing. A server
+facing untrusted clients imports none of theirs (`ServerOptions.clientFixers: false`) but can run its own
+(`ServerOptions.generators`).
+
+<auto-type-table path="packages/core/src/plugin.ts" name="FileGenerator" />
+
+#### `DocumentFileGenerator`
+
+<auto-type-table path="packages/core/src/plugin.ts" name="DocumentFileGenerator" />
+
+```ts title="acme-generator.js"
+export default {
+  name: "acme/word-count",
+  open: () => ({
+    // Runs before every compile, once per streamed token: keep it fast.
+    files: (source) => ({ "acme/count.typ": `#let words = ${source.split(/\s+/).length}` }),
+  }),
+};
+```
 
 ### `TemplateSpec`
 

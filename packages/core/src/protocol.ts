@@ -10,7 +10,14 @@
 
 import type { Diagnostic } from "./diagnostic";
 import type { Range, TextEdit } from "./index";
-import type { DiagnosticFixer, FontCatalogue, FontSource, LoadedFontFamily, PackageSpec } from "./plugin";
+import type {
+  DiagnosticFixer,
+  FileGenerator,
+  FontCatalogue,
+  FontSource,
+  LoadedFontFamily,
+  PackageSpec,
+} from "./plugin";
 
 /**
  * Bumped only for breaking changes. Additive changes (new methods, new optional
@@ -208,6 +215,16 @@ export interface DocumentOpenParams extends DocumentParams {
    * @beta
    */
   fixerModules?: string[];
+  /**
+   * File generator modules for this document (plugins'
+   * `engine.generatorModules`, PLAN §8.2): ES modules whose default export is a
+   * {@link FileGenerator} or an array of them. The server imports each once and
+   * runs the generators before every compile and export of the document; one
+   * that fails to load is reported with `$/log` and the document compiles
+   * without it. A server facing untrusted clients ignores them.
+   * @beta
+   */
+  generatorModules?: string[];
   /**
    * Font catalogues this document loads families from, in addition to
    * `initialize`'s. The fonts they load are the worker's, as every font is.

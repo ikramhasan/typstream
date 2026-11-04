@@ -1,0 +1,108 @@
+---
+title: "@typstream/mermaid"
+description: Mermaid diagrams in typstream documents, drawn by pele in the engine's worker, the same on pages, in the HTML target, the PDF and a DOCX export; a plugin with its prompt kit.
+icon: Package
+---
+
+`@typstream/mermaid` draws [Mermaid](https://mermaid.js.org) diagrams in typstream documents with
+[pele](https://pele.run), a fast Mermaid renderer by the creator of Obsidian. A model writes a raw block with the
+language `mermaid`, as it would in Markdown, and the document shows the diagram: flowcharts, sequence, class, state and
+entity relationship diagrams, Gantt charts, timelines, pie, quadrant and XY charts, user journeys, mind maps and every
+other type Mermaid 12 has.
+
+## Install
+
+```npm
+npm install @typstream/mermaid
+```
+
+## Example
+
+```tsx
+import { htmlCompat } from "@typstream/html-compat";
+import { mermaid } from "@typstream/mermaid";
+import { Typstream } from "typstream";
+
+// `typstream`'s <Typstream> has html-compat already; with @typstream/react, list it before mermaid.
+<Typstream source={text} plugins={[mermaid]} />;
+```
+
+```ts
+import { buildSystemPrompt, edu } from "@typstream/edu";
+import { mermaid } from "@typstream/mermaid";
+
+// The model learns to write ```mermaid blocks, and to caption them as figures.
+const system = buildSystemPrompt([edu, mermaid]);
+```
+
+````typst
+= The water cycle
+
+#figure(kind: image, caption: [The water cycle.])[
+  ```mermaid
+  flowchart LR
+    A[Ocean] -->|Evaporation| B[Water vapour]
+    B -->|Condensation| C[Clouds]
+    C -->|Precipitation| D[Rain and snow]
+    D -->|Runoff| A
+  ```
+]
+````
+
+A diagram in a figure needs `kind: image`: Typst numbers a figure of a raw block as a code listing otherwise.
+
+## How it draws
+
+Typst can't run pele, which is JavaScript, so the engine's worker draws each block before the compile, with a
+[file generator](/docs/reference/core#filegenerator) the plugin names by URL (`MERMAID_GENERATOR`). The worker writes
+what it drew into the plugin's Typst package, and the plugin's preamble shows every `mermaid` block as its drawing:
+
+- **Shapes** are pele's SVG, as an image, its CSS variables resolved to pele's light theme.
+- **Labels** are Typst text, set in Libertinus Serif (DejaVu Sans Mono for monospace ones), which pele measured them
+  in. An SVG image's text would come out in the browser's fonts on pages and in another face in the PDF; as Typst text
+  it is the same everywhere, and can be selected and searched.
+- **Size**: 16 of pele's pixels are the text size, and a diagram shrinks to fit its column. A diagram wider than the
+  text of Typst's default page is laid out again for that width, as pele lays diagrams out for narrow screens (a
+  left-to-right flowchart turns top to bottom), so its text stays readable on paper.
+- **Streaming**: a block shows its code until its first drawing, then keeps its last drawing while the stream cuts its
+  source mid-line, so a diagram grows instead of flickering. In final mode (and in exports) a block pele can't read
+  shows pele's error above its code.
+
+Because a diagram is Typst output, it is in every target: the paged view, the HTML target (as html-compat's picture of
+it), `exportPdf()`, standalone HTML and `exportDocx()`, where it is a picture with its labels on it. The plugin's
+conformance suite checks each against Typst's PDF. pele runs with links, images and icons off, so a diagram fetches
+nothing and links nowhere.
+
+The generator module is about 276 KB gzipped (pele, and the label font's widths). The worker imports it when a
+document with the plugin opens; nothing of it is on the main thread. Bundlers emit it as an asset next to the plugin.
+Under a strict Content-Security-Policy, the worker's `script-src` must allow it (it is same-origin unless your
+bundler puts assets elsewhere).
+
+### Without the worker
+
+A server that runs no client modules (`@typstream/node`, `clientFixers: false`) ignores the plugin's
+`generatorModules`, and documents show their blocks as code. Give the server the generator itself:
+
+```ts
+import mermaidGenerator from "@typstream/mermaid/generator";
+import { createServer } from "@typstream/engine/server";
+
+const server = createServer(adapter, post, { clientFixers: false, generators: [mermaidGenerator] });
+```
+
+A worker of your own can do the same with `serve(adapter, undefined, { generators: [mermaidGenerator] })`, which
+bundles pele into the worker instead of loading it by URL. `mermaidGenerator` is beta, like file generators.
+
+## Exports
+
+| Export | |
+| --- | --- |
+| `mermaid` | The plugin: the Typst package and its preamble, the generator module, the prompt kit. Depends on html-compat. |
+| `mermaidFiles` | The Typst package's files under `MERMAID_ROOT`, and the empty index of drawings the generator replaces. |
+| `mermaidPreamble` | Typst that shows every `mermaid` raw block as its diagram. |
+| `MERMAID_GENERATOR` | The URL of the generator module the worker imports. |
+| `mermaidPromptRules` | How to write diagrams, for the system prompt. |
+| `mermaidExamples` | Whole documents with diagrams, for few-shot prompts. |
+| `MERMAID_VERSION`, `MERMAID_ROOT` | The Typst package's version and spec (`@typstream/mermaid:0.1.0`). |
+
+`@typstream/mermaid/generator`'s default export, `mermaidGenerator`, is the `FileGenerator` itself.

@@ -1,8 +1,8 @@
 // Plugins' engine and heal facets (PLAN §8.0). Fonts, fixer modules, font
 // catalogues and packages shared by the worker come from `createEngine`'s
 // plugins and go out with `initialize`; a document's plugins add its files,
-// packages, preamble, heal handlers and lint settings, and fixer modules and
-// font catalogues the worker loads for it (`document/open`). Fonts stay the
+// packages, preamble, heal handlers and lint settings, and fixer modules, file
+// generator modules and font catalogues the worker loads for it (`document/open`). Fonts stay the
 // engine's: they are the worker's, not a document's, so a document's plugin
 // can't bring its own. A catalogue only names fonts, which the worker loads
 // for itself when a document asks for one.
@@ -49,9 +49,10 @@ export const initializeOptions = (
   };
 };
 
-/** A document's options with its plugins applied, and the fixer modules they bring. @internal */
+/** A document's options with its plugins applied, and the fixer and file generator modules they bring. @internal */
 export interface ResolvedDocumentOptions extends DocumentOptions {
   fixerModules?: string[];
+  generatorModules?: string[];
 }
 
 /**
@@ -71,6 +72,7 @@ export const documentOptions = (
   const files = Object.assign({}, ...engines.map((e) => e.files), options.files);
   const packages = [...engines.flatMap((e) => e.packages ?? []), ...(options.packages ?? [])];
   const fixerModules = [...new Set(engines.flatMap((e) => e.fixerModules ?? []))];
+  const generatorModules = [...new Set(engines.flatMap((e) => e.generatorModules ?? []))];
   const fontCatalogues = uniqueCatalogues([
     ...engines.flatMap((e) => e.fontCatalogues ?? []),
     ...(options.fontCatalogues ?? []),
@@ -96,6 +98,7 @@ export const documentOptions = (
       ...(Object.keys(files).length ? { files } : {}),
       ...(packages.length ? { packages } : {}),
       ...(fixerModules.length ? { fixerModules } : {}),
+      ...(generatorModules.length ? { generatorModules } : {}),
       ...(fontCatalogues.length ? { fontCatalogues } : {}),
       heal,
     },

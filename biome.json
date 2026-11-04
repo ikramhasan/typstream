@@ -21,6 +21,7 @@
       "!**/target",
       "!**/*.generated.ts",
       "!packages/google-fonts/catalogue.json",
+      "!packages/mermaid/generator",
       "!**/.stryker-tmp",
       "!**/reports",
       "!!reference",

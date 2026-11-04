@@ -35,8 +35,9 @@ const ok = [
   await measure("@typstream/dom (HTML renderer, incl. its CSS)", "src/html/index.ts", 23.3 * 1024),
   // 4 KB until canvas pages (#14): the painter, the drawing's decoder, the link layer and pixel management, 1.8 KB;
   // 5.6 KB until render islands on pages (#28: the island manager the HTML renderer has too, 0.8 KB, and their layer
-  // over each page, its CSS and the covered text hidden, 0.4 KB) made it 6.76 KB.
-  await measure("@typstream/dom (paged renderer)", "src/paged/index.ts", 6.8 * 1024),
+  // over each page, its CSS and the covered text hidden, 0.4 KB) made it 6.76 KB; 6.8 KB until SVG images drawn at a
+  // whole pixel (paint.ts's drawWhole, Firefox's resampled SVG images; 0.36 KB) made it 7.12 KB.
+  await measure("@typstream/dom (paged renderer)", "src/paged/index.ts", 7.2 * 1024),
   await measure("@typstream/dom (standalone HTML export)", "src/export/index.ts", 2 * 1024),
 ];
 process.exitCode = ok.every(Boolean) ? 0 : 1;
