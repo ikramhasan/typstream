@@ -1,0 +1,6 @@
+[package]
+name = "mermaid"
+version = "0.1.0"
+entrypoint = "lib.typ"
+description = "Mermaid diagrams in typstream: ```mermaid blocks drawn by pele in the worker, their labels set by Typst."
+compiler = "0.15.1"

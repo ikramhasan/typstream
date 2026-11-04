@@ -438,6 +438,7 @@ export class DocumentImpl implements EngineDocument {
   private readonly fallback: boolean;
   private readonly packages: PackageSpec[] | undefined;
   private readonly fixerModules: string[] | undefined;
+  private readonly generatorModules: string[] | undefined;
   private readonly fontCatalogues: FontCatalogue[] | undefined;
   private healed: HealResult;
   private target: CompileTarget;
@@ -526,6 +527,7 @@ export class DocumentImpl implements EngineDocument {
     this.fallback = options.fallback !== false;
     this.packages = options.packages;
     this.fixerModules = options.fixerModules;
+    this.generatorModules = options.generatorModules;
     this.fontCatalogues = options.fontCatalogues;
     this.files = { ...options.files };
     this.images = options.resolveImage
@@ -859,6 +861,7 @@ export class DocumentImpl implements EngineDocument {
         files: this.files,
         packages: this.packages,
         fixerModules: this.fixerModules,
+        generatorModules: this.generatorModules,
         fontCatalogues: this.fontCatalogues,
       });
       this.openedIn = generation;

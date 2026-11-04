@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/api-extractor/v7/api-extractor.schema.json",
+  "extends": "../../tools/repo/api-extractor.base.json",
+  // The `@typstream/mermaid/generator` entry point: the file generator the worker imports.
+  "mainEntryPointFilePath": "<projectFolder>/generator/mermaid.d.ts",
+  "apiReport": {
+    "enabled": true,
+    "reportFileName": "mermaid-generator.api.md",
+    "reportFolder": "<projectFolder>/api/",
+    "reportTempFolder": "<projectFolder>/dist/api/"
+  }
+}

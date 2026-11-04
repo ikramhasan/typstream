@@ -4,7 +4,9 @@
 // answer, the worksheet again with the change. It checks that both answers stream
 // into <Typstream> and finish, with no error frame, that the export downloads a
 // .docx, that the replay's mind map is interactive in the HTML answer (a render
-// island), and that telemetry reached the example's sink. Without
+// island), that its Mermaid diagram is drawn in both answers (the worker loaded
+// @typstream/mermaid's generator module, an asset Turbopack emits), and that
+// telemetry reached the example's sink. Without
 // ANTHROPIC_API_KEY the server replays a recorded worksheet and a revision of it,
 // so this runs offline.
 
@@ -60,6 +62,9 @@ try {
   const text = await answered(0, "paged");
   if (!process.env.ANTHROPIC_API_KEY && !text.includes("Pythagorean triples"))
     throw new Error(`unexpected render: ${text}`);
+  // The replay's diagram, drawn: its labels are text on the page, and its code isn't.
+  if (!process.env.ANTHROPIC_API_KEY && (!text.includes("Find the hypotenuse") || text.includes("flowchart LR")))
+    throw new Error(`the Mermaid diagram wasn't drawn: ${text}`);
   // The answer as a Word file: a .docx download, a zip.
   const [download] = await Promise.all([
     page.waitForEvent("download", { timeout: 60_000 }),
@@ -84,6 +89,10 @@ try {
     await answers.nth(1).locator("typstream-island .react-flow__node").first().waitFor({ timeout: 30_000 });
     const nodes = await answers.nth(1).locator("typstream-island .react-flow__node").count();
     if (nodes !== 9) throw new Error(`the mind map island has ${nodes} nodes, not 9`);
+    // The diagram as html-compat's picture, named by its labels, with pele's shapes in it; not its code.
+    const diagram = answers.nth(1).locator('[role="img"][aria-label*="Find the hypotenuse"]');
+    if ((await diagram.locator("image").count()) !== 1 || revised.includes("flowchart LR"))
+      throw new Error("the Mermaid diagram wasn't drawn in the HTML answer");
   }
   if (errors.length) throw new Error(`console errors:\n${errors.join("\n")}`);
   // The telemetry hooks (app/telemetry.tsx) reached the example's sink.

@@ -110,6 +110,37 @@ export interface DiagnosticFixer {
   fix(d: Diagnostic, ctx: FixContext): TextEdit[] | null | Promise<TextEdit[] | null>;
 }
 
+/**
+ * Files a plugin makes from a document's source in the worker, before every
+ * compile and export (PLAN §8.2): what Typst can't compute itself, such as a
+ * diagram drawn by a JavaScript library, for the plugin's Typst to read. Like
+ * fixers, generators run in the worker, so plugins ship them as ES modules
+ * (`engine.generatorModules`) whose default export is a generator or an array
+ * of them. A server facing untrusted clients imports none of theirs.
+ * @beta
+ */
+export interface FileGenerator {
+  /** Unique. Names it in the worker's logs. */
+  name: string;
+  /** A generator for one document, which may keep what it made for the next revision. */
+  open(): DocumentFileGenerator;
+}
+
+/** A {@link FileGenerator}'s work for one document. @beta */
+export interface DocumentFileGenerator {
+  /**
+   * Every file it provides for `source` (the document's preamble and text),
+   * keyed by path as in `document/setFiles`. The worker writes what changed
+   * since the last call and removes what is no longer listed, so a generator
+   * can return the same value again cheaply: it runs before every compile,
+   * once per streamed token. May be async (to load a library the first time);
+   * the compile waits for it.
+   */
+  files(source: string, ctx: { mode: CompileMode }): Record<string, FileContent> | Promise<Record<string, FileContent>>;
+  /** The document closed. */
+  close?(): void;
+}
+
 /** `fix` applies a lint rule's change, `warn` only reports it. @public */
 export type LintSetting = "fix" | "warn" | "off";
 
@@ -377,6 +408,8 @@ export interface TypstreamPlugin {
   engine?: {
     /** ES module URLs loaded inside the worker; each default-exports a {@link DiagnosticFixer} or an array of them (PLAN §8.2). */
     fixerModules?: string[];
+    /** ES module URLs loaded inside the worker; each default-exports a {@link FileGenerator} or an array of them. @beta */
+    generatorModules?: string[];
     /** Files mounted for every document, e.g. a local Typst package's sources. */
     files?: Record<string, string | Uint8Array>;
     /** @beta */

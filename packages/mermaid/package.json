@@ -1,0 +1,49 @@
+{
+  "name": "@typstream/mermaid",
+  "version": "0.0.0",
+  "description": "Mermaid diagrams for typstream, drawn by pele in the engine's worker: the same on pages, in HTML, PDF and DOCX.",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./generator": {
+      "types": "./generator/mermaid.d.ts",
+      "default": "./generator/mermaid.js"
+    },
+    "./typst/*": "./typst/*"
+  },
+  "files": [
+    "dist",
+    "generator",
+    "typst"
+  ],
+  "scripts": {
+    "build": "node scripts/embed.mjs && tsup",
+    "embed": "node scripts/embed.mjs",
+    "widths": "node scripts/widths.mjs",
+    "test": "vitest run --project node",
+    "test:paged": "vitest run --project paged",
+    "test:docx": "vitest run --project docx",
+    "size": "node scripts/size.mjs",
+    "check-types": "tsc -p tsconfig.json",
+    "check:api": "api-extractor run && api-extractor run -c api-extractor.generator.json",
+    "api:update": "api-extractor run --local && api-extractor run --local -c api-extractor.generator.json",
+    "check:package": "publint --strict --pack npm && attw --pack . --profile esm-only"
+  },
+  "dependencies": {
+    "@typstream/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@typstream/corpus": "workspace:*",
+    "@typstream/engine": "workspace:*",
+    "@typstream/engine-wasm": "workspace:*",
+    "@typstream/heal": "workspace:*",
+    "@typstream/html-compat": "workspace:*",
+    "pele": "1.13.0"
+  }
+}

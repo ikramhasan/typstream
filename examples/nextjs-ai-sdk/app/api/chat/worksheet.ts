@@ -1,7 +1,9 @@
 // What the offline replay streams: a worksheet like the ones the instructions
 // ask for, written as a model writes Typst (headings, prose, inline and display
-// math, a table, lists, a mind map), and the same worksheet revised, as the
-// answer to a follow-up.
+// math, a table, lists, a mind map, a Mermaid diagram), and the same
+// worksheet revised, as the answer to a follow-up. The diagram is a block of
+// its own, not in a figure: a cut `#figure(` has no body yet, which fails the
+// compile at that prefix.
 export const WORKSHEET = `= The Pythagorean theorem
 _Grade 8 · Worksheet 4 · 30 minutes_
 
@@ -26,6 +28,15 @@ for the sides of a triangle, the triangle has a right angle.
   - Converse
     - Testing right angles
 ]
+
+== Using the theorem
+\`\`\`mermaid
+flowchart LR
+  A[Right triangle?] -->|Yes| B[Find the hypotenuse]
+  B --> C[Square the legs and add]
+  C --> D[Take the square root]
+  A -->|No| E[Use another method]
+\`\`\`
 
 == Worked example
 A ladder $5$ m long leans against a wall with its foot $3$ m from the wall. How high does it reach?

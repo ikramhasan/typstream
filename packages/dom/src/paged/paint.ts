@@ -44,6 +44,70 @@ const prepare = (drawing: PageDrawing): Prepared => {
   return p;
 };
 
+const SVG_URL = "data:image/svg+xml;base64,";
+
+/** Each SVG image's versions of {@link drawWhole}, by place and size: `null` while decoding, or for good if it can't be. */
+const wholes = new WeakMap<HTMLImageElement, Map<string, HTMLImageElement | null>>();
+
+/**
+ * Draws an SVG image as the box `w` × `h` device pixels at (`x`, `y`) through a version of it that is a whole number of
+ * pixels drawn at a whole pixel: an SVG of that size with the image inside, moved and scaled to the box. Firefox
+ * rasterizes an SVG image at a whole number of pixels and resamples that bitmap to the place and size it is drawn at,
+ * so on a page painted at a device pixel ratio above 1 its edges came out soft and up to a pixel off (a Mermaid
+ * diagram's, against the PDF); an image drawn at its own size at a whole pixel it draws as Chromium and WebKit draw any.
+ * False until that version is decoded (`onImage` then asks for a repaint), or when it can't be: the caller draws the
+ * image itself meanwhile.
+ */
+const drawWhole = (
+  ctx: CanvasRenderingContext2D,
+  url: string,
+  image: HTMLImageElement,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  onImage: () => void,
+): boolean => {
+  const left = Math.floor(x);
+  const top = Math.floor(y);
+  const width = Math.ceil(x + w) - left;
+  const height = Math.ceil(y + h) - top;
+  const key = `${x - left} ${y - top} ${w} ${h}`;
+  const versions = wholes.get(image) ?? new Map<string, HTMLImageElement | null>();
+  wholes.set(image, versions);
+  const version = versions.get(key);
+  if (version) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(version, left, top, width, height);
+    return true;
+  }
+  if (version === undefined) {
+    // A page at its zoom, and a few it was just at.
+    if (versions.size > 3) versions.delete(versions.keys().next().value as string);
+    versions.set(key, null);
+    const { naturalWidth: nw, naturalHeight: nh } = image;
+    if (!nw || !nh) return false;
+    // Bytes, as atob gives them: what is added is ASCII. From the root element on (no prolog inside an element), in
+    // an element of the image's own size: the root's absolute size is that, and a relative one is relative to it.
+    const svg = atob(url.slice(SVG_URL.length));
+    const img = new Image();
+    img.src =
+      SVG_URL +
+      btoa(
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><g transform="translate(${x - left} ${y - top}) scale(${w / nw} ${h / nh})"><svg width="${nw}" height="${nh}">${svg.slice(svg.indexOf("<svg"))}</svg></g></svg>`,
+      );
+    // One without a size of its own, or that doesn't decode (a doctype's entities), stays null: drawn as it is.
+    img.decode().then(
+      () => {
+        versions.set(key, img);
+        onImage();
+      },
+      () => {},
+    );
+  }
+  return false;
+};
+
 const CAPS: CanvasLineCap[] = ["butt", "round", "square"];
 const JOINS: CanvasLineJoin[] = ["miter", "round", "bevel"];
 
@@ -139,7 +203,17 @@ export const paint = (
       const height = next();
       const scaling = next();
       const image = images.get(url);
-      if (image) {
+      // An SVG image, unrotated and unflipped, through its version drawn at a whole pixel (drawWhole). Others, and it
+      // until that version is decoded, through the transform.
+      const whole =
+        image &&
+        url.startsWith(SVG_URL) &&
+        b === 0 &&
+        c === 0 &&
+        a > 0 &&
+        d > 0 &&
+        drawWhole(ctx, url, image, e, f, a * width, d * height, onImage);
+      if (image && !whole) {
         ctx.imageSmoothingEnabled = scaling !== 2;
         ctx.drawImage(image, 0, 0, width, height);
       } else if (image === undefined && url.startsWith("data:")) {
