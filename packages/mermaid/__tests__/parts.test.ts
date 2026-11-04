@@ -3,6 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { type Drawing, draw, PAGE_WIDTH } from "../src/draw";
 import generator from "../src/generator";
+import { mermaidExamples, mermaidPromptRules } from "../src/index";
 import { measureText } from "../src/measure";
 import { INDEX_FILE, MERMAID_ROOT } from "../src/paths";
 import { diagramKey, findFences } from "../src/scan";
@@ -97,6 +98,28 @@ describe("draw", () => {
       line: 3,
     });
     expect(draw("not a diagram", "e-")).toMatchObject({ error: expect.stringMatching(/./) });
+  });
+});
+
+describe("Sankey diagrams", () => {
+  const ROWS = "Property tax,Budget,700\nBudget,Schools,450\nBudget,Roads,250";
+
+  it("draw from CSV without a header row, as the prompt rules ask; a header row fails", () => {
+    // pele reads every row's third field as a number: a header's "Value" isn't one.
+    expect(draw(`sankey-beta\n\n${ROWS}`, "s-")).toHaveProperty("svg");
+    expect(draw(`sankey-beta\n\nSource,Target,Value\n${ROWS}`, "s-")).toEqual({
+      error: expect.stringContaining("line 3"),
+      line: 3,
+    });
+    expect(mermaidPromptRules.some((r) => r.includes("`sankey-beta`") && r.includes("no header row"))).toBe(true);
+  });
+});
+
+describe("the prompt examples", () => {
+  it.each(mermaidExamples)("draw every diagram of $title", ({ output }) => {
+    const fences = findFences(output);
+    expect(fences.length).toBeGreaterThan(0);
+    for (const { source } of fences) expect(draw(source, "e-"), source).not.toHaveProperty("error");
   });
 });
 

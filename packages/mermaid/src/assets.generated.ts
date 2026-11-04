@@ -12,6 +12,11 @@ export const EXAMPLES = [
     "output": "= How a leaf makes food\n\n```mermaid\nsequenceDiagram\n  participant Roots\n  participant Leaf\n  participant Air\n  Roots->>Leaf: Water\n  Air->>Leaf: Carbon dioxide\n  Note over Leaf: Sunlight drives photosynthesis\n  Leaf->>Air: Oxygen\n  Leaf-->>Roots: Glucose (sugar)\n```\n\nThe plant's dry mass comes almost entirely from the air:\n\n```mermaid\npie title Where a plant's dry mass comes from\n  \"Carbon dioxide (air)\" : 95\n  \"Minerals (soil)\" : 5\n```\n"
   },
   {
+    "title": "school-budget",
+    "request": "A grade 9 civics handout on where a town's budget goes, with a Sankey diagram of the money's flow.",
+    "output": "= Where the town's money goes\n\nEvery year the town council decides how to spend what it collects. The diagram follows each dollar from where it comes from to what it pays for.\n\n#figure(kind: image, caption: [The town's budget, in thousands of dollars.])[\n  ```mermaid\n  sankey-beta\n\n  Property tax,Budget,700\n  Grants,Budget,250\n  Fees,Budget,50\n  Budget,Schools,450\n  Budget,Roads,200\n  Budget,Parks,100\n  Budget,Police and fire,250\n  ```\n]\n\n== Questions\n\n+ Which source brings in the most money?\n+ What share of the budget goes to schools?\n+ If grants fell by half, which services would you cut, and why?\n"
+  },
+  {
     "title": "water-cycle",
     "request": "A one-page handout on the water cycle for grade 6, with a diagram.",
     "output": "= The water cycle\n\nWater moves between the sea, the air and the land in a cycle that never stops. The sun's heat drives it.\n\n#figure(kind: image, caption: [The water cycle.])[\n  ```mermaid\n  flowchart LR\n    A[Ocean] -->|Evaporation| B[Water vapour]\n    B -->|Condensation| C[Clouds]\n    C -->|Precipitation| D[Rain and snow]\n    D -->|Runoff| A\n    D -->|Infiltration| E[Groundwater]\n    E --> A\n  ```\n]\n\n== Check your understanding\n\n+ What makes water evaporate from the ocean?\n+ Where does rain go when it soaks into the ground?\n"

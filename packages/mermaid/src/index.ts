@@ -36,11 +36,13 @@ export const MERMAID_GENERATOR: string = new URL("../generator/mermaid.js", impo
 export const mermaidExamples: PromptExample[] = EXAMPLES;
 
 /**
- * How to write diagrams, for the system prompt: Mermaid in a raw block, a figure of kind `image`
- * for a caption (a raw block's figure would be a listing), and no styling of its own.
+ * How to write diagrams, for the system prompt: Mermaid in a raw block, Sankey diagrams' CSV without
+ * a header row (models write one, and pele reads every row's third field as a number), a figure of
+ * kind `image` for a caption (a raw block's figure would be a listing), and no styling of its own.
  */
 export const mermaidPromptRules: string[] = [
-  "Draw diagrams Mermaid can draw (flowcharts, sequence, class, state and entity relationship diagrams, timelines, Gantt charts, pie, quadrant and XY charts, user journeys) as a raw block with the language `mermaid`, in Mermaid 12 syntax: ```` ```mermaid ```` on its own line, the diagram, then ```` ``` ````. Use one where it shows a process, cycle, sequence, structure or comparison better than prose; draw geometry and precise figures with CeTZ instead.",
+  "Draw diagrams Mermaid can draw (flowcharts, sequence, class, state and entity relationship diagrams, timelines, Gantt charts, pie, quadrant and XY charts, Sankey diagrams, user journeys) as a raw block with the language `mermaid`, in Mermaid 12 syntax: ```` ```mermaid ```` on its own line, the diagram, then ```` ``` ````. Use one where it shows a process, cycle, sequence, structure or comparison better than prose; draw geometry and precise figures with CeTZ instead.",
+  "A Sankey diagram (`sankey-beta`) is CSV with no header row: one `source,target,value` line per flow, where the value is a number.",
   "To number and caption a diagram, put the block in a figure of kind image: `#figure(kind: image, caption: [The water cycle.])[```mermaid ... ```]`. Without `kind: image` it would be numbered as a code listing.",
   'Keep diagram labels short, in the language of the request. Quote a label holding punctuation or brackets: `A["Water (H2O)"]`. No HTML, Markdown, math or icons in labels, and no styling (`style`, `classDef`, `%%{init}%%`, themes): the document draws diagrams in its own style.',
 ];

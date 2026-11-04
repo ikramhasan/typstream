@@ -9,3 +9,5 @@ File generators (beta): plugin code in the engine's worker that makes files from
 New package `@typstream/mermaid`: Mermaid diagrams drawn by [pele](https://pele.run). A model writes a ```` ```mermaid ```` raw block; the worker draws it with pele (the generator module, `MERMAID_GENERATOR`, about 276 KB gzipped, never on the main thread) and the plugin's Typst shows the shapes as an SVG image and the labels as Typst text in the fonts pele measured them in, so a diagram is the same on pages, in the HTML target, the PDF and a DOCX export. Diagrams too wide for the page are laid out again for its width; while streaming a block keeps its last drawing; final mode shows pele's error. With its prompt kit; `@typstream/mermaid/generator` gives servers and custom workers the generator itself.
 
 The worker's imports of fixer and generator modules are marked for bundlers to leave alone (`webpackIgnore`, `turbopackIgnore`): Turbopack replaced them with a "module not found" error, so in a Next.js app no plugin's worker module loaded.
+
+The prompt rules teach Sankey diagrams' syntax (`sankey-beta`, CSV with no header row: pele rejects a header's "Value" as a number).
