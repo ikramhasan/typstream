@@ -210,18 +210,6 @@ return (
 `status` is `"idle"` until the document opens, then one of the engine's
 [document statuses](/docs/reference/engine#documentstatus): `idle`, `compiling`, `stale`, `error` or `done`.
 
-### `useTypstreamDefaults` and `useTypstreamEngine` (beta)
-
-For components that open documents themselves, as [`@typstream/plate`](/docs/reference/plate)'s editor does:
-`useTypstreamDefaults()` is the nearest providers' settings, merged, and `useTypstreamEngine(engine?)` the engine to
-compile with (the one given, else the page's shared engine, held while the component is mounted; `null` until it has
-mounted).
-
-```tsx
-const { plugins, inputs } = useTypstreamDefaults();
-const engine = useTypstreamEngine();
-```
-
 ### Re-exported types
 
 For convenience the package re-exports types from the packages it builds on:

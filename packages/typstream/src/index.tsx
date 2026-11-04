@@ -26,12 +26,8 @@ const variant = (file: string): Pick<TypstFont, "weight" | "style"> => ({
   style: /Italic|Oblique/.test(file) ? "italic" : "normal",
 });
 
-/**
- * The engine's fonts, for the HTML target to set its text in as the pages do (dom's `registerTypstFonts`): what
- * {@link Typstream} passes as `fonts`, for other components showing the HTML target (`@typstream/plate`'s editor).
- * @beta
- */
-export const typstFonts: readonly TypstFont[] = [
+/** The engine's fonts, for the HTML target to set its text in as the pages do (dom's `registerTypstFonts`). */
+const TYPST_FONTS: readonly TypstFont[] = [
   ...baseFonts.map((url) => {
     const file = url.pathname.split("/").pop() ?? "";
     // By what the name starts with: bundlers add a hash to it (`DejaVuSansMono.1ejec9br.ttf`).
@@ -79,7 +75,7 @@ export const Typstream = ({
   ...props
 }: TypstreamProps) => (
   <BaseTypstream
-    fonts={typstFonts}
+    fonts={TYPST_FONTS}
     {...props}
     plugins={[...(compat ? [htmlCompat] : []), ...(packages ? [universe] : []), ...(plugins ?? [])]}
     mathFont={mathFont ?? MATH_FONT}

@@ -79,14 +79,6 @@ export const PACKAGES = {
   codemirror: { name: "@typstream/codemirror", layer: 5, deps: ["syntax", "engine"] },
   "editor-core": { name: "@typstream/editor-core", layer: 5, deps: ["syntax", "engine", "dom"] },
   "editor-react": { name: "@typstream/editor-react", layer: 5, deps: ["editor-core", "syntax", "engine", "dom"] },
-  // The visual editor on Plate (#36, the second approach): the HTML target as typstream lays it out, edited in place.
-  // Its tests compile with engine-wasm (the commands, in Node) and edu's documents (in the browser).
-  plate: {
-    name: "@typstream/plate",
-    layer: 5,
-    deps: ["core", "engine", "dom", "react", "typstream"],
-    testDeps: ["engine-wasm", "edu", "html-compat", "universe"],
-  },
 };
 
 // The table must itself respect the layering, or the rules built from it would

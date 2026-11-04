@@ -1,7 +1,6 @@
 // Smoke test (PLAN §10.4: example apps build and run): builds the app, starts it,
-// asks for a worksheet in Chromium (a suggestion, rendered as pages), exports it
-// as a Word file and edits it in the visual editor (Edit, typing, Done), then asks
-// for a change typed in the field, as HTML: a second
+// asks for a worksheet in Chromium (a suggestion, rendered as pages) and exports
+// it as a Word file, then asks for a change typed in the field, as HTML: a second
 // answer, the worksheet again with the change. It checks that both answers stream
 // into <Typstream> and finish, with no error frame, that the export downloads a
 // .docx, that the replay's mind map is interactive in the HTML answer (a render
@@ -69,28 +68,6 @@ try {
   const docx = await readFile(await download.path());
   if (!download.suggestedFilename().endsWith(".docx") || docx.length === 0 || docx.subarray(0, 2).toString() !== "PK")
     throw new Error(`not a DOCX: ${download.suggestedFilename()}, ${docx.length} bytes`);
-  // Edit (@typstream/plate): the answer in the visual editor as it is shown; what is typed goes into its Typst, and
-  // Done shows the edited document.
-  await page.getByRole("button", { name: "Edit", exact: true }).first().click();
-  const editor = answers.first().locator(".typstream-plate-flow");
-  const words = editor.locator("[data-slate-string]", { hasText: "Pythagorean triples" }).first();
-  await words.waitFor({ timeout: 60_000 });
-  await words.click();
-  await page.keyboard.press("End");
-  await page.keyboard.type(" (checked)");
-  await editor.locator("[data-slate-string]", { hasText: "(checked)" }).first().waitFor({ timeout: 10_000 });
-  await page.getByRole("button", { name: "Done", exact: true }).first().click();
-  // The pages' text layer has the edit once the edited document is drawn.
-  await answers
-    .first()
-    .locator(".typstream-host")
-    .filter({ hasText: "(checked)" })
-    .waitFor({ timeout: 60_000 })
-    .catch(async () => {
-      throw new Error(
-        `the edit isn't in the answer: ${await answers.first().locator(".typstream-host").textContent()}`,
-      );
-    });
   // A second turn as HTML, typed and sent with Enter: the worksheet again, with the change.
   await page.getByRole("combobox", { name: "Render as" }).click();
   await page.getByRole("option", { name: "HTML" }).click();

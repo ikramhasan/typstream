@@ -77,8 +77,6 @@ export interface HtmlRendererOptions {
     linkTarget?: string | null;
     // @beta
     onPages?: (count: number) => void;
-    // @beta
-    onParse?: (content: DocumentFragment) => void;
     plugins?: readonly TypstreamPlugin[];
     stylesheets?: readonly string[];
     theme?: "auto" | "light" | "dark";

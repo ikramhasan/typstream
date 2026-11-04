@@ -80,8 +80,6 @@ export interface CompileParams extends DocumentParams {
     pageFormat?: PageFormat;
     settled?: number;
     settledFrom?: number;
-    // @beta
-    spans?: boolean;
     target: CompileTarget;
 }
 

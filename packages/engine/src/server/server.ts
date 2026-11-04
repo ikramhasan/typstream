@@ -225,17 +225,6 @@ const isTrap = (e: unknown): boolean =>
 const inputsKey = (inputs: Record<string, string> | undefined): string =>
   JSON.stringify(Object.entries(inputs ?? {}).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
 
-/** What engine-wasm's `spans` write (`CompileParams.spans`): a text's range on its wrapper, an element's on it. */
-const SPANS = /(<typstream-text data-src="| data-typstream-span=")(-?\d+) (-?\d+)"/g;
-
-/** `html`'s source ranges (`CompileParams.spans`) moved by `map`; a range whose start maps below 0 is `-1 -1`. */
-const mapSpans = (html: string, map: (pos: number) => number): string =>
-  html.replace(SPANS, (_, head: string, from: string, to: string) => {
-    const a = Number(from) < 0 ? -1 : map(Number(from));
-    const b = a < 0 || Number(to) < 0 ? -1 : Math.max(a, map(Number(to)));
-    return `${head}${a < 0 ? -1 : a} ${b}"`;
-  });
-
 /**
  * Moves a diagnostic from `/main.typ` (layout profile + preamble + document) into document
  * coordinates: the document starts at `offset`, the preamble at `preambleAt` (after the
@@ -490,22 +479,11 @@ class Server implements EngineServer {
     mode: CompileMode,
     fullPages: boolean,
     drawings: boolean,
-    spans = false,
   ): Promise<Compiled> {
-    if (target === "html") {
-      const r = await doc.compiler.compileHtml(spans ? { mode, spans } : { mode });
-      const { anchored, offset } = doc;
-      // Source ranges in the coordinates of the text last written, as diagnostics are: past the preamble and anchors.
-      const html =
-        spans && r.html !== null
-          ? mapSpans(r.html, (pos) => {
-              if (pos < offset) return -1;
-              return anchored ? fromAnchored(anchored, pos - offset) : pos - offset;
-            })
-          : r.html;
-      return { ...r, html, diagnostics: this.diagnostics(doc, r.diagnostics) };
-    }
-    const r = await doc.compiler.compilePaged({ fullPages, drawings, mode });
+    const r =
+      target === "html"
+        ? await doc.compiler.compileHtml({ mode })
+        : await doc.compiler.compilePaged({ fullPages, drawings, mode });
     return { ...r, diagnostics: this.diagnostics(doc, r.diagnostics) };
   }
 
@@ -769,7 +747,6 @@ class Server implements EngineServer {
       if (!this.adapter.targets.includes(target)) this.unsupported(`the ${target} target`);
       const fallback = fallbackOf(params.fallback, doc.text.length);
       const anchors = target === "html" && params.anchors !== false;
-      const spans = target === "html" && params.spans === true;
       // Imported packages load first, within the fix budget; any later arrival compiles again.
       const waiting = await doc.packages.prepare(doc.prefix + doc.text, received + FIX_BUDGET_MS[mode]);
       if (waiting) this.recompile(waiting.loading, params);
@@ -803,7 +780,7 @@ class Server implements EngineServer {
       // again once it arrives.
       const pending: Promise<void>[] = [];
       const compile = async (): Promise<Compiled> => {
-        r = await this.compileMain(doc, target, mode, full, drawings, spans);
+        r = await this.compileMain(doc, target, mode, full, drawings);
         count(r.compileMs);
         const lacking = this.lacking(doc, r);
         if (lacking) pending.push(lacking);
@@ -950,10 +927,7 @@ class Server implements EngineServer {
       // The adapter's changed pages now diff against output the client never got.
       if (kept) doc.pagedBase = null;
       if (out && "html" in out && out.html !== null) {
-        const { toOriginal } = outcome.compiled;
-        // Source ranges, as an island's: in the text the client sent, past the fixers' and the fallback's changes.
-        const html = spans ? mapSpans(out.html, (pos) => (pos < 0 ? -1 : toOriginal(pos))) : out.html;
-        this.post({ method: "document/artifact", params: { uri, rev, artifact: { target: "html", html } } });
+        this.post({ method: "document/artifact", params: { uri, rev, artifact: { target: "html", html: out.html } } });
         doc.pagedBase = null;
       } else if (out && "output" in out && out.output) {
         const { pageCount, changed, islands } = out.output;
