@@ -231,12 +231,17 @@ export const engineWasm = (options: EngineWasmOptions = {}): EngineAdapter => {
           const result = { html: r.ok ? (r.html ?? "") : null, diagnostics: r.diagnostics, compileMs: r.ms };
           return withPending(result, r.missingFonts);
         },
-        compilePaged({ fullPages, drawings }) {
+        compilePaged({ fullPages, drawings, positions }) {
           if (fullPages) engine.reset_pages();
-          const r = engine.compile_svg_changed(drawings);
+          const r = engine.compile_svg_changed(drawings, positions);
           const result = {
             output: r.ok
-              ? { pageCount: r.pageCount ?? 0, changed: r.changed ?? [], islands: islandsOf(r.islands ?? []) }
+              ? {
+                  pageCount: r.pageCount ?? 0,
+                  changed: r.changed ?? [],
+                  islands: islandsOf(r.islands ?? []),
+                  ...(r.positions && { positions: r.positions }),
+                }
               : null,
             diagnostics: r.diagnostics,
             compileMs: r.compileMs,

@@ -27,10 +27,13 @@ and keeps the last good render on screen when a compile fails. [How it works](ap
 | --- | --- |
 | [`typstream`](packages/typstream) | `<Typstream>` with the defaults an app wants (html-compat, the math font, Typst packages). |
 | [`@typstream/react`](packages/react) | `<Typstream>`, `TypstreamProvider`, `useTypstream()`. |
+| [`@typstream/editor-react`](packages/editor-react) | `<TypstEditor>`: a document edited on its own pages, with toolbars, menus and forms for components (beta). |
+| [`@typstream/editor-core`](packages/editor-core) | The editor without a framework: caret, selection and commands over the engine's layout, plugins (beta). |
 | [`@typstream/dom`](packages/dom) | Framework-free renderers: HTML blocks, pages on canvases, render islands, standalone HTML export. |
 | [`@typstream/engine`](packages/engine) | The compile worker and its main-thread client: scheduling, watchdog, last good render, fallback. |
 | [`@typstream/engine-wasm`](packages/engine-wasm) | Typst 0.15.1 as wasm: HTML, pages, PDF, diagnostics. |
 | [`@typstream/heal`](packages/heal) | Heals streamed prefixes so they parse; a port of Typst's parser, tested against the real one. |
+| [`@typstream/syntax`](packages/syntax) | Typst's parser as wasm: the lossless syntax tree, for the editor (beta). |
 | [`@typstream/core`](packages/core) | Edits, positions, source maps, and the protocol and plugin types. |
 | [`@typstream/ai`](packages/ai) | AI SDK glue: an assistant message as a document, and streaming edits. |
 | [`@typstream/node`](packages/node) | Typst on the server: validate a document before saving it, render it to PDF, HTML or SVG. |
@@ -72,6 +75,8 @@ measured after every merge to `main` ([Coverage workflow](https://github.com/ikr
 | `@typstream/dom` | ![dom lines](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fikramhasan%2Ftypstream%2Fbadges%2Fdom.lines.json) | ![dom branches](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fikramhasan%2Ftypstream%2Fbadges%2Fdom.branches.json) |
 | `@typstream/react` | ![react lines](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fikramhasan%2Ftypstream%2Fbadges%2Freact.lines.json) | ![react branches](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fikramhasan%2Ftypstream%2Fbadges%2Freact.branches.json) |
 | `@typstream/mindmap` | ![mindmap lines](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fikramhasan%2Ftypstream%2Fbadges%2Fmindmap.lines.json) | ![mindmap branches](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fikramhasan%2Ftypstream%2Fbadges%2Fmindmap.branches.json) |
+| `@typstream/editor-core` | ![editor-core lines](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fikramhasan%2Ftypstream%2Fbadges%2Feditor-core.lines.json) | ![editor-core branches](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fikramhasan%2Ftypstream%2Fbadges%2Feditor-core.branches.json) |
+| `@typstream/editor-react` | ![editor-react lines](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fikramhasan%2Ftypstream%2Fbadges%2Feditor-react.lines.json) | ![editor-react branches](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fikramhasan%2Ftypstream%2Fbadges%2Feditor-react.branches.json) |
 | `@typstream/ai` | ![ai lines](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fikramhasan%2Ftypstream%2Fbadges%2Fai.lines.json) | ![ai branches](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fikramhasan%2Ftypstream%2Fbadges%2Fai.branches.json) |
 | `@typstream/node` | ![node lines](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fikramhasan%2Ftypstream%2Fbadges%2Fnode.lines.json) | ![node branches](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fikramhasan%2Ftypstream%2Fbadges%2Fnode.branches.json) |
 

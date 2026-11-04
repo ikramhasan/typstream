@@ -12,6 +12,7 @@ import type {
   FileContent,
   InitializeOptions,
   PagedIsland,
+  PagePositions,
   PageUpdate,
 } from "@typstream/core";
 
@@ -78,10 +79,13 @@ export interface AdapterDocument {
    * successful paged compile, or every page with `fullPages` (or the first
    * time). A failed compile keeps what the next one diffs against. With
    * `drawings`, pages may come as `drawing`s for a canvas (core's
-   * `PageDrawing`); an adapter without them sends SVG.
+   * `PageDrawing`); an adapter without them sends SVG. With `positions`, the
+   * output says where `/main.typ` was laid out on every page (core's
+   * `PagePositions`, offsets in `/main.typ`); an adapter without them leaves
+   * them out.
    */
   compilePaged(
-    options: { fullPages: boolean; drawings?: boolean } & AdapterCompileOptions,
+    options: { fullPages: boolean; drawings?: boolean; positions?: boolean } & AdapterCompileOptions,
   ): MaybePromise<AdapterPagedResult>;
   /**
    * Compiles `/main.typ` for its diagnostics only, as the fallback does to
@@ -144,5 +148,5 @@ export interface AdapterPagedResult extends AdapterCompileResult {
    * (PLAN §8.4) with `from` in `/main.typ` coordinates (the server moves it past
    * the preamble). Adapters without introspection leave `islands` out.
    */
-  output: { pageCount: number; changed: PageUpdate[]; islands?: PagedIsland[] } | null;
+  output: { pageCount: number; changed: PageUpdate[]; islands?: PagedIsland[]; positions?: PagePositions[] } | null;
 }

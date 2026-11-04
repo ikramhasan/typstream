@@ -329,22 +329,79 @@ export interface IslandProps<Data = unknown> {
 }
 
 /**
- * Reserved for the visual editor (PLAN §10.3). Typed loosely on purpose: the
- * editor will narrow these, and plugins may fill them in early without
- * breaking when it does.
+ * An argument of a component the editor shows in the component's form (#36),
+ * so nobody writes Typst to set it: `points` of an edu question.
+ * @beta
+ */
+export interface EditorParamSpec {
+  /** The named argument. */
+  name: string;
+  /** Its label in the form. */
+  label: string;
+  /**
+   * What the form edits: a number, a text (a Typst string), a yes/no, one of
+   * `options`, a colour, a length (`2em`, written as typed), or `content`
+   * (a `[…]` block, edited as text in the form).
+   */
+  type: "number" | "text" | "boolean" | "choice" | "color" | "length" | "content";
+  /** The choices of a `choice`: each value's Typst source and its label. */
+  options?: { value: string; label: string }[];
+  /** What the function uses when the argument isn't written (Typst source), shown in the form. */
+  default?: string;
+  /** Smallest number allowed. */
+  min?: number;
+  /** Largest number allowed. */
+  max?: number;
+  /** Step of a number input. */
+  step?: number;
+  /** One line of help under the field. */
+  help?: string;
+}
+
+/**
+ * A component a plugin's Typst defines, as the visual editor offers it (#36):
+ * in its insert menu (with `template`), and when selected with a form for
+ * `params`. Plain data, so content plugins (layer 3) declare it without the editor.
+ * @beta
+ */
+export interface EditorComponentSpec {
+  /** The Typst function: `question`, `mindmap`. */
+  name: string;
+  /** Its name in menus: `Question`. */
+  label: string;
+  /** One line in the insert menu. */
+  description?: string;
+  /** The insert menu's group: `Questions`. */
+  group?: string;
+  /** An icon name the editor's toolbar knows (lucide's: `circle-help`, `network`). */
+  icon?: string;
+  /**
+   * The Typst the insert menu writes, with `{{cursor}}` where the caret goes
+   * (`#question(points: 1)[{{cursor}}]`). Without a cursor the new component is selected.
+   */
+  template: string;
+  /** Set inline, in a paragraph (a blank to fill in), rather than a block of its own. */
+  inline?: boolean;
+  /** Search words for the slash menu. */
+  keywords?: string[];
+  /** The named arguments its form edits, in order. */
+  params?: EditorParamSpec[];
+}
+
+/**
+ * What a plugin gives the visual editor (#36, PLAN §10.3): its components
+ * (insert menu, forms), and its calls that style text (marks, shown inline
+ * and stepped over like `*`) or are set inline in a paragraph. Further facets
+ * may be added; unknown ones are ignored.
  * @beta
  */
 export interface EditorFacet {
-  /** Custom blocks the editor can show and edit (edu will add `question`, `mcq`, `answer`). */
-  nodes?: unknown[];
-  /** Editing commands the plugin adds. */
-  commands?: unknown[];
-  /** Toolbar entries the plugin adds. */
-  toolbar?: unknown[];
-  /** Keyboard shortcuts the plugin adds. */
-  shortcuts?: unknown[];
-  /** Entries the plugin adds to the editor's slash menu. */
-  slashItems?: unknown[];
+  /** Components the editor can insert and edit. */
+  components?: EditorComponentSpec[];
+  /** Functions that style the text inside them, like `strong`: the editor steps over their code. */
+  marks?: string[];
+  /** Functions set inline in a paragraph even alone on a line (the editor's blocks don't split there). */
+  inline?: string[];
   /** Further facets the editor may define. */
   [key: string]: unknown;
 }

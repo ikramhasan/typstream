@@ -378,7 +378,18 @@ with the same files. See [A catalogue of your own](/docs/guides/fonts-and-langua
 
 <auto-type-table path="packages/core/src/plugin.ts" name="LoadedFontFamily" />
 
-`EditorFacet` is reserved for the visual editor: typed loosely on purpose, and nothing reads it yet.
+### The editor facet (beta)
+
+`EditorFacet` is what a plugin gives the [visual editor](/docs/reference/editor-react): its components, in the
+editor's insert menu and with a form for their arguments (`EditorComponentSpec`, `EditorParamSpec`), and the names of
+its functions that style text (`marks`) or are set inline in a paragraph (`inline`). It is plain data, so a content
+plugin declares it without depending on the editor; edu's is `eduComponents`.
+
+<auto-type-table path="packages/core/src/plugin.ts" name="EditorFacet" />
+
+<auto-type-table path="packages/core/src/plugin.ts" name="EditorComponentSpec" />
+
+<auto-type-table path="packages/core/src/plugin.ts" name="EditorParamSpec" />
 
 ### Render islands (beta)
 
@@ -622,6 +633,18 @@ An island marker in a paged artifact: where on its page an island goes, from lay
 all, whichever pages it holds.
 
 <auto-type-table path="packages/core/src/protocol.ts" name="PagedIsland" />
+
+#### `PagePositions` and `PageElement` (beta)
+
+Where the document's source was laid out on a page, for an editor that edits on the pages: a paged compile with
+`positions: true` sends them for every page (an edit moves the offsets of the text after it, on pages that look the
+same). `glyphs` are the glyph clusters, each with the range of the text the client sent that it shows; `elements`
+are the elements on the page that show some of the document, with the box around what is drawn inside them, so a
+component's box is that of the outermost element covering only its call.
+
+<auto-type-table path="packages/core/src/protocol.ts" name="PagePositions" />
+
+<auto-type-table path="packages/core/src/protocol.ts" name="PageElement" />
 
 #### `TextRun`
 

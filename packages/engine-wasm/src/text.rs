@@ -459,7 +459,7 @@ pub(crate) fn mark(items: &[(Point, FrameItem)], i: usize, text: &TextItem) -> b
 /// level and lays its glyphs out left to right, so an RTL run's clusters go
 /// backwards through its text. A piece of one cluster says nothing that way:
 /// then its first strong character decides, and without one it has none.
-pub(crate) fn run_dir(text: &TextItem) -> Option<Dir> {
+pub fn run_dir(text: &TextItem) -> Option<Dir> {
     if let (Some(first), Some(last)) = (text.glyphs.first(), text.glyphs.last()) {
         if first.range.start > last.range.start {
             return Some(Dir::RTL);

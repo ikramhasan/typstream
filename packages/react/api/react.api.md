@@ -29,6 +29,9 @@ import { TypstreamHtmlExportOptions } from '@typstream/dom';
 import { TypstreamOptions } from '@typstream/dom';
 import { WatchdogEvent } from '@typstream/core';
 
+// @internal
+export const acquireEngine: () => Engine;
+
 export { AppliedFix }
 
 export { CompiledEvent }
@@ -54,6 +57,9 @@ export type IslandComponent<Data = any> = ComponentType<IslandProps<Data>>;
 export type IslandComponents = Readonly<Record<string, IslandComponent>>;
 
 export { IslandProps }
+
+// @internal
+export const releaseEngine: () => void;
 
 export { RenderedEvent }
 
@@ -127,6 +133,9 @@ export interface TypstreamProviderProps extends TypstreamDefaults {
 
 // @public
 export const useTypstream: () => TypstreamInfo;
+
+// @internal
+export const useTypstreamDefaults: () => TypstreamDefaults;
 
 export { WatchdogEvent }
 
