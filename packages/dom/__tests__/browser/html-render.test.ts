@@ -14,7 +14,14 @@ import { htmlCompat, htmlCompatCss } from "@typstream/html-compat";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { commands, server } from "vitest/browser";
 import { registerTypstFonts } from "../../src/html/fonts";
-import { compactGlyphs, createHtmlRenderer, type HtmlRenderer, unflatten } from "../../src/html/renderer";
+import {
+  compactGlyphs,
+  createHtmlRenderer,
+  type HtmlRenderer,
+  inlineGlyphs,
+  outlinePath,
+  unflatten,
+} from "../../src/html/renderer";
 import { collapseSpaces, rowRuns, styleSpaces } from "../../src/html/runs";
 import { createSanitizer, hideStyles } from "../../src/html/sanitize";
 import { splitHtml } from "../../src/html/split";
@@ -61,6 +68,11 @@ const parseWhole = (html: string, idPrefix: string): string => {
   createSanitizer({ idPrefix, plugins: [htmlCompat] })(body);
   // Pictures as the renderer sizes them.
   for (const svg of Array.from(body.querySelectorAll("svg"))) if (!svg.parentElement?.closest("svg")) unflatten(svg);
+  // Glyphs as copies of their outlines, the first of each id, as the renderer draws them.
+  inlineGlyphs(body, (id) => {
+    const symbol = GLYPH_ID.test(id) ? body.querySelector(`symbol[id="${id}"]`) : null;
+    return symbol ? outlinePath(symbol) : undefined;
+  });
   collapseSpaces(body, document);
   styleSpaces(body, document);
   rowRuns(body, document);
@@ -72,7 +84,7 @@ const parseWhole = (html: string, idPrefix: string): string => {
 /** typst-svg's glyph ids, prefixed by the renderer. */
 const GLYPH_ID = /^[a-z]+-g[0-9A-F]{1,32}$/;
 
-/** Every `<use>` in the flow finds its glyph in the root's outlines, which hold each once. */
+/** Every `<use>` left in the flow finds its glyph in the root's outlines, which hold each once. */
 const glyphProblems = (root: HTMLElement): string[] => {
   const sheet = root.querySelector(":scope > .typstream-glyphs");
   const ids = Array.from(sheet?.children ?? []).map((el) => el.id);
@@ -150,9 +162,12 @@ describe(`HTML renderer on corpus documents in ${browser}`, () => {
     // One of each glyph the three equations draw (x, y, z, 2, +, =).
     expect(ids.length).toBe(6);
     const flow = renderer.root.querySelector(".typstream-flow") as HTMLElement;
-    // Drawn where they're used, and not where they're kept.
-    const use = flow.querySelector("use") as SVGUseElement;
-    expect(use.getBoundingClientRect().width).toBeGreaterThan(0);
+    // Each glyph drawn as a copy of its outline's path where it's used (no `<use>`: #162), not where they're kept.
+    expect(flow.querySelector("use")).toBeNull();
+    const outlines = new Set(Array.from(sheet.querySelectorAll("path")).map((p) => p.getAttribute("d")));
+    const drawn = Array.from(flow.querySelectorAll("svg path")).filter((p) => outlines.has(p.getAttribute("d")));
+    expect(drawn.length).toBe(html.match(/<use /g)?.length);
+    for (const path of drawn) expect(path.getBoundingClientRect().width).toBeGreaterThan(0);
     expect(sheet.getBoundingClientRect().width).toBe(0);
     // Markup with a glyph's id but other content isn't an outline the root has: it stays in its block.
     const id = (ids[0] as string).slice(2);
