@@ -216,6 +216,38 @@ export const compactGlyphs = (html: string): string =>
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
+/** An outline's path, when the outline is one path and nothing else (typst-svg's are). @internal */
+export const outlinePath = (symbol: Element): Element | undefined => {
+  const path = symbol.firstElementChild;
+  return symbol.childElementCount === 1 &&
+    path?.localName === "path" &&
+    path.attributes.length === 1 &&
+    !symbol.hasAttribute("viewBox")
+    ? path
+    : undefined;
+};
+
+/** A `<use>`'s attributes that place and name what it draws, which its copy doesn't take. */
+const USE_ONLY = new Set(["xlink:href", "href", "x", "y", "width", "height", "transform"]);
+
+/**
+ * Draws each `<use>` of an outline in `root` as a copy of the outline's path (`outline` finds it by id), placed and
+ * painted as the `<use>` would: its transform, then its `x` and `y`; its fill. In WebKit each `<use>` is a shadow tree
+ * of its own, built when it's added and torn down when it goes: with the thousands an equation-heavy document draws,
+ * adding and removing pictures cost an update milliseconds (#162). @internal
+ */
+export const inlineGlyphs = (root: ParentNode, outline: (id: string) => Element | undefined): void => {
+  for (const use of Array.from(root.querySelectorAll("use"))) {
+    const path = outline((use.getAttribute("xlink:href") ?? use.getAttribute("href") ?? "").slice(1));
+    if (!path) continue;
+    const copy = use.ownerDocument.importNode(path, false);
+    const at = (name: string) => use.getAttribute(name) ?? 0;
+    copy.setAttribute("transform", `${use.getAttribute("transform") ?? ""} translate(${at("x")} ${at("y")})`);
+    for (const { name, value } of Array.from(use.attributes)) if (!USE_ONLY.has(name)) copy.setAttribute(name, value);
+    use.replaceWith(copy);
+  }
+};
+
 /**
  * A picture Typst sizes 0 across one way (a line: `height: 0em`, its `viewBox` 1pt tall) given its `viewBox`'s size
  * that way, and as much negative margin: a box of 0 would scale the drawing to nothing, and this one takes no more
@@ -352,12 +384,15 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
   const markers = new WeakMap<Element, { name: string; raw: string; data: unknown }>();
 
   /**
-   * Glyph outlines, one of each, out of sight in the root (the pictures' `<use>`s find them there): by id, the markup
-   * each came in. Kept there, an outline stays when the block that brought it goes (an edit, a stream's last block
-   * changing) and later blocks use it; and one that comes again isn't parsed again.
+   * Glyph outlines, one of each, out of sight in the root: by id, the markup each came in. Pictures draw copies of
+   * their paths (`inlineGlyphs`); a `<use>` one couldn't copy (an outline that isn't one path) finds it there. Kept
+   * there, an outline stays when the block that brought it goes (an edit, a stream's last block changing) and later
+   * blocks use it; and one that comes again isn't parsed again.
    */
   const glyphs = new Map<string, string>();
   let glyphSheet: SVGSVGElement | null = null;
+  /** Each outline's path, by its sanitized id: pictures draw copies of it (`inlineGlyphs`). */
+  const outlines = new Map<string, Element>();
 
   /**
    * Takes the outlines in `html` the root doesn't have, sanitized, to the root. From the whole document, before any of
@@ -389,6 +424,8 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
       }
       glyphSheet.append(symbol);
       glyphs.set(glyph, markup);
+      const path = outlinePath(symbol);
+      if (path) outlines.set(symbol.id, path);
     }
     if (glyphSheet && glyphSheet.parentNode !== root) root.append(glyphSheet);
   };
@@ -411,6 +448,7 @@ export const createHtmlRenderer = (root: HTMLElement, options: HtmlRendererOptio
       sanitize(nodes);
       const svg = nodes.firstElementChild;
       if (svg?.namespaceURI === SVG_NS) unflatten(svg as SVGElement);
+      inlineGlyphs(nodes, (id) => outlines.get(id));
       nodes = inert.importNode(nodes, true);
       if (pictures.size >= MAX_PICTURES) pictures.clear();
       pictures.set(markup, nodes);
