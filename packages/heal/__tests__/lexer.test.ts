@@ -127,6 +127,20 @@ describe("lexer ≡ Typst's lexer", () => {
       { numRuns: RUNS },
     );
   });
+  it("enum numbers: any that parses as a u64, leading zeros included", () => {
+    for (const n of [
+      "9".repeat(19),
+      "1".repeat(20),
+      "18446744073709551615",
+      "18446744073709551616",
+      "99999999999999999999",
+      `${"0".repeat(24)}1`,
+      `000${"18446744073709551615"}`,
+      `000${"18446744073709551616"}`,
+    ]) {
+      agree(`${n}. a`, "markup");
+    }
+  });
 
   it("known bug still reproduces: math delimiter classes", () => {
     for (const c of MATH_DELIMITER_BUG) {

@@ -509,12 +509,13 @@ describe(`HTML renderer while streaming in ${browser}`, () => {
     expect(stats.violations).toEqual([]);
     const sorted = [...stats.ms].sort((a, b) => a - b);
     const at = (q: number) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * q))] as number;
-    console.log(
+    // In the assertion's message too: vitest's browser mode doesn't show the page's console.
+    const summary =
       `${browser}: ${stats.updates} updates, ${blocksOf(renderer).length} blocks; update p50 ${at(0.5).toFixed(2)} ms, ` +
-        `p90 ${at(0.9).toFixed(2)} ms, max ${at(1).toFixed(2)} ms; ${stats.created} blocks created, ${stats.kept} kept`,
-    );
+      `p90 ${at(0.9).toFixed(2)} ms, max ${at(1).toFixed(2)} ms; ${stats.created} blocks created, ${stats.kept} kept`;
+    console.log(summary);
     // PLAN §11.5: main-thread update ≤ 4 ms at 20 pages (Phase 0 level).
-    expect(at(0.5)).toBeLessThanOrEqual(4);
+    expect(at(0.5), summary).toBeLessThanOrEqual(4);
     unmount(renderer);
   }, 300_000);
 });
