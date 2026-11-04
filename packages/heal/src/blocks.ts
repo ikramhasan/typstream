@@ -8,19 +8,20 @@
 //   an element between them would split the list in two and restart its numbering;
 // - a line starting with `<`: a label there attaches to the element before it.
 
+import { fitsU64 } from "./lexer";
 import { type Checkpoint, recognize } from "./recognizer";
 
 type Kind = "heading" | "list" | "enum" | "term" | "label" | "other";
 
 // Markers as heal's lexer reads them (lexer.ts, `markup`): `=`, `-`, `+`, `/`
-// or `1.` followed by whitespace, a comment or the end of the text.
-const MARKER = /(?:(=+)|(-)|(\+|\d{1,19}\.)|(\/))(?=\s|$|\/\/|\/\*)/y;
+// or `1.` (a number that fits a u64) followed by whitespace, a comment or the end of the text.
+const MARKER = /(?:(=+)|(-)|(\+|(\d+)\.)|(\/))(?=\s|$|\/\/|\/\*)/y;
 
 const kindAt = (text: string, at: number): Kind => {
   if (text.charCodeAt(at) === 0x3c /* < */) return "label";
   MARKER.lastIndex = at;
   const m = MARKER.exec(text);
-  if (!m) return "other";
+  if (!m || (m[4] !== undefined && !fitsU64(m[4]))) return "other";
   return m[1] ? "heading" : m[2] ? "list" : m[3] ? "enum" : "term";
 };
 

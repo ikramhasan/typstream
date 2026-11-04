@@ -40,9 +40,10 @@ export const PIXEL_RATIO = 2;
 /**
  * Largest cluster of differing pixels a page may have. Chromium and Firefox have none on the edu corpus; WebKit has a
  * few scattered pixels (1–7 on a page, at most 2 touching) where its canvas and pdf.js antialias an edge on different
- * sides. A missing full stop is a cluster of 7–8.
+ * sides, and in Playwright's Docker image one CSS pixel (2×2) where a dashed border's pattern ends in a sub-pixel dash
+ * (the suite's own tables example). A missing full stop is a cluster of 7–8.
  */
-export const MAX_CLUSTER = 3;
+export const MAX_CLUSTER = 4;
 
 /** The real engine worker, spawned from source as the packages' own browser tests do. */
 export const startEngine = (): Engine =>
