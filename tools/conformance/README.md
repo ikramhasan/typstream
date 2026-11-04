@@ -23,7 +23,7 @@ per set of `sys.inputs`).
 
 - **Paged view = PDF** (`src/paged.ts`, vitest browser mode): each example mounted in the document panel
   (`mountTypstream`, paged, `fit-width`, painted at a device pixel ratio of 2), each page against pdf.js's raster of
-  the mount's `exportPdf()`: the same pages, as big, and no more than 3 differing pixels touching. A pixel differs when
+  the mount's `exportPdf()`: the same pages, as big, and no more than 4 differing pixels touching. A pixel differs when
   no pixel of the other image within one device pixel is close to it in colour. tools/browser-suites' PDF raster suite
   (#119) runs the same comparison on the edu corpus.
 - **HTML target = paged view** (`src/html.ts`, in the `paged` project): each example mounted both ways in the document

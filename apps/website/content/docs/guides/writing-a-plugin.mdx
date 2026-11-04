@@ -321,7 +321,7 @@ This repository's plugins prove it with a shared suite (`tools/conformance`) run
 
 | Check | Where | Passes when |
 |---|---|---|
-| Paged view = PDF | a browser (vitest) | every page painted in the document panel matches pdf.js's raster of the PDF: no more than 3 differing pixels touching |
+| Paged view = PDF | a browser (vitest) | every page painted in the document panel matches pdf.js's raster of the PDF: no more than 4 differing pixels touching |
 | DOCX is valid | Node | Microsoft's Open XML validator reports no errors |
 | DOCX = PDF | Node, LibreOffice | every line and page start is Typst's (by their text around equations, where the example has some), pictures match the PDF's pixels, every equation's letters and digits come out, and rules, borders and shading are where Typst draws them (no more than 6 differing pixels touching) |
 

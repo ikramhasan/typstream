@@ -15,39 +15,10 @@ import { LAYOUT_PROFILE } from "../src/server/profile";
 import { createServer } from "../src/server/server";
 import { nodeEngineWasm } from "./support/engine-wasm";
 
+// Where anchors go (heal's anchorPoints) is tested in heal's blocks.test.ts.
 const points = (text: string) => anchorPoints(text, recognize(text).checkpoints);
-/** The lines that get an anchor, as text. */
-const anchoredLines = (text: string) => points(text).map((p) => text.slice(p, text.indexOf("\n", p) >>> 0));
 
 const ANCHOR = /<typstream-anchor data-src="\d+"><\/typstream-anchor>/g;
-
-describe("anchorPoints", () => {
-  it("anchors block starts: the start, after blank lines, and headings", () => {
-    const text = "Intro\nstill intro\n\nSecond\n= Heading\nBody\n\n\n#figure[x]\n";
-    expect(anchoredLines(text)).toEqual(["Intro", "Second", "= Heading", "#figure[x]"]);
-  });
-
-  it("anchors the first item of a list, not later items of the same list", () => {
-    expect(anchoredLines("- a\n\n- b\n\n+ c\n\n2. d\n\n/ t: e\n\n/ u: f\n")).toEqual(["- a", "+ c", "/ t: e"]);
-  });
-
-  it("anchors a list after a different kind of block", () => {
-    expect(anchoredLines("Para\n\n- a\n\nText\n\n- b\n")).toEqual(["Para", "- a", "Text", "- b"]);
-  });
-
-  it("skips lines starting with a label, which would attach to the anchor", () => {
-    expect(anchoredLines("= A\n\n<sec-a>\n\nText\n")).toEqual(["= A", "Text"]);
-  });
-
-  it("puts the anchor before the line's indentation and skips markers that aren't markers", () => {
-    expect(points("x\n\n  - a\n")).toEqual([0, 3]);
-    expect(anchoredLines("x\n\n-5 degrees\n\n=no heading\n")).toEqual(["x", "-5 degrees", "=no heading"]);
-  });
-
-  it("ignores lines inside content blocks and text brackets", () => {
-    expect(anchoredLines("#[\n\nInner\n]\n\nOuter [\n\nbracket]\n")).toEqual(["#[", "Outer ["]);
-  });
-});
 
 describe("pastRules", () => {
   const moved = (text: string) => {
