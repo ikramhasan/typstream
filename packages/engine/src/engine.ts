@@ -69,8 +69,8 @@ export interface EngineOptions {
   recycleBytes?: number;
   /**
    * Keep an initialized spare worker so replacing the active one is instant,
-   * started once the active one has answered a compile. Default true, or the
-   * `spawn`'s own.
+   * started once the active one has answered a compile (at once when a spare
+   * takes over). Default true, or the `spawn`'s own.
    */
   spare?: boolean;
   /** Default schedule of every document. */
@@ -429,6 +429,9 @@ class EngineImpl implements Engine, DocumentHost {
       return;
     }
     this.active = next;
+    // A promoted spare is past the first download and compile, which a new spare starts from (the module is
+    // shared): its own starts now, so another runaway compile doesn't wait for a cold worker.
+    if (next.isReady) this.warmSpare(next);
   }
 
   /**

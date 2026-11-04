@@ -456,8 +456,8 @@ describe("watchdog", () => {
     await tick(100);
     expect(events.find((e) => e.type === "watchdog")).toMatchObject({ uri: doc.uri, budgetMs: 3000 });
     expect(workers.spawned[0]?.terminated).toBe(true);
-    // The spare took over; its own spare waits for its first compile.
-    expect(workers.alive).toEqual([workers.spawned[1]]);
+    // The spare took over and a new spare is warming up.
+    expect(workers.alive).toEqual([workers.spawned[1], workers.spawned[2]]);
     let s = doc.getState();
     expect(s.status).toBe("stale");
     expect(s.failure?.reason).toBe("timeout");

@@ -674,7 +674,7 @@ Multiple documents per worker (chat history, editor tabs) share fonts, packages 
 >   - The budget clock starts once the worker has answered `initialize`, so cold start isn't counted.
 >   - A worker crash (an `error` event) during a compile is a strike, like a timeout.
 >   - A worker that dies before it is initialized isn't respawned. The engine fails, and every document reports `error`, rather than respawning in a loop.
->   - The spare is spawned once the active worker has answered a compile or an export, so it doesn't compete with the first one (2026-11-04; it used to start as soon as the active worker was up, and downloaded and compiled the wasm while the first compile waited for packages).
+>   - The spare is spawned once the active worker has answered a compile or an export, so it doesn't compete with the first one, and at once when a spare takes over (2026-11-04; it used to start as soon as the active worker was up, and downloaded and compiled the wasm while the first compile waited for packages).
 >   - Workers share the compiled engine (2026-11-04): the default worker compiles `engine_bg.wasm` itself (engine-wasm's `wasmUrl`) and posts the `WebAssembly.Module` to the page; `engineWorker()` posts it to every worker it starts after that, before `initialize` (`src/shared-wasm.ts`). The spare and replacements download and compile nothing.
 >   - After a replacement, documents open themselves in the new worker (`document/open` with the current healed text) at their next compile. Idle documents don't recompile.
 > - **Recycling.** `memoryBytes` from a compile result over the threshold swaps in the spare right after that compile. There is no warm-up compile: the next one runs without the old worker's caches.

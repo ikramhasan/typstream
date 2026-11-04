@@ -763,9 +763,16 @@ diagnostic.
 
 ## `@typstream/engine/worker`
 
-The default worker script: `serve(engineWasm({ fonts: baseFonts, lazyFonts: [...extraFonts, ...scriptFonts] }))`, with the fonts from
+The default worker script: `serve(engineWasm({ wasm, fonts: baseFonts, lazyFonts: [...extraFonts, ...scriptFonts] }))`, with the fonts from
 `@typstream/engine-wasm/fonts`. It has no exports; importing it starts the server in the current worker.
 `engineWorker()` spawns it, so you rarely need it directly.
+
+Its `wasm` is shared between workers, so a page downloads and compiles the engine once. When it initializes, the worker
+fetches `wasmUrl` (from `@typstream/engine-wasm/wasm`), compiles it and posts `{ "typstream/wasm": module }`, the
+`WebAssembly.Module`, to the page. A message of that shape received before `initialize` is used instead: the worker
+compiles nothing. Neither is part of the protocol. `engineWorker()` keeps the module and sends it to every worker it
+starts after that, and `fromWorker` drops the message, so a client never sees it. If you spawn this worker with your
+own message handling, ignore that message.
 
 ## See also
 
