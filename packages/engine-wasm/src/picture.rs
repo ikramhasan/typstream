@@ -107,7 +107,8 @@ pub fn render(
 /// inside an SVG with some strokes a fraction of a point off (round-capped lines and dashes, against the PDF), while it
 /// draws the same vectors inline as Typst's PDF has them; and an image in an image is the part of SVG readers support
 /// least. The image's ids get a prefix of their own, since typst-svg's (`f1`, `r1`) and the image's may be the same.
-/// An image that can't be read as SVG, or has a doctype (entities), stays as it is.
+/// An image that can't be read as SVG, has a doctype (entities) or a style sheet (whose selectors would then apply to
+/// the whole picture, and name ids as they were), stays as it is.
 fn inline_svg_images(svg: String) -> String {
     const DATA: &str = "data:image/svg+xml;base64,";
     let mut out = String::with_capacity(svg.len());
@@ -146,7 +147,7 @@ fn inline_svg_images(svg: String) -> String {
 /// prefixed with `prefix`.
 fn nested(image: &str, prefix: &str, image_attrs: &[(String, String)]) -> Option<String> {
     let start = image.find("<svg")?;
-    if image[..start].contains("<!DOCTYPE") {
+    if image[..start].contains("<!DOCTYPE") || image.contains("<style") {
         return None;
     }
     let root_end = start + tag_end(&image[start..])?;
@@ -554,6 +555,15 @@ mod tests {
             base64(br#"<!DOCTYPE svg [<!ENTITY a "x">]><svg viewBox="0 0 1 1">&a;</svg>"#)
         );
         assert_eq!(inline_svg_images(doctype.clone()), doctype);
+    }
+
+    #[test]
+    fn leaves_svgs_with_a_style_sheet() {
+        let styled = format!(
+            r#"<svg><image xlink:href="data:image/svg+xml;base64,{}" width="1" height="1"/></svg>"#,
+            base64(br#"<svg viewBox="0 0 1 1"><style>#a, rect { fill: red }</style><rect id="a"/></svg>"#)
+        );
+        assert_eq!(inline_svg_images(styled.clone()), styled);
     }
 
     #[test]
