@@ -51,7 +51,8 @@ export const warmFonts = async (engine: Engine) => {
   });
   const { diagnostics } = await steady(() => doc.getState(), 1000);
   doc.dispose();
-  // A face Typst doesn't find (a family renamed, a variant gone) is a warning, and would load nothing.
+  // A family Typst doesn't find (renamed, say) is a warning, and would load nothing. A missing weight or style isn't:
+  // Typst takes the family's nearest face.
   if (diagnostics.length) throw new Error(`warmFonts: ${diagnostics.map((d) => d.message).join("; ")}`);
 };
 
