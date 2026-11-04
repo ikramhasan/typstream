@@ -31,7 +31,6 @@ import { edu, SHOW_ANSWERS_INPUT } from "@typstream/edu";
 import { googleFonts } from "@typstream/google-fonts";
 import { mindmap } from "@typstream/mindmap";
 import { mindmapIslands } from "@typstream/mindmap/react";
-import { TypstPlateEditor } from "@typstream/plate";
 import { DefaultChatTransport, type UIDataTypes, type UIMessage } from "ai";
 import {
   ArrowUpIcon,
@@ -43,7 +42,6 @@ import {
   ImageIcon,
   KeyRoundIcon,
   LoaderCircleIcon,
-  PencilIcon,
   RotateCwIcon,
   SquareIcon,
   SquarePenIcon,
@@ -466,18 +464,6 @@ const Answer = ({ text, streaming, target, answers, busy, onRetry }: AnswerProps
   // Compiles that failed while streaming. The last good render stays on screen, so a reader never
   // sees them; the smoke test checks there were none.
   const [stale, setStale] = useState(0);
-  // Edit opens the answer in the visual editor (@typstream/plate) as it is shown; Done shows the edited document,
-  // which copy and export take. The chat isn't rewritten: an edit stays on this page (see the comment at the top).
-  const [editing, setEditing] = useState(false);
-  const [edited, setEdited] = useState<string | null>(null);
-  // A regenerated answer is a new document.
-  useEffect(() => {
-    if (streaming) {
-      setEdited(null);
-      setEditing(false);
-    }
-  }, [streaming]);
-  const source = edited ?? text;
   const frame = t.openFrames[0]?.frame;
   const { host, clip, measure } = useStreamClip(t.state, streaming, target);
   return (
@@ -497,56 +483,36 @@ const Answer = ({ text, streaming, target, answers, busy, onRetry }: AnswerProps
             className={clip === null ? undefined : "overflow-y-clip"}
             style={clip === null ? undefined : { height: clip }}
           >
-            {editing ? (
-              <TypstPlateEditor
-                value={source}
-                onChange={setEdited}
-                plugins={PLUGINS}
-                resolveImage={IMAGES}
-                inputs={answers ? ANSWERS : undefined}
-                className="answer-editor"
-              />
-            ) : (
-              <Typstream
-                ref={t.ref}
-                source={source}
-                isStreaming={streaming}
-                target={target}
-                plugins={PLUGINS}
-                // A mind map is interactive in the HTML target (pan, zoom, open and close branches): React Flow,
-                // loaded the first time an answer has one. Pages show its drawing.
-                islands={mindmapIslands}
-                resolveImage={IMAGES}
-                inputs={answers ? ANSWERS : undefined}
-                layout="fit-width"
-                animated
-                caret
-                onRendered={measure}
-                onStatusChange={(status) => {
-                  if (status === "stale" || status === "error") setStale((n) => n + 1);
-                }}
-              />
-            )}
+            <Typstream
+              ref={t.ref}
+              source={text}
+              isStreaming={streaming}
+              target={target}
+              plugins={PLUGINS}
+              // A mind map is interactive in the HTML target (pan, zoom, open and close branches): React Flow,
+              // loaded the first time an answer has one. Pages show its drawing.
+              islands={mindmapIslands}
+              resolveImage={IMAGES}
+              inputs={answers ? ANSWERS : undefined}
+              layout="fit-width"
+              animated
+              caret
+              onRendered={measure}
+              onStatusChange={(status) => {
+                if (status === "stale" || status === "error") setStale((n) => n + 1);
+              }}
+            />
           </div>
         </article>
         <MessageFooter className="gap-1 px-0">
-          {editing ? (
-            <Action label="Done" onClick={() => setEditing(false)}>
-              <CheckIcon />
-            </Action>
-          ) : (
-            <Action label="Edit" onClick={() => setEditing(true)} disabled={streaming}>
-              <PencilIcon />
-            </Action>
-          )}
-          <CopySource target={target} text={source} exportHtml={t.exportHtml} disabled={streaming || editing} />
+          <CopySource target={target} text={text} exportHtml={t.exportHtml} disabled={streaming} />
           <Export
             format={target === "html" ? "html" : "pdf"}
             exportPdf={t.exportPdf}
             exportHtml={t.exportHtml}
             exportDocx={t.exportDocx}
-            source={source}
-            disabled={streaming || editing}
+            source={text}
+            disabled={streaming}
           >
             <FileDownIcon />
           </Export>
@@ -555,8 +521,8 @@ const Answer = ({ text, streaming, target, answers, busy, onRetry }: AnswerProps
             exportPdf={t.exportPdf}
             exportHtml={t.exportHtml}
             exportDocx={t.exportDocx}
-            source={source}
-            disabled={streaming || editing}
+            source={text}
+            disabled={streaming}
           >
             <FileTypeIcon />
           </Export>

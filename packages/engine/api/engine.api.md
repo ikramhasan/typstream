@@ -70,8 +70,6 @@ export interface DocumentOptions {
     preamble?: string;
     resolveImage?: ImageResolver;
     schedule?: Partial<ScheduleOptions>;
-    // @beta
-    spans?: boolean;
     target?: CompileTarget;
     text?: string;
     uri?: DocumentUri;

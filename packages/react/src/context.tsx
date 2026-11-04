@@ -62,11 +62,7 @@ export interface TypstreamDefaults
 
 const Context = createContext<TypstreamDefaults>({});
 
-/**
- * The settings of the nearest {@link TypstreamProvider}s, merged: what a `<Typstream>` here starts from. For
- * components that open documents themselves (`@typstream/plate`'s editor).
- * @beta
- */
+/** The defaults in effect here. @internal */
 export const useTypstreamDefaults = (): TypstreamDefaults => useContext(Context);
 
 /** Props of {@link TypstreamProvider}. @public */

@@ -19,13 +19,7 @@ export type {
   TypstreamHtmlExportOptions,
 } from "@typstream/dom";
 export type { DocumentState, DocumentStatus, Engine } from "@typstream/engine";
-export {
-  type TypstreamDefaults,
-  TypstreamProvider,
-  type TypstreamProviderProps,
-  useTypstreamDefaults,
-} from "./context";
-export { useTypstreamEngine } from "./engine";
+export { type TypstreamDefaults, TypstreamProvider, type TypstreamProviderProps } from "./context";
 export type { IslandComponent, IslandComponents } from "./islands";
 export { Typstream, type TypstreamHandle, type TypstreamProps } from "./Typstream";
 export type { TelemetryHooks } from "./telemetry";

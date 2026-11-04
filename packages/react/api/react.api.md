@@ -128,12 +128,6 @@ export interface TypstreamProviderProps extends TypstreamDefaults {
 // @public
 export const useTypstream: () => TypstreamInfo;
 
-// @beta
-export const useTypstreamDefaults: () => TypstreamDefaults;
-
-// @beta
-export const useTypstreamEngine: (engine?: Engine) => Engine | null;
-
 export { WatchdogEvent }
 
 // (No @packageDocumentation comment for this package)

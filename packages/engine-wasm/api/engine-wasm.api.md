@@ -62,7 +62,7 @@ export class Engine {
     static add_font(bytes: Uint8Array): number;
     check_paged(): CheckResult;
     compile_docx_model(): DocxModelResult;
-    compile_html(spans?: boolean | null): HtmlResult;
+    compile_html(): HtmlResult;
     compile_pdf(): PdfResult;
     compile_svg_changed(drawings?: boolean | null): SvgChangedResult;
     static docx_margin_probe(): string;
@@ -107,7 +107,7 @@ export interface InitOutput {
     // (undocumented)
     readonly engine_compile_docx_model: (a: number) => number;
     // (undocumented)
-    readonly engine_compile_html: (a: number, b: number) => number;
+    readonly engine_compile_html: (a: number) => number;
     // (undocumented)
     readonly engine_compile_pdf: (a: number) => number;
     // (undocumented)
