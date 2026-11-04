@@ -10,6 +10,8 @@ import { commands, server } from "vitest/browser";
 import { fromWorker } from "../../src/connection";
 import { type DocumentState, type EngineDocument, ExportError } from "../../src/document";
 import { createEngine, type Engine, type EngineEvent, type EngineOptions } from "../../src/engine";
+import { wasmOf } from "../../src/shared-wasm";
+import { sharingWasm } from "../../src/spawn";
 import { conformance } from "../conformance";
 import { FIVE_PAGES } from "../support/documents";
 
@@ -227,6 +229,44 @@ describe(`watchdog in ${browser}`, { timeout: 120_000 }, () => {
     expect(["timeout", "crash"]).toContain(failed.failure?.reason);
     expect(events.map((e) => e.type)).toContainEqual(expect.stringMatching(/^(watchdog|crash)$/));
 
+    doc.set("Recovered.");
+    const recovered = await until(doc, (s) => s.status === "idle" && s.failure === null);
+    expect(recovered.artifact?.target === "html" && recovered.artifact.html).toContain("Recovered.");
+    expect(events.filter((e) => e.type === "failed")).toEqual([]);
+    engine.dispose();
+  });
+});
+
+describe(`the compiled engine, shared in ${browser}`, { timeout: 120_000 }, () => {
+  it("starts the spare from the module the first worker compiled, and carries on there after a runaway compile", async () => {
+    const workers: { sent: unknown[] }[] = [];
+    const engine = createEngine({
+      spawn: fromWorker(
+        sharingWasm(() => {
+          const worker = new Worker(new URL("../../src/worker.ts", import.meta.url), { type: "module" });
+          const sent: unknown[] = [];
+          const post = worker.postMessage.bind(worker);
+          worker.postMessage = (message: unknown) => {
+            sent.push(message);
+            post(message);
+          };
+          workers.push({ sent });
+          return worker;
+        }),
+      ),
+      watchdog: { streamingMs: 2000 },
+    });
+    const events: EngineEvent[] = [];
+    engine.onEvent((e) => events.push(e));
+    const doc = engine.open({ text: "Before." });
+    await until(doc, (s) => s.status === "idle" && s.artifact !== null);
+    // The spare starts after that first compile, from the first worker's module, sent before `initialize`.
+    expect(workers).toHaveLength(2);
+    expect(workers[0]?.sent.some((m) => wasmOf(m) !== undefined)).toBe(false);
+    expect(wasmOf(workers[1]?.sent[0])).toBeInstanceOf(WebAssembly.Module);
+
+    doc.set("Before.\n#let a = range(100000000).map(x => x)\nAfter.");
+    await until(doc, (s) => s.failure !== null);
     doc.set("Recovered.");
     const recovered = await until(doc, (s) => s.status === "idle" && s.failure === null);
     expect(recovered.artifact?.target === "html" && recovered.artifact.html).toContain("Recovered.");

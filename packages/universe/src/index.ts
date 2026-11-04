@@ -38,8 +38,9 @@ const preview = (
   version: string,
   url: URL,
   integrity: string,
+  imports: string[],
   use?: { topic: UniverseTopic; summary: string },
-): UniversePackage => ({ namespace: "preview", name, version, url: url.href, integrity, ...use });
+): UniversePackage => ({ namespace: "preview", name, version, url: url.href, integrity, imports, ...use });
 
 /**
  * Every vendored package, dependencies included. Each `new URL` is a literal so
@@ -52,6 +53,7 @@ export const UNIVERSE_PACKAGES: readonly UniversePackage[] = [
     "0.5.3",
     new URL("../vendor/cetz-0.5.3.tar.gz", import.meta.url),
     "sha256-7uRpaPfYuRjZ0EkPoOM2gkZlOASeDzSguTSJWUx+PVo=",
+    ["@preview/oxifmt:1.0.0"],
     {
       topic: "diagrams",
       // #24: models call Typst's `polygon` and `ellipse` in a canvas, where `cetz.draw` shadows them.
@@ -64,6 +66,7 @@ export const UNIVERSE_PACKAGES: readonly UniversePackage[] = [
     "0.5.8",
     new URL("../vendor/fletcher-0.5.8.tar.gz", import.meta.url),
     "sha256-vtCQZc1kBvcTg4tcVXGaNsHxtiqCQEq3JVbegOy5rXw=",
+    ["@preview/cetz:0.3.4"],
     {
       topic: "diagrams",
       summary:
@@ -75,6 +78,7 @@ export const UNIVERSE_PACKAGES: readonly UniversePackage[] = [
     "0.1.4",
     new URL("../vendor/cetz-plot-0.1.4.tar.gz", import.meta.url),
     "sha256-I/KwwAqNhHnJ9ghzhtfoWY6ZYIfOzPMktulXDX2CMc0=",
+    ["@preview/cetz:0.5.2"],
     {
       topic: "math",
       summary:
@@ -86,6 +90,7 @@ export const UNIVERSE_PACKAGES: readonly UniversePackage[] = [
     "0.9.8",
     new URL("../vendor/physica-0.9.8.tar.gz", import.meta.url),
     "sha256-gLyLUm7L9oiszlLGmleQxWZRE4LWGZnWaGgQacVQBQs=",
+    [],
     {
       topic: "math",
       summary: "calculus and physics notation in math; import `*`: `$dv(f, x)$`, `$pdv(u, x, y)$`, `$vb(F)$`",
@@ -96,6 +101,7 @@ export const UNIVERSE_PACKAGES: readonly UniversePackage[] = [
     "0.8.1",
     new URL("../vendor/unify-0.8.1.tar.gz", import.meta.url),
     "sha256-m5t0SW3fByFSrqtdTqvD87gky+/ZphP4wY6a3cVm9T8=",
+    [],
     {
       topic: "math",
       summary:
@@ -107,6 +113,7 @@ export const UNIVERSE_PACKAGES: readonly UniversePackage[] = [
     "0.1.3",
     new URL("../vendor/chemformula-0.1.3.tar.gz", import.meta.url),
     "sha256-g9dEimwQXuFvLIk70BB78v5DHwZVqkyI66yIJk/kUMw=",
+    [],
     {
       topic: "chemistry",
       summary:
@@ -118,6 +125,7 @@ export const UNIVERSE_PACKAGES: readonly UniversePackage[] = [
     "0.2.0",
     new URL("../vendor/alchemist-0.2.0.tar.gz", import.meta.url),
     "sha256-wp9SMhMi3ZJtK/nDi5cRrE8xBJQ4NsGhDz+G82kBUMg=",
+    ["@preview/cetz:0.5.2"],
     {
       topic: "chemistry",
       summary: 'structural formulas; import `*`: `#skeletize({ fragment("H_3C"); single(); fragment("OH") })`',
@@ -129,24 +137,28 @@ export const UNIVERSE_PACKAGES: readonly UniversePackage[] = [
     "0.5.2",
     new URL("../vendor/cetz-0.5.2.tar.gz", import.meta.url),
     "sha256-1HwM5S7MWYfEKdi/jA5hf/er+oCJ5G8OAmJFqTO94NI=",
+    ["@preview/oxifmt:1.0.0"],
   ),
   preview(
     "cetz",
     "0.3.4",
     new URL("../vendor/cetz-0.3.4.tar.gz", import.meta.url),
     "sha256-HBkbw1TTedKFYNU/UE0Rxm/XIFvzanWHS37qp12rXK8=",
+    ["@preview/oxifmt:0.2.1"],
   ),
   preview(
     "oxifmt",
     "1.0.0",
     new URL("../vendor/oxifmt-1.0.0.tar.gz", import.meta.url),
     "sha256-XS/0bduus8C6ZZTZ999XCbC5z8JILO0EbFryxrztj0o=",
+    [],
   ),
   preview(
     "oxifmt",
     "0.2.1",
     new URL("../vendor/oxifmt-0.2.1.tar.gz", import.meta.url),
     "sha256-SHrUfkIQznu2YJIMfuGQDBLgkHTQefibSdMwJ/oG78k=",
+    [],
   ),
 ];
 
@@ -161,12 +173,13 @@ const spec = (p: PackageSpec): string => `@${p.namespace}/${p.name}:${p.version}
 export const universe = definePlugin({
   key: "universe",
   engine: {
-    packages: UNIVERSE_PACKAGES.map(({ namespace, name, version, url, integrity }) => ({
+    packages: UNIVERSE_PACKAGES.map(({ namespace, name, version, url, integrity, imports }) => ({
       namespace,
       name,
       version,
       url,
       integrity,
+      imports,
     })),
   },
   prompt: {

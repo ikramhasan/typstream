@@ -258,6 +258,12 @@ export interface PackageSpec {
    * and browsers then hand over the tar.
    */
   integrity?: string;
+  /**
+   * The packages its sources import (`@preview/oxifmt:1.0.0`), requested with
+   * it rather than found once it is unpacked, so they download at the same
+   * time. Optional: the engine finds them anyway.
+   */
+  imports?: readonly string[];
 }
 
 /** A named document setup: page, fonts, header (PLAN §8.3). @public */

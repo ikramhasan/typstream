@@ -16,6 +16,7 @@ export const universe: {
             version: string;
             url: string;
             integrity: string;
+            imports: readonly string[] | undefined;
         }[];
     };
     prompt: {

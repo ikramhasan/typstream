@@ -90,15 +90,22 @@ export function LiveDemo({ recordings }: { recordings: Recording[] }) {
   const done = count >= recording.chunks.length;
   const streaming = !done;
   const lines = text.split("\n");
+  const state = t.state;
+  // The engine hasn't answered a compile of this document yet (nor given up), though there is something to
+  // compile: it is still starting, or fetching the packages the document's plugins import. The replay holds
+  // until it has, or a first visit, which downloads the engine, would see the whole stream written before
+  // anything rendered. Not before the healed text has something in it: a lone `#` heals to nothing, and the
+  // engine has nothing to compile.
+  const loading = !!state?.heal.source && state.lastCompile === null && state.failure === null;
 
   // Each chunk at its recorded time after the previous one, as the API delivered it.
   useEffect(() => {
-    if (!playing || done) return;
+    if (!playing || done || loading) return;
     const prev = recording.chunks[count - 1]?.t ?? 0;
     const next = recording.chunks[count]?.t ?? prev;
     timer.current = setTimeout(() => setCount((c) => c + 1), Math.max(0, next - prev));
     return () => clearTimeout(timer.current);
-  }, [playing, done, count, recording]);
+  }, [playing, done, loading, count, recording]);
 
   useEffect(() => {
     if (done) setPlaying(false);
@@ -125,7 +132,6 @@ export function LiveDemo({ recordings }: { recordings: Recording[] }) {
   }, [text]);
 
   // Keep the part being written in view: about two thirds of the way down, with what came before above it.
-  const state = t.state;
   useEffect(() => {
     const el = preview.current;
     const position = streaming ? streamPosition(state) : null;
@@ -188,7 +194,15 @@ export function LiveDemo({ recordings }: { recordings: Recording[] }) {
   );
 
   const frame = t.openFrames[0]?.frame;
-  const status = done ? (t.status === "done" ? "finished" : t.status) : frame ? `writing ${frame}…` : "streaming";
+  const status = done
+    ? t.status === "done"
+      ? "finished"
+      : t.status
+    : loading
+      ? "loading engine…"
+      : frame
+        ? `writing ${frame}…`
+        : "streaming";
 
   return (
     <div ref={root} className="flex flex-col gap-4 text-left">

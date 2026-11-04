@@ -18,6 +18,7 @@ import {
   type ServerNotification,
 } from "@typstream/core";
 import type { WatchdogOptions } from "./document";
+import { wasmOf } from "./shared-wasm";
 
 /**
  * What the client hears from a worker it spawned.
@@ -105,7 +106,10 @@ export const fromWorker =
   (create: () => WorkerLike): SpawnEngine =>
   (events) => {
     const worker = create();
-    worker.addEventListener("message", (event) => events.message(event.data as ServerMessage));
+    worker.addEventListener("message", (event) => {
+      // The default worker's compiled engine, for engineWorker() to keep (./shared-wasm.ts).
+      if (wasmOf(event.data) === undefined) events.message(event.data as ServerMessage);
+    });
     worker.addEventListener("error", (event) => {
       // Handled here: without this, browsers also report it as an uncaught error of the page.
       (event as { preventDefault?(): void }).preventDefault?.();

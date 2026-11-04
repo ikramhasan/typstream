@@ -278,6 +278,8 @@ export class DocumentPackages {
     const promise = this.store.load(using);
     const entry: Entry = { status: "loading", using, promise };
     this.entries.set(spec, entry);
+    // What it imports, known in advance, downloads alongside it (mountLoaded requests them again: known by then).
+    for (const imported of using.imports ?? []) this.request(imported);
     promise.then(
       (loaded) => {
         if (this.entries.get(spec) === entry) this.entries.set(spec, { status: "loaded", using, loaded });

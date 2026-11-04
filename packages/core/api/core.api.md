@@ -514,6 +514,7 @@ export const normalizeDiagnostics: (ds: readonly Diagnostic[]) => Diagnostic[];
 
 // @beta
 export interface PackageSpec {
+    imports?: readonly string[];
     integrity?: string;
     name: string;
     namespace: string;

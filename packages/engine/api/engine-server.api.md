@@ -127,7 +127,7 @@ export interface EngineWasmOptions {
     fontCache?: string | false;
     fonts?: readonly FontInput[];
     lazyFonts?: readonly LazyFontInput[];
-    wasm?: InitInput | Promise<InitInput>;
+    wasm?: InitInput | Promise<InitInput> | (() => InitInput | Promise<InitInput>);
 }
 
 // @beta
