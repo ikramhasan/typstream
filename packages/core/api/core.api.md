@@ -235,6 +235,7 @@ export interface EditorComponentSpec {
     inline?: boolean;
     keywords?: string[];
     label: string;
+    list?: boolean;
     name: string;
     params?: EditorParamSpec[];
     template: string;

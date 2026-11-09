@@ -44,7 +44,7 @@ export const moveArg =
     if (!found || found.blocks.length < 2) return null;
     const next = found.blocks[found.index + dir];
     if (!next) {
-      if (dir > 0 && isList(schema, found.component)) return addItem(state, found.block);
+      if (dir > 0 && isList(schema, found.component)) return addItem(found.block);
       return { edits: [], selection: state.selection };
     }
     const { from, to } = innerOf(next);
@@ -55,7 +55,7 @@ export const moveArg =
   };
 
 /** A new item after `block` (`, [~]`), the caret in it. */
-const addItem = (state: EditorState, block: SyntaxNode): Transaction => {
+const addItem = (block: SyntaxNode): Transaction => {
   const insert = `, [${EMPTY_LINE}]`;
   const at = block.to + 3;
   return { edits: [{ from: block.to, to: block.to, insert }], selection: { anchor: at, head: at } };
@@ -77,7 +77,7 @@ export const enterArg: EditorCommand = (state: EditorState, schema: EditorSchema
   if (text.slice(from, to).includes("\n")) return null;
   const at = state.selection.head;
   const atEnd = text.slice(at, to).trim() === "" || isEmptyBlock(text, found.block);
-  if (isList(schema, found.component)) return atEnd ? addItem(state, found.block) : null;
+  if (isList(schema, found.component)) return atEnd ? addItem(found.block) : null;
   // Only a plugin's components and tables: Enter in `#align(center)[…]` is a paragraph's.
   if (!schema.components?.has(found.component.name)) return null;
   if (found.blocks.length > 1) {

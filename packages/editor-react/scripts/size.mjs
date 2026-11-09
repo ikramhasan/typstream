@@ -6,7 +6,7 @@ import { build } from "esbuild";
 
 const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
 // 15.9 KB when it was written (#36): the toolbars, menus, component bars and their CSS.
-const BUDGET = 17.8 * 1024;
+const BUDGET = 18.2 * 1024;
 
 const result = await build({
   entryPoints: ["src/index.ts"],

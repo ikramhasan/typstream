@@ -280,7 +280,7 @@ export const ComponentBar = ({ view, docked = false }: { view: EditorView; docke
   const controls = (
     <div
       className={docked ? "tse-toolbar tse-docked" : "tse-toolbar tse-floating"}
-      role={docked ? "group" : "toolbar"}
+      role="toolbar"
       aria-label={label}
       style={docked ? undefined : style}
     >
@@ -350,8 +350,9 @@ const TableEdges = ({ view }: { view: EditorView }) => {
     const last = boxes[boxes.length - 1];
     if (!first || !last) return null;
     return {
-      row: { left: (last.left + last.right) / 2 - 10, top: last.bottom + 4 },
-      column: { left: first.right + 4, top: (first.top + first.bottom) / 2 - 10 },
+      // On the table's bottom and right borders, not over the text after it.
+      row: { left: (last.left + last.right) / 2 - 10, top: last.bottom - 10 },
+      column: { left: first.right - 10, top: (first.top + first.bottom) / 2 - 10 },
     };
   });
   if (!table || !at) return null;
@@ -471,6 +472,7 @@ export const EquationPanel = ({ view }: { view: EditorView }) => {
   // opens the field; Backspace and Delete still delete the equation.
   const typing = useRef({ eq, draft });
   typing.current = { eq, draft };
+  // biome-ignore lint/correctness/useExhaustiveDependencies: edit reads the state when it runs
   useEffect(() => {
     if (key === null) return;
     const onKey = (e: KeyboardEvent) => {

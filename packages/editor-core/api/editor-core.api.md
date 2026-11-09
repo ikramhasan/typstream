@@ -183,7 +183,9 @@ export interface EditorPlugin {
 
 // @beta
 export interface EditorSchema {
+    components?: ReadonlySet<string>;
     inline: ReadonlySet<string>;
+    lists?: ReadonlySet<string>;
     marks: ReadonlySet<string>;
 }
 
@@ -210,6 +212,7 @@ export interface EditorView {
     destroy(): void;
     dispatch(tr: Transaction): void;
     readonly element: HTMLElement;
+    readonly errors: readonly string[];
     focus(): void;
     readonly focused: boolean;
     readonly history: {
@@ -218,6 +221,7 @@ export interface EditorView {
     };
     readonly laidOut: boolean;
     readonly layout: Layout | null;
+    layoutOffset(offset: number): number;
     readonly plugins: readonly EditorPlugin[];
     redo(): boolean;
     run(command: EditorCommand): boolean;
@@ -234,6 +238,9 @@ export interface EditorView {
 
 // @beta
 export const EMPTY_LINE = "~";
+
+// @beta
+export const enterArg: EditorCommand;
 
 // @beta
 export const escapeMarkup: (text: string, before?: string, after?: string) => string;
@@ -407,6 +414,9 @@ export const marksPlugin: EditorPlugin;
 export const markValue: (state: EditorState, mark: Mark, from?: number, to?: number, schema?: EditorSchema) => string | true | null;
 
 // @beta
+export const moveArg: (dir: 1 | -1) => EditorCommand;
+
+// @beta
 export const moveCell: (dir: 1 | -1) => EditorCommand;
 
 // @beta
@@ -429,6 +439,9 @@ export interface PluginView {
 
 // @beta
 export const readString: (literal: string) => string | null;
+
+// @beta
+export const removeArg: EditorCommand;
 
 // @beta
 export const schemaOf: (plugins: readonly EditorPlugin[]) => EditorSchema;
