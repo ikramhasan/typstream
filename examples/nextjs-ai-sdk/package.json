@@ -19,6 +19,7 @@
     "@typstream/editor-react": "workspace:*",
     "@typstream/edu": "workspace:*",
     "@typstream/google-fonts": "workspace:*",
+    "@typstream/mermaid": "workspace:*",
     "@typstream/mindmap": "workspace:*",
     "@typstream/universe": "workspace:*",
     "ai": "^7.0.153",

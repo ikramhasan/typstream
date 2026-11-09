@@ -190,6 +190,14 @@ export interface DocumentEventBase {
     uri: DocumentUri;
 }
 
+// @beta
+export interface DocumentFileGenerator {
+    close?(): void;
+    files(source: string, ctx: {
+        mode: CompileMode;
+    }): Record<string, FileContent> | Promise<Record<string, FileContent>>;
+}
+
 // @public
 export interface DocumentOpenParams extends DocumentParams {
     files?: FileDelta;
@@ -197,6 +205,8 @@ export interface DocumentOpenParams extends DocumentParams {
     fixerModules?: string[];
     // @beta
     fontCatalogues?: FontCatalogue[];
+    // @beta
+    generatorModules?: string[];
     // @beta
     packages?: PackageSpec[];
     preamble?: string;
@@ -327,6 +337,12 @@ export type FileContent = string | Uint8Array;
 
 // @public
 export type FileDelta = Record<string, FileContent | null>;
+
+// @beta
+export interface FileGenerator {
+    name: string;
+    open(): DocumentFileGenerator;
+}
 
 // @public
 export interface FixContext {
@@ -527,6 +543,7 @@ export const normalizeDiagnostics: (ds: readonly Diagnostic[]) => Diagnostic[];
 
 // @beta
 export interface PackageSpec {
+    imports?: readonly string[];
     integrity?: string;
     name: string;
     namespace: string;
@@ -897,6 +914,7 @@ export interface TypstreamPlugin {
     editor?: EditorFacet;
     engine?: {
         fixerModules?: string[];
+        generatorModules?: string[];
         files?: Record<string, string | Uint8Array>;
         packages?: PackageSpec[];
         fonts?: FontSource[];

@@ -261,6 +261,12 @@ font's URL. See [Fonts and languages](/docs/guides/fonts-and-languages).
 | `scripts` | `string[]` | ISO 15924 codes of the scripts it is for, e.g. `["Beng"]`. |
 | `info` | `string` | `Engine.font_info` of the file, computed at build time: pass it to `Engine.register_font`. |
 
+## Wasm subpath
+
+`@typstream/engine-wasm/wasm` exports `wasmUrl`, the `URL` of `engine_bg.wasm`, written as
+`new URL("./engine_bg.wasm", import.meta.url)` so bundlers emit it as an asset. Fetch and compile it yourself to reuse
+the `WebAssembly.Module` (initialization takes one as `module_or_path`), as `@typstream/engine`'s worker does.
+
 The package also exports `./engine_bg.wasm` and `./fonts/*` as files, for loaders that need their paths. Font licenses
 are in `dist/fonts/NOTICE` and `dist/fonts/LICENSE-Noto.txt`.
 

@@ -35,6 +35,7 @@ import { isStreaming, textOf } from "@typstream/ai";
 import { TypstEditor } from "@typstream/editor-react";
 import { edu, SHOW_ANSWERS_INPUT } from "@typstream/edu";
 import { googleFonts } from "@typstream/google-fonts";
+import { mermaid } from "@typstream/mermaid";
 import { mindmap } from "@typstream/mindmap";
 import { mindmapIslands } from "@typstream/mindmap/react";
 import { DefaultChatTransport, type UIDataTypes, type UIMessage } from "ai";
@@ -111,10 +112,11 @@ const TARGETS = [
 
 /**
  * The vocabulary and fonts the route's prompt teaches: edu, any Google Fonts family, which the
- * engine downloads from jsDelivr the first time an answer names it, and mind maps. A constant: a new
+ * engine downloads from jsDelivr the first time an answer names it, mind maps, and Mermaid diagrams,
+ * which the engine's worker draws with pele (its module loads with the first answer). A constant: a new
  * array would reopen every answer.
  */
-const PLUGINS = [edu, googleFonts, mindmap];
+const PLUGINS = [edu, googleFonts, mindmap, mermaid];
 /**
  * The editor's: `typstream`'s <Typstream> adds html-compat and universe (CeTZ and the other packages) before
  * the plugins it's given, and the editor must open the document with the same ones to draw the same pages.
@@ -246,6 +248,29 @@ const SUGGESTIONS: { group: string; items: Suggestion[] }[] = [
       {
         label: "Map with photos",
         prompt: "A visual mind map of the water cycle for grade 4, with photos on the main stages.",
+      },
+    ],
+  },
+  {
+    // @typstream/mermaid: ```mermaid blocks, drawn by pele in the engine's worker, the same as pages,
+    // in HTML and in both exports.
+    group: "Diagrams",
+    items: [
+      {
+        label: "Flowchart",
+        prompt: "A grade 6 handout on the water cycle, with a flowchart of its stages.",
+      },
+      {
+        label: "Sequence diagram",
+        prompt: "A grade 9 biology handout on how a nerve signal travels, with a sequence diagram of each step.",
+      },
+      {
+        label: "Timeline",
+        prompt: "A grade 8 history handout on the Industrial Revolution, with a timeline of its key inventions.",
+      },
+      {
+        label: "Pie chart",
+        prompt: "A grade 7 worksheet on percentages, using a pie chart of how a class gets to school.",
       },
     ],
   },

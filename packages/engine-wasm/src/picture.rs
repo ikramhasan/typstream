@@ -68,7 +68,10 @@ pub fn render(
         supplement: Content::empty(),
         number: 1,
     };
-    let svg = flat_gradients(typst_svg::svg(&page, &typst_svg::SvgOptions::default()));
+    let svg = inline_svg_images(flat_gradients(typst_svg::svg(
+        &page,
+        &typst_svg::SvgOptions::default(),
+    )));
     // LibreOffice draws an SVG whose content stays inside its view box a pixel at 96 DPI smaller than its frame (0.75 pt
     // narrower and shorter, 0.31 pt in from the top left, whatever its size); content reaching outside the view box,
     // which nothing draws, makes it draw the SVG exactly.
@@ -97,6 +100,173 @@ pub fn render(
         svg,
         png,
     })
+}
+
+/// typst-svg's SVG images inlined: an `<image>` whose data is SVG (`data:image/svg+xml;base64,…`, a Mermaid diagram's
+/// shapes) becomes a nested `<svg>` of the image's box with the image's content. LibreOffice 26.2 draws an SVG image
+/// inside an SVG with some strokes a fraction of a point off (round-capped lines and dashes, against the PDF), while it
+/// draws the same vectors inline as Typst's PDF has them; and an image in an image is the part of SVG readers support
+/// least. The image's ids get a prefix of their own, since typst-svg's (`f1`, `r1`) and the image's may be the same.
+/// An image that can't be read as SVG, has a doctype (entities) or a style sheet (whose selectors would then apply to
+/// the whole picture, and name ids as they were), stays as it is.
+fn inline_svg_images(svg: String) -> String {
+    const DATA: &str = "data:image/svg+xml;base64,";
+    let mut out = String::with_capacity(svg.len());
+    let mut rest = svg.as_str();
+    let mut n = 0;
+    while let Some(at) = rest.find("<image ") {
+        out.push_str(&rest[..at]);
+        let Some(end) = tag_end(&rest[at..]).map(|e| at + e) else {
+            break;
+        };
+        let tag = &rest[at..=end];
+        let attrs = attributes(tag);
+        let get = |name: &str| {
+            attrs
+                .iter()
+                .find(|(k, _)| k == name)
+                .map(|(_, v)| v.as_str())
+        };
+        let inlined = get("xlink:href")
+            .or_else(|| get("href"))
+            .and_then(|href| href.strip_prefix(DATA))
+            .and_then(base64_decode)
+            .and_then(|bytes| String::from_utf8(bytes).ok())
+            .and_then(|image| {
+                n += 1;
+                nested(&image, &format!("i{n}-"), &attrs)
+            });
+        out.push_str(inlined.as_deref().unwrap_or(tag));
+        rest = &rest[end + 1..];
+    }
+    out.push_str(rest);
+    out
+}
+
+/// The SVG document `image` as a nested `<svg>` in the box of the `<image>` whose attributes are `image_attrs`, its ids
+/// prefixed with `prefix`.
+fn nested(image: &str, prefix: &str, image_attrs: &[(String, String)]) -> Option<String> {
+    let start = image.find("<svg")?;
+    if image[..start].contains("<!DOCTYPE") || image.contains("<style") {
+        return None;
+    }
+    let root_end = start + tag_end(&image[start..])?;
+    let root = &image[start..=root_end];
+    if root.ends_with("/>") {
+        return None;
+    }
+    let attrs = attributes(root);
+    let get = |list: &[(String, String)], name: &str| {
+        list.iter().find(|(k, _)| k == name).map(|(_, v)| v.clone())
+    };
+    let number =
+        |v: Option<String>| v.and_then(|v| v.trim_end_matches("px").trim().parse::<f64>().ok());
+    let view_box = match get(&attrs, "viewBox") {
+        Some(v) => v,
+        None => format!(
+            "0 0 {} {}",
+            number(get(&attrs, "width"))?,
+            number(get(&attrs, "height"))?
+        ),
+    };
+    let mut tag = String::from("<svg");
+    for (k, v) in &attrs {
+        if !matches!(
+            k.as_str(),
+            "width" | "height" | "x" | "y" | "viewBox" | "preserveAspectRatio"
+        ) {
+            tag.push_str(&format!(" {k}=\"{v}\""));
+        }
+    }
+    for k in ["x", "y", "width", "height"] {
+        if let Some(v) = get(image_attrs, k) {
+            tag.push_str(&format!(" {k}=\"{v}\""));
+        }
+    }
+    let aspect = get(image_attrs, "preserveAspectRatio").unwrap_or_else(|| "xMidYMid meet".into());
+    tag.push_str(&format!(
+        " viewBox=\"{view_box}\" preserveAspectRatio=\"{aspect}\">"
+    ));
+    let mut body = format!("{tag}{}", &image[root_end + 1..]);
+    // Its ids, and what refers to them, with the prefix.
+    let ids: Vec<String> = body
+        .match_indices(" id=\"")
+        .filter_map(|(i, m)| body[i + m.len()..].split('"').next().map(String::from))
+        .collect();
+    for id in ids {
+        for (from, to) in [
+            ("id=\"", "id=\""),
+            ("url(#", "url(#"),
+            ("href=\"#", "href=\"#"),
+        ] {
+            let close = if from == "url(#" { ")" } else { "\"" };
+            body = body.replace(
+                &format!("{from}{id}{close}"),
+                &format!("{to}{prefix}{id}{close}"),
+            );
+        }
+    }
+    Some(match get(image_attrs, "transform") {
+        Some(t) => format!("<g transform=\"{t}\">{body}</g>"),
+        None => body,
+    })
+}
+
+/// Where a start tag ends (its `>`), quotes respected.
+fn tag_end(s: &str) -> Option<usize> {
+    let mut quote = None;
+    for (i, c) in s.char_indices() {
+        match (quote, c) {
+            (None, '"' | '\'') => quote = Some(c),
+            (Some(q), _) if c == q => quote = None,
+            (None, '>') => return Some(i),
+            _ => {}
+        }
+    }
+    None
+}
+
+/// A start tag's attributes, in order.
+fn attributes(tag: &str) -> Vec<(String, String)> {
+    let mut out = Vec::new();
+    let mut rest = tag.trim_start_matches('<');
+    rest = rest.trim_start_matches(|c: char| !c.is_whitespace());
+    while let Some(eq) = rest.find('=') {
+        let name = rest[..eq].trim().to_string();
+        let after = rest[eq + 1..].trim_start();
+        let Some(q) = after.chars().next().filter(|c| *c == '"' || *c == '\'') else {
+            break;
+        };
+        let Some(close) = after[1..].find(q) else {
+            break;
+        };
+        out.push((name, after[1..=close].to_string()));
+        rest = &after[close + 2..];
+    }
+    out
+}
+
+/// Standard base64, padding optional; `None` on anything else.
+fn base64_decode(s: &str) -> Option<Vec<u8>> {
+    let value = |c: u8| match c {
+        b'A'..=b'Z' => Some(c - b'A'),
+        b'a'..=b'z' => Some(c - b'a' + 26),
+        b'0'..=b'9' => Some(c - b'0' + 52),
+        b'+' => Some(62),
+        b'/' => Some(63),
+        _ => None,
+    };
+    let mut out = Vec::with_capacity(s.len() * 3 / 4);
+    let (mut acc, mut bits) = (0u32, 0);
+    for c in s.trim_end_matches('=').bytes() {
+        acc = (acc << 6) | u32::from(value(c)?);
+        bits += 6;
+        if bits >= 8 {
+            bits -= 8;
+            out.push((acc >> bits) as u8);
+        }
+    }
+    Some(out)
 }
 
 /// typst-svg's gradients with their stops copied in. It fills a shape with a gradient that takes its stops from another
@@ -330,7 +500,71 @@ fn first_text(frame: &Frame) -> Option<Span> {
 
 #[cfg(test)]
 mod tests {
-    use super::flat_gradients;
+    use super::{base64_decode, flat_gradients, inline_svg_images};
+
+    /// Standard base64, for the tests' data URLs.
+    fn base64(bytes: &[u8]) -> String {
+        const ABC: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        let mut out = String::new();
+        for chunk in bytes.chunks(3) {
+            let b = [
+                chunk[0],
+                *chunk.get(1).unwrap_or(&0),
+                *chunk.get(2).unwrap_or(&0),
+            ];
+            let n = (u32::from(b[0]) << 16) | (u32::from(b[1]) << 8) | u32::from(b[2]);
+            for i in 0..4 {
+                out.push(if i <= chunk.len() {
+                    ABC[(n >> (18 - 6 * i) & 63) as usize] as char
+                } else {
+                    '='
+                });
+            }
+        }
+        out
+    }
+
+    #[test]
+    fn decodes_base64() {
+        let text = "<svg>\u{e9}</svg>".as_bytes();
+        assert_eq!(base64_decode(&base64(text)).unwrap(), text);
+        assert_eq!(base64_decode("YQ==").unwrap(), b"a");
+        assert!(base64_decode("a b").is_none());
+    }
+
+    #[test]
+    fn inlines_an_svg_image_with_its_box_and_its_ids_prefixed() {
+        let image = r##"<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 20" width="40" height="20" fill="#1f1f1f"><defs><linearGradient id="f1"/></defs><path d="M0,0H4" stroke="url(#f1)" stroke-linecap="round"/></svg>"##;
+        let svg = format!(
+            r##"<svg><defs><linearGradient id="f1"/></defs><g transform="matrix(1 0 0 1 5 6)"><image xlink:href="data:image/svg+xml;base64,{}" width="80" height="40" preserveAspectRatio="none"/></g></svg>"##,
+            base64(image.as_bytes())
+        );
+        let out = inline_svg_images(svg);
+        assert_eq!(
+            out,
+            r##"<svg><defs><linearGradient id="f1"/></defs><g transform="matrix(1 0 0 1 5 6)"><svg xmlns="http://www.w3.org/2000/svg" fill="#1f1f1f" width="80" height="40" viewBox="0 0 40 20" preserveAspectRatio="none"><defs><linearGradient id="i1-f1"/></defs><path d="M0,0H4" stroke="url(#i1-f1)" stroke-linecap="round"/></svg></g></svg>"##
+        );
+    }
+
+    #[test]
+    fn leaves_raster_images_and_svgs_with_a_doctype() {
+        let png = r#"<svg><image xlink:href="data:image/png;base64,iVBORw0KGgo=" width="1" height="1"/></svg>"#;
+        assert_eq!(inline_svg_images(png.to_string()), png);
+        let doctype = format!(
+            r#"<svg><image xlink:href="data:image/svg+xml;base64,{}" width="1" height="1"/></svg>"#,
+            base64(br#"<!DOCTYPE svg [<!ENTITY a "x">]><svg viewBox="0 0 1 1">&a;</svg>"#)
+        );
+        assert_eq!(inline_svg_images(doctype.clone()), doctype);
+    }
+
+    #[test]
+    fn leaves_svgs_with_a_style_sheet() {
+        let styled = format!(
+            r#"<svg><image xlink:href="data:image/svg+xml;base64,{}" width="1" height="1"/></svg>"#,
+            base64(br#"<svg viewBox="0 0 1 1"><style>#a, rect { fill: red }</style><rect id="a"/></svg>"#)
+        );
+        assert_eq!(inline_svg_images(styled.clone()), styled);
+    }
 
     #[test]
     fn copies_a_referenced_gradients_stops_in() {

@@ -54,7 +54,7 @@ jobs:
         # The runner image's package lists go stale: a security update removes the version they name (404).
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends poppler-utils
       - run: docker pull onlyoffice/documentserver
-      - run: pnpm turbo run build --filter=@typstream/docx-check^...
+      - run: pnpm turbo run build --filter=@typstream/docx-check^... --filter=@typstream/mermaid
       - run: dotnet publish tools/docx-check/validator -c Release -o tools/docx-check/validator/out
       - run: node tools/docx-check/check.mjs --onlyoffice
       # Other scripts (#134), for the numbers: ONLYOFFICE's PDF drops Indic vowel signs, Bengali equations' digits too.
@@ -63,7 +63,7 @@ jobs:
       # The plugins' conformance suites (#135), for what differs: ONLYOFFICE draws ruled lines taller and underlines a
       # point higher than LibreOffice, so some examples fail there.
       - run: >-
-          pnpm --filter @typstream/edu --filter @typstream/mindmap --filter @typstream/universe
+          pnpm --filter @typstream/edu --filter @typstream/mindmap --filter @typstream/mermaid --filter @typstream/universe
           --filter @typstream/conformance test:docx
         env:
           TYPSTREAM_DOCX_ENGINE: onlyoffice
@@ -117,9 +117,11 @@ jobs:
       - run: node tools/repo/playwright-docker.mjs pnpm --filter @typstream/browser-suites test:browser
         env:
           BROWSERS: ${{ matrix.browser }}
-      # The plugins' conformance suites' paged half (#135), in every browser (PRs run Chromium's).
+      # The plugins' conformance suites' paged half (#135), in every browser (PRs run Chromium's). mermaid's loads its
+      # generator module, which its build writes.
+      - run: pnpm turbo run build --filter=@typstream/mermaid
       - run: >-
           node tools/repo/playwright-docker.mjs pnpm --filter @typstream/edu --filter @typstream/mindmap
-          --filter @typstream/universe --filter @typstream/conformance test:paged
+          --filter @typstream/mermaid --filter @typstream/universe --filter @typstream/conformance test:paged
         env:
           BROWSERS: ${{ matrix.browser }}

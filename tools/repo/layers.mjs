@@ -47,6 +47,14 @@ export const PACKAGES = {
   edu: { name: "@typstream/edu", layer: 3, deps: ["core"], testDeps: ["engine-wasm", "html-compat"] },
   "html-compat": { name: "@typstream/html-compat", layer: 3, deps: ["core"], testDeps: ["engine-wasm", "universe"] },
   "google-fonts": { name: "@typstream/google-fonts", layer: 3, deps: ["core"], testDeps: ["engine-wasm"] },
+  // Content, like edu. Its tests run its generator (pele) in the engine's server as the worker does, with
+  // engine-wasm and html-compat.
+  mermaid: {
+    name: "@typstream/mermaid",
+    layer: 3,
+    deps: ["core"],
+    testDeps: ["engine-wasm", "engine", "heal", "html-compat"],
+  },
   dom: {
     name: "@typstream/dom",
     layer: 4,

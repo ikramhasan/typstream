@@ -396,6 +396,9 @@ importers:
       '@typstream/google-fonts':
         specifier: workspace:*
         version: link:../../packages/google-fonts
+      '@typstream/mermaid':
+        specifier: workspace:*
+        version: link:../../packages/mermaid
       '@typstream/mindmap':
         specifier: workspace:*
         version: link:../../packages/mindmap
@@ -750,6 +753,31 @@ importers:
       pdfjs-dist:
         specifier: ^6.4.299
         version: 6.4.299
+
+  packages/mermaid:
+    dependencies:
+      '@typstream/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@typstream/corpus':
+        specifier: workspace:*
+        version: link:../../corpus
+      '@typstream/engine':
+        specifier: workspace:*
+        version: link:../engine
+      '@typstream/engine-wasm':
+        specifier: workspace:*
+        version: link:../engine-wasm
+      '@typstream/heal':
+        specifier: workspace:*
+        version: link:../heal
+      '@typstream/html-compat':
+        specifier: workspace:*
+        version: link:../html-compat
+      pele:
+        specifier: 1.13.0
+        version: 1.13.0
 
   packages/mindmap:
     dependencies:
@@ -5264,6 +5292,10 @@ packages:
   pdfjs-dist@6.4.299:
     resolution: {integrity: sha512-AVl138zALtfaAPvADulE0PZThbYzCBS79nL4pOSL/6Sm/4AH5A21BD9VHt97OlCuzJuCpmeZtAtkinisF4Vb1g==}
     engines: {node: '>=22.13.0 || >=24'}
+
+  pele@1.13.0:
+    resolution: {integrity: sha512-Ie8UKY9x00MsuR3jO6AzUwzK2Z6MIV3Tf4EDdITiuk8Uaz8K7g0R082WqsqNaSU8DdgkrRvZThzhit83mi/uiw==}
+    engines: {node: '>=20'}
 
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
@@ -10410,6 +10442,8 @@ snapshots:
   pdfjs-dist@6.4.299:
     optionalDependencies:
       '@napi-rs/canvas': 1.0.13
+
+  pele@1.13.0: {}
 
   picocolors@1.1.1: {}
 

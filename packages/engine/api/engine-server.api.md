@@ -11,6 +11,7 @@ import { Diagnostic } from '@typstream/core';
 import { DiagnosticFixer } from '@typstream/core';
 import { ExportFormat } from '@typstream/core';
 import { FileContent } from '@typstream/core';
+import { FileGenerator } from '@typstream/core';
 import { FontCatalogue } from '@typstream/core';
 import { InitializeOptions } from '@typstream/core';
 import { InitInput } from '@typstream/engine-wasm';
@@ -129,7 +130,7 @@ export interface EngineWasmOptions {
     fontCache?: string | false;
     fonts?: readonly FontInput[];
     lazyFonts?: readonly LazyFontInput[];
-    wasm?: InitInput | Promise<InitInput>;
+    wasm?: InitInput | Promise<InitInput> | (() => InitInput | Promise<InitInput>);
 }
 
 // @beta
@@ -151,7 +152,7 @@ export const hoistImport: DiagnosticFixer;
 export { InitInput }
 
 // @beta
-export const inProcess: (createAdapter: () => EngineAdapter, options?: Pick<ServerOptions, "fixers" | "packages" | "fontCatalogues">) => SpawnEngine;
+export const inProcess: (createAdapter: () => EngineAdapter, options?: Pick<ServerOptions, "fixers" | "packages" | "fontCatalogues" | "generators" | "clientFixers">) => SpawnEngine;
 
 // @public
 export const LAYOUT_PROFILE: string;
@@ -190,7 +191,7 @@ export const PREAMBLE_PATH = "<preamble>";
 export const RUNTIME_PATH = "/@typstream/runtime.typ";
 
 // @public
-export const serve: (adapter: EngineAdapter, scope?: WorkerScope, options?: Pick<ServerOptions, "fixers" | "packages" | "fontCatalogues">) => EngineServer;
+export const serve: (adapter: EngineAdapter, scope?: WorkerScope, options?: Pick<ServerOptions, "fixers" | "packages" | "fontCatalogues" | "generators">) => EngineServer;
 
 // @public
 export interface ServerOptions {
@@ -198,6 +199,8 @@ export interface ServerOptions {
     fixers?: readonly DiagnosticFixer[];
     // @beta
     fontCatalogues?: FontCatalogueOptions;
+    // @beta
+    generators?: readonly FileGenerator[];
     onFatal?(error: unknown): void;
     // @beta
     packages?: PackageOptions;

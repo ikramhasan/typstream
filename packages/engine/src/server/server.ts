@@ -22,6 +22,7 @@ import {
   type FallbackParams,
   type FileContent,
   type FileDelta,
+  type FileGenerator,
   type FontCatalogue,
   type InitializeParams,
   type InitializeResult,
@@ -65,6 +66,7 @@ import {
   runFixers,
 } from "./fixers";
 import { anyArrives, type FontCatalogueOptions, FontCatalogues } from "./fonts";
+import { DocumentGenerators, loadGenerators } from "./generators";
 import { DocumentPackages, type PackageOptions, PackageStore } from "./packages";
 import { LAYOUT_PROFILE } from "./profile";
 import { RUNTIME, RUNTIME_IMPORT, RUNTIME_PATH } from "./runtime";
@@ -112,13 +114,20 @@ export interface ServerOptions {
    */
   fixers?: readonly DiagnosticFixer[];
   /**
-   * Import the fixer modules the client names (`initialize`'s and
-   * `document/open`'s `fixerModules`). Default true, for a worker serving its
-   * own page. Importing a module runs its code, so a server facing untrusted
-   * clients must set false (`@typstream/node` does): their lists are then
-   * ignored, with a warning.
+   * Import the fixer and file generator modules the client names
+   * (`initialize`'s and `document/open`'s `fixerModules`, `document/open`'s
+   * `generatorModules`). Default true, for a worker serving its own page.
+   * Importing a module runs its code, so a server facing untrusted clients
+   * must set false (`@typstream/node` does): their lists are then ignored,
+   * with a warning.
    */
   clientFixers?: boolean;
+  /**
+   * File generators run for every document (PLAN §8.2), before those of its
+   * `generatorModules`: a server that imports no client modules can still
+   * offer a plugin's, e.g. `@typstream/mermaid`'s diagrams. @beta
+   */
+  generators?: readonly FileGenerator[];
   /**
    * Typst packages (PLAN §6.4): the server's own allowlist, whether to take the
    * client's, where packages without a URL come from. Default: only what the
@@ -190,6 +199,8 @@ interface Doc {
   files: Set<string>;
   /** Layer 3 fixers in the order they're tried: the server's, plus the document's fixer modules'. */
   fixers: DiagnosticFixer[];
+  /** File generators: the server's, plus the document's generator modules'. */
+  generators: DocumentGenerators;
   /** Font catalogues it loads families it names from: the server's, `initialize`'s and its own. */
   catalogues: FontCatalogue[];
   /**
@@ -291,7 +302,9 @@ const fallbackOf = (f: FallbackParams | undefined, length: number): FallbackPara
 const loadFixers = async (url: string): Promise<DiagnosticFixer[]> => {
   let module: { default?: unknown };
   try {
-    module = await import(/* @vite-ignore */ url);
+    // A URL known only at runtime: bundlers must leave the import as it is (Turbopack otherwise makes it throw
+    // "module not found", webpack too).
+    module = await import(/* @vite-ignore */ /* webpackIgnore: true */ /* turbopackIgnore: true */ url);
   } catch (e) {
     throw invalid(`fixer module ${url} failed to load: ${e instanceof Error ? e.message : String(e)}`);
   }
@@ -316,6 +329,8 @@ class Server implements EngineServer {
   private sharedModules = new Set<string>();
   /** Documents' fixer modules by URL, each imported once. */
   private readonly documentModules = new Map<string, Promise<DiagnosticFixer[]>>();
+  /** Documents' file generator modules by URL, each imported once. */
+  private readonly generatorModules = new Map<string, Promise<FileGenerator[]>>();
   private readonly packages: PackageStore;
   private readonly fonts: FontCatalogues;
 
@@ -610,10 +625,56 @@ class Server implements EngineServer {
   }
 
   /** The fixer modules of a client's list the server may import: none unless it trusts the client. */
-  private clientModules(urls: readonly string[]): readonly string[] {
+  private clientModules(urls: readonly string[], what = "fixer modules"): readonly string[] {
     if (this.options.clientFixers !== false || !urls.length) return urls;
-    this.post({ method: "$/log", params: { level: "warn", message: "ignored the client's fixer modules" } });
+    this.post({ method: "$/log", params: { level: "warn", message: `ignored the client's ${what}` } });
     return [];
+  }
+
+  /**
+   * The server's file generators plus those of a document's modules, for one document. A module
+   * that fails to load is logged, as a fixer module is, and the document compiles without it.
+   */
+  private async documentGenerators(urls: readonly string[]): Promise<DocumentGenerators> {
+    const own = [...new Set(this.clientModules(urls, "file generator modules"))];
+    const loaded = await Promise.all(
+      own.map(async (url) => {
+        const load = this.generatorModules.get(url) ?? loadGenerators(url);
+        this.generatorModules.set(url, load);
+        try {
+          return await load;
+        } catch (e) {
+          this.generatorModules.delete(url);
+          this.post({
+            method: "$/log",
+            params: { level: "error", message: e instanceof Error ? e.message : String(e) },
+          });
+          return [];
+        }
+      }),
+    );
+    return new DocumentGenerators([...(this.options.generators ?? []), ...loaded.flat()], (level, message) =>
+      this.post({ method: "$/log", params: { level, message } }),
+    );
+  }
+
+  /**
+   * Brings the files a document's generators make from its source up to date (before a compile
+   * or an export). What changed invalidates what the fallback learnt, as the client's files do.
+   */
+  private async generate(doc: Doc, mode: CompileMode): Promise<void> {
+    const delta = await doc.generators.run(doc.prefix + doc.text, mode);
+    if (!delta) return;
+    const files: Record<string, FileContent | null> = {};
+    for (const [path, content] of Object.entries(delta)) {
+      try {
+        files[virtualPath(path)] = content;
+      } catch (e) {
+        this.post({ method: "$/log", params: { level: "error", message: e instanceof Error ? e.message : String(e) } });
+      }
+    }
+    doc.compiler.setFiles(files);
+    doc.memo = null;
   }
 
   private unsupported(what: string): never {
@@ -662,16 +723,23 @@ class Server implements EngineServer {
 
     shutdown: async () => {
       this.ready();
-      for (const doc of this.docs.values()) doc.compiler.close();
+      for (const doc of this.docs.values()) {
+        doc.generators.close();
+        doc.compiler.close();
+      }
       this.docs.clear();
       this.phase = "shutdown";
       return null;
     },
 
-    "document/open": async ({ uri, rev, text, preamble, files, packages, fixerModules, fontCatalogues }) => {
+    "document/open": async (params) => {
+      const { uri, rev, text, preamble, files, packages, fixerModules, generatorModules, fontCatalogues } = params;
       this.ready();
       if (this.docs.has(uri)) throw new ProtocolError("document-already-open", `document ${uri} is already open`);
-      const fixers = await this.documentFixers(fixerModules ?? []);
+      const [fixers, generators] = await Promise.all([
+        this.documentFixers(fixerModules ?? []),
+        this.documentGenerators(generatorModules ?? []),
+      ]);
       const compiler = this.adapter.open();
       const keys = new Set<string>();
       try {
@@ -679,6 +747,7 @@ class Server implements EngineServer {
         compiler.setFiles({ [RUNTIME_PATH]: RUNTIME });
         if (files) this.writeFiles(compiler, files, keys);
       } catch (e) {
+        generators.close();
         compiler.close();
         throw e;
       }
@@ -704,6 +773,7 @@ class Server implements EngineServer {
           doc.memo = null;
         }),
         fixers,
+        generators,
         catalogues: this.fonts.forDocument(fontCatalogues),
         files: keys,
       };
@@ -737,7 +807,9 @@ class Server implements EngineServer {
     },
 
     "document/close": async ({ uri }) => {
-      this.doc(uri).compiler.close();
+      const doc = this.doc(uri);
+      doc.generators.close();
+      doc.compiler.close();
       this.docs.delete(uri);
       return null;
     },
@@ -752,6 +824,7 @@ class Server implements EngineServer {
       // Imported packages load first, within the fix budget; any later arrival compiles again.
       const waiting = await doc.packages.prepare(doc.prefix + doc.text, received + FIX_BUDGET_MS[mode]);
       if (waiting) this.recompile(waiting.loading, params);
+      await this.generate(doc, mode);
       this.sync(doc, params.inputs, anchors);
       const settled =
         mode === "streaming" && params.settled !== undefined
@@ -989,6 +1062,7 @@ class Server implements EngineServer {
       const doc = this.current(uri, rev);
       if (!this.adapter.exports.includes("html")) this.unsupported("HTML export");
       await doc.packages.prepare(doc.prefix + doc.text, performance.now() + FIX_BUDGET_MS.final);
+      await this.generate(doc, "final");
       this.sync(doc, inputs, anchors === true);
       const r = await this.exportOnce(doc, () => doc.compiler.compileHtml({ mode: "final" }));
       const diagnostics = this.diagnostics(doc, r.diagnostics);
@@ -1002,6 +1076,7 @@ class Server implements EngineServer {
       const exportModel = doc.compiler.exportDocxModel?.bind(doc.compiler);
       if (!this.adapter.exports.includes("docx") || !exportModel) this.unsupported("DOCX export");
       await doc.packages.prepare(doc.prefix + doc.text, performance.now() + FIX_BUDGET_MS.final);
+      await this.generate(doc, "final");
       this.sync(doc, inputs);
       // Laid-out pages don't keep their margins: the probe records them where the document ends.
       this.writeFixed(doc, doc.text + DOCX_MARGIN_PROBE, false, (p) => p);
@@ -1017,6 +1092,7 @@ class Server implements EngineServer {
       const doc = this.current(uri, rev);
       if (!this.adapter.exports.includes("pdf") || !doc.compiler.exportPdf) this.unsupported("PDF export");
       await doc.packages.prepare(doc.prefix + doc.text, performance.now() + FIX_BUDGET_MS.final);
+      await this.generate(doc, "final");
       this.sync(doc, inputs);
       const exportPdf = doc.compiler.exportPdf.bind(doc.compiler);
       const r = await this.exportOnce(doc, () => exportPdf({ mode: "final" }));

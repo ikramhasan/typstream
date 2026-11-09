@@ -47,8 +47,9 @@ export interface EngineWasmOptions {
    * The compiler: a URL (fetched and compiled while it streams in), a fetch
    * `Response`, the bytes, or a compiled `WebAssembly.Module`. Default:
    * `engine_bg.wasm` next to engine-wasm's JS, which bundlers emit as an asset.
+   * A function is called when the client initializes the worker, and returns one of them.
    */
-  wasm?: InitInput | Promise<InitInput>;
+  wasm?: InitInput | Promise<InitInput> | (() => InitInput | Promise<InitInput>);
   /** Fonts every document gets, in addition to those sent with `initialize`. */
   fonts?: readonly FontInput[];
   /**
@@ -194,9 +195,10 @@ export const engineWasm = (options: EngineWasmOptions = {}): EngineAdapter => {
         ...sources.filter((f) => !(f.kind === "url" && f.info !== undefined)).map(fontInput),
       ];
       cache = await openCache(options.fontCache ?? "typstream-fonts");
+      const wasm = typeof options.wasm === "function" ? options.wasm() : options.wasm;
       const [, loaded] = await Promise.all([
         // The glue streams a URL or Response through `instantiateStreaming`.
-        initWasm(options.wasm === undefined ? undefined : { module_or_path: options.wasm }),
+        initWasm(wasm === undefined ? undefined : { module_or_path: wasm }),
         Promise.all(eager.map((font) => (font instanceof Uint8Array ? font : fetchFont(font, cache)))),
       ]);
       // Fonts belong to the wasm instance: every document's engine sees them.

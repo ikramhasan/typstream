@@ -112,6 +112,21 @@ describe("Typst packages", { timeout: 60_000 }, () => {
     expect(fetched.sort()).toEqual(["cetz-0.5.3.tar.gz", "oxifmt-1.0.0.tar.gz"]);
   });
 
+  it("fetches the imports a package lists alongside it, not once it is unpacked", async () => {
+    const log: string[] = [];
+    const fetch = async (url: string) => {
+      const file = url.slice(url.lastIndexOf("/") + 1);
+      log.push(`start ${file}`);
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      log.push(`end ${file}`);
+      return new Response(readFileSync(fileURLToPath(url)));
+    };
+    const s = await serverWith({ packages: { fetch, cache: false } }, [...UNIVERSE_PACKAGES]);
+    const uri = await s.open(CETZ);
+    expect((await s.compile({ uri, rev: 1, target: "paged" })).diagnostics).toEqual([]);
+    expect(log.slice(0, 2)).toEqual(["start cetz-0.5.3.tar.gz", "start oxifmt-1.0.0.tar.gz"]);
+  });
+
   it("follows dependencies pinned at other versions (fletcher's cetz 0.3.4)", async () => {
     const { fetched, fetch } = vendored();
     const s = await serverWith({ packages: { fetch, cache: false } }, [...UNIVERSE_PACKAGES]);

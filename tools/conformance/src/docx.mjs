@@ -1,5 +1,5 @@
 // The DOCX half of the conformance suite (#135): a plugin's examples exported as an app exports them (healed in final
-// mode, the plugins' preambles, files and packages, @typstream/node's engine with the layout profile), to Typst's PDF
+// mode, the plugins' preambles, files, packages and generated files, @typstream/node's engine with the layout profile), to Typst's PDF
 // and to DOCX, the DOCX laid out by LibreOffice (or ONLYOFFICE) and compared with the PDF (compare.mjs), and checked
 // by Microsoft's validator.
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
@@ -19,6 +19,27 @@ import { TOLERANCE } from "./pixels.mjs";
 
 /** @typedef {import("./docx.d.mts").ConformanceSuite} ConformanceSuite */
 /** @typedef {import("./docx.d.mts").DocxResult} DocxResult */
+
+/**
+ * The plugins' file generators (`engine.generatorModules`, PLAN §8.2), opened for one document: the files they make
+ * from its source, as the engine's worker writes them before an export.
+ * @param {readonly import("@typstream/core").TypstreamPlugin[]} plugins
+ */
+const generators = async (plugins) => {
+  const modules = await Promise.all(
+    plugins.flatMap((p) => p.engine?.generatorModules ?? []).map((url) => import(/* @vite-ignore */ url)),
+  );
+  const list = modules.flatMap((m) => (Array.isArray(m.default) ? m.default : [m.default]));
+  return async (source) => {
+    const files = {};
+    for (const g of list) {
+      const session = g.open();
+      Object.assign(files, await session.files(source, { mode: "final" }));
+      session.close?.();
+    }
+    return files;
+  };
+};
 
 /** A file name for an example: its name's letters and digits. */
 const slug = (name, taken) => {
@@ -45,6 +66,7 @@ export const checkDocx = async (suite, options = {}) => {
     packageFiles(plugins.flatMap((p) => p.engine?.packages ?? [])),
     ...plugins.map((p) => p.engine?.files ?? {}),
   );
+  const generate = await generators(plugins);
   const handlers = plugins.flatMap((p) => p.heal?.handlers ?? []);
   const lint = Object.assign({}, ...plugins.map((p) => p.heal?.lint ?? {}));
   const results = new Map();
@@ -53,7 +75,8 @@ export const checkDocx = async (suite, options = {}) => {
   for (const example of suite.examples) {
     // What an engine exports: the document healed in final mode, lint fixes included (the layout profile's among them).
     const text = heal(example.source, { final: true, handlers, lint }).source;
-    const opts = { preamble, files: { ...files, ...example.files }, inputs: example.inputs };
+    const generated = await generate((preamble ? `${preamble}\n` : "") + text);
+    const opts = { preamble, files: { ...files, ...generated, ...example.files }, inputs: example.inputs };
     const [pdf, docx] = await Promise.all([render(text, "pdf", opts), renderDocxModel(text, opts)]);
     if (!pdf.ok || !docx.ok) {
       const errors = (pdf.ok ? docx : pdf).diagnostics.filter((d) => d.severity === "error");

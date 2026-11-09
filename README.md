@@ -42,6 +42,7 @@ and keeps the last good render on screen when a compile fails. [How it works](ap
 | [`@typstream/universe`](packages/universe) | The Typst Universe packages allowed by default (CeTZ, fletcher, physica, …), vendored. |
 | [`@typstream/google-fonts`](packages/google-fonts) | Any Google Fonts family by name. |
 | [`@typstream/mindmap`](packages/mindmap) | Mind maps, drawn in Typst and interactive in React. |
+| [`@typstream/mermaid`](packages/mermaid) | Mermaid diagrams, drawn by [pele](https://pele.run), the same on pages, in PDF and in Word. |
 
 Guides and reference are in [`apps/website/content/docs`](apps/website/content/docs) (the website's source), starting
 with [installation](apps/website/content/docs/getting-started/installation.mdx). For a chat app, see

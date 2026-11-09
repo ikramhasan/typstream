@@ -34,6 +34,8 @@ packages/edu      @typstream/edu: the Typst vocabulary for teachers' documents (
                   rubrics, drawings, `ce`), its CSS and prompt catalogue, as a plugin (tests need the engine and native typst).
 packages/mindmap  @typstream/mindmap: mind maps, the first render island (#28): a Typst package drawing a map written as a
                   list, its prompt kit, the island's spec, and `./react` (React Flow, loaded lazily). Bindings layer.
+packages/mermaid  @typstream/mermaid: Mermaid diagrams drawn by pele (pele.run): ```mermaid blocks, drawn in the worker by a
+                  file generator (generator/mermaid.js, pele bundled) into its Typst package, shapes as SVG, labels as Typst text.
 packages/dom      @typstream/dom: framework-free renderers. `src/html/`: HTML renderer (string block split, sanitizer, source
                   anchors, word fade-in, caret, theme CSS, Typst's fonts, and the document laid out on pages as the
                   paged view's: `pages.ts`, page breaks, headers and footers, columns, fractional spacing). `src/paged/`: pages painted on canvases from the engine's drawings, SVG for what they can't draw (changed pages, visible first, text layer).
@@ -113,7 +115,8 @@ pnpm coverage          # line and branch coverage of the TypeScript packages, No
 ```
 
 In `packages/engine-wasm` (Rust build, ~3 min cold):
-- `pnpm build`: `build.sh` → `dist/` (glue, `.d.ts`, `wasm-opt -Oz` wasm, Typst's 17 bundled faces from typst-assets, the CFF ones converted to TrueType outlines (output SHA-256 pinned, #118): 5 base fonts and 12 lazy `extraFonts`, the same files `@typstream/node` serves (#128), and the lazily loaded script fonts, downloaded from notofonts at a pinned commit and SHA-256 checked, with their `FontInfo` registry written by `scripts/fonts.mjs`). It skips the build when `dist/` came from the same inputs (`FORCE=1` rebuilds). The root `pnpm test` / `pnpm check-types` (turbo) build it first; run inside the package, `pnpm test` uses the existing `dist/`.
+- `pnpm build`: `build.sh` → `dist/` (glue, `.d.ts`, `wasm-opt -Oz` wasm and its URL for bundlers (`wasm.js`: the engine's worker
+  compiles it itself, to post the module to the workers after it), Typst's 17 bundled faces from typst-assets, the CFF ones converted to TrueType outlines (output SHA-256 pinned, #118): 5 base fonts and 12 lazy `extraFonts`, the same files `@typstream/node` serves (#128), and the lazily loaded script fonts, downloaded from notofonts at a pinned commit and SHA-256 checked, with their `FontInfo` registry written by `scripts/fonts.mjs`). It skips the build when `dist/` came from the same inputs (`FORCE=1` rebuilds). The root `pnpm test` / `pnpm check-types` (turbo) build it first; run inside the package, `pnpm test` uses the existing `dist/`.
 - `pnpm size`: wasm budget, 6.32 MB brotli (HTML, SVG and PDF in one build since #18, and the DOCX model).
 - Native tools in `examples/` (`cargo run --release --example …`, the font store is thread-local, so they compile on
   the calling thread): `frames` dumps a document's laid-out frames (items, positions, tags), `docx_model` writes its
@@ -167,14 +170,25 @@ In `packages/mindmap`:
 - On pages, islands are DOM over the canvas (dom's paged view, a `.typstream-islands` layer per page), so the canvas,
   print, exports and the pixel suites (`test:paged`, browser-suites' `pdf-raster`) keep the Typst drawing.
 
+In `packages/mermaid`:
+- Edit `typst/*.typ` or `examples/*.typ`, then `pnpm embed` (a test checks `src/assets.generated.ts`). `pnpm widths`
+  rewrites `src/widths.generated.ts` (Libertinus Serif's advance widths, pele's measurer) from typst-assets in Cargo's
+  registry.
+- `pnpm build` writes `generator/mermaid.js` (the worker module, pele bundled, outside `dist/` so
+  `new URL("../generator/mermaid.js", import.meta.url)` works from `src/` and `dist/`); its tests load it, so turbo builds
+  the package first. `pnpm test`: the generator's parts, documents through the engine and engine-wasm (every healed
+  stream prefix). `pnpm test:paged`, `test:docx`: the conformance suite. `pnpm size`: plugin ≤ 6 KB, generator ≤ 285 KB.
+- Typst can't run JavaScript: the generator writes an index of drawings (by the block's text, whitespace collapsed,
+  which `lib.typ` computes alike) and an SVG per drawing; the preamble's show rule reads them. Labels are Typst text.
+
 In `packages/dom`:
 - `pnpm test`: node tests (the HTML block splitter, paged helpers). `pnpm test:browser`: the renderers in Chromium, Firefox and WebKit, fed by the real engine worker with html-compat and corpus documents (needs engine-wasm's `dist/`). `BROWSERS=chromium` runs one.
-- `pnpm size`: HTML renderer ≤ 23.3 KB gzipped (with its CSS), paged renderer ≤ 6.8 KB, standalone HTML export ≤ 2 KB.
+- `pnpm size`: HTML renderer ≤ 23.3 KB gzipped (with its CSS), paged renderer ≤ 7.2 KB, standalone HTML export ≤ 2 KB.
 - Its API report needs DOM types, so its `api-extractor.json` overrides the shared compiler settings.
 
 In `packages/react`:
 - `pnpm test`: Node tests (provider merging, the shared engine's lifetime). `pnpm test:browser`: `<Typstream>` with React Testing Library against the real engine worker in Chromium, Firefox and WebKit (StrictMode, lazy opening, worker cleanup). `BROWSERS=chromium` runs one. Needs engine-wasm's `dist/`.
-- `pnpm size`: ≤ 35.0 KB gzipped including `@typstream/dom` (React and the engine external).
+- `pnpm size`: ≤ 35.3 KB gzipped including `@typstream/dom` (React and the engine external).
 - Its bundle starts with `"use client"` (tsup banner), as does `typstream`'s, for Next.js's App Router.
 
 In `packages/syntax`: `pnpm build` runs `build.sh` (the crate to `wasm/`, skipped when `wasm/.inputs` matches, then
@@ -211,7 +225,7 @@ external). Change the edit prompt's rules (`editPromptRules`) only with a new me
 
 In `examples/strict-csp`: `pnpm test` builds the pages (a worksheet in both targets, and a mind map island in both), serves them with the policy in `csp.mjs` and fails on any CSP violation or console error in Chromium, Firefox and WebKit (`BROWSERS=` picks some). Build the packages first (`pnpm turbo run build --filter=@typstream/example-strict-csp^...`). CI runs it in each browser's `Engine (<browser>)` job. Hostile documents go in `corpus/adversarial/hostile-*.typ` (category `hostile-…`); the engine's and the browser suites' `security.test.ts` run them all.
 
-In `examples/nextjs-ai-sdk`: deployed at https://typstream-ai-sdk.vercel.app with no `ANTHROPIC_API_KEY`, so when the server has none (`GET /api/chat`), the page asks for the visitor's key in a dialog, keeps it in memory only and sends it in a header (`app/api/chat/key.ts`); the smoke test declines it ("Replay a sample"). `pnpm test` builds the app (Turbopack) and streams an answer into `<Typstream>` in Chromium (pages), then a follow-up's answer (HTML: the document again, changed), then the first answer's Edit button opening `<TypstEditor>` and typing into it (Done shows the edit in the page view), failing on any error frame. A follow-up gets a whole new document: the route sends the chat as `useChat` posted it, with the same instructions every request, and must never rewrite an earlier message (Anthropic rejects a request whose content before an answer's thinking changed: "Invalid `signature` in `thinking` block"). The route prompts with edu's kit (with universe, google-fonts and mindmap) and the page renders with their plugins (mind maps as islands); the UI is shadcn/ui (AI Elements, Base UI, Tailwind 4) in `components/ui/`, added with the shadcn CLI. Without `ANTHROPIC_API_KEY` the route replays a worksheet (or, for a follow-up, the worksheet revised) that compiles at every prefix (a kit recording doesn't, and the test fails on any error frame); a key in `.env.local` reaches `next start` too, so run the test with `ANTHROPIC_API_KEY=` to keep it offline. Build the packages first (`pnpm turbo run build --filter=@typstream/example-nextjs-ai-sdk^...`). CI runs it in the `Engine (chromium)` job.
+In `examples/nextjs-ai-sdk`: deployed at https://typstream-ai-sdk.vercel.app with no `ANTHROPIC_API_KEY`, so when the server has none (`GET /api/chat`), the page asks for the visitor's key in a dialog, keeps it in memory only and sends it in a header (`app/api/chat/key.ts`); the smoke test declines it ("Replay a sample"). `pnpm test` builds the app (Turbopack) and streams an answer into `<Typstream>` in Chromium (pages), then a follow-up's answer (HTML: the document again, changed), then the first answer's Edit button opening `<TypstEditor>` and typing into it (Done shows the edit in the page view), failing on any error frame. A follow-up gets a whole new document: the route sends the chat as `useChat` posted it, with the same instructions every request, and must never rewrite an earlier message (Anthropic rejects a request whose content before an answer's thinking changed: "Invalid `signature` in `thinking` block"). The route prompts with edu's kit (with universe, google-fonts, mindmap and mermaid) and the page renders with their plugins (mind maps as islands; Mermaid diagrams drawn by the worker, which loads mermaid's generator module as a Turbopack asset); the UI is shadcn/ui (AI Elements, Base UI, Tailwind 4) in `components/ui/`, added with the shadcn CLI. Without `ANTHROPIC_API_KEY` the route replays a worksheet (or, for a follow-up, the worksheet revised) that compiles at every prefix (a kit recording doesn't, and the test fails on any error frame); a key in `.env.local` reaches `next start` too, so run the test with `ANTHROPIC_API_KEY=` to keep it offline. Build the packages first (`pnpm turbo run build --filter=@typstream/example-nextjs-ai-sdk^...`). CI runs it in the `Engine (chromium)` job.
 
 In `packages/heal`:
 - `pnpm test:long`: 20,000-run property campaign (minutes).

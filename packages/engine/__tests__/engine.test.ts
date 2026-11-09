@@ -474,6 +474,16 @@ describe("watchdog", () => {
     s = doc.getState();
     expect(s.status).toBe("idle");
     expect(html(s)).toBe("<p>Fine again</p>");
+    expect(workers.alive).toEqual([workers.spawned[1], workers.spawned[2]]);
+  });
+
+  it("starts the spare once the first compile is answered, so it doesn't slow that one down", async () => {
+    const { workers, engine } = setup({ compileMs: () => 500 });
+    engine.open({ text: "Fine" });
+    await tick(100);
+    expect(workers.alive).toHaveLength(1);
+    await tick(500);
+    expect(workers.alive).toHaveLength(2);
   });
 
   it("stops compiling live after three strikes and compiles once when finished", async () => {

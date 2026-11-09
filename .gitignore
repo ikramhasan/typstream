@@ -26,3 +26,6 @@ reports/
 .vercel/
 packages/syntax/wasm/
 packages/editor-react/__tests__/browser/screenshots/
+
+# @typstream/mermaid: the worker module its build writes outside dist/
+packages/mermaid/generator/

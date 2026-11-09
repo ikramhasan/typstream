@@ -408,13 +408,14 @@ Typst panic, or out of memory) ends the worker so the client replaces it.
 const serve: (
   adapter: EngineAdapter,
   scope?: WorkerScope,
-  options?: Pick<ServerOptions, "fixers" | "packages">,
+  options?: Pick<ServerOptions, "fixers" | "packages" | "fontCatalogues" | "generators">,
 ) => EngineServer;
 ```
 
 Runs the engine server in this worker, answering the client's messages with `adapter`. `scope` defaults to the
 worker's global scope. `options.fixers` replaces the built-in fixers (`[]` turns them off); `options.packages`
-configures Typst packages (by default the client's allowlist is used).
+configures Typst packages (by default the client's allowlist is used); `options.generators` (beta) are file generators
+every document runs, such as `@typstream/mermaid/generator` bundled into your own worker instead of imported by URL.
 
 ```ts
 serve(engineWasm(), undefined, { fixers: [pendingRef, myFixer, tailCut] });
@@ -471,7 +472,7 @@ the bytes, or a compiled `WebAssembly.Module`).
 ```ts
 const inProcess: (
   createAdapter: () => EngineAdapter,
-  options?: Pick<ServerOptions, "fixers" | "packages">,
+  options?: Pick<ServerOptions, "fixers" | "packages" | "fontCatalogues" | "generators" | "clientFixers">,
 ) => SpawnEngine;
 ```
 
@@ -522,8 +523,8 @@ can't structured-clone, write messages with [`serializeMessage`](/docs/reference
 <Callout type="warn" title="Untrusted clients">
 A server that accepts connections from clients it doesn't control must set `clientFixers: false`,
 `packages: { trustClient: false }` and `fontCatalogues: { trustClient: false }`. Otherwise any client can make it
-import code (fixer modules) or fetch any URL (packages, font catalogues). [`@typstream/node`](/docs/reference/node)
-sets all three.
+import code (fixer and file generator modules) or fetch any URL (packages, font catalogues).
+[`@typstream/node`](/docs/reference/node) sets all three. A server's own `generators` (`ServerOptions.generators`) still run.
 </Callout>
 
 #### `PackageOptions` (beta)
@@ -762,9 +763,16 @@ diagnostic.
 
 ## `@typstream/engine/worker`
 
-The default worker script: `serve(engineWasm({ fonts: baseFonts, lazyFonts: [...extraFonts, ...scriptFonts] }))`, with the fonts from
+The default worker script: `serve(engineWasm({ wasm, fonts: baseFonts, lazyFonts: [...extraFonts, ...scriptFonts] }))`, with the fonts from
 `@typstream/engine-wasm/fonts`. It has no exports; importing it starts the server in the current worker.
 `engineWorker()` spawns it, so you rarely need it directly.
+
+Its `wasm` is shared between workers, so a page downloads and compiles the engine once. When it initializes, the worker
+fetches `wasmUrl` (from `@typstream/engine-wasm/wasm`), compiles it and posts `{ "typstream/wasm": module }`, the
+`WebAssembly.Module`, to the page. A message of that shape received before `initialize` is used instead: the worker
+compiles nothing. Neither is part of the protocol. `engineWorker()` keeps the module and sends it to every worker it
+starts after that, and `fromWorker` drops the message, so a client never sees it. If you spawn this worker with your
+own message handling, ignore that message.
 
 ## See also
 
