@@ -118,7 +118,7 @@ const Chrome = memo(function Chrome({
   return (
     <>
       {props.floatingToolbar !== false && <FloatingToolbar view={view} extra={props.floatingStart?.(view)} />}
-      <ComponentBar view={view} />
+      {props.toolbar === false && <ComponentBar view={view} />}
       <EquationPanel view={view} />
       {slash && <SlashMenu view={view} onClose={closeSlash} />}
     </>

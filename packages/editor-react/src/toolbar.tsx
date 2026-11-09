@@ -15,6 +15,7 @@ import {
 } from "react";
 import { useViewFrame } from "./hooks";
 import { InsertMenu } from "./insert";
+import { ComponentBar } from "./panels";
 import { Button, ColorMenu, Layer, Menu, Popover, Separator } from "./ui";
 
 /** A button opening a text field (a link's URL); Enter applies it, Remove takes it off. */
@@ -199,21 +200,25 @@ export const FixedToolbar = ({ view, end }: { view: EditorView; end?: ReactNode 
     view,
     view.plugins.flatMap((p) => p.toolbar ?? []),
   );
-  return <FixedToolbarBody view={view} end={end} stamp={stamp} />;
+  return (
+    <div className="tse-toolbar tse-fixed" role="toolbar" aria-label="Formatting" aria-orientation="horizontal">
+      <FixedToolbarItems view={view} stamp={stamp} />
+      {end && (
+        <>
+          <span style={{ flex: 1 }} />
+          {end}
+        </>
+      )}
+      <ComponentBar view={view} docked />
+    </div>
+  );
 };
 
-const FixedToolbarBody = memo(function FixedToolbarBody({
-  view,
-  end,
-}: {
-  view: EditorView;
-  end?: ReactNode;
-  stamp: string;
-}) {
+const FixedToolbarItems = memo(function FixedToolbarItems({ view }: { view: EditorView; stamp: string }) {
   const items = view.plugins.flatMap((p) => p.toolbar ?? []);
   const inserts = view.plugins.flatMap((p) => p.insert ?? []);
   return (
-    <div className="tse-toolbar tse-fixed" role="toolbar" aria-label="Formatting" aria-orientation="horizontal">
+    <>
       <Button label="Undo" icon="undo" shortcut="Mod-z" disabled={!view.history.canUndo} onClick={() => view.undo()} />
       <Button
         label="Redo"
@@ -237,13 +242,7 @@ const FixedToolbarBody = memo(function FixedToolbarBody({
           ))}
         </Fragment>
       ))}
-      {end && (
-        <>
-          <span style={{ flex: 1 }} />
-          {end}
-        </>
-      )}
-    </div>
+    </>
   );
 });
 

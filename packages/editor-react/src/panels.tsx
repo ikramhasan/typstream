@@ -212,8 +212,11 @@ export const ComponentForm = ({
 
 const BAR_HEIGHT = 36;
 
-/** The bar over the component at the selection: its name, settings, table buttons, Delete. */
-export const ComponentBar = ({ view }: { view: EditorView }) => {
+/**
+ * The component at the selection's controls: its name, settings, table buttons, Delete. Docked in
+ * the fixed toolbar (where it covers nothing on the page), or a bar over the component without one.
+ */
+export const ComponentBar = ({ view, docked = false }: { view: EditorView; docked?: boolean }) => {
   const component = view.components()[0] ?? null;
   const spec = component ? specOf(view, component.name) : undefined;
   const [settings, setSettings] = useState(false);
@@ -225,6 +228,7 @@ export const ComponentBar = ({ view }: { view: EditorView }) => {
   useEffect(() => setSettings(false), [key]);
   const style = usePlacement<CSSProperties>(() => {
     if (!component) return null;
+    if (docked) return {};
     const box = view.boxesOf(component.from, component.to)[0];
     if (!box) return undefined;
     // Above the component, below the fixed toolbar (sticky over the pages), or under the component.
@@ -241,61 +245,66 @@ export const ComponentBar = ({ view }: { view: EditorView }) => {
     view.focus();
   };
   const label = spec?.label ?? component.name;
-  return (
-    <Layer>
-      <div className="tse-toolbar tse-floating" role="toolbar" aria-label={label} style={style}>
-        <span className="tse-panel-title" style={{ padding: "0 6px" }}>
-          <Icon name={spec?.icon ?? "square"} />
-          {label}
-        </span>
-        {spec?.params?.length ? (
-          <Button
-            label="Settings"
-            buttonRef={settingsButton}
-            expanded={settings}
-            onClick={() => setSettings((s) => !s)}
-          >
-            Settings
-          </Button>
-        ) : null}
-        {table && (
-          <>
-            <hr className="tse-separator" />
-            <Button label="Add a row above" icon="arrow-up-to-line" onClick={() => run(addRow("above"))} />
-            <Button label="Add a row below" icon="arrow-down-to-line" onClick={() => run(addRow("below"))} />
-            <Button label="Add a column left" icon="arrow-left-to-line" onClick={() => run(addColumn("left"))} />
-            <Button label="Add a column right" icon="arrow-right-to-line" onClick={() => run(addColumn("right"))} />
-            <hr className="tse-separator" />
-            <Button label="Delete the row" icon="rows" variant="destructive" onClick={() => run(deleteRow)} />
-            <Button label="Delete the column" icon="columns" variant="destructive" onClick={() => run(deleteColumn)} />
-          </>
-        )}
-        <hr className="tse-separator" />
-        <Button
-          label={`Delete the ${label.toLowerCase()}`}
-          icon="trash"
-          variant="destructive"
-          onClick={() => (table ? run(deleteTable) : remove(view, component))}
-        />
-      </div>
-      {settings && spec && (
-        <Popover
-          anchor={settingsAnchor}
-          onClose={closeSettings}
-          ignore={settingsButton}
-          label={`${label} settings`}
-          className="tse-form"
-        >
-          <div
-            className="tse-panel"
-            style={{ position: "static", boxShadow: "none", border: 0, padding: 4, animation: "none" }}
-          >
-            <ComponentForm view={view} component={component} spec={spec} />
-          </div>
-        </Popover>
+  const controls = (
+    <div
+      className={docked ? "tse-toolbar tse-docked" : "tse-toolbar tse-floating"}
+      role={docked ? "group" : "toolbar"}
+      aria-label={label}
+      style={docked ? undefined : style}
+    >
+      <span className="tse-panel-title" style={{ padding: "0 6px" }}>
+        <Icon name={spec?.icon ?? "square"} />
+        {label}
+      </span>
+      {spec?.params?.length ? (
+        <Button label="Settings" buttonRef={settingsButton} expanded={settings} onClick={() => setSettings((s) => !s)}>
+          Settings
+        </Button>
+      ) : null}
+      {table && (
+        <>
+          <hr className="tse-separator" />
+          <Button label="Add a row above" icon="arrow-up-to-line" onClick={() => run(addRow("above"))} />
+          <Button label="Add a row below" icon="arrow-down-to-line" onClick={() => run(addRow("below"))} />
+          <Button label="Add a column left" icon="arrow-left-to-line" onClick={() => run(addColumn("left"))} />
+          <Button label="Add a column right" icon="arrow-right-to-line" onClick={() => run(addColumn("right"))} />
+          <hr className="tse-separator" />
+          <Button label="Delete the row" icon="rows" variant="destructive" onClick={() => run(deleteRow)} />
+          <Button label="Delete the column" icon="columns" variant="destructive" onClick={() => run(deleteColumn)} />
+        </>
       )}
-      {table && <TableEdges view={view} />}
-    </Layer>
+      <hr className="tse-separator" />
+      <Button
+        label={`Delete the ${label.toLowerCase()}`}
+        icon="trash"
+        variant="destructive"
+        onClick={() => (table ? run(deleteTable) : remove(view, component))}
+      />
+    </div>
+  );
+  return (
+    <>
+      {docked ? controls : <Layer>{controls}</Layer>}
+      <Layer>
+        {settings && spec && (
+          <Popover
+            anchor={settingsAnchor}
+            onClose={closeSettings}
+            ignore={settingsButton}
+            label={`${label} settings`}
+            className="tse-form"
+          >
+            <div
+              className="tse-panel"
+              style={{ position: "static", boxShadow: "none", border: 0, padding: 4, animation: "none" }}
+            >
+              <ComponentForm view={view} component={component} spec={spec} />
+            </div>
+          </Popover>
+        )}
+        {table && <TableEdges view={view} />}
+      </Layer>
+    </>
   );
 };
 

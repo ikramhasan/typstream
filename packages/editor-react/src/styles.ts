@@ -68,6 +68,17 @@ export const EDITOR_CSS: string = `
   background: color-mix(in oklab, var(--tse-bg) 92%, transparent);
   backdrop-filter: blur(8px);
 }
+/* The component at the selection's controls: a tab hanging under the fixed toolbar, out of the flow (no page moves). */
+.tse-docked {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 8px;
+  padding: 3px;
+  border: 1px solid var(--tse-border);
+  border-radius: var(--tse-radius);
+  background: var(--tse-bg);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.08);
+}
 .tse-floating {
   position: fixed;
   z-index: 50;
