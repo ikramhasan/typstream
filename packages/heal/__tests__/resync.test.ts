@@ -86,6 +86,17 @@ describe("resync after an edit", () => {
     check(fullState(text, {}), text, e);
   });
 
+  // A term without a colon whose emphasis is still open reports the colon missing where its block ends, at the next
+  // block's checkpoint: the checkpoint recognition resyncs at (which reports it again) and the one it resumes from
+  // (which doesn't).
+  it.each([
+    ["a\n\n/ x_\n\n$y$\n\n= H\n", { from: 0, to: 0, insert: "!" }],
+    ["/ x_\n\n$y$\n\nz\n\nw\n\nv\n", { from: 12, to: 12, insert: "!" }],
+  ])("%j + %j", (text, e) => {
+    const { update } = check(fullState(text, {}), text, e);
+    expect(update.to).not.toBeNull();
+  });
+
   it("random edits ≡ fresh recognition", () => {
     const editArb = fc.record({
       at: fc.nat(),

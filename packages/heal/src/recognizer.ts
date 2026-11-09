@@ -298,6 +298,13 @@ const isMathAlphabetic = (text: string): boolean => {
   return chars.length === 1 ? isAlphabetic(chars[0]) : chars.every((c) => isAlphabetic(c));
 };
 
+/**
+ * @internal Errors at a root checkpoint's offset reported before it was reached: the block before it ends there (a
+ * term item's missing colon is reported at the end of the blank line after it, the next block's start). Incremental
+ * healing splits its state at checkpoints by position, and only these, at a checkpoint's offset, belong before it.
+ */
+export const beforeCheckpoint = new WeakSet<SyntaxIssue>();
+
 interface Snapshot {
   cursor: number;
   mode: Mode;
@@ -326,6 +333,8 @@ class Parser {
   readonly modes: ModeSpan[] = [];
   readonly checkpoints: Checkpoint[] = [];
   stoppedAt: number | undefined;
+  /** Errors reported before the last root checkpoint. */
+  errorsBefore = 0;
   lastTokenStart = 0;
   /** Start offsets of constructs a dangling end can be cut back to, innermost last. */
   readonly scopes: number[] = [];
@@ -642,6 +651,11 @@ class Parser {
     while (!this.atSet(stop) || (nesting.length > 0 && this.at("RightBracket"))) {
       if (root && start) {
         const cp = { offset: this.token.start, nesting: nesting.length };
+        for (let i = Math.min(this.errorsBefore, this.errors.length); i < this.errors.length; i++) {
+          const e = this.errors[i] as SyntaxIssue;
+          if (e.start === cp.offset) beforeCheckpoint.add(e);
+        }
+        this.errorsBefore = this.errors.length;
         if (this.opts.stopAt?.(cp)) {
           this.stoppedAt = cp.offset;
           return;

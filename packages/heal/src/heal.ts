@@ -23,6 +23,7 @@ import {
 } from "./lint";
 import { normalize } from "./normalize";
 import {
+  beforeCheckpoint,
   type Checkpoint,
   effectiveRequirements,
   type FrameKind,
@@ -212,7 +213,10 @@ export const updateState = (state: State, text: string, edit: TextEdit, opts: He
   const oldAt = resync === null ? Number.POSITIVE_INFINITY : resync - delta;
   const resyncMode = resync === null ? null : modeAt(state.modes, oldAt);
   const cps = splitAt(state.checkpoints, oldAt, (c) => c.offset);
-  const errors = splitAt(state.errors, oldAt, (e) => e.start);
+  // Errors the block before the resync point reported at it: recognition re-reported them (`beforeCheckpoint`).
+  const errors = splitAt(state.errors, oldAt, (e) => e.start).filter(
+    (e) => e.start !== oldAt || !beforeCheckpoint.has(e),
+  );
   const events = splitAt(state.events, oldAt, eventPos);
   const modes = splitAt(state.modes, oldAt, (m) => m.at);
   if (delta !== 0) {
@@ -232,7 +236,10 @@ export const updateState = (state: State, text: string, edit: TextEdit, opts: He
   }
 
   splitAt(state.checkpoints, cp.offset, (c) => c.offset);
-  splitAt(state.errors, cp.offset, (e) => e.start);
+  // The block before `cp` reported these at it, and recognition from `cp` won't again.
+  state.errors.push(
+    ...splitAt(state.errors, cp.offset, (e) => e.start).filter((e) => e.start === cp.offset && beforeCheckpoint.has(e)),
+  );
   splitAt(state.events, cp.offset, eventPos);
   splitAt(state.modes, cp.offset, (m) => m.at);
   state.checkpoints.push(...r.checkpoints, ...cps);
