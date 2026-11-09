@@ -205,6 +205,8 @@ export const deleteEdits = (
           const expr = kids[i + 1];
           if (c.kind === "Hash" && expr && isEmbedded(expr)) {
             i++;
+            // Only an expression the range reaches: one before or after it stays whole.
+            if (expr.to <= from || c.from >= to) continue;
             if (from <= c.from && expr.to <= to) push(c.from, expr.to);
             else embedded(c, expr);
           } else visit(c, true);

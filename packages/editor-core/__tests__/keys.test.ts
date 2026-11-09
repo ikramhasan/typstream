@@ -125,6 +125,18 @@ describe("empty lines", () => {
   });
 });
 
+describe("deleting leaves what it doesn't reach", () => {
+  it("keeps components before and after the range", () => {
+    expect(run("#line(length: 100%)\n\nYour na‸me\n\n#answer-lines(count: 3)", deleteChar(-1))).toBe(
+      "#line(length: 100%)\n\nYour n‸me\n\n#answer-lines(count: 3)",
+    );
+    expect(run("#question[\n  Which?‸\n  #mcq(ce(\"H2\"), ce(\"O2\"), answer: 1)\n]", deleteChar(-1))).toBe(
+      "#question[\n  Which‸\n  #mcq(ce(\"H2\"), ce(\"O2\"), answer: 1)\n]",
+    );
+    expect(run("#v(1em) He«ll»o #pagebreak()", deleteChar(1))).toBe("#v(1em) He‸o #pagebreak()");
+  });
+});
+
 describe("keys", () => {
   it("deletes words back and forth", () => {
     expect(run("Hello world‸", (st) => deleteWord(-1)(st, s))).toBe("Hello ‸");
