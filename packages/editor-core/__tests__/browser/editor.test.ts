@@ -176,7 +176,7 @@ describe("the editor on the pages", () => {
     expect(caret().top).toBeGreaterThan(two.bottom - 1);
     expect(Math.abs(caret().left - two.left)).toBeLessThan(2);
     await userEvent.keyboard("{Enter}");
-    expect(view.state.text).toBe("- one\n- two\n\n");
+    expect(view.state.text).toBe("- one\n- two\n\n~");
     await settled(view, doc);
     await userEvent.keyboard("After the list.");
     expect(view.state.text).toBe("- one\n- two\n\nAfter the list.");
@@ -325,7 +325,7 @@ describe("the editor on the pages", () => {
     await userEvent.keyboard("{Enter}");
     expect(view.state.text).toBe("Hey!!");
     await userEvent.keyboard(" you{Enter}");
-    expect(view.state.text).toBe("Hey!! you\n\n");
+    expect(view.state.text).toBe("Hey!! you\n\n~");
     await userEvent.keyboard("?");
     expect(view.state.text).toBe("Hey!! you\n\n¿?");
     expect(updates.at(-1)).toBe("Hey!! you\n\n¿?");

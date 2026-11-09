@@ -101,8 +101,9 @@ describe("<TypstEditor>", () => {
     await userEvent.click(screen.getByRole("button", { name: "Insert" }));
     await userEvent.click(screen.getByRole("menuitem", { name: /^Question/ }));
     expect(view.state.text).toContain("#question(points: 1)[");
-    await userEvent.keyboard("What is 2 + 2? ");
-    expect(view.state.text).toContain("What is 2 + 2? Question text");
+    // The sample text is selected: what is typed replaces it.
+    await userEvent.keyboard("What is 2 + 2?");
+    expect(view.state.text).toContain("[\n  What is 2 + 2?\n]");
     await waitFor(() => !!screen.queryByRole("button", { name: "Settings" }));
     await userEvent.click(screen.getByRole("button", { name: "Settings" }));
     const points = screen.getByRole("spinbutton", { name: /Points/ });
@@ -144,20 +145,19 @@ describe("<TypstEditor>", () => {
     await waitFor(() => !!screen.queryByRole("textbox", { name: "Search what to insert" }), 5000, "for the slash menu");
     await userEvent.keyboard("equation");
     await userEvent.keyboard("{Enter}");
-    expect(view.state.text).toBe("Intro.\n\n$ x =  $");
-    // Selected whole, an equation shows its field.
-    const at = view.state.text.indexOf("$");
-    act(() => view.select({ anchor: at, head: view.state.text.length, node: true }));
-    const field = await waitFor(
-      () => !!screen.queryByRole("textbox", { name: /Formula/ }),
-      5000,
-      "for the formula",
-    ).then(() => screen.getByRole("textbox", { name: /Formula/ }));
-    await userEvent.clear(field);
-    await userEvent.type(field, "a^2 + b^2 = c^2");
+    // A new equation is selected whole, with its field: typing goes into its formula.
+    expect(view.state.text).toBe("Intro.\n\n$ x $");
+    expect(view.state.selection.node).toBe(true);
+    await waitFor(() => !!screen.queryByRole("textbox", { name: /Formula/ }), 5000, "for the formula");
+    await userEvent.keyboard("a^2 + b^2 = c^2");
     expect(view.state.text).toBe("Intro.\n\n$ a^2 + b^2 = c^2 $");
     await laidOut(view);
     await page.screenshot({ path: "screenshots/equation.png" });
+    // Emptied and closed, it goes rather than staying as an invisible `$ $`.
+    const field = screen.getByRole("textbox", { name: /Formula/ });
+    await userEvent.clear(field);
+    await userEvent.keyboard("{Enter}");
+    expect(view.state.text).toBe("Intro.\n\n");
   });
 
   it("mounts once without plugins, keeping its history while it is typed into", async () => {
