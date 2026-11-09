@@ -106,6 +106,7 @@ export const eduComponents: EditorComponentSpec[] = [
     icon: "list-checks",
     keywords: ["choice", "options", "quiz"],
     template: "#mcq([First option], [Second option], [Third option], answer: 1)",
+    list: true,
     params: [
       {
         name: "answer",

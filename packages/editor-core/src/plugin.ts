@@ -199,15 +199,21 @@ export const createEditorPlugin = <P extends EditorPlugin>(plugin: P): P => plug
 export const schemaOf = (plugins: readonly EditorPlugin[]): EditorSchema => {
   const marks = new Set(DEFAULT_SCHEMA.marks);
   const inline = new Set(DEFAULT_SCHEMA.inline);
+  const components = new Set<string>(["table", "grid"]);
+  const lists = new Set<string>();
   for (const p of plugins) {
     for (const m of p.marks ?? []) {
       marks.add(m);
       inline.add(m);
     }
     for (const i of p.inline ?? []) inline.add(i);
-    for (const c of p.components ?? []) if (c.inline) inline.add(c.name);
+    for (const c of p.components ?? []) {
+      if (c.inline) inline.add(c.name);
+      components.add(c.name);
+      if (c.list) lists.add(c.name);
+    }
   }
-  return { marks, inline };
+  return { marks, inline, components, lists };
 };
 
 /**

@@ -84,7 +84,8 @@ const clickAt = async (view: EditorView, page: number, x: number, y: number) => 
 
 /** The page point of the middle of the glyph showing `text[offset]`. */
 const glyphAt = (view: EditorView, offset: number) => {
-  const g = view.layout?.glyphs.find((g) => g.from === offset);
+  const at = view.layoutOffset(offset);
+  const g = view.layout?.glyphs.find((g) => g.from === at);
   if (!g) throw new Error(`no glyph at ${offset}`);
   return { page: g.page, x: g.x + g.width * 0.25, y: g.y - g.ascent / 3 };
 };
@@ -106,7 +107,7 @@ describe("the editor on the pages", () => {
     expect(view.state.text).toBe("Hello big world.");
     await settled(view, doc);
     // The new text is laid out where it was typed.
-    const g = view.layout?.glyphs.find((g) => g.from === text.indexOf("world"));
+    const g = view.layout?.glyphs.find((g) => g.from === view.layoutOffset(text.indexOf("world")));
     expect(view.state.text.slice(g?.from, g?.to)).toBe("b");
   });
 
@@ -159,7 +160,8 @@ describe("the editor on the pages", () => {
     const caret = () => view.element.querySelector(".typstream-editor-caret")?.getBoundingClientRect() as DOMRect;
     /** The client box of the glyph showing `text[offset]`. */
     const glyph = (offset: number) => {
-      const g = view.layout?.glyphs.find((g) => g.from === offset) as NonNullable<EditorView["layout"]>["glyphs"][0];
+      const at = view.layoutOffset(offset);
+      const g = view.layout?.glyphs.find((g) => g.from === at) as NonNullable<EditorView["layout"]>["glyphs"][0];
       const page = view.element.querySelector(".typstream-page")?.getBoundingClientRect() as DOMRect;
       const k = page.width / (view.layout?.pages[0]?.width ?? 1);
       return {
@@ -257,7 +259,8 @@ describe("the editor on the pages", () => {
     // An option of a multiple choice: text in a content block of a call, edited in place.
     const option = view.state.text.indexOf("$+2$");
     await settled(view, doc);
-    const plus = view.layout?.glyphs.find((g) => g.from > option && g.from < option + 4);
+    const o = view.layoutOffset(option);
+    const plus = view.layout?.glyphs.find((g) => g.from > o && g.from < o + 4);
     expect(plus).toBeDefined();
     // Enter and Backspace in the question: a new paragraph, then joined again.
     view.select({ anchor: view.state.text.indexOf("really ") + 7, head: view.state.text.indexOf("really ") + 7 });
@@ -294,8 +297,7 @@ describe("the editor on the pages", () => {
     view.select({ anchor: end, head: end });
     await userEvent.keyboard("{Enter}{Enter}");
     await settled(view, doc);
-    // (The layout's text has the caret's placeholder before "After.": one character on.)
-    const at = view.state.text.indexOf("After.") + 1;
+    const at = view.layoutOffset(view.state.text.indexOf("After."));
     const after = view.layout?.glyphs.find((g) => g.from === at) as { y: number };
     const page = view.element.querySelector(".typstream-page")?.getBoundingClientRect() as DOMRect;
     const k = page.width / (view.layout?.pages[0]?.width ?? 1);

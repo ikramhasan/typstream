@@ -10,11 +10,15 @@ import {
   deleteSelection,
   deleteWord,
   type EditorPlugin,
+  enterArg,
   indentItems,
   insertText,
   keysPlugin,
+  moveArg,
   moveCell,
   moveChar,
+  removeArg,
+  schemaOf,
   snap,
   splitBlock,
 } from "../src/index";
@@ -186,6 +190,54 @@ describe("deleting a component", () => {
     expect(del("#question[\n  Text\n\n  [[#answer-lines(count: 2)]]\n]")).toBe("#question[\n  Text\n‸]");
     // In a line of text: only itself.
     expect(del("a [[$x$]] b")).toBe("a ‸ b");
+  });
+});
+
+describe("second QA pass", () => {
+  const edu = schemaOf([
+    {
+      key: "t",
+      components: [
+        { name: "mcq", label: "Multiple choice", list: true },
+        { name: "true-false", label: "True or false" },
+        { name: "rubric", label: "Rubric" },
+      ],
+    },
+  ]);
+  const enter = (st: ReturnType<typeof state>) => enterArg(st, edu) ?? splitBlock(st, edu);
+  const back = (st: ReturnType<typeof state>) => removeArg(st, edu) ?? deleteChar(-1)(st, edu);
+
+  it("Backspace on a line left empty removes the line, not text above", () => {
+    expect(run("given.\n\n‸\n\n== Warm-up", deleteChar(-1))).toBe("given.‸\n\n== Warm-up");
+    expect(run("#question[\n  Balance.\n\n  ‸\n  + one\n]", deleteChar(-1))).toBe(
+      "#question[\n  Balance.‸\n  + one\n]",
+    );
+  });
+
+  it("joining takes a list item's marker, and an empty item above goes whole", () => {
+    expect(run("Things you need:‸\n\n- a pencil\n- a ruler", deleteChar(1))).toBe(
+      "Things you need:‸a pencil\n- a ruler",
+    );
+    expect(run("+ What?\n+ \n‸Shade it.", deleteChar(-1))).toBe("+ What?\n‸Shade it.");
+  });
+
+  it("a multiple choice gets and loses options with Enter and Backspace, and Tab goes through them", () => {
+    expect(run("#mcq([Root], [Stem‸], answer: 1)", enter)).toBe("#mcq([Root], [Stem], [‸~], answer: 1)");
+    expect(run("#mcq([Root], [Stem], [‸~], answer: 1)", back)).toBe("#mcq([Root], [Stem‸], answer: 1)");
+    expect(run("#mcq([Ro‸ot], [Stem], answer: 1)", (st) => moveArg(1)(st, edu))).toBe(
+      "#mcq([Root], [«Stem»], answer: 1)",
+    );
+    expect(run("#mcq([Root], [St‸em], answer: 1)", (st) => moveArg(1)(st, edu))).toBe(
+      "#mcq([Root], [Stem], [‸~], answer: 1)",
+    );
+  });
+
+  it("Enter at the end of a one-line statement leaves the component; in a cell it breaks the line", () => {
+    expect(run("#true-false(answer: true)[Typed‸]", enter)).toBe("#true-false(answer: true)[Typed]\n\n‸~");
+    expect(run("#rubric(([Content], [Good‸]))", enter)).toBe("#rubric(([Content], [Good \\ ‸]))");
+    expect(run("#rubric(([Con‸tent], [Good]))", (st) => moveArg(1)(st, edu))).toBe("#rubric(([Content], [«Good»]))");
+    // Not a plugin's component: a paragraph as usual.
+    expect(run("#align(center)[Para‸]", enter)).toBe("#align(center)[Para\n\n‸~]");
   });
 });
 

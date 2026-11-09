@@ -5,7 +5,7 @@
 
 import type { TextEdit } from "@typstream/core";
 import type { SyntaxNode } from "@typstream/syntax";
-import { blocksAround, DEFAULT_SCHEMA, type EditorSchema, isEmptyLine } from "./commands";
+import { blocksAround, DEFAULT_SCHEMA, type EditorSchema, emptyLineAt, isEmptyLine } from "./commands";
 import type { EditorState, Selection, Transaction } from "./state";
 import { callArgs, calleeName, findLast, isEmbedded } from "./tree";
 
@@ -223,8 +223,10 @@ const sample = (clean: string, cursor: number, start: number): Selection => {
 export const insertInline =
   (template: string) =>
   (state: EditorState): Transaction => {
-    const from = state.from;
-    const to = state.to;
+    // On an empty line, in place of its `~`.
+    const empty = state.empty ? emptyLineAt(state.text, state.from) : -1;
+    const from = empty >= 0 ? empty : state.from;
+    const to = empty >= 0 ? empty + 1 : state.to;
     const cursor = template.indexOf(CURSOR);
     const clean = template.replace(CURSOR, "");
     // A space before, if it would stick to a word (`a#blank()` is fine; `$x$` needs nothing).

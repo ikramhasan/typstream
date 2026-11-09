@@ -32,6 +32,10 @@ export interface EditorSchema {
   marks: ReadonlySet<string>;
   /** Calls set inline in a paragraph even alone on a line. */
   inline: ReadonlySet<string>;
+  /** Components a plugin declares (with forms), whose content the editor's keys know. */
+  components?: ReadonlySet<string>;
+  /** Components whose positional content arguments are items (a multiple choice's options). */
+  lists?: ReadonlySet<string>;
 }
 
 /** The marks and inline calls of Typst's standard library. @beta */
@@ -301,6 +305,25 @@ export const deleteChar =
     if (line && lineAt !== at && line.edits.length)
       return { edits: line.edits, selection: caret(mapThrough(at, line.edits, 1)) };
     if (line !== undefined) return line;
+    // On a line left empty (its text deleted): the line goes, not a character of the text above.
+    if (inEmptyParagraph(state.text, at) && !itemAt(state.tree, state.text, at)) {
+      const text = state.text;
+      let from = text.lastIndexOf("\n", at - 1) + 1;
+      while (from > 0 && /\s/.test(text[from - 1] as string)) from--;
+      const eol = text.indexOf("\n", at);
+      const to = eol < 0 ? text.length : eol;
+      // At the very start, the blank lines after it go instead.
+      if (from === 0 || text[from - 1] === "[") {
+        let end = to;
+        while (end < text.length && /\s/.test(text[end] as string)) end++;
+        if (text[end] === "]") end = to;
+        return {
+          edits: [{ from: text.lastIndexOf("\n", at - 1) + 1, to: end, insert: "" }],
+          selection: caret(text.lastIndexOf("\n", at - 1) + 1),
+        };
+      }
+      return { edits: [{ from, to, insert: "" }], selection: caret(from) };
+    }
     if (dir < 0) {
       const item = itemAt(state.tree, state.text, at);
       const body = item?.children.find((k) => k.kind === "Markup");
@@ -341,6 +364,10 @@ export const deleteChar =
       }
     }
     if (u.kind === "atom") return selectOnly({ anchor: u.from, head: u.to, node: true });
+    if (u.kind === "break" || u.kind === "space") {
+      const joined = joinItem(state, at, dir, u);
+      if (joined) return joined;
+    }
     const [from, to] = u.kind === "break" ? [Math.min(at, u.from), Math.max(at, u.to)] : [u.from, u.to];
     const edits = deleteEdits(state, from, to, schema);
     // The paragraph before ended with a space (Typst's break holds it): joined, the space stays.
@@ -390,6 +417,29 @@ const removeEmptyLine = (state: EditorState, at: number, dir: 1 | -1): Transacti
   }
   // Onto an empty line above: before its `~`.
   return { edits: [{ from, to, insert: "" }], selection: caret(isEmptyLine(text, from - 1) ? from - 1 : from) };
+};
+
+/**
+ * Joining across the break before a list item or heading (Delete at a paragraph's end), or into an
+ * empty item above (Backspace): the item's marker goes with the break, so it doesn't show as text
+ * (`Things you need:- a pencil`); an empty item above goes whole.
+ */
+const joinItem = (state: EditorState, at: number, dir: 1 | -1, u: Unit): Transaction | null => {
+  const text = state.text;
+  if (!/\n/.test(text.slice(Math.min(at, u.from), Math.max(at, u.to)))) return null;
+  if (dir > 0) {
+    // The line after: a marker to take with the break.
+    const next = Math.max(at, u.to);
+    const marker = /^[ \t]*(?:[-+/]|\d+\.|=+)[ \t]+/.exec(text.slice(next));
+    if (!marker) return null;
+    return { edits: [{ from: at, to: next + marker[0].length, insert: "" }], selection: caret(at) };
+  }
+  // The line before: an empty item.
+  const start = Math.min(at, u.from);
+  const lineStart = text.lastIndexOf("\n", start - 1) + 1;
+  if (!/^[ \t]*(?:[-+/]|\d+\.)[ \t]*$/.test(text.slice(lineStart, start))) return null;
+  const edits = [{ from: lineStart, to: text.lastIndexOf("\n", at - 1) + 1, insert: "" }];
+  return { edits, selection: caret(mapThrough(at, edits, 1)) };
 };
 
 /** Edits that turn a heading or list item into a paragraph: its marker goes, and it stays a block of its own. */
@@ -646,11 +696,13 @@ const inEmptyParagraph = (text: string, at: number): boolean => {
   const lineStart = text.lastIndexOf("\n", at - 1) + 1;
   const next = text.indexOf("\n", at);
   const lineEnd = next < 0 ? text.length : next;
-  if (text.slice(lineStart, lineEnd).trim() !== "") return false;
+  // The line's rest may close the content block it is in (`‸]`): the paragraph ends there.
+  const closes = /^[ \t]*\]/.test(text.slice(at, lineEnd));
+  if (text.slice(lineStart, at).trim() !== "" || (!closes && text.slice(at, lineEnd).trim() !== "")) return false;
   const above = text.slice(0, Math.max(0, lineStart - 1));
   const below = next < 0 ? "" : text.slice(next + 1);
   const blankAbove = lineStart === 0 || /(^|\n)[ \t]*$/.test(above) || /\[[ \t]*$/.test(above);
-  const blankBelow = next < 0 || /^[ \t]*(\n|$|\])/.test(below) || BLOCK_START.test(below);
+  const blankBelow = closes || next < 0 || /^[ \t]*(\n|$|\])/.test(below) || BLOCK_START.test(below);
   return blankAbove && blankBelow;
 };
 

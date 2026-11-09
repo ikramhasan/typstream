@@ -2,6 +2,7 @@
 // a selection and the keyboard on the pages the engine lays out; commands turn what the teacher
 // does into minimal edits of the source; plugins add toolbars, menus and components.
 
+export { enterArg, moveArg, removeArg } from "./args";
 export {
   type Alignment,
   alignmentAt,

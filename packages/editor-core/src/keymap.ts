@@ -3,6 +3,7 @@
 // something else where it applies (Enter in its component) and the editor's command runs where it
 // doesn't. What only the view can do (arrows, Home/End, pages up and down, undo) stays in the view.
 
+import { enterArg, moveArg, removeArg } from "./args";
 import { indentItems } from "./blocks";
 import { deleteChar, deleteSelection, type EditorSchema, insertLineBreak, splitBlock, unitsFor } from "./commands";
 import type { EditorCommand, EditorPlugin } from "./plugin";
@@ -70,17 +71,17 @@ const swallow: EditorCommand = (state) => ({ edits: [], selection: state.selecti
  * @beta
  */
 export const baseKeymap: Readonly<Record<string, EditorCommand | readonly EditorCommand[]>> = {
-  Enter: splitBlock,
+  Enter: [enterArg, splitBlock],
   "Shift-Enter": insertLineBreak,
-  Backspace: deleteChar(-1),
+  Backspace: [removeArg, deleteChar(-1)],
   "Shift-Backspace": deleteChar(-1),
   Delete: deleteChar(1),
   "Word-Backspace": deleteWord(-1),
   "Word-Delete": deleteWord(1),
   // A list item in or out a level, then a table's cells; elsewhere Tab stays in the editor (the
   // view lets it through after Escape, for keyboard users leaving the editor).
-  Tab: [indentItems(1), moveCell(1), swallow],
-  "Shift-Tab": [indentItems(-1), moveCell(-1), swallow],
+  Tab: [indentItems(1), moveCell(1), moveArg(1), swallow],
+  "Shift-Tab": [indentItems(-1), moveCell(-1), moveArg(-1), swallow],
 };
 
 /** The editor's keys as a plugin, below every other (priority -100); every editor has it. @beta */

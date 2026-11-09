@@ -6,8 +6,10 @@
 // document's own, is placed where the call's content starts and ends, and lays nothing out (the same
 // pages, glyph for glyph). Offsets go between the two texts through the insertions.
 
-import { caretAnchor, type EditorSchema, unitsFor } from "./commands";
+import type { SyntaxNode } from "@typstream/syntax";
+import { caretAnchor, type EditorSchema } from "./commands";
 import type { EditorState } from "./state";
+import { calleeName } from "./tree";
 
 /** What the editor inserts: the caret's placeholder, or a marker before (`open`) or after (`close`) a call. */
 export interface Insertion {
@@ -48,11 +50,24 @@ export const compile = (state: EditorState, schema: EditorSchema, focused: boole
   const plain = state.text;
   const inserts: Omit<Insertion, "start">[] = [];
   let markers = 0;
-  for (const u of unitsFor(state, schema)) {
-    if (u.kind !== "atom" || plain[u.from] !== "#" || !CALL.test(plain.slice(u.from, u.from + 64))) continue;
-    if (++markers > MAX_MARKERS) break;
-    inserts.push({ at: u.from, text: MARKER, kind: "open" }, { at: u.to, text: MARKER, kind: "close" });
-  }
+  // Every call set in markup that isn't a text style: one that shows none of the document (a
+  // number line), or whose content may not show (answer lines with their hidden answer).
+  const visit = (node: SyntaxNode) => {
+    const kids = node.children;
+    for (let i = 0; i < kids.length; i++) {
+      const c = kids[i] as SyntaxNode;
+      const call = kids[i + 1];
+      if (node.kind === "Markup" && c.kind === "Hash" && call?.kind === "FuncCall" && markers < MAX_MARKERS) {
+        const name = calleeName(call, plain);
+        if (name !== null && !schema.marks.has(name) && CALL.test(plain.slice(c.from, c.from + 64))) {
+          markers++;
+          inserts.push({ at: c.from, text: MARKER, kind: "open" }, { at: call.to, text: MARKER, kind: "close" });
+        }
+      }
+      if (c.children.length) visit(c);
+    }
+  };
+  visit(state.tree);
   const caret = focused ? caretAnchor(state, schema) : null;
   if (caret !== null) inserts.push({ at: caret, text: PLACEHOLDER, kind: "caret" });
   inserts.sort((a, b) => a.at - b.at || RANK[a.kind] - RANK[b.kind]);

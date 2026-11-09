@@ -412,6 +412,8 @@ export interface EditorComponentSpec {
   description?: string;
   /** The insert menu's group: `Questions`. */
   group?: string;
+  /** Its positional content arguments are items (a multiple choice's options): Enter adds one, Backspace in an empty one removes it. */
+  list?: boolean;
   /** An icon name the editor's toolbar knows (lucide's: `circle-help`, `network`). */
   icon?: string;
   /**
