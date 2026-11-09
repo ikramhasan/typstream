@@ -187,7 +187,11 @@ const Field = ({
         step={param.step}
         placeholder={placeholder}
         aria-invalid={invalid || undefined}
-        onChange={(e) => commit(e.target.value)}
+        onChange={(e) => {
+          // A number half typed ("-") reads as empty: not "leave the argument out".
+          if (e.target.validity.badInput) return setDraft(e.target.value);
+          commit(e.target.value);
+        }}
       />
     );
   return (
@@ -416,6 +420,23 @@ const MATH_KEYS: { label: string; insert: string; title: string }[] = [
   { label: "→", insert: "->", title: "Arrow" },
 ];
 
+/**
+ * `math` with the words the compiler doesn't know in math (`unknown variable: area`) quoted, so
+ * Typst sets them as text: `area = length times width` → `"area" = "length" times "width"`. With
+ * `atEnd` false, a word at the very end (being typed) waits.
+ */
+export const quoteUnknown = (math: string, errors: readonly string[], atEnd: boolean): string => {
+  let out = math;
+  for (const message of errors) {
+    const word = /unknown variable: ([\p{L}_][\p{L}\p{N}_-]*)/u.exec(message)?.[1];
+    if (!word || word.length < 2) continue;
+    const end = atEnd ? '(?![\\p{L}\\p{N}_"])' : '(?=[^\\p{L}\\p{N}_"])';
+    const bare = new RegExp(`(^|[^\\p{L}\\p{N}_".])${word}${end}`, "gu");
+    out = out.replace(bare, (m) => `${m.slice(0, m.length - word.length)}"${word}"`);
+  }
+  return out;
+};
+
 /** The equation selected (`$…$` as a node), its formula and whether it is set on its own line. */
 const equationAt = (view: EditorView): { from: number; to: number; math: string; display: boolean } | null => {
   const { selection, text } = { selection: view.state.selection, text: view.state.text };
@@ -436,6 +457,16 @@ export const EquationPanel = ({ view }: { view: EditorView }) => {
   const key = eq ? `${eq.from}` : null;
   // biome-ignore lint/correctness/useExhaustiveDependencies: another equation, another draft
   useEffect(() => setDraft(eq?.math ?? ""), [key]);
+  // A word Typst doesn't know in math (`area`, `length`): set as text, quoted. The compiler says
+  // which words those are, so `pi`, `sin` and `times` stay math.
+  const errors = view.errors;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: write is this render's
+  useEffect(() => {
+    if (!eq) return;
+    // Only a word typed to its end (something after it): `le` of `length` being typed isn't one.
+    const fixed = quoteUnknown(draft, errors, false);
+    if (fixed !== draft) write(fixed);
+  }, [errors.join("\n"), key, draft]);
   // With the equation selected, typing goes into its formula (the page can't take math), and Enter
   // opens the field; Backspace and Delete still delete the equation.
   const typing = useRef({ eq, draft });
@@ -467,13 +498,22 @@ export const EquationPanel = ({ view }: { view: EditorView }) => {
     if (!box) return undefined;
     return { left: Math.max(8, Math.min(box.left, window.innerWidth - 268)), top: box.bottom + 8 };
   });
-  if (!eq || !style) return null;
+  // Between a change and its layout the equation may have no box yet: the panel stays where it
+  // was (unmounted, its field would lose the keys being typed).
+  const lastStyle = useRef<CSSProperties | null>(null);
+  if (style) lastStyle.current = style;
+  if (!eq) lastStyle.current = null;
+  const placed = style ?? lastStyle.current;
+  if (!eq || !placed) return null;
   const incomplete = draft.trim() !== "" && hasErrors(parse(eq.display ? `$ ${draft} $` : `$${draft}$`));
   const write = (math: string, display = eq.display) => {
     setDraft(math);
     edit(math, display);
   };
   const close = () => {
+    // The last word too, now that typing is over.
+    const fixed = quoteUnknown(draft, view.errors, true);
+    if (fixed !== draft && eq) edit(fixed, eq.display);
     // An equation left empty shows nothing: it goes, rather than staying in the source as `$ $`.
     if (draft.trim() === "")
       view.dispatch({
@@ -484,6 +524,9 @@ export const EquationPanel = ({ view }: { view: EditorView }) => {
     view.focus();
   };
   function edit(math: string, display: boolean) {
+    // The equation as the state has it now: a write before this one (a key, then a word quoted)
+    // may have moved its end since this render.
+    const eq = equationAt(view);
     if (!eq) return;
     const src = display ? `$ ${math} $` : `$${math}$`;
     // A formula half typed (`x + ((`) would fail the compile: it waits in the field until it is whole.
@@ -507,7 +550,7 @@ export const EquationPanel = ({ view }: { view: EditorView }) => {
   };
   return (
     <Layer>
-      <div className="tse-panel" style={style} role="dialog" aria-label="Equation">
+      <div className="tse-panel" style={placed} role="dialog" aria-label="Equation">
         <div className="tse-panel-title">
           <Icon name="radical" />
           Equation

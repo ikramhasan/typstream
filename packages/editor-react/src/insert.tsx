@@ -7,17 +7,37 @@ import { Plus } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { Button, type MenuEntry, MenuList, Popover } from "./ui";
 
-const matches = (item: InsertItem, query: string): boolean => {
+/**
+ * How well an item matches what was typed after `/`, lower first, `null` for no match: its name's
+ * start, a word of its name, its name, its keywords, its group, its description. "num" finds
+ * Number line before a question "numbered" in its description.
+ */
+export const rank = (item: InsertItem, query: string): number | null => {
   const q = query.trim().toLowerCase();
-  if (!q) return true;
-  return [item.label, item.description, item.group, ...(item.keywords ?? [])].some((s) => s?.toLowerCase().includes(q));
+  if (!q) return 0;
+  const label = item.label.toLowerCase();
+  if (label.startsWith(q)) return 0;
+  if (label.split(/\s+/).some((w) => w.startsWith(q))) return 1;
+  if (label.includes(q)) return 2;
+  if ((item.keywords ?? []).some((k) => k.toLowerCase().includes(q))) return 3;
+  if (item.group?.toLowerCase().includes(q)) return 4;
+  if (item.description?.toLowerCase().includes(q)) return 5;
+  return null;
 };
 
 /** A searchable list of insert items; Enter inserts the highlighted one. */
 export const InsertList = ({ view, items, onDone }: { view: EditorView; items: InsertItem[]; onDone: () => void }) => {
   const [query, setQuery] = useState("");
   const [highlighted, setHighlighted] = useState(0);
-  const found = useMemo(() => items.filter((i) => matches(i, query)), [items, query]);
+  const found = useMemo(
+    () =>
+      items
+        .map((item, i) => ({ item, i, r: rank(item, query) }))
+        .filter((x): x is { item: InsertItem; i: number; r: number } => x.r !== null)
+        .sort((a, b) => a.r - b.r || a.i - b.i)
+        .map((x) => x.item),
+    [items, query],
+  );
   const insert = (item: InsertItem) => {
     onDone();
     view.run(item.run);

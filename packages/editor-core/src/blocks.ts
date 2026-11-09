@@ -3,7 +3,7 @@
 // is a marker at the start of a line in Typst (`== `, `- `, `+ `); alignment is an `#align(…)[…]`
 // around the block.
 
-import type { TextEdit } from "@typstream/core";
+import { diffEdit, type TextEdit } from "@typstream/core";
 import type { SyntaxNode } from "@typstream/syntax";
 import { blocksAround, canType, DEFAULT_SCHEMA, type EditorSchema } from "./commands";
 import { type EditorState, mapThrough, type Selection, type Transaction } from "./state";
@@ -159,6 +159,20 @@ const mapBlockSelection = (s: Selection, edits: TextEdit[], markersAt: ReadonlyS
 export const toggleList =
   (kind: "list" | "enum") =>
   (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): Transaction | null => {
+    // In an `#align(…)[…]`: a list can't be centred (its bullets stay at the margin), so the
+    // alignment goes first.
+    if (alignmentAt(state) !== "left") {
+      const unaligned = setAlignment("left")(state, schema);
+      if (unaligned) {
+        const mid = state.apply(unaligned).state;
+        const listed = toggleList(kind)(mid, schema);
+        if (listed) {
+          const end = mid.apply(listed).state;
+          const edit = diffEdit(state.text, end.text);
+          return { edits: edit ? [edit] : [], selection: end.selection };
+        }
+      }
+    }
     const { blocks, all: around } = selectedBlocks(state, schema);
     const all = blocks.length > 0 && blocks.every((b) => b.kind === kind || b.kind === "expression");
     const only = blocks.length === 1 ? blocks[0] : undefined;

@@ -78,6 +78,8 @@ export interface EditorView {
   readonly layout: Layout | null;
   /** Whether `layout` shows the current text: no change is waiting for a compile. */
   readonly laidOut: boolean;
+  /** The messages of the last compile's errors (`unknown variable: area`), for panels that help fix them. */
+  readonly errors: readonly string[];
   /**
    * Where an offset of the text is among `layout`'s offsets, which count what the editor compiles
    * besides the text (the caret's placeholder, the markers around components).
@@ -735,9 +737,15 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
 
   /** Scroll to the caret once the next layout arrives (after a command from a menu). */
   let scrollOnLayout = false;
+  let shownDiagnostics: unknown = null;
   const onDoc = () => {
     const s = doc.getState();
     const artifact = s.artifact;
+    // A failed compile leaves the pages, but its errors are news (`errors`).
+    if (s.diagnostics !== shownDiagnostics) {
+      shownDiagnostics = s.diagnostics;
+      if (artifact === shownArtifact) notify();
+    }
     if (artifact?.target !== "paged" || !artifact.positions || artifact === shownArtifact) return;
     shownArtifact = artifact;
     layout = new LayoutClass(artifact);
@@ -1463,6 +1471,12 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
       return layout;
     },
     layoutOffset: (offset) => toLayout(offset).offset,
+    get errors() {
+      return doc
+        .getState()
+        .diagnostics.filter((d) => d.severity === "error")
+        .map((d) => d.message);
+    },
     get laidOut() {
       return layout !== null && layoutText === sent.text;
     },

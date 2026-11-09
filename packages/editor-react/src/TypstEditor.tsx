@@ -147,6 +147,8 @@ export const TypstEditor = forwardRef<TypstEditorHandle, TypstEditorProps>(funct
   latest.current = props;
   /** The source the editor last reported, so the prop echoing it back changes nothing. */
   const emitted = useRef(props.source);
+  /** The sources reported lately, newest last. */
+  const recent = useRef<string[]>([]);
 
   // The document opens again when what it is opened with changes: its engine, plugins (by key, so
   // arrays written inline don't reopen it on every render), preamble, layout. Opening again drops the
@@ -217,6 +219,9 @@ export const TypstEditor = forwardRef<TypstEditorHandle, TypstEditorProps>(funct
           placeholder: latest.current.placeholder ?? "Write something, or press / to insert",
           onChange: (text) => {
             emitted.current = text;
+            // The app may render with any of these before the last: none of them is from outside.
+            recent.current.push(text);
+            if (recent.current.length > 64) recent.current.shift();
             latest.current.onChange?.(text);
           },
         });
@@ -238,9 +243,11 @@ export const TypstEditor = forwardRef<TypstEditorHandle, TypstEditorProps>(funct
     };
   }, [engineProp, pluginKeys, editorPluginKeys, fullPreamble, layout, !!resolveImage]);
 
-  // A source from outside (an AI edit, a reload): one edit.
+  // A source from outside (an AI edit, a reload): one edit. Not one the editor itself reported a
+  // moment ago: two changes in one render (a key, then a word quoted in a formula) reach the app
+  // one after the other, and its render with the first must not undo the second.
   useEffect(() => {
-    if (!view || props.source === emitted.current) return;
+    if (!view || props.source === emitted.current || recent.current.includes(props.source)) return;
     emitted.current = props.source;
     view.setText(props.source);
   }, [view, props.source]);
@@ -268,6 +275,31 @@ export const TypstEditor = forwardRef<TypstEditorHandle, TypstEditorProps>(funct
     });
     return off;
   }, [autoFocus, view]);
+
+  // A menu, popover or form closed (Escape, an item chosen): the keyboard goes back to the
+  // document, not to the page's body, where keys would do nothing.
+  useEffect(() => {
+    if (!view) return;
+    const docEl = view.element.ownerDocument;
+    let ours = false;
+    const onFocusIn = (e: FocusEvent) => {
+      const t = e.target as Element | null;
+      // A menu's, popover's or panel's control (not the document itself, nor anything else on the page).
+      ours = !!t?.closest?.(".tse-layer, .tse-toolbar") && !t?.closest?.(".typstream-editor");
+    };
+    const onFocusOut = () => {
+      setTimeout(() => {
+        const active = docEl.activeElement;
+        if (ours && (!active || active === docEl.body)) view.focus();
+      }, 0);
+    };
+    docEl.addEventListener("focusin", onFocusIn);
+    docEl.addEventListener("focusout", onFocusOut);
+    return () => {
+      docEl.removeEventListener("focusin", onFocusIn);
+      docEl.removeEventListener("focusout", onFocusOut);
+    };
+  }, [view]);
 
   // `/` on an empty line opens the insert menu at the caret.
   useEffect(() => {

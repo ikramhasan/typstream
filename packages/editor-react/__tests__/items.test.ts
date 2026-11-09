@@ -7,7 +7,8 @@ import { edu } from "@typstream/edu";
 import { mindmap } from "@typstream/mindmap";
 import { describe, expect, it } from "vitest";
 import { hasIcon } from "../src/icons";
-import { display, source } from "../src/panels";
+import { rank } from "../src/insert";
+import { display, quoteUnknown, source } from "../src/panels";
 import { shortcutLabel } from "../src/ui";
 
 const icons = (items: readonly ToolbarItem[]): string[] =>
@@ -65,5 +66,29 @@ describe("form fields", () => {
     expect(source(option, "5", 3)).toBeUndefined();
     expect(source(option, "0", 3)).toBeUndefined();
     expect(source({ ...field("number"), min: 0 }, "-1")).toBeUndefined();
+  });
+});
+
+describe("formulas with words", () => {
+  it("quote the words the compiler doesn't know, once typed to their end", () => {
+    const errs = ["unknown variable: area", "unknown variable: length"];
+    expect(quoteUnknown("area = length times width", errs, false)).toBe('"area" = "length" times width');
+    expect(quoteUnknown("area = len", ["unknown variable: len"], false)).toBe("area = len");
+    expect(quoteUnknown("x = width", ["unknown variable: width"], true)).toBe('x = "width"');
+    expect(quoteUnknown('"area" = 2', ["unknown variable: area"], true)).toBe('"area" = 2');
+  });
+});
+
+describe("the slash menu's order", () => {
+  it("puts name matches before keyword and description matches", () => {
+    const items = basicPlugins.concat(fromTypstreamPlugin(edu) ?? []).flatMap((p) => p.insert ?? []);
+    const top = (q: string) =>
+      items
+        .map((item, i) => ({ item, i, r: rank(item, q) }))
+        .filter((x) => x.r !== null)
+        .sort((a, b) => (a.r as number) - (b.r as number) || a.i - b.i)[0]?.item.label;
+    expect(top("num")).toBe("Number line");
+    expect(top("ans")).toBe("Answer lines");
+    expect(top("tab")).toBe("Table");
   });
 });

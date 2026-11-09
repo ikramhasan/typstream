@@ -131,6 +131,10 @@ describe("block types", () => {
     expect(run("- «a\n- b»", setAlignment("center"))).toBe(null);
   });
 
+  it("leave a centred paragraph's alignment when it becomes a list", () => {
+    expect(run("#align(center)[Some te‸xt]", toggleList("list"))).toBe("- Some te‸xt");
+  });
+
   it("keep headings when a selection around them becomes a list", () => {
     expect(run("«One\n\n== Head\n\nTwo»", toggleList("list"))).toBe("- «One\n\n== Head\n\n- Two»");
   });
