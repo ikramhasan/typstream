@@ -651,10 +651,7 @@ class Parser {
     while (!this.atSet(stop) || (nesting.length > 0 && this.at("RightBracket"))) {
       if (root && start) {
         const cp = { offset: this.token.start, nesting: nesting.length };
-        for (let i = Math.min(this.errorsBefore, this.errors.length); i < this.errors.length; i++) {
-          const e = this.errors[i] as SyntaxIssue;
-          if (e.start === cp.offset) beforeCheckpoint.add(e);
-        }
+        for (const e of this.errors.slice(this.errorsBefore)) if (e.start === cp.offset) beforeCheckpoint.add(e);
         this.errorsBefore = this.errors.length;
         if (this.opts.stopAt?.(cp)) {
           this.stoppedAt = cp.offset;

@@ -155,6 +155,9 @@ const splitAt = <T>(xs: T[], at: number, pos: (x: T) => number): T[] => {
 
 const eventPos = (e: LintEvent): number => ("at" in e ? e.at : e.start);
 
+/** An error the block before the checkpoint at `at` reported there (`beforeCheckpoint`). */
+const reportedBefore = (e: SyntaxIssue, at: number): boolean => e.start === at && beforeCheckpoint.has(e);
+
 const pushMode = (modes: ModeSpan[], m: ModeSpan): void => {
   const last = modes[modes.length - 1];
   if (!last || last.mode !== m.mode) modes.push(m);
@@ -213,10 +216,8 @@ export const updateState = (state: State, text: string, edit: TextEdit, opts: He
   const oldAt = resync === null ? Number.POSITIVE_INFINITY : resync - delta;
   const resyncMode = resync === null ? null : modeAt(state.modes, oldAt);
   const cps = splitAt(state.checkpoints, oldAt, (c) => c.offset);
-  // Errors the block before the resync point reported at it: recognition re-reported them (`beforeCheckpoint`).
-  const errors = splitAt(state.errors, oldAt, (e) => e.start).filter(
-    (e) => e.start !== oldAt || !beforeCheckpoint.has(e),
-  );
+  // Errors the block before the resync point reported at it: recognition re-reported them.
+  const errors = splitAt(state.errors, oldAt, (e) => e.start).filter((e) => !reportedBefore(e, oldAt));
   const events = splitAt(state.events, oldAt, eventPos);
   const modes = splitAt(state.modes, oldAt, (m) => m.at);
   if (delta !== 0) {
@@ -237,9 +238,7 @@ export const updateState = (state: State, text: string, edit: TextEdit, opts: He
 
   splitAt(state.checkpoints, cp.offset, (c) => c.offset);
   // The block before `cp` reported these at it, and recognition from `cp` won't again.
-  state.errors.push(
-    ...splitAt(state.errors, cp.offset, (e) => e.start).filter((e) => e.start === cp.offset && beforeCheckpoint.has(e)),
-  );
+  state.errors.push(...splitAt(state.errors, cp.offset, (e) => e.start).filter((e) => reportedBefore(e, cp.offset)));
   splitAt(state.events, cp.offset, eventPos);
   splitAt(state.modes, cp.offset, (m) => m.at);
   state.checkpoints.push(...r.checkpoints, ...cps);
