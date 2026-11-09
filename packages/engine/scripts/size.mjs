@@ -38,7 +38,8 @@ const measure = async (label, entry, budget, external) => {
 // when Trusted Types (#70) had left it at 8.45. 9.5 KB until canvas pages' `pageFormat` and `setPageFormat()`
 // (#14, 44 bytes) came in after render islands (#28) had left it 4 bytes under. 9.6 KB until the editor's
 // positions (#36: `positions`, `setPositions()`, `artifactInput`, and mapping them back through healing, 0.15 KB).
-const MAIN_THREAD = 9.8 * 1024;
+// 9.8 KB until #164's cold start (the wasm compiled once and posted to the workers, 0.16 KB) met them: 9.91 KB.
+const MAIN_THREAD = 10.0 * 1024;
 
 const ok = [
   await measure("@typstream/engine (main thread)", "src/index.ts", MAIN_THREAD, ["@typstream/heal"]),
