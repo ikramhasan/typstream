@@ -6,10 +6,14 @@ import {
   baseKeymap,
   caretAnchor,
   DEFAULT_SCHEMA,
+  deleteChar,
   deleteWord,
   type EditorPlugin,
+  insertText,
   keysPlugin,
   moveCell,
+  moveChar,
+  snap,
   splitBlock,
 } from "../src/index";
 import { byPriority, matchesShortcut } from "../src/plugin";
@@ -72,20 +76,52 @@ describe("caretAnchor: where Typst lays out nothing beside the caret", () => {
 
 describe("Enter out of a list, and in an empty paragraph", () => {
   it("ends a list with a paragraph of its own", () => {
-    expect(run("- a\n- ‸", splitBlock)).toBe("- a\n\n‸");
+    expect(run("- a\n- ‸", splitBlock)).toBe("- a\n\n‸~");
     // A line of text right after would run into the new paragraph: a blank line between.
-    expect(run("- a\n- ‸\nNext line", splitBlock)).toBe("- a\n\n‸\n\nNext line");
+    expect(run("- a\n- ‸\nNext line", splitBlock)).toBe("- a\n\n‸~\n\nNext line");
     // A heading or another item after starts a block anyway.
-    expect(run("+ a\n+ ‸\n= Next", splitBlock)).toBe("+ a\n\n‸\n= Next");
-    expect(run("#question[\n  + a\n  + ‸\n]", splitBlock)).toBe("#question[\n  + a\n\n  ‸\n]");
+    expect(run("+ a\n+ ‸\n= Next", splitBlock)).toBe("+ a\n\n‸~\n= Next");
+    expect(run("#question[\n  + a\n  + ‸\n]", splitBlock)).toBe("#question[\n  + a\n\n  ‸~\n]");
   });
 
-  it("does nothing in an empty paragraph, which Typst shows as nothing", () => {
-    expect(run("A\n\n‸\n\nB", splitBlock)).toBe("A\n\n‸\n\nB");
-    expect(run("A\n\n‸", splitBlock)).toBe("A\n\n‸");
-    expect(run("‸", splitBlock)).toBe("‸");
+  it("writes empty lines Typst would show as nothing: Enter after Enter adds lines", () => {
+    expect(run("A‸", splitBlock)).toBe("A\n\n‸~");
+    expect(run("A\n\n‸~", splitBlock)).toBe("A\n\n~\n\n‸~");
+    expect(run("‸A", splitBlock)).toBe("~\n\n‸A");
+    expect(run("Hel‸lo", splitBlock)).toBe("Hel\n\n‸lo");
+    // An empty paragraph without one (the end of the text after a deletion) gets one too.
+    expect(run("A\n\n‸\n\nB", splitBlock)).toBe("A\n\n~\n\n‸~\n\nB");
+    expect(run("‸", splitBlock)).toBe("~\n\n‸~");
+    // In a component's content block.
+    expect(run("#question[\n  What?‸\n]", splitBlock)).toBe("#question[\n  What?\n\n  ‸~\n]");
     // Not a blank line of its own: a paragraph is split as usual.
     expect(run("A\n‸\nB", splitBlock)).toBe("A\n\n\n‸\nB");
+  });
+});
+
+describe("empty lines", () => {
+  it("are replaced by what is typed", () => {
+    expect(run("A\n\n‸~\n\nB", (st) => insertText("x")(st, s))).toBe("A\n\nx‸\n\nB");
+    expect(run("A\n\n~‸", (st) => insertText("x")(st, s))).toBe("A\n\nx‸");
+    expect(run("#table(columns: 2, [‸~], [b])", (st) => insertText("x")(st, s))).toBe("#table(columns: 2, [x‸], [b])");
+    // A `~` in text is a non-breaking space, not an empty line.
+    expect(run("a~‸b", (st) => insertText("x")(st, s))).toBe("a~x‸b");
+  });
+
+  it("go whole with Backspace and Delete; a cell keeps its own", () => {
+    expect(run("A\n\n‸~", deleteChar(-1))).toBe("A‸");
+    expect(run("A\n\n‸~\n\nB", deleteChar(-1))).toBe("A‸\n\nB");
+    expect(run("A\n\n‸~\n\nB", deleteChar(1))).toBe("A‸\n\nB");
+    expect(run("‸~\n\nB", deleteChar(-1))).toBe("‸B");
+    // Across the break: the empty line goes, not joined into the text.
+    expect(run("A\n\n~\n\n‸B", deleteChar(-1))).toBe("A‸\n\nB");
+    expect(run("A‸\n\n~\n\nB", deleteChar(1))).toBe("A‸\n\nB");
+    expect(run("#table(columns: 2, [‸~], [b])", deleteChar(-1))).toBe("#table(columns: 2, [‸~], [b])");
+  });
+
+  it("are one place for the caret", () => {
+    expect(snap(state("A\n\n~‸"), 4, s)).toBe(3);
+    expect(moveChar(state("A\n\n‸~\n\nB"), 3, 1, s)).toBeGreaterThan(4);
   });
 });
 
@@ -106,7 +142,7 @@ describe("keys", () => {
     expect(run("#table(columns: 2, [a], [bb‸], [c], [])", (st) => moveCell(-1)(st, s))).toBe(
       "#table(columns: 2, [«a»], [bb], [c], [])",
     );
-    expect(run("#table(columns: 2, [a], [b‸])", (st) => moveCell(1)(st, s))).toContain("[], [‸]");
+    expect(run("#table(columns: 2, [a], [b‸])", (st) => moveCell(1)(st, s))).toContain("[~], [‸~]");
     expect(run("Not a table‸", (st) => moveCell(1)(st, s))).toBe(null);
   });
 

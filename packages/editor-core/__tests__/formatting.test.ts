@@ -183,10 +183,10 @@ describe("tables", () => {
 
   it("get rows and columns, the caret in the new cell", () => {
     expect(run(table, addRow("below"))).toBe(
-      "#table(\n  columns: 2,\n  table.header([A], [B]),\n  [a1], [b1],\n  [a2], [b2],\n  [], [‸],\n)",
+      "#table(\n  columns: 2,\n  table.header([A], [B]),\n  [a1], [b1],\n  [a2], [b2],\n  [~], [‸~],\n)",
     );
     expect(run(table, addColumn("left"))).toBe(
-      "#table(\n  columns: 3,\n  table.header([A], [], [B]),\n  [a1], [], [b1],\n  [a2], [‸], [b2],\n)",
+      "#table(\n  columns: 3,\n  table.header([A], [~], [B]),\n  [a1], [~], [b1],\n  [a2], [‸~], [b2],\n)",
     );
   });
 
@@ -197,12 +197,12 @@ describe("tables", () => {
 
   it("keep column sizes", () => {
     const sized = "#table(columns: (1fr, 2fr), [a], [b‸])";
-    expect(run(sized, addColumn("right"))).toBe("#table(\n  columns: (1fr, 2fr, 2fr),\n  [a], [b], [‸],\n)");
+    expect(run(sized, addColumn("right"))).toBe("#table(\n  columns: (1fr, 2fr, 2fr),\n  [a], [b], [‸~],\n)");
   });
 
   it("are inserted from a template", () => {
     expect(run("Text‸", insertBlock(tableTemplate(2, 2)))).toBe(
-      "Text\n\n#table(\n  columns: (1fr, 1fr),\n  table.header([‸], []),\n  [], [],\n)",
+      "Text\n\n#table(\n  columns: (1fr, 1fr),\n  table.header([‸~], [~]),\n  [~], [~],\n)",
     );
   });
 });

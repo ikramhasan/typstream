@@ -287,6 +287,8 @@ export const deleteChar =
     if (!state.empty) return deleteSelection(state, schema);
     const at = state.selection.head;
     const units = unitsFor(state, schema);
+    const line = removeEmptyLine(state, at, dir);
+    if (line !== undefined) return line;
     if (dir < 0) {
       const item = itemAt(state.tree, state.text, at);
       const body = item?.children.find((k) => k.kind === "Markup");
@@ -319,6 +321,43 @@ export const deleteChar =
     }
     return { edits, selection: caret(mapThrough(dir < 0 ? from : at, edits, -1) + kept) };
   };
+
+/**
+ * Backspace or Delete at or beside an empty line: the line goes (with the break that set it apart),
+ * as an empty paragraph does in a word processor; in a table cell nothing happens, the cell stays.
+ * `undefined` when no empty line is involved.
+ */
+const removeEmptyLine = (state: EditorState, at: number, dir: 1 | -1): Transaction | null | undefined => {
+  const text = state.text;
+  // The empty line the caret is on, or the one across the break the key would join.
+  let i = emptyLineAt(text, at);
+  if (i < 0) {
+    let j = at;
+    if (dir < 0) {
+      while (j > 0 && /\s/.test(text[j - 1] as string)) j--;
+      if (j < at && text.slice(j, at).includes("\n\n") && isEmptyLine(text, j - 1)) i = j - 1;
+    } else {
+      while (j < text.length && /\s/.test(text[j] as string)) j++;
+      if (j > at && text.slice(at, j).includes("\n\n") && isEmptyLine(text, j)) i = j;
+    }
+    if (i < 0) return undefined;
+  }
+  // Alone in a content block (a cell): it stays.
+  let a = i;
+  while (a > 0 && /[ \t]/.test(text[a - 1] as string)) a--;
+  if (text[a - 1] === "[") return selectOnly(caret(i));
+  // The line and the blank line before it, back to the text before; at the start, the one after.
+  let from = a;
+  while (from > 0 && /\s/.test(text[from - 1] as string)) from--;
+  let to = i + 1;
+  if (from === 0 || text[from - 1] === "[") {
+    from = a;
+    while (to < text.length && /\s/.test(text[to] as string)) to++;
+    if (text[to] === "]") to = i + 1;
+  }
+  // Onto an empty line above: before its `~`.
+  return { edits: [{ from, to, insert: "" }], selection: caret(isEmptyLine(text, from - 1) ? from - 1 : from) };
+};
 
 /** Edits that turn a heading or list item into a paragraph: its marker goes, and it stays a block of its own. */
 const unmark = (state: EditorState, item: SyntaxNode): TextEdit[] => {
@@ -357,6 +396,11 @@ export const insertText =
   (typed: string) =>
   (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): Transaction | null => {
     if (state.selection.node) return null;
+    // Typed into an empty line: the text replaces its `~`.
+    const empty = state.empty ? emptyLineAt(state.text, state.selection.head) : -1;
+    // Spaces at a line's start show nothing in Typst: on an empty line they change nothing.
+    if (empty >= 0 && typed.trim() === "") return selectOnly(caret(empty));
+    if (empty >= 0) state = state.select({ anchor: empty, head: empty + 1 });
     const from = state.from;
     const to = state.to;
     const deletions = from < to ? deleteEdits(state, from, to, schema) : [];
@@ -474,10 +518,6 @@ export const splitBlock = (state: EditorState, schema: EditorSchema = DEFAULT_SC
   const path = pathAt(base.tree, at, -1);
   const found = itemAt(base.tree, text, at);
   const item = found && found.kind !== "Heading" ? found : null;
-  // An empty paragraph stays one: Typst lays out empty paragraphs as nothing, so more blank lines
-  // would only be newlines in the source the pages never show.
-  if (!item && found?.kind !== "Heading" && inEmptyParagraph(text, at))
-    return pre.length ? chain(state, base, selectOnly(caret(at))) : selectOnly(caret(at));
   let tr: Transaction;
   if (item && item.from < at) {
     const marker = item.children[0] as SyntaxNode;
@@ -504,7 +544,9 @@ export const splitBlock = (state: EditorState, schema: EditorSchema = DEFAULT_SC
     const heading = findLast(path, isHeading) ?? findLast(pathAt(base.tree, at, 1), isHeading);
     const body = heading?.children.find((k) => k.kind === "Markup");
     if (heading && body && at <= body.from) {
-      tr = { edits: [{ from: heading.from, to: heading.from, insert: "\n\n" }], selection: caret(at + 2) };
+      // An empty line before the heading.
+      const insert = `${EMPTY_LINE}\n\n`;
+      tr = { edits: [{ from: heading.from, to: heading.from, insert }], selection: caret(at + insert.length) };
     } else {
       // Spaces after the break would start the new paragraph: they go. Those before it stay, so
       // joining the paragraphs again (Backspace) gives the text back as it was.
@@ -513,7 +555,14 @@ export const splitBlock = (state: EditorState, schema: EditorSchema = DEFAULT_SC
       while (b < text.length && (text[b] === " " || text[b] === "\t")) b++;
       const indent = " ".repeat(Math.max(0, indentOf(text, at)));
       const insert = `\n\n${indent}`;
-      tr = { edits: [{ from: a, to: b, insert }], selection: caret(a + insert.length) };
+      // A paragraph left with no text (Enter at a paragraph's end or start, or on an empty line)
+      // is an empty line, written so the pages show it.
+      const next = text.slice(0, a) + insert + text.slice(b);
+      const emptyBefore = inEmptyParagraph(next, a);
+      const emptyAfter = inEmptyParagraph(next, a + insert.length);
+      const written = (emptyBefore ? EMPTY_LINE : "") + insert + (emptyAfter ? EMPTY_LINE : "");
+      const caretAt = a + written.length - (emptyAfter ? EMPTY_LINE.length : 0);
+      tr = { edits: [{ from: a, to: b, insert: written }], selection: caret(caretAt) };
     }
   }
   if (pre.length === 0) return tr;
@@ -542,6 +591,41 @@ const inEmptyParagraph = (text: string, at: number): boolean => {
 };
 
 /**
+ * What the editor writes for an empty line: a block holding only a non-breaking space. Typst lays
+ * out an empty paragraph or cell as nothing, so Enter on an empty line, or a new table row, would
+ * show nothing on the pages, in the PDF or in Word; a lone `~` is one line high in all of them.
+ * Typing into it replaces it, and Backspace or Delete removes the line.
+ * @beta
+ */
+export const EMPTY_LINE = "~";
+
+/**
+ * Whether the `~` at `i` is a block of its own (see {@link EMPTY_LINE}): alone on a line between
+ * blank lines or a content block's edges, or alone in a content block (`[~]`, a table cell).
+ */
+export const isEmptyLine = (text: string, i: number): boolean => {
+  if (text[i] !== "~" || text[i - 1] === "\\") return false;
+  let a = i;
+  while (a > 0 && (text[a - 1] === " " || text[a - 1] === "\t")) a--;
+  let b = i + 1;
+  while (b < text.length && (text[b] === " " || text[b] === "\t")) b++;
+  const left = a === 0 ? "\n" : (text[a - 1] as string);
+  const right = b >= text.length ? "\n" : (text[b] as string);
+  if (left === "[" && right === "]") return true;
+  if ((left !== "\n" && left !== "[") || (right !== "\n" && right !== "]")) return false;
+  // On a line of its own: a paragraph only with blank lines (or the block's edges) around it.
+  const above = text.slice(0, Math.max(0, a - 1));
+  const below = text.slice(b + 1);
+  const blankAbove = left === "[" || a === 0 || /(^|\n)[ \t]*$/.test(above) || /\[[ \t]*$/.test(above);
+  const blankBelow = right === "]" || b >= text.length || /^[ \t]*(\n|$|\])/.test(below);
+  return blankAbove && blankBelow;
+};
+
+/** The empty line beside a caret at `at` (its `~` just after or before it), or -1. */
+export const emptyLineAt = (text: string, at: number): number =>
+  isEmptyLine(text, at) ? at : isEmptyLine(text, at - 1) ? at - 1 : -1;
+
+/**
  * An empty item turned into an empty paragraph after the list (at the item's indentation, in a
  * content block), with blank lines around it so what is typed there is a paragraph of its own.
  */
@@ -555,7 +639,10 @@ const leaveList = (text: string, item: SyntaxNode): Transaction => {
   const next = /^\n[ \t]*(.*)/.exec(text.slice(end))?.[1] ?? "";
   const joins = next !== "" && !next.startsWith("]") && !/^(?:[-+/=]|\d+\.)(?:\s|$)/.test(next);
   const after = joins ? "\n" : "";
-  return { edits: [{ from: lineStart, to: end, insert: insert + after }], selection: caret(lineStart + insert.length) };
+  return {
+    edits: [{ from: lineStart, to: end, insert: insert + EMPTY_LINE + after }],
+    selection: caret(lineStart + insert.length),
+  };
 };
 
 /**
@@ -608,10 +695,10 @@ export const exitBlock =
     }
     if (dir > 0) {
       const end = (blocks[last] as Block).to;
-      return { edits: [{ from: end, to: end, insert: "\n\n" }], selection: caret(end + 2) };
+      return { edits: [{ from: end, to: end, insert: `\n\n${EMPTY_LINE}` }], selection: caret(end + 2) };
     }
     const start = (blocks[first] as Block).from;
-    return { edits: [{ from: start, to: start, insert: "\n\n" }], selection: caret(start) };
+    return { edits: [{ from: start, to: start, insert: `${EMPTY_LINE}\n\n` }], selection: caret(start) };
   };
 
 /** How far the line at `offset` is indented (content blocks written over several lines keep it). */
@@ -720,7 +807,13 @@ export const moveChar = (
   offset: number,
   dir: 1 | -1,
   schema: EditorSchema = DEFAULT_SCHEMA,
-): number => step(unitsFor(state, schema), offset, dir);
+): number => {
+  const units = unitsFor(state, schema);
+  let to = step(units, offset, dir);
+  // An empty line is one place for the caret, before its `~`: right from there goes past it.
+  if (dir > 0 && to === offset + 1 && isEmptyLine(state.text, offset)) to = step(units, to, dir);
+  return isEmptyLine(state.text, to - 1) ? to - 1 : to;
+};
 
 /**
  * Snaps `offset` to a place a caret can be: not inside a character, an atom or a component's code.
@@ -729,8 +822,9 @@ export const moveChar = (
 export const snap = (state: EditorState, offset: number, schema: EditorSchema = DEFAULT_SCHEMA): number => {
   const units = unitsFor(state, schema);
   const inside = unitInside(units, offset);
-  if (inside) return offset - inside.from < inside.to - offset ? inside.from : inside.to;
-  return offset;
+  const at = inside ? (offset - inside.from < inside.to - offset ? inside.from : inside.to) : offset;
+  // On an empty line, before its `~`.
+  return isEmptyLine(state.text, at - 1) ? at - 1 : at;
 };
 
 /** The units, for views that need them. @beta */

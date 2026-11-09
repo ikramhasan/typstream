@@ -196,11 +196,22 @@ const place = (
   const insert = prefix + clean + suffix;
   const start = from + prefix.length;
   const selection: Selection =
-    cursor >= 0
-      ? { anchor: start + cursor, head: start + cursor }
-      : { anchor: start, head: start + clean.length, node: true };
+    cursor >= 0 ? sample(clean, cursor, start) : { anchor: start, head: start + clean.length, node: true };
   void state;
   return { edits: [{ from, to, insert }], selection };
+};
+
+/**
+ * The caret at a template's `{{cursor}}`, with the sample text after it selected (`The statement`
+ * up to the content block's end), so what is typed replaces it.
+ */
+const sample = (clean: string, cursor: number, start: number): Selection => {
+  const text = /^[^[\]#$\n]*/.exec(clean.slice(cursor))?.[0] ?? "";
+  const end = clean[cursor + text.length];
+  // Not an empty line's `~`: the caret stands before it, and typing replaces it anyway.
+  const shown = text.trim() !== "" && text.trim() !== "~";
+  const length = shown && (end === "]" || end === "\n") ? text.replace(/\s+$/, "").length : 0;
+  return { anchor: start + cursor, head: start + cursor + length };
 };
 
 /**
@@ -217,9 +228,7 @@ export const insertInline =
     const clean = template.replace(CURSOR, "");
     // A space before, if it would stick to a word (`a#blank()` is fine; `$x$` needs nothing).
     const selection: Selection =
-      cursor >= 0
-        ? { anchor: from + cursor, head: from + cursor }
-        : { anchor: from, head: from + clean.length, node: true };
+      cursor >= 0 ? sample(clean, cursor, from) : { anchor: from, head: from + clean.length, node: true };
     return { edits: [{ from, to, insert: clean }], selection };
   };
 

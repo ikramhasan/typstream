@@ -4,12 +4,15 @@
 // commands (they return `null`); the cells' text is edited on the page like any other.
 
 import type { SyntaxNode } from "@typstream/syntax";
-import { DEFAULT_SCHEMA, type EditorSchema } from "./commands";
+import { DEFAULT_SCHEMA, type EditorSchema, EMPTY_LINE } from "./commands";
 import { componentAt } from "./components";
 import type { EditorState, Transaction } from "./state";
 import { callArgs, calleeName } from "./tree";
 
 const TABLES = new Set(["table", "grid"]);
+
+/** A new cell: an empty line, so its row is a line high on the pages and in print, as in a word processor. */
+const EMPTY_CELL = `[${EMPTY_LINE}]`;
 
 /**
  * A table as rows and columns: `cells[row][column]` are the cells' Typst source (`[a]`). `header`
@@ -105,7 +108,7 @@ const readTable = (state: EditorState, call: SyntaxNode, from: number): TableMod
   }
   // A short last row is filled with empty cells when the table is rewritten.
   const last = cells[cells.length - 1];
-  if (last) while (last.length < columns) last.push("[]");
+  if (last) while (last.length < columns) last.push(EMPTY_CELL);
   return { name, from, to: call.to, columns, sizes, cells, ranges, header, named };
 };
 
@@ -138,8 +141,10 @@ export const writeTable = (table: TableModel): string => {
  * @beta
  */
 export const tableTemplate = (rows: number, columns: number): string => {
-  const header = Array.from({ length: columns }, (_, i) => (i === 0 ? "[{{cursor}}]" : "[]")).join(", ");
-  const body = Array.from({ length: Math.max(0, rows - 1) }, () => `  ${Array(columns).fill("[]").join(", ")},`);
+  const header = Array.from({ length: columns }, (_, i) => (i === 0 ? `[{{cursor}}${EMPTY_LINE}]` : EMPTY_CELL)).join(
+    ", ",
+  );
+  const body = Array.from({ length: Math.max(0, rows - 1) }, () => `  ${Array(columns).fill(EMPTY_CELL).join(", ")},`);
   const sizes = Array(columns).fill("1fr").join(", ");
   return `#table(\n  columns: (${sizes}),\n  table.header(${header}),\n${body.join("\n")}\n)`;
 };
@@ -177,7 +182,7 @@ export const addRow =
     const next = clone(table);
     let row = where === "above" ? cell.row : cell.row + 1;
     if (table.header && row === 0) row = 1;
-    next.cells.splice(row, 0, Array(table.columns).fill("[]"));
+    next.cells.splice(row, 0, Array(table.columns).fill(EMPTY_CELL));
     return rewrite(state, table, next, row, cell.column);
   };
 
@@ -196,7 +201,7 @@ export const addColumn =
     const next = clone(table);
     next.columns++;
     if (next.sizes) next.sizes.splice(column, 0, next.sizes[cell.column] ?? "auto");
-    for (const row of next.cells) row.splice(column, 0, "[]");
+    for (const row of next.cells) row.splice(column, 0, EMPTY_CELL);
     return rewrite(state, table, next, cell.row, column);
   };
 

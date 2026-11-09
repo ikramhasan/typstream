@@ -165,8 +165,8 @@ describe("Backspace and Delete", () => {
 
 describe("Backspace at the start of a block (#36)", () => {
   it("turns an empty item or heading into an empty paragraph, with no marker or space left", () => {
-    expect(run("- one\n- ‸", deleteChar(-1))).toBe("- one\n\n‸");
-    expect(run("+ one\n+ ‸\n+ two", deleteChar(-1))).toBe("+ one\n\n‸\n+ two");
+    expect(run("- one\n- ‸", deleteChar(-1))).toBe("- one\n\n‸~");
+    expect(run("+ one\n+ ‸\n+ two", deleteChar(-1))).toBe("+ one\n\n‸~\n+ two");
     expect(run("= ‸", deleteChar(-1))).toBe("‸");
   });
 
@@ -221,14 +221,14 @@ describe("Markdown shortcuts (#36)", () => {
 
 describe("Ctrl+Enter: out of a component (#36)", () => {
   it("starts a paragraph after the top-level block the caret is in", () => {
-    expect(run("#question[\n  Wh‸at?\n]\n\nNext.", exitBlock(1))).toBe("#question[\n  What?\n]\n\n‸\n\nNext.");
-    expect(run("#table(columns: 2, [a‸], [b])", exitBlock(1))).toBe("#table(columns: 2, [a], [b])\n\n‸");
-    expect(run("- one\n  - tw‸o\n- three", exitBlock(1))).toBe("- one\n  - two\n- three\n\n‸");
+    expect(run("#question[\n  Wh‸at?\n]\n\nNext.", exitBlock(1))).toBe("#question[\n  What?\n]\n\n‸~\n\nNext.");
+    expect(run("#table(columns: 2, [a‸], [b])", exitBlock(1))).toBe("#table(columns: 2, [a], [b])\n\n‸~");
+    expect(run("- one\n  - tw‸o\n- three", exitBlock(1))).toBe("- one\n  - two\n- three\n\n‸~");
   });
 
   it("before it with Shift", () => {
-    expect(run("Intro.\n\n#question[Wh‸at?]", exitBlock(-1))).toBe("Intro.\n\n‸\n\n#question[What?]");
-    expect(run("#question[Wh‸at?]", exitBlock(-1))).toBe("‸\n\n#question[What?]");
+    expect(run("Intro.\n\n#question[Wh‸at?]", exitBlock(-1))).toBe("Intro.\n\n‸~\n\n#question[What?]");
+    expect(run("#question[Wh‸at?]", exitBlock(-1))).toBe("‸~\n\n#question[What?]");
   });
 });
 
@@ -239,19 +239,19 @@ describe("Enter and Shift+Enter", () => {
 
   it("add a list item, and end the list from an empty one", () => {
     expect(run("- one‸\n- two", splitBlock)).toBe("- one\n- ‸\n- two");
-    expect(run("- one\n- ‸", splitBlock)).toBe("- one\n\n‸");
+    expect(run("- one\n- ‸", splitBlock)).toBe("- one\n\n‸~");
     expect(run("+ one‸", splitBlock)).toBe("+ one\n+ ‸");
   });
 
   it("move an empty nested item up a level, and end the list from the top level (#36)", () => {
     expect(run("- one\n  - two\n  - ‸", splitBlock)).toBe("- one\n  - two\n- ‸");
-    expect(run("- one\n  - two\n- ‸", splitBlock)).toBe("- one\n  - two\n\n‸");
+    expect(run("- one\n  - two\n- ‸", splitBlock)).toBe("- one\n  - two\n\n‸~");
     expect(run("+ one\n    + two\n    + ‸\n+ three", splitBlock)).toBe("+ one\n    + two\n+ ‸\n+ three");
-    expect(run("#question[\n  - one\n  - ‸\n]", splitBlock)).toBe("#question[\n  - one\n\n  ‸\n]");
+    expect(run("#question[\n  - one\n  - ‸\n]", splitBlock)).toBe("#question[\n  - one\n\n  ‸~\n]");
   });
 
   it("put a new paragraph before a heading from its start", () => {
-    expect(run("= ‸Title", splitBlock)).toBe("\n\n= ‸Title");
+    expect(run("= ‸Title", splitBlock)).toBe("~\n\n= ‸Title");
   });
 
   it("split a heading: the rest is a paragraph", () => {

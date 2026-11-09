@@ -324,8 +324,10 @@ export class Layout {
    */
   lineBeside(line: Line, dir: 1 | -1, x: number): Line | null {
     const index = this.lines.indexOf(line);
-    let best: Line | null = null;
-    let bestScore = Number.POSITIVE_INFINITY;
+    // The nearest lines in that direction (an empty line's lone glyph included), then of those at
+    // about that height (a table's row, columns), the one nearest to `x`.
+    const found: { line: Line; dy: number; dx: number }[] = [];
+    let nearest = Number.POSITIVE_INFINITY;
     for (let i = index + dir; i >= 0 && i < this.lines.length; i += dir) {
       const other = this.lines[i] as Line;
       const pageGap = (other.page - line.page) * dir;
@@ -339,14 +341,17 @@ export class Layout {
             ? other.top - line.bottom
             : line.top - other.bottom;
       const dx = x < other.left ? other.left - x : x > other.right ? x - other.right : 0;
-      const score = dy + dx * 2;
-      if (score < bestScore) {
-        best = other;
-        bestScore = score;
-      }
-      if (dy > 200 && best) break;
+      found.push({ line: other, dy, dx });
+      nearest = Math.min(nearest, dy);
+      if (dy > nearest + 200) break;
     }
-    return best;
+    const band = (line.bottom - line.top) * 0.5;
+    let best: { line: Line; dy: number; dx: number } | null = null;
+    for (const f of found) {
+      if (f.dy > nearest + band) continue;
+      if (!best || f.dx < best.dx || (f.dx === best.dx && f.dy < best.dy)) best = f;
+    }
+    return best?.line ?? null;
   }
 
   private height(page: number): number {
