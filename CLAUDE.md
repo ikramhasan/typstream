@@ -190,7 +190,15 @@ In `packages/editor-core` and `packages/editor-react` (#36):
 - `pnpm test`: the commands against Typst's parser (`__tests__/support.ts` marks a state with `‸` or `«…»` and checks
   the result parses). `pnpm test:browser`: the view and `<TypstEditor>` on the real worker in Chromium, Firefox and
   WebKit (Playwright clicks and keys); editor-react's tests write screenshots to `__tests__/browser/screenshots/`
-  (ignored) for a look. `pnpm size`: editor-core ≤ 24.6 KB, editor-react ≤ 16.4 KB gzipped.
+  (ignored) for a look. `pnpm size`: editor-core ≤ 26.6 KB, editor-react ≤ 16.8 KB gzipped.
+- Where Typst lays out nothing beside the caret (a paragraph's last space, an empty paragraph, item or cell) the view
+  compiles a non-breaking space there (`caretAnchor`), never written to the source: the engine's text then differs
+  from `view.state.text` by it. Tests wait for `view.laidOut`, not for `artifactInput` to equal the text, and layout
+  offsets after the caret are one on.
+- Keys are plugins' keymaps, by priority; the editor's own are `keysPlugin` (-100). Bind a key in a plugin and return
+  `null` where it doesn't apply, so the key falls through; don't add keys to the view.
+- `pnpm --filter @typstream/playground dev`, then http://localhost:5173/editor.html: `<TypstEditor>` with edu on the
+  worker, the source beside it, and key-to-pages timings; `window.typstreamEditor` has the view and document.
 - A plugin's components for the editor are plain data in its `editor` facet (`EditorComponentSpec`: a template with
   `{{cursor}}`, form fields); edu's are `eduComponents`. A new one's icon must be one
   `packages/editor-react/src/icons.tsx` draws (a test checks).

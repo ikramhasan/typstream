@@ -53,7 +53,16 @@ import {
   SquareIcon,
   SquarePenIcon,
 } from "lucide-react";
-import { type FormEvent, type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  type FormEvent,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   type DocumentState,
   fetchImages,
@@ -490,6 +499,17 @@ const Answer = ({ text: answered, streaming, target, answers, busy, onRetry }: A
   const [stale, setStale] = useState(0);
   const frame = t.openFrames[0]?.frame;
   const { host, clip, measure } = useStreamClip(t.state, streaming, target);
+  // The same element on every render: each key re-renders the answer, and the editor's toolbar
+  // renders again only when what it shows changes.
+  const done = useMemo(
+    () => (
+      <Button size="sm" onClick={() => setEditing(false)}>
+        <CheckIcon data-icon="inline-start" />
+        Done
+      </Button>
+    ),
+    [],
+  );
   return (
     <Message>
       <MessageContent>
@@ -505,12 +525,7 @@ const Answer = ({ text: answered, streaming, target, answers, busy, onRetry }: A
               inputs={answers ? ANSWERS : undefined}
               layout="fit-width"
               autoFocus
-              toolbarEnd={
-                <Button size="sm" onClick={() => setEditing(false)}>
-                  <CheckIcon data-icon="inline-start" />
-                  Done
-                </Button>
-              }
+              toolbarEnd={done}
             />
           </article>
         ) : (

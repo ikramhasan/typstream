@@ -28,6 +28,9 @@ export const alignmentAt: (state: EditorState) => Alignment;
 export const argumentOf: (state: EditorState, component: Component, name: string) => string | null;
 
 // @beta
+export const baseKeymap: Readonly<Record<string, EditorCommand | readonly EditorCommand[]>>;
+
+// @beta
 export const basicPlugins: readonly EditorPlugin[];
 
 // @beta
@@ -52,6 +55,9 @@ export const blockType: (state: EditorState, schema?: EditorSchema) => BlockType
 
 // @beta
 export const canType: (state: EditorState, offset: number) => boolean;
+
+// @beta
+export const caretAnchor: (state: EditorState, schema?: EditorSchema) => number | null;
 
 // @beta
 export interface CaretBox {
@@ -109,6 +115,15 @@ export const createEditorPlugin: <P extends EditorPlugin>(plugin: P) => P;
 export const CURSOR = "{{cursor}}";
 
 // @beta
+export interface Decoration {
+    class?: string;
+    color?: string;
+    from: number;
+    kind?: "text" | "box";
+    to: number;
+}
+
+// @beta
 export const DEFAULT_SCHEMA: EditorSchema;
 
 // @beta
@@ -127,6 +142,9 @@ export const deleteSelection: (state: EditorState, schema?: EditorSchema) => Tra
 export const deleteTable: (state: EditorState, schema?: EditorSchema) => Transaction | null;
 
 // @beta
+export const deleteWord: (dir: 1 | -1) => EditorCommand;
+
+// @beta
 export type EditorCommand = (state: EditorState, schema: EditorSchema) => Transaction | null;
 
 // @beta
@@ -134,6 +152,7 @@ export interface EditorOptions {
     doc: EngineDocument;
     layout?: "fixed" | "fit-width";
     onChange?: (text: string, edit: TextEdit) => void;
+    placeholder?: string;
     plugins?: readonly EditorPlugin[];
     readOnly?: boolean;
     text?: string;
@@ -142,14 +161,21 @@ export interface EditorOptions {
 // @beta
 export interface EditorPlugin {
     components?: ComponentSpec[];
+    decorations?: (state: EditorState, schema: EditorSchema) => readonly Decoration[];
     floating?: ToolbarItem[];
+    handleKeyDown?: (view: EditorView, event: KeyboardEvent) => boolean;
+    handlePaste?: (view: EditorView, data: DataTransfer) => boolean;
+    handleTextInput?: (state: EditorState, text: string, schema: EditorSchema) => Transaction | null;
     inline?: string[];
     inputRules?: InputRule[];
     insert?: InsertItem[];
     key: string;
+    keymap?: Record<string, EditorCommand | readonly EditorCommand[]>;
     marks?: string[];
+    priority?: number;
     shortcuts?: Record<string, EditorCommand>;
     toolbar?: ToolbarItem[];
+    view?: (view: EditorView) => PluginView;
 }
 
 // @beta
@@ -187,10 +213,12 @@ export interface EditorView {
         readonly canUndo: boolean;
         readonly canRedo: boolean;
     };
+    readonly laidOut: boolean;
     readonly layout: Layout | null;
     readonly plugins: readonly EditorPlugin[];
     redo(): boolean;
     run(command: EditorCommand): boolean;
+    runKey(key: string): boolean;
     readonly schema: EditorSchema;
     select(selection: Selection_2): void;
     selectionRects(): DOMRect[];
@@ -290,6 +318,9 @@ export const insertText: (typed: string) => (state: EditorState, schema?: Editor
 export const isMarked: (state: EditorState, mark: Mark, from?: number, to?: number, schema?: EditorSchema) => boolean;
 
 // @beta
+export const keysPlugin: EditorPlugin;
+
+// @beta
 export interface LaidElement extends PageElement {
     page: number;
 }
@@ -367,6 +398,9 @@ export const marksPlugin: EditorPlugin;
 export const markValue: (state: EditorState, mark: Mark, from?: number, to?: number, schema?: EditorSchema) => string | true | null;
 
 // @beta
+export const moveCell: (dir: 1 | -1) => EditorCommand;
+
+// @beta
 export const moveChar: (state: EditorState, offset: number, dir: 1 | -1, schema?: EditorSchema) => number;
 
 // @beta
@@ -376,6 +410,12 @@ export interface PageRect {
     width: number;
     x: number;
     y: number;
+}
+
+// @beta
+export interface PluginView {
+    destroy?(): void;
+    update?(view: EditorView, previous: EditorState): void;
 }
 
 // @beta

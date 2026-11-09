@@ -18,7 +18,8 @@ framework. It edits a document on the pages the engine lays out:
   screen keyboards work.
 - **Commands** read Typst's syntax tree ([`@typstream/syntax`](/docs/reference/syntax)) and return the edits that
   make a change, leaving everything else in the source as it was. Every change reaches the engine as one `TextEdit`.
-- **Plugins** add shortcuts, toolbar items, insert items, input rules and components.
+- **Plugins** add key bindings, handlers for keys, typed text and pastes, toolbar items, insert items, input rules,
+  components, decorations drawn over the pages, and views of their own. The editor's own keys are a plugin too.
 
 The source is the document ([PLAN §10.1](https://github.com/ikramhasan/typstream/blob/main/PLAN.md)): there is no
 second model to keep in step, and AI edits, streaming and the editor all edit the same text.
@@ -63,6 +64,12 @@ function createEditor(container: HTMLElement, options: EditorOptions): EditorVie
 
 <auto-type-table path="packages/editor-core/src/view.ts" name="EditorView" />
 
+Where Typst lays out nothing beside the caret (a space ending a paragraph, an empty paragraph, list item, heading or
+table cell, after a line break), there is nothing to draw it by. The view then compiles its text with a placeholder at
+the caret, a non-breaking space, so the caret stands where the next character goes and an empty line has its height.
+`caretAnchor` says where; the source the editor reports never has it, and `laidOut` says whether the layout shows the
+current text.
+
 ## State and transactions
 
 `EditorState` holds the source, its syntax tree (parsed on first use) and the `Selection`. Commands return a
@@ -83,7 +90,9 @@ Each is `(state, schema) => Transaction | null` (an `EditorCommand`); `null` whe
 | --- | --- |
 | `insertText(text)` | Types `text` over the selection, escaped (`escapeMarkup`) so it shows as typed. `canType` says whether text can go at an offset (not in code or math). |
 | `deleteChar(dir)`, `deleteSelection` | Backspace and Delete: a character, the break between paragraphs, a heading's or item's marker first (a nested item goes up a level instead); an equation or component is selected, then deleted. A selection goes structurally: constructs only partly in it keep their delimiters. |
-| `splitBlock`, `insertLineBreak` | Enter and Shift+Enter. In a list, a new item; on an empty one, the item up a level, or out of the list from the top level. |
+| `splitBlock`, `insertLineBreak` | Enter and Shift+Enter. In a list, a new item; on an empty one, the item up a level, or out of the list from the top level into a paragraph of its own. In an empty paragraph Enter does nothing: Typst shows no empty paragraphs. |
+| `deleteWord(dir)` | Ctrl+Backspace and Ctrl+Delete (⌥ on Apple platforms): to the start or end of the word. |
+| `moveCell(dir)` | Tab and Shift+Tab in a table: the next or previous cell's text selected; past the last cell, a new row. |
 | `exitBlock(dir)` | Ctrl+Enter and Ctrl+Shift+Enter: an empty paragraph after (`1`) or before (`-1`) the top-level block the caret is in (a component, a table, a whole list). |
 | `moveChar`, `snap` | Where the caret goes one character on, and the nearest place a caret can be. |
 | `toggleMark(mark)`, `setMark(mark, value)` | Bold, italic, underline (a `Mark`: a function, and for colours and sizes an argument); `isMarked` and `markValue` read them at the selection. |
@@ -108,9 +117,16 @@ component (`PageRect`), in points on a page.
 ```ts
 interface EditorPlugin {
   key: string;
+  priority?: number;
   marks?: string[];
   inline?: string[];
+  keymap?: Record<string, EditorCommand | readonly EditorCommand[]>;
   shortcuts?: Record<string, EditorCommand>;
+  handleKeyDown?: (view: EditorView, event: KeyboardEvent) => boolean;
+  handleTextInput?: (state: EditorState, text: string, schema: EditorSchema) => Transaction | null;
+  handlePaste?: (view: EditorView, data: DataTransfer) => boolean;
+  decorations?: (state: EditorState, schema: EditorSchema) => readonly Decoration[];
+  view?: (view: EditorView) => PluginView;
   toolbar?: ToolbarItem[];
   floating?: ToolbarItem[];
   insert?: InsertItem[];
@@ -118,6 +134,35 @@ interface EditorPlugin {
   components?: ComponentSpec[];
 }
 ```
+
+Keys go to plugins by `priority` (higher first, then in the order given): first each `handleKeyDown`, then the
+keymaps. A key's commands are tried in order, and one that returns `null` passes the key on, to the next command and
+then to plugins of lower priority. So a plugin binds Enter for its own component and the editor's Enter runs
+everywhere else:
+
+```ts
+const answers = createEditorPlugin({
+  key: "answers",
+  keymap: {
+    // In an answer box, Enter adds a line; elsewhere it falls through to the editor's own.
+    Enter: (state) => (inAnswer(state) ? addAnswerLine(state) : null),
+  },
+  decorations: (state) => unanswered(state).map(({ from, to }) => ({ from, to, class: "unanswered" })),
+  view: (view) => ({ update: () => renderWordCount(view.state.text) }),
+});
+```
+
+The editor's own keys are `keysPlugin`, at priority -100, which every editor has: `baseKeymap` binds Enter,
+Shift+Enter, Backspace, Delete, word deletion (`Word-Backspace`: Ctrl, or ⌥ on Apple platforms) and Tab (a list item
+in or out a level, then a table's cells; elsewhere it stays in the editor, and Escape then Tab leaves it). Screen
+keyboards' input (`insertParagraph`, `deleteContentBackward`) runs the same bindings. Typed text goes to each
+`handleTextInput` before `insertText`, pastes to each `handlePaste`. A `Decoration` is drawn over the text (`text`, like
+a selection) or around what a range lays out (`box`); a `PluginView` is told after every change of the editor's state,
+layout or focus.
+
+<auto-type-table path="packages/editor-core/src/plugin.ts" name="Decoration" />
+
+<auto-type-table path="packages/editor-core/src/plugin.ts" name="PluginView" />
 
 `createEditorPlugin` type-checks one. `basicPlugins` are the editor's own: `blocksPlugin` (block types, lists,
 alignment, Markdown-like shortcuts), `marksPlugin` (marks, colours from `COLORS` and `HIGHLIGHTS`, sizes) and

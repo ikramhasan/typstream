@@ -63,6 +63,7 @@ export interface TypstEditorProps {
     layout?: "fixed" | "fit-width";
     onChange?: (source: string) => void;
     onReady?: (view: EditorView) => void;
+    placeholder?: string;
     plugins?: readonly TypstreamPlugin[];
     preamble?: string;
     readOnly?: boolean;
