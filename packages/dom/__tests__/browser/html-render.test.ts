@@ -410,6 +410,30 @@ describe(`HTML renderer's pages in ${browser}`, () => {
     }
     unmount(renderer);
   });
+  it("measures the text it lays out with one range, however long the document (#162)", async () => {
+    // WebKit and Chromium update every live range a document has on each change to it, until it is collected: a range
+    // per measured run (thousands a layout) made the updates after a layout several times slower.
+    const doc = openHtml(engine);
+    const html = await compileHtml(doc, TWENTY_PAGES);
+    doc.dispose();
+    const createRange = Document.prototype.createRange;
+    let ranges = 0;
+    Document.prototype.createRange = function (this: Document) {
+      ranges++;
+      return createRange.call(this);
+    };
+    try {
+      const renderer = mount();
+      renderer.root.style.width = "800px";
+      renderer.update(html);
+      await laidOut();
+      expect(renderer.root.querySelectorAll(".typstream-page").length).toBeGreaterThan(10);
+      expect(ranges).toBeLessThanOrEqual(1);
+      unmount(renderer);
+    } finally {
+      Document.prototype.createRange = createRange;
+    }
+  });
 });
 
 /** Checks every update of a stream: blocks with unchanged HTML keep their DOM node. */

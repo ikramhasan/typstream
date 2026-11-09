@@ -1,0 +1,8 @@
+firefox: sums 281 285 223 211 210 209 210; medians 3.0 3.0 3.0 2.0 3.0 2.0 3.0
+run 0: paginations 66, p50 11 p90 48 max 860 sum 2720
+run 1: paginations 65, p50 13 p90 42 max 842 sum 2637
+run 2: paginations 65, p50 11 p90 29 max 794 sum 2310
+run 3: paginations 65, p50 9 p90 29 max 806 sum 2309
+run 4: paginations 65, p50 9 p90 26 max 804 sum 2303
+run 5: paginations 65, p50 8 p90 29 max 804 sum 2278
+run 6: paginations 65, p50 9 p90 28 max 818 sum 2327

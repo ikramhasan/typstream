@@ -1,0 +1,1 @@
+chromium: 92 updates, 309 blocks; update p50 1.90 ms, p90 5.40 ms, max 10.00 ms; 396 blocks created, 7038 kept

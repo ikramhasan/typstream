@@ -1,0 +1,8 @@
+chromium: sums 372 463 654 471 442 560 467; medians 3.6 4.8 7.2 4.4 6.2 5.3 4.5
+run 0: paginations 65, p50 3 p90 34 max 1535 sum 3641
+run 1: paginations 65, p50 3 p90 41 max 1523 sum 3716
+run 2: paginations 65, p50 3 p90 36 max 1435 sum 3510
+run 3: paginations 65, p50 3 p90 33 max 1451 sum 3513
+run 4: paginations 65, p50 3 p90 33 max 1429 sum 3508
+run 5: paginations 65, p50 3 p90 33 max 1953 sum 4191
+run 6: paginations 65, p50 3 p90 33 max 1427 sum 3460
