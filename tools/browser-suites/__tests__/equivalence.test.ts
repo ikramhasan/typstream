@@ -25,6 +25,7 @@ import {
   canvasOf,
   finished,
   host,
+  keepFontsWarm,
   loadCorpus,
   loadMathFont,
   pageEls,
@@ -42,6 +43,8 @@ import {
 const browser = server.browser;
 
 let engine: Engine;
+/** Warms a worker the watchdog put in place of the warmed one (the adversarial set's runaways). */
+let fontsWarm: () => Promise<void>;
 let corpus: CorpusDocument[];
 beforeAll(async () => {
   // No live page limit (the security suite tests it): past 100 pages a stream stops compiling until it ends, so its
@@ -50,6 +53,7 @@ beforeAll(async () => {
   engine = startEngine({ limits: { livePages: Number.POSITIVE_INFINITY } });
   await engine.ready;
   await warmFonts(engine);
+  fontsWarm = keepFontsWarm(engine);
   await loadMathFont();
   // The hostile runaways are security.test.ts's, under shorter budgets.
   corpus = (await loadCorpus()).filter(
@@ -137,6 +141,7 @@ const targets: Target[] = ["paged", "html"];
 
 /** Streams `entry` into one mount, renders it whole in another, and says how they differ, if they do. */
 const compare = async (entry: CorpusDocument, target: Target) => {
+  await fontsWarm();
   const streamed = host(600);
   const opts = appOptions(engine, entry, { target, source: "", isStreaming: true });
   const a = mountTypstream(streamed, opts);
@@ -162,6 +167,8 @@ const compare = async (entry: CorpusDocument, target: Target) => {
     await streamInto(a, opts, entry);
     await until(a, (s) => s.final && finished(s), timeoutFor(entry));
     const sa = await steady(() => a.getState());
+    // The streamed side's last compiles may have had the watchdog replace the worker.
+    await fontsWarm();
     b = mountTypstream(oneShot, appOptions(engine, entry, { target }));
     await until(b, finished, timeoutFor(entry));
     const sb = await steady(() => (b as MountedTypstream).getState());

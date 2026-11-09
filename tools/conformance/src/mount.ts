@@ -56,6 +56,23 @@ export const warmFonts = async (engine: Engine) => {
   if (diagnostics.length) throw new Error(`warmFonts: ${diagnostics.map((d) => d.message).join("; ")}`);
 };
 
+/**
+ * Keeps the lazy fonts loaded whichever worker the engine runs on: `warmFonts` loads them into the worker it has, and
+ * the watchdog, a crash or recycling replaces that with one that has none, whose documents change again a moment after
+ * finishing as each font arrives. Call the function returned before each document: it warms a replacement first.
+ */
+export const keepFontsWarm = (engine: Engine): (() => Promise<void>) => {
+  let replaced = false;
+  engine.onEvent((e) => {
+    if (e.type === "watchdog" || e.type === "crash" || e.type === "recycle") replaced = true;
+  });
+  return async () => {
+    if (!replaced) return;
+    replaced = false;
+    await warmFonts(engine);
+  };
+};
+
 /** An element `width` px wide at the top of the page. */
 export const host = (width: number): HTMLElement => {
   const el = document.createElement("div");
