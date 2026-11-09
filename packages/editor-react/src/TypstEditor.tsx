@@ -12,6 +12,7 @@ import {
   type EditorPlugin,
   type EditorView,
   fromTypstreamPlugin,
+  isEmptyLine,
 } from "@typstream/editor-core";
 import type { DocumentOptions, Engine, EngineDocument, ImageResolver } from "@typstream/engine";
 import { acquireEngine, releaseEngine, useTypstreamDefaults } from "@typstream/react";
@@ -278,7 +279,9 @@ export const TypstEditor = forwardRef<TypstEditorHandle, TypstEditorProps>(funct
       const lineStart = text.lastIndexOf("\n", selection.head - 1) + 1;
       const lineEnd = text.indexOf("\n", selection.head);
       const line = text.slice(lineStart, lineEnd < 0 ? text.length : lineEnd);
-      if (line.trim() !== "") return;
+      // An empty line, or one holding only an empty line's `~`.
+      const tilde = lineStart + line.indexOf("~");
+      if (line.trim() !== "" && !(line.trim() === "~" && isEmptyLine(text, tilde))) return;
       e.preventDefault();
       e.stopPropagation();
       setSlash(true);

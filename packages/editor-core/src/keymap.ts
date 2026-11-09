@@ -49,7 +49,14 @@ export const moveCell =
     if (!next) {
       if (dir < 0) return { edits: [], selection: state.selection };
       // Past the last cell: a row below, the caret in its first cell.
-      return addRow("below")(state, schema);
+      const added = addRow("below")(state, schema);
+      if (!added) return null;
+      const after = state.apply(added).state;
+      const grown = tableAt(after, table.from + 1, schema);
+      const cell = grown?.ranges[grown.ranges.length - 1]?.[0];
+      if (!cell) return added;
+      const { from: f } = inner(after.text, cell);
+      return { edits: added.edits, selection: { anchor: f, head: f } };
     }
     const { from, to } = inner(state.text, next);
     return { edits: [], selection: { anchor: from, head: to } };

@@ -8,6 +8,7 @@ import {
   DEFAULT_SCHEMA,
   deleteChar,
   deleteWord,
+  indentItems,
   type EditorPlugin,
   insertText,
   keysPlugin,
@@ -137,6 +138,41 @@ describe("deleting leaves what it doesn't reach", () => {
   });
 });
 
+describe("more of what the QA pass found", () => {
+  it("Backspace after a paragraph's last space deletes the space", () => {
+    expect(run("given. ‸\n\nNext", deleteChar(-1))).toBe("given.‸\n\nNext");
+    expect(run("given. ‸", deleteChar(-1))).toBe("given.‸");
+  });
+
+  it("Backspace or Delete across the break to a component selects it", () => {
+    expect(run("#question[What?]\n\n‸After", deleteChar(-1))).toBe("[[#question[What?]]]\n\nAfter");
+    expect(run("Before‸\n\n#number-line(from: 0, to: 5)", deleteChar(1))).toBe("Before\n\n[[#number-line(from: 0, to: 5)]]");
+  });
+
+  it("text typed beside a component on its own line is a paragraph of its own", () => {
+    expect(run("#number-line(from: 0, to: 5)‸", (st) => insertText("After")(st, s))).toBe(
+      "#number-line(from: 0, to: 5)\n\nAfter‸",
+    );
+    expect(run("‸#pagebreak()", (st) => insertText("Before")(st, s))).toBe("Before‸\n\n#pagebreak()");
+    // In the text, an inline call takes text beside it as it is.
+    expect(run("A #blank(answer: [x])‸ b", (st) => insertText("c")(st, s))).toBe("A #blank(answer: [x])c‸ b");
+  });
+
+  it("an empty line out of a list's middle is one", () => {
+    expect(run("- a\n- ‸\n- b", splitBlock)).toBe("- a\n\n‸~\n- b");
+    expect(run("- a\n\n‸~\n- b", (st) => insertText("Out")(st, s))).toBe("- a\n\nOut‸\n- b");
+  });
+
+  it("Backspace at a heading's start removes the empty line above it", () => {
+    expect(run("~\n\n= ‸Title", deleteChar(-1))).toBe("= ‸Title");
+  });
+
+  it("Tab doesn't indent a list's first item", () => {
+    expect(run("- fi‸rst\n- second", (st) => indentItems(1)(st, s))).toBe(null);
+    expect(run("- first\n- sec‸ond", (st) => indentItems(1)(st, s))).toBe("- first\n  - sec‸ond");
+  });
+});
+
 describe("keys", () => {
   it("deletes words back and forth", () => {
     expect(run("Hello world‸", (st) => deleteWord(-1)(st, s))).toBe("Hello ‸");
@@ -154,7 +190,7 @@ describe("keys", () => {
     expect(run("#table(columns: 2, [a], [bb‸], [c], [])", (st) => moveCell(-1)(st, s))).toBe(
       "#table(columns: 2, [«a»], [bb], [c], [])",
     );
-    expect(run("#table(columns: 2, [a], [b‸])", (st) => moveCell(1)(st, s))).toContain("[~], [‸~]");
+    expect(run("#table(columns: 2, [a], [b‸])", (st) => moveCell(1)(st, s))).toContain("[‸~], [~]");
     expect(run("Not a table‸", (st) => moveCell(1)(st, s))).toBe(null);
   });
 

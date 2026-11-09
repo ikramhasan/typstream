@@ -5,7 +5,7 @@
 
 import type { TextEdit } from "@typstream/core";
 import type { SyntaxNode } from "@typstream/syntax";
-import { blocksAround, DEFAULT_SCHEMA, type EditorSchema } from "./commands";
+import { blocksAround, canType, DEFAULT_SCHEMA, type EditorSchema } from "./commands";
 import { type EditorState, mapThrough, type Selection, type Transaction } from "./state";
 import { type Block, callArgs, calleeName, itemAt, pathAt } from "./tree";
 
@@ -34,11 +34,12 @@ const selectedBlocks = (state: EditorState, schema: EditorSchema): { blocks: Blo
 export const blockType = (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): BlockType | null => {
   const { blocks } = selectedBlocks(state, schema);
   const b = blocks[0];
-  if (!b) return null;
+  if (!b) return canType(state, state.selection.head) ? { kind: "paragraph" } : null;
   if (b.kind === "heading") return { kind: "heading", level: headingLevel(b.node as SyntaxNode) };
   if (b.kind === "list" || b.kind === "enum" || b.kind === "term") return { kind: b.kind };
   if (b.kind === "paragraph") return { kind: "paragraph" };
-  return null;
+  // Text in a mark, a cell or a component's content: a paragraph there.
+  return canType(state, state.selection.head) ? { kind: "paragraph" } : null;
 };
 
 const headingLevel = (heading: SyntaxNode): number => {
@@ -158,8 +159,24 @@ const mapBlockSelection = (s: Selection, edits: TextEdit[], markersAt: ReadonlyS
 export const toggleList =
   (kind: "list" | "enum") =>
   (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): Transaction | null => {
-    const { blocks } = selectedBlocks(state, schema);
+    const { blocks, all: around } = selectedBlocks(state, schema);
     const all = blocks.length > 0 && blocks.every((b) => b.kind === kind || b.kind === "expression");
+    const only = blocks.length === 1 ? blocks[0] : undefined;
+    if (state.empty && !all && only && (only.kind === "list" || only.kind === "enum")) {
+      // A caret in a list of the other kind: the whole list changes, as in a word processor.
+      let first = around.indexOf(only);
+      let last = first;
+      const same = (b: Block | undefined, c: Block) =>
+        !!b && b.kind === only.kind && state.text.slice(Math.min(b.to, c.to), Math.max(b.from, c.from)).trim() === "";
+      while (same(around[first - 1], around[first] as Block)) first--;
+      while (same(around[last + 1], around[last] as Block)) last++;
+      const wide = state.select({ anchor: (around[first] as Block).from, head: (around[last] as Block).to });
+      const tr = setBlockType({ kind })(wide, schema);
+      if (!tr) return null;
+      const edits = [...tr.edits].sort((a, b) => a.from - b.from);
+      const at = mapThrough(state.selection.head, edits, 1);
+      return { edits: tr.edits, selection: { anchor: at, head: at } };
+    }
     return setBlockType(all ? { kind: "paragraph" } : { kind })(state, schema);
   };
 
@@ -178,6 +195,8 @@ export const indentItems =
     const seen = new Set<number>();
     for (const item of items) {
       let line = text.lastIndexOf("\n", item.from - 1) + 1;
+      // A list's first item can't go in a level: there is no item for it to be nested in.
+      if (dir > 0 && !hasItemAbove(text, line)) continue;
       while (line <= item.to && line < text.length + 1) {
         if (!seen.has(line)) {
           seen.add(line);
@@ -200,6 +219,16 @@ export const indentItems =
   };
 
 /** List, enum and term items the selection touches, outermost. */
+/** Whether the line before `line` (a list item's) is a list item or its text, at its indentation or deeper. */
+const hasItemAbove = (text: string, line: number): boolean => {
+  if (line === 0) return false;
+  const start = text.lastIndexOf("\n", line - 2) + 1;
+  const above = text.slice(start, line - 1);
+  if (above.trim() === "") return false;
+  const indent = (l: string) => /^[ \t]*/.exec(l)?.[0].length ?? 0;
+  return indent(above) >= indent(text.slice(line, text.indexOf("\n", line) < 0 ? undefined : text.indexOf("\n", line)));
+};
+
 const itemsInSelection = (state: EditorState): SyntaxNode[] => {
   // A caret: the item holding it, an empty one too (`- ` ends at its marker; the space is outside).
   if (state.empty) {

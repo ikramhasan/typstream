@@ -20,6 +20,7 @@ export {
   deleteSelection,
   type EditorSchema,
   EMPTY_LINE,
+  isEmptyLine,
   exitBlock,
   insertLineBreak,
   insertText,

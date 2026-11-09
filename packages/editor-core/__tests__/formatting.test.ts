@@ -120,10 +120,15 @@ describe("block types", () => {
   it("turn paragraphs into one list, and back", () => {
     expect(run("«One\n\nTwo»", toggleList("list"))).toBe("- «One\n- Two»");
     expect(run("- «One\n- Two»", toggleList("list"))).toBe("«One\n\nTwo»");
-    expect(run("- On‸e\n- Two", toggleList("enum"))).toBe("+ On‸e\n- Two");
+    // A caret in a list: the whole list changes kind, as in a word processor.
+    expect(run("- On‸e\n- Two", toggleList("enum"))).toBe("+ On‸e\n+ Two");
+    expect(run("Intro\n\n- On‸e\n- Two\n\nAfter", toggleList("enum"))).toBe("Intro\n\n+ On‸e\n+ Two\n\nAfter");
   });
 
   it("are read from the source", () => {
+    // Text in a mark or a cell is a paragraph's.
+    expect(blockType(state("Some #strong[bo‸ld] text"))).toEqual({ kind: "paragraph" });
+    expect(blockType(state("#table(columns: 2, [a‸], [b])"))).toEqual({ kind: "paragraph" });
     expect(blockType(state("== Ti‸tle"))).toEqual({ kind: "heading", level: 2 });
     expect(blockType(state("- it‸em"))).toEqual({ kind: "list" });
     expect(blockType(state("pa‸ra"))).toEqual({ kind: "paragraph" });

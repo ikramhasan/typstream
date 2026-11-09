@@ -172,9 +172,12 @@ export const unitInside = (units: readonly Unit[], offset: number): Unit | null 
 export const step = (units: readonly Unit[], offset: number, dir: 1 | -1): number => {
   if (dir < 0) {
     let i = unitBefore(units, offset);
+    const crossed = i >= 0 && (units[i] as Unit).kind === "edge";
     while (i >= 0 && (units[i] as Unit).kind === "edge") i--;
     if (i < 0) return offset;
     const u = units[i] as Unit;
+    // Across a component's code (between two cells): the end of the text before it, a place too.
+    if (crossed) return u.to;
     // Land where the unit before it ends, if that is just before it (no edge between): the same
     // spot, in the formatting of the text before.
     const prev = units[i - 1];
@@ -184,9 +187,10 @@ export const step = (units: readonly Unit[], offset: number, dir: 1 | -1): numbe
   // `offset` inside a unit: to its end.
   const inside = unitInside(units, offset);
   if (inside) return inside.to;
+  const crossed = i < units.length && (units[i] as Unit).kind === "edge";
   while (i < units.length && (units[i] as Unit).kind === "edge") i++;
   if (i >= units.length) return offset;
-  return (units[i] as Unit).to;
+  return crossed ? (units[i] as Unit).from : (units[i] as Unit).to;
 };
 
 /** Where a word starts or ends next to `offset`, for Ctrl/Alt + arrows and double clicks. */

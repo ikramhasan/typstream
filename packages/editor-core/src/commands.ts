@@ -19,6 +19,7 @@ import {
   type Path,
   pathAt,
 } from "./tree";
+import { componentAt } from "./components";
 import { step, type Unit, unitAfter, unitBefore, unitInside, unitsOf } from "./units";
 
 /**
@@ -289,7 +290,13 @@ export const deleteChar =
     if (!state.empty) return deleteSelection(state, schema);
     const at = state.selection.head;
     const units = unitsFor(state, schema);
-    const line = removeEmptyLine(state, at, dir);
+    // At a heading's or item's text start, the empty line above it counts as beside the caret.
+    const startItem = dir < 0 ? itemAt(state.tree, state.text, at) : null;
+    const startBody = startItem?.children.find((k) => k.kind === "Markup");
+    const lineAt = startItem && (!startBody || startBody.from >= at) ? startItem.from : at;
+    const line = removeEmptyLine(state, lineAt, dir);
+    // Removed above a heading: the caret stays at its text.
+    if (line && lineAt !== at && line.edits.length) return { edits: line.edits, selection: caret(mapThrough(at, line.edits, 1)) };
     if (line !== undefined) return line;
     if (dir < 0) {
       const item = itemAt(state.tree, state.text, at);
@@ -304,11 +311,32 @@ export const deleteChar =
         return { edits, selection: caret(mapThrough(at, edits, -1)) };
       }
     }
+    // A caret inside a run of whitespace (a paragraph's last space, which Typst's parser keeps in
+    // the break after it): the space beside the caret, not the character before the run.
+    const within = unitInside(units, at);
+    const text = state.text;
+    if (within && (within.kind === "break" || within.kind === "space")) {
+      const c = dir < 0 ? text[at - 1] : text[at];
+      if (c === " " || c === "\t") {
+        const edits = [dir < 0 ? { from: at - 1, to: at, insert: "" } : { from: at, to: at + 1, insert: "" }];
+        return { edits, selection: caret(dir < 0 ? at - 1 : at) };
+      }
+    }
     const i = dir < 0 ? unitBefore(units, at) : unitAfter(units, at);
     const u = units[i];
     if (!u) return null;
     // Nothing but delimiters may lie between the caret and the unit: never another unit's code.
     if (u.kind === "edge") return null;
+    // Across the break to a component or an equation on its own: it is selected, as an atom is
+    // (the next press deletes it), not joined to the text.
+    if (u.kind === "break") {
+      const across = units[dir < 0 ? i - 1 : i + 1];
+      if (across && (across.kind === "edge" || across.kind === "atom")) {
+        const component = componentAt(state, dir < 0 ? across.from : across.to - 1, schema);
+        if (component) return selectOnly({ anchor: component.from, head: component.to, node: true });
+        if (across.kind === "atom") return selectOnly({ anchor: across.from, head: across.to, node: true });
+      }
+    }
     if (u.kind === "atom") return selectOnly({ anchor: u.from, head: u.to, node: true });
     const [from, to] = u.kind === "break" ? [Math.min(at, u.from), Math.max(at, u.to)] : [u.from, u.to];
     const edits = deleteEdits(state, from, to, schema);
@@ -422,6 +450,30 @@ export const insertText =
     } else if (ctx === "raw") {
       insert = typed.replace(/`/g, "ˋ");
     }
+    // Right after (or before) a component or equation set on its own line, text would join its
+    // code (`#number-line(…)After`): a paragraph of its own instead.
+    let apart = 0;
+    if (ctx === "markup" && from === to) {
+      const units = unitsFor(state, schema);
+      const lineStart = text.lastIndexOf("\n", from - 1) + 1;
+      const eol = text.indexOf("\n", from);
+      const lineEnd = eol < 0 ? text.length : eol;
+      const before = units[unitBefore(units, from)];
+      const after = units[unitAfter(units, from)];
+      const ownLine = (u: Unit) => {
+        const r = (u.kind === "edge" ? componentAt(state, u.kind === "edge" && u.to === from ? u.from : u.to - 1, schema) : null) ?? u;
+        const start = text.lastIndexOf("\n", r.from - 1) + 1;
+        const end = text.indexOf("\n", r.to);
+        return text.slice(start, r.from).trim() === "" && text.slice(r.to, end < 0 ? undefined : end).trim() === "";
+      };
+      const block = (u: Unit | undefined): u is Unit => !!u && (u.kind === "atom" || u.kind === "edge");
+      if (block(before) && before.to === from && text.slice(from, lineEnd).trim() === "" && ownLine(before))
+        insert = `\n\n${insert}`;
+      else if (block(after) && after.from === from && text.slice(lineStart, from).trim() === "" && ownLine(after)) {
+        insert = `${insert}\n\n`;
+        apart = 2;
+      }
+    }
     const edits: TextEdit[] = [...deletions.filter((d) => d.to <= from || d.from >= from)];
     const at = from;
     // Insert at the start of the deleted range (merged into an edit starting there).
@@ -436,7 +488,9 @@ export const insertText =
         at,
         dedupe(guarded).sort((a, b) => a.from - b.from || a.to - b.to),
         -1,
-      ) + insert.length;
+      ) +
+      insert.length -
+      apart;
     return { edits: dedupe(guarded), selection: caret(head), merge: true };
   };
 
@@ -588,7 +642,7 @@ const inEmptyParagraph = (text: string, at: number): boolean => {
   const above = text.slice(0, Math.max(0, lineStart - 1));
   const below = next < 0 ? "" : text.slice(next + 1);
   const blankAbove = lineStart === 0 || /(^|\n)[ \t]*$/.test(above) || /\[[ \t]*$/.test(above);
-  const blankBelow = next < 0 || /^[ \t]*(\n|$|\])/.test(below);
+  const blankBelow = next < 0 || /^[ \t]*(\n|$|\])/.test(below) || BLOCK_START.test(below);
   return blankAbove && blankBelow;
 };
 
@@ -604,6 +658,7 @@ export const EMPTY_LINE = "~";
 /**
  * Whether the `~` at `i` is a block of its own (see {@link EMPTY_LINE}): alone on a line between
  * blank lines or a content block's edges, or alone in a content block (`[~]`, a table cell).
+ * @beta
  */
 export const isEmptyLine = (text: string, i: number): boolean => {
   if (text[i] !== "~" || text[i - 1] === "\\") return false;
@@ -619,7 +674,7 @@ export const isEmptyLine = (text: string, i: number): boolean => {
   const above = text.slice(0, Math.max(0, a - 1));
   const below = text.slice(b + 1);
   const blankAbove = left === "[" || a === 0 || /(^|\n)[ \t]*$/.test(above) || /\[[ \t]*$/.test(above);
-  const blankBelow = right === "]" || b >= text.length || /^[ \t]*(\n|$|\])/.test(below);
+  const blankBelow = right === "]" || b >= text.length || /^[ \t]*(\n|$|\])/.test(below) || BLOCK_START.test(below);
   return blankAbove && blankBelow;
 };
 
