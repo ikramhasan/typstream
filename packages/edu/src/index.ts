@@ -112,6 +112,7 @@ export const eduComponents: EditorComponentSpec[] = [
         label: "Correct option",
         type: "number",
         min: 1,
+        maxPositional: true,
         step: 1,
         help: "1 is the first option. Shown in the answer key only.",
       },

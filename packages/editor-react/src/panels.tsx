@@ -90,11 +90,19 @@ export const display = (param: EditorParamSpec, source: string | null): string =
 };
 
 /** The source for what the field holds; `null` leaves the argument out (its default). */
-export const source = (param: EditorParamSpec, value: string): string | null | undefined => {
+export const source = (
+  param: EditorParamSpec,
+  value: string,
+  max: number | undefined = param.max,
+): string | null | undefined => {
   if (value === "") return null;
   switch (param.type) {
-    case "number":
-      return /^-?(\d+(\.\d*)?|\.\d+)$/.test(value) ? value : undefined;
+    case "number": {
+      // Out of range (the fifth of three options, negative points): not written.
+      if (!/^-?(\d+(\.\d*)?|\.\d+)$/.test(value)) return undefined;
+      const n = Number(value);
+      return (param.min !== undefined && n < param.min) || (max !== undefined && n > max) ? undefined : value;
+    }
     case "text":
       return typstString(value);
     case "content":
@@ -111,21 +119,32 @@ export const source = (param: EditorParamSpec, value: string): string | null | u
 const Field = ({
   param,
   value,
+  max = param.max,
   onChange,
 }: {
   param: EditorParamSpec;
   value: string | null;
+  max?: number;
   onChange: (source: string | null) => void;
 }) => {
   const shown = display(param, value);
   const [draft, setDraft] = useState(shown);
   // An undo or another change from outside: the field follows.
   useEffect(() => setDraft(shown), [shown]);
+  const invalid = source(param, draft, max) === undefined;
   const commit = (v: string) => {
     setDraft(v);
-    const s = source(param, v);
+    const s = source(param, v, max);
     if (s !== undefined) onChange(s);
   };
+  const range =
+    param.min !== undefined && max !== undefined
+      ? `From ${param.min} to ${max}.`
+      : param.min !== undefined
+        ? `${param.min} or more.`
+        : max !== undefined
+          ? `At most ${max}.`
+          : "Not valid here.";
   const placeholder = param.default ? `${display(param, param.default)} (default)` : undefined;
   if (param.type === "boolean")
     return (
@@ -164,9 +183,10 @@ const Field = ({
         type={param.type === "number" ? "number" : "text"}
         value={draft}
         min={param.min}
-        max={param.max}
+        max={max}
         step={param.step}
         placeholder={placeholder}
+        aria-invalid={invalid || undefined}
         onChange={(e) => commit(e.target.value)}
       />
     );
@@ -175,9 +195,16 @@ const Field = ({
     <label className="tse-field">
       {param.label}
       {input}
-      {param.help && <small>{param.help}</small>}
+      {invalid ? <small className="tse-invalid">{range}</small> : param.help && <small>{param.help}</small>}
     </label>
   );
+};
+
+/** How many positional arguments a component's call has (a multiple choice's options). */
+const positionalCount = (component: Component): number => {
+  const args = component.call.children.find((k) => k.kind === "Args");
+  const skip = new Set(["LeftParen", "RightParen", "Comma", "Space", "Named", "LineComment", "BlockComment"]);
+  return args?.children.filter((k) => !skip.has(k.kind)).length ?? 0;
 };
 
 /** The form of a component's arguments. */
@@ -195,6 +222,7 @@ export const ComponentForm = ({
       <Field
         key={param.name}
         param={param}
+        max={param.maxPositional ? positionalCount(component) : param.max}
         value={argumentOf(view.state, component, param.name)}
         onChange={(value) => {
           // The component as the state has it now (an edit before moved it).

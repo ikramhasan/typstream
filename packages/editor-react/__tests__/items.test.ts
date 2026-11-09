@@ -59,5 +59,11 @@ describe("form fields", () => {
     expect(source(field("number"), "")).toBeNull();
     expect(source(field("number"), "two")).toBeUndefined();
     expect(source(field("length"), "2")).toBeUndefined();
+    // Out of range: not written (the fifth of three options, negative points).
+    const option = { ...field("number"), min: 1 };
+    expect(source(option, "2", 3)).toBe("2");
+    expect(source(option, "5", 3)).toBeUndefined();
+    expect(source(option, "0", 3)).toBeUndefined();
+    expect(source({ ...field("number"), min: 0 }, "-1")).toBeUndefined();
   });
 });

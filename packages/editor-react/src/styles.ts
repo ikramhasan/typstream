@@ -69,6 +69,8 @@ export const EDITOR_CSS: string = `
   backdrop-filter: blur(8px);
 }
 /* The component at the selection's controls: a tab hanging under the fixed toolbar, out of the flow (no page moves). */
+.tse-invalid { color: #b91c1c; }
+.tse-field input[aria-invalid] { border-color: #dc2626; }
 .tse-docked {
   position: absolute;
   top: calc(100% + 4px);

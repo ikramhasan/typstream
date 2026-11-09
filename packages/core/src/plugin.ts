@@ -389,6 +389,8 @@ export interface EditorParamSpec {
   min?: number;
   /** Largest number allowed. */
   max?: number;
+  /** The largest number is how many positional arguments the call has (a multiple choice's options). */
+  maxPositional?: boolean;
   /** Step of a number input. */
   step?: number;
   /** One line of help under the field. */
