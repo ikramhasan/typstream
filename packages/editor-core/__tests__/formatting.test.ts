@@ -221,6 +221,18 @@ describe("links", () => {
     expect(run(linked, setLink(null))).toBe("See «the site» now");
   });
 
+  it("come off whole from a caret in them, and show at a caret", () => {
+    const linked = 'See #link("https://example.org")[the s‸ite] now';
+    expect(linkAt(state(linked))).toBe("https://example.org");
+    expect(run(linked, setLink(null))).toBe("See the s‸ite now");
+  });
+
+  it("get the scheme they need", () => {
+    expect(run("«here»", setLink("example.com"))).toBe('#link("https://example.com")[«here»]');
+    expect(run("«mail»", setLink("ada@example.org"))).toBe('#link("mailto:ada@example.org")[«mail»]');
+    expect(run("«page»", setLink("#top"))).toBe('#link("#top")[«page»]');
+  });
+
   it("write the URL as the text at a caret", () => {
     expect(run("Go ‸", setLink("https://x.org/a_b"))).toBe('Go #link("https://x.org/a_b")[https:\\/\\/x.org\\/a\\_b]‸');
   });

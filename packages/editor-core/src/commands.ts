@@ -5,7 +5,7 @@
 
 import type { TextEdit } from "@typstream/core";
 import type { SyntaxNode } from "@typstream/syntax";
-import { componentAt } from "./components";
+import { componentAt, deleteBlock } from "./components";
 import { type EditorState, mapThrough, type Selection, type Transaction } from "./state";
 import { atLineStart, escapeMarkup, isWordy } from "./text";
 import {
@@ -273,6 +273,8 @@ export const deleteEdits = (
 /** Deletes the selection; `null` when it is a caret. @beta */
 export const deleteSelection = (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): Transaction | null => {
   if (state.empty) return null;
+  // A component or equation selected: it goes with the line it leaves.
+  if (state.selection.node) return deleteBlock(state.from, state.to)(state);
   const edits = deleteEdits(state, state.from, state.to, schema);
   return { edits, selection: caret(state.from) };
 };

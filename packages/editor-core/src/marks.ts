@@ -389,8 +389,8 @@ const diffEdit = (a: string, b: string): TextEdit | null => {
  * @beta
  */
 export const linkAt = (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): string | null => {
-  const ps = pieces(state, state.from, state.to, schema);
-  const p = ps[0];
+  // A caret: the link around it. A selection: the link around its text.
+  const p = state.empty ? { from: state.from, to: state.from } : pieces(state, state.from, state.to, schema)[0];
   if (!p) return null;
   const w = wrappers(state)
     .filter((w) => w.name === "link" && w.innerFrom <= p.from && p.to <= w.innerTo)
@@ -400,17 +400,37 @@ export const linkAt = (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA
 };
 
 /**
+ * A URL as typed, with the scheme it needs: `example.com` is `https://example.com`, an e-mail
+ * address a `mailto:` link; one with a scheme, a path or an anchor stays.
+ */
+export const withScheme = (url: string): string => {
+  const u = url.trim();
+  if (/^[a-z][a-z0-9+.-]*:/i.test(u) || /^[/#?.]/.test(u)) return u;
+  if (/^[^\s@/]+@[^\s@/]+\.[^\s@/]+$/.test(u)) return `mailto:${u}`;
+  return `https://${u}`;
+};
+
+/**
  * Makes the selection a link to `url` (`#link("…")[…]`), changes the link it is in, or takes links
  * off it with `null`. On a caret, writes the URL as the link's text.
  * @beta
  */
 export const setLink =
-  (url: string | null) =>
+  (given: string | null) =>
   (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): Transaction | null => {
+    const url = given === null ? null : withScheme(given);
     const quoted = url === null ? null : `"${url.replace(/["\\]/g, "\\$&")}"`;
     const around = wrappers(state)
       .filter((w) => w.name === "link" && w.innerFrom <= state.from && state.to <= w.innerTo)
       .at(-1);
+    if (around && quoted === null && (state.empty || (state.from <= around.innerFrom && around.innerTo <= state.to))) {
+      // The link the caret (or the whole link) is in comes off whole: its text stays.
+      const edits = [
+        { from: around.from, to: around.innerFrom, insert: "" },
+        { from: around.innerTo, to: around.to, insert: "" },
+      ];
+      return { edits, selection: mapSel(state.selection, edits) };
+    }
     if (around && quoted !== null) {
       // Another URL for the link the selection is in.
       const edits = [{ from: around.from, to: around.innerFrom, insert: `#link(${quoted})[` }];

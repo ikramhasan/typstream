@@ -9,9 +9,16 @@ export const load = (): Promise<void> =>
 
 /**
  * A state from a document marked up with its selection: `‸` is the caret, `«…»` a selection
- * (anchor at `«`, head at `»`).
+ * (anchor at `«`, head at `»`), `[[…]]` a component selected whole.
  */
 export const state = (marked: string): EditorState => {
+  // `[[…]]`: a component selected whole (a node selection), as `show` writes it.
+  const node = marked.indexOf("[[");
+  if (node >= 0 && marked.includes("]]") && !marked.includes("‸") && !marked.includes("«")) {
+    const end = marked.lastIndexOf("]]") - 2;
+    const text = marked.slice(0, node) + marked.slice(node + 2, end + 2) + marked.slice(end + 4);
+    return new EditorState(text, { anchor: node, head: end, node: true });
+  }
   const caret = marked.indexOf("‸");
   if (caret >= 0) return new EditorState(marked.replace("‸", ""), { anchor: caret, head: caret });
   const a = marked.indexOf("«");

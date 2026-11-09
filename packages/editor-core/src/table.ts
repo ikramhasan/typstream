@@ -5,7 +5,7 @@
 
 import type { SyntaxNode } from "@typstream/syntax";
 import { DEFAULT_SCHEMA, type EditorSchema, EMPTY_LINE } from "./commands";
-import { componentAt } from "./components";
+import { componentAt, deleteBlock } from "./components";
 import type { EditorState, Transaction } from "./state";
 import { callArgs, calleeName } from "./tree";
 
@@ -236,8 +236,5 @@ export const deleteColumn = (state: EditorState, schema?: EditorSchema): Transac
 export const deleteTable = (state: EditorState, schema?: EditorSchema): Transaction | null => {
   const table = tableAt(state, state.from, schema);
   if (!table) return null;
-  let to = table.to;
-  const after = /^[ \t]*\n?/.exec(state.text.slice(to));
-  if (after) to += after[0].length;
-  return { edits: [{ from: table.from, to, insert: "" }], selection: { anchor: table.from, head: table.from } };
+  return deleteBlock(table.from, table.to)(state);
 };

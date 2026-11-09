@@ -10,6 +10,7 @@ import {
   argumentOf,
   type Component,
   type ComponentSpec,
+  deleteBlock,
   deleteColumn,
   deleteRow,
   deleteTable,
@@ -20,6 +21,7 @@ import {
   tableAt,
   typstString,
 } from "@typstream/editor-core";
+import { hasErrors, parse } from "@typstream/syntax";
 import { Plus } from "lucide-react";
 import { type CSSProperties, type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Icon } from "./icons";
@@ -66,11 +68,7 @@ export const specOf = (view: EditorView, name: string): ComponentSpec | undefine
 
 /** Deletes a component and the line it leaves. */
 const remove = (view: EditorView, c: Component) => {
-  const text = view.state.text;
-  let to = c.to;
-  const after = /^[ \t]*\n?/.exec(text.slice(to));
-  if (after) to += after[0].length;
-  view.dispatch({ edits: [{ from: c.from, to, insert: "" }], selection: { anchor: c.from, head: c.from } });
+  view.run(deleteBlock(c.from, c.to));
   view.focus();
 };
 
@@ -433,6 +431,7 @@ export const EquationPanel = ({ view }: { view: EditorView }) => {
     return { left: Math.max(8, Math.min(box.left, window.innerWidth - 268)), top: box.bottom + 8 };
   });
   if (!eq || !style) return null;
+  const incomplete = draft.trim() !== "" && hasErrors(parse(eq.display ? `$ ${draft} $` : `$${draft}$`));
   const write = (math: string, display = eq.display) => {
     setDraft(math);
     edit(math, display);
@@ -450,6 +449,8 @@ export const EquationPanel = ({ view }: { view: EditorView }) => {
   function edit(math: string, display: boolean) {
     if (!eq) return;
     const src = display ? `$ ${math} $` : `$${math}$`;
+    // A formula half typed (`x + ((`) would fail the compile: it waits in the field until it is whole.
+    if (hasErrors(parse(src))) return;
     view.dispatch({
       edits: [{ from: eq.from, to: eq.to, insert: src }],
       selection: { anchor: eq.from, head: eq.from + src.length, node: true },
@@ -489,7 +490,11 @@ export const EquationPanel = ({ view }: { view: EditorView }) => {
               }
             }}
           />
-          <small>Write it as you would say it: x^2, a/b, sqrt(x), pi.</small>
+          <small>
+            {incomplete
+              ? "Not finished yet: the page shows the formula as it was."
+              : "Write it as you would say it: x^2, a/b, sqrt(x), pi."}
+          </small>
         </label>
         <div className="tse-math-keys">
           {MATH_KEYS.map((k) => (

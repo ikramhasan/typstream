@@ -233,6 +233,39 @@ export const insertInline =
     return { edits: [{ from, to, insert: clean }], selection };
   };
 
+/**
+ * Deletes the piece at `[from, to)` (a component, a table, an equation). One on a line of its own
+ * goes with its line, and the blank lines around it become one, so the text after it starts where
+ * a paragraph does (not indented, no empty line left); the caret goes to the start of what follows.
+ * @beta
+ */
+export const deleteBlock =
+  (from: number, to: number) =>
+  (state: EditorState): Transaction => {
+    const text = state.text;
+    const lineStart = text.lastIndexOf("\n", from - 1) + 1;
+    const eol = text.indexOf("\n", to);
+    const lineEnd = eol < 0 ? text.length : eol;
+    if (text.slice(lineStart, from).trim() !== "" || text.slice(to, lineEnd).trim() !== "")
+      return { edits: [{ from, to, insert: "" }], selection: { anchor: from, head: from } };
+    // Its lines and the whitespace after them, then the break that kept it apart, as one.
+    let a = lineStart;
+    let b = lineEnd;
+    while (b < text.length && /\s/.test(text[b] as string)) b++;
+    while (a > 0 && /\s/.test(text[a - 1] as string)) a--;
+    // What separated it from its neighbours, once: the text after it keeps its indentation.
+    const indent = (() => {
+      const start = text.lastIndexOf("\n", b - 1) + 1;
+      return /^[ \t]*/.exec(text.slice(start, b))?.[0] ?? "";
+    })();
+    let insert: string;
+    if (b >= text.length) insert = "";
+    else if (a === 0) insert = indent;
+    else if (text[a - 1] === "[" || text[b] === "]") insert = `\n${indent}`;
+    else insert = `\n\n${indent}`;
+    return { edits: [{ from: a, to: b, insert }], selection: { anchor: a + insert.length, head: a + insert.length } };
+  };
+
 /** Every component call in the document, outermost first, for outlines and tests. @beta */
 export const componentsIn = (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): Component[] => {
   const out: Component[] = [];

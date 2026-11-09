@@ -7,6 +7,7 @@ import {
   caretAnchor,
   DEFAULT_SCHEMA,
   deleteChar,
+  deleteSelection,
   deleteWord,
   type EditorPlugin,
   indentItems,
@@ -172,6 +173,19 @@ describe("more of what the QA pass found", () => {
   it("Tab doesn't indent a list's first item", () => {
     expect(run("- fi‸rst\n- second", (st) => indentItems(1)(st, s))).toBe(null);
     expect(run("- first\n- sec‸ond", (st) => indentItems(1)(st, s))).toBe("- first\n  - sec‸ond");
+  });
+});
+
+describe("deleting a component", () => {
+  const del = (marked: string) => run(marked, (st) => deleteSelection(st, s));
+  it("takes its line and leaves one blank line between its neighbours", () => {
+    expect(del("A\n\n[[#pagebreak()]]\n\nB")).toBe("A\n\n‸B");
+    expect(del("A\n\n[[#table(columns: 1, [x])]]\n\n\n\nB")).toBe("A\n\n‸B");
+    expect(del("[[#line(length: 100%)]]\n\nB")).toBe("‸B");
+    expect(del("A\n\n[[#line(length: 100%)]]\n")).toBe("A‸");
+    expect(del("#question[\n  Text\n\n  [[#answer-lines(count: 2)]]\n]")).toBe("#question[\n  Text\n‸]");
+    // In a line of text: only itself.
+    expect(del("a [[$x$]] b")).toBe("a ‸ b");
   });
 });
 

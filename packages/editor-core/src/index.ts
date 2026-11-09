@@ -36,6 +36,7 @@ export {
   componentIn,
   componentsAt,
   componentsIn,
+  deleteBlock,
   insertBlock,
   insertInline,
   setArgument,
