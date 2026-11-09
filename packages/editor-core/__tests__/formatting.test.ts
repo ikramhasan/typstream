@@ -125,6 +125,16 @@ describe("block types", () => {
     expect(run("Intro\n\n- On‸e\n- Two\n\nAfter", toggleList("enum"))).toBe("Intro\n\n+ On‸e\n+ Two\n\nAfter");
   });
 
+  it("align the blocks around a list, not the list (its numbers would stay at the margin)", () => {
+    const out = (run("«Para\n\n- a\n- b\n\nEnd»", setAlignment("center")) ?? "").replace(/[«»]/g, "");
+    expect(out).toBe("#align(center)[Para]\n\n- a\n- b\n\n#align(center)[End]");
+    expect(run("- «a\n- b»", setAlignment("center"))).toBe(null);
+  });
+
+  it("keep headings when a selection around them becomes a list", () => {
+    expect(run("«One\n\n== Head\n\nTwo»", toggleList("list"))).toBe("- «One\n\n== Head\n\n- Two»");
+  });
+
   it("are read from the source", () => {
     // Text in a mark or a cell is a paragraph's.
     expect(blockType(state("Some #strong[bo‸ld] text"))).toEqual({ kind: "paragraph" });

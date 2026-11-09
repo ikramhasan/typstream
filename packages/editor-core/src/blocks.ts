@@ -177,6 +177,28 @@ export const toggleList =
       const at = mapThrough(state.selection.head, edits, 1);
       return { edits: tr.edits, selection: { anchor: at, head: at } };
     }
+    // A heading in the selection stays a heading: the blocks around it become the list.
+    if (!all && blocks.some((b) => b.kind === "heading") && blocks.some((b) => b.kind !== "heading")) {
+      const runs: Block[][] = [[]];
+      for (const b of blocks) {
+        if (b.kind === "heading") runs.push([]);
+        else (runs[runs.length - 1] as Block[]).push(b);
+      }
+      const edits: TextEdit[] = [];
+      for (const run of runs.filter((r) => r.length > 0)) {
+        const part = state.select({ anchor: (run[0] as Block).from, head: (run[run.length - 1] as Block).to });
+        edits.push(...(setBlockType({ kind })(part, schema)?.edits ?? []));
+      }
+      if (edits.length === 0) return null;
+      const sorted = [...edits].sort((a, b) => a.from - b.from);
+      return {
+        edits,
+        selection: {
+          anchor: mapThrough(state.selection.anchor, sorted, 1),
+          head: mapThrough(state.selection.head, sorted, -1),
+        },
+      };
+    }
     return setBlockType(all ? { kind: "paragraph" } : { kind })(state, schema);
   };
 
@@ -312,15 +334,25 @@ export const setAlignment =
     }
     if (align === "left") return null;
     const { blocks } = selectedBlocks(state, schema);
-    if (blocks.length === 0) return null;
-    const from = (blocks[0] as Block).from;
-    const to = (blocks[blocks.length - 1] as Block).to;
+    // Typst aligns a list's text but not its bullets and numbers, which would stay at the margin
+    // far from it: lists keep their place, and the blocks between them are aligned.
+    const runs: Block[][] = [];
+    for (const b of blocks) {
+      if (b.kind === "list" || b.kind === "enum" || b.kind === "term") runs.push([]);
+      else if (runs.length === 0) runs.push([b]);
+      else (runs[runs.length - 1] as Block[]).push(b);
+    }
     const open = alignOpen(align);
-    const edits = [
-      { from, to: from, insert: open },
-      { from: to, to, insert: "]" },
-    ];
-    return { edits, selection: mapBlockSelection(state.selection, edits, new Set([from])) };
+    const edits: TextEdit[] = [];
+    const starts = new Set<number>();
+    for (const run of runs.filter((r) => r.length > 0)) {
+      const from = (run[0] as Block).from;
+      const to = (run[run.length - 1] as Block).to;
+      edits.push({ from, to: from, insert: open }, { from: to, to, insert: "]" });
+      starts.add(from);
+    }
+    if (edits.length === 0) return null;
+    return { edits, selection: mapBlockSelection(state.selection, edits, starts) };
   };
 
 const alignOpen = (align: Alignment): string => `#align(${align})[`;

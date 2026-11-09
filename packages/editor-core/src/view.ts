@@ -662,6 +662,10 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
     const tr = command(state, schema);
     if (!tr) return false;
     dispatch(tr);
+    // From a menu or a toolbar: what it made may be off screen (a page break, a table at the end),
+    // and is laid out with the next compile.
+    scrollToCaret();
+    scrollOnLayout = true;
     return true;
   };
 
@@ -683,6 +687,8 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
   // -------------------------------------------------------------------------
   // Layout from the engine
 
+  /** Scroll to the caret once the next layout arrives (after a command from a menu). */
+  let scrollOnLayout = false;
   const onDoc = () => {
     const s = doc.getState();
     const artifact = s.artifact;
@@ -697,6 +703,10 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
     };
     updatePending();
     scheduleDraw();
+    if (scrollOnLayout && layoutText === sent.text) {
+      scrollOnLayout = false;
+      scrollToCaret();
+    }
     notify();
   };
   const unsubscribe = doc.subscribe(onDoc);
@@ -1009,6 +1019,11 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
         }
         case "ArrowUp":
         case "ArrowDown":
+          // A component selected: the caret before (up) or after (down) it.
+          if (selection.node && !e.shiftKey) {
+            moveTo(e.key === "ArrowUp" ? state.from : state.to, false);
+            return true;
+          }
           if (mod) {
             moveTo(e.key === "ArrowUp" ? 0 : state.text.length, e.shiftKey);
             return true;
@@ -1236,7 +1251,12 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
     if (readOnly) return;
     const data = e.clipboardData;
     if (data) for (const p of ordered) if (p.handlePaste?.(api, data)) return;
-    const typst = e.clipboardData?.getData("text/x-typst");
+    let typst = e.clipboardData?.getData("text/x-typst");
+    // One list item copied, pasted into an item: its text, not an item nested in this one.
+    const lineStart = state.text.lastIndexOf("\n", state.from - 1) + 1;
+    const marker = /^[ \t]*(?:[-+/]|\d+\.)[ \t]+/;
+    if (typst && !typst.includes("\n") && marker.test(typst) && marker.test(state.text.slice(lineStart, state.from)))
+      typst = typst.replace(marker, "");
     const plain = e.clipboardData?.getData("text/plain") ?? "";
     if (typst && canType(state, state.from) && !hasErrors(parse(typst))) {
       const del = state.empty ? null : deleteSelection(state, schema);

@@ -566,7 +566,8 @@ export const insertPlugin: EditorPlugin = createEditorPlugin({
       icon: "file-plus",
       group: "Basic",
       keywords: ["new page"],
-      run: insertBlock("#pagebreak()"),
+      // The caret on the new page, on an empty line, as a word processor's page break leaves it.
+      run: insertBlock("#pagebreak()\n\n{{cursor}}~"),
     },
   ],
 });
