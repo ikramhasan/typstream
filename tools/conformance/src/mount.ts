@@ -5,6 +5,7 @@
 import type { Artifact, PagedArtifact } from "@typstream/core";
 import type { MountedTypstream } from "@typstream/dom";
 import type { DocumentState, Engine } from "@typstream/engine";
+import { extraFonts } from "@typstream/engine-wasm/fonts";
 
 /**
  * Resolves with the state once its artifact has stopped changing for `ms`. A
@@ -20,13 +21,24 @@ export const steady = async (get: () => DocumentState | null, ms = 150): Promise
   }
 };
 
+/** A line in each of Typst's lazily loaded faces (`*_bold italic_*`, `New Computer Modern`, …). */
+const extraFaces = extraFonts
+  .map(({ family, file }) => {
+    const weight = /Semibold/.test(file) ? 600 : /Bold/.test(file) ? 700 : 400;
+    const style = /Italic|Oblique/.test(file) ? "italic" : "normal";
+    return `#text(font: "${family}", weight: ${weight}, style: "${style}")[Aa]\n`;
+  })
+  .join("");
+
 /**
- * Loads the script fonts the corpus needs (Arabic, Bengali, Devanagari; regular and bold) into
- * the engine, so later documents compile with them from their first compile and
- * never change after finishing. Fonts belong to the worker's wasm instance.
+ * Loads the lazy fonts into the engine: Typst's other faces and the script fonts the corpus needs
+ * (Arabic, Bengali, Devanagari; regular and bold), so later documents compile with them from their
+ * first compile and never change after finishing. `steady` can't tell a font on its way from none:
+ * under load (the nightly runs the plugins' suites at once) one took longer than its wait, and the
+ * pages were read in another face. Fonts belong to the worker's wasm instance.
  */
 export const warmFonts = async (engine: Engine) => {
-  const doc = engine.open({ target: "paged", text: "العربية বাংলা हिन्दी *العربية বাংলা हिन्दी*" });
+  const doc = engine.open({ target: "paged", text: `${extraFaces}العربية বাংলা हिन्दी *العربية বাংলা हिन्दी*` });
   doc.finish();
   await new Promise<void>((resolve) => {
     const check = (s: DocumentState) => {
@@ -37,8 +49,28 @@ export const warmFonts = async (engine: Engine) => {
     const stop = doc.subscribe(check);
     check(doc.getState());
   });
-  await steady(() => doc.getState(), 1000);
+  const { diagnostics } = await steady(() => doc.getState(), 1000);
   doc.dispose();
+  // A family Typst doesn't find (renamed, say) is a warning, and would load nothing. A missing weight or style isn't:
+  // Typst takes the family's nearest face.
+  if (diagnostics.length) throw new Error(`warmFonts: ${diagnostics.map((d) => d.message).join("; ")}`);
+};
+
+/**
+ * Keeps the lazy fonts loaded whichever worker the engine runs on: `warmFonts` loads them into the worker it has, and
+ * the watchdog, a crash or recycling replaces that with one that has none, whose documents change again a moment after
+ * finishing as each font arrives. Call the function returned before each document: it warms a replacement first.
+ */
+export const keepFontsWarm = (engine: Engine): (() => Promise<void>) => {
+  let replaced = false;
+  engine.onEvent((e) => {
+    if (e.type === "watchdog" || e.type === "crash" || e.type === "recycle") replaced = true;
+  });
+  return async () => {
+    if (!replaced) return;
+    replaced = false;
+    await warmFonts(engine);
+  };
 };
 
 /** An element `width` px wide at the top of the page. */

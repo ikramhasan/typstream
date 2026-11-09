@@ -204,6 +204,12 @@ export const createHtmlPages = (
   partsOf?: (id: string) => readonly Node[],
 ): HtmlPages => {
   const doc = root.ownerDocument;
+  /**
+   * The one range layouts measure text with. WebKit and Chromium keep every live range of a document and update each
+   * on every change to it until it is collected: one range per measured run, thousands a layout, made the renderer's
+   * updates after it several times slower (#162).
+   */
+  const measuring = doc.createRange();
   const view = doc.defaultView as Window & typeof globalThis;
   const sheets = doc.createElement("div");
   sheets.className = "typstream-paged";
@@ -625,7 +631,7 @@ export const createHtmlPages = (
     const box = el.getBoundingClientRect();
     // What the columns hold, in their flow: its boxes, not what is placed out of it (the MathML that screen readers
     // read, which overflows its own box).
-    const range = doc.createRange();
+    const range = measuring;
     const rects = [...el.childNodes]
       .flatMap((n) => {
         if (n.nodeType === 1) return outOfFlow(n as Element, view) ? [] : [...(n as Element).getClientRects()];
@@ -644,7 +650,7 @@ export const createHtmlPages = (
 
   /** Where the line at `top` starts in the inline run `nodes` (their first node or character on it). */
   const lineStart = (nodes: Node[], top: number, o: number): Node | { text: Text; offset: number } | null => {
-    const range = doc.createRange();
+    const range = measuring;
     for (const node of nodes) {
       if (node.nodeType === 3) {
         const text = node as Text;
@@ -699,7 +705,7 @@ export const createHtmlPages = (
 
   /** The text nodes and inline atoms of an inline run, deep, with their boxes. */
   const boxes = (nodes: Node[], o: number, out: { top: number; bottom: number }[]): void => {
-    const range = doc.createRange();
+    const range = measuring;
     for (const node of nodes) {
       if (node.nodeType === 3) {
         if (!(node as Text).data.trim()) continue;
@@ -742,7 +748,7 @@ export const createHtmlPages = (
       const first = nodes[0] as Node;
       /** The top of the line's first box: a character, an element, or the run's first node. */
       const firstTop = (now: number): number => {
-        const range = doc.createRange();
+        const range = measuring;
         if (start && "text" in start) {
           if (start.offset >= start.text.length) range.selectNode(start.text);
           else {
@@ -1146,7 +1152,7 @@ export const createHtmlPages = (
   const fillLines = (root: HTMLElement) => {
     const fills = [...root.querySelectorAll<HTMLElement>(".typstream-fill > .ts-hfill")];
     for (const h of fills) h.style.width = "0px";
-    const range = doc.createRange();
+    const range = measuring;
     const widths = fills.map((h) => {
       const row = h.parentElement as HTMLElement;
       // The baseline of its line (it is an empty inline block there): what follows on that line crosses it.

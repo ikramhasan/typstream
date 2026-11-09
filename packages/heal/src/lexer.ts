@@ -502,7 +502,7 @@ export class Lexer {
     const s = this.s;
     s.eatWhile(isAsciiDigit);
     const read = s.s.slice(start, s.cursor);
-    if (s.eatIf(".") && this.spaceOrEnd() && read.length <= 19 && fitsU64(read)) return "EnumMarker";
+    if (s.eatIf(".") && this.spaceOrEnd() && fitsU64(read)) return "EnumMarker";
     return this.text();
   }
 
@@ -830,8 +830,11 @@ export class Lexer {
   lastStringEscaped = false;
 }
 
-const fitsU64 = (digits: string): boolean =>
-  digits.length < 20 || (digits.length === 20 && digits <= "18446744073709551615");
+/** Whether a run of ASCII digits parses as a u64 (`read.parse::<u64>()` in `numbering`): leading zeros don't count. */
+export const fitsU64 = (digits: string): boolean => {
+  const value = digits.replace(/^0+/, "");
+  return value.length < 20 || (value.length === 20 && value <= "18446744073709551615");
+};
 
 /** `link_prefix` from lexer.rs: the URL part of an automatic link and whether its brackets balance. */
 export const linkPrefix = (text: string, from: number): { length: number; balanced: boolean } => {

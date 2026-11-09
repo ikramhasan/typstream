@@ -17,6 +17,7 @@ export {
   frame,
   graphicsOf,
   host,
+  keepFontsWarm,
   pageEls,
   pagesDrawn,
   shown,

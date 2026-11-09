@@ -10,14 +10,18 @@ import { playwright } from "@vitest/browser-playwright";
  */
 export const conformanceProjects = (alias) => {
   // The suite's own imports of packages, from their sources too, but @typstream/node: it runs its build's workers. By
-  // exact name: `@typstream/engine/server` is another entry.
+  // exact name: `@typstream/engine/server` is another entry. Without an alias an import takes the package's build,
+  // which only exists where turbo built it first (PRs' CI, not the nightly suites).
   const root = new URL("../../../packages/", import.meta.url).pathname;
   // The suite itself: plugins don't depend on it (it imports the engine, which imports Universe's plugin for its
   // tests), so their tests find it by path.
   const suite = new URL("./", import.meta.url).pathname;
   const exact = {
     ...Object.fromEntries(
-      ["core", "heal", "engine", "docx", "dom"].map((n) => [`@typstream/${n}`, `${root}${n}/src/index.ts`]),
+      ["core", "heal", "engine", "docx", "dom", "html-compat"].map((n) => [
+        `@typstream/${n}`,
+        `${root}${n}/src/index.ts`,
+      ]),
     ),
     "@typstream/conformance/paged": `${suite}paged.ts`,
     "@typstream/conformance/html": `${suite}html.ts`,

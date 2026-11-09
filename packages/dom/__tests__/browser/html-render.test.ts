@@ -410,6 +410,30 @@ describe(`HTML renderer's pages in ${browser}`, () => {
     }
     unmount(renderer);
   });
+  it("measures the text it lays out with one range, however long the document (#162)", async () => {
+    // WebKit and Chromium update every live range a document has on each change to it, until it is collected: a range
+    // per measured run (thousands a layout) made the updates after a layout several times slower.
+    const doc = openHtml(engine);
+    const html = await compileHtml(doc, TWENTY_PAGES);
+    doc.dispose();
+    const createRange = Document.prototype.createRange;
+    let ranges = 0;
+    Document.prototype.createRange = function (this: Document) {
+      ranges++;
+      return createRange.call(this);
+    };
+    try {
+      const renderer = mount();
+      renderer.root.style.width = "800px";
+      renderer.update(html);
+      await laidOut();
+      expect(renderer.root.querySelectorAll(".typstream-page").length).toBeGreaterThan(10);
+      expect(ranges).toBeLessThanOrEqual(1);
+      unmount(renderer);
+    } finally {
+      Document.prototype.createRange = createRange;
+    }
+  });
 });
 
 /** Checks every update of a stream: blocks with unchanged HTML keep their DOM node. */
@@ -509,12 +533,13 @@ describe(`HTML renderer while streaming in ${browser}`, () => {
     expect(stats.violations).toEqual([]);
     const sorted = [...stats.ms].sort((a, b) => a - b);
     const at = (q: number) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * q))] as number;
-    console.log(
+    // In the assertion's message too: vitest's browser mode doesn't show the page's console.
+    const summary =
       `${browser}: ${stats.updates} updates, ${blocksOf(renderer).length} blocks; update p50 ${at(0.5).toFixed(2)} ms, ` +
-        `p90 ${at(0.9).toFixed(2)} ms, max ${at(1).toFixed(2)} ms; ${stats.created} blocks created, ${stats.kept} kept`,
-    );
+      `p90 ${at(0.9).toFixed(2)} ms, max ${at(1).toFixed(2)} ms; ${stats.created} blocks created, ${stats.kept} kept`;
+    console.log(summary);
     // PLAN §11.5: main-thread update ≤ 4 ms at 20 pages (Phase 0 level).
-    expect(at(0.5)).toBeLessThanOrEqual(4);
+    expect(at(0.5), summary).toBeLessThanOrEqual(4);
     unmount(renderer);
   }, 300_000);
 });

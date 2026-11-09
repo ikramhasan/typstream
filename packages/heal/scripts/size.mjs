@@ -5,8 +5,10 @@ import { build } from "esbuild";
 // 15 KB until #24's math-lone-script lint rule and currency-dollar fix (0.1 KB) and #65's closers for
 // math groups in a call's arguments (0.07 KB) took it to 15.1 KB on main; 15.5 KB until #129's
 // layout-profile rule, which reads a call's arguments (0.7 KB), took it from 15.3 to 16.0 KB; 16.2 KB until the rule
-// took small corner radii out of boxes around text (#118, 0.28 KB), to 16.28 KB.
-const BUDGET_GZ = 16.3 * 1024;
+// took small corner radii out of boxes around text (#118, 0.28 KB), to 16.28 KB; 16.3 KB until the incremental healer
+// kept an error at a block's start with the block before it (0.1 KB) and enum numbers were read as Typst reads them,
+// to 16.37 KB.
+const BUDGET_GZ = 16.4 * 1024;
 const result = await build({
   entryPoints: ["src/index.ts"],
   bundle: true,
