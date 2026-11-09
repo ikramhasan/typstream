@@ -5,6 +5,7 @@
 
 import type { TextEdit } from "@typstream/core";
 import type { SyntaxNode } from "@typstream/syntax";
+import { componentAt } from "./components";
 import { type EditorState, mapThrough, type Selection, type Transaction } from "./state";
 import { atLineStart, escapeMarkup, isWordy } from "./text";
 import {
@@ -19,7 +20,6 @@ import {
   type Path,
   pathAt,
 } from "./tree";
-import { componentAt } from "./components";
 import { step, type Unit, unitAfter, unitBefore, unitInside, unitsOf } from "./units";
 
 /**
@@ -296,7 +296,8 @@ export const deleteChar =
     const lineAt = startItem && (!startBody || startBody.from >= at) ? startItem.from : at;
     const line = removeEmptyLine(state, lineAt, dir);
     // Removed above a heading: the caret stays at its text.
-    if (line && lineAt !== at && line.edits.length) return { edits: line.edits, selection: caret(mapThrough(at, line.edits, 1)) };
+    if (line && lineAt !== at && line.edits.length)
+      return { edits: line.edits, selection: caret(mapThrough(at, line.edits, 1)) };
     if (line !== undefined) return line;
     if (dir < 0) {
       const item = itemAt(state.tree, state.text, at);
@@ -461,7 +462,10 @@ export const insertText =
       const before = units[unitBefore(units, from)];
       const after = units[unitAfter(units, from)];
       const ownLine = (u: Unit) => {
-        const r = (u.kind === "edge" ? componentAt(state, u.kind === "edge" && u.to === from ? u.from : u.to - 1, schema) : null) ?? u;
+        const r =
+          (u.kind === "edge"
+            ? componentAt(state, u.kind === "edge" && u.to === from ? u.from : u.to - 1, schema)
+            : null) ?? u;
         const start = text.lastIndexOf("\n", r.from - 1) + 1;
         const end = text.indexOf("\n", r.to);
         return text.slice(start, r.from).trim() === "" && text.slice(r.to, end < 0 ? undefined : end).trim() === "";
@@ -561,7 +565,9 @@ const column = (text: string, offset: number): number => offset - (text.lastInde
 export const splitBlock = (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): Transaction | null => {
   let base = state;
   const pre: TextEdit[] = [];
-  if (!state.empty) {
+  // A component selected: a new paragraph after it, not in its place.
+  if (state.selection.node) base = state.select(caret(state.to));
+  else if (!state.empty) {
     const del = deleteSelection(state, schema);
     if (!del) return null;
     const applied = state.apply(del);

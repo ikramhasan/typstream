@@ -8,8 +8,8 @@ import {
   DEFAULT_SCHEMA,
   deleteChar,
   deleteWord,
-  indentItems,
   type EditorPlugin,
+  indentItems,
   insertText,
   keysPlugin,
   moveCell,
@@ -131,8 +131,8 @@ describe("deleting leaves what it doesn't reach", () => {
     expect(run("#line(length: 100%)\n\nYour na‸me\n\n#answer-lines(count: 3)", deleteChar(-1))).toBe(
       "#line(length: 100%)\n\nYour n‸me\n\n#answer-lines(count: 3)",
     );
-    expect(run("#question[\n  Which?‸\n  #mcq(ce(\"H2\"), ce(\"O2\"), answer: 1)\n]", deleteChar(-1))).toBe(
-      "#question[\n  Which‸\n  #mcq(ce(\"H2\"), ce(\"O2\"), answer: 1)\n]",
+    expect(run('#question[\n  Which?‸\n  #mcq(ce("H2"), ce("O2"), answer: 1)\n]', deleteChar(-1))).toBe(
+      '#question[\n  Which‸\n  #mcq(ce("H2"), ce("O2"), answer: 1)\n]',
     );
     expect(run("#v(1em) He«ll»o #pagebreak()", deleteChar(1))).toBe("#v(1em) He‸o #pagebreak()");
   });
@@ -146,7 +146,9 @@ describe("more of what the QA pass found", () => {
 
   it("Backspace or Delete across the break to a component selects it", () => {
     expect(run("#question[What?]\n\n‸After", deleteChar(-1))).toBe("[[#question[What?]]]\n\nAfter");
-    expect(run("Before‸\n\n#number-line(from: 0, to: 5)", deleteChar(1))).toBe("Before\n\n[[#number-line(from: 0, to: 5)]]");
+    expect(run("Before‸\n\n#number-line(from: 0, to: 5)", deleteChar(1))).toBe(
+      "Before\n\n[[#number-line(from: 0, to: 5)]]",
+    );
   });
 
   it("text typed beside a component on its own line is a paragraph of its own", () => {

@@ -22,7 +22,6 @@ import { hasErrors, parse } from "@typstream/syntax";
 import {
   blockAtOffset,
   canType,
-  caretAnchor,
   deleteSelection,
   type EditorSchema,
   insertText,
@@ -31,6 +30,7 @@ import {
   splitBlock,
   unitsAt,
 } from "./commands";
+import { type Compiled, compile, fromCompiled, markersOf, toCompiled } from "./compiled";
 import { type Component, componentIn, componentsAt, componentsIn } from "./components";
 import { History } from "./history";
 import { keysPlugin } from "./keymap";
@@ -160,9 +160,6 @@ const isApple = (win: Window) => /Mac|iPhone|iPad|iPod/.test(win.navigator.platf
 /** A line holding a list item's marker and nothing else (`- `, `+ `, `1. `, `/ `). */
 const EMPTY_ITEM = /^[ \t]*(?:[-+/]|\d+\.)[ \t]*$/;
 
-/** What the engine compiles at a caret with nothing beside it (see `caretAnchor`): a glyph, invisible. */
-const PLACEHOLDER = "\u00a0";
-
 /** Percent of `total`, for positions inside a page element. */
 const pct = (v: number, total: number) => `${((v / total) * 100).toFixed(4)}%`;
 
@@ -215,11 +212,15 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
   // Edits are offsets into the document's input: it must be the editor's text.
   doc.set(state.text);
   doc.finish();
-  /** The text the engine has: the editor's, with the caret's placeholder. */
-  let sent = state.text;
+  /** The text the engine has: the editor's, with the caret's placeholder and the calls' markers (compiled.ts). */
+  let sent: Compiled = { text: state.text, plain: state.text, inserts: [] };
+  /** Texts sent lately, by what was compiled: a layout's offsets are in one of them. */
+  const versions = new Map<string, Compiled>([[sent.text, sent]]);
   let layout: Layout | null = null;
   /** The text `layout` was compiled from. */
   let layoutText: string | null = null;
+  /** What that text was: the editor's text then, and the insertions. */
+  let compiled: Compiled | null = null;
   let shownArtifact: PagedArtifact | null = null;
   const history = new History();
   const listeners = new Set<() => void>();
@@ -240,13 +241,15 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
     for (const l of [...listeners]) l();
   };
 
-  /** Brings the engine's text up to the state: the change, and the caret's placeholder moved. */
+  /** Brings the engine's text up to the state: the change, the caret's placeholder and the markers moved. */
   const syncDoc = () => {
-    const at = focused ? caretAnchor(state, schema) : null;
-    const next = at === null ? state.text : state.text.slice(0, at) + PLACEHOLDER + state.text.slice(at);
-    const edit = diffEdit(sent, next);
+    const next = compile(state, schema, focused);
+    const edit = diffEdit(sent.text, next.text);
     if (!edit) return;
     sent = next;
+    versions.set(next.text, next);
+    // The engine compiles at most the last few: older ones are never laid out.
+    if (versions.size > 32) versions.delete(versions.keys().next().value as string);
     doc.applyEdit(edit);
   };
 
@@ -256,10 +259,10 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
   /** The current text's change from the layout's, as one edit (null when they are the same). */
   let pending: TextEdit | null = null;
   const updatePending = () => {
-    pending = layoutText === null || layoutText === state.text ? null : diffEdit(layoutText, state.text);
+    pending = compiled === null || compiled.plain === state.text ? null : diffEdit(compiled.plain, state.text);
   };
-  /** A current offset in the layout's text, and how many typed characters it is past that. */
-  const toLayout = (offset: number): { offset: number; ahead: number } => {
+  /** A current offset in the editor's text as the layout had it, and how many typed characters it is past that. */
+  const toLayoutPlain = (offset: number): { offset: number; ahead: number } => {
     if (!pending) return { offset, ahead: 0 };
     const { from, to, insert } = pending;
     if (offset <= from) return { offset, ahead: 0 };
@@ -267,8 +270,65 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
     // In text typed since: at the end of what it replaced, so many characters on.
     return { offset: to, ahead: offset - from };
   };
+  /** A current offset in the layout's text (with its insertions), and how many typed characters it is past that. */
+  const toLayout = (offset: number): { offset: number; ahead: number } => {
+    const p = toLayoutPlain(offset);
+    return compiled ? { offset: toCompiled(compiled, p.offset), ahead: p.ahead } : p;
+  };
   /** A layout offset in the current text. */
-  const fromLayout = (offset: number): number => (pending ? mapThrough(offset, [pending], -1) : offset);
+  const fromLayout = (offset: number): number => {
+    const plain = compiled ? fromCompiled(compiled, offset) : offset;
+    return pending ? mapThrough(plain, [pending], -1) : plain;
+  };
+
+  /**
+   * Where a call that shows none of the document went (a number line, answer lines): between its
+   * markers (compiled.ts). On one line, from one to the other; else the column's width from the
+   * first's line down to the second, page by page.
+   */
+  const atomRects = (from: number, to: number): PageRect[] => {
+    if (!layout || !compiled) return [];
+    const m = markersOf(compiled, toLayoutPlain(from).offset, toLayoutPlain(to).offset);
+    if (!m) return [];
+    // A marker's element is its call's node: past its `#`.
+    const marker = (at: number) =>
+      layout?.elements.find((e) => e.kind === "metadata" && e.node && e.node[0] >= at && e.node[0] <= at + 1);
+    const a = marker(m.open);
+    const b = marker(m.close);
+    if (!a || !b) return [];
+    const lines = (page: number) => layout?.lines.filter((l) => l.page === page) ?? [];
+    const column = (page: number) => {
+      const ls = lines(page);
+      const size = layout?.pages[page] ?? { width: 0, height: 0 };
+      const left = Math.min(a.x, ...ls.map((l) => l.left));
+      const right = Math.max(size.width - left, ...ls.map((l) => l.right));
+      const top = Math.min(size.height * 0.08, ...ls.map((l) => l.top));
+      const bottom = Math.max(size.height - top, ...ls.map((l) => l.bottom));
+      return { left, right, top, bottom };
+    };
+    if (a.page === b.page && Math.abs(a.y - b.y) < 2) {
+      // In a line of text: the line's height, from one marker to the other.
+      const line = layout.lineAt(a.page, a.x, a.y);
+      const top = line && Math.abs(line.top - a.y) < 30 ? line.top : a.y - 10;
+      const bottom = line && Math.abs(line.top - a.y) < 30 ? line.bottom : a.y + 4;
+      return [{ page: a.page, x: a.x, y: top, width: Math.max(b.x - a.x, 2), height: bottom - top }];
+    }
+    const out: PageRect[] = [];
+    for (let page = a.page; page <= b.page; page++) {
+      const c = column(page);
+      const top = page === a.page ? a.y : c.top;
+      const bottom = page === b.page ? b.y : c.bottom;
+      if (bottom - top > 0.5) out.push({ page, x: c.left, y: top, width: c.right - c.left, height: bottom - top });
+    }
+    return out;
+  };
+
+  /** A component's boxes on the pages: what its call lays out, and between its markers when it shows none of the document. */
+  const rangeRects = (from: number, to: number): PageRect[] => {
+    if (!layout) return [];
+    const range = toLayoutRange(from, to);
+    return [...layout.boxes(range.from, range.to), ...atomRects(from, to)];
+  };
 
   // -------------------------------------------------------------------------
   // Where things are
@@ -461,9 +521,11 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
     if (!layout) return;
     const { anchor, head, node } = state.selection;
     // Components: the selected one, or the ones holding the caret.
-    for (const c of selectedComponents()) {
-      const range = toLayoutRange(c.from, c.to);
-      for (const box of layout.boxes(range.from, range.to)) {
+    // A node selection that is no component with a form (an equation, a call of no plugin's) is outlined too.
+    const outlined = selectedComponents().map((c) => ({ from: c.from, to: c.to }));
+    if (node && outlined.length === 0) outlined.push({ from: Math.min(anchor, head), to: Math.max(anchor, head) });
+    for (const c of outlined) {
+      for (const box of rangeRects(c.from, c.to)) {
         const overlay = overlayFor(box.page);
         if (!overlay) continue;
         const el = docEl.createElement("div");
@@ -488,7 +550,7 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
       for (const d of p.decorations?.(state, schema) ?? []) {
         const range = toLayoutRange(d.from, d.to);
         const box = d.kind === "box";
-        for (const r of box ? layout.boxes(range.from, range.to) : layout.rects(range.from, range.to)) {
+        for (const r of box ? rangeRects(d.from, d.to) : layout.rects(range.from, range.to)) {
           const overlay = overlayFor(r.page);
           if (!overlay) continue;
           const el = docEl.createElement("div");
@@ -628,6 +690,11 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
     shownArtifact = artifact;
     layout = new LayoutClass(artifact);
     layoutText = s.artifactInput;
+    compiled = (layoutText !== null && versions.get(layoutText)) || {
+      text: layoutText ?? "",
+      plain: layoutText ?? "",
+      inserts: [],
+    };
     updatePending();
     scheduleDraw();
     notify();
@@ -645,11 +712,27 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
   let lastClickAt = { x: 0, y: 0 };
 
   /** The current offset under a client point, or a component to select there. */
+  /** A piece shown whole (an equation, a call) that a click selects rather than putting the caret at its edge. */
+  const selectable = (from: number, to: number): boolean => {
+    const text = state.text;
+    if (text[from] === "$") return true;
+    const c = componentIn(state, from, to, schema);
+    if (c && plugins.some((p) => p.components?.some((spec) => spec.name === c.name))) return true;
+    // On a line of its own: a block (a number line, a page break).
+    const start = text.lastIndexOf("\n", from - 1) + 1;
+    const eol = text.indexOf("\n", to);
+    return text.slice(start, from).trim() === "" && text.slice(to, eol < 0 ? undefined : eol).trim() === "";
+  };
+  /** What a click on a piece shown whole does: selects it, or puts the caret at the edge nearer to `x`. */
+  const onPiece = (from: number, to: number, nearStart: boolean): { offset: number } | { node: Range } =>
+    selectable(from, to) ? { node: { from, to } } : { offset: nearStart ? from : to };
+
+  /** The current offset under a client point, or a piece to select there (a component, an equation). */
   const resolve = (
     clientX: number,
     clientY: number,
     target: EventTarget | null,
-  ): { offset: number } | { component: Component } | null => {
+  ): { offset: number } | { node: Range } | null => {
     const point = pointAt(clientX, clientY, target);
     if (!point || !layout) return null;
     const hit = layout.hit(point.page, point.x, point.y);
@@ -665,32 +748,43 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
       const start = lt[cell.node[0]] === "[" ? cell.node[0] + 1 : cell.node[0];
       return { offset: snap(state, fromLayout(start), schema) };
     }
+    const units = unitsAt(state, schema);
     const onText =
       !!hit.glyph && hit.glyph.from >= 0 && !!line && point.y >= line.top - 4 && point.y <= line.bottom + 4;
-    if (onText && hit.offset !== null) return { offset: snap(state, fromLayout(hit.offset), schema) };
-    // Off the text, on a component's own drawing (a question's number, a table's rules, a
-    // drawing): the innermost component there.
-    const inside = (from: number, to: number) => {
-      const range = toLayoutRange(from, to);
-      return (
-        layout
-          ?.boxes(range.from, range.to)
-          .some((b) => b.page === point.page && within(point, [b.x, b.y, b.width, b.height], 1)) ?? false
-      );
-    };
-    const hits = componentsIn(state, schema).filter((c) => inside(c.from, c.to));
+    if (onText && hit.offset !== null && hit.glyph) {
+      const at = fromLayout(hit.offset);
+      // A glyph of an equation or of a call's arguments (`ce("H2O")`): the piece it is part of.
+      const glyphAt = fromLayout(hit.glyph.from);
+      const piece = units.find((u) => u.kind === "atom" && u.from <= glyphAt && glyphAt < u.to);
+      if (piece && (hit.glyph.flags & 2 || (piece.from < at && at < piece.to))) {
+        const box = rangeRects(piece.from, piece.to).find((b) => b.page === point.page);
+        return onPiece(piece.from, piece.to, !box || point.x < box.x + box.width / 2);
+      }
+      return { offset: snap(state, at, schema) };
+    }
+    // Off the text, on a component's own drawing (a question's number, a table's rules, a number
+    // line): the innermost component or piece there.
+    const inside = (from: number, to: number) =>
+      rangeRects(from, to).some((b) => b.page === point.page && within(point, [b.x, b.y, b.width, b.height], 1));
+    const pieces = units.filter((u) => u.kind === "atom" && inside(u.from, u.to));
+    const hits: Range[] = [...componentsIn(state, schema).filter((c) => inside(c.from, c.to)), ...pieces];
     const innermost = hits.sort((a, b) => a.to - a.from - (b.to - b.from))[0];
     if (innermost) {
       // A table's cell: a caret in it.
       const cell = layout.elements.find(
         (e) => e.kind === "cell" && e.page === point.page && e.node && within(point, layout?.cellBox(e) ?? [], 0),
       );
-      if (cell?.node && (innermost.name === "table" || innermost.name === "grid")) {
+      const c = componentIn(state, innermost.from, innermost.to, schema);
+      if (cell?.node && c && (c.name === "table" || c.name === "grid")) {
         const lt = layoutText ?? state.text;
         const start = lt[cell.node[0]] === "[" ? cell.node[0] + 1 : cell.node[0];
         return { offset: snap(state, fromLayout(start), schema) };
       }
-      return { component: innermost };
+      if (pieces.includes(innermost as (typeof pieces)[number])) {
+        const box = rangeRects(innermost.from, innermost.to).find((b) => b.page === point.page);
+        return onPiece(innermost.from, innermost.to, !box || point.x < box.x + box.width / 2);
+      }
+      return { node: { from: innermost.from, to: innermost.to } };
     }
     if (hit.offset === null) return null;
     return { offset: snap(state, fromLayout(hit.offset), schema) };
@@ -736,8 +830,8 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
     focusInput();
     if (!hit) return;
     goalX = null;
-    if ("component" in hit) {
-      select({ anchor: hit.component.from, head: hit.component.to, node: true });
+    if ("node" in hit) {
+      select({ anchor: hit.node.from, head: hit.node.to, node: true });
       return;
     }
     const at = hit.offset;
@@ -770,7 +864,7 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
   let scrolling: number | null = null;
   const dragTo = (x: number, y: number) => {
     const hit = resolve(x, y, docEl.elementFromPoint(x, y));
-    if (!hit || "component" in hit) return;
+    if (!hit || "node" in hit) return;
     if (hit.offset !== state.selection.head) select({ anchor: dragAnchor, head: hit.offset });
   };
   /** Dragging a selection past the top or bottom of the panel scrolls it, faster the further out. */
@@ -981,7 +1075,7 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
       return y >= r.top && y <= r.bottom;
     });
     const hit = resolve(client.left, y, target ?? null);
-    if (!hit || "component" in hit) {
+    if (!hit || "node" in hit) {
       moveTo(dir < 0 ? 0 : state.text.length, extend);
       return true;
     }
@@ -1004,6 +1098,8 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
 
   const typeText = (text: string) => {
     if (readOnly || !text) return;
+    // A component or equation selected: what is typed goes after it, never over it.
+    if (state.selection.node) state = state.select({ anchor: state.to, head: state.to });
     for (const p of ordered) {
       const own = p.handleTextInput?.(state, text, schema);
       if (own) {
@@ -1221,7 +1317,7 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
       return layout;
     },
     get laidOut() {
-      return layout !== null && layoutText === sent;
+      return layout !== null && layoutText === sent.text;
     },
     plugins,
     schema,
@@ -1263,10 +1359,7 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
     },
     components: selectedComponents,
     boxesOf(from, to) {
-      if (!layout) return [];
-      const range = toLayoutRange(from, to);
-      return layout
-        .boxes(range.from, range.to)
+      return rangeRects(from, to)
         .map(toClient)
         .filter((r): r is DOMRect => r !== null);
     },
@@ -1287,6 +1380,12 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
   pluginViews = plugins.flatMap((p) => (p.view ? [p.view(api)] : []));
   return api;
 };
+
+/** A range of the source. */
+interface Range {
+  from: number;
+  to: number;
+}
 
 const within = (p: { x: number; y: number }, box: readonly number[], pad: number): boolean => {
   const [x, y, w, h] = box as [number, number, number, number];
