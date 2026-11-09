@@ -401,6 +401,31 @@ export const EquationPanel = ({ view }: { view: EditorView }) => {
   const key = eq ? `${eq.from}` : null;
   // biome-ignore lint/correctness/useExhaustiveDependencies: another equation, another draft
   useEffect(() => setDraft(eq?.math ?? ""), [key]);
+  // With the equation selected, typing goes into its formula (the page can't take math), and Enter
+  // opens the field; Backspace and Delete still delete the equation.
+  const typing = useRef({ eq, draft });
+  typing.current = { eq, draft };
+  useEffect(() => {
+    if (key === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      const { eq: current, draft: text } = typing.current;
+      if (!current || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
+      if (e.key.length !== 1 && e.key !== "Enter") return;
+      e.preventDefault();
+      e.stopPropagation();
+      // A new equation's sample `x` is replaced by what is typed.
+      const next = e.key === "Enter" ? text : text === "x" ? e.key : text + e.key;
+      if (next !== text) edit(next, current.display);
+      setDraft(next);
+      requestAnimationFrame(() => {
+        const el = field.current;
+        el?.focus();
+        el?.setSelectionRange(next.length, next.length);
+      });
+    };
+    view.element.addEventListener("keydown", onKey, true);
+    return () => view.element.removeEventListener("keydown", onKey, true);
+  }, [key, view]);
   const style = usePlacement<CSSProperties>(() => {
     if (!eq) return null;
     const box = view.boxesOf(eq.from, eq.to)[0];
@@ -410,12 +435,26 @@ export const EquationPanel = ({ view }: { view: EditorView }) => {
   if (!eq || !style) return null;
   const write = (math: string, display = eq.display) => {
     setDraft(math);
+    edit(math, display);
+  };
+  const close = () => {
+    // An equation left empty shows nothing: it goes, rather than staying in the source as `$ $`.
+    if (draft.trim() === "")
+      view.dispatch({
+        edits: [{ from: eq.from, to: eq.to, insert: "" }],
+        selection: { anchor: eq.from, head: eq.from },
+      });
+    else view.select({ anchor: eq.to, head: eq.to });
+    view.focus();
+  };
+  function edit(math: string, display: boolean) {
+    if (!eq) return;
     const src = display ? `$ ${math} $` : `$${math}$`;
     view.dispatch({
       edits: [{ from: eq.from, to: eq.to, insert: src }],
       selection: { anchor: eq.from, head: eq.from + src.length, node: true },
     });
-  };
+  }
   const insertKey = (insert: string) => {
     const el = field.current;
     const at = el ? el.selectionStart : draft.length;
@@ -434,7 +473,7 @@ export const EquationPanel = ({ view }: { view: EditorView }) => {
         <div className="tse-panel-title">
           <Icon name="radical" />
           Equation
-          <Button label="Done" icon="x" onClick={() => view.select({ anchor: eq.to, head: eq.to })} />
+          <Button label="Done" icon="x" onClick={close} />
         </div>
         <label className="tse-field">
           Formula
@@ -446,8 +485,7 @@ export const EquationPanel = ({ view }: { view: EditorView }) => {
             onKeyDown={(e) => {
               if (e.key === "Escape" || (e.key === "Enter" && !e.shiftKey)) {
                 e.preventDefault();
-                view.select({ anchor: eq.to, head: eq.to });
-                view.focus();
+                close();
               }
             }}
           />

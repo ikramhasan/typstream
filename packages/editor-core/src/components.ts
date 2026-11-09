@@ -5,7 +5,7 @@
 
 import type { TextEdit } from "@typstream/core";
 import type { SyntaxNode } from "@typstream/syntax";
-import { blocksAround, DEFAULT_SCHEMA, type EditorSchema } from "./commands";
+import { blocksAround, DEFAULT_SCHEMA, type EditorSchema, isEmptyLine } from "./commands";
 import type { EditorState, Selection, Transaction } from "./state";
 import { callArgs, calleeName, findLast, isEmbedded } from "./tree";
 
@@ -162,8 +162,9 @@ export const insertBlock =
     let from: number;
     let prefix: string;
     let suffix: string;
-    if (line.trim() === "") {
-      // An empty line: the component goes there, apart from what is around.
+    const tilde = line.indexOf("~");
+    if (line.trim() === "" || (line.trim() === "~" && isEmptyLine(text, lineStart + tilde))) {
+      // An empty line (an empty line's `~` included): the component goes there, apart from what is around.
       from = lineStart + indent.length;
       const before = text.slice(0, lineStart);
       prefix = before.trim() === "" || /\n[ \t]*\n[ \t]*$/.test(before) ? "" : "\n";

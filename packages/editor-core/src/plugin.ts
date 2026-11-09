@@ -539,7 +539,7 @@ export const insertPlugin: EditorPlugin = createEditorPlugin({
       icon: "radical",
       group: "Basic",
       keywords: ["math", "formula"],
-      run: insertBlock("$ x = {{cursor}} $"),
+      run: insertBlock("$ x $"),
     },
     {
       key: "inline-equation",
