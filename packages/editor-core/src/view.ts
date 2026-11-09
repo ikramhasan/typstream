@@ -9,19 +9,22 @@
 // Between a change and its compile the layout is the previous one: offsets are mapped from the text
 // it was compiled from (`DocumentState.artifactInput`) to the current one, and the caret moves on
 // by an estimate of what was typed, so it keeps up with typing.
+//
+// Where Typst lays out nothing beside the caret (a space ending a paragraph, an empty paragraph,
+// list item or cell), the engine compiles the text with a placeholder at the caret, so the caret
+// has a glyph to stand by and the empty line its height (`caretAnchor`). The source the editor
+// reports never has it.
 
 import { diffEdit, type PagedArtifact, type TextEdit } from "@typstream/core";
 import { type MountedPaged, mountPaged } from "@typstream/dom";
 import type { EngineDocument } from "@typstream/engine";
 import { hasErrors, parse } from "@typstream/syntax";
-import { indentItems } from "./blocks";
 import {
   blockAtOffset,
   canType,
-  deleteChar,
+  caretAnchor,
   deleteSelection,
   type EditorSchema,
-  insertLineBreak,
   insertText,
   moveChar,
   snap,
@@ -30,8 +33,18 @@ import {
 } from "./commands";
 import { type Component, componentIn, componentsAt, componentsIn } from "./components";
 import { History } from "./history";
+import { keysPlugin } from "./keymap";
 import { type CaretBox, type Glyph, type Layout, Layout as LayoutClass, type Line, type PageRect } from "./layout";
-import { basicPlugins, type EditorCommand, type EditorPlugin, matchesShortcut, schemaOf } from "./plugin";
+import {
+  basicPlugins,
+  bindingsOf,
+  byPriority,
+  type EditorCommand,
+  type EditorPlugin,
+  matchesShortcut,
+  type PluginView,
+  schemaOf,
+} from "./plugin";
 import { EditorState, mapThrough, type Selection, type Transaction } from "./state";
 import { escapeMarkup } from "./text";
 import { unitBefore, wordAt, wordStep } from "./units";
@@ -50,6 +63,8 @@ export interface EditorOptions {
   onChange?: (text: string, edit: TextEdit) => void;
   /** Read-only: the caret and selection, no changes. */
   readOnly?: boolean;
+  /** Shown where the caret is while the document is empty (`Write something, or press / for blocks`). */
+  placeholder?: string;
 }
 
 /** A mounted editor. @beta */
@@ -60,6 +75,8 @@ export interface EditorView {
   readonly state: EditorState;
   /** Where the source was laid out, as of the last compile; `null` before the first. */
   readonly layout: Layout | null;
+  /** Whether `layout` shows the current text: no change is waiting for a compile. */
+  readonly laidOut: boolean;
   /** The plugins, the editor's own included. */
   readonly plugins: readonly EditorPlugin[];
   /** What the plugins make of Typst's functions. */
@@ -68,6 +85,8 @@ export interface EditorView {
   dispatch(tr: Transaction): void;
   /** Runs a command; whether it applied. */
   run(command: EditorCommand): boolean;
+  /** Runs what the keymaps bind to a key (`Enter`, `Mod-b`), as if it were pressed; whether a command applied. */
+  runKey(key: string): boolean;
   /** Undoes the last change; whether there was one. */
   undo(): boolean;
   /** Redoes the last undone change. */
@@ -109,6 +128,10 @@ const CSS = `
 .typstream-editor-component { position: absolute; outline: 1.5px solid var(--typstream-component, rgb(37 99 235 / 0.55)); outline-offset: 2px; border-radius: 2px; }
 .typstream-editor-component[data-selected] { outline-width: 2px; outline-color: var(--typstream-component-selected, rgb(37 99 235)); background: rgb(37 99 235 / 0.06); }
 .typstream-editor-input { position: absolute; width: 1px; height: 1em; padding: 0; border: 0; margin: 0; opacity: 0; resize: none; overflow: hidden; white-space: pre; font-size: 16px; caret-color: transparent; color: transparent; background: transparent; outline: none; pointer-events: none; }
+.typstream-editor-decoration { position: absolute; }
+.typstream-editor-decoration[data-kind="box"] { outline: 1.5px solid var(--typstream-decoration, rgb(234 179 8)); outline-offset: 1px; }
+.typstream-editor-placeholder { position: absolute; white-space: nowrap; color: var(--typstream-placeholder, rgb(100 116 139 / 0.75)); font-family: system-ui, sans-serif; line-height: 1; pointer-events: none; }
+.typstream-editor-input[data-menu] { pointer-events: auto; z-index: 3; width: 24px; height: 24px; }
 .typstream-editor-composition { position: absolute; white-space: pre; background: var(--typstream-composition, rgb(254 240 138 / 0.8)); border-bottom: 1px solid currentColor; font-family: serif; line-height: 1; }
 @keyframes typstream-blink { 50% { opacity: 0; } }
 @media print { .typstream-editor-overlay { display: none; } }
@@ -137,6 +160,9 @@ const isApple = (win: Window) => /Mac|iPhone|iPad|iPod/.test(win.navigator.platf
 /** A line holding a list item's marker and nothing else (`- `, `+ `, `1. `, `/ `). */
 const EMPTY_ITEM = /^[ \t]*(?:[-+/]|\d+\.)[ \t]*$/;
 
+/** What the engine compiles at a caret with nothing beside it (see `caretAnchor`): a glyph, invisible. */
+const PLACEHOLDER = "\u00a0";
+
 /** Percent of `total`, for positions inside a page element. */
 const pct = (v: number, total: number) => `${((v / total) * 100).toFixed(4)}%`;
 
@@ -149,7 +175,10 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
   const docEl = container.ownerDocument;
   const win = docEl.defaultView as Window;
   ensureStyles(docEl);
-  const plugins = options.plugins ?? basicPlugins;
+  const given = options.plugins ?? basicPlugins;
+  // Every editor has its keys; a plugin of higher priority binds the same key where it applies.
+  const plugins = given.some((p) => p.key === keysPlugin.key) ? given : [...given, keysPlugin];
+  const ordered = byPriority(plugins);
   const schema = schemaOf(plugins);
   const apple = isApple(win);
   const readOnly = options.readOnly === true;
@@ -186,6 +215,8 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
   // Edits are offsets into the document's input: it must be the editor's text.
   doc.set(state.text);
   doc.finish();
+  /** The text the engine has: the editor's, with the caret's placeholder. */
+  let sent = state.text;
   let layout: Layout | null = null;
   /** The text `layout` was compiled from. */
   let layoutText: string | null = null;
@@ -198,8 +229,25 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
   let composing = false;
   let compositionText = "";
 
+  /** Plugins' own views, made once the view exists (below). */
+  let pluginViews: PluginView[] = [];
+  /** The state the plugins' views last saw. */
+  let seen = state;
   const notify = () => {
+    const previous = seen;
+    seen = state;
+    for (const v of pluginViews) v.update?.(api, previous);
     for (const l of [...listeners]) l();
+  };
+
+  /** Brings the engine's text up to the state: the change, and the caret's placeholder moved. */
+  const syncDoc = () => {
+    const at = focused ? caretAnchor(state, schema) : null;
+    const next = at === null ? state.text : state.text.slice(0, at) + PLACEHOLDER + state.text.slice(at);
+    const edit = diffEdit(sent, next);
+    if (!edit) return;
+    sent = next;
+    doc.applyEdit(edit);
   };
 
   // -------------------------------------------------------------------------
@@ -436,9 +484,41 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
         overlay.append(el);
       }
     }
+    for (const p of plugins)
+      for (const d of p.decorations?.(state, schema) ?? []) {
+        const range = toLayoutRange(d.from, d.to);
+        const box = d.kind === "box";
+        for (const r of box ? layout.boxes(range.from, range.to) : layout.rects(range.from, range.to)) {
+          const overlay = overlayFor(r.page);
+          if (!overlay) continue;
+          const el = docEl.createElement("div");
+          el.className = d.class ? `typstream-editor-decoration ${d.class}` : "typstream-editor-decoration";
+          el.dataset.kind = box ? "box" : "text";
+          if (d.color) {
+            if (box) el.style.outlineColor = d.color;
+            else el.style.background = d.color;
+          }
+          place(el, r.page, r.x, r.y, r.width, r.height);
+          overlay.append(el);
+        }
+      }
     caretEl = null;
     if (anchor === head || composing) {
       const box = caretBox(head);
+      if (box && options.placeholder && !composing && state.text.trim() === "") {
+        const overlay = overlayFor(box.page);
+        if (overlay) {
+          const hint = docEl.createElement("span");
+          hint.className = "typstream-editor-placeholder";
+          hint.textContent = options.placeholder;
+          const size = layout.pages[box.page] as { width: number };
+          const k = (pageEls()[box.page]?.getBoundingClientRect().width ?? size.width) / size.width;
+          hint.style.fontSize = `${(box.bottom - box.top) * k * 0.62}px`;
+          place(hint, box.page, box.x + 2, box.top + (box.bottom - box.top) * 0.2, null, box.bottom - box.top);
+          hint.style.height = "";
+          overlay.append(hint);
+        }
+      }
       if (box) {
         const overlay = overlayFor(box.page);
         if (overlay) {
@@ -461,7 +541,7 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
         // The input follows the caret, so IME windows open by it.
         const client = toClient({ page: box.page, x: box.x, y: box.top, width: 1, height: box.bottom - box.top });
         const host = element.getBoundingClientRect();
-        if (client) {
+        if (client && !("menu" in input.dataset)) {
           input.style.left = `${client.left - host.left}px`;
           input.style.top = `${client.top - host.top}px`;
           input.style.height = `${Math.max(client.height, 12)}px`;
@@ -499,8 +579,8 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
   const setState = (next: EditorState, edit: TextEdit | null, record: { merge?: boolean } | null) => {
     const before = state;
     state = next;
+    syncDoc();
     if (edit) {
-      doc.applyEdit(edit);
       if (record) history.record(before.text, next.text, before.selection, next.selection, record.merge);
       options.onChange?.(next.text, edit);
     }
@@ -533,6 +613,7 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
 
   const select = (selection: Selection) => {
     state = state.select(selection);
+    syncDoc();
     scheduleDraw();
     notify();
   };
@@ -615,7 +696,33 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
     return { offset: snap(state, fromLayout(hit.offset), schema) };
   };
 
+  /**
+   * A right click: the caret there (unless it is in the selection), and the hidden input under the
+   * pointer holding the selected text, so the browser's menu is an editing one: Cut, Copy and Paste
+   * reach the clipboard handlers below.
+   */
+  const onMenuDown = (e: PointerEvent) => {
+    const hit = resolve(e.clientX, e.clientY, e.target);
+    if (hit && "offset" in hit && (state.empty || hit.offset < state.from || hit.offset > state.to))
+      select({ anchor: hit.offset, head: hit.offset });
+    focusInput();
+    const host = element.getBoundingClientRect();
+    input.style.left = `${e.clientX - host.left - 12}px`;
+    input.style.top = `${e.clientY - host.top - 12}px`;
+    input.dataset.menu = "";
+    input.value = state.empty ? "\u200b" : shownText(state.from, state.to);
+    input.select();
+  };
+  const onContextMenu = () => {
+    // The menu is open: the input stops catching the pointer, and goes back to the caret.
+    win.setTimeout(() => {
+      delete input.dataset.menu;
+      scheduleDraw();
+    }, 0);
+  };
+
   const onPointerDown = (e: PointerEvent) => {
+    if (e.button === 2) return onMenuDown(e);
     if (e.button !== 0) return;
     const target = e.target as Element | null;
     if (target?.closest(".typstream-island")) return;
@@ -658,20 +765,52 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
     return u && u.from <= to ? u.from : from;
   };
 
-  const onPointerMove = (e: PointerEvent) => {
-    if (!dragging) return;
-    const hit = resolve(e.clientX, e.clientY, docEl.elementFromPoint(e.clientX, e.clientY));
+  /** Where the pointer is while dragging, for scrolling on past the panel's edge. */
+  let dragPoint: { x: number; y: number } | null = null;
+  let scrolling: number | null = null;
+  const dragTo = (x: number, y: number) => {
+    const hit = resolve(x, y, docEl.elementFromPoint(x, y));
     if (!hit || "component" in hit) return;
     if (hit.offset !== state.selection.head) select({ anchor: dragAnchor, head: hit.offset });
   };
+  /** Dragging a selection past the top or bottom of the panel scrolls it, faster the further out. */
+  const autoscroll = () => {
+    scrolling = null;
+    if (!dragging || !dragPoint) return;
+    const viewport = scrollParent();
+    const top = viewport ? viewport.getBoundingClientRect().top : 0;
+    const bottom = viewport ? viewport.getBoundingClientRect().bottom : win.innerHeight;
+    const edge = 24;
+    const over =
+      dragPoint.y < top + edge
+        ? dragPoint.y - top - edge
+        : dragPoint.y > bottom - edge
+          ? dragPoint.y - bottom + edge
+          : 0;
+    if (over === 0) return;
+    const by = Math.sign(over) * Math.min(40, Math.abs(over) / 2 + 2);
+    if (viewport) viewport.scrollBy({ top: by });
+    else win.scrollBy({ top: by });
+    dragTo(dragPoint.x, Math.min(Math.max(dragPoint.y, top + 1), bottom - 1));
+    scrolling = win.requestAnimationFrame(autoscroll);
+  };
+  const onPointerMove = (e: PointerEvent) => {
+    if (!dragging) return;
+    dragPoint = { x: e.clientX, y: e.clientY };
+    dragTo(e.clientX, e.clientY);
+    if (scrolling === null) scrolling = win.requestAnimationFrame(autoscroll);
+  };
   const onPointerUp = () => {
     dragging = false;
+    dragPoint = null;
   };
 
   pagesHost.addEventListener("pointerdown", onPointerDown);
   pagesHost.addEventListener("pointermove", onPointerMove);
   pagesHost.addEventListener("pointerup", onPointerUp);
   pagesHost.addEventListener("pointercancel", onPointerUp);
+  pagesHost.addEventListener("contextmenu", onContextMenu);
+  input.addEventListener("contextmenu", onContextMenu);
 
   // -------------------------------------------------------------------------
   // Keys
@@ -719,19 +858,46 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
     return true;
   };
 
+  /** The previous key was Escape: Tab may leave the editor, for keyboard users. */
+  let escaped = false;
+
+  /**
+   * The keymaps' commands for a key, plugins by priority: the first that applies runs. `matched`
+   * says whether any binding had the key (the editor's, even when nothing applied there).
+   */
+  const runBindings = (matches: (key: string) => boolean): { matched: boolean; ran: boolean } => {
+    let matched = false;
+    for (const p of ordered)
+      for (const [key, commands] of bindingsOf(p)) {
+        if (!matches(key)) continue;
+        matched = true;
+        for (const command of commands) {
+          const tr = command(state, schema);
+          if (!tr) continue;
+          if (!readOnly || tr.edits.length === 0) dispatch(tr);
+          scrollToCaret();
+          return { matched, ran: true };
+        }
+      }
+    return { matched, ran: false };
+  };
+
+  const runKey = (key: string): boolean => runBindings((k) => k === key).ran;
+
   const onKeyDown = (e: KeyboardEvent) => {
     if (composing || e.isComposing) return;
+    // Text a context menu left in the input (see `onMenu`) isn't typed.
+    if (input.value && !composing) input.value = "";
+    const wasEscaped = escaped;
+    escaped = e.key === "Escape";
+    if (e.key === "Tab" && wasEscaped) return;
     const mod = apple ? e.metaKey : e.ctrlKey;
     const word = apple ? e.altKey : e.ctrlKey;
     const { selection } = state;
     const handled = (() => {
-      // Plugins' shortcuts first.
-      for (const p of plugins)
-        for (const [key, command] of Object.entries(p.shortcuts ?? {}))
-          if (matchesShortcut(key, e, apple)) {
-            if (!readOnly) run(command);
-            return true;
-          }
+      for (const p of ordered) if (p.handleKeyDown?.(api, e)) return true;
+      const { matched } = runBindings((key) => matchesShortcut(key, e, apple));
+      if (matched) return true;
       switch (e.key) {
         case "ArrowLeft":
         case "ArrowRight": {
@@ -749,7 +915,14 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
         }
         case "ArrowUp":
         case "ArrowDown":
+          if (mod) {
+            moveTo(e.key === "ArrowUp" ? 0 : state.text.length, e.shiftKey);
+            return true;
+          }
           return vertical(e.key === "ArrowUp" ? -1 : 1, e.shiftKey);
+        case "PageUp":
+        case "PageDown":
+          return page(e.key === "PageUp" ? -1 : 1, e.shiftKey);
         case "Home":
         case "End":
           goalX = null;
@@ -758,12 +931,6 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
             return true;
           }
           return lineEdge(e.key === "Home" ? -1 : 1, e.shiftKey);
-        case "Tab": {
-          if (readOnly) return false;
-          if (run(indentItems(e.shiftKey ? -1 : 1))) return true;
-          // In a table: the next (or previous) cell.
-          return moveCell(e.shiftKey ? -1 : 1);
-        }
         case "Escape":
           if (selection.node || selection.anchor !== selection.head) {
             moveTo(selection.head, false);
@@ -771,22 +938,9 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
           }
           return false;
         case "Backspace":
-        case "Delete": {
-          if (readOnly) return true;
-          const dir = e.key === "Backspace" ? -1 : 1;
-          if (word && selection.anchor === selection.head) {
-            const to = wordStep(unitsAt(state, schema), state.text, selection.head, dir);
-            const s2 = state.select({ anchor: selection.head, head: to });
-            const tr = deleteSelection(s2, schema);
-            if (tr) dispatch(tr);
-            return true;
-          }
-          run(deleteChar(dir));
-          return true;
-        }
+        case "Delete":
         case "Enter":
-          if (readOnly) return true;
-          run(e.shiftKey ? insertLineBreak : splitBlock);
+          // Keys the keymaps left alone (read-only, or no command applied) are still the editor's.
           return true;
       }
       if (mod && !e.altKey) {
@@ -810,26 +964,54 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
     if (handled) e.preventDefault();
   };
 
-  /** Moves the caret to the next or previous table cell. */
-  const moveCell = (dir: 1 | -1): boolean => {
+  /** PageUp and PageDown: the caret a screen up or down, at the same x. */
+  const page = (dir: 1 | -1, extend: boolean): boolean => {
     if (!layout) return false;
-    const at = toLayout(state.selection.head).offset;
-    const cells = layout.elements
-      .filter((e): e is typeof e & { node: [number, number] } => e.kind === "cell" && !!e.node)
-      .sort((a, b) => a.node[0] - b.node[0]);
-    const i = cells.findIndex((c) => c.node[0] <= at && at <= c.node[1]);
-    if (i < 0) return false;
-    const next = cells[i + dir];
-    if (!next?.node) return true;
-    const [from, to] = next.node;
-    const inner = (layoutText ?? state.text).slice(from, to).startsWith("[") ? from + 1 : from;
-    moveTo(snap(state, fromLayout(inner), schema), false);
-    void to;
+    const box = caretBox(state.selection.head);
+    const client = box && toClient({ page: box.page, x: box.x, y: box.top, width: 1, height: box.bottom - box.top });
+    if (!box || !client) return false;
+    goalX ??= box.x;
+    const viewport = scrollParent();
+    const height = viewport ? viewport.clientHeight : win.innerHeight;
+    const y = client.top + client.height / 2 + dir * height * 0.9;
+    const els = pageEls();
+    // The page at that height (or the nearest), and the point on it.
+    const target = els.find((el) => {
+      const r = el.getBoundingClientRect();
+      return y >= r.top && y <= r.bottom;
+    });
+    const hit = resolve(client.left, y, target ?? null);
+    if (!hit || "component" in hit) {
+      moveTo(dir < 0 ? 0 : state.text.length, extend);
+      return true;
+    }
+    const keep = goalX;
+    moveTo(hit.offset, extend);
+    goalX = keep;
+    if (viewport) viewport.scrollBy({ top: dir * height * 0.9 });
+    else win.scrollBy({ top: dir * height * 0.9 });
     return true;
+  };
+
+  /** The nearest ancestor that scrolls (the pages' panel), or `null` for the window. */
+  const scrollParent = (): HTMLElement | null => {
+    for (let el = element.parentElement; el; el = el.parentElement) {
+      const { overflowY } = win.getComputedStyle(el);
+      if ((overflowY === "auto" || overflowY === "scroll") && el.scrollHeight > el.clientHeight) return el;
+    }
+    return null;
   };
 
   const typeText = (text: string) => {
     if (readOnly || !text) return;
+    for (const p of ordered) {
+      const own = p.handleTextInput?.(state, text, schema);
+      if (own) {
+        dispatch(own);
+        scrollToCaret();
+        return;
+      }
+    }
     const tr = insertText(text)(state, schema);
     if (!tr) return;
     dispatch(tr);
@@ -862,18 +1044,24 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
         e.preventDefault();
         typeText(e.data ?? e.dataTransfer?.getData("text/plain") ?? "");
         return;
+      // What screen keyboards and IMEs send instead of keys: the same bindings as the keys.
       case "insertParagraph":
         e.preventDefault();
-        if (!readOnly) run(splitBlock);
+        runKey("Enter");
         return;
       case "insertLineBreak":
         e.preventDefault();
-        if (!readOnly) run(insertLineBreak);
+        runKey("Shift-Enter");
         return;
       case "deleteContentBackward":
       case "deleteContentForward":
         e.preventDefault();
-        if (!readOnly) run(deleteChar(e.inputType === "deleteContentBackward" ? -1 : 1));
+        runKey(e.inputType === "deleteContentBackward" ? "Backspace" : "Delete");
+        return;
+      case "deleteWordBackward":
+      case "deleteWordForward":
+        e.preventDefault();
+        runKey(e.inputType === "deleteWordBackward" ? "Word-Backspace" : "Word-Delete");
         return;
       case "historyUndo":
         e.preventDefault();
@@ -932,6 +1120,7 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
   };
 
   const onCopy = (e: ClipboardEvent, cut: boolean) => {
+    input.value = "";
     if (state.selection.anchor === state.selection.head) return;
     e.preventDefault();
     e.clipboardData?.setData("text/plain", shownText(state.from, state.to));
@@ -947,7 +1136,10 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
 
   const onPaste = (e: ClipboardEvent) => {
     e.preventDefault();
+    input.value = "";
     if (readOnly) return;
+    const data = e.clipboardData;
+    if (data) for (const p of ordered) if (p.handlePaste?.(api, data)) return;
     const typst = e.clipboardData?.getData("text/x-typst");
     const plain = e.clipboardData?.getData("text/plain") ?? "";
     if (typst && canType(state, state.from) && !hasErrors(parse(typst))) {
@@ -989,12 +1181,14 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
   const onFocus = () => {
     focused = true;
     element.dataset.focused = "";
+    syncDoc();
     scheduleDraw();
     notify();
   };
   const onBlur = () => {
     focused = false;
     delete element.dataset.focused;
+    syncDoc();
     scheduleDraw();
     notify();
   };
@@ -1018,7 +1212,7 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
   const undo = (): boolean => restore(history.undo(state.text));
   const redo = (): boolean => restore(history.redo(state.text));
 
-  return {
+  const api: EditorView = {
     element,
     get state() {
       return state;
@@ -1026,10 +1220,14 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
     get layout() {
       return layout;
     },
+    get laidOut() {
+      return layout !== null && layoutText === sent;
+    },
     plugins,
     schema,
     dispatch,
     run,
+    runKey,
     undo,
     redo,
     history: {
@@ -1074,7 +1272,10 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
     },
     toClient,
     destroy() {
+      for (const v of pluginViews) v.destroy?.();
+      pluginViews = [];
       if (frame !== null) win.cancelAnimationFrame(frame);
+      if (scrolling !== null) win.cancelAnimationFrame(scrolling);
       ro.disconnect();
       unsubscribe();
       paged.destroy();
@@ -1083,6 +1284,8 @@ export const createEditor = (container: HTMLElement, options: EditorOptions): Ed
       element.remove();
     },
   };
+  pluginViews = plugins.flatMap((p) => (p.view ? [p.view(api)] : []));
+  return api;
 };
 
 const within = (p: { x: number; y: number }, box: readonly number[], pad: number): boolean => {

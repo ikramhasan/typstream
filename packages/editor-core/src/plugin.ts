@@ -1,8 +1,11 @@
-// The editor's plugins, after Plate's: each is one object adding any of shortcuts, toolbar items
-// (the fixed toolbar and the floating one over a selection), insert-menu items, input rules
-// (Markdown-like shortcuts typed at a line's start) and components (forms for their arguments).
-// Everything the editor does beyond typing comes from plugins, its own basics included; a
-// typstream plugin's `editor` facet (plain data, e.g. edu's components) becomes one too.
+// The editor's plugins, after Plate's and ProseMirror's: each is one object adding any of keymaps
+// (commands bound to keys, falling through to the next binding where they don't apply), handlers
+// for keys, typed text and pastes, toolbar items (the fixed toolbar and the floating one over a
+// selection), insert-menu items, input rules (Markdown-like shortcuts typed at a line's start),
+// components (forms for their arguments), decorations drawn over the pages, and a view of its own
+// that follows the editor. Everything the editor does beyond typing comes from plugins, its own
+// keys included (`keysPlugin`, at the lowest priority); a typstream plugin's `editor` facet (plain
+// data, e.g. edu's components) becomes one too.
 
 import type { EditorComponentSpec, EditorParamSpec, TypstreamPlugin } from "@typstream/core";
 import { alignmentAt, blockType, indentItems, setAlignment, setBlockType, toggleList } from "./blocks";
@@ -11,6 +14,7 @@ import { insertBlock, insertInline } from "./components";
 import { isMarked, linkAt, markValue, setLink, setMark, toggleMark } from "./marks";
 import type { EditorState, Transaction } from "./state";
 import { tableTemplate } from "./table";
+import type { EditorView } from "./view";
 
 /**
  * A command: what it does to a state, or `null` when it doesn't apply there.
@@ -112,18 +116,70 @@ export interface ComponentSpec extends Omit<EditorComponentSpec, "template"> {
 }
 
 /**
+ * Something drawn over a range of the pages (a search match, an AI suggestion, a comment): `text`
+ * marks the text like a selection, `box` outlines what the range lays out (a component). Its
+ * `class` styles it (`.typstream-editor-decoration.<class>`), or `color` fills it.
+ * @beta
+ */
+export interface Decoration {
+  /** Start in the source. */
+  from: number;
+  /** End in the source. */
+  to: number;
+  /** `text` (default): rectangles over the text; `box`: the boxes of what the range lays out. */
+  kind?: "text" | "box";
+  /** Class names added to its elements. */
+  class?: string;
+  /** A CSS colour filling it (text) or outlining it (box). */
+  color?: string;
+}
+
+/**
+ * A plugin's own view: made when the editor mounts, told after every change of the editor's state,
+ * layout or focus, destroyed with the editor (a word count, a status line, collaborators' carets).
+ * @beta
+ */
+export interface PluginView {
+  /** After a change: the view, and the state before it. */
+  update?(view: EditorView, previous: EditorState): void;
+  /** The editor is going away. */
+  destroy?(): void;
+}
+
+/**
  * An editor plugin.
  * @beta
  */
 export interface EditorPlugin {
   /** Unique: `marks`, `edu`. */
   key: string;
+  /**
+   * Which plugins see keys, typed text and pastes first: higher first, then in the order given.
+   * Default 0; the editor's own keys (`keysPlugin`) are -100.
+   */
+  priority?: number;
   /** Functions that style text (stepped over like delimiters). */
   marks?: string[];
   /** Functions set inline in a paragraph. */
   inline?: string[];
-  /** Keyboard shortcuts: `Mod-b` (Ctrl, or ⌘ on Apple), `Mod-Shift-x`, `Mod-Alt-1`. */
+  /**
+   * Commands bound to keys: `Enter`, `Mod-b` (Ctrl, or ⌘ on Apple), `Mod-Shift-x`, `Mod-Alt-1`,
+   * `Word-Backspace` (Ctrl, or ⌥ on Apple). A list is tried in order; a command that doesn't apply
+   * (returns `null`) passes the key on to the next one, then to plugins of lower priority.
+   */
+  keymap?: Record<string, EditorCommand | readonly EditorCommand[]>;
+  /** Keyboard shortcuts, as `keymap` (kept for the toolbar's labels; both are bound). */
   shortcuts?: Record<string, EditorCommand>;
+  /** Sees every key before the keymaps; `true` when it handled it (the editor does nothing more). */
+  handleKeyDown?: (view: EditorView, event: KeyboardEvent) => boolean;
+  /** Typed text before the editor inserts it: a transaction instead, or `null` to let it in. */
+  handleTextInput?: (state: EditorState, text: string, schema: EditorSchema) => Transaction | null;
+  /** A paste before the editor's (Typst it copied, else plain text): `true` when it handled it. */
+  handlePaste?: (view: EditorView, data: DataTransfer) => boolean;
+  /** What to draw over the pages at a state. */
+  decorations?: (state: EditorState, schema: EditorSchema) => readonly Decoration[];
+  /** A view of its own that follows the editor. */
+  view?: (view: EditorView) => PluginView;
   /** Items of the fixed toolbar. */
   toolbar?: ToolbarItem[];
   /** Items of the floating toolbar over a text selection. */
@@ -518,17 +574,37 @@ export const insertPlugin: EditorPlugin = createEditorPlugin({
 /** The editor's own plugins, in toolbar order. @beta */
 export const basicPlugins: readonly EditorPlugin[] = [blocksPlugin, marksPlugin, insertPlugin];
 
-/** Shortcut names as event keys match them: `Mod-b` against a keydown. @beta */
+/** Plugins in the order they see keys, typed text and pastes: by priority, then as given. @internal */
+export const byPriority = (plugins: readonly EditorPlugin[]): EditorPlugin[] =>
+  plugins
+    .map((p, i) => [p, i] as const)
+    .sort((a, b) => (b[0].priority ?? 0) - (a[0].priority ?? 0) || a[1] - b[1])
+    .map(([p]) => p);
+
+/** A plugin's key bindings: its keymap, then its shortcuts. */
+export const bindingsOf = (plugin: EditorPlugin): [string, readonly EditorCommand[]][] => [
+  ...Object.entries(plugin.keymap ?? {}).map(
+    ([k, c]) => [k, typeof c === "function" ? [c] : c] as [string, readonly EditorCommand[]],
+  ),
+  ...Object.entries(plugin.shortcuts ?? {}).map(([k, c]) => [k, [c]] as [string, readonly EditorCommand[]]),
+];
+
+/**
+ * Shortcut names as event keys match them: `Mod-b` against a keydown. Modifiers: `Mod` (⌘ on Apple
+ * platforms, else Ctrl), `Ctrl`, `Alt`, `Shift`, `Meta`, and `Word` (⌥ on Apple, else Ctrl).
+ * @beta
+ */
 export const matchesShortcut = (shortcut: string, event: KeyboardEvent, apple: boolean): boolean => {
   const parts = shortcut.split("-");
   let key = parts.pop() as string;
   if (key === "" && shortcut.endsWith("--")) key = "-";
   const mods = new Set(parts.map((p) => p.toLowerCase()));
-  const mod = apple ? event.metaKey : event.ctrlKey;
-  if (mods.has("mod") !== mod) return false;
-  if (mods.has("shift") !== event.shiftKey) return false;
-  if (mods.has("alt") !== event.altKey) return false;
-  if (!mods.has("mod") && (apple ? event.ctrlKey : event.metaKey)) return false;
+  const has = (m: string) => mods.has(m);
+  const ctrl = has("ctrl") || (!apple && (has("mod") || has("word")));
+  const meta = has("meta") || (apple && has("mod"));
+  const alt = has("alt") || (apple && has("word"));
+  if (ctrl !== event.ctrlKey || meta !== event.metaKey || alt !== event.altKey) return false;
+  if (has("shift") !== event.shiftKey) return false;
   // Named keys (`Enter`, `Tab`) as written, by any case.
   if (event.key.toLowerCase() === key.toLowerCase()) return true;
   // Shift and Alt change `event.key` (Shift-8 is `*`, Alt-1 on a Mac `¡`): compare the physical key.

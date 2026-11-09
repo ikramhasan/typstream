@@ -14,6 +14,7 @@ export {
 } from "./blocks";
 export {
   canType,
+  caretAnchor,
   DEFAULT_SCHEMA,
   deleteChar,
   deleteSelection,
@@ -38,6 +39,7 @@ export {
   setArgument,
 } from "./components";
 export { History } from "./history";
+export { baseKeymap, deleteWord, keysPlugin, moveCell } from "./keymap";
 export { type CaretBox, type Glyph, type LaidElement, Layout, type Line, type PageRect } from "./layout";
 export { isMarked, linkAt, type Mark, markValue, setLink, setMark, toggleMark } from "./marks";
 export {
@@ -46,6 +48,7 @@ export {
   COLORS,
   type ComponentSpec,
   createEditorPlugin,
+  type Decoration,
   type EditorCommand,
   type EditorPlugin,
   fromTypstreamPlugin,
@@ -54,6 +57,7 @@ export {
   type InsertItem,
   insertPlugin,
   marksPlugin,
+  type PluginView,
   schemaOf,
   type ToolbarItem,
 } from "./plugin";

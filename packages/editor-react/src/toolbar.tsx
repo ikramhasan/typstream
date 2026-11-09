@@ -3,7 +3,17 @@
 // selection, menus what the block is, pickers the colour.
 
 import type { EditorView, ToolbarItem } from "@typstream/editor-core";
-import { type CSSProperties, Fragment, type ReactNode, useCallback, useLayoutEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  Fragment,
+  memo,
+  type ReactNode,
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import { useViewFrame } from "./hooks";
 import { InsertMenu } from "./insert";
 import { Button, ColorMenu, Layer, Menu, Popover, Separator } from "./ui";
 
@@ -163,8 +173,43 @@ const grouped = (items: ToolbarItem[], order: readonly string[]): ToolbarItem[][
 /** Groups in the order Plate's fixed toolbar has them. */
 const FIXED_ORDER = ["block", "size", "marks", "color", "align", "list"];
 
+/**
+ * What a toolbar shows at the view's state, as a string: it renders again only when this changes,
+ * not on every key.
+ */
+const stampOf = (view: EditorView, items: readonly ToolbarItem[]): string => {
+  const { state, schema } = view;
+  const parts: unknown[] = [view.history.canUndo, view.history.canRedo];
+  const visit = (item: ToolbarItem) => {
+    if (item.prompt) parts.push(item.prompt.value(state, schema));
+    else if (item.picker) parts.push(item.picker.value(state, schema));
+    else if (item.items) {
+      parts.push(item.current?.(state, schema) ?? null);
+      for (const i of item.items) parts.push(i.active?.(state, schema) ?? null);
+    } else parts.push(item.active?.(state, schema) ?? null, item.enabled?.(state, schema) ?? null);
+  };
+  for (const item of items) visit(item);
+  return JSON.stringify(parts);
+};
+
 /** The toolbar above the pages: undo and redo, the insert menu, then the plugins' items. */
 export const FixedToolbar = ({ view, end }: { view: EditorView; end?: ReactNode }) => {
+  useViewFrame(view);
+  const stamp = stampOf(
+    view,
+    view.plugins.flatMap((p) => p.toolbar ?? []),
+  );
+  return <FixedToolbarBody view={view} end={end} stamp={stamp} />;
+};
+
+const FixedToolbarBody = memo(function FixedToolbarBody({
+  view,
+  end,
+}: {
+  view: EditorView;
+  end?: ReactNode;
+  stamp: string;
+}) {
   const items = view.plugins.flatMap((p) => p.toolbar ?? []);
   const inserts = view.plugins.flatMap((p) => p.insert ?? []);
   return (
@@ -200,7 +245,7 @@ export const FixedToolbar = ({ view, end }: { view: EditorView; end?: ReactNode 
       )}
     </div>
   );
-};
+});
 
 /**
  * The toolbar over a text selection (Plate's floating toolbar): above its first line, centred on

@@ -19,7 +19,9 @@ import { loadSyntax } from "@typstream/syntax";
 import {
   type CSSProperties,
   forwardRef,
+  memo,
   type ReactNode,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useLayoutEffect,
@@ -27,6 +29,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useViewFrame } from "./hooks";
 import { SlashMenu } from "./insert";
 import { ComponentBar, EquationPanel } from "./panels";
 import { ensureEditorStyles } from "./styles";
@@ -71,6 +74,8 @@ export interface TypstEditorProps {
   autoFocus?: boolean;
   /** Read-only: select and copy, no changes. */
   readOnly?: boolean;
+  /** Shown at the caret while the document is empty. Default: `Write something, or press / to insert`. */
+  placeholder?: string;
   /** Class of the root element. */
   className?: string;
   /** Style of the root element. */
@@ -95,12 +100,29 @@ const NO_EDITOR_PLUGINS: readonly EditorPlugin[] = [];
 /** A list of plugins as a key that changes only when their keys do. */
 const keysOf = (plugins: readonly { key: string }[]): string => plugins.map((p) => p.key).join("\u0000");
 
-/** Re-renders whenever the view changes (state, layout, focus). */
-const useViewVersion = (view: EditorView | null): number => {
-  const [version, setVersion] = useState(0);
-  useEffect(() => view?.subscribe(() => setVersion((v) => v + 1)), [view]);
-  return version;
-};
+/** The editor's chrome: toolbars and panels, following the view on their own (the root doesn't re-render). */
+const Chrome = memo(function Chrome({
+  view,
+  props,
+  slash,
+  closeSlash,
+}: {
+  view: EditorView;
+  props: TypstEditorProps;
+  slash: boolean;
+  closeSlash: () => void;
+}) {
+  useViewFrame(view);
+  if (props.readOnly) return null;
+  return (
+    <>
+      {props.floatingToolbar !== false && <FloatingToolbar view={view} extra={props.floatingStart?.(view)} />}
+      <ComponentBar view={view} />
+      <EquationPanel view={view} />
+      {slash && <SlashMenu view={view} onClose={closeSlash} />}
+    </>
+  );
+});
 
 /**
  * The typstream editor: `source` shown as its pages and edited on them.
@@ -191,6 +213,7 @@ export const TypstEditor = forwardRef<TypstEditorHandle, TypstEditorProps>(funct
           plugins: editorPlugins,
           layout,
           readOnly: latest.current.readOnly,
+          placeholder: latest.current.placeholder ?? "Write something, or press / to insert",
           onChange: (text) => {
             emitted.current = text;
             latest.current.onChange?.(text);
@@ -223,20 +246,27 @@ export const TypstEditor = forwardRef<TypstEditorHandle, TypstEditorProps>(funct
   useEffect(() => {
     if (doc && Object.keys(allInputs).length) doc.setInputs(allInputs);
   }, [doc, allInputs]);
+  // Files as they change: a record made again on every render (a provider's merge) with the same
+  // files would recompile the document for nothing.
+  const sentFiles = useRef<FileDelta | undefined>(undefined);
   useEffect(() => {
-    if (doc && files) doc.setFiles(files);
+    if (!doc || !files || sameFiles(sentFiles.current, files)) return;
+    sentFiles.current = files;
+    doc.setFiles(files);
   }, [doc, files]);
 
   // Focus once the first pages are laid out.
-  const version = useViewVersion(view);
-  const focusedOnce = useRef(false);
-  // `version` changes with the view's layout.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: see above
+  const autoFocus = !!props.autoFocus;
   useEffect(() => {
-    if (!props.autoFocus || focusedOnce.current || !view?.layout) return;
-    focusedOnce.current = true;
-    view.focus();
-  }, [props.autoFocus, view, version]);
+    if (!autoFocus || !view) return;
+    if (view.layout) return view.focus();
+    const off = view.subscribe(() => {
+      if (!view.layout) return;
+      off();
+      view.focus();
+    });
+    return off;
+  }, [autoFocus, view]);
 
   // `/` on an empty line opens the insert menu at the caret.
   useEffect(() => {
@@ -257,6 +287,8 @@ export const TypstEditor = forwardRef<TypstEditorHandle, TypstEditorProps>(funct
     return () => view.element.removeEventListener("keydown", onKey, true);
   }, [view, props.readOnly]);
 
+  const closeSlash = useCallback(() => setSlash(false), []);
+
   useImperativeHandle(ref, () => ({ view, document: doc, focus: () => view?.focus() }), [view, doc]);
 
   const className = props.className ? `tse-root ${props.className}` : "tse-root";
@@ -272,14 +304,14 @@ export const TypstEditor = forwardRef<TypstEditorHandle, TypstEditorProps>(funct
           The editor couldn't start: {failed}
         </p>
       )}
-      {view && !props.readOnly && (
-        <>
-          {props.floatingToolbar !== false && <FloatingToolbar view={view} extra={props.floatingStart?.(view)} />}
-          <ComponentBar view={view} />
-          <EquationPanel view={view} />
-          {slash && <SlashMenu view={view} onClose={() => setSlash(false)} />}
-        </>
-      )}
+      {view && <Chrome view={view} props={props} slash={slash} closeSlash={closeSlash} />}
     </div>
   );
 });
+
+/** Whether two files records hold the same files (by path and content). */
+const sameFiles = (a: FileDelta | undefined, b: FileDelta): boolean => {
+  if (!a) return false;
+  const keys = Object.keys(b);
+  return keys.length === Object.keys(a).length && keys.every((k) => a[k] === b[k]);
+};

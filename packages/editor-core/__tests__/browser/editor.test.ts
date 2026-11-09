@@ -9,7 +9,16 @@ import { htmlCompat } from "@typstream/html-compat";
 import { loadSyntax } from "@typstream/syntax";
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
-import { basicPlugins, createEditor, type EditorView, fromTypstreamPlugin, toggleMark } from "../../src/index";
+import {
+  basicPlugins,
+  createEditor,
+  type EditorOptions,
+  type EditorPlugin,
+  type EditorView,
+  fromTypstreamPlugin,
+  insertText,
+  toggleMark,
+} from "../../src/index";
 
 const spawn = () =>
   fromWorker(() => new Worker(new URL("../../../engine/src/worker.ts", import.meta.url), { type: "module" }));
@@ -40,14 +49,17 @@ const until = (doc: EngineDocument, done: (s: DocumentState) => boolean, ms = 60
 const PREAMBLE = "#set page(width: 300pt, height: 200pt, margin: 20pt)\n";
 
 /** An editor on `text`, once the engine laid it out. */
-const open = async (text: string): Promise<{ view: EditorView; doc: EngineDocument }> => {
+const open = async (
+  text: string,
+  options: Partial<EditorOptions> = {},
+): Promise<{ view: EditorView; doc: EngineDocument }> => {
   const engine = createEngine({ spawn: spawn() });
   engines.push(engine);
   const doc = engine.open({ target: "paged", preamble: PREAMBLE, text, positions: true, pageFormat: "drawing" });
   const el = document.createElement("div");
   el.style.width = "400px";
   document.body.append(el);
-  const view = createEditor(el, { doc, text });
+  const view = createEditor(el, { doc, text, ...options });
   cleanups.push(() => {
     view.destroy();
     el.remove();
@@ -58,7 +70,7 @@ const open = async (text: string): Promise<{ view: EditorView; doc: EngineDocume
 
 /** Waits until the engine has laid out the editor's current text. */
 const settled = async (view: EditorView, doc: EngineDocument) => {
-  await until(doc, (s) => s.status === "done" && s.artifactInput === view.state.text);
+  await until(doc, (s) => s.status === "done" && view.laidOut);
   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 };
 
@@ -258,5 +270,69 @@ describe("the editor on the pages", () => {
     expect(doc.getState().diagnostics.filter((d) => d.severity === "error")).toEqual([]);
     // Typing to the new layout: a compile and a frame (CI machines are slower).
     expect(ms).toBeLessThan(3000);
+  });
+
+  it("draws the caret after a space ending a paragraph, and on an empty line out of a list", async () => {
+    const { view, doc } = await open("Some words\n\n- one\n- two\n\nAfter.");
+    const caret = () => view.element.querySelector(".typstream-editor-caret")?.getBoundingClientRect() as DOMRect;
+    view.select({ anchor: 10, head: 10 });
+    view.focus();
+    await settled(view, doc);
+    const before = caret();
+    // Typst drops a paragraph's last space: the caret still moves past it, as far as a space.
+    await userEvent.keyboard(" ");
+    await settled(view, doc);
+    expect(view.state.text.startsWith("Some words \n")).toBe(true);
+    expect(caret().left - before.left).toBeGreaterThan(1.5);
+    expect(caret().left - before.left).toBeLessThan(8);
+    // The space shows once text follows it, and the placeholder never reaches the source.
+    await userEvent.keyboard("more");
+    await settled(view, doc);
+    expect(view.state.text.startsWith("Some words more\n")).toBe(true);
+    // Enter twice at the end of the list: an empty line between it and the next paragraph.
+    const end = view.state.text.indexOf("two") + 3;
+    view.select({ anchor: end, head: end });
+    await userEvent.keyboard("{Enter}{Enter}");
+    await settled(view, doc);
+    // (The layout's text has the caret's placeholder before "After.": one character on.)
+    const at = view.state.text.indexOf("After.") + 1;
+    const after = view.layout?.glyphs.find((g) => g.from === at) as { y: number };
+    const page = view.element.querySelector(".typstream-page")?.getBoundingClientRect() as DOMRect;
+    const k = page.width / (view.layout?.pages[0]?.width ?? 1);
+    expect(caret().bottom).toBeLessThan(page.top + after.y * k - 4);
+    await userEvent.keyboard("New");
+    expect(view.state.text).toBe("Some words more\n\n- one\n- two\n\nNew\n\nAfter.");
+    await settled(view, doc);
+    expect(doc.getState().diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+  });
+
+  it("lets plugins bind keys where they apply, take typed text, draw over the pages and follow the view", async () => {
+    const updates: string[] = [];
+    const shout: EditorPlugin = {
+      key: "shout",
+      // Enter at the end of a line ending in "!" adds another "!"; elsewhere, the editor's Enter.
+      keymap: { Enter: (s) => (s.text[s.selection.head - 1] === "!" ? insertText("!")(s) : null) },
+      handleTextInput: (s, text) => (text === "?" ? insertText("¿?")(s) : null),
+      decorations: (s) => {
+        const at = s.text.indexOf("Hey");
+        return at < 0 ? [] : [{ from: at, to: at + 3, class: "found" }];
+      },
+      view: () => ({ update: (v) => updates.push(v.state.text) }),
+    };
+    const { view, doc } = await open("Hey!", { plugins: [...basicPlugins, shout] });
+    view.select({ anchor: 4, head: 4 });
+    view.focus();
+    await userEvent.keyboard("{Enter}");
+    expect(view.state.text).toBe("Hey!!");
+    await userEvent.keyboard(" you{Enter}");
+    expect(view.state.text).toBe("Hey!! you\n\n");
+    await userEvent.keyboard("?");
+    expect(view.state.text).toBe("Hey!! you\n\n¿?");
+    expect(updates.at(-1)).toBe("Hey!! you\n\n¿?");
+    await settled(view, doc);
+    expect(view.element.querySelectorAll(".typstream-editor-decoration.found").length).toBe(1);
+    // Tab where nothing applies stays in the editor.
+    await userEvent.keyboard("{Tab}");
+    expect(document.activeElement?.className).toBe("typstream-editor-input");
   });
 });

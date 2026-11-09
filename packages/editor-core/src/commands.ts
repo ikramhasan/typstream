@@ -474,6 +474,10 @@ export const splitBlock = (state: EditorState, schema: EditorSchema = DEFAULT_SC
   const path = pathAt(base.tree, at, -1);
   const found = itemAt(base.tree, text, at);
   const item = found && found.kind !== "Heading" ? found : null;
+  // An empty paragraph stays one: Typst lays out empty paragraphs as nothing, so more blank lines
+  // would only be newlines in the source the pages never show.
+  if (!item && found?.kind !== "Heading" && inEmptyParagraph(text, at))
+    return pre.length ? chain(state, base, selectOnly(caret(at))) : selectOnly(caret(at));
   let tr: Transaction;
   if (item && item.from < at) {
     const marker = item.children[0] as SyntaxNode;
@@ -524,13 +528,34 @@ const isEmptyItem = (text: string, item: SyntaxNode): boolean => {
   return !body || text.slice(body.from, body.to).trim() === "";
 };
 
-/** An empty item turned into an empty paragraph after the list (at the item's indentation, in a content block). */
+/** Whether `at` is on a line of its own between blank lines (or a content block's edges): an empty paragraph. */
+const inEmptyParagraph = (text: string, at: number): boolean => {
+  const lineStart = text.lastIndexOf("\n", at - 1) + 1;
+  const next = text.indexOf("\n", at);
+  const lineEnd = next < 0 ? text.length : next;
+  if (text.slice(lineStart, lineEnd).trim() !== "") return false;
+  const above = text.slice(0, Math.max(0, lineStart - 1));
+  const below = next < 0 ? "" : text.slice(next + 1);
+  const blankAbove = lineStart === 0 || /(^|\n)[ \t]*$/.test(above) || /\[[ \t]*$/.test(above);
+  const blankBelow = next < 0 || /^[ \t]*(\n|$|\])/.test(below);
+  return blankAbove && blankBelow;
+};
+
+/**
+ * An empty item turned into an empty paragraph after the list (at the item's indentation, in a
+ * content block), with blank lines around it so what is typed there is a paragraph of its own.
+ */
 const leaveList = (text: string, item: SyntaxNode): Transaction => {
   const lineStart = text.lastIndexOf("\n", item.from - 1) + 1;
   let end = item.to;
   while (text[end] === " " || text[end] === "\t") end++;
-  const insert = `\n${" ".repeat(column(text, item.from))}`;
-  return { edits: [{ from: lineStart, to: end, insert }], selection: caret(lineStart + insert.length) };
+  const indent = " ".repeat(column(text, item.from));
+  const insert = `\n${indent}`;
+  // A line of text right after the item would run into the new paragraph: a blank line between.
+  const next = /^\n[ \t]*(.*)/.exec(text.slice(end))?.[1] ?? "";
+  const joins = next !== "" && !next.startsWith("]") && !/^(?:[-+/=]|\d+\.)(?:\s|$)/.test(next);
+  const after = joins ? "\n" : "";
+  return { edits: [{ from: lineStart, to: end, insert: insert + after }], selection: caret(lineStart + insert.length) };
 };
 
 /**
@@ -629,6 +654,58 @@ const diff = (a: string, b: string): TextEdit | null => {
   let end = 0;
   while (end < max - start && a.charCodeAt(a.length - 1 - end) === b.charCodeAt(b.length - 1 - end)) end++;
   return { from: start, to: a.length - end, insert: b.slice(start, b.length - end) };
+};
+
+// ---------------------------------------------------------------------------
+// Where a caret has nothing to stand by
+
+/** A line that starts a block of its own: a list item, a heading, a term. */
+const BLOCK_START = /^[ \t]*(?:[-+/=]|\d+\.)(?:[ \t]|$)/;
+
+/** Whether the line `at` is on ends at `at`'s block: nothing after it, and a blank line, a block or the end next. */
+const endsBlock = (text: string, at: number): boolean => {
+  const eol = text.indexOf("\n", at);
+  if (eol < 0) return text.slice(at).trim() === "";
+  if (text.slice(at, eol).trim() !== "") return false;
+  const next = text.slice(eol + 1, text.indexOf("\n", eol + 1) < 0 ? undefined : text.indexOf("\n", eol + 1));
+  return next.trim() === "" || next.trim().startsWith("]") || BLOCK_START.test(next);
+};
+
+/** A unit Typst draws glyphs for: text, a quote, an equation (not a line break, which draws nothing). */
+const drawn = (text: string, u: Unit | undefined): u is Unit =>
+  !!u && (u.kind === "atom" || (u.kind === "char" && !/^\\\+?$/.test(text.slice(u.from, u.to))));
+
+/**
+ * Where a caret has no glyph beside it, so the view can't draw it from the layout: Typst lays out
+ * nothing there. After a space ending a paragraph (Typst drops it), in an empty paragraph, list
+ * item, heading or table cell, after a line break ending a paragraph. The view compiles its text
+ * with a placeholder at that offset (a non-breaking space: a glyph, and the line's height) while
+ * the caret is there, so the caret stands where the next character will. `null` where a glyph is
+ * beside the caret, or it isn't in markup.
+ * @beta
+ */
+export const caretAnchor = (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): number | null => {
+  if (!state.empty || state.selection.node) return null;
+  const at = state.selection.head;
+  const ctx = typingContext(pathAt(state.tree, at, 1)) ?? typingContext(pathAt(state.tree, at, -1));
+  if (ctx !== "markup") return null;
+  const units = unitsFor(state, schema);
+  const inside = unitInside(units, at);
+  const text = state.text;
+  // Between the newlines of a blank line: an empty paragraph. In a space running onto the next
+  // line: only where the paragraph ends with the line (a list item's last space), else the space
+  // is laid out between the words.
+  if (inside) return inside.kind === "break" || (inside.kind === "space" && endsBlock(text, at)) ? at : null;
+  const tight = (from: number, to: number) => !/\s/.test(text.slice(from, to));
+  const before = units[unitBefore(units, at)];
+  if (drawn(text, before) && tight(before.to, at)) return null;
+  const i = unitAfter(units, at);
+  const after = units[i];
+  if (drawn(text, after) && tight(at, after.from)) return null;
+  // Spaces before text in the same paragraph (a content block's leading newline): Typst lays out the text.
+  const then = units[i + 1];
+  if (after?.kind === "space" && after.from === at && drawn(text, then) && then.from === after.to) return null;
+  return at;
 };
 
 // ---------------------------------------------------------------------------
