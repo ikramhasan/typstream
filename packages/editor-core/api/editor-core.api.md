@@ -127,6 +127,9 @@ export interface Decoration {
 export const DEFAULT_SCHEMA: EditorSchema;
 
 // @beta
+export const deleteBlock: (from: number, to: number) => (state: EditorState) => Transaction;
+
+// @beta
 export const deleteChar: (dir: 1 | -1) => (state: EditorState, schema?: EditorSchema) => Transaction | null;
 
 // @beta
@@ -230,6 +233,9 @@ export interface EditorView {
 }
 
 // @beta
+export const EMPTY_LINE = "~";
+
+// @beta
 export const escapeMarkup: (text: string, before?: string, after?: string) => string;
 
 // @beta
@@ -313,6 +319,9 @@ export const insertPlugin: EditorPlugin;
 
 // @beta
 export const insertText: (typed: string) => (state: EditorState, schema?: EditorSchema) => Transaction | null;
+
+// @beta
+export const isEmptyLine: (text: string, i: number) => boolean;
 
 // @beta
 export const isMarked: (state: EditorState, mark: Mark, from?: number, to?: number, schema?: EditorSchema) => boolean;
@@ -442,7 +451,7 @@ export const setArgument: (component: Component, name: string, value: string | n
 export const setBlockType: (type: BlockType) => (state: EditorState, schema?: EditorSchema) => Transaction | null;
 
 // @beta
-export const setLink: (url: string | null) => (state: EditorState, schema?: EditorSchema) => Transaction | null;
+export const setLink: (given: string | null) => (state: EditorState, schema?: EditorSchema) => Transaction | null;
 
 // @beta
 export const setMark: (mark: Mark, value: string | true | null) => (state: EditorState, schema?: EditorSchema) => Transaction | null;

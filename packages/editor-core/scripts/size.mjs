@@ -8,7 +8,7 @@ const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
 // 23.5 KB when it was written (#36): the view, the commands, tables, marks, links and the basic plugins.
 // 24 KB until a word processor's list keys (an empty item up a level, Tab on an empty item, Backspace at
 // an item's start), the caret on an empty item and Ctrl+Enter out of a component: 0.4 KB.
-const BUDGET = 26.6 * 1024;
+const BUDGET = 29.8 * 1024;
 
 const result = await build({
   entryPoints: ["src/index.ts"],

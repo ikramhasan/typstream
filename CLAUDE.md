@@ -204,7 +204,7 @@ In `packages/editor-core` and `packages/editor-react` (#36):
 - `pnpm test`: the commands against Typst's parser (`__tests__/support.ts` marks a state with `‸` or `«…»` and checks
   the result parses). `pnpm test:browser`: the view and `<TypstEditor>` on the real worker in Chromium, Firefox and
   WebKit (Playwright clicks and keys); editor-react's tests write screenshots to `__tests__/browser/screenshots/`
-  (ignored) for a look. `pnpm size`: editor-core ≤ 26.6 KB, editor-react ≤ 16.8 KB gzipped.
+  (ignored) for a look. `pnpm size`: editor-core ≤ 29.8 KB, editor-react ≤ 17.8 KB gzipped.
 - Where Typst lays out nothing beside the caret (a paragraph's last space, an empty paragraph, item or cell) the view
   compiles a non-breaking space there (`caretAnchor`), never written to the source: the engine's text then differs
   from `view.state.text` by it. Tests wait for `view.laidOut`, not for `artifactInput` to equal the text, and layout

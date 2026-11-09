@@ -70,6 +70,17 @@ the caret, a non-breaking space, so the caret stands where the next character go
 `caretAnchor` says where; the source the editor reports never has it, and `laidOut` says whether the layout shows the
 current text.
 
+A component made in a plugin's package (a number line, answer lines, a multiple choice of `ce()` options) is laid out
+with spans in the package, so the engine can't say where it went. The view also compiles an invisible `#metadata`
+marker before and after every call that shows none of the document, and takes the component's box from where Typst put
+them: it can be clicked, outlined and set up like the others. The markers lay nothing out (the pages are the same,
+glyph for glyph), and like the placeholder they never reach the source.
+
+**Empty lines.** Typst lays out an empty paragraph or table cell as nothing, so Enter on an empty line would show no
+new line, on the pages, in the PDF or in Word. The editor writes an empty line as a block holding only `EMPTY_LINE`
+(`~`, a non-breaking space), one line high everywhere; `isEmptyLine` says whether a `~` is one. Typing replaces it,
+Backspace and Delete remove the line, new table cells are `[~]`.
+
 ## State and transactions
 
 `EditorState` holds the source, its syntax tree (parsed on first use) and the `Selection`. Commands return a
@@ -99,7 +110,8 @@ Each is `(state, schema) => Transaction | null` (an `EditorCommand`); `null` whe
 | `setLink(url)`, `linkAt` | A `#link("…")[…]` around the selection, its URL changed, or links taken off with `null`. |
 | `setBlockType(type)`, `blockType` | Paragraph, heading levels, list items (`BlockType`). `toggleList` and `indentItems` for lists. |
 | `setAlignment(align)`, `alignmentAt` | An `#align(…)[…]` around the blocks (`Alignment`). |
-| `insertBlock(template)`, `insertInline(template)` | Inserts Typst as a block after the caret's, or at the caret; `CURSOR` (`{{cursor}}`) marks where the caret goes. |
+| `insertBlock(template)`, `insertInline(template)` | Inserts Typst as a block after the caret's (on an empty line, in its place), or at the caret; `CURSOR` (`{{cursor}}`) marks where the caret goes, and sample text after it (`{{cursor}}The statement`) is selected so typing replaces it. |
+| `deleteBlock(from, to)` | Deletes a component, a table or an equation; one on a line of its own goes with its line, leaving one blank line between its neighbours. A selected component's Backspace uses it. |
 | `componentAt`, `componentsAt`, `componentIn`, `componentsIn` | The calls that are components (`Component`): not marks. `argumentOf` and `setArgument` read and write their named arguments. |
 | `tableAt`, `cellAt`, `addRow`, `addColumn`, `deleteRow`, `deleteColumn`, `deleteTable`, `tableTemplate` | Tables as rows and columns (`TableModel`). |
 

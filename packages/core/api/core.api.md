@@ -257,6 +257,7 @@ export interface EditorParamSpec {
     help?: string;
     label: string;
     max?: number;
+    maxPositional?: boolean;
     min?: number;
     name: string;
     options?: {
