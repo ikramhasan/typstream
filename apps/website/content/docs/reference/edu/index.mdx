@@ -164,9 +164,22 @@ edu as a typstream plugin, with key `"edu"` and version `EDU_VERSION`. Its facet
 | `templates` | `eduTemplates` |
 | `prompt` | `{ catalogue: eduCatalogue, rules: eduPromptRules, examples: eduExamples }` |
 | `stylesheets` | `[eduCss]` |
+| `editor` | `{ components: eduComponents, inline: ["blank", "ce"] }` |
 
 Pass it in `plugins` to `<Typstream>`, `mountTypstream` or `engine.open`, and to `buildSystemPrompt`. See
 [Plugins](/docs/concepts/plugins).
+
+### eduComponents (beta)
+
+```ts
+const eduComponents: EditorComponentSpec[];
+```
+
+edu's components as the [visual editor](/docs/reference/editor-react) offers them: questions (`question`, `mcq`,
+`true-false`), answers (`blank`, `answer-lines`, `answer-space`, `answer`), blocks (`callout`, `instructions`,
+`learning-objectives`, `student-info`, `rubric`) and drawings (`number-line`, `graph-paper`, `coordinate-plane`), each
+with the Typst its insert menu writes and the arguments its form edits (a question's `points`, a multiple choice's
+correct option). Their text is edited on the page.
 
 ### eduCss
 

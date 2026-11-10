@@ -64,7 +64,7 @@ export class Engine {
     compile_docx_model(): DocxModelResult;
     compile_html(): HtmlResult;
     compile_pdf(): PdfResult;
-    compile_svg_changed(drawings?: boolean | null): SvgChangedResult;
+    compile_svg_changed(drawings?: boolean | null, positions?: boolean | null): SvgChangedResult;
     static docx_margin_probe(): string;
     static features(): string[];
     static font_info(bytes: Uint8Array): string;
@@ -111,7 +111,7 @@ export interface InitOutput {
     // (undocumented)
     readonly engine_compile_pdf: (a: number) => number;
     // (undocumented)
-    readonly engine_compile_svg_changed: (a: number, b: number) => number;
+    readonly engine_compile_svg_changed: (a: number, b: number, c: number) => number;
     // (undocumented)
     readonly engine_docx_margin_probe: (a: number) => void;
     // (undocumented)
@@ -158,6 +158,24 @@ export type PageDrawing = {
 export type PageLink = { url: string; x: number; y: number; width: number; height: number };
 
 // @public
+export type PagePositions = {
+    glyphs: Uint8Array;
+    elements: {
+        kind: string;
+        from: number;
+        to: number;
+        node?: [number, number];
+        depth: number;
+        x: number;
+        y: number;
+        endX?: number;
+        endY?: number;
+        box?: [number, number, number, number];
+        cell?: [number, number];
+    }[];
+};
+
+// @public
 export type PdfResult = CompileResult & { pdf?: Uint8Array; pageCount?: number };
 
 // @public
@@ -169,6 +187,7 @@ export type SvgChangedResult = CompileResult & {
     pageCount?: number;
     changed?: ChangedPage[];
     islands?: IslandMarker[];
+    positions?: PagePositions[];
     compileMs: number;
     exportMs: number;
 };

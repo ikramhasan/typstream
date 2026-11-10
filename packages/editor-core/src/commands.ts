@@ -1,0 +1,964 @@
+// Editing commands: what typing, Backspace, Enter and the toolbars do to the source. Each reads
+// Typst's syntax tree and returns the edits that make the change, keeping the source valid and
+// everything the change doesn't touch byte for byte (the author's or the model's formatting,
+// comments and code). The teacher sees and edits the pages; this is how that becomes Typst.
+
+import type { TextEdit } from "@typstream/core";
+import type { SyntaxNode } from "@typstream/syntax";
+import { componentAt, deleteBlock } from "./components";
+import { type EditorState, mapThrough, type Selection, type Transaction } from "./state";
+import { atLineStart, escapeMarkup, isWordy } from "./text";
+import {
+  type Block,
+  blocksOf,
+  calleeName,
+  contentBlocksIn,
+  findLast,
+  isEmbedded,
+  itemAt,
+  markupOf,
+  type Path,
+  pathAt,
+} from "./tree";
+import { step, type Unit, unitAfter, unitBefore, unitInside, unitsOf } from "./units";
+
+/**
+ * What the commands need to know beyond the state: which calls are marks (text styling, shown
+ * inline and stepped over like `*`) and which are set inline in a paragraph.
+ * @beta
+ */
+export interface EditorSchema {
+  /** Calls that style the text inside them (`strong`, `text`, `underline`): their code shows nothing. */
+  marks: ReadonlySet<string>;
+  /** Calls set inline in a paragraph even alone on a line. */
+  inline: ReadonlySet<string>;
+  /** Components a plugin declares (with forms), whose content the editor's keys know. */
+  components?: ReadonlySet<string>;
+  /** Components whose positional content arguments are items (a multiple choice's options). */
+  lists?: ReadonlySet<string>;
+}
+
+/** The marks and inline calls of Typst's standard library. @beta */
+export const DEFAULT_SCHEMA: EditorSchema = {
+  marks: new Set([
+    "strong",
+    "emph",
+    "underline",
+    "overline",
+    "strike",
+    "highlight",
+    "sub",
+    "super",
+    "smallcaps",
+    "text",
+    "link",
+    "lower",
+    "upper",
+  ]),
+  inline: new Set([
+    "strong",
+    "emph",
+    "underline",
+    "overline",
+    "strike",
+    "highlight",
+    "sub",
+    "super",
+    "smallcaps",
+    "text",
+    "link",
+    "box",
+    "raw",
+    "ref",
+    "cite",
+    "footnote",
+    "h",
+    "sym",
+    "emoji",
+    "lower",
+    "upper",
+  ]),
+};
+
+/**
+ * A state's derived data commands share: its units (cached per state).
+ * @beta
+ */
+export const unitsFor = (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): Unit[] => {
+  const cache = state as EditorState & { [UNITS]?: { schema: EditorSchema; units: Unit[] } };
+  const hit = cache[UNITS];
+  if (hit && hit.schema === schema) return hit.units;
+  const units = unitsOf(state.tree, state.text, (name) => schema.marks.has(name));
+  cache[UNITS] = { schema, units };
+  return units;
+};
+const UNITS = Symbol("units");
+
+/** The blocks of the markup around `offset`. */
+export const blocksAround = (state: EditorState, offset: number, schema: EditorSchema = DEFAULT_SCHEMA) => {
+  const path = pathAt(state.tree, offset, -1);
+  const m = markupAround(path, offset) ?? { markup: state.tree, index: 0 };
+  const blocks = blocksOf(m.markup, state.text, (name) => schema.inline.has(name));
+  return { path, markup: m.markup, blocks };
+};
+
+/**
+ * The markup a caret at `offset` types into: the innermost `Markup` on the path that contains it,
+ * skipping a heading's or list item's own markup when the offset is outside its text.
+ */
+const markupAround = (path: Path, offset: number): { markup: SyntaxNode; index: number } | null => {
+  for (let i = path.length - 1; i >= 0; i--) {
+    const n = path[i] as SyntaxNode;
+    if (n.kind === "Markup" && n.from <= offset && offset <= n.to) {
+      // A block item's own markup is its text; blocks are its parent's.
+      const parent = path[i - 1];
+      if (
+        parent &&
+        (parent.kind === "Heading" ||
+          parent.kind === "ListItem" ||
+          parent.kind === "EnumItem" ||
+          parent.kind === "TermItem")
+      )
+        continue;
+      if (parent && (parent.kind === "Strong" || parent.kind === "Emph")) continue;
+      return { markup: n, index: i };
+    }
+  }
+  return markupOf(path);
+};
+
+/** An empty transaction that just selects. */
+const selectOnly = (selection: Selection): Transaction => ({ edits: [], selection });
+
+const caret = (at: number): Selection => ({ anchor: at, head: at });
+
+/** Whether `offset` is where a caret can type: in markup, not inside code, math or a string. @beta */
+export const canType = (state: EditorState, offset: number): boolean => {
+  const after = pathAt(state.tree, offset, 1);
+  const before = pathAt(state.tree, offset, -1);
+  return typingContext(after) !== null || typingContext(before) !== null;
+};
+
+/** `markup` or `raw` when a caret on `path` types text there. */
+const typingContext = (path: Path): "markup" | "raw" | null => {
+  for (let i = path.length - 1; i >= 0; i--) {
+    const kind = (path[i] as SyntaxNode).kind;
+    if (kind === "Raw") {
+      const leaf = path[path.length - 1] as SyntaxNode;
+      return leaf.kind === "RawDelim" || leaf.kind === "RawLang" ? null : "raw";
+    }
+    if (kind === "Markup") return "markup";
+    if (
+      kind === "Math" ||
+      kind === "Code" ||
+      kind === "Args" ||
+      kind === "CodeBlock" ||
+      kind === "Str" ||
+      kind === "Equation"
+    )
+      return null;
+    if (kind === "Hash" || kind === "Ident" || kind === "FuncCall" || kind === "FieldAccess") return null;
+  }
+  return null;
+};
+
+// ---------------------------------------------------------------------------
+// Deleting
+
+const TEXTY = new Set(["Text", "Space"]);
+
+/**
+ * The edits that delete `[from, to)` structurally: text inside it goes; a construct (strong text,
+ * a call, a list item's marker) goes only when all of it is inside, so the source stays valid; a
+ * heading's or list item's marker goes when the range starts before it (the block joins the one
+ * before, as in word processors).
+ * @beta
+ */
+export const deleteEdits = (
+  state: EditorState,
+  from: number,
+  to: number,
+  schema: EditorSchema = DEFAULT_SCHEMA,
+): TextEdit[] => {
+  const text = state.text;
+  const edits: TextEdit[] = [];
+  const push = (a: number, b: number) => {
+    if (b <= a) return;
+    const last = edits[edits.length - 1];
+    if (last && last.to >= a) last.to = Math.max(last.to, b);
+    else edits.push({ from: a, to: b, insert: "" });
+  };
+  const inside = (n: SyntaxNode) => from <= n.from && n.to <= to;
+  const visit = (node: SyntaxNode, markup: boolean) => {
+    if (node.to <= from || node.from >= to) return;
+    if (inside(node) && node.kind !== "Markup") {
+      push(node.from, node.to);
+      return;
+    }
+    if (node.children.length === 0) {
+      if ((markup && TEXTY.has(node.kind)) || (node.kind === "Text" && !markup))
+        push(Math.max(from, node.from), Math.min(to, node.to));
+      else if (node.kind === "Text" || node.kind === "RawTrimmed")
+        push(Math.max(from, node.from), Math.min(to, node.to));
+      return;
+    }
+    const kids = node.children;
+    switch (node.kind) {
+      case "Markup":
+        for (let i = 0; i < kids.length; i++) {
+          const c = kids[i] as SyntaxNode;
+          const expr = kids[i + 1];
+          if (c.kind === "Hash" && expr && isEmbedded(expr)) {
+            i++;
+            // Only an expression the range reaches: one before or after it stays whole.
+            if (expr.to <= from || c.from >= to) continue;
+            if (from <= c.from && expr.to <= to) push(c.from, expr.to);
+            else embedded(c, expr);
+          } else visit(c, true);
+        }
+        return;
+      case "Strong":
+      case "Emph": {
+        const inner = kids.find((k) => k.kind === "Markup");
+        // All of its text inside the range: the delimiters go too.
+        if (inner && from <= inner.from && inner.to <= to) push(node.from, node.to);
+        else if (inner) visit(inner, true);
+        return;
+      }
+      case "Heading":
+      case "ListItem":
+      case "EnumItem":
+      case "TermItem": {
+        const marker = kids[0] as SyntaxNode;
+        const body = kids.find((k) => k.kind === "Markup");
+        if (from < marker.from && to >= (body?.from ?? marker.to)) push(marker.from, body?.from ?? marker.to);
+        for (const k of kids) if (k.kind === "Markup") visit(k, true);
+        return;
+      }
+      case "Raw":
+        for (const k of kids) if (k.kind === "Text") visit(k, false);
+        return;
+      case "Equation":
+        // An equation is one piece: partly selected, it goes whole.
+        push(node.from, node.to);
+        return;
+      default:
+        for (const k of kids)
+          if (k.kind === "ContentBlock" || k.kind === "Markup" || k.kind === "Args") visit(k, k.kind === "Markup");
+    }
+  };
+  /** An embedded expression partly in the range: only the text in its content blocks goes, unless it is a mark. */
+  const embedded = (hash: SyntaxNode, expr: SyntaxNode) => {
+    const name = expr.kind === "FuncCall" ? calleeName(expr, text) : null;
+    const blocks = contentBlocksIn(expr);
+    if (blocks.length === 0 && (from <= hash.from || to >= expr.to)) {
+      // Shown whole (an image, an inline equation call): partly selected, it goes whole.
+      if (name !== null && !schema.marks.has(name) && from > hash.from && to < expr.to) return;
+      push(hash.from, expr.to);
+      return;
+    }
+    // A mark whose text is all inside the range goes whole.
+    if (name !== null && schema.marks.has(name) && blocks.length === 1) {
+      const inner = (blocks[0] as SyntaxNode).children.find((k) => k.kind === "Markup");
+      if (inner && from <= inner.from && inner.to <= to) {
+        push(hash.from, expr.to);
+        return;
+      }
+    }
+    for (const b of blocks) {
+      const inner = b.children.find((k) => k.kind === "Markup");
+      if (inner) visit(inner, true);
+    }
+  };
+  visit(state.tree, true);
+  return [...edits, ...guardDelimiters(state, edits)];
+};
+
+/** Deletes the selection; `null` when it is a caret. @beta */
+export const deleteSelection = (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): Transaction | null => {
+  if (state.empty) return null;
+  // A component or equation selected: it goes with the line it leaves.
+  if (state.selection.node) return deleteBlock(state.from, state.to)(state);
+  const edits = deleteEdits(state, state.from, state.to, schema);
+  return { edits, selection: caret(state.from) };
+};
+
+/**
+ * Backspace (`dir` -1) or Delete (1). With a selection, deletes it. Otherwise one unit: a
+ * character, a space, the break between two paragraphs (they join). At the start of a heading or
+ * list item, Backspace first makes it a paragraph. An atom (an equation, a component) is selected
+ * first, and deleted by the next press.
+ * @beta
+ */
+export const deleteChar =
+  (dir: 1 | -1) =>
+  (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): Transaction | null => {
+    if (!state.empty) return deleteSelection(state, schema);
+    const at = state.selection.head;
+    const units = unitsFor(state, schema);
+    // At a heading's or item's text start, the empty line above it counts as beside the caret.
+    const startItem = dir < 0 ? itemAt(state.tree, state.text, at) : null;
+    const startBody = startItem?.children.find((k) => k.kind === "Markup");
+    const lineAt = startItem && (!startBody || startBody.from >= at) ? startItem.from : at;
+    const line = removeEmptyLine(state, lineAt, dir);
+    // Removed above a heading: the caret stays at its text.
+    if (line && lineAt !== at && line.edits.length)
+      return { edits: line.edits, selection: caret(mapThrough(at, line.edits, 1)) };
+    if (line !== undefined) return line;
+    // On a line left empty (its text deleted): the line goes, not a character of the text above.
+    if (inEmptyParagraph(state.text, at) && !itemAt(state.tree, state.text, at)) {
+      const text = state.text;
+      let from = text.lastIndexOf("\n", at - 1) + 1;
+      while (from > 0 && /\s/.test(text[from - 1] as string)) from--;
+      const eol = text.indexOf("\n", at);
+      const to = eol < 0 ? text.length : eol;
+      // At the very start, the blank lines after it go instead.
+      if (from === 0 || text[from - 1] === "[") {
+        let end = to;
+        while (end < text.length && /\s/.test(text[end] as string)) end++;
+        if (text[end] === "]") end = to;
+        return {
+          edits: [{ from: text.lastIndexOf("\n", at - 1) + 1, to: end, insert: "" }],
+          selection: caret(text.lastIndexOf("\n", at - 1) + 1),
+        };
+      }
+      return { edits: [{ from, to, insert: "" }], selection: caret(from) };
+    }
+    if (dir < 0) {
+      const item = itemAt(state.tree, state.text, at);
+      const body = item?.children.find((k) => k.kind === "Markup");
+      if (item && (!body || body.from === body.to || body.from >= at)) {
+        // At an item's start, as in a word processor: a nested item goes up a level, an empty one
+        // becomes an empty paragraph after the list, and one with text a paragraph.
+        const up = outdentItem(state, item, at);
+        if (up) return up;
+        if (item.kind !== "Heading" && isEmptyItem(state.text, item)) return leaveList(state.text, item);
+        const edits = unmark(state, item);
+        return { edits, selection: caret(mapThrough(at, edits, -1)) };
+      }
+    }
+    // A caret inside a run of whitespace (a paragraph's last space, which Typst's parser keeps in
+    // the break after it): the space beside the caret, not the character before the run.
+    const within = unitInside(units, at);
+    const text = state.text;
+    if (within && (within.kind === "break" || within.kind === "space")) {
+      const c = dir < 0 ? text[at - 1] : text[at];
+      if (c === " " || c === "\t") {
+        const edits = [dir < 0 ? { from: at - 1, to: at, insert: "" } : { from: at, to: at + 1, insert: "" }];
+        return { edits, selection: caret(dir < 0 ? at - 1 : at) };
+      }
+    }
+    const i = dir < 0 ? unitBefore(units, at) : unitAfter(units, at);
+    const u = units[i];
+    if (!u) return null;
+    // Nothing but delimiters may lie between the caret and the unit: never another unit's code.
+    if (u.kind === "edge") return null;
+    // Across the break to a component or an equation on its own: it is selected, as an atom is
+    // (the next press deletes it), not joined to the text.
+    if (u.kind === "break") {
+      const across = units[dir < 0 ? i - 1 : i + 1];
+      if (across && (across.kind === "edge" || across.kind === "atom")) {
+        const component = componentAt(state, dir < 0 ? across.from : across.to - 1, schema);
+        if (component) return selectOnly({ anchor: component.from, head: component.to, node: true });
+        if (across.kind === "atom") return selectOnly({ anchor: across.from, head: across.to, node: true });
+      }
+    }
+    if (u.kind === "atom") return selectOnly({ anchor: u.from, head: u.to, node: true });
+    if (u.kind === "break" || u.kind === "space") {
+      const joined = joinItem(state, at, dir, u);
+      if (joined) return joined;
+    }
+    const [from, to] = u.kind === "break" ? [Math.min(at, u.from), Math.max(at, u.to)] : [u.from, u.to];
+    const edits = deleteEdits(state, from, to, schema);
+    // The paragraph before ended with a space (Typst's break holds it): joined, the space stays.
+    let kept = 0;
+    if (u.kind === "break" && /^[ \t]/.test(state.text.slice(u.from, u.to))) {
+      const first = edits.find((e) => e.from <= u.from && u.from < e.to);
+      if (first) {
+        first.insert = ` ${first.insert}`;
+        kept = dir < 0 ? 1 : 0;
+      }
+    }
+    return { edits, selection: caret(mapThrough(dir < 0 ? from : at, edits, -1) + kept) };
+  };
+
+/**
+ * Backspace or Delete at or beside an empty line: the line goes (with the break that set it apart),
+ * as an empty paragraph does in a word processor; in a table cell nothing happens, the cell stays.
+ * `undefined` when no empty line is involved.
+ */
+const removeEmptyLine = (state: EditorState, at: number, dir: 1 | -1): Transaction | null | undefined => {
+  const text = state.text;
+  // The empty line the caret is on, or the one across the break the key would join.
+  let i = emptyLineAt(text, at);
+  if (i < 0) {
+    let j = at;
+    if (dir < 0) {
+      while (j > 0 && /\s/.test(text[j - 1] as string)) j--;
+      if (j < at && text.slice(j, at).includes("\n\n") && isEmptyLine(text, j - 1)) i = j - 1;
+    } else {
+      while (j < text.length && /\s/.test(text[j] as string)) j++;
+      if (j > at && text.slice(at, j).includes("\n\n") && isEmptyLine(text, j)) i = j;
+    }
+    if (i < 0) return undefined;
+  }
+  // Alone in a content block (a cell): it stays.
+  let a = i;
+  while (a > 0 && /[ \t]/.test(text[a - 1] as string)) a--;
+  if (text[a - 1] === "[") return selectOnly(caret(i));
+  // The line and the blank line before it, back to the text before; at the start, the one after.
+  let from = a;
+  while (from > 0 && /\s/.test(text[from - 1] as string)) from--;
+  let to = i + 1;
+  if (from === 0 || text[from - 1] === "[") {
+    from = a;
+    while (to < text.length && /\s/.test(text[to] as string)) to++;
+    if (text[to] === "]") to = i + 1;
+  }
+  // Onto an empty line above: before its `~`.
+  return { edits: [{ from, to, insert: "" }], selection: caret(isEmptyLine(text, from - 1) ? from - 1 : from) };
+};
+
+/**
+ * Joining across the break before a list item or heading (Delete at a paragraph's end), or into an
+ * empty item above (Backspace): the item's marker goes with the break, so it doesn't show as text
+ * (`Things you need:- a pencil`); an empty item above goes whole.
+ */
+const joinItem = (state: EditorState, at: number, dir: 1 | -1, u: Unit): Transaction | null => {
+  const text = state.text;
+  if (!/\n/.test(text.slice(Math.min(at, u.from), Math.max(at, u.to)))) return null;
+  if (dir > 0) {
+    // The line after: a marker to take with the break.
+    const next = Math.max(at, u.to);
+    const marker = /^[ \t]*(?:[-+/]|\d+\.|=+)[ \t]+/.exec(text.slice(next));
+    if (!marker) return null;
+    return { edits: [{ from: at, to: next + marker[0].length, insert: "" }], selection: caret(at) };
+  }
+  // The line before: an empty item.
+  const start = Math.min(at, u.from);
+  const lineStart = text.lastIndexOf("\n", start - 1) + 1;
+  if (!/^[ \t]*(?:[-+/]|\d+\.)[ \t]*$/.test(text.slice(lineStart, start))) return null;
+  const edits = [{ from: lineStart, to: text.lastIndexOf("\n", at - 1) + 1, insert: "" }];
+  return { edits, selection: caret(mapThrough(at, edits, 1)) };
+};
+
+/** Edits that turn a heading or list item into a paragraph: its marker goes, and it stays a block of its own. */
+const unmark = (state: EditorState, item: SyntaxNode): TextEdit[] => {
+  const body = item.children.find((k) => k.kind === "Markup");
+  const text = state.text;
+  // An empty one (`= `): the space after its marker goes too, or the paragraph would start with it.
+  let end = body?.from ?? item.to;
+  if (!body || body.from === body.to) while (text[end] === " " || text[end] === "\t") end++;
+  const edits: TextEdit[] = [{ from: item.from, to: end, insert: "" }];
+  const lineStart = text.lastIndexOf("\n", item.from - 1);
+  // The text before on the previous line would run into it: a blank line keeps them apart.
+  if (
+    lineStart > 0 &&
+    text[lineStart - 1] !== "\n" &&
+    text.slice(lineStart + 1, item.from).trim() === "" &&
+    item.kind !== "ListItem" &&
+    item.kind !== "EnumItem"
+  )
+    edits.unshift({ from: lineStart, to: lineStart, insert: "\n" });
+  const after = text.indexOf("\n", item.to);
+  if (item.kind === "Heading" && after >= 0 && text[after + 1] !== "\n" && after + 1 < text.length)
+    edits.push({ from: after, to: after, insert: "\n" });
+  return edits;
+};
+
+// ---------------------------------------------------------------------------
+// Typing
+
+/**
+ * Types `typed` over the selection: escaped for Typst so it shows as typed (a `*` is a star). In
+ * raw text it goes in as it is. A space that Typst would fold into the one before it is a
+ * non-breaking space, so double spaces show. `null` where text can't be typed (code, math).
+ * @beta
+ */
+export const insertText =
+  (typed: string) =>
+  (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): Transaction | null => {
+    if (state.selection.node) return null;
+    // Typed into an empty line: the text replaces its `~`.
+    const empty = state.empty ? emptyLineAt(state.text, state.selection.head) : -1;
+    // Spaces at a line's start show nothing in Typst: on an empty line they change nothing.
+    if (empty >= 0 && typed.trim() === "") return selectOnly(caret(empty));
+    if (empty >= 0) state = state.select({ anchor: empty, head: empty + 1 });
+    const from = state.from;
+    const to = state.to;
+    const deletions = from < to ? deleteEdits(state, from, to, schema) : [];
+    // Where the text goes: the selection's start, after what is deleted there.
+    const path = pathAt(state.tree, from, 1);
+    const ctx = typingContext(path) ?? typingContext(pathAt(state.tree, from, -1));
+    if (ctx === null) return null;
+    const text = state.text;
+    let insert = typed;
+    if (ctx === "markup") {
+      const lineStart = text.lastIndexOf("\n", from - 1) + 1;
+      const before = text.slice(lineStart, from);
+      const afterEnd = deletions.length ? (deletions[deletions.length - 1] as TextEdit).to : to;
+      const after = text.slice(afterEnd, afterEnd + 4);
+      insert = escapeMarkup(typed.replace(/\r\n?/g, "\n"), before, after);
+      if (typed === " " && (/\s$/.test(before) || atLineStart(before) || before.endsWith("~"))) insert = "~";
+    } else if (ctx === "raw") {
+      insert = typed.replace(/`/g, "ˋ");
+    }
+    // Right after (or before) a component or equation set on its own line, text would join its
+    // code (`#number-line(…)After`): a paragraph of its own instead.
+    let apart = 0;
+    if (ctx === "markup" && from === to) {
+      const units = unitsFor(state, schema);
+      const lineStart = text.lastIndexOf("\n", from - 1) + 1;
+      const eol = text.indexOf("\n", from);
+      const lineEnd = eol < 0 ? text.length : eol;
+      const before = units[unitBefore(units, from)];
+      const after = units[unitAfter(units, from)];
+      const ownLine = (u: Unit) => {
+        const r =
+          (u.kind === "edge"
+            ? componentAt(state, u.kind === "edge" && u.to === from ? u.from : u.to - 1, schema)
+            : null) ?? u;
+        const start = text.lastIndexOf("\n", r.from - 1) + 1;
+        const end = text.indexOf("\n", r.to);
+        return text.slice(start, r.from).trim() === "" && text.slice(r.to, end < 0 ? undefined : end).trim() === "";
+      };
+      const block = (u: Unit | undefined): u is Unit => !!u && (u.kind === "atom" || u.kind === "edge");
+      if (block(before) && before.to === from && text.slice(from, lineEnd).trim() === "" && ownLine(before))
+        insert = `\n\n${insert}`;
+      else if (block(after) && after.from === from && text.slice(lineStart, from).trim() === "" && ownLine(after)) {
+        insert = `${insert}\n\n`;
+        apart = 2;
+      }
+    }
+    const edits: TextEdit[] = [...deletions.filter((d) => d.to <= from || d.from >= from)];
+    const at = from;
+    // Insert at the start of the deleted range (merged into an edit starting there).
+    const first = edits.find((e) => e.from === at);
+    if (first) first.insert = insert + first.insert;
+    else edits.push({ from: at, to: at, insert });
+    const all = dedupe(edits);
+    const guarded = [...all, ...guardDelimiters(state, all)];
+    // After the typed text: where `at` goes, before what was inserted there, plus the text.
+    const head =
+      mapThrough(
+        at,
+        dedupe(guarded).sort((a, b) => a.from - b.from || a.to - b.to),
+        -1,
+      ) +
+      insert.length -
+      apart;
+    return { edits: dedupe(guarded), selection: caret(head), merge: true };
+  };
+
+const dedupe = (edits: TextEdit[]): TextEdit[] => {
+  const seen = new Set<string>();
+  return edits.filter((e) => {
+    const k = `${e.from}:${e.to}:${e.insert}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+};
+
+/**
+ * Text typed or deleted next to a `*` or `_` delimiter can turn it into text: Typst reads one
+ * between two letters as text (lexer.rs `in_word`). Strong or emph text whose delimiter would end
+ * up so becomes `#strong[…]` / `#emph[…]`, which reads the same anywhere.
+ */
+const guardDelimiters = (state: EditorState, edits: readonly TextEdit[]): TextEdit[] => {
+  if (edits.length === 0) return [];
+  const text = state.text;
+  const sorted = [...edits].sort((a, b) => a.from - b.from || a.to - b.to);
+  let next = "";
+  let at = 0;
+  for (const e of sorted) {
+    next += text.slice(at, e.from) + e.insert;
+    at = e.to;
+  }
+  next += text.slice(at);
+  const touched = (pos: number) => sorted.some((e) => e.from <= pos + 1 && pos - 1 <= e.to);
+  const deleted = (a: number, b: number) => sorted.some((e) => e.from < b && a < e.to);
+  const inWord = (pos: number) => isWordy(next[pos - 1]) && isWordy(next[pos + 1]);
+  const start = (sorted[0] as TextEdit).from;
+  const end = (sorted[sorted.length - 1] as TextEdit).to;
+  const out: TextEdit[] = [];
+  const visit = (node: SyntaxNode) => {
+    if (node.kind === "Strong" || node.kind === "Emph") {
+      const open = node.from;
+      const close = node.to - 1;
+      if ((touched(open) || touched(close)) && !deleted(open, open + 1) && !deleted(close, close + 1)) {
+        const o = mapThrough(open, sorted, 1);
+        const c = mapThrough(close, sorted, 1);
+        if (inWord(o) || inWord(c)) {
+          const name = node.kind === "Strong" ? "strong" : "emph";
+          out.push({ from: open, to: open + 1, insert: `#${name}[` }, { from: close, to: close + 1, insert: "]" });
+          return;
+        }
+      }
+    }
+    for (const c of node.children) if (c.to >= start - 1 && c.from <= end + 1) visit(c);
+  };
+  visit(state.tree);
+  // Only those that don't overlap the edits themselves.
+  return out.filter((g) => !sorted.some((e) => e.from < g.to && g.from < e.to));
+};
+
+// ---------------------------------------------------------------------------
+// Enter
+
+/** The column `offset` is at on its line. */
+const column = (text: string, offset: number): number => offset - (text.lastIndexOf("\n", offset - 1) + 1);
+
+/**
+ * Enter: a new paragraph, or in a list a new item. In an empty list item, ends the list. At the
+ * start of a heading or item with text, the new block goes before it.
+ * @beta
+ */
+export const splitBlock = (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): Transaction | null => {
+  let base = state;
+  const pre: TextEdit[] = [];
+  // A component selected: a new paragraph after it, not in its place.
+  if (state.selection.node) base = state.select(caret(state.to));
+  else if (!state.empty) {
+    const del = deleteSelection(state, schema);
+    if (!del) return null;
+    const applied = state.apply(del);
+    base = applied.state;
+    if (applied.edit) pre.push(applied.edit);
+  }
+  const at = base.selection.head;
+  if (!canType(base, at)) return null;
+  const text = base.text;
+  const path = pathAt(base.tree, at, -1);
+  const found = itemAt(base.tree, text, at);
+  const item = found && found.kind !== "Heading" ? found : null;
+  let tr: Transaction;
+  if (item && item.from < at) {
+    const marker = item.children[0] as SyntaxNode;
+    const body = item.children.find((k) => k.kind === "Markup");
+    if (isEmptyItem(text, item)) {
+      // An empty item goes up a level, and from the top level ends the list.
+      tr = outdentItem(base, item, at) ?? leaveList(text, item);
+    } else if (body && at <= body.from) {
+      // At the start of the item's text: an empty item before it.
+      const indent = " ".repeat(column(text, item.from));
+      const markerText = item.kind === "EnumItem" ? "+" : text.slice(marker.from, marker.to);
+      const insert = `${markerText} \n${indent}`;
+      tr = { edits: [{ from: item.from, to: item.from, insert }], selection: caret(item.from + insert.length) };
+    } else {
+      const indent = " ".repeat(column(text, item.from));
+      const markerText =
+        item.kind === "EnumItem" ? "+" : item.kind === "TermItem" ? "/" : text.slice(marker.from, marker.to);
+      const insert = item.kind === "TermItem" ? `\n${indent}/ ` : `\n${indent}${markerText} `;
+      // The rest of the line's spaces stay with the text after the break, not before.
+      tr = { edits: [{ from: at, to: at, insert }], selection: caret(at + insert.length) };
+    }
+  } else {
+    const isHeading = (n: SyntaxNode) => n.kind === "Heading";
+    const heading = findLast(path, isHeading) ?? findLast(pathAt(base.tree, at, 1), isHeading);
+    const body = heading?.children.find((k) => k.kind === "Markup");
+    if (heading && body && at <= body.from) {
+      // An empty line before the heading.
+      const insert = `${EMPTY_LINE}\n\n`;
+      tr = { edits: [{ from: heading.from, to: heading.from, insert }], selection: caret(at + insert.length) };
+    } else {
+      // Spaces after the break would start the new paragraph: they go. Those before it stay, so
+      // joining the paragraphs again (Backspace) gives the text back as it was.
+      const a = at;
+      let b = at;
+      while (b < text.length && (text[b] === " " || text[b] === "\t")) b++;
+      const indent = " ".repeat(Math.max(0, indentOf(text, at)));
+      const insert = `\n\n${indent}`;
+      // A paragraph left with no text (Enter at a paragraph's end or start, or on an empty line)
+      // is an empty line, written so the pages show it.
+      const next = text.slice(0, a) + insert + text.slice(b);
+      const emptyBefore = inEmptyParagraph(next, a);
+      const emptyAfter = inEmptyParagraph(next, a + insert.length);
+      const written = (emptyBefore ? EMPTY_LINE : "") + insert + (emptyAfter ? EMPTY_LINE : "");
+      const caretAt = a + written.length - (emptyAfter ? EMPTY_LINE.length : 0);
+      tr = { edits: [{ from: a, to: b, insert: written }], selection: caret(caretAt) };
+    }
+  }
+  if (pre.length === 0) return tr;
+  return chain(state, base, tr);
+};
+
+const LIST_ITEMS = new Set(["ListItem", "EnumItem", "TermItem"]);
+
+/** Whether a list item (or heading) has no text. */
+const isEmptyItem = (text: string, item: SyntaxNode): boolean => {
+  const body = item.children.find((k) => k.kind === "Markup");
+  return !body || text.slice(body.from, body.to).trim() === "";
+};
+
+/** Whether `at` is on a line of its own between blank lines (or a content block's edges): an empty paragraph. */
+const inEmptyParagraph = (text: string, at: number): boolean => {
+  const lineStart = text.lastIndexOf("\n", at - 1) + 1;
+  const next = text.indexOf("\n", at);
+  const lineEnd = next < 0 ? text.length : next;
+  // The line's rest may close the content block it is in (`‸]`): the paragraph ends there.
+  const closes = /^[ \t]*\]/.test(text.slice(at, lineEnd));
+  if (text.slice(lineStart, at).trim() !== "" || (!closes && text.slice(at, lineEnd).trim() !== "")) return false;
+  const above = text.slice(0, Math.max(0, lineStart - 1));
+  const below = next < 0 ? "" : text.slice(next + 1);
+  const blankAbove = lineStart === 0 || /(^|\n)[ \t]*$/.test(above) || /\[[ \t]*$/.test(above);
+  const blankBelow = closes || next < 0 || /^[ \t]*(\n|$|\])/.test(below) || BLOCK_START.test(below);
+  return blankAbove && blankBelow;
+};
+
+/**
+ * What the editor writes for an empty line: a block holding only a non-breaking space. Typst lays
+ * out an empty paragraph or cell as nothing, so Enter on an empty line, or a new table row, would
+ * show nothing on the pages, in the PDF or in Word; a lone `~` is one line high in all of them.
+ * Typing into it replaces it, and Backspace or Delete removes the line.
+ * @beta
+ */
+export const EMPTY_LINE = "~";
+
+/**
+ * Whether the `~` at `i` is a block of its own (see {@link EMPTY_LINE}): alone on a line between
+ * blank lines or a content block's edges, or alone in a content block (`[~]`, a table cell).
+ * @beta
+ */
+export const isEmptyLine = (text: string, i: number): boolean => {
+  if (text[i] !== "~" || text[i - 1] === "\\") return false;
+  let a = i;
+  while (a > 0 && (text[a - 1] === " " || text[a - 1] === "\t")) a--;
+  let b = i + 1;
+  while (b < text.length && (text[b] === " " || text[b] === "\t")) b++;
+  const left = a === 0 ? "\n" : (text[a - 1] as string);
+  const right = b >= text.length ? "\n" : (text[b] as string);
+  if (left === "[" && right === "]") return true;
+  if ((left !== "\n" && left !== "[") || (right !== "\n" && right !== "]")) return false;
+  // On a line of its own: a paragraph only with blank lines (or the block's edges) around it.
+  const above = text.slice(0, Math.max(0, a - 1));
+  const below = text.slice(b + 1);
+  const blankAbove = left === "[" || a === 0 || /(^|\n)[ \t]*$/.test(above) || /\[[ \t]*$/.test(above);
+  const blankBelow = right === "]" || b >= text.length || /^[ \t]*(\n|$|\])/.test(below) || BLOCK_START.test(below);
+  return blankAbove && blankBelow;
+};
+
+/** The empty line beside a caret at `at` (its `~` just after or before it), or -1. */
+export const emptyLineAt = (text: string, at: number): number =>
+  isEmptyLine(text, at) ? at : isEmptyLine(text, at - 1) ? at - 1 : -1;
+
+/**
+ * An empty item turned into an empty paragraph after the list (at the item's indentation, in a
+ * content block), with blank lines around it so what is typed there is a paragraph of its own.
+ */
+const leaveList = (text: string, item: SyntaxNode): Transaction => {
+  const lineStart = text.lastIndexOf("\n", item.from - 1) + 1;
+  let end = item.to;
+  while (text[end] === " " || text[end] === "\t") end++;
+  const indent = " ".repeat(column(text, item.from));
+  const insert = `\n${indent}`;
+  // A line of text right after the item would run into the new paragraph: a blank line between.
+  const next = /^\n[ \t]*(.*)/.exec(text.slice(end))?.[1] ?? "";
+  const joins = next !== "" && !next.startsWith("]") && !/^(?:[-+/=]|\d+\.)(?:\s|$)/.test(next);
+  const after = joins ? "\n" : "";
+  return {
+    edits: [{ from: lineStart, to: end, insert: insert + EMPTY_LINE + after }],
+    selection: caret(lineStart + insert.length),
+  };
+};
+
+/**
+ * A nested list item moved up a level: it and the lines under it (its text, its own items) lose
+ * the indentation it has beyond the item it is nested in. `null` for an item at the top level.
+ */
+const outdentItem = (state: EditorState, item: SyntaxNode, at: number): Transaction | null => {
+  if (!LIST_ITEMS.has(item.kind)) return null;
+  const text = state.text;
+  const parent = findLast(
+    pathAt(state.tree, item.from, 1),
+    (n) => LIST_ITEMS.has(n.kind) && n.from < item.from && item.to <= n.to,
+  );
+  if (!parent) return null;
+  const delta = column(text, item.from) - column(text, parent.from);
+  if (delta <= 0) return null;
+  const edits: TextEdit[] = [];
+  for (let line = text.lastIndexOf("\n", item.from - 1) + 1; line <= item.to; ) {
+    // A tab is one column, as `column` and Typst's nesting count it.
+    let n = 0;
+    while (n < delta && (text[line + n] === " " || text[line + n] === "\t")) n++;
+    if (n) edits.push({ from: line, to: line + n, insert: "" });
+    const next = text.indexOf("\n", line);
+    if (next < 0) break;
+    line = next + 1;
+  }
+  return { edits, selection: caret(mapThrough(at, edits, 1)) };
+};
+
+/**
+ * Ctrl+Enter (and Ctrl+Shift+Enter, `dir` -1): an empty paragraph after (before) the top-level
+ * block the caret is in, so the teacher can write after a component, a table or a list (a list
+ * whole, its items together) without leaving them by hand. Plate's "exit break".
+ * @beta
+ */
+export const exitBlock =
+  (dir: 1 | -1) =>
+  (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): Transaction | null => {
+    const at = state.selection.head;
+    const blocks = blocksOf(state.tree, state.text, (name) => schema.inline.has(name));
+    let i = blocks.findIndex((b) => b.from <= at && at <= b.to);
+    for (let k = blocks.length - 1; i < 0 && k >= 0; k--) if ((blocks[k] as Block).to <= at) i = k;
+    if (i < 0) return null;
+    const isList = (b: Block | undefined) => b?.kind === "list" || b?.kind === "enum" || b?.kind === "term";
+    let [first, last] = [i, i];
+    if (isList(blocks[i])) {
+      const kind = (blocks[i] as Block).kind;
+      while (blocks[first - 1]?.kind === kind) first--;
+      while (blocks[last + 1]?.kind === kind) last++;
+    }
+    if (dir > 0) {
+      const end = (blocks[last] as Block).to;
+      return { edits: [{ from: end, to: end, insert: `\n\n${EMPTY_LINE}` }], selection: caret(end + 2) };
+    }
+    const start = (blocks[first] as Block).from;
+    return { edits: [{ from: start, to: start, insert: `${EMPTY_LINE}\n\n` }], selection: caret(start) };
+  };
+
+/** How far the line at `offset` is indented (content blocks written over several lines keep it). */
+const indentOf = (text: string, offset: number): number => {
+  const lineStart = text.lastIndexOf("\n", offset - 1) + 1;
+  let i = lineStart;
+  while (text[i] === " ") i++;
+  return i - lineStart;
+};
+
+/**
+ * Shift+Enter: a line break in the paragraph (Typst's `\`).
+ * @beta
+ */
+export const insertLineBreak = (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): Transaction | null => {
+  const base = state.empty ? null : deleteSelection(state, schema);
+  const s = base ? state.apply(base).state : state;
+  const at = s.selection.head;
+  if (!canType(s, at)) return null;
+  const insert = s.text[at - 1] === " " ? "\\ " : " \\ ";
+  const tr: Transaction = { edits: [{ from: at, to: at, insert }], selection: caret(at + insert.length) };
+  return base ? chain(state, s, tr) : tr;
+};
+
+/**
+ * One transaction from `state` to `mid` (edits already made) and on through `tr`: what was
+ * replaced in `state` by everything, as a single edit.
+ */
+const chain = (state: EditorState, mid: EditorState, tr: Transaction): Transaction => {
+  const { state: end } = mid.apply(tr);
+  const edit = diff(state.text, end.text);
+  return { edits: edit ? [edit] : [], selection: end.selection };
+};
+
+const diff = (a: string, b: string): TextEdit | null => {
+  if (a === b) return null;
+  let start = 0;
+  const max = Math.min(a.length, b.length);
+  while (start < max && a.charCodeAt(start) === b.charCodeAt(start)) start++;
+  let end = 0;
+  while (end < max - start && a.charCodeAt(a.length - 1 - end) === b.charCodeAt(b.length - 1 - end)) end++;
+  return { from: start, to: a.length - end, insert: b.slice(start, b.length - end) };
+};
+
+// ---------------------------------------------------------------------------
+// Where a caret has nothing to stand by
+
+/** A line that starts a block of its own: a list item, a heading, a term. */
+const BLOCK_START = /^[ \t]*(?:[-+/=]|\d+\.)(?:[ \t]|$)/;
+
+/** Whether the line `at` is on ends at `at`'s block: nothing after it, and a blank line, a block or the end next. */
+const endsBlock = (text: string, at: number): boolean => {
+  const eol = text.indexOf("\n", at);
+  if (eol < 0) return text.slice(at).trim() === "";
+  if (text.slice(at, eol).trim() !== "") return false;
+  const next = text.slice(eol + 1, text.indexOf("\n", eol + 1) < 0 ? undefined : text.indexOf("\n", eol + 1));
+  return next.trim() === "" || next.trim().startsWith("]") || BLOCK_START.test(next);
+};
+
+/** A unit Typst draws glyphs for: text, a quote, an equation (not a line break, which draws nothing). */
+const drawn = (text: string, u: Unit | undefined): u is Unit =>
+  !!u && (u.kind === "atom" || (u.kind === "char" && !/^\\\+?$/.test(text.slice(u.from, u.to))));
+
+/**
+ * Where a caret has no glyph beside it, so the view can't draw it from the layout: Typst lays out
+ * nothing there. After a space ending a paragraph (Typst drops it), in an empty paragraph, list
+ * item, heading or table cell, after a line break ending a paragraph. The view compiles its text
+ * with a placeholder at that offset (a non-breaking space: a glyph, and the line's height) while
+ * the caret is there, so the caret stands where the next character will. `null` where a glyph is
+ * beside the caret, or it isn't in markup.
+ * @beta
+ */
+export const caretAnchor = (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): number | null => {
+  if (!state.empty || state.selection.node) return null;
+  const at = state.selection.head;
+  const ctx = typingContext(pathAt(state.tree, at, 1)) ?? typingContext(pathAt(state.tree, at, -1));
+  if (ctx !== "markup") return null;
+  const units = unitsFor(state, schema);
+  const inside = unitInside(units, at);
+  const text = state.text;
+  // Between the newlines of a blank line: an empty paragraph. In a space running onto the next
+  // line: only where the paragraph ends with the line (a list item's last space), else the space
+  // is laid out between the words.
+  if (inside) return inside.kind === "break" || (inside.kind === "space" && endsBlock(text, at)) ? at : null;
+  const tight = (from: number, to: number) => !/\s/.test(text.slice(from, to));
+  const before = units[unitBefore(units, at)];
+  if (drawn(text, before) && tight(before.to, at)) return null;
+  const i = unitAfter(units, at);
+  const after = units[i];
+  if (drawn(text, after) && tight(at, after.from)) return null;
+  // Spaces before text in the same paragraph (a content block's leading newline): Typst lays out the text.
+  const then = units[i + 1];
+  if (after?.kind === "space" && after.from === at && drawn(text, then) && then.from === after.to) return null;
+  return at;
+};
+
+// ---------------------------------------------------------------------------
+// Caret movement over units
+
+/**
+ * Where a caret at `offset` moves one unit left (-1) or right (1); `offset` itself at the end.
+ * @beta
+ */
+export const moveChar = (
+  state: EditorState,
+  offset: number,
+  dir: 1 | -1,
+  schema: EditorSchema = DEFAULT_SCHEMA,
+): number => {
+  const units = unitsFor(state, schema);
+  let to = step(units, offset, dir);
+  // An empty line is one place for the caret, before its `~`: right from there goes past it.
+  if (dir > 0 && to === offset + 1 && isEmptyLine(state.text, offset)) to = step(units, to, dir);
+  return isEmptyLine(state.text, to - 1) ? to - 1 : to;
+};
+
+/**
+ * Snaps `offset` to a place a caret can be: not inside a character, an atom or a component's code.
+ * @beta
+ */
+export const snap = (state: EditorState, offset: number, schema: EditorSchema = DEFAULT_SCHEMA): number => {
+  const units = unitsFor(state, schema);
+  const inside = unitInside(units, offset);
+  const at = inside ? (offset - inside.from < inside.to - offset ? inside.from : inside.to) : offset;
+  // On an empty line, before its `~`.
+  return isEmptyLine(state.text, at - 1) ? at - 1 : at;
+};
+
+/** The units, for views that need them. @beta */
+export const unitsAt = (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): readonly Unit[] =>
+  unitsFor(state, schema);
+
+/** The block (in the innermost markup) holding `offset`. @beta */
+export const blockAtOffset = (
+  state: EditorState,
+  offset: number,
+  schema: EditorSchema = DEFAULT_SCHEMA,
+): Block | null => {
+  const { blocks } = blocksAround(state, offset, schema);
+  let found: Block | null = null;
+  for (const b of blocks) {
+    if (b.from <= offset && offset <= b.to) return b;
+    if (b.from <= offset) found = b;
+  }
+  return found;
+};

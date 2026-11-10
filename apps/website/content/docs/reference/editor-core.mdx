@@ -1,0 +1,191 @@
+---
+title: "@typstream/editor-core"
+description: The editor without a framework (beta). A Typst document edited on its own pages, the commands that turn what the teacher does into minimal edits of the source, and the plugin contract.
+icon: PenTool
+---
+
+<Callout type="warn" title="Beta">
+New with the visual editor (#36); may change before the first stable release.
+</Callout>
+
+`@typstream/editor-core` is the editor under [`@typstream/editor-react`](/docs/reference/editor-react), with no
+framework. It edits a document on the pages the engine lays out:
+
+- **The view** (`createEditor`) mounts [`@typstream/dom`](/docs/reference/dom)'s page view on an engine document and
+  draws a caret, a selection and component outlines over the pages, from where the engine laid the source out
+  (`PagedArtifact.positions`, [`@typstream/core`](/docs/reference/core)). Clicks, arrow keys and Home/End are answered
+  against the same layout, so the caret lands where Typst put the text. Keys go to a hidden textarea, so IMEs and
+  screen keyboards work.
+- **Commands** read Typst's syntax tree ([`@typstream/syntax`](/docs/reference/syntax)) and return the edits that
+  make a change, leaving everything else in the source as it was. Every change reaches the engine as one `TextEdit`.
+- **Plugins** add key bindings, handlers for keys, typed text and pastes, toolbar items, insert items, input rules,
+  components, decorations drawn over the pages, and views of their own. The editor's own keys are a plugin too.
+
+The source is the document ([PLAN §10.1](https://github.com/ikramhasan/typstream/blob/main/PLAN.md)): there is no
+second model to keep in step, and AI edits, streaming and the editor all edit the same text.
+
+## Install
+
+```npm
+npm install @typstream/editor-core
+```
+
+## Example
+
+```ts
+import { createEngine, engineWorker } from "@typstream/engine";
+import { basicPlugins, createEditor, fromTypstreamPlugin, toggleMark } from "@typstream/editor-core";
+import { loadSyntax } from "@typstream/syntax";
+import { edu } from "@typstream/edu";
+import { htmlCompat } from "@typstream/html-compat";
+
+await loadSyntax();
+const engine = createEngine({ spawn: engineWorker() });
+const text = "= Quiz\n\n#question(points: 2)[What is 2 + 2?]";
+// edu needs html-compat (its dependency) loaded too.
+const doc = engine.open({ target: "paged", plugins: [htmlCompat, edu], text, positions: true });
+const view = createEditor(document.querySelector("#editor")!, {
+  doc,
+  text,
+  plugins: [...basicPlugins, fromTypstreamPlugin(edu)!],
+  onChange: (source) => save(source),
+});
+view.select({ anchor: 2, head: 6 });
+view.run(toggleMark({ name: "strong" })); // = Quiz → *Quiz*
+```
+
+## The view
+
+```ts
+function createEditor(container: HTMLElement, options: EditorOptions): EditorView;
+```
+
+<auto-type-table path="packages/editor-core/src/view.ts" name="EditorOptions" />
+
+<auto-type-table path="packages/editor-core/src/view.ts" name="EditorView" />
+
+Where Typst lays out nothing beside the caret (a space ending a paragraph, an empty paragraph, list item, heading or
+table cell, after a line break), there is nothing to draw it by. The view then compiles its text with a placeholder at
+the caret, a non-breaking space, so the caret stands where the next character goes and an empty line has its height.
+`caretAnchor` says where; the source the editor reports never has it, and `laidOut` says whether the layout shows the
+current text.
+
+A component made in a plugin's package (a number line, answer lines, a multiple choice of `ce()` options) is laid out
+with spans in the package, so the engine can't say where it went. The view also compiles an invisible `#metadata`
+marker before and after every call that shows none of the document, and takes the component's box from where Typst put
+them: it can be clicked, outlined and set up like the others. The markers lay nothing out (the pages are the same,
+glyph for glyph), and like the placeholder they never reach the source.
+
+**Empty lines.** Typst lays out an empty paragraph or table cell as nothing, so Enter on an empty line would show no
+new line, on the pages, in the PDF or in Word. The editor writes an empty line as a block holding only `EMPTY_LINE`
+(`~`, a non-breaking space), one line high everywhere; `isEmptyLine` says whether a `~` is one. Typing replaces it,
+Backspace and Delete remove the line, new table cells are `[~]`.
+
+## State and transactions
+
+`EditorState` holds the source, its syntax tree (parsed on first use) and the `Selection`. Commands return a
+`Transaction`: edits to the old text and the selection after them. `mapThrough` and `mapSelection` carry offsets
+through edits; `History` is the undo history the view keeps (typing within a second joins one entry).
+
+<auto-type-table path="packages/editor-core/src/state.ts" name="Selection" />
+
+<auto-type-table path="packages/editor-core/src/state.ts" name="Transaction" />
+
+## Commands
+
+Each is `(state, schema) => Transaction | null` (an `EditorCommand`); `null` where it doesn't apply. The
+`EditorSchema` says which functions are marks (text styling, stepped over like `*`) and which are set inline;
+`DEFAULT_SCHEMA` has Typst's, `schemaOf` adds the plugins'.
+
+| Command | What it does |
+| --- | --- |
+| `insertText(text)` | Types `text` over the selection, escaped (`escapeMarkup`) so it shows as typed. `canType` says whether text can go at an offset (not in code or math). |
+| `deleteChar(dir)`, `deleteSelection` | Backspace and Delete: a character, the break between paragraphs, a heading's or item's marker first (a nested item goes up a level instead); an equation or component is selected, then deleted. A selection goes structurally: constructs only partly in it keep their delimiters. |
+| `splitBlock`, `insertLineBreak` | Enter and Shift+Enter. In a list, a new item; on an empty one, the item up a level, or out of the list from the top level into a paragraph of its own. In an empty paragraph Enter does nothing: Typst shows no empty paragraphs. |
+| `deleteWord(dir)` | Ctrl+Backspace and Ctrl+Delete (⌥ on Apple platforms): to the start or end of the word. |
+| `moveCell(dir)` | Tab and Shift+Tab in a table: the next or previous cell's text selected; past the last cell, a new row. |
+| `moveArg(dir)`, `enterArg`, `removeArg` | Keys in a component's content: Tab through its content arguments (a multiple choice's options, a rubric's cells); in a component whose items they are (`EditorComponentSpec.list`), Enter at an item's end adds one and Backspace in an empty one removes it; Enter at the end of a plugin component's one-line content (a true/false statement) leaves it, and in a cell breaks the line. |
+| `exitBlock(dir)` | Ctrl+Enter and Ctrl+Shift+Enter: an empty paragraph after (`1`) or before (`-1`) the top-level block the caret is in (a component, a table, a whole list). |
+| `moveChar`, `snap` | Where the caret goes one character on, and the nearest place a caret can be. |
+| `toggleMark(mark)`, `setMark(mark, value)` | Bold, italic, underline (a `Mark`: a function, and for colours and sizes an argument); `isMarked` and `markValue` read them at the selection. |
+| `setLink(url)`, `linkAt` | A `#link("…")[…]` around the selection, its URL changed, or links taken off with `null`. |
+| `setBlockType(type)`, `blockType` | Paragraph, heading levels, list items (`BlockType`). `toggleList` and `indentItems` for lists. |
+| `setAlignment(align)`, `alignmentAt` | An `#align(…)[…]` around the blocks (`Alignment`). |
+| `insertBlock(template)`, `insertInline(template)` | Inserts Typst as a block after the caret's (on an empty line, in its place), or at the caret; `CURSOR` (`{{cursor}}`) marks where the caret goes, and sample text after it (`{{cursor}}The statement`) is selected so typing replaces it. |
+| `deleteBlock(from, to)` | Deletes a component, a table or an equation; one on a line of its own goes with its line, leaving one blank line between its neighbours. A selected component's Backspace uses it. |
+| `componentAt`, `componentsAt`, `componentIn`, `componentsIn` | The calls that are components (`Component`): not marks. `argumentOf` and `setArgument` read and write their named arguments. |
+| `tableAt`, `cellAt`, `addRow`, `addColumn`, `deleteRow`, `deleteColumn`, `deleteTable`, `tableTemplate` | Tables as rows and columns (`TableModel`). |
+
+`typstString` and `readString` write and read Typst string literals. `unitsOf` lists what a caret steps over
+(`Unit`: characters, spaces, paragraph breaks, atoms, and edges, a component's own code).
+
+## Layout
+
+`Layout` reads a paged artifact's positions: its `Glyph`s grouped into `Line`s, and the `LaidElement`s with their
+boxes. It answers where a caret goes (`CaretBox`), what a click hits, the rectangles of a selection and the boxes of a
+component (`PageRect`), in points on a page.
+
+## Plugins
+
+```ts
+interface EditorPlugin {
+  key: string;
+  priority?: number;
+  marks?: string[];
+  inline?: string[];
+  keymap?: Record<string, EditorCommand | readonly EditorCommand[]>;
+  shortcuts?: Record<string, EditorCommand>;
+  handleKeyDown?: (view: EditorView, event: KeyboardEvent) => boolean;
+  handleTextInput?: (state: EditorState, text: string, schema: EditorSchema) => Transaction | null;
+  handlePaste?: (view: EditorView, data: DataTransfer) => boolean;
+  decorations?: (state: EditorState, schema: EditorSchema) => readonly Decoration[];
+  view?: (view: EditorView) => PluginView;
+  toolbar?: ToolbarItem[];
+  floating?: ToolbarItem[];
+  insert?: InsertItem[];
+  inputRules?: InputRule[];
+  components?: ComponentSpec[];
+}
+```
+
+Keys go to plugins by `priority` (higher first, then in the order given): first each `handleKeyDown`, then the
+keymaps. A key's commands are tried in order, and one that returns `null` passes the key on, to the next command and
+then to plugins of lower priority. So a plugin binds Enter for its own component and the editor's Enter runs
+everywhere else:
+
+```ts
+const answers = createEditorPlugin({
+  key: "answers",
+  keymap: {
+    // In an answer box, Enter adds a line; elsewhere it falls through to the editor's own.
+    Enter: (state) => (inAnswer(state) ? addAnswerLine(state) : null),
+  },
+  decorations: (state) => unanswered(state).map(({ from, to }) => ({ from, to, class: "unanswered" })),
+  view: (view) => ({ update: () => renderWordCount(view.state.text) }),
+});
+```
+
+The editor's own keys are `keysPlugin`, at priority -100, which every editor has: `baseKeymap` binds Enter,
+Shift+Enter, Backspace, Delete, word deletion (`Word-Backspace`: Ctrl, or ⌥ on Apple platforms) and Tab (a list item
+in or out a level, then a table's cells; elsewhere it stays in the editor, and Escape then Tab leaves it). Screen
+keyboards' input (`insertParagraph`, `deleteContentBackward`) runs the same bindings. Typed text goes to each
+`handleTextInput` before `insertText`, pastes to each `handlePaste`. A `Decoration` is drawn over the text (`text`, like
+a selection) or around what a range lays out (`box`); a `PluginView` is told after every change of the editor's state,
+layout or focus.
+
+<auto-type-table path="packages/editor-core/src/plugin.ts" name="Decoration" />
+
+<auto-type-table path="packages/editor-core/src/plugin.ts" name="PluginView" />
+
+`createEditorPlugin` type-checks one. `basicPlugins` are the editor's own: `blocksPlugin` (block types, lists,
+alignment, Markdown-like shortcuts), `marksPlugin` (marks, colours from `COLORS` and `HIGHLIGHTS`, sizes) and
+`insertPlugin` (tables, equations, a divider, a page break). `fromTypstreamPlugin` makes one from a typstream
+plugin's `editor` facet: its components in the insert menu, with forms.
+
+<auto-type-table path="packages/editor-core/src/plugin.ts" name="ToolbarItem" />
+
+<auto-type-table path="packages/editor-core/src/plugin.ts" name="InsertItem" />
+
+<auto-type-table path="packages/editor-core/src/plugin.ts" name="InputRule" />
+
+<auto-type-table path="packages/editor-core/src/plugin.ts" name="ComponentSpec" />

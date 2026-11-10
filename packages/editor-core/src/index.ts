@@ -1,0 +1,82 @@
+// @typstream/editor-core (#36): a Typst document edited on its own pages. The view puts a caret,
+// a selection and the keyboard on the pages the engine lays out; commands turn what the teacher
+// does into minimal edits of the source; plugins add toolbars, menus and components.
+
+export { enterArg, moveArg, removeArg } from "./args";
+export {
+  type Alignment,
+  alignmentAt,
+  type BlockType,
+  blockType,
+  indentItems,
+  setAlignment,
+  setBlockType,
+  toggleList,
+} from "./blocks";
+export {
+  canType,
+  caretAnchor,
+  DEFAULT_SCHEMA,
+  deleteChar,
+  deleteSelection,
+  type EditorSchema,
+  EMPTY_LINE,
+  exitBlock,
+  insertLineBreak,
+  insertText,
+  isEmptyLine,
+  moveChar,
+  snap,
+  splitBlock,
+} from "./commands";
+export {
+  argumentOf,
+  type Component,
+  CURSOR,
+  componentAt,
+  componentIn,
+  componentsAt,
+  componentsIn,
+  deleteBlock,
+  insertBlock,
+  insertInline,
+  setArgument,
+} from "./components";
+export { History } from "./history";
+export { baseKeymap, deleteWord, keysPlugin, moveCell } from "./keymap";
+export { type CaretBox, type Glyph, type LaidElement, Layout, type Line, type PageRect } from "./layout";
+export { isMarked, linkAt, type Mark, markValue, setLink, setMark, toggleMark } from "./marks";
+export {
+  basicPlugins,
+  blocksPlugin,
+  COLORS,
+  type ComponentSpec,
+  createEditorPlugin,
+  type Decoration,
+  type EditorCommand,
+  type EditorPlugin,
+  fromTypstreamPlugin,
+  HIGHLIGHTS,
+  type InputRule,
+  type InsertItem,
+  insertPlugin,
+  marksPlugin,
+  type PluginView,
+  schemaOf,
+  type ToolbarItem,
+} from "./plugin";
+export { EditorState, mapSelection, mapThrough, type Selection, type Transaction } from "./state";
+export {
+  addColumn,
+  addRow,
+  cellAt,
+  deleteColumn,
+  deleteRow,
+  deleteTable,
+  type TableModel,
+  tableAt,
+  tableTemplate,
+} from "./table";
+export { escapeMarkup, readString, typstString } from "./text";
+export { type Unit, unitsOf } from "./units";
+export { createEditor, type EditorOptions, type EditorView } from "./view";

@@ -44,6 +44,7 @@ import {
   type VersionMismatchData,
 } from "@typstream/core";
 import { fileKey } from "../image-paths";
+import { mapPositions } from "../positions";
 import type {
   AdapterCompileResult,
   AdapterDocument,
@@ -494,11 +495,12 @@ class Server implements EngineServer {
     mode: CompileMode,
     fullPages: boolean,
     drawings: boolean,
+    positions = false,
   ): Promise<Compiled> {
     const r =
       target === "html"
         ? await doc.compiler.compileHtml({ mode })
-        : await doc.compiler.compilePaged({ fullPages, drawings, mode });
+        : await doc.compiler.compilePaged({ fullPages, drawings, mode, ...(positions && { positions }) });
     return { ...r, diagnostics: this.diagnostics(doc, r.diagnostics) };
   }
 
@@ -838,6 +840,7 @@ class Server implements EngineServer {
       // Changed pages only when the client can apply them to the pages it has.
       const pageFormat = params.pageFormat ?? "svg";
       const drawings = pageFormat === "drawing";
+      const positions = params.positions === true;
       let full =
         params.fullPages === true || !this.client.pagedDiff || doc.pagedBase === null || doc.pageFormat !== pageFormat;
       // The last compile, whose output is published, and the time spent in Typst.
@@ -853,7 +856,7 @@ class Server implements EngineServer {
       // again once it arrives.
       const pending: Promise<void>[] = [];
       const compile = async (): Promise<Compiled> => {
-        r = await this.compileMain(doc, target, mode, full, drawings);
+        r = await this.compileMain(doc, target, mode, full, drawings, positions);
         count(r.compileMs);
         const lacking = this.lacking(doc, r);
         if (lacking) pending.push(lacking);
@@ -1003,7 +1006,7 @@ class Server implements EngineServer {
         this.post({ method: "document/artifact", params: { uri, rev, artifact: { target: "html", html: out.html } } });
         doc.pagedBase = null;
       } else if (out && "output" in out && out.output) {
-        const { pageCount, changed, islands } = out.output;
+        const { pageCount, changed, islands, positions: laid } = out.output;
         const { offset } = doc;
         const { toOriginal } = outcome.compiled;
         this.post({
@@ -1022,6 +1025,11 @@ class Server implements EngineServer {
                   ...i,
                   from: i.from === null || i.from < offset ? null : toOriginal(i.from - offset),
                 })),
+              }),
+              ...(laid && {
+                positions: laid.map((p) =>
+                  mapPositions(p, (at) => (at < offset ? -1 : toOriginal(at - offset)), offset),
+                ),
               }),
             },
           },

@@ -32,6 +32,8 @@ const PACKAGES = [
   { name: "dom", node: ["--project", "node"], browser: ["--project", "browser"] },
   { name: "react", node: ["--project", "node"], browser: ["--project", "browser"] },
   { name: "mindmap", node: ["--project", "node"], browser: ["--project", "browser"] },
+  { name: "editor-core", node: ["--project", "node"], browser: ["--project", "browser"] },
+  { name: "editor-react", node: ["--project", "node"], browser: ["--project", "browser"] },
   { name: "ai", node: [] },
   { name: "node", node: [] },
 ];
