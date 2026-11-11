@@ -54,6 +54,7 @@ export const eduPromptRules: string[] = [
   "Use `#blank()` for fill-in blanks, `#answer-lines(count: n)` for written answers and `#answer-space(height: ...)` for working space. Never draw blanks with underscores, not even in example sentences. A blank inside a formula goes in the math: `$2/3 = #blank(answer: [4])/6$`, never one formula split in two around it.",
   "Multiple choice: `#mcq([option], [option], ..., answer: n)` with n counting from 1. Matching: `#matching((left, right), ...)` with the pairs correctly matched; edu shuffles the right column.",
   'Write chemical formulas and equations with `#ce("2H2 + O2 -> 2H2O")`. Use Typst math for mathematics.',
+  "A rubric is a plain table: `#table(columns: (auto, 1fr, 1fr, 1fr), table.header([*Criterion*], [*Excellent (3)*], [*Good (2)*], [*Needs work (1)*]), [*Thesis*], [Clear and arguable.], [Clear.], [Vague.], ...)`, a row per criterion, a column per level, best first, the points in each level's heading.",
   "Use `#columns(2)[...]` for two flowing columns and `#grid(columns: 2, ...)` for side-by-side content.",
   "Put boxed text in edu's components (`#callout`, `#instructions`). Never give a `block`, `box` or `rect` rounded corners (`radius`) and never rotate text: a Word export keeps those only as pictures.",
   "Add `#answer-key()` at the end when the teacher asks for an answer key; it lists every answer by question and appears only in the teacher's copy.",
@@ -140,6 +141,18 @@ export const eduComponents: EditorComponentSpec[] = [
     ],
   },
   {
+    name: "matching",
+    label: "Matching",
+    description: "Pairs to match, the right column shuffled",
+    group: "Questions",
+    icon: "arrow-left-right",
+    keywords: ["match", "pairs", "connect"],
+    template:
+      "#matching(\n  ([{{cursor}}First], [its match]),\n  ([Second], [its match]),\n  ([Third], [its match]),\n)",
+    // Each pair a row of two cells: Tab past the last adds a pair, Backspace in an empty one removes it.
+    rows: true,
+  },
+  {
     name: "blank",
     label: "Blank",
     description: "A gap in the text to fill in",
@@ -193,7 +206,9 @@ export const eduComponents: EditorComponentSpec[] = [
     group: "Blocks",
     icon: "info",
     keywords: ["note", "tip", "warning", "definition", "box", "text box"],
-    template: '#callout(kind: "note")[{{cursor}}Something to note.]',
+    // The title written out, so it is text on the page to click and change; it follows the kind
+    // while it is the kind's name.
+    template: '#callout(kind: "note", title: [Note])[{{cursor}}Something to note.]',
     params: [
       {
         name: "kind",
@@ -230,35 +245,9 @@ export const eduComponents: EditorComponentSpec[] = [
     description: "Name, class and date to fill in",
     group: "Blocks",
     icon: "pen-line",
-    template: "#student-info()",
-  },
-  {
-    name: "rubric",
-    label: "Rubric",
-    description: "Criteria and levels in a table",
-    group: "Blocks",
-    icon: "table",
-    // The levels written out, so their names are text on the page to click and change.
-    template:
-      "#rubric(\n  levels: ([Exemplary], [Proficient], [Developing], [Beginning]),\n  ([{{cursor}}Content], [Complete and accurate], [Mostly accurate], [Some errors], [Missing]),\n  ([Presentation], [Clear], [Mostly clear], [Unclear], [Missing]),\n)",
-    rows: true,
-    params: [
-      {
-        name: "levels",
-        label: "Levels",
-        type: "list",
-        default: "([Exemplary], [Proficient], [Developing], [Beginning])",
-        columnsFrom: 1,
-        help: "The columns' names, best first, one on each line.",
-      },
-      {
-        name: "points",
-        label: "Points",
-        type: "list",
-        item: "number",
-        help: "One for each level, with commas: 4, 3, 2, 1. Empty counts down to 1; none hides them.",
-      },
-    ],
+    // The labels written out, so they are text on the page; Enter after one adds a field.
+    template: "#student-info([{{cursor}}Name], [Date], [Class])",
+    list: true,
   },
   {
     name: "ce",
@@ -269,7 +258,9 @@ export const eduComponents: EditorComponentSpec[] = [
     inline: true,
     keywords: ["chemistry", "reaction", "molecule", "element"],
     template: '#ce("H2O")',
-    // The formula is the call's first argument: a parameter named by its place.
+    // The formula is the call's first argument: a parameter named by its place. edu draws it from
+    // the string, so the page has no place for a caret in it: its field opens on a click.
+    field: "0",
     params: [
       {
         name: "0",
@@ -335,5 +326,10 @@ export const edu: TypstreamPlugin = {
   prompt: { catalogue: eduCatalogue, rules: eduPromptRules, examples: eduExamples },
   sanitize: { allowClasses: ["edu-*"] },
   stylesheets: [eduCss],
-  editor: { components: eduComponents, inline: ["blank", "ce"] },
+  editor: {
+    components: eduComponents,
+    inline: ["blank", "ce"],
+    // Answers on the pages, to edit where they are, as the answer key's copy shows them.
+    switches: [{ input: "showAnswers", label: "Show answers", icon: "eye" }],
+  },
 };

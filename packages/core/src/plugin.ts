@@ -452,8 +452,34 @@ export interface EditorComponentSpec {
   inline?: boolean;
   /** Search words for the slash menu. */
   keywords?: string[];
-  /** The named arguments its form edits, in order. */
+  /**
+   * The named arguments it has, in order. Choices, yes/no and numbers are controls on its bar;
+   * the rest are in its Settings form.
+   */
   params?: EditorParamSpec[];
+  /**
+   * A parameter whose field opens under it as soon as it is selected, by a click or a key: the
+   * text the component draws itself from a string (a chemical formula's), which has no place on the
+   * page for a caret.
+   */
+  field?: string;
+}
+
+/**
+ * A switch in the visual editor's toolbar that sets one of `sys.inputs` while it is on (edu's
+ * "Show answers": `showAnswers` is `"true"`), so what it shows is on the pages to edit there.
+ * The document itself doesn't change.
+ * @beta
+ */
+export interface EditorSwitchSpec {
+  /** The input it sets: `showAnswers`. */
+  input: string;
+  /** Its label: `Show answers`. */
+  label: string;
+  /** An icon name the editor's toolbar knows (lucide's: `eye`). */
+  icon?: string;
+  /** The input's value while it is on. Default `"true"`. */
+  value?: string;
 }
 
 /**
@@ -493,6 +519,8 @@ export interface EditorFacet {
   components?: EditorComponentSpec[];
   /** Font families for the font picker. */
   fonts?: EditorFontsSpec;
+  /** Switches in the toolbar that set an input of the document while they are on. */
+  switches?: EditorSwitchSpec[];
   /** Functions that style the text inside them, like `strong`: the editor steps over their code. */
   marks?: string[];
   /** Functions set inline in a paragraph even alone on a line (the editor's blocks don't split there). */

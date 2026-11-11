@@ -285,12 +285,24 @@ export const plainText = (source: string): string => {
   return out.replace(/\s+/g, " ").trim();
 };
 
+/** Whether a parameter is a control on its component's bar (a choice, a yes/no, a number), not in its form. */
+export const onBar = (param: EditorParamSpec): boolean =>
+  param.type === "choice" || param.type === "boolean" || param.type === "number";
+
+/** Choices with at most this many options are buttons side by side on the bar; more are a list. */
+const BAR_BUTTONS = 3;
+
+/** An option's letter on the bar, as edu's multiple choice letters them: `a` is the first. */
+const letterOf = (i: number): string => (i < 26 ? String.fromCharCode(97 + i) : String(i + 1));
+
 const Field = ({
   param,
   value,
   read,
   max = param.max,
   onChange,
+  compact = false,
+  onDone,
 }: {
   param: EditorParamSpec;
   /** The argument's source at this render. */
@@ -299,6 +311,10 @@ const Field = ({
   read: () => string | null;
   max?: number;
   onChange: (source: string | null) => void;
+  /** On the component's bar: on one line, its help in a tooltip. */
+  compact?: boolean;
+  /** Enter in a field on the bar: back to the document. */
+  onDone?: () => void;
 }) => {
   const shown = display(param, value);
   const [draft, setDraft] = useState(shown);
@@ -338,6 +354,68 @@ const Field = ({
     setError(null);
   };
   const placeholder = param.default ? `${display(param, param.default)} (default)` : undefined;
+  if (compact) {
+    const current = value ?? param.default ?? null;
+    // Buttons: a yes/no is one, pressed while it is on; a few choices and a multiple choice's
+    // correct option (`a`, `b`, … as the page letters them) are one each, the chosen one pressed.
+    const buttons: { label: string; title?: string; source: string; active: boolean }[] | null =
+      param.type === "boolean"
+        ? null
+        : param.maxPositional && max !== undefined && max <= 26
+          ? Array.from({ length: max }, (_, i) => ({
+              label: letterOf(i),
+              title: `${param.label}: ${letterOf(i)}`,
+              source: String(i + 1),
+              active: current === String(i + 1),
+            }))
+          : param.type === "choice" && (param.options?.length ?? 0) <= BAR_BUTTONS
+            ? (param.options ?? []).map((o) => ({ label: o.label, source: o.value, active: current === o.value }))
+            : null;
+    if (param.type === "boolean")
+      return (
+        <Button
+          label={param.help ? `${param.label}: ${param.help}` : param.label}
+          active={current === "true"}
+          onClick={() => onChange(current === "true" ? "false" : "true")}
+        >
+          {param.label}
+        </Button>
+      );
+    if (buttons)
+      return (
+        // biome-ignore lint/a11y/useSemanticElements: buttons pressed one at a time, as the bar's others are
+        <span className="tse-bar-field" role="group" aria-label={param.label}>
+          <span aria-hidden="true">{param.label}</span>
+          <span className="tse-segmented">
+            {buttons.map((b) => (
+              <Button
+                key={b.source}
+                label={b.title ?? b.label}
+                active={b.active}
+                onClick={() => onChange(b.active && !param.maxPositional ? null : b.source)}
+              >
+                {b.label}
+              </Button>
+            ))}
+          </span>
+        </span>
+      );
+    if (param.type === "choice")
+      return (
+        <label className="tse-bar-field" title={param.help}>
+          {param.label}
+          {/* What the call writes, or its default: the option the page shows. */}
+          <select value={current ?? ""} onChange={(e) => onChange(e.target.value === "" ? null : e.target.value)}>
+            {!param.options?.some((o) => o.value === current) && <option value="">Default</option>}
+            {param.options?.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      );
+  }
   if (param.type === "boolean")
     return (
       <label className="tse-field-row">
@@ -431,11 +509,25 @@ const Field = ({
         placeholder={placeholder}
         aria-invalid={error !== null || undefined}
         onChange={(e) => commit(e.target.value)}
-        onKeyDown={step}
+        onKeyDown={(e) => {
+          step(e);
+          if (compact && e.key === "Enter") {
+            e.preventDefault();
+            onDone?.();
+          }
+        }}
         onBlur={settle}
       />
     );
   }
+  if (compact)
+    return (
+      // biome-ignore lint/a11y/noLabelWithoutControl: the control is `input`, a field of the kind above
+      <label className="tse-bar-field" title={error ?? help}>
+        {param.label}
+        {input}
+      </label>
+    );
   return (
     // biome-ignore lint/a11y/noLabelWithoutControl: the control is `input`, a field of the kind above
     <label className="tse-field">
@@ -550,30 +642,80 @@ export const setValue =
     return { edits: [edit], selection: keep(state.selection, edit) };
   };
 
-/** The form of a component's arguments. */
+/**
+ * A choice set to `value` where another of the component's content arguments still says the
+ * chosen one's name (a callout's title, `[Note]`, of its kind `"note"`): that one follows it
+ * (`[Warning]`). `null` when none does.
+ */
+export const followingLabel = (
+  state: EditorState,
+  component: Component,
+  spec: ComponentSpec,
+  param: EditorParamSpec,
+  value: string | null,
+): Transaction | null => {
+  if (param.type !== "choice") return null;
+  const label = (source: string | null) => param.options?.find((o) => o.value === (source ?? param.default))?.label;
+  const before = label(argumentIn(state, component, param));
+  const after = label(value);
+  if (!before || !after || before === after) return null;
+  const other = spec.params?.find(
+    (p) => p.type === "content" && argumentIn(state, component, p) === `[${escapeMarkup(before)}]`,
+  );
+  return other ? setValue(component, other, `[${escapeMarkup(after)}]`)(state) : null;
+};
+
+/** Two transactions on the same state, of edits apart, as one: one undo step. */
+const together = (state: EditorState, a: Transaction, b: Transaction): Transaction => {
+  const edits = [...a.edits, ...b.edits].sort((x, y) => x.from - y.from);
+  const s = state.selection;
+  const grown = edits.reduce((d, e) => d + e.insert.length - (e.to - e.from), 0);
+  return {
+    edits,
+    selection: s.node
+      ? { anchor: Math.min(s.anchor, s.head), head: Math.max(s.anchor, s.head) + grown, node: true }
+      : mapSelection(s, edits),
+  };
+};
+
+/**
+ * Fields for a component's arguments: `params` (default all its own), in its Settings form, or
+ * `compact` on its bar.
+ */
 export const ComponentForm = ({
   view,
   component,
   spec,
+  params = spec.params ?? [],
+  compact,
+  onDone,
 }: {
   view: EditorView;
   component: Component;
   spec: ComponentSpec;
+  params?: readonly EditorParamSpec[];
+  compact?: boolean;
+  onDone?: () => void;
 }) => {
   // The component as the state has it now (an edit before moved it).
   const current = () => view.components()[0] ?? component;
   return (
     <>
-      {(spec.params ?? []).map((param) => (
+      {params.map((param) => (
         <Field
           key={param.name}
           param={param}
           max={param.maxPositional ? positionals(component).length : param.max}
           value={argumentIn(view.state, component, param)}
           read={() => argumentIn(view.state, current(), param)}
+          compact={compact}
+          onDone={onDone}
           onChange={(value) => {
-            const tr = setValue(current(), param, value)(view.state);
-            if (tr) view.dispatch(tr);
+            const state = view.state;
+            const tr = setValue(current(), param, value)(state);
+            if (!tr) return;
+            const follow = followingLabel(state, current(), spec, param, value);
+            view.dispatch(follow ? together(state, tr, follow) : tr);
           }}
         />
       ))}
@@ -590,14 +732,29 @@ const controlsIn = (el: Element | null): HTMLElement[] => [
  * The settings form in its popover: the keyboard starts in its first field (its text selected, to
  * type over), Enter in a one-line field and Tab past its ends close it, back to the document.
  */
-const SettingsForm = ({ view, onClose, children }: { view: EditorView; onClose: () => void; children: ReactNode }) => {
+const SettingsForm = ({
+  view,
+  onClose,
+  select = true,
+  children,
+}: {
+  view: EditorView;
+  onClose: () => void;
+  /** The first field's text selected, to type over; else the caret at its end, to change it. */
+  select?: boolean;
+  children: ReactNode;
+}) => {
   const ref = useRef<HTMLDivElement>(null);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: once, as it opens
   useLayoutEffect(() => {
     const all = controlsIn(ref.current);
     // A field before a button: one that only says what it holds (a formula) has a button first.
     const first = all.find((el) => !(el instanceof HTMLButtonElement)) ?? all[0];
     first?.focus({ preventScroll: true });
-    if (first instanceof HTMLInputElement && first.type === "text") first.select();
+    if (first instanceof HTMLInputElement && first.type === "text") {
+      if (select) first.select();
+      else first.setSelectionRange(first.value.length, first.value.length);
+    }
   }, []);
   const done = () => {
     onClose();
@@ -640,12 +797,52 @@ export const ComponentBar = ({ view }: { view: EditorView }) => {
   const component = view.components()[0] ?? null;
   const spec = component ? specOf(view, component.name) : undefined;
   const [settings, setSettings] = useState(false);
+  const params = spec?.params ?? [];
+  // Choices, yes/no and numbers on the bar; the field that opens on its own (`field`) by itself;
+  // the rest (texts, lengths, lists) in Settings.
+  const field = spec?.field !== undefined ? params.find((p) => p.name === spec.field) : undefined;
+  const barParams = params.filter((p) => p !== field && onBar(p));
+  const formParams = params.filter((p) => p !== field && !onBar(p));
+  const [fieldOpen, setFieldOpen] = useState(false);
   const settingsButton = useRef<HTMLButtonElement>(null);
   const bar = useRef<HTMLDivElement>(null);
   const closeSettings = useCallback(() => setSettings(false), []);
+  const closeField = useCallback(() => setFieldOpen(false), []);
   const key = component ? `${component.name}@${component.from}` : null;
-  // biome-ignore lint/correctness/useExhaustiveDependencies: another component closes the form
-  useEffect(() => setSettings(false), [key]);
+  /** The pages were pressed after the last key: a component selected by a click opens its field. */
+  const pressed = useRef(false);
+  useEffect(() => {
+    const el = view.element;
+    const onDown = () => {
+      pressed.current = true;
+    };
+    // Enter on a component selected with the keys opens its field (as on an equation).
+    const onKey = (e: KeyboardEvent) => {
+      pressed.current = false;
+      const c = view.components()[0];
+      const s = c ? specOf(view, c.name) : undefined;
+      if (e.key !== "Enter" || e.shiftKey || e.ctrlKey || e.metaKey || e.altKey || !s?.field) return;
+      if (!view.state.selection.node || view.state.from !== c?.from || view.state.to !== c.to) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setFieldOpen(true);
+    };
+    el.addEventListener("pointerdown", onDown, true);
+    el.addEventListener("keydown", onKey, true);
+    return () => {
+      el.removeEventListener("pointerdown", onDown, true);
+      el.removeEventListener("keydown", onKey, true);
+    };
+  }, [view]);
+  // Another component closes the form, and opens its field if it has one and a click selected it.
+  // Not one the keys selected: a Backspace that selects a formula before deleting it would go on to
+  // delete in its field (the key's default action follows the focus), and arrows would stop there.
+  // A click on what a package draws selects once the pages are laid out again (`refine`), after no key.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: on another component
+  useEffect(() => {
+    setSettings(false);
+    setFieldOpen(!!field && pressed.current);
+  }, [key]);
   /** Where the bar goes now, from the view as it is. */
   const measure = useCallback(() => {
     const c = view.components()[0];
@@ -662,9 +859,13 @@ export const ComponentBar = ({ view }: { view: EditorView }) => {
   }, [view]);
   const placed = usePlacement(measure);
   // What must stay clear of the bar (the floating toolbar) asks where it is, whichever is placed first.
+  /** The field is open, and the bar is in its panel (one popup, not two): nothing to keep clear of. */
+  const merged = useRef(false);
+  merged.current = fieldOpen && !!field;
   useLayoutEffect(
     () =>
       registerBar(view, () => {
+        if (merged.current) return null;
         const at = measure();
         return at && !at.hidden
           ? { left: at.left, top: at.top, right: at.left + at.width, bottom: at.top + at.height }
@@ -675,7 +876,7 @@ export const ComponentBar = ({ view }: { view: EditorView }) => {
   // The form by the component, not over it: under it, or above the bar where there is no room under.
   const settingsAnchor = useCallback((): Box | null => {
     const c = view.components()[0];
-    const at = bar.current?.getBoundingClientRect();
+    const at = merged.current ? undefined : bar.current?.getBoundingClientRect();
     return unionOf([...(c ? view.boxesOf(c.from, c.to) : []), ...(at ? [at] : [])]);
   }, [view]);
   if (!component) return null;
@@ -687,17 +888,41 @@ export const ComponentBar = ({ view }: { view: EditorView }) => {
   // The teacher's name for it; never the Typst function's.
   const label = spec?.label ?? "Component";
   const shown = placed && !placed.hidden;
-  const style: CSSProperties = shown
-    ? { left: placed.left, top: placed.top, maxWidth: placed.maxWidth }
-    : { left: 0, top: 0, visibility: "hidden" };
+  const remove_ = () => (table ? run(deleteTable) : remove(view, component));
+  // With its field open, the bar is in the field's panel: measured still (it says whether the
+  // component is in view), but not shown.
+  const style: CSSProperties =
+    shown && !merged.current
+      ? { left: placed.left, top: placed.top, maxWidth: placed.maxWidth }
+      : { left: 0, top: 0, visibility: "hidden", pointerEvents: "none" };
   return (
     <Layer>
-      <div ref={bar} className="tse-toolbar tse-bar" role="toolbar" aria-label={label} style={style}>
+      <div
+        ref={bar}
+        className="tse-toolbar tse-bar"
+        role="toolbar"
+        aria-label={label}
+        aria-hidden={merged.current || undefined}
+        style={style}
+      >
         <span className="tse-panel-title" style={{ padding: "0 6px" }}>
           <Icon name={spec?.icon ?? "square"} />
           {label}
         </span>
-        {spec?.params?.length ? (
+        {component && spec && barParams.length > 0 && (
+          <>
+            <hr className="tse-separator" />
+            <ComponentForm
+              view={view}
+              component={component}
+              spec={spec}
+              params={barParams}
+              compact
+              onDone={() => view.focus()}
+            />
+          </>
+        )}
+        {formParams.length ? (
           <Button
             label="Settings"
             buttonRef={settingsButton}
@@ -721,24 +946,47 @@ export const ComponentBar = ({ view }: { view: EditorView }) => {
           </>
         )}
         <hr className="tse-separator" />
-        <Button
-          label={`Delete the ${label.toLowerCase()}`}
-          icon="trash"
-          variant="destructive"
-          onClick={() => (table ? run(deleteTable) : remove(view, component))}
-        />
+        <Button label={`Delete the ${label.toLowerCase()}`} icon="trash" variant="destructive" onClick={remove_} />
       </div>
       {settings && spec && shown && (
         <Popover
           anchor={settingsAnchor}
           onClose={closeSettings}
+          // Firefox and WebKit don't blur a field the form takes away: the keys go back to the document here.
+          onEscape={() => {
+            closeSettings();
+            view.focus();
+          }}
           ignore={settingsButton}
           label={`${label} settings`}
           className="tse-form"
           follow
         >
           <SettingsForm view={view} onClose={closeSettings}>
-            <ComponentForm view={view} component={component} spec={spec} />
+            <ComponentForm view={view} component={component} spec={spec} params={formParams} />
+          </SettingsForm>
+        </Popover>
+      )}
+      {fieldOpen && field && spec && shown && (
+        <Popover
+          anchor={settingsAnchor}
+          onClose={closeField}
+          onEscape={() => {
+            closeField();
+            view.focus();
+          }}
+          label={label}
+          className="tse-form"
+          follow
+        >
+          {/* The bar's name and Delete, at the top of the field's panel. */}
+          <div className="tse-panel-title" style={{ padding: "2px 4px 0" }}>
+            <Icon name={spec.icon ?? "square"} />
+            {label}
+            <Button label={`Delete the ${label.toLowerCase()}`} icon="trash" variant="destructive" onClick={remove_} />
+          </div>
+          <SettingsForm view={view} onClose={closeField} select={false}>
+            <ComponentForm view={view} component={component} spec={spec} params={[field]} />
           </SettingsForm>
         </Popover>
       )}

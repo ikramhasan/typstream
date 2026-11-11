@@ -230,6 +230,7 @@ export type DocumentUri = string;
 // @beta
 export interface EditorComponentSpec {
     description?: string;
+    field?: string;
     group?: string;
     icon?: string;
     inline?: boolean;
@@ -250,6 +251,7 @@ export interface EditorFacet {
     fonts?: EditorFontsSpec;
     inline?: string[];
     marks?: string[];
+    switches?: EditorSwitchSpec[];
 }
 
 // @beta
@@ -281,6 +283,14 @@ export interface EditorParamSpec {
     }[];
     step?: number;
     type: "number" | "text" | "boolean" | "choice" | "color" | "length" | "content" | "list";
+}
+
+// @beta
+export interface EditorSwitchSpec {
+    icon?: string;
+    input: string;
+    label: string;
+    value?: string;
 }
 
 // @public

@@ -34,7 +34,7 @@ const GROUPS = [
   [
     "Teaching content",
     "Boxes, lists and tables around the questions.",
-    ["callout", "instructions", "learning-objectives", "rubric", "student-info"],
+    ["callout", "instructions", "learning-objectives", "student-info"],
   ],
   [
     "Drawings",

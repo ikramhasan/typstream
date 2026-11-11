@@ -87,8 +87,11 @@ import { htmlCompat, universe } from "typstream";
   Outdent on a top-level item) is disabled, and a press on the toolbar never takes the caret out of the document.
 - **Insert menu and slash menu** (`/` on an empty line): tables, equations, a divider, a page break, and every
   component the plugins declare (`EditorComponentSpec` in their `editor` facet).
-- **Components**: the caret in one shows a bar over it with its name, **Settings** (a form for the arguments its
-  plugin lists) and Delete. A table's bar adds and removes rows and columns, and ➕ buttons at its edges add one at
+- **Components**: the caret in one shows a bar over it with its name, its choices, yes/no and numbers as controls
+  (a callout's kind, a question's points, a multiple choice's correct option as its letters), **Settings** for the
+  rest of the arguments its plugin lists (texts, sizes), and Delete. A component whose text it draws from a string
+  (`EditorComponentSpec.field`: a chemical formula) opens that field as soon as it is selected. A plugin's switches
+  (`EditorSwitchSpec`: edu's "Show answers") are at the fixed toolbar's end. A table's bar adds and removes rows and columns, and ➕ buttons at its edges add one at
   the end. A selected equation shows a field for its formula, with keys for fractions, roots and symbols: while a
   formula is half typed the page keeps the last one that compiled, and what Typst's math would refuse is written as
   a teacher means it: a word (`speed`, the `km` of `3km`, the `CO` of `CO_2`) as text, the letters a formula

@@ -1,5 +1,5 @@
 // Teaching content: callouts, instructions, learning objectives, rubrics, student fields.
-#import "util.typ": _array, _half, _layout, _rule
+#import "util.typ": _array, _half, _layout, _plain, _rule
 #import "i18n.typ": _field-label, _word, _words
 
 #let _kinds = (
@@ -127,7 +127,8 @@
 
 /// Lines for students to write their name, the date, their class, and so on. Known fields are
 /// "name", "date", "class", "section", "roll", "score" and "teacher", labelled in the document's
-/// language; any other text is used as its own label. The name field gets the most room.
+/// language; any other text, or content (`[Group]`), is used as its own label. The name field
+/// gets the most room.
 ///
 /// ```example
 /// #student-info("name", "class", "roll")
@@ -135,7 +136,9 @@
 #let student-info(..fields) = context {
   let fields = if fields.pos().len() == 0 { ("name", "date", "class") } else { fields.pos() }
   {
-    let width(f) = if f == "name" { 2.2fr } else { 1fr }
+    // The name's field by its key, or by its label written out (`[Name]`, as the visual editor writes it).
+    let named = (lower(_words.en.name), lower(_word("name")))
+    let width(f) = if f == "name" or (type(f) == content and lower(_plain(f).trim()) in named) { 2.2fr } else { 1fr }
     block(above: 0.36em, below: 0.36em, grid(
       columns: fields.map(f => (auto, width(f))).flatten(),
       // Tight between a label and its line, wider between fields.

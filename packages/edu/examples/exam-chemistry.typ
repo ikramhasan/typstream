@@ -35,8 +35,9 @@
   #answer-lines(count: 4, answer: [Bubbles of gas; the solid dissolves. #ce("CaCO3(s) + 2HCl(aq) -> CaCl2(aq) + H2O(l) + CO2(g)")])
 ]
 
-#rubric(
-  ([Balanced equation], [Correct, with states], [Correct], [One error], [Not balanced]),
-  ([Observations], [Two, explained], [Two], [One], [None]),
-  points: (2, 1.5, 1, 0),
+#table(
+  columns: (auto, 1fr, 1fr, 1fr, 1fr),
+  table.header([*Criterion*], [*Exemplary (2)*], [*Proficient (1.5)*], [*Developing (1)*], [*Beginning (0)*]),
+  [*Balanced equation*], [Correct, with states], [Correct], [One error], [Not balanced],
+  [*Observations*], [Two, explained], [Two], [One], [None],
 )

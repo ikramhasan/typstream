@@ -3,6 +3,7 @@
 
 import {
   ArrowDownToLine,
+  ArrowLeftRight,
   ArrowLeftToLine,
   ArrowRightToLine,
   ArrowUpToLine,
@@ -14,6 +15,7 @@ import {
   CircleQuestionMark,
   ClipboardList,
   Columns3,
+  Eye,
   FilePlus,
   FlaskConical,
   Heading1,
@@ -61,6 +63,7 @@ const ICONS: Record<string, LucideIcon> = {
   "align-left": TextAlignStart,
   "align-right": TextAlignEnd,
   "arrow-down-to-line": ArrowDownToLine,
+  "arrow-left-right": ArrowLeftRight,
   "arrow-left-to-line": ArrowLeftToLine,
   "arrow-right-to-line": ArrowRightToLine,
   "arrow-up-to-line": ArrowUpToLine,
@@ -72,6 +75,7 @@ const ICONS: Record<string, LucideIcon> = {
   "circle-help": CircleQuestionMark,
   "clipboard-list": ClipboardList,
   columns: Columns3,
+  eye: Eye,
   "file-plus": FilePlus,
   "flask-conical": FlaskConical,
   "heading-1": Heading1,

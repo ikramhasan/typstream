@@ -194,7 +194,7 @@ describe("<TypstEditor>", () => {
     await page.screenshot({ path: "screenshots/table.png" });
   });
 
-  it("inserts an edu question, types its text and sets its points from its settings", async () => {
+  it("inserts an edu question, types its text and sets its points on its bar", async () => {
     const { view } = await mount("= Quiz\n\nIntro.");
     act(() => view.select({ anchor: 14, head: 14 }));
     view.focus();
@@ -204,17 +204,19 @@ describe("<TypstEditor>", () => {
     // The sample text is selected: what is typed replaces it.
     await userEvent.keyboard("What is 2 + 2?");
     expect(view.state.text).toContain("[\n  What is 2 + 2?\n]");
-    await waitFor(() => !!screen.queryByRole("button", { name: "Settings" }));
-    await userEvent.click(screen.getByRole("button", { name: "Settings" }));
-    // The keyboard is in the form's first field, its text selected: what is typed replaces it.
-    const points = screen.getByRole("textbox", { name: /Points/ });
-    expect(document.activeElement).toBe(points);
-    await userEvent.keyboard("3");
+    // A number is on the bar, not in a form behind Settings (it has no other settings).
+    const bar = await barOf("Question");
+    expect(within(bar).queryByRole("button", { name: "Settings" })).toBeNull();
+    const points = within(bar).getByRole("textbox", { name: /Points/ });
+    await userEvent.fill(points, "3");
     expect(view.state.text).toContain("#question(points: 3)[");
+    // Enter gives the keys back to the document.
+    await userEvent.keyboard("{Enter}");
+    expect(view.focused).toBe(true);
     await page.screenshot({ path: "screenshots/question.png" });
   });
 
-  it("puts the caret in a new multiple choice's first option, and in a new rubric's first cell", async () => {
+  it("puts the caret in a new multiple choice's first option, and in a new matching's first cell", async () => {
     const { view } = await mount("= Quiz\n\nIntro.");
     act(() => view.select({ anchor: 14, head: 14 }));
     view.focus();
@@ -225,9 +227,9 @@ describe("<TypstEditor>", () => {
     expect(view.state.text).toContain("#mcq([Light], [Second option], [Third option], answer: 1)");
     act(() => view.select({ anchor: view.state.text.length, head: view.state.text.length }));
     await userEvent.click(screen.getByRole("button", { name: "Insert" }));
-    await userEvent.click(screen.getByRole("menuitem", { name: /^Rubric/ }));
+    await userEvent.click(screen.getByRole("menuitem", { name: /^Matching/ }));
     await userEvent.keyboard("Ideas");
-    expect(view.state.text).toContain("([Ideas], [Complete and accurate],");
+    expect(view.state.text).toContain("([Ideas], [its match]),");
   });
 
   it("edits a mind map's topics on the page", async () => {
@@ -773,6 +775,12 @@ describe("<TypstEditor>", () => {
     const row = fixedBar().querySelector(".tse-fixed-items") as HTMLElement;
     expect(row.scrollWidth).toBeGreaterThan(row.clientWidth);
     await userEvent.keyboard("{Alt>}{F10}{/Alt}{End}");
+    // The toolbar's end (a plugin's switch) is in view; the row's last control is the one before it.
+    const end = fixedBar().querySelector(".tse-fixed-end") as HTMLElement | null;
+    if (end?.contains(document.activeElement)) {
+      expect((document.activeElement as HTMLElement).getBoundingClientRect().right).toBeLessThanOrEqual(root().right);
+      await userEvent.keyboard("{ArrowLeft}");
+    }
     const last = document.activeElement as HTMLElement;
     expect(row.contains(last)).toBe(true);
     expect(last.getBoundingClientRect().right).toBeLessThanOrEqual(row.getBoundingClientRect().right + 1);
@@ -785,11 +793,11 @@ describe("<TypstEditor>: settings forms", () => {
     const { view } = await mount("= Quiz\n\n#answer-lines(count: 2)\n\nAfter.");
     selectNode(view, "#answer-lines(count: 2)");
     const bar = await barOf("Answer lines");
+    // The count is on the bar; the answer, a text, in its form.
+    const lines = within(bar).getByRole("textbox", { name: /^Lines/ }) as HTMLInputElement;
     await userEvent.click(within(bar).getByRole("button", { name: "Settings" }));
-    const lines = screen.getByRole("textbox", { name: /^Lines/ }) as HTMLInputElement;
-    // The keyboard is in the first field, its text selected.
-    expect(document.activeElement).toBe(lines);
-    expect([lines.selectionStart, lines.selectionEnd]).toEqual([0, 1]);
+    // The keyboard is in the form's first field.
+    expect(document.activeElement).toBe(screen.getByRole("textbox", { name: /^Answer/ }));
     // By its component: inside the pane, over neither the component nor the fixed toolbar.
     await frames();
     const form = (document.querySelector(".tse-form") as HTMLElement).getBoundingClientRect();
@@ -802,24 +810,21 @@ describe("<TypstEditor>: settings forms", () => {
     ).toBeLessThan(24);
 
     // Half a line and a 31st of 30: not written, and the source keeps the count it had.
+    await page.screenshot({ path: "screenshots/settings.png" });
+    // Tab past the form's last field closes it: the keys are the document's again.
+    await userEvent.keyboard("{Tab}");
+    await waitFor(() => !document.querySelector(".tse-form"), 5000, "for the form to close");
+    expect(view.focused).toBe(true);
+    // On the bar, the field says what fits (in its tooltip) and keeps what it can't take out of the source.
     for (const refused of ["2.5", "31", "0", "-4", "many"]) {
       await userEvent.fill(lines, refused);
       expect(lines.getAttribute("aria-invalid")).toBe("true");
-      expect(screen.getByRole("alert").textContent).toBe("A whole number from 1 to 30.");
+      expect(lines.closest("label")?.title).toBe("A whole number from 1 to 30.");
       expect(view.state.text).toContain("#answer-lines(count: 2)");
     }
     await userEvent.fill(lines, "12");
     expect(lines.getAttribute("aria-invalid")).toBeNull();
-    expect(screen.queryByRole("alert")).toBeNull();
     expect(view.state.text).toContain("#answer-lines(count: 12)");
-    // Tab goes on to the next field, and past the last one closes the form: the keys are the document's again.
-    await page.screenshot({ path: "screenshots/settings.png" });
-    await userEvent.keyboard("{Tab}");
-    expect(document.activeElement).toBe(screen.getByRole("textbox", { name: /^Answer/ }));
-    expect(document.querySelector(".tse-form")).not.toBeNull();
-    await userEvent.keyboard("{Tab}");
-    await waitFor(() => !document.querySelector(".tse-form"), 5000, "for the form to close");
-    expect(view.focused).toBe(true);
   });
 
   it("gives a size typed without a unit its field's unit, and refuses what isn't a size", async () => {
@@ -900,19 +905,23 @@ describe("<TypstEditor>: what a component's package draws", () => {
     await userEvent.click(view.element, { position: { x: r.left + r.width / 4 - host.left, y: r.top - host.top } });
   };
 
-  it("selects a formula among a multiple choice's options from a click on it, with its own bar and form", async () => {
+  it("opens the field of a formula among a multiple choice's options from one click on it", async () => {
     const source = 'Which is water?\n\n#mcq(ce("H2O"), ce("NaCl"), answer: 1)\n\nAnd salt?';
     const { view } = await mount(source);
     // `(a) H₂O`: brackets round a letter, then the formula.
     await clickGlyph(view, drawnLines(view)[0]?.[3]);
-    const bar = await barOf("Chemical formula");
+    await waitFor(() => !!screen.queryByRole("textbox", { name: /^Formula/ }), 5000, "for the field");
     expect(view.state.text).toBe('Which is water?\n\n#mcq([#ce("H2O")], [#ce("NaCl")], answer: 1)\n\nAnd salt?');
     expect(view.state.text.slice(view.state.from, view.state.to)).toBe('#ce("H2O")');
-    // Its form is the formula's, in a teacher's words.
-    await userEvent.click(within(bar).getByRole("button", { name: "Settings" }));
+    // Its field is open, with the keyboard in it, the caret after the formula: no Settings to click first,
+    // and one panel, its name and Delete on top, not a bar besides.
+    const panel = screen.getByRole("dialog", { name: "Chemical formula" });
+    expect(within(panel).getByRole("button", { name: "Delete the chemical formula" })).toBeTruthy();
+    expect(componentBar()).toBeNull();
     const field = screen.getByRole("textbox", { name: /^Formula/ }) as HTMLInputElement;
-    expect(field.value).toBe("H2O");
-    await userEvent.fill(field, "H2O2");
+    expect(document.activeElement).toBe(field);
+    expect([field.value, field.selectionStart]).toEqual(["H2O", 3]);
+    await userEvent.keyboard("2");
     expect(view.state.text).toContain('#mcq([#ce("H2O2")], [#ce("NaCl")], answer: 1)');
     await userEvent.keyboard("{Escape}");
     await page.screenshot({ path: "screenshots/option-formula.png" });
@@ -935,64 +944,85 @@ describe("<TypstEditor>: what a component's package draws", () => {
     expect(changes.at(-1) ?? source).toBe(source);
   });
 
-  it("names a rubric's levels and their points in its settings, a cell for each level in every row", async () => {
-    const source = "#rubric(\n  ([Method], [Complete], [Partial], [Missing]),\n  ([Units], [All], [Some], [None]),\n)";
+  it("adds and removes a matching's pairs with Tab and Backspace, each cell text on the page", async () => {
+    const source = "#matching(\n  ([Dog], [chien]),\n  ([Cat], [chat]),\n)";
     const { view } = await mount(source);
-    selectNode(view, source);
-    const bar = await barOf("Rubric");
-    await userEvent.click(within(bar).getByRole("button", { name: "Settings" }));
-    const levels = screen.getByRole("textbox", { name: /^Levels/ }) as HTMLTextAreaElement;
-    const points = screen.getByRole("textbox", { name: /^Points/ }) as HTMLInputElement;
-    // The function's own levels: nothing written, its names shown as what the field would hold.
-    expect([levels.value, points.value]).toEqual(["", ""]);
-    expect(levels.placeholder).toContain("Exemplary");
-    await userEvent.fill(levels, "Good\nFair\nPoor");
-    expect(view.state.text).toBe(
-      "#rubric(\n  ([Method], [Complete], [Partial], [Missing]),\n  ([Units], [All], [Some], [None]),\n  levels: ([Good], [Fair], [Poor]),\n)",
-    );
-    // A fourth level: a cell for it in every row.
-    await userEvent.fill(levels, "Good\nFair\nPoor\nAbsent");
-    expect(view.state.text).toBe(
-      "#rubric(\n  ([Method], [Complete], [Partial], [Missing], [~]),\n  ([Units], [All], [Some], [None], [~]),\n  levels: ([Good], [Fair], [Poor], [Absent]),\n)",
-    );
-    await userEvent.fill(points, "6, 4, 2, 0");
-    expect(view.state.text).toContain("  levels: ([Good], [Fair], [Poor], [Absent]),\n  points: (6, 4, 2, 0),\n)");
-    // What isn't a list of numbers is not written, and says so in a teacher's words: the points are
-    // as they were before the field was typed in (the function's own).
-    await userEvent.fill(points, "six");
-    expect(points.getAttribute("aria-invalid")).toBe("true");
-    expect(screen.getByRole("alert").textContent).toBe("Numbers with commas between them: 4, 3, 2, 1.");
-    expect(view.state.text).not.toContain("points");
-    await userEvent.fill(points, "none");
-    expect(screen.queryByRole("alert")).toBeNull();
-    expect(view.state.text).toContain("points: none");
-    // The form stays under the rubric as it grows.
-    await frames();
-    const form = (document.querySelector(".tse-form") as HTMLElement).getBoundingClientRect();
-    const box = unionOf(view.boxesOf(view.state.from, view.state.to));
-    expect(apart(form, box)).toBe(true);
-    await page.screenshot({ path: "screenshots/rubric-settings.png" });
-    await userEvent.keyboard("{Escape}");
-
-    // A level's name is text on the page now: a click puts the caret in it.
-    await waitFor(() => view.laidOut, 5000, "for the pages");
-    const fair = pointOf(view, view.state.text.indexOf("[Fair]") + 1);
-    await userEvent.click(view.element, { position: fair });
-    await userEvent.keyboard("Quite ");
-    expect(view.state.text).toContain("levels: ([Good], [Quite Fair], [Poor], [Absent])");
-    // Tab past the last cell adds a criterion; Backspace in it, still empty, takes it away.
-    const last = view.state.text.indexOf("[None], [~]") + "[None], [".length;
-    act(() => view.select({ anchor: last, head: last + 1 }));
+    // A cell is text on the page: a click puts the caret in it.
+    const at = pointOf(view, view.state.text.indexOf("[Cat]") + 3);
+    await userEvent.click(view.element, { position: at });
+    await barOf("Matching");
+    await userEvent.keyboard("t");
+    expect(view.state.text).toContain("([Catt], [chat]),");
+    // Tab past the last cell adds a pair; Backspace in it, still empty, takes it away.
+    const last = view.state.text.indexOf("[chat]") + "[chat".length;
+    act(() => view.select({ anchor: last, head: last }));
     view.focus();
     await userEvent.keyboard("{Tab}");
-    expect(view.state.text).toContain("  ([Units], [All], [Some], [None], [~]),\n  ([~], [~], [~], [~], [~]),\n");
-    await userEvent.keyboard("Neatness");
-    expect(view.state.text).toContain("([Neatness], [~], [~], [~], [~]),");
-    // Its name deleted, then once more.
-    await userEvent.keyboard("{Backspace>8/}");
-    expect(view.state.text).toContain("([~], [~], [~], [~], [~]),");
-    await userEvent.keyboard("{Backspace}");
-    expect(view.state.text).toContain("  ([Units], [All], [Some], [None], [~]),\n  levels:");
+    expect(view.state.text).toContain("  ([Catt], [chat]),\n  ([~], [~]),\n)");
+    await userEvent.keyboard("Bird");
+    expect(view.state.text).toContain("([Bird], [~]),");
+    await userEvent.keyboard("{Backspace>4/}{Backspace}");
+    expect(view.state.text).toBe("#matching(\n  ([Dog], [chien]),\n  ([Catt], [chat]),\n)");
+  });
+
+  it("sets a component's choices and yes/no on its bar, a title that is the kind's name following it", async () => {
+    const source = '#callout(kind: "note", title: [Note])[Mind the units.]\n\n#true-false(answer: true)[Ice floats.]';
+    const { view } = await mount(source);
+    selectNode(view, '#callout(kind: "note", title: [Note])[Mind the units.]');
+    const bar = await barOf("Callout");
+    await userEvent.selectOptions(within(bar).getByRole("combobox", { name: /Kind/ }), "Warning");
+    expect(view.state.text).toContain('#callout(kind: "warning", title: [Warning])[Mind the units.]');
+    // One step: Undo brings back both.
+    view.undo();
+    expect(view.state.text).toBe(source);
+    // A title of the teacher's own stays.
+    act(() => view.setText(source.replace("[Note]", "[Units]")));
+    selectNode(view, '#callout(kind: "note", title: [Units])[Mind the units.]');
+    await userEvent.selectOptions(within(await barOf("Callout")).getByRole("combobox", { name: /Kind/ }), "Tip");
+    expect(view.state.text).toContain('#callout(kind: "tip", title: [Units])');
+    // Two choices are buttons, the one written pressed.
+    selectNode(view, "#true-false(answer: true)[Ice floats.]");
+    const tf = await barOf("True or false");
+    const no = within(tf).getByRole("button", { name: "False" });
+    expect(within(tf).getByRole("button", { name: "True" }).getAttribute("aria-pressed")).toBe("true");
+    await userEvent.click(no);
+    expect(view.state.text).toContain("#true-false(answer: false)[Ice floats.]");
+    // The keys stay the document's.
+    expect(view.focused).toBe(true);
+  });
+
+  it("marks a multiple choice's correct option by its letter on the bar", async () => {
+    const { view } = await mount("#mcq([Venus], [Mercury], [Mars], answer: 1)");
+    const at = view.state.text.indexOf("Mars") + 1;
+    act(() => view.select({ anchor: at, head: at }));
+    view.focus();
+    const bar = await barOf("Multiple choice");
+    expect(within(bar).getByTitle("Correct option: a").getAttribute("aria-pressed")).toBe("true");
+    await userEvent.click(within(bar).getByTitle("Correct option: b"));
+    expect(view.state.text).toBe("#mcq([Venus], [Mercury], [Mars], answer: 2)");
+    // An option more: a letter more.
+    await userEvent.keyboard("{End}{Enter}Earth");
+    await waitFor(() => !!within(bar).queryByTitle("Correct option: d"), 5000, "for d");
+  });
+
+  it("shows the answers on the pages while its switch is on, to edit there, the document unchanged", async () => {
+    const source = "Water boils at #blank(answer: [100]) °C.";
+    const { view } = await mount(source);
+    const answers = () => within(fixedBar()).getByRole("button", { name: "Show answers" });
+    expect(answers().getAttribute("aria-pressed")).toBe("false");
+    // Hidden: the answer isn't on the page.
+    expect(view.boxesOf(source.indexOf("100"), source.indexOf("100") + 3)).toEqual([]);
+    await userEvent.click(answers());
+    expect(answers().getAttribute("aria-pressed")).toBe("true");
+    await waitFor(() => view.boxesOf(source.indexOf("100"), source.indexOf("100") + 3).length > 0, 10_000, "for it");
+    expect(view.state.text).toBe(source);
+    // A click on it puts the caret in it.
+    await userEvent.click(view.element, { position: pointOf(view, source.indexOf("100") + 2) });
+    await userEvent.keyboard("{Backspace}{Backspace}21");
+    expect(view.state.text).toBe("Water boils at #blank(answer: [210]) °C.");
+    await page.screenshot({ path: "screenshots/answers.png" });
+    await userEvent.click(answers());
+    await waitFor(() => view.boxesOf(source.indexOf("100"), source.indexOf("100") + 3).length === 0, 10_000, "gone");
   });
 });
 
@@ -1034,14 +1064,40 @@ describe("<TypstEditor>: bars and names", () => {
       expect(within1(bar, paneBox(view))).toBe(true);
       expect(apart(bar, fixedBar().getBoundingClientRect())).toBe(true);
     }
-    // A chemical formula has its formula in its settings.
+    // A chemical formula's field opens on Enter (and on a click).
     selectNode(view, '#ce("H2O")');
-    await userEvent.click(within(await barOf("Chemical formula")).getByRole("button", { name: "Settings" }));
+    await barOf("Chemical formula");
+    await userEvent.keyboard("{Enter}");
+    await waitFor(() => !!screen.queryByRole("textbox", { name: /^Formula/ }), 5000, "for the field");
     const field = screen.getByRole("textbox", { name: /^Formula/ }) as HTMLInputElement;
     expect(field.value).toBe("H2O");
     await userEvent.fill(field, "CO2");
     expect(view.state.text).toContain('Water is #ce("CO2") and ice.');
     await page.screenshot({ path: "screenshots/bars.png" });
+  });
+
+  it("opens a formula's field on a click or Enter, never on a key that selected it", async () => {
+    const source = 'Salt is #ce("NaCl") here.';
+    const { view } = await mount(source);
+    const end = source.indexOf(" here");
+    act(() => view.select({ anchor: end, head: end }));
+    view.focus();
+    // Backspace beside it selects it; its field stays shut, so the next Backspace deletes it, not its last letter.
+    await userEvent.keyboard("{Backspace}");
+    await barOf("Chemical formula");
+    await frames();
+    expect(screen.queryByRole("textbox", { name: /^Formula/ })).toBeNull();
+    expect(view.focused).toBe(true);
+    // Enter opens it, the keyboard in it.
+    await userEvent.keyboard("{Enter}");
+    await waitFor(() => !!screen.queryByRole("textbox", { name: /^Formula/ }), 5000, "for the field");
+    expect(document.activeElement).toBe(screen.getByRole("textbox", { name: /^Formula/ }));
+    expect(view.state.text).toBe(source);
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => view.focused, 5000, "for the keys back on the page");
+    expect(view.state.selection.node).toBe(true);
+    await userEvent.keyboard("{Backspace}");
+    expect(view.state.text).toBe("Salt is  here.");
   });
 
   it("puts a table's bar and its ➕ on the table as it is drawn, not on the line it stands on", async () => {

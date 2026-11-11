@@ -10,7 +10,10 @@ const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
 // the link field, forms that check what they are given, the equation's field, the bars' placement.
 // 27.8 KB until list fields (a rubric's levels and points, its rows' cells following them) and forms
 // that follow a component as it grows: 0.8 KB.
-const BUDGET = 28.6 * 1024;
+// 28.6 KB until a component's choices, yes/no and numbers went on its bar, a formula's field opened
+// on a click or Enter, plugins' switches ("Show answers") joined the toolbar, and Escape in a form gives the
+// keys back to the document in Firefox and WebKit (2026-11-11): 1.3 KB.
+const BUDGET = 30.0 * 1024;
 
 const result = await build({
   entryPoints: ["src/index.ts"],

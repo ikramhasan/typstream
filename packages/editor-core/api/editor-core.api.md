@@ -6,6 +6,7 @@
 
 import { EditorComponentSpec } from '@typstream/core';
 import { EditorFontsSpec } from '@typstream/core';
+import { EditorSwitchSpec } from '@typstream/core';
 import { EngineDocument } from '@typstream/engine';
 import { PagedArtifact } from '@typstream/core';
 import { PageElement } from '@typstream/core';
@@ -191,6 +192,7 @@ export interface EditorPlugin {
     marks?: string[];
     priority?: number;
     shortcuts?: Record<string, EditorCommand>;
+    switches?: EditorSwitchSpec[];
     toolbar?: ToolbarItem[];
     view?: (view: EditorView) => PluginView;
 }

@@ -115,6 +115,8 @@ export interface PopoverProps {
   /** The anchor's rectangle, in client coordinates. */
   anchor: () => Box | null;
   onClose: () => void;
+  /** Escape closed it (default `onClose`): where the keys go next. */
+  onEscape?: () => void;
   children: ReactNode;
   className?: string;
   prefer?: "below" | "above";
@@ -162,6 +164,7 @@ export const usePopup = () => {
 export const Popover = ({
   anchor,
   onClose,
+  onEscape = onClose,
   children,
   className,
   prefer,
@@ -171,6 +174,9 @@ export const Popover = ({
   follow,
 }: PopoverProps) => {
   const ref = useRef<HTMLDivElement>(null);
+  // The latest, without listening again on every render (it is often written inline).
+  const escaped = useRef(onEscape);
+  escaped.current = onEscape;
   const hold = useContext(Held);
   const bounds = useContext(Bounds);
   useLayoutEffect(() => hold?.(), [hold]);
@@ -204,7 +210,7 @@ export const Popover = ({
       // The popover's alone: not the document's (it would drop the selection), nor a dialog's around the editor.
       e.stopPropagation();
       e.preventDefault();
-      onClose();
+      escaped.current();
     };
     window.addEventListener("pointerdown", down, true);
     window.addEventListener("keydown", key, true);

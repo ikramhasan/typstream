@@ -21,12 +21,19 @@ export const files = () =>
       .map((name) => [name, read(`typst/${name}`)]),
   );
 
-/** Public names, in lib.typ's order: what its `#import "x.typ": a, b` lines bring in. */
+/**
+ * Public names, in lib.typ's order: what its `#import "x.typ": a, b` lines bring in. A line ending
+ * in `// Not in the prompt: why` brings in names documents may still call (`hidden`), which the
+ * catalogue leaves out.
+ */
 export const publicNames = (lib) =>
-  [...lib.matchAll(/^#import "([^"]+)": (.+)$/gm)].map(([, file, names]) => ({
-    file,
-    names: names.split(",").map((n) => n.trim()),
-  }));
+  [...lib.matchAll(/^#import "([^"]+)": ([^/\n]+?)\s*(\/\/ Not in the prompt\b.*)?$/gm)].map(
+    ([, file, names, hidden]) => ({
+      file,
+      names: names.split(",").map((n) => n.trim()),
+      hidden: !!hidden,
+    }),
+  );
 
 /** The parameter list of the `#let name(` at `start`, up to its closing parenthesis. */
 const params = (source, start) => {
@@ -43,7 +50,8 @@ const params = (source, start) => {
 /** One FunctionDoc per public function, from the doc comment above its `#let`. */
 export const catalogue = (sources) => {
   const docs = [];
-  for (const { file, names } of publicNames(sources["lib.typ"])) {
+  for (const { file, names, hidden } of publicNames(sources["lib.typ"])) {
+    if (hidden) continue;
     const source = sources[file];
     for (const name of names) {
       const at = source.search(new RegExp(`^#let ${name}\\(`, "m"));

@@ -410,11 +410,15 @@ with the same files. See [A catalogue of your own](/docs/guides/fonts-and-langua
 editor's insert menu and with a form for their arguments (`EditorComponentSpec`, `EditorParamSpec`), and the names of
 its functions that style text (`marks`) or are set inline in a paragraph (`inline`), and the font families its
 font picker offers (`fonts`, an `EditorFontsSpec`: a short list shown at once, and the URL of a catalogue's index for
-the picker's search). It is plain data, so a content plugin declares it without depending on the editor; edu's is
+the picker's search), and switches in its toolbar that set an input while they are on (`switches`, each an
+`EditorSwitchSpec`: edu's "Show answers" sets `showAnswers`, so answers are on the pages to edit). It is plain data, so a content plugin declares it without depending on the editor; edu's is
 `eduComponents`, and `@typstream/google-fonts` declares the fonts.
 
-What a component generates from its arguments (a rubric's header row, from its `levels` and `points`) isn't text on
-the page a caret can go in, so give those arguments a form field: a `list` parameter is an array written one item on
+A component's choices, yes/no and numbers are controls on its bar; its other arguments are in its Settings form. Text
+a component draws from a string (a chemical formula's) has no place on the page for a caret: name that parameter
+`field`, and its field opens as soon as the component is selected. Better still, take content (`[Name]`), which is
+edited on the page like any text. What a component generates from its arguments (a header row, from `levels` and
+`points`) isn't text on the page a caret can go in either, so give those arguments a form field: a `list` parameter is an array written one item on
 each line (content: `levels: ([Good], [Fair])`) or with commas between them (`item: "number"`: `points: (4, 3)`).
 With `columnsFrom`, the list heads the columns of the component's rows, which then gain and lose cells with it, and
 `rows` on the component makes its positional arguments rows for the keys: Tab past the last cell adds one, Backspace
@@ -427,6 +431,8 @@ in an empty one removes it.
 <auto-type-table path="packages/core/src/plugin.ts" name="EditorParamSpec" />
 
 <auto-type-table path="packages/core/src/plugin.ts" name="EditorFontsSpec" />
+
+<auto-type-table path="packages/core/src/plugin.ts" name="EditorSwitchSpec" />
 
 ### Render islands (beta)
 

@@ -1,6 +1,6 @@
 ---
 title: "@typstream/edu"
-description: The Typst vocabulary for teachers' documents (templates, questions, answers and keys, callouts, rubrics, drawings, chemistry) as a typstream plugin with a prompt kit.
+description: The Typst vocabulary for teachers' documents (templates, questions, answers and keys, callouts, drawings, chemistry) as a typstream plugin with a prompt kit.
 icon: GraduationCap
 ---
 
@@ -70,7 +70,7 @@ signature, parameters and a live example.
 | Questions | [`question`](/docs/reference/edu/vocabulary#question) (numbered through the document), [`mcq`](/docs/reference/edu/vocabulary#mcq), [`true-false`](/docs/reference/edu/vocabulary#true-false), [`matching`](/docs/reference/edu/vocabulary#matching) (give the correct pairs; edu shuffles the right column and works out the key) |
 | Answer spaces | [`blank`](/docs/reference/edu/vocabulary#blank), [`answer-lines`](/docs/reference/edu/vocabulary#answer-lines), [`answer-space`](/docs/reference/edu/vocabulary#answer-space) |
 | Answers | [`answer`](/docs/reference/edu/vocabulary#answer) (worked solutions), [`answer-key`](/docs/reference/edu/vocabulary#answer-key) |
-| Teaching content | [`callout`](/docs/reference/edu/vocabulary#callout) (note, tip, warning, definition, example, remember), [`instructions`](/docs/reference/edu/vocabulary#instructions), [`learning-objectives`](/docs/reference/edu/vocabulary#learning-objectives), [`rubric`](/docs/reference/edu/vocabulary#rubric), [`student-info`](/docs/reference/edu/vocabulary#student-info) |
+| Teaching content | [`callout`](/docs/reference/edu/vocabulary#callout) (note, tip, warning, definition, example, remember), [`instructions`](/docs/reference/edu/vocabulary#instructions), [`learning-objectives`](/docs/reference/edu/vocabulary#learning-objectives), [`student-info`](/docs/reference/edu/vocabulary#student-info) |
 | Drawings | [`number-line`](/docs/reference/edu/vocabulary#number-line), [`graph-paper`](/docs/reference/edu/vocabulary#graph-paper), [`coordinate-plane`](/docs/reference/edu/vocabulary#coordinate-plane) (native shapes; inline SVG with an `aria-label` in HTML) |
 | Chemistry | [`ce`](/docs/reference/edu/vocabulary#ce): `#ce("2H2 + O2 -> 2H2O")`, an mhchem-like subset (subscripts, coefficients, charges, states, hydrates, arrows) written as math, so HTML gets MathML |
 
@@ -176,10 +176,13 @@ const eduComponents: EditorComponentSpec[];
 ```
 
 edu's components as the [visual editor](/docs/reference/editor-react) offers them: questions (`question`, `mcq`,
-`true-false`), answers (`blank`, `answer-lines`, `answer-space`, `answer`), blocks (`callout`, `instructions`,
-`learning-objectives`, `student-info`, `rubric`) and drawings (`number-line`, `graph-paper`, `coordinate-plane`), each
-with the Typst its insert menu writes and the arguments its form edits (a question's `points`, a multiple choice's
-correct option). Their text is edited on the page.
+`true-false`, `matching`), answers (`blank`, `answer-lines`, `answer-space`, `answer`), blocks (`callout`,
+`instructions`, `learning-objectives`, `student-info`) and drawings (`number-line`, `graph-paper`, `coordinate-plane`),
+and `ce`, each with the Typst its insert menu writes and its arguments: a question's `points` and a multiple choice's
+correct option are on its bar, a chemical formula's field opens on a click. Their text, a callout's title and the
+student fields' labels included, is edited on the page; edu's plugin adds a "Show answers" switch to the editor's
+toolbar, so answers are edited there too. A rubric is a table (the prompt says how); `rubric` itself still compiles,
+for documents written with it, but isn't in the prompt.
 
 ### eduCss
 

@@ -50,9 +50,12 @@ describe("package", () => {
   });
 
   it("documents every public function, each with an example", () => {
-    const names = (publicNames(lib) as { names: string[] }[]).flatMap((p) => p.names);
+    const all = publicNames(lib) as { names: string[]; hidden: boolean }[];
+    const names = all.flatMap((p) => p.names);
     expect(names.length).toBeGreaterThan(20);
-    expect(eduCatalogue.map((d) => d.name)).toEqual(names);
+    // Names kept for documents written with them (a rubric, now a table) are public, but not in the prompt.
+    expect(all.filter((p) => p.hidden).flatMap((p) => p.names)).toEqual(["rubric"]);
+    expect(eduCatalogue.map((d) => d.name)).toEqual(all.filter((p) => !p.hidden).flatMap((p) => p.names));
     for (const doc of eduCatalogue) {
       expect(doc.signature, doc.name).toMatch(new RegExp(`^${doc.name}\\(.*\\)$`));
       expect(doc.description.length, doc.name).toBeGreaterThan(20);

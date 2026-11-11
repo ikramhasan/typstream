@@ -216,6 +216,24 @@ export const EDITOR_CSS: string = `
 }
 .tse-field textarea { min-height: 54px; resize: vertical; font-family: ui-monospace, monospace; }
 .tse-field input:focus, .tse-field select:focus, .tse-field textarea:focus { border-color: var(--tse-ring); }
+/* A component's choices, yes/no and numbers, on its bar */
+.tse-bar-field { display: inline-flex; align-items: center; gap: 6px; padding: 0 4px; font-size: 12px; color: var(--tse-muted-fg); white-space: nowrap; }
+.tse-bar-field input[type="text"], .tse-bar-field select {
+  height: 28px;
+  padding: 2px 6px;
+  border: 1px solid var(--tse-border);
+  border-radius: calc(var(--tse-radius) - 4px);
+  background: transparent;
+  color: var(--tse-fg);
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+}
+.tse-bar-field input[type="text"] { width: 4.5em; }
+.tse-bar-field input:focus, .tse-bar-field select:focus { border-color: var(--tse-ring); }
+.tse-bar-field input[aria-invalid] { border-color: #dc2626; }
+.tse-segmented { display: inline-flex; gap: 1px; }
+.tse-segmented .tse-button { min-width: 28px; justify-content: center; }
 .tse-field-row { display: flex; align-items: center; gap: 8px; color: var(--tse-fg); font-size: 13px; }
 .tse-field small { color: var(--tse-muted-fg); }
 .tse-invalid, .tse-field small.tse-invalid { color: #b91c1c; }

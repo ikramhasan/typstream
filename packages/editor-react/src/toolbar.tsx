@@ -523,3 +523,45 @@ export const FloatingToolbar = ({ view, extra }: { view: EditorView; extra?: Rea
     </Layer>
   );
 };
+
+/**
+ * The plugins' switches (edu's "Show answers"), at the fixed toolbar's end: each sets an input of
+ * the document while it is on, so what it shows (the answers) is on the pages, to edit there.
+ */
+export const Switches = ({
+  view,
+  on,
+  onChange,
+}: {
+  view: EditorView;
+  /** The inputs set now, by name. */
+  on: Record<string, string>;
+  onChange: (on: Record<string, string>) => void;
+}) => {
+  const switches = view.plugins.flatMap((p) => p.switches ?? []);
+  return (
+    <>
+      {switches.map((s) => {
+        const value = s.value ?? "true";
+        const active = on[s.input] === value;
+        return (
+          // An icon where it has one, its name in the tooltip: the fixed toolbar's row has little room.
+          <Button
+            key={s.input}
+            label={s.label}
+            icon={s.icon}
+            active={active}
+            onClick={() => {
+              const next = { ...on };
+              if (active) delete next[s.input];
+              else next[s.input] = value;
+              onChange(next);
+            }}
+          >
+            {s.icon ? undefined : s.label}
+          </Button>
+        );
+      })}
+    </>
+  );
+};

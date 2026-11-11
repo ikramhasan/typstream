@@ -37,7 +37,7 @@ import { SlashMenu, type SlashSession, slashSession } from "./insert";
 import { ComponentBar, EquationPanel } from "./panels";
 import { paneOf } from "./place";
 import { ensureEditorStyles } from "./styles";
-import { FixedToolbar, FloatingToolbar, openPrompt } from "./toolbar";
+import { FixedToolbar, FloatingToolbar, openPrompt, Switches } from "./toolbar";
 import { APPLE, Bounds } from "./ui";
 
 /** Props of {@link TypstEditor}. @beta */
@@ -175,7 +175,12 @@ export const TypstEditor = forwardRef<TypstEditorHandle, TypstEditorProps>(funct
         .pop()
     : undefined;
   const fullPreamble = [templateSpec?.preamble, preamble].filter(Boolean).join("\n");
-  const allInputs = useMemo(() => ({ ...templateSpec?.inputs, ...inputs }), [templateSpec, inputs]);
+  /** The plugins' switches that are on (edu's "Show answers"), by input: their inputs go over the others. */
+  const [switched, setSwitched] = useState<Record<string, string>>({});
+  const allInputs = useMemo(
+    () => ({ ...templateSpec?.inputs, ...inputs, ...switched }),
+    [templateSpec, inputs, switched],
+  );
   const engineProp = props.engine ?? defaults.engine;
 
   useLayoutEffect(() => {
@@ -301,8 +306,9 @@ export const TypstEditor = forwardRef<TypstEditorHandle, TypstEditorProps>(funct
     recent.current = [];
     view.setText(props.source);
   }, [view, props.source]);
+  // Inputs the same as the document's change nothing (a switch turned off leaves none at all).
   useEffect(() => {
-    if (doc && Object.keys(allInputs).length) doc.setInputs(allInputs);
+    doc?.setInputs(allInputs);
   }, [doc, allInputs]);
   // Files as they change: a record made again on every render (a provider's merge) with the same
   // files would recompile the document for nothing.
@@ -363,7 +369,21 @@ export const TypstEditor = forwardRef<TypstEditorHandle, TypstEditorProps>(funct
     // biome-ignore lint/a11y/noStaticElementInteractions: it only keeps the focus where it is
     <div className={className} style={props.style} data-layout={layout} onMouseDown={keepKeys}>
       <Bounds.Provider value={bounds}>
-        {view && props.toolbar !== false && !props.readOnly && <FixedToolbar view={view} end={props.toolbarEnd} />}
+        {view && props.toolbar !== false && !props.readOnly && (
+          <FixedToolbar
+            view={view}
+            end={
+              view.plugins.some((p) => p.switches?.length) ? (
+                <>
+                  <Switches view={view} on={switched} onChange={setSwitched} />
+                  {props.toolbarEnd}
+                </>
+              ) : (
+                props.toolbarEnd
+              )
+            }
+          />
+        )}
         {!view && props.toolbar !== false && !props.readOnly && (
           <div className="tse-toolbar tse-fixed" aria-hidden="true" style={{ minHeight: 40 }} />
         )}

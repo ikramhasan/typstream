@@ -7,7 +7,13 @@
 // keys included (`keysPlugin`, at the lowest priority); a typstream plugin's `editor` facet (plain
 // data, e.g. edu's components) becomes one too.
 
-import type { EditorComponentSpec, EditorFontsSpec, EditorParamSpec, TypstreamPlugin } from "@typstream/core";
+import type {
+  EditorComponentSpec,
+  EditorFontsSpec,
+  EditorParamSpec,
+  EditorSwitchSpec,
+  TypstreamPlugin,
+} from "@typstream/core";
 import { alignmentAt, blockType, indentItems, setAlignment, setBlockType, toggleList } from "./blocks";
 import { DEFAULT_SCHEMA, type EditorSchema, exitBlock } from "./commands";
 import { insertBlock, insertInline } from "./components";
@@ -195,6 +201,8 @@ export interface EditorPlugin {
   components?: ComponentSpec[];
   /** Font families for the font picker (a toolbar item whose picker is of kind `font`). */
   fonts?: EditorFontsSpec;
+  /** Switches in the fixed toolbar that set an input of the document while on (edu's "Show answers"). */
+  switches?: EditorSwitchSpec[];
 }
 
 /** Identity function that type-checks an editor plugin. @beta */
@@ -243,6 +251,7 @@ export const fromTypstreamPlugin = (plugin: TypstreamPlugin): EditorPlugin | nul
     marks: facet.marks,
     inline: facet.inline,
     fonts: facet.fonts,
+    switches: facet.switches,
     components,
     insert: components.map((c) => ({
       key: `${plugin.key}:${c.name}`,
