@@ -404,7 +404,35 @@ with the same files. See [A catalogue of your own](/docs/guides/fonts-and-langua
 
 <auto-type-table path="packages/core/src/plugin.ts" name="LoadedFontFamily" />
 
-`EditorFacet` is reserved for the visual editor: typed loosely on purpose, and nothing reads it yet.
+### The editor facet (beta)
+
+`EditorFacet` is what a plugin gives the [visual editor](/docs/reference/editor-react): its components, in the
+editor's insert menu and with a form for their arguments (`EditorComponentSpec`, `EditorParamSpec`), and the names of
+its functions that style text (`marks`) or are set inline in a paragraph (`inline`), and the font families its
+font picker offers (`fonts`, an `EditorFontsSpec`: a short list shown at once, and the URL of a catalogue's index for
+the picker's search), and switches in its toolbar that set an input while they are on (`switches`, each an
+`EditorSwitchSpec`: edu's "Show answers" sets `showAnswers`, so answers are on the pages to edit). It is plain data, so a content plugin declares it without depending on the editor; edu's is
+`eduComponents`, and `@typstream/google-fonts` declares the fonts.
+
+A component's choices, yes/no and numbers are controls on its bar; its other arguments are in its Settings form. Text
+a component draws from a string (a chemical formula's) has no place on the page for a caret: name that parameter
+`field`, and its field opens as soon as the component is selected. Better still, take content (`[Name]`), which is
+edited on the page like any text. What a component generates from its arguments (a header row, from `levels` and
+`points`) isn't text on the page a caret can go in either, so give those arguments a form field: a `list` parameter is an array written one item on
+each line (content: `levels: ([Good], [Fair])`) or with commas between them (`item: "number"`: `points: (4, 3)`).
+With `columnsFrom`, the list heads the columns of the component's rows, which then gain and lose cells with it, and
+`rows` on the component makes its positional arguments rows for the keys: Tab past the last cell adds one, Backspace
+in an empty one removes it.
+
+<auto-type-table path="packages/core/src/plugin.ts" name="EditorFacet" />
+
+<auto-type-table path="packages/core/src/plugin.ts" name="EditorComponentSpec" />
+
+<auto-type-table path="packages/core/src/plugin.ts" name="EditorParamSpec" />
+
+<auto-type-table path="packages/core/src/plugin.ts" name="EditorFontsSpec" />
+
+<auto-type-table path="packages/core/src/plugin.ts" name="EditorSwitchSpec" />
 
 ### Render islands (beta)
 
@@ -648,6 +676,18 @@ An island marker in a paged artifact: where on its page an island goes, from lay
 all, whichever pages it holds.
 
 <auto-type-table path="packages/core/src/protocol.ts" name="PagedIsland" />
+
+#### `PagePositions` and `PageElement` (beta)
+
+Where the document's source was laid out on a page, for an editor that edits on the pages: a paged compile with
+`positions: true` sends them for every page (an edit moves the offsets of the text after it, on pages that look the
+same). `glyphs` are the glyph clusters, each with the range of the text the client sent that it shows; `elements`
+are the elements on the page that show some of the document, with the box around what is drawn inside them, so a
+component's box is that of the outermost element covering only its call.
+
+<auto-type-table path="packages/core/src/protocol.ts" name="PagePositions" />
+
+<auto-type-table path="packages/core/src/protocol.ts" name="PageElement" />
 
 #### `TextRun`
 

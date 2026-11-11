@@ -8,6 +8,9 @@
 // Typst's HTML export drops fonts, so the preamble marks text whose font isn't
 // the document's own with its family (`data-typstream-font`), and the renderer
 // shows the families the engine loaded as web fonts made from the same files.
+//
+// For the visual editor (#36) the plugin's `editor.fonts` puts the library in
+// the font picker: a short list, and the index for its search.
 
 import type { FontCatalogue, TypstreamPlugin } from "@typstream/core";
 
@@ -43,6 +46,67 @@ export const googleFontsPreamble: string = `#show: body => context if target() =
 } else { body }
 `;
 
+/**
+ * The families the visual editor's font picker lists before a search: ones
+ * teachers' documents are set in (text faces, a few for titles, handwriting,
+ * code), each a download of 3 MB at most. The search finds the rest.
+ * @public
+ */
+export const GOOGLE_FONTS_FAMILIES: readonly string[] = [
+  "Andika",
+  "Atkinson Hyperlegible",
+  "Bebas Neue",
+  "Bitter",
+  "Caveat",
+  "Comic Neue",
+  "Crimson Text",
+  "DM Sans",
+  "EB Garamond",
+  "Fira Sans",
+  "Fredoka",
+  "Inter",
+  "JetBrains Mono",
+  "Kalam",
+  "Lato",
+  "Lexend",
+  "Libre Baskerville",
+  "Lora",
+  "Montserrat",
+  "Nunito",
+  "Open Sans",
+  "Oswald",
+  "Patrick Hand",
+  "Playfair Display",
+  "Poppins",
+  "PT Serif",
+  "Quicksand",
+  "Raleway",
+  "Roboto",
+  "Roboto Mono",
+  "Roboto Slab",
+  "Schoolbell",
+  "Source Code Pro",
+  "Source Sans 3",
+  "Source Serif 4",
+  "Work Sans",
+];
+
+/**
+ * Fonts the library doesn't have, and the family of the same widths (or the
+ * nearest) that stands in for each: what the prompt rules tell a model, and
+ * what the font picker's search finds under the name people type.
+ * @public
+ */
+export const GOOGLE_FONTS_ALIASES: Readonly<Record<string, string>> = {
+  Arial: "Arimo",
+  Helvetica: "Arimo",
+  "Times New Roman": "Tinos",
+  Calibri: "Carlito",
+  Cambria: "Caladea",
+  "Courier New": "Cousine",
+  "Comic Sans MS": "Comic Neue",
+};
+
 /** Options of {@link createGoogleFonts}. @public */
 export interface GoogleFontsOptions {
   /**
@@ -60,7 +124,9 @@ export interface GoogleFontsOptions {
 /**
  * The Google Fonts library as a typstream plugin: the font catalogue
  * (`engine.fontCatalogues`), the preamble that keeps fonts in the HTML target,
- * the attribute the sanitizer must let through, and prompt rules. Families
+ * the attribute the sanitizer must let through, prompt rules, and the visual
+ * editor's font picker (`editor.fonts`: {@link GOOGLE_FONTS_FAMILIES}, and
+ * every family of the index by search, which fetches the index). Families
  * download from cdn.jsdelivr.net when a document first names them, so a page
  * under a Content-Security-Policy must allow it in `connect-src`.
  * @public
@@ -74,6 +140,15 @@ export const createGoogleFonts = (options: GoogleFontsOptions = {}): TypstreamPl
     key: "google-fonts",
     engine: { fontCatalogues: [catalogue], preamble: googleFontsPreamble },
     sanitize: { allowAttrs: { span: ["data-typstream-font"] } },
+    editor: {
+      fonts: {
+        label: "Google Fonts",
+        families: [...GOOGLE_FONTS_FAMILIES],
+        index: catalogue.index,
+        ...(options.maxBytes !== undefined ? { maxBytes: options.maxBytes } : {}),
+        aliases: { ...GOOGLE_FONTS_ALIASES },
+      },
+    },
     prompt: {
       rules: [
         'Fonts: any Google Fonts family, by its exact name: `#set text(font: "Lora")` for the whole document, `#show heading: set text(font: "Playfair Display")` for headings, `#text(font: "Caveat")[…]` for a passage. Each family is downloaded the first time it is used, so use one or two.',

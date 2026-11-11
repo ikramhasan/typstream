@@ -3,7 +3,7 @@
 // documents look right in both targets. The browser side is a stylesheet for that HTML
 // (css/edu.css). This module packages both as a typstream plugin, with the prompt catalogue
 // generated from the package's doc comments.
-import type { FunctionDoc, PromptExample, TemplateSpec, TypstreamPlugin } from "@typstream/core";
+import type { EditorComponentSpec, FunctionDoc, PromptExample, TemplateSpec, TypstreamPlugin } from "@typstream/core";
 import { CATALOGUE, CSS_SOURCE, EXAMPLES, FILES } from "./assets.generated";
 
 export { buildSystemPrompt, type SystemPromptOptions, typstPromptRules } from "./prompt";
@@ -54,6 +54,7 @@ export const eduPromptRules: string[] = [
   "Use `#blank()` for fill-in blanks, `#answer-lines(count: n)` for written answers and `#answer-space(height: ...)` for working space. Never draw blanks with underscores, not even in example sentences. A blank inside a formula goes in the math: `$2/3 = #blank(answer: [4])/6$`, never one formula split in two around it.",
   "Multiple choice: `#mcq([option], [option], ..., answer: n)` with n counting from 1. Matching: `#matching((left, right), ...)` with the pairs correctly matched; edu shuffles the right column.",
   'Write chemical formulas and equations with `#ce("2H2 + O2 -> 2H2O")`. Use Typst math for mathematics.',
+  "A rubric is a plain table: `#table(columns: (auto, 1fr, 1fr, 1fr), table.header([*Criterion*], [*Excellent (3)*], [*Good (2)*], [*Needs work (1)*]), [*Thesis*], [Clear and arguable.], [Clear.], [Vague.], ...)`, a row per criterion, a column per level, best first, the points in each level's heading.",
   "Use `#columns(2)[...]` for two flowing columns and `#grid(columns: 2, ...)` for side-by-side content.",
   "Put boxed text in edu's components (`#callout`, `#instructions`). Never give a `block`, `box` or `rect` rounded corners (`radius`) and never rotate text: a Word export keeps those only as pictures.",
   "Add `#answer-key()` at the end when the teacher asks for an answer key; it lists every answer by question and appears only in the teacher's copy.",
@@ -74,9 +75,246 @@ export const eduTemplates: TemplateSpec[] = (
   ] as const
 ).map(([name, title, description]) => ({ name, title, description, preamble: `#show: ${name}\n` }));
 
+const content = (name: string, label: string, help?: string) => ({
+  name,
+  label,
+  type: "content" as const,
+  ...(help && { help }),
+});
+
+/**
+ * edu's components as the visual editor offers them (#36): in its insert menu, with a form for
+ * their arguments. Their text (a question's body, a callout's, the options of a multiple choice)
+ * is edited on the page.
+ * @beta
+ */
+export const eduComponents: EditorComponentSpec[] = [
+  {
+    name: "question",
+    label: "Question",
+    description: "A numbered question with its points",
+    group: "Questions",
+    icon: "circle-help",
+    keywords: ["exercise", "problem", "points"],
+    template: "#question(points: 1)[\n  {{cursor}}Question text\n]",
+    params: [{ name: "points", label: "Points", type: "number", min: 0, step: 0.5, help: "Empty: no points shown." }],
+  },
+  {
+    name: "mcq",
+    label: "Multiple choice",
+    description: "Options to choose from, one correct",
+    group: "Questions",
+    icon: "list-checks",
+    keywords: ["choice", "options", "quiz"],
+    template: "#mcq([{{cursor}}First option], [Second option], [Third option], answer: 1)",
+    list: true,
+    params: [
+      {
+        name: "answer",
+        label: "Correct option",
+        type: "number",
+        min: 1,
+        maxPositional: true,
+        step: 1,
+        help: "1 is the first option. Shown in the answer key only.",
+      },
+      { name: "columns", label: "Columns", type: "number", min: 1, max: 6, step: 1, help: "Empty: as many as fit." },
+    ],
+  },
+  {
+    name: "true-false",
+    label: "True or false",
+    description: "A statement to mark true or false",
+    group: "Questions",
+    icon: "circle-help",
+    template: "#true-false(answer: true)[{{cursor}}The statement]",
+    params: [
+      {
+        name: "answer",
+        label: "Answer",
+        type: "choice",
+        options: [
+          { value: "true", label: "True" },
+          { value: "false", label: "False" },
+        ],
+      },
+    ],
+  },
+  {
+    name: "matching",
+    label: "Matching",
+    description: "Pairs to match, the right column shuffled",
+    group: "Questions",
+    icon: "arrow-left-right",
+    keywords: ["match", "pairs", "connect"],
+    template:
+      "#matching(\n  ([{{cursor}}First], [its match]),\n  ([Second], [its match]),\n  ([Third], [its match]),\n)",
+    // Each pair a row of two cells: Tab past the last adds a pair, Backspace in an empty one removes it.
+    rows: true,
+  },
+  {
+    name: "blank",
+    label: "Blank",
+    description: "A gap in the text to fill in",
+    group: "Answers",
+    icon: "text-cursor-input",
+    inline: true,
+    keywords: ["gap", "fill in", "cloze"],
+    template: "#blank(answer: [answer])",
+    params: [
+      content("answer", "Answer", "Shown in the answer key only."),
+      { name: "width", label: "Width", type: "length", default: "4em" },
+    ],
+  },
+  {
+    name: "answer-lines",
+    label: "Answer lines",
+    description: "Ruled lines to write the answer on",
+    group: "Answers",
+    icon: "notebook-pen",
+    template: "#answer-lines(count: 3)",
+    params: [
+      { name: "count", label: "Lines", type: "number", min: 1, max: 30, step: 1, default: "3" },
+      content("answer", "Answer", "Shown in the answer key only."),
+    ],
+  },
+  {
+    name: "answer-space",
+    label: "Answer space",
+    description: "Empty room to work in",
+    group: "Answers",
+    icon: "square",
+    template: "#answer-space(height: 4em)",
+    params: [
+      { name: "height", label: "Height", type: "length", default: "4em" },
+      { name: "boxed", label: "Framed", type: "boolean", default: "false" },
+      content("answer", "Answer", "Shown in the answer key only."),
+    ],
+  },
+  {
+    name: "answer",
+    label: "Answer",
+    description: "A worked answer, in the answer key only",
+    group: "Answers",
+    icon: "book-open-check",
+    template: "#answer[{{cursor}}The answer]",
+  },
+  {
+    name: "callout",
+    label: "Callout",
+    description: "A note, tip, warning or definition in a box",
+    group: "Blocks",
+    icon: "info",
+    keywords: ["note", "tip", "warning", "definition", "box", "text box"],
+    // The title written out, so it is text on the page to click and change; it follows the kind
+    // while it is the kind's name.
+    template: '#callout(kind: "note", title: [Note])[{{cursor}}Something to note.]',
+    params: [
+      {
+        name: "kind",
+        label: "Kind",
+        type: "choice",
+        default: '"note"',
+        options: ["note", "tip", "warning", "definition", "example", "remember"].map((k) => ({
+          value: `"${k}"`,
+          label: k[0]?.toUpperCase() + k.slice(1),
+        })),
+      },
+      content("title", "Title", "Empty: the kind's name."),
+    ],
+  },
+  {
+    name: "instructions",
+    label: "Instructions",
+    description: "Instructions for students, in a box",
+    group: "Blocks",
+    icon: "clipboard-list",
+    template: "#instructions[{{cursor}}Answer all questions.]",
+  },
+  {
+    name: "learning-objectives",
+    label: "Learning objectives",
+    description: "What students will learn",
+    group: "Blocks",
+    icon: "list-checks",
+    template: "#learning-objectives[\n  - {{cursor}}First objective\n]",
+  },
+  {
+    name: "student-info",
+    label: "Student fields",
+    description: "Name, class and date to fill in",
+    group: "Blocks",
+    icon: "pen-line",
+    // The labels written out, so they are text on the page; Enter after one adds a field.
+    template: "#student-info([{{cursor}}Name], [Date], [Class])",
+    list: true,
+  },
+  {
+    name: "ce",
+    label: "Chemical formula",
+    description: "A molecule, an ion or a reaction",
+    group: "Blocks",
+    icon: "flask-conical",
+    inline: true,
+    keywords: ["chemistry", "reaction", "molecule", "element"],
+    template: '#ce("H2O")',
+    // The formula is the call's first argument: a parameter named by its place. edu draws it from
+    // the string, so the page has no place for a caret in it: its field opens on a click.
+    field: "0",
+    params: [
+      {
+        name: "0",
+        label: "Formula",
+        type: "text",
+        help: "As you would type it: 2H2 + O2 -> 2H2O. Spaces around + and the arrow.",
+      },
+    ],
+  },
+  {
+    name: "number-line",
+    label: "Number line",
+    description: "A number line with ticks and labels",
+    group: "Drawings",
+    icon: "minus",
+    template: "#number-line(from: 0, to: 10)",
+    params: [
+      { name: "from", label: "From", type: "number", default: "0" },
+      { name: "to", label: "To", type: "number", default: "10" },
+      { name: "step", label: "Step", type: "number", default: "1", min: 0.01 },
+      { name: "length", label: "Length", type: "length", default: "12cm" },
+    ],
+  },
+  {
+    name: "graph-paper",
+    label: "Graph paper",
+    description: "A grid to draw on",
+    group: "Drawings",
+    icon: "table",
+    template: "#graph-paper(cols: 30, rows: 10)",
+    params: [
+      { name: "cols", label: "Columns", type: "number", default: "30", min: 1, max: 40, step: 1 },
+      { name: "rows", label: "Rows", type: "number", default: "10", min: 1, max: 60, step: 1 },
+    ],
+  },
+  {
+    name: "coordinate-plane",
+    label: "Coordinate plane",
+    description: "Axes and a grid",
+    group: "Drawings",
+    icon: "plus",
+    template: "#coordinate-plane()",
+    params: [
+      { name: "unit", label: "Unit", type: "length", default: "7mm" },
+      { name: "grid", label: "Grid", type: "boolean", default: "true" },
+      { name: "labels", label: "Labels", type: "boolean", default: "true" },
+    ],
+  },
+];
+
 /**
  * edu as a typstream plugin: its files and preamble for the engine, templates, prompt kit, the
- * classes the sanitizer keeps, and its stylesheet for the HTML renderer and standalone exports.
+ * classes the sanitizer keeps, its stylesheet for the HTML renderer and standalone exports, and
+ * its components for the visual editor.
  */
 export const edu: TypstreamPlugin = {
   key: "edu",
@@ -88,4 +326,10 @@ export const edu: TypstreamPlugin = {
   prompt: { catalogue: eduCatalogue, rules: eduPromptRules, examples: eduExamples },
   sanitize: { allowClasses: ["edu-*"] },
   stylesheets: [eduCss],
+  editor: {
+    components: eduComponents,
+    inline: ["blank", "ce"],
+    // Answers on the pages, to edit where they are, as the answer key's copy shows them.
+    switches: [{ input: "showAnswers", label: "Show answers", icon: "eye" }],
+  },
 };

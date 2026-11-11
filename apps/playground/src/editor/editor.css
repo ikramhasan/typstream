@@ -1,0 +1,44 @@
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  font-family: system-ui, sans-serif;
+}
+.ed-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.ed-header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 6px 12px;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 13px;
+}
+.ed-stats {
+  margin-left: auto;
+  color: #475569;
+  font-variant-numeric: tabular-nums;
+}
+.ed-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  min-height: 0;
+  flex: 1;
+}
+.ed-editor {
+  min-height: 0;
+  overflow: auto;
+  background: #f1f5f9;
+}
+.ed-source {
+  margin: 0;
+  padding: 8px;
+  overflow: auto;
+  font-size: 12px;
+  border-left: 1px solid #e5e7eb;
+  white-space: pre-wrap;
+}

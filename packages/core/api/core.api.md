@@ -78,6 +78,8 @@ export interface CompileParams extends DocumentParams {
     inputs?: Record<string, string>;
     mode?: CompileMode;
     pageFormat?: PageFormat;
+    // @beta
+    positions?: boolean;
     settled?: number;
     settledFrom?: number;
     target: CompileTarget;
@@ -226,17 +228,70 @@ export interface DocumentSetFilesParams extends DocumentParams {
 export type DocumentUri = string;
 
 // @beta
+export interface EditorComponentSpec {
+    description?: string;
+    field?: string;
+    group?: string;
+    icon?: string;
+    inline?: boolean;
+    keywords?: string[];
+    label: string;
+    list?: boolean;
+    name: string;
+    outline?: boolean;
+    params?: EditorParamSpec[];
+    rows?: boolean;
+    template: string;
+}
+
+// @beta
 export interface EditorFacet {
     [key: string]: unknown;
-    commands?: unknown[];
-    nodes?: unknown[];
-    shortcuts?: unknown[];
-    slashItems?: unknown[];
-    toolbar?: unknown[];
+    components?: EditorComponentSpec[];
+    fonts?: EditorFontsSpec;
+    inline?: string[];
+    marks?: string[];
+    switches?: EditorSwitchSpec[];
+}
+
+// @beta
+export interface EditorFontsSpec {
+    aliases?: Record<string, string>;
+    families: string[];
+    index?: string;
+    label?: string;
+    maxBytes?: number;
 }
 
 // @public
 export type EditOrigin = "stream" | "user" | "ai" | "remote";
+
+// @beta
+export interface EditorParamSpec {
+    columnsFrom?: number;
+    default?: string;
+    help?: string;
+    item?: "content" | "number";
+    label: string;
+    max?: number;
+    maxPositional?: boolean;
+    min?: number;
+    name: string;
+    options?: {
+        value: string;
+        label: string;
+    }[];
+    step?: number;
+    type: "number" | "text" | "boolean" | "choice" | "color" | "length" | "content" | "list";
+}
+
+// @beta
+export interface EditorSwitchSpec {
+    icon?: string;
+    input: string;
+    label: string;
+    value?: string;
+}
 
 // @public
 export type ErrorCode =
@@ -529,6 +584,8 @@ export interface PagedArtifact {
     islands?: PagedIsland[];
     pageCount: number;
     pages: PageUpdate[];
+    // @beta
+    positions?: PagePositions[];
     target: "paged";
 }
 
@@ -552,6 +609,21 @@ export interface PageDrawing {
     strings: string[];
 }
 
+// @beta
+export interface PageElement {
+    box?: [number, number, number, number];
+    cell?: [number, number];
+    depth: number;
+    endX?: number;
+    endY?: number;
+    from: number;
+    kind: string;
+    node?: [number, number];
+    to: number;
+    x: number;
+    y: number;
+}
+
 // @public
 export type PageFormat = "svg" | "drawing";
 
@@ -569,6 +641,12 @@ export interface PagePoint {
     page: number;
     x: number;
     y: number;
+}
+
+// @beta
+export interface PagePositions {
+    elements: PageElement[];
+    glyphs: Uint8Array;
 }
 
 // @public

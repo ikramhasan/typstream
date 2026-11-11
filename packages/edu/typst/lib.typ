@@ -8,6 +8,7 @@
 #import "templates.typ": exam, handout, lesson-plan, quiz, worksheet
 #import "questions.typ": matching, mcq, question, true-false
 #import "answers.typ": answer, answer-key, answer-lines, answer-space, blank
-#import "blocks.typ": callout, instructions, learning-objectives, rubric, student-info
+#import "blocks.typ": callout, instructions, learning-objectives, student-info
+#import "blocks.typ": rubric // Not in the prompt: a rubric is a table (#36), and documents written with it still compile.
 #import "drawings.typ": coordinate-plane, graph-paper, number-line
 #import "chem.typ": ce

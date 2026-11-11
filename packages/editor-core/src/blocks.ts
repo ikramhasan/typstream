@@ -1,0 +1,508 @@
+// Block formatting: paragraph, heading levels, bulleted and numbered lists, indentation and
+// alignment, for every block the selection touches in the markup around it. A heading or list item
+// is a marker at the start of a line in Typst (`== `, `- `, `+ `); alignment is an `#align(…)[…]`
+// around the block.
+
+import { diffEdit, type TextEdit } from "@typstream/core";
+import type { SyntaxNode } from "@typstream/syntax";
+import { blocksAround, canType, DEFAULT_SCHEMA, type EditorSchema, fixedBlocks } from "./commands";
+import { type EditorState, mapThrough, type Selection, type Transaction } from "./state";
+import { type Block, blocksOf, callArgs, calleeName, itemAt, pathAt } from "./tree";
+
+/**
+ * What a block is: a paragraph, a heading (level 1–6), or an item of a bulleted (`list`), numbered
+ * (`enum`) or term list.
+ * @beta
+ */
+export type BlockType =
+  | { kind: "paragraph" }
+  | { kind: "heading"; level: number }
+  | { kind: "list" }
+  | { kind: "enum" }
+  | { kind: "term" };
+
+/** Blocks next to each other in one markup, and all of that markup's. */
+interface Group {
+  blocks: Block[];
+  siblings: Block[];
+}
+
+/**
+ * The blocks the selection touches, in the markup that holds all of it. A call the selection only
+ * partly reaches (it starts in a table's cell, or ends in one) is opened: the blocks of its content
+ * are the ones touched. With `through`, an `#align(…)[…]` is opened too (its blocks change type
+ * like any other).
+ */
+const selectedBlocks = (
+  state: EditorState,
+  schema: EditorSchema,
+  through = true,
+): { blocks: Block[]; all: Block[]; groups: Group[] } => {
+  const text = state.text;
+  const inline = (name: string) => schema.inline.has(name);
+  const { blocks: all } = blocksAround(state, state.from, schema, state.to);
+  const groups: Group[] = [];
+  const bodies = (b: Block): SyntaxNode[] | null => {
+    if (b.kind !== "expression" || b.node?.kind !== "FuncCall") return null;
+    const aligned = alignedBody(b, text) !== null;
+    if (aligned ? !through : state.from <= b.from && b.to <= state.to) return null;
+    const out: SyntaxNode[] = [];
+    const visit = (n: SyntaxNode) => {
+      for (const c of n.children) {
+        if (c.kind !== "ContentBlock") visit(c);
+        else if (c.from < state.to && c.to > state.from) out.push(c);
+      }
+    };
+    visit(b.node);
+    return out.length ? out : null;
+  };
+  const walk = (siblings: Block[]) => {
+    let run: Group = { blocks: [], siblings };
+    groups.push(run);
+    for (const b of siblings) {
+      // The spaces after a block on its line are its too: the caret after an empty heading's or
+      // item's marker, or after a paragraph's last space.
+      if (pastSpaces(text, b.to) < state.from || b.from > state.to) continue;
+      const inner = bodies(b);
+      if (!inner) {
+        // The selection in the items nested in an item, and not in the item's own text: those are
+        // the blocks touched.
+        const nested = nestedItems(b, text, inline);
+        if (nested && state.from >= (nested[0] as Block).from) {
+          walk(nested);
+          run = { blocks: [], siblings };
+          groups.push(run);
+        } else run.blocks.push(b);
+        continue;
+      }
+      for (const c of inner) {
+        const markup = c.children.find((k) => k.kind === "Markup");
+        if (markup) walk(blocksOf(markup, text, inline));
+      }
+      run = { blocks: [], siblings };
+      groups.push(run);
+    }
+  };
+  walk(all);
+  const kept = groups.filter((g) => g.blocks.length > 0);
+  // No block: a caret on an empty line.
+  return { blocks: kept.flatMap((g) => g.blocks), all, groups: kept };
+};
+
+/** The items nested in a list item (its content after its own text), if it has any. */
+const nestedItems = (b: Block, text: string, inline: (name: string) => boolean): Block[] | null => {
+  if ((b.kind !== "list" && b.kind !== "enum") || !b.node) return null;
+  const body = b.node.children.find((k) => k.kind === "Markup");
+  if (!body) return null;
+  const inner = blocksOf(body, text, inline);
+  const at = inner.findIndex((k) => k.kind === "list" || k.kind === "enum" || k.kind === "term");
+  return at < 0 ? null : inner.slice(at);
+};
+
+/** The end of the spaces and tabs at `at`. */
+const pastSpaces = (text: string, at: number): number => {
+  let to = at;
+  while (text[to] === " " || text[to] === "\t") to++;
+  return to;
+};
+
+/** The text of an `#align(…)[…]` block: its content's markup, with the call and its hash. */
+const alignedBody = (b: Block, text: string): { hash: SyntaxNode; call: SyntaxNode; inner: SyntaxNode } | null => {
+  const call = b.node;
+  if (b.kind !== "expression" || call?.kind !== "FuncCall" || calleeName(call, text) !== "align") return null;
+  const hash = b.nodes.find((k) => k.kind === "Hash" && k.to === call.from);
+  const inner = callArgs(call, text)?.trailing[0]?.children.find((k) => k.kind === "Markup");
+  return hash && inner ? { hash, call, inner } : null;
+};
+
+/** The type of the block the caret is in. @beta */
+export const blockType = (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): BlockType | null => {
+  const { blocks } = selectedBlocks(state, schema);
+  const b = blocks[0];
+  if (!b) return canType(state, state.selection.head) ? { kind: "paragraph" } : null;
+  if (b.kind === "heading") return { kind: "heading", level: headingLevel(b.node as SyntaxNode) };
+  if (b.kind === "list" || b.kind === "enum" || b.kind === "term") return { kind: b.kind };
+  if (b.kind === "paragraph") return { kind: "paragraph" };
+  // Text in a mark, a cell or a component's content: a paragraph there.
+  return canType(state, state.selection.head) ? { kind: "paragraph" } : null;
+};
+
+const headingLevel = (heading: SyntaxNode): number => {
+  const marker = heading.children[0] as SyntaxNode;
+  return marker.to - marker.from;
+};
+
+/** The source of a block's text without its marker, its lines joined (a heading is one line). */
+const MARKERS: Record<string, string> = { list: "- ", enum: "+ ", term: "/ " };
+
+/**
+ * Makes every block the selection touches `type`. A paragraph's lines are joined: a heading or an
+ * item is one line in Typst. Blocks that become paragraphs keep a blank line around them. Items
+ * that become a list are joined into one (no blank lines between them).
+ * @beta
+ */
+export const setBlockType =
+  (type: BlockType) =>
+  (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): Transaction | null => {
+    // A multiple choice's option, a mind map's branch: the component says what its blocks are.
+    if (fixedBlocks(state, state.from, schema) || fixedBlocks(state, state.to, schema)) return null;
+    const { blocks, groups } = selectedBlocks(state, schema);
+    const text = state.text;
+    if (blocks.length === 0) {
+      // An empty line: write the marker, to type after.
+      if (type.kind === "paragraph") return null;
+      const marker = type.kind === "heading" ? `${"=".repeat(type.level)} ` : (MARKERS[type.kind] as string);
+      const at = state.from;
+      return {
+        edits: [{ from: at, to: at, insert: marker }],
+        selection: { anchor: at + marker.length, head: at + marker.length },
+      };
+    }
+    const edits: TextEdit[] = [];
+    blocks.forEach((b, i) => {
+      if (b.kind === "expression") return;
+      const markerEnd = markerEndOf(b, text);
+      const marker =
+        type.kind === "paragraph"
+          ? ""
+          : type.kind === "heading"
+            ? `${"=".repeat(type.level)} `
+            : (MARKERS[type.kind] as string);
+      // The lines of its own text: items nested in it stay on theirs.
+      const nested = nestedItems(b, text, (name) => schema.inline.has(name));
+      const oneLine =
+        type.kind === "paragraph" ? null : joinLines(text, markerEnd, nested ? (nested[0] as Block).from - 1 : b.to);
+      edits.push({ from: b.from, to: markerEnd, insert: marker });
+      if (oneLine) edits.push(...oneLine);
+      // Between two selected blocks: a blank line for paragraphs and headings, a line break in a list.
+      const next = blocks[i + 1];
+      if (next && next.kind !== "expression") {
+        const gap = text.slice(b.to, next.from);
+        // The next block keeps its indentation (items nested in an item, a list in a component's content).
+        const indent = /[ \t]*$/.exec(gap)?.[0] ?? "";
+        const want = `${type.kind === "list" || type.kind === "enum" || type.kind === "term" ? "\n" : "\n\n"}${indent}`;
+        if (gap.trim() === "" && gap !== want && (want.startsWith("\n\n") ? !gap.startsWith("\n\n") : true))
+          edits.push({ from: b.to, to: next.from, insert: want });
+      }
+    });
+    // A paragraph or heading needs blank lines around it where it sat in a list.
+    const first = blocks[0] as Block;
+    const last = blocks[blocks.length - 1] as Block;
+    if (type.kind === "paragraph" || type.kind === "heading") {
+      // Before its line, so the block keeps its indentation; not where a content block starts.
+      const before = text.slice(0, first.from);
+      const line = before.lastIndexOf("\n") + 1;
+      if (before.trim() !== "" && before.slice(line).trim() === "" && !/(?:\n|\[)[ \t]*\n$/.test(before.slice(0, line)))
+        edits.unshift({ from: line, to: line, insert: "\n" });
+      const after = text.slice(last.to);
+      if (after.trim() !== "" && !/^[ \t]*\n[ \t]*(?:\n|\])/.test(after) && /^[ \t]*\n/.test(after)) {
+        // After the spaces its line ends with, where the caret may be.
+        const end = pastSpaces(text, last.to);
+        edits.push({ from: end, to: end, insert: "\n" });
+      }
+    }
+    // A new item next to a list of its kind, a blank line between them, is that list's: one tight
+    // list (and one numbering), unless the list itself has blank lines between its items.
+    if (type.kind === "list" || type.kind === "enum")
+      for (const g of groups) {
+        const join = (a: Block | undefined, b: Block | undefined, neighbour: Block | undefined) => {
+          if (!a || !b || (a.kind === type.kind) === (b.kind === type.kind)) return;
+          const item = a.kind === type.kind ? a : b;
+          const gap = text.slice(a.to, b.from);
+          if (gap.trim() !== "" || !gap.includes("\n\n")) return;
+          if (neighbour?.kind === item.kind && /\n[ \t]*\n/.test(text.slice(...between(item, neighbour)))) return;
+          edits.push({ from: a.to, to: b.from, insert: `\n${/[ \t]*$/.exec(gap)?.[0] ?? ""}` });
+        };
+        const at = g.siblings.indexOf(g.blocks[0] as Block);
+        const end = g.siblings.indexOf(g.blocks[g.blocks.length - 1] as Block);
+        if (g.blocks[0]?.kind !== "expression") join(g.siblings[at - 1], g.siblings[at], g.siblings[at - 2]);
+        if (g.blocks[g.blocks.length - 1]?.kind !== "expression")
+          join(g.siblings[end], g.siblings[end + 1], g.siblings[end + 2]);
+      }
+    const merged = mergeTouching(edits);
+    return { edits: merged, selection: mapBlockSelection(state.selection, merged, new Set(blocks.map((b) => b.from))) };
+  };
+
+/** The source between two blocks, whichever comes first. */
+const between = (a: Block, b: Block): [number, number] => (a.from < b.from ? [a.to, b.from] : [b.to, a.from]);
+
+/** Where a block's text starts: after its marker and the space after it (the block's end, past its spaces, if it has none). */
+const markerEndOf = (b: Block, text: string): number => {
+  if (!b.node || b.kind === "paragraph" || b.kind === "expression") return b.from;
+  const body = b.node.children.find((k) => k.kind === "Markup");
+  return pastSpaces(text, body ? body.from : b.to);
+};
+
+/** Edits that put a block's lines on one line: each newline (and the indentation after it) becomes a space. */
+const joinLines = (text: string, from: number, to: number): TextEdit[] => {
+  const out: TextEdit[] = [];
+  const re = /[ \t]*\n[ \t]*/g;
+  re.lastIndex = from;
+  for (let m = re.exec(text); m && m.index < to; m = re.exec(text)) {
+    if (m.index + m[0].length > to) break;
+    out.push({ from: m.index, to: m.index + m[0].length, insert: " " });
+  }
+  return out;
+};
+
+const mergeTouching = (edits: TextEdit[]): TextEdit[] => {
+  const sorted = [...edits].sort((a, b) => a.from - b.from || a.to - b.to);
+  const out: TextEdit[] = [];
+  for (const e of sorted) {
+    const last = out[out.length - 1];
+    if (last && e.from < last.to) {
+      // Overlapping: the later one's text after the earlier.
+      last.to = Math.max(last.to, e.to);
+      last.insert += e.insert;
+    } else out.push({ ...e });
+  }
+  return out;
+};
+
+/**
+ * A selection through block edits: past markers written at a block's start, before newlines added
+ * at its end.
+ */
+const mapBlockSelection = (s: Selection, edits: TextEdit[], markersAt: ReadonlySet<number>): Selection => {
+  const map = (pos: number) => mapThrough(pos, edits, markersAt.has(pos) ? 1 : -1);
+  return { anchor: map(s.anchor), head: map(s.head) };
+};
+
+/**
+ * Turns the selected blocks into a list of `kind`, or back into paragraphs if they all are one.
+ * @beta
+ */
+export const toggleList =
+  (kind: "list" | "enum") =>
+  (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): Transaction | null => {
+    if (fixedBlocks(state, state.from, schema) || fixedBlocks(state, state.to, schema)) return null;
+    // In an `#align(…)[…]`: a list can't be centred (its bullets stay at the margin), so the
+    // alignment goes first.
+    const unaligned = setAlignment("left")(state, schema);
+    if (unaligned) {
+      const mid = state.apply(unaligned).state;
+      const listed = toggleList(kind)(mid, schema);
+      if (listed) {
+        const end = mid.apply(listed).state;
+        const edit = diffEdit(state.text, end.text);
+        return { edits: edit ? [edit] : [], selection: end.selection };
+      }
+    }
+    const { blocks, groups } = selectedBlocks(state, schema);
+    const all = blocks.length > 0 && blocks.every((b) => b.kind === kind || b.kind === "expression");
+    const only = blocks.length === 1 ? blocks[0] : undefined;
+    const around = groups[0]?.siblings ?? [];
+    if (state.empty && !all && only && (only.kind === "list" || only.kind === "enum")) {
+      // A caret in a list of the other kind: the whole list changes, as in a word processor.
+      let first = around.indexOf(only);
+      let last = first;
+      const same = (b: Block | undefined, c: Block) =>
+        !!b && b.kind === only.kind && state.text.slice(Math.min(b.to, c.to), Math.max(b.from, c.from)).trim() === "";
+      while (same(around[first - 1], around[first] as Block)) first--;
+      while (same(around[last + 1], around[last] as Block)) last++;
+      const wide = state.select({ anchor: (around[first] as Block).from, head: (around[last] as Block).to });
+      const tr = setBlockType({ kind })(wide, schema);
+      if (!tr) return null;
+      const edits = [...tr.edits].sort((a, b) => a.from - b.from);
+      const at = mapThrough(state.selection.head, edits, 1);
+      return { edits: tr.edits, selection: { anchor: at, head: at } };
+    }
+    // A heading in the selection stays a heading: the blocks around it become the list.
+    if (!all && blocks.some((b) => b.kind === "heading") && blocks.some((b) => b.kind !== "heading")) {
+      const runs: Block[][] = [[]];
+      for (const b of blocks) {
+        if (b.kind === "heading") runs.push([]);
+        else (runs[runs.length - 1] as Block[]).push(b);
+      }
+      const edits: TextEdit[] = [];
+      for (const run of runs.filter((r) => r.length > 0)) {
+        const part = state.select({ anchor: (run[0] as Block).from, head: (run[run.length - 1] as Block).to });
+        edits.push(...(setBlockType({ kind })(part, schema)?.edits ?? []));
+      }
+      if (edits.length === 0) return null;
+      const sorted = [...edits].sort((a, b) => a.from - b.from);
+      return {
+        edits,
+        selection: {
+          anchor: mapThrough(state.selection.anchor, sorted, 1),
+          head: mapThrough(state.selection.head, sorted, -1),
+        },
+      };
+    }
+    return setBlockType(all ? { kind: "paragraph" } : { kind })(state, schema);
+  };
+
+/**
+ * Indents (`dir` 1) or outdents (-1) the selected list items by two spaces, the lines of their
+ * text and nested items included: Typst nests list items by indentation.
+ * @beta
+ */
+export const indentItems =
+  (dir: 1 | -1) =>
+  (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): Transaction | null => {
+    const text = state.text;
+    const items = itemsInSelection(state);
+    if (items.length === 0) return null;
+    const edits: TextEdit[] = [];
+    const seen = new Set<number>();
+    for (const item of items) {
+      let line = text.lastIndexOf("\n", item.from - 1) + 1;
+      // A list's first item can't go in a level: there is no item for it to be nested in.
+      if (dir > 0 && !hasItemAbove(text, line)) continue;
+      // Nor a top-level item out one (a list indented in a component's content would break in two).
+      if (dir < 0 && !nested(state, item)) continue;
+      while (line <= item.to && line < text.length + 1) {
+        if (!seen.has(line)) {
+          seen.add(line);
+          if (dir > 0) edits.push({ from: line, to: line, insert: "  " });
+          else {
+            let n = 0;
+            while (n < 2 && text[line + n] === " ") n++;
+            if (n) edits.push({ from: line, to: line + n, insert: "" });
+          }
+        }
+        const next = text.indexOf("\n", line);
+        if (next < 0 || next >= item.to) break;
+        line = next + 1;
+      }
+    }
+    void schema;
+    if (edits.length === 0) return null;
+    const sorted = edits.sort((a, b) => a.from - b.from);
+    return { edits: sorted, selection: mapBlockSelection(state.selection, sorted, new Set(sorted.map((e) => e.from))) };
+  };
+
+/** Whether a list item is nested in another's text. */
+const nested = (state: EditorState, item: SyntaxNode): boolean =>
+  pathAt(state.tree, item.from, 1).some(
+    (n) =>
+      (n.kind === "ListItem" || n.kind === "EnumItem" || n.kind === "TermItem") &&
+      n.from < item.from &&
+      item.to <= n.to,
+  );
+
+/** Whether the line before `line` (a list item's) is a list item or its text, at its indentation or deeper. */
+const hasItemAbove = (text: string, line: number): boolean => {
+  if (line === 0) return false;
+  const start = text.lastIndexOf("\n", line - 2) + 1;
+  const above = text.slice(start, line - 1);
+  if (above.trim() === "") return false;
+  const indent = (l: string) => /^[ \t]*/.exec(l)?.[0].length ?? 0;
+  return indent(above) >= indent(text.slice(line, text.indexOf("\n", line) < 0 ? undefined : text.indexOf("\n", line)));
+};
+
+/** List, enum and term items the selection touches, outermost. */
+const itemsInSelection = (state: EditorState): SyntaxNode[] => {
+  // A caret: the item holding it, an empty one too (`- ` ends at its marker; the space is outside).
+  if (state.empty) {
+    const item = itemAt(state.tree, state.text, state.selection.head);
+    return item && item.kind !== "Heading" ? [item] : [];
+  }
+  const out: SyntaxNode[] = [];
+  const visit = (node: SyntaxNode) => {
+    for (const c of node.children) {
+      if (c.to < state.from || c.from > state.to) continue;
+      if (c.kind === "ListItem" || c.kind === "EnumItem" || c.kind === "TermItem") {
+        // The innermost item holding the caret, or every item a selection touches.
+        const inner = c.children.find((k) => k.kind === "Markup");
+        const nested = inner?.children.some(
+          (k) => (k.kind === "ListItem" || k.kind === "EnumItem") && k.from <= state.to && k.to >= state.from,
+        );
+        if (
+          nested &&
+          state.from >= (inner?.children.find((k) => k.kind === "ListItem" || k.kind === "EnumItem")?.from ?? Infinity)
+        )
+          visit(inner as SyntaxNode);
+        else out.push(c);
+      } else if (c.kind === "Markup" || c.kind === "ContentBlock" || c.kind === "FuncCall" || c.kind === "Args")
+        visit(c);
+    }
+  };
+  visit(state.tree);
+  return out;
+};
+
+/**
+ * An alignment: `left`, `center` or `right`. (No justified text: the layout profile pages are laid
+ * out with sets ragged right, so a DOCX export matches them, #129.)
+ * @beta
+ */
+export type Alignment = "left" | "center" | "right";
+
+/** The alignment of the block the caret is in: of an `#align(…)` around it. @beta */
+export const alignmentAt = (state: EditorState): Alignment => {
+  const path = pathAt(state.tree, state.from, -1);
+  for (let i = path.length - 1; i >= 0; i--) {
+    const n = path[i] as SyntaxNode;
+    if (n.kind !== "FuncCall") continue;
+    const name = calleeName(n, state.text);
+    const args = callArgs(n, state.text);
+    if (name === "align" && args?.positional[0]) {
+      const v = state.text.slice(args.positional[0].from, args.positional[0].to);
+      if (v === "center" || v === "right" || v === "left") return v;
+    }
+  }
+  return "left";
+};
+
+/**
+ * Aligns the blocks the selection touches: an `#align(…)[…]` around them (one for a run of
+ * blocks), changed or taken off if they already have one.
+ * @beta
+ */
+export const setAlignment =
+  (align: Alignment) =>
+  (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): Transaction | null => {
+    const text = state.text;
+    const open = align === "left" ? "" : alignOpen(align);
+    const edits: TextEdit[] = [];
+    const starts = new Set<number>();
+    /** An `#align(…)[…]` gets the alignment, or goes (its text stays). */
+    const change = (hash: SyntaxNode, call: SyntaxNode, inner: SyntaxNode) => {
+      if (text.slice(hash.from, inner.from) !== open) edits.push({ from: hash.from, to: inner.from, insert: open });
+      if (align === "left") edits.push({ from: inner.to, to: call.to, insert: "" });
+    };
+    const done = (): Transaction | null => {
+      if (edits.length === 0) return null;
+      edits.sort((a, b) => a.from - b.from || a.to - b.to);
+      return { edits, selection: mapBlockSelection(state.selection, edits, starts) };
+    };
+    // The whole selection in an `#align(…)[…]`: change it, or unwrap it.
+    const path = pathAt(state.tree, state.from, -1);
+    for (let i = path.length - 1; i >= 1; i--) {
+      const n = path[i] as SyntaxNode;
+      if (n.kind !== "FuncCall" || n.to < state.to || calleeName(n, text) !== "align") continue;
+      const inner = callArgs(n, text)?.trailing[0]?.children.find((k) => k.kind === "Markup");
+      const hash = (path[i - 1] as SyntaxNode).children.find((k) => k.kind === "Hash" && k.to === n.from);
+      if (!inner || !hash) continue;
+      change(hash, n, inner);
+      return done();
+    }
+    // Typst aligns a list's text but not its bullets and numbers, which would stay at the margin
+    // far from it: lists keep their place, and the blocks between them are aligned (one
+    // `#align(…)[…]` for a run of them). Blocks that are aligned already change, or are unwrapped.
+    for (const g of selectedBlocks(state, schema, false).groups) {
+      let run: Block[] = [];
+      const wrap = () => {
+        const from = run[0]?.from;
+        const end = run[run.length - 1]?.to;
+        run = [];
+        if (from === undefined || end === undefined || align === "left") return;
+        // A caret after the last block's last space stays in it.
+        const to = Math.max(end, Math.min(state.to, pastSpaces(text, end)));
+        edits.push({ from, to: from, insert: open }, { from: to, to, insert: "]" });
+        starts.add(from);
+      };
+      for (const b of g.blocks) {
+        const aligned = alignedBody(b, text);
+        if (aligned) change(aligned.hash, aligned.call, aligned.inner);
+        if (aligned || b.kind === "list" || b.kind === "enum" || b.kind === "term") wrap();
+        // A heading with no text yet has nothing to align.
+        else if (b.kind !== "heading" || markerEndOf(b, text) < b.to) run.push(b);
+      }
+      wrap();
+    }
+    return done();
+  };
+
+const alignOpen = (align: Alignment): string => `#align(${align})[`;

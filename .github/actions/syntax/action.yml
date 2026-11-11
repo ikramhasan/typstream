@@ -1,0 +1,56 @@
+name: Typst syntax (wasm) build
+description: >
+  Builds packages/syntax/wasm (typst-syntax as wasm, for @typstream/syntax and the visual editor). wasm/ is
+  cached on the crate's inputs, so a warm run skips Rust entirely; build.sh then sees wasm/ is up to date and
+  only runs tsup. A cold run also restores target/.
+
+runs:
+  using: composite
+  steps:
+    - id: wasm
+      uses: actions/cache@v6
+      with:
+        path: packages/syntax/wasm
+        # The inputs build.sh hashes into wasm/.inputs.
+        key: syntax-wasm-${{ runner.os }}-${{ hashFiles('packages/syntax/Cargo.lock', 'packages/syntax/Cargo.toml', 'packages/syntax/rust/**', 'packages/syntax/build.sh') }}
+
+    # Typst 0.15.1 needs Rust ≥ 1.92 (CLAUDE.md).
+    - if: steps.wasm.outputs.cache-hit != 'true'
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: wasm32-unknown-unknown
+
+    - if: steps.wasm.outputs.cache-hit != 'true'
+      uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: packages/syntax -> target
+        shared-key: syntax
+        save-if: ${{ github.ref == 'refs/heads/main' }}
+
+    # wasm-bindgen-cli must match the wasm-bindgen crate in Cargo.lock exactly, so read it from there.
+    - if: steps.wasm.outputs.cache-hit != 'true'
+      id: bindgen
+      shell: bash
+      run: |
+        version=$(awk '/^name = "wasm-bindgen"$/ { getline; gsub(/version = |"/, ""); print; exit }' packages/syntax/Cargo.lock)
+        test -n "$version"
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+
+    - if: steps.wasm.outputs.cache-hit != 'true'
+      uses: taiki-e/install-action@v2
+      with:
+        tool: wasm-bindgen@${{ steps.bindgen.outputs.version }}
+
+    # The binaryen engine-wasm's build uses.
+    - if: steps.wasm.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        BINARYEN: "133"
+      run: |
+        curl -fsSL "https://github.com/WebAssembly/binaryen/releases/download/version_$BINARYEN/binaryen-version_$BINARYEN-x86_64-linux.tar.gz" \
+          | tar -xz -C "$RUNNER_TEMP"
+        echo "$RUNNER_TEMP/binaryen-version_$BINARYEN/bin" >> "$GITHUB_PATH"
+
+    - if: steps.wasm.outputs.cache-hit != 'true'
+      shell: bash
+      run: WASM_ONLY=1 packages/syntax/build.sh

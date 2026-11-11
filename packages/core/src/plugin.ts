@@ -366,22 +366,165 @@ export interface IslandProps<Data = unknown> {
 }
 
 /**
- * Reserved for the visual editor (PLAN §10.3). Typed loosely on purpose: the
- * editor will narrow these, and plugins may fill them in early without
- * breaking when it does.
+ * An argument of a component the editor shows in the component's form (#36),
+ * so nobody writes Typst to set it: `points` of an edu question.
+ * @beta
+ */
+export interface EditorParamSpec {
+  /** The named argument, or a positional one by its place: `"0"` is the call's first argument. */
+  name: string;
+  /** Its label in the form. */
+  label: string;
+  /**
+   * What the form edits: a number, a text (a Typst string), a yes/no, one of
+   * `options`, a colour, a length (`2em`, written as typed), `content`
+   * (a `[…]` block, edited as text in the form), or a `list` (an array of
+   * `item`s: `([Good], [Fair])`).
+   */
+  type: "number" | "text" | "boolean" | "choice" | "color" | "length" | "content" | "list";
+  /**
+   * What a `list` holds: `content` (`[…]` blocks, one on each line of the form; the default) or
+   * `number`s (on one line, with commas; `none` is written as typed, for a function that takes it).
+   */
+  item?: "content" | "number";
+  /**
+   * A `list` whose items head the columns of the component's rows (a rubric's levels), from this
+   * cell of a row on (`1`: after the criterion): a row gets an empty cell for each item added, and
+   * loses the empty ones past the last.
+   */
+  columnsFrom?: number;
+  /** The choices of a `choice`: each value's Typst source and its label. */
+  options?: { value: string; label: string }[];
+  /** What the function uses when the argument isn't written (Typst source), shown in the form. */
+  default?: string;
+  /** Smallest number allowed. */
+  min?: number;
+  /** Largest number allowed. */
+  max?: number;
+  /** The largest number is how many positional arguments the call has (a multiple choice's options). */
+  maxPositional?: boolean;
+  /** Step of a number input. */
+  step?: number;
+  /** One line of help under the field. */
+  help?: string;
+}
+
+/**
+ * A component a plugin's Typst defines, as the visual editor offers it (#36):
+ * in its insert menu (with `template`), and when selected with a form for
+ * `params`. Plain data, so content plugins (layer 3) declare it without the editor.
+ * @beta
+ */
+export interface EditorComponentSpec {
+  /** The Typst function: `question`, `mindmap`. */
+  name: string;
+  /** Its name in menus: `Question`. */
+  label: string;
+  /** One line in the insert menu. */
+  description?: string;
+  /** The insert menu's group: `Questions`. */
+  group?: string;
+  /**
+   * Its positional content arguments are items (a multiple choice's options): Enter adds one,
+   * Backspace in an empty one removes it. A parameter with `maxPositional` numbers one of them (the
+   * correct option), and follows it as items are added and removed.
+   */
+  list?: boolean;
+  /**
+   * Its positional arguments are rows, arrays of content cells (a rubric's criteria): Tab past the
+   * last cell adds a row, Backspace in an empty one removes it.
+   */
+  rows?: boolean;
+  /**
+   * Its content is an outline, a first line and the list under it (a mind map's topic and
+   * branches): Enter on the first line starts an item, and the list's keys never leave it or turn
+   * an item into a paragraph.
+   */
+  outline?: boolean;
+  /** An icon name the editor's toolbar knows (lucide's: `circle-help`, `network`). */
+  icon?: string;
+  /**
+   * The Typst the insert menu writes, with `{{cursor}}` where the caret goes
+   * (`#question(points: 1)[{{cursor}}]`). Without a cursor the new component is selected.
+   */
+  template: string;
+  /** Set inline, in a paragraph (a blank to fill in), rather than a block of its own. */
+  inline?: boolean;
+  /** Search words for the slash menu. */
+  keywords?: string[];
+  /**
+   * The named arguments it has, in order. Choices, yes/no and numbers are controls on its bar;
+   * the rest are in its Settings form.
+   */
+  params?: EditorParamSpec[];
+  /**
+   * A parameter whose field opens under it as soon as it is selected, by a click or a key: the
+   * text the component draws itself from a string (a chemical formula's), which has no place on the
+   * page for a caret.
+   */
+  field?: string;
+}
+
+/**
+ * A switch in the visual editor's toolbar that sets one of `sys.inputs` while it is on (edu's
+ * "Show answers": `showAnswers` is `"true"`), so what it shows is on the pages to edit there.
+ * The document itself doesn't change.
+ * @beta
+ */
+export interface EditorSwitchSpec {
+  /** The input it sets: `showAnswers`. */
+  input: string;
+  /** Its label: `Show answers`. */
+  label: string;
+  /** An icon name the editor's toolbar knows (lucide's: `eye`). */
+  icon?: string;
+  /** The input's value while it is on. Default `"true"`. */
+  value?: string;
+}
+
+/**
+ * Font families a plugin brings, as the visual editor's font picker offers
+ * them (#36). Plain data: the families are loaded by the engine (the plugin's
+ * `engine.fontCatalogues`) when a document names one.
+ * @beta
+ */
+export interface EditorFontsSpec {
+  /** The picker's heading over them: `Google Fonts`. */
+  label?: string;
+  /** The families the picker lists, by the names Typst knows them by: `Lora`. */
+  families: string[];
+  /**
+   * URL of a font catalogue's index (a {@link FontCatalogueIndex}, as
+   * `engine.fontCatalogues` names it): the picker's search finds every family in it.
+   */
+  index?: string;
+  /**
+   * The most a family of the index may weigh to be found, in bytes: the catalogue's
+   * `maxBytes`, above which the engine wouldn't load it. Default 5 MB.
+   */
+  maxBytes?: number;
+  /** Names people look for, and the family that stands in for each: `{ Arial: "Arimo" }`. */
+  aliases?: Record<string, string>;
+}
+
+/**
+ * What a plugin gives the visual editor (#36, PLAN §10.3): its components
+ * (insert menu, forms), its calls that style text (marks, shown inline
+ * and stepped over like `*`) or are set inline in a paragraph, and its fonts
+ * (the font picker). Further facets may be added; unknown ones are ignored.
  * @beta
  */
 export interface EditorFacet {
-  /** Custom blocks the editor can show and edit (edu will add `question`, `mcq`, `answer`). */
-  nodes?: unknown[];
-  /** Editing commands the plugin adds. */
-  commands?: unknown[];
-  /** Toolbar entries the plugin adds. */
-  toolbar?: unknown[];
-  /** Keyboard shortcuts the plugin adds. */
-  shortcuts?: unknown[];
-  /** Entries the plugin adds to the editor's slash menu. */
-  slashItems?: unknown[];
+  /** Components the editor can insert and edit. */
+  components?: EditorComponentSpec[];
+  /** Font families for the font picker. */
+  fonts?: EditorFontsSpec;
+  /** Switches in the toolbar that set an input of the document while they are on. */
+  switches?: EditorSwitchSpec[];
+  /** Functions that style the text inside them, like `strong`: the editor steps over their code. */
+  marks?: string[];
+  /** Functions set inline in a paragraph even alone on a line (the editor's blocks don't split there). */
+  inline?: string[];
   /** Further facets the editor may define. */
   [key: string]: unknown;
 }

@@ -1,0 +1,145 @@
+---
+title: "@typstream/editor-react"
+description: The typstream editor for React (beta). A Typst document edited on its own pages, with fixed and floating toolbars, insert and slash menus, and forms for components.
+icon: PenLine
+---
+
+<Callout type="warn" title="Beta">
+New with the visual editor (#36); may change before the first stable release.
+</Callout>
+
+`@typstream/editor-react` edits a Typst document **on its pages**: the same pages the page view shows, painted by
+the engine, with a caret and a selection drawn over them. What the teacher sees while editing is what prints, exports
+to PDF and converts to Word, because it is the same layout. Nobody writes Typst: typing is escaped (a `*` stays a
+star), the toolbars write the markup, tables get buttons for their rows and columns, and a plugin's components (edu's
+questions, a mind map) come from the insert menu with a form for their settings.
+
+Around the pages it has the chrome of [Plate](https://platejs.org)'s editors, written for Typst: a fixed toolbar, a
+floating toolbar over a selection, an insert menu and a slash menu, and a bar over the component at the caret. It is a
+thin React layer over [`@typstream/editor-core`](/docs/reference/editor-core), which does the editing.
+
+## Install
+
+```npm
+npm install @typstream/editor-react
+```
+
+React 19 is a peer dependency. The bundle is marked `"use client"`.
+
+## Example
+
+```tsx title="EditDocument.tsx"
+"use client";
+import { TypstEditor } from "@typstream/editor-react";
+import { edu } from "@typstream/edu";
+import { useState } from "react";
+import { htmlCompat, universe } from "typstream";
+
+// The plugins typstream's <Typstream> shows the document with (see below): edu needs html-compat.
+const PLUGINS = [htmlCompat, universe, edu];
+
+export function EditDocument({ initial }: { initial: string }) {
+  const [source, setSource] = useState(initial);
+  return <TypstEditor source={source} onChange={setSource} plugins={PLUGINS} layout="fit-width" autoFocus />;
+}
+```
+
+`TypstEditor` opens the document as `<Typstream>` does: the provider's engine and settings
+([`TypstreamProvider`](/docs/reference/react)), the plugins' files, packages and preambles, a `template`, `inputs`. Show
+the page view and the editor with the same props and they draw the same pages.
+
+<Callout type="warn" title="typstream's <Typstream> adds plugins">
+The `typstream` package's `<Typstream>` puts `htmlCompat` and `universe` before the plugins it's given. Pass them to
+the editor too, or a document that imports CeTZ (or any package universe allows) shows "package … is not allowed" in
+the editor:
+
+```tsx
+import { htmlCompat, universe } from "typstream";
+
+<TypstEditor source={source} onChange={setSource} plugins={[htmlCompat, universe, edu]} />;
+```
+</Callout>
+
+## What it does
+
+- **Typing** goes into the source at the caret, escaped so it shows as typed. Enter starts a paragraph, Shift+Enter
+  breaks the line, Backspace joins paragraphs and, at a heading's start, makes it a paragraph. `- ` and `* ` at a line's
+  start make a bulleted list, `+ ` and `1. ` a numbered one, `# ` and `= ` a heading.
+- **Lists** work as in a word processor. Enter adds an item; on an empty item it moves the item up a level, and at the
+  top level ends the list with an empty paragraph after it. Tab and Shift+Tab nest an item and take it back, an empty
+  one too. Backspace at an item's start moves a nested item up a level and makes a top-level one a paragraph.
+- **Out of a component**: Ctrl+Enter (⌘+Enter) starts a paragraph after the question, table, figure or list the caret
+  is in, and Ctrl+Shift+Enter one before it, so text can follow a component that ends the document.
+- **The fixed toolbar**: undo and redo, insert, the block's type (text, headings, lists), font, font size, bold, italic,
+  underline, strikethrough, sub- and superscript, text colour and highlight, alignment, lists and indentation.
+- **The font picker**: Typst's own families, and each plugin's (`editor.fonts`). With
+  [`@typstream/google-fonts`](/docs/reference/google-fonts) among the plugins it lists three dozen families for
+  teachers' documents, and its search finds any family of the library the engine can load, also by the font it
+  replaces ("Arial" finds Arimo). A font goes on the selection as `#text(font: "…")[…]`; with the whole document
+  selected (Ctrl+A) it becomes the document's, one `#set text(font: "…")`. The engine downloads a family when a
+  document first uses it.
+- **The floating toolbar** over a selection: the block's type, the marks, colours. `floatingStart` puts the app's own
+  buttons at its start (an "Ask AI").
+- **Links**: the Link button or Ctrl+K (⌘+K) opens a field for the address, holding the link's own when the caret is
+  in one. A link has a dotted line under it in the editor (Typst gives it no look of its own), and its button is
+  drawn as on.
+- **What can't be done is off**: a button whose command would change nothing here (Redo with nothing undone,
+  Outdent on a top-level item) is disabled, and a press on the toolbar never takes the caret out of the document.
+- **Insert menu and slash menu** (`/` on an empty line): tables, equations, a divider, a page break, and every
+  component the plugins declare (`EditorComponentSpec` in their `editor` facet).
+- **Components**: the caret in one shows a bar over it with its name, its choices, yes/no and numbers as controls
+  (a callout's kind, a question's points, a multiple choice's correct option as its letters), **Settings** for the
+  rest of the arguments its plugin lists (texts, sizes), and Delete. A component whose text it draws from a string
+  (`EditorComponentSpec.field`: a chemical formula) opens that field as soon as it is selected. A plugin's switches
+  (`EditorSwitchSpec`: edu's "Show answers") are at the fixed toolbar's end. A table's bar adds and removes rows and columns, and ➕ buttons at its edges add one at
+  the end. A selected equation shows a field for its formula, with keys for fractions, roots and symbols: while a
+  formula is half typed the page keeps the last one that compiled, and what Typst's math would refuse is written as
+  a teacher means it: a word (`speed`, the `km` of `3km`, the `CO` of `CO_2`) as text, the letters a formula
+  multiplies apart (`y = 2mx + b` is written `2m x + b`, `v = u + at` as `a t`). A new component with sample text
+  has the caret in it, the sample selected, so typing replaces it.
+- **Shortcuts**: Ctrl or ⌘ with B, I, U, Shift+X (strikethrough), Z and Shift+Z, Alt+1–3 for headings, Shift+8 and
+  Shift+7 for lists, Enter and Shift+Enter to leave a component; Tab indents a list item or moves to the next table
+  cell.
+
+## API
+
+### TypstEditor
+
+```tsx
+const TypstEditor: React.ForwardRefExoticComponent<TypstEditorProps & React.RefAttributes<TypstEditorHandle>>;
+```
+
+<auto-type-table path="packages/editor-react/src/TypstEditor.tsx" name="TypstEditorProps" />
+
+<auto-type-table path="packages/editor-react/src/TypstEditor.tsx" name="TypstEditorHandle" />
+
+A ref gives the `EditorView` (commands, the selection, the history) and the engine document (exports).
+
+### Plugins
+
+`editorPlugins` adds editor plugins: shortcuts, toolbar items (`ToolbarItem`), insert items (`InsertItem`), input
+rules (`InputRule`) and components (`ComponentSpec`), each command an `EditorCommand`. `createEditorPlugin` type-checks
+one. These types are re-exported from [`@typstream/editor-core`](/docs/reference/editor-core), where they are
+described with the view (`EditorView`).
+
+```tsx
+import { createEditorPlugin, TypstEditor } from "@typstream/editor-react";
+import { insertBlock } from "@typstream/editor-core";
+
+const signature = createEditorPlugin({
+  key: "acme/signature",
+  insert: [{ key: "signature", label: "Signature line", group: "Acme", run: insertBlock("#line(length: 40%)\nSigned") }],
+});
+
+<TypstEditor source={source} onChange={setSource} editorPlugins={[signature]} />;
+```
+
+### EDITOR_CSS
+
+```ts
+const EDITOR_CSS: string;
+```
+
+The CSS of the toolbars, menus and panels, on shadcn/ui's variables (`--background`, `--border`, `--primary`,
+`--radius`, …), so the editor fits a shadcn app as it is. The component adds it to the document itself (as a
+constructed stylesheet, which strict Content-Security-Policies allow); use the string for a shadow root.

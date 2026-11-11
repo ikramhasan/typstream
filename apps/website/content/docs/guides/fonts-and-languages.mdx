@@ -139,6 +139,13 @@ Text in a family that didn't load keeps your page's font. HTML exports (`exportH
   `createGoogleFonts({ index: "/fonts/catalogue.json" })`, whose `base` is your mirror's URL.
 - **Node.** `@typstream/node`'s server loads nothing from catalogues.
 
+### In the editor
+
+The plugin also gives the [visual editor](/docs/reference/editor-react) its font picker's families (`editor.fonts`):
+a short list of families for teachers' documents, and the index, which the picker downloads when its menu first opens
+(465 KB, from your origin) so that a search finds any family within the size limit. The list has the families' names, not their faces: the
+engine downloads a family when it is chosen, and the pages show it then.
+
 ### A catalogue of your own
 
 Any plugin can bring a catalogue, in `engine.fontCatalogues`: `{ index, maxBytes? }`, where `index` is the URL of a

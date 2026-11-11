@@ -10,6 +10,12 @@ import { TypstreamPlugin } from '@typstream/core';
 export const createGoogleFonts: (options?: GoogleFontsOptions) => TypstreamPlugin;
 
 // @public
+export const GOOGLE_FONTS_ALIASES: Readonly<Record<string, string>>;
+
+// @public
+export const GOOGLE_FONTS_FAMILIES: readonly string[];
+
+// @public
 export const GOOGLE_FONTS_INDEX: string;
 
 // @public

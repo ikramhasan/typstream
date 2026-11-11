@@ -4,7 +4,7 @@ description: Use @typstream/edu to render teachers' documents with numbered ques
 ---
 
 `@typstream/edu` is a Typst vocabulary for teachers' documents: templates (worksheet, quiz, exam, lesson plan,
-handout), questions with points, answer spaces, answers that only the teacher's copy shows, callouts, rubrics and
+handout), questions with points, answer spaces, answers that only the teacher's copy shows, callouts, rubrics (as tables) and
 drawings. Every function renders in both targets, so a quiz looks right as live HTML and as printed pages. This guide
 goes from adding the plugin to exporting a student's and a teacher's PDF. Every function is listed, with a live
 example, in the [edu vocabulary](/docs/reference/edu/vocabulary).
@@ -85,7 +85,7 @@ the statement marked, and the answer key listed under the question numbers. The 
 
 Others you'll use often: [`answer-space`](/docs/reference/edu/vocabulary#answer-space) for working space,
 [`matching`](/docs/reference/edu/vocabulary#matching), [`answer`](/docs/reference/edu/vocabulary#answer) for a worked
-solution, [`callout`](/docs/reference/edu/vocabulary#callout), [`rubric`](/docs/reference/edu/vocabulary#rubric),
+solution, [`callout`](/docs/reference/edu/vocabulary#callout), a rubric (a `#table` with a header row),
 and drawings such as [`number-line`](/docs/reference/edu/vocabulary#number-line) and
 [`coordinate-plane`](/docs/reference/edu/vocabulary#coordinate-plane). Chemistry is
 [`ce`](/docs/reference/edu/vocabulary#ce): `#ce("2H2 + O2 -> 2H2O")`.

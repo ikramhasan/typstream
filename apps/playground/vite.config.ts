@@ -4,6 +4,7 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 const root = fileURLToPath(new URL("../..", import.meta.url));
+const here = fileURLToPath(new URL(".", import.meta.url));
 
 // Cross-origin isolation: without it browsers coarsen performance.now() to 100 µs,
 // too coarse for heal's per-token budgets (PLAN.md §1). The engine's wasm may want
@@ -26,7 +27,7 @@ export default defineConfig({
       { find: "@typstream/corpus/stream", replacement: `${root}corpus/src/stream.ts` },
       { find: "@typstream/mindmap/react", replacement: `${root}packages/mindmap/src/react.tsx` },
       {
-        find: /^@typstream\/(core|heal|engine|docx|html-compat|dom|react|universe|mindmap)$/,
+        find: /^@typstream\/(core|heal|engine|docx|html-compat|dom|react|universe|mindmap|edu|google-fonts|syntax|editor-core|editor-react)$/,
         replacement: `${root}packages/$1/src/index.ts`,
       },
     ],
@@ -37,6 +38,10 @@ export default defineConfig({
   // The engine worker is a module worker; its chunks must be ES modules too.
   worker: { format: "es" },
   // Corpus documents are lazy chunks; the adversarial ones are big on purpose.
-  build: { chunkSizeWarningLimit: 2048 },
+  // Two pages: the stream playground and the editor's (editor.html).
+  build: {
+    chunkSizeWarningLimit: 2048,
+    rollupOptions: { input: { main: `${here}index.html`, editor: `${here}editor.html` } },
+  },
   test: { include: ["src/**/*.test.ts"] },
 });

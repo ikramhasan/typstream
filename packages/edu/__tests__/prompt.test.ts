@@ -7,7 +7,20 @@ import { describe, expect, it } from "vitest";
 import { buildSystemPrompt, edu, eduCatalogue, eduExamples, eduPromptRules, typstPromptRules } from "../src/index";
 
 /** Typst's own functions the rules mention, and `f`, a stand-in for any function. */
-const TYPST = new Set(["columns", "grid", "table", "figure", "image", "text", "import", "link", "v", "h", "f"]);
+const TYPST = new Set([
+  "columns",
+  "grid",
+  "table",
+  "header",
+  "figure",
+  "image",
+  "text",
+  "import",
+  "link",
+  "v",
+  "h",
+  "f",
+]);
 
 /** The parameter names of a catalogue signature, `..options` as `options`. */
 const params = (signature: string): Set<string> => {
