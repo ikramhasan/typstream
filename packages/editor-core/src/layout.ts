@@ -28,7 +28,10 @@ export interface Glyph {
   ascent: number;
   /** Its font's descender at its size, as a positive distance below the baseline. */
   descent: number;
-  /** Start of the source it shows, or -1 when it doesn't show the document's text (a numbering, a template's word). */
+  /**
+   * Start of the source it shows, or -1 when it doesn't show the document's text (a numbering, a
+   * template's word), or shows it again (a title in a running header, a table's header on its next page).
+   */
   from: number;
   /** End of the source it shows (exclusive), or -1. */
   to: number;
@@ -107,6 +110,62 @@ const decode = (positions: PagePositions, page: number, out: Glyph[]) => {
   }
 };
 
+/**
+ * Text shown again on other pages (a title in a running header, a table's header on each page the
+ * table crosses) is the document's once, where it is largest (else first): its copies show none of
+ * the document, as a template's words don't, so the caret has one place and arrow keys pass them.
+ */
+const dropCopies = (glyphs: Glyph[]) => {
+  const key = (g: Glyph) => g.from * 0x200000 + Math.min(g.to - g.from, 0x1fffff);
+  // The page each range is on, -1 for one on several.
+  const pages = new Map<number, number>();
+  let copied = false;
+  for (const g of glyphs) {
+    if (g.from < 0) continue;
+    const k = key(g);
+    const page = pages.get(k);
+    if (page === undefined) pages.set(k, g.page);
+    else if (page !== g.page && page !== -1) {
+      pages.set(k, -1);
+      copied = true;
+    }
+  }
+  if (!copied) return;
+  // Of those, per page (in order): how many glyphs show the range there, and how tall.
+  const shown = new Map<number, Map<number, { count: number; height: number }>>();
+  for (const g of glyphs) {
+    if (g.from < 0) continue;
+    const k = key(g);
+    if (pages.get(k) !== -1) continue;
+    let on = shown.get(k);
+    if (!on) {
+      on = new Map();
+      shown.set(k, on);
+    }
+    const s = on.get(g.page);
+    if (s) {
+      s.count++;
+      s.height = Math.max(s.height, g.ascent + g.descent);
+    } else on.set(g.page, { count: 1, height: g.ascent + g.descent });
+  }
+  const originals = new Map<number, { page: number; count: number }>();
+  for (const [k, on] of shown) {
+    let best = { page: -1, count: 0, height: 0 };
+    for (const [page, s] of on) if (s.height > best.height + 0.01) best = { page, ...s };
+    originals.set(k, best);
+  }
+  for (const g of glyphs) {
+    if (g.from < 0) continue;
+    const k = key(g);
+    const original = originals.get(k);
+    if (!original || original.page === g.page) continue;
+    // A node's glyphs on both sides of a page break (a long string) aren't copies: each page has some of them.
+    if (!(g.flags & EXACT) && shown.get(k)?.get(g.page)?.count !== original.count) continue;
+    g.from = -1;
+    g.to = -1;
+  }
+};
+
 /** Whether `g` continues the line `line` ends with `prev`: the same page, overlapping heights, going on rightwards. */
 const continues = (line: Line, prev: Glyph, g: Glyph): boolean => {
   if (g.page !== line.page) return false;
@@ -142,6 +201,7 @@ export class Layout {
       decode(positions, page, this.glyphs);
       for (const e of positions.elements) this.elements.push({ ...e, page });
     });
+    dropCopies(this.glyphs);
     let line: Line | null = null;
     this.glyphs.forEach((g, i) => {
       const prev = this.glyphs[i - 1];
@@ -252,9 +312,15 @@ export class Layout {
   /**
    * The source offset at a point on page `page` (points), for a click: on the nearest line, the
    * nearest glyph edge. `glyph` is the glyph hit, whether or not it shows the document's text.
+   * With `text`, only on lines that show some of it.
    */
-  hit(page: number, x: number, y: number): { offset: number | null; glyph: Glyph | null; line: Line | null } {
-    const line = this.lineAt(page, x, y);
+  hit(
+    page: number,
+    x: number,
+    y: number,
+    text = false,
+  ): { offset: number | null; glyph: Glyph | null; line: Line | null } {
+    const line = this.lineAt(page, x, y, text);
     if (!line) return { offset: null, glyph: null, line: null };
     let best: Glyph | null = null;
     let bestDist = Number.POSITIVE_INFINITY;
@@ -300,12 +366,12 @@ export class Layout {
     return best;
   }
 
-  /** The line under `(x, y)` on `page`, or the nearest one. */
-  lineAt(page: number, x: number, y: number): Line | null {
+  /** The line under `(x, y)` on `page`, or the nearest one; with `text`, of those showing the document's text. */
+  lineAt(page: number, x: number, y: number, text = false): Line | null {
     let best: Line | null = null;
     let bestScore = Number.POSITIVE_INFINITY;
     for (const line of this.lines) {
-      if (line.page !== page) continue;
+      if (line.page !== page || (text && !this.lineRange(line))) continue;
       const dy = y < line.top ? line.top - y : y > line.bottom ? y - line.bottom : 0;
       const dx = x < line.left ? line.left - x : x > line.right ? x - line.right : 0;
       // Vertical distance first: a click beside a line is on it.

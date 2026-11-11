@@ -21,6 +21,7 @@
     "@typstream/edu": "workspace:*",
     "@typstream/engine": "workspace:*",
     "@typstream/engine-wasm": "workspace:*",
+    "@typstream/google-fonts": "workspace:*",
     "@typstream/heal": "workspace:*",
     "@typstream/html-compat": "workspace:*",
     "@typstream/mindmap": "workspace:*",

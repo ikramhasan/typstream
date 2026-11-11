@@ -8,7 +8,12 @@ const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
 // 23.5 KB when it was written (#36): the view, the commands, tables, marks, links and the basic plugins.
 // 24 KB until a word processor's list keys (an empty item up a level, Tab on an empty item, Backspace at
 // an item's start), the caret on an empty item and Ctrl+Enter out of a component: 0.4 KB.
-const BUDGET = 31.5 * 1024;
+// 31.5 KB until the third QA pass (2026-11-10), 10.8 KB: the clipboard's two sides, blocks split and
+// joined as a word processor does, marks changed in place, components' lists and outlines, the font,
+// clicks beside what draws no text.
+// 42.4 KB until code arguments were opened by a click (written as content, kept when the pages
+// show the click was on one) and a rubric's rows got their keys: 1.6 KB.
+const BUDGET = 44 * 1024;
 
 const result = await build({
   entryPoints: ["src/index.ts"],

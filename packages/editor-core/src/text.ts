@@ -114,3 +114,12 @@ export const readString = (literal: string): string | null => {
   }
   return out;
 };
+
+/**
+ * What the editor writes for an empty line: a block holding only a non-breaking space. Typst lays
+ * out an empty paragraph or cell as nothing, so Enter on an empty line, or a new table row, would
+ * show nothing on the pages, in the PDF or in Word; a lone `~` is one line high in all of them.
+ * Typing into it replaces it, and Backspace or Delete removes the line.
+ * @beta
+ */
+export const EMPTY_LINE = "~";

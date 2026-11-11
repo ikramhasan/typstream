@@ -9,7 +9,7 @@ import { deleteChar, deleteSelection, type EditorSchema, insertLineBreak, splitB
 import type { EditorCommand, EditorPlugin } from "./plugin";
 import type { EditorState, Transaction } from "./state";
 import { addRow, cellAt, tableAt } from "./table";
-import { wordStep } from "./units";
+import { type Unit, unitAfter, unitBefore, wordStep } from "./units";
 
 /**
  * Deletes back to the start of the word (`dir` -1, Ctrl/⌥+Backspace) or on to its end (1); with a
@@ -21,9 +21,34 @@ export const deleteWord =
   (state: EditorState, schema: EditorSchema): Transaction | null => {
     if (!state.empty) return deleteSelection(state, schema);
     const head = state.selection.head;
-    const to = wordStep(unitsFor(state, schema), state.text, head, dir);
-    if (to === head) return null;
+    const units = unitsFor(state, schema);
+    // At a block's end or start only the break goes, as with Backspace or Delete alone: not a
+    // word of the next block with it.
+    const beside = units[dir < 0 ? unitBefore(units, head) : unitAfter(units, head)];
+    // (Between list items the break is a space with a line break in it, the marker after it.)
+    const ends = (u: Unit) =>
+      u.kind !== "char" && (u.kind !== "space" || state.text.slice(u.from, u.to).includes("\n"));
+    const one = () => {
+      const tr = deleteChar(dir)(state, schema);
+      return tr && (tr.edits.some((e) => e.to > e.from || e.insert) || tr.selection?.node) ? tr : null;
+    };
+    if (!beside || ends(beside) || (dir < 0 ? beside.to : beside.from) !== head) return one();
+    let to = wordStep(units, state.text, head, dir);
+    for (const u of units) {
+      if (!ends(u)) continue;
+      if (dir < 0 && u.to <= head && u.to > to) to = u.to;
+      if (dir > 0 && u.from >= head && u.from < to) to = u.from;
+    }
+    if (to === head) return one();
     return deleteSelection(state.select({ anchor: head, head: to }), schema);
+  };
+
+/** A deleting key at a caret: a run of them is one step to undo, as a run of typed characters is. */
+const run =
+  (command: EditorCommand): EditorCommand =>
+  (state, schema) => {
+    const tr = command(state, schema);
+    return tr && state.empty && !tr.selection?.node ? { ...tr, merge: true } : tr;
   };
 
 /** Where a cell's text is: inside its brackets. */
@@ -73,11 +98,11 @@ const swallow: EditorCommand = (state) => ({ edits: [], selection: state.selecti
 export const baseKeymap: Readonly<Record<string, EditorCommand | readonly EditorCommand[]>> = {
   Enter: [enterArg, splitBlock],
   "Shift-Enter": insertLineBreak,
-  Backspace: [removeArg, deleteChar(-1)],
-  "Shift-Backspace": deleteChar(-1),
-  Delete: deleteChar(1),
-  "Word-Backspace": deleteWord(-1),
-  "Word-Delete": deleteWord(1),
+  Backspace: [removeArg, run(deleteChar(-1))],
+  "Shift-Backspace": run(deleteChar(-1)),
+  Delete: run(deleteChar(1)),
+  "Word-Backspace": run(deleteWord(-1)),
+  "Word-Delete": run(deleteWord(1)),
   // A list item in or out a level, then a table's cells; elsewhere Tab stays in the editor (the
   // view lets it through after Escape, for keyboard users leaving the editor).
   Tab: [indentItems(1), moveCell(1), moveArg(1), swallow],

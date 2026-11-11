@@ -2,7 +2,7 @@
 // a selection and the keyboard on the pages the engine lays out; commands turn what the teacher
 // does into minimal edits of the source; plugins add toolbars, menus and components.
 
-export { enterArg, moveArg, removeArg } from "./args";
+export { argAsContent, argsAsContent, enterArg, moveArg, removeArg } from "./args";
 export {
   type Alignment,
   alignmentAt,
@@ -16,11 +16,11 @@ export {
 export {
   canType,
   caretAnchor,
+  caretPlace,
   DEFAULT_SCHEMA,
   deleteChar,
   deleteSelection,
   type EditorSchema,
-  EMPTY_LINE,
   exitBlock,
   insertLineBreak,
   insertText,
@@ -45,8 +45,9 @@ export {
 export { History } from "./history";
 export { baseKeymap, deleteWord, keysPlugin, moveCell } from "./keymap";
 export { type CaretBox, type Glyph, type LaidElement, Layout, type Line, type PageRect } from "./layout";
-export { isMarked, linkAt, type Mark, markValue, setLink, setMark, toggleMark } from "./marks";
+export { fontAt, isMarked, linkAt, type Mark, markValue, setFont, setLink, setMark, toggleMark } from "./marks";
 export {
+  BASE_FONTS,
   basicPlugins,
   blocksPlugin,
   COLORS,
@@ -61,6 +62,7 @@ export {
   type InsertItem,
   insertPlugin,
   marksPlugin,
+  matchesShortcut,
   type PluginView,
   schemaOf,
   type ToolbarItem,
@@ -77,6 +79,6 @@ export {
   tableAt,
   tableTemplate,
 } from "./table";
-export { escapeMarkup, readString, typstString } from "./text";
+export { EMPTY_LINE, escapeMarkup, readString, typstString } from "./text";
 export { type Unit, unitsOf } from "./units";
 export { createEditor, type EditorOptions, type EditorView } from "./view";

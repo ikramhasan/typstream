@@ -158,6 +158,7 @@ export const mindmap: TypstreamPlugin = {
         group: "Drawings",
         icon: "network",
         keywords: ["map", "diagram", "brainstorm"],
+        outline: true,
         template: "#mindmap[\n  {{cursor}}Main topic\n  - First branch\n    - A detail\n  - Second branch\n]",
         params: [
           {

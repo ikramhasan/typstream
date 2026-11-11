@@ -12,7 +12,7 @@ import {
   type EditorPlugin,
   type EditorView,
   fromTypstreamPlugin,
-  isEmptyLine,
+  matchesShortcut,
 } from "@typstream/editor-core";
 import type { DocumentOptions, Engine, EngineDocument, ImageResolver } from "@typstream/engine";
 import { acquireEngine, releaseEngine, useTypstreamDefaults } from "@typstream/react";
@@ -21,7 +21,9 @@ import {
   type CSSProperties,
   forwardRef,
   memo,
+  type MouseEvent as ReactMouseEvent,
   type ReactNode,
+  type RefObject,
   useCallback,
   useEffect,
   useImperativeHandle,
@@ -31,10 +33,12 @@ import {
   useState,
 } from "react";
 import { useViewFrame } from "./hooks";
-import { SlashMenu } from "./insert";
+import { SlashMenu, type SlashSession, slashSession } from "./insert";
 import { ComponentBar, EquationPanel } from "./panels";
+import { paneOf } from "./place";
 import { ensureEditorStyles } from "./styles";
-import { FixedToolbar, FloatingToolbar } from "./toolbar";
+import { FixedToolbar, FloatingToolbar, openPrompt } from "./toolbar";
+import { APPLE, Bounds } from "./ui";
 
 /** Props of {@link TypstEditor}. @beta */
 export interface TypstEditorProps {
@@ -101,26 +105,32 @@ const NO_EDITOR_PLUGINS: readonly EditorPlugin[] = [];
 /** A list of plugins as a key that changes only when their keys do. */
 const keysOf = (plugins: readonly { key: string }[]): string => plugins.map((p) => p.key).join("\u0000");
 
+/** Where the open slash menu takes the document's keys (Up, Down, Enter, Escape). */
+type SlashKeys = RefObject<((event: KeyboardEvent) => boolean) | null>;
+
 /** The editor's chrome: toolbars and panels, following the view on their own (the root doesn't re-render). */
 const Chrome = memo(function Chrome({
   view,
   props,
   slash,
+  slashKeys,
   closeSlash,
 }: {
   view: EditorView;
   props: TypstEditorProps;
-  slash: boolean;
+  slash: SlashSession | null;
+  slashKeys: SlashKeys;
   closeSlash: () => void;
 }) {
   useViewFrame(view);
   if (props.readOnly) return null;
   return (
     <>
+      {/* Before the floating toolbar, which keeps clear of it. */}
+      <ComponentBar view={view} />
       {props.floatingToolbar !== false && <FloatingToolbar view={view} extra={props.floatingStart?.(view)} />}
-      {props.toolbar === false && <ComponentBar view={view} />}
       <EquationPanel view={view} />
-      {slash && <SlashMenu view={view} onClose={closeSlash} />}
+      {slash && <SlashMenu view={view} session={slash} keys={slashKeys} onClose={closeSlash} />}
     </>
   );
 });
@@ -134,7 +144,8 @@ export const TypstEditor = forwardRef<TypstEditorHandle, TypstEditorProps>(funct
   const host = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<EditorView | null>(null);
   const [doc, setDoc] = useState<EngineDocument | null>(null);
-  const [slash, setSlash] = useState(false);
+  const [slash, setSlash] = useState<SlashSession | null>(null);
+  const slashKeys: SlashKeys = useRef(null);
   const [failed, setFailed] = useState<string | null>(null);
   const plugins = props.plugins ?? defaults.plugins ?? NO_PLUGINS;
   const template = props.template ?? defaults.template;
@@ -183,11 +194,41 @@ export const TypstEditor = forwardRef<TypstEditorHandle, TypstEditorProps>(funct
     let document: EngineDocument | null = null;
     let mounted: EditorView | null = null;
     const { plugins, editorPlugins: extra } = opened.current;
-    const editorPlugins = [
+    const given = [
       ...basicPlugins,
       ...plugins.map(fromTypstreamPlugin).filter((p): p is EditorPlugin => p !== null),
       ...(extra ?? []),
     ];
+    const fields = given.flatMap((p) => [...(p.toolbar ?? []), ...(p.floating ?? [])]).filter((i) => i.prompt);
+    // The chrome's own keys, before the plugins': what opens or moves in the toolbars and menus.
+    const chrome: EditorPlugin = {
+      key: "tse-chrome",
+      priority: 1000,
+      // `/` where a word could start opens the insert menu at the caret; the `/` is typed all the same.
+      handleTextInput: (state, text) => {
+        if (text === "/" && !latest.current.readOnly) setSlash(slashSession(state));
+        return null;
+      },
+      handleKeyDown: (view, e) => {
+        if (latest.current.readOnly) return false;
+        if (slashKeys.current?.(e)) return true;
+        // WAI-ARIA's key to a toolbar from what it formats.
+        if (matchesShortcut("Alt-F10", e, APPLE)) {
+          const root = view.element.closest(".tse-root");
+          const first = root?.querySelector<HTMLElement>(".tse-fixed-items button:not(:disabled)");
+          first?.focus();
+          return !!first;
+        }
+        // A field's shortcut (the link's, Ctrl+K): the field opens where there is something to put in it.
+        const field = fields.find((i) => i.shortcut && matchesShortcut(i.shortcut, e, APPLE));
+        if (!field?.prompt) return false;
+        const { state, schema } = view;
+        if ((!state.empty && !state.selection.node) || field.prompt.value(state, schema) !== null)
+          openPrompt(view, field.key);
+        return true;
+      },
+    };
+    const editorPlugins = [chrome, ...given];
     const images = !!opened.current.resolveImage;
     // Typst's parser (the commands' syntax tree) loads once, a few tens of KB.
     loadSyntax()
@@ -237,6 +278,7 @@ export const TypstEditor = forwardRef<TypstEditorHandle, TypstEditorProps>(funct
       cancelled = true;
       mounted?.destroy();
       document?.dispose();
+      setSlash(null);
       setView(null);
       setDoc(null);
       if (shared) releaseEngine();
@@ -247,8 +289,16 @@ export const TypstEditor = forwardRef<TypstEditorHandle, TypstEditorProps>(funct
   // moment ago: two changes in one render (a key, then a word quoted in a formula) reach the app
   // one after the other, and its render with the first must not undo the second.
   useEffect(() => {
-    if (!view || props.source === emitted.current || recent.current.includes(props.source)) return;
+    if (!view) return;
+    if (props.source === emitted.current) {
+      // The app has caught up: an earlier text coming back after this is from outside (its own
+      // "Discard changes" to what the document was before the last keys).
+      recent.current = [];
+      return;
+    }
+    if (recent.current.includes(props.source)) return;
     emitted.current = props.source;
+    recent.current = [];
     view.setText(props.source);
   }, [view, props.source]);
   useEffect(() => {
@@ -301,48 +351,47 @@ export const TypstEditor = forwardRef<TypstEditorHandle, TypstEditorProps>(funct
     };
   }, [view]);
 
-  // `/` on an empty line opens the insert menu at the caret.
-  useEffect(() => {
-    if (!view || props.readOnly) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey) return;
-      const { text, selection } = view.state;
-      if (selection.anchor !== selection.head) return;
-      const lineStart = text.lastIndexOf("\n", selection.head - 1) + 1;
-      const lineEnd = text.indexOf("\n", selection.head);
-      const line = text.slice(lineStart, lineEnd < 0 ? text.length : lineEnd);
-      // An empty line, or one holding only an empty line's `~`.
-      const tilde = lineStart + line.indexOf("~");
-      if (line.trim() !== "" && !(line.trim() === "~" && isEmptyLine(text, tilde))) return;
-      e.preventDefault();
-      e.stopPropagation();
-      setSlash(true);
-    };
-    view.element.addEventListener("keydown", onKey, true);
-    return () => view.element.removeEventListener("keydown", onKey, true);
-  }, [view, props.readOnly]);
-
-  const closeSlash = useCallback(() => setSlash(false), []);
+  const closeSlash = useCallback(() => setSlash(null), []);
 
   useImperativeHandle(ref, () => ({ view, document: doc, focus: () => view?.focus() }), [view, doc]);
 
+  // Menus, popovers and forms stay inside the editor's pane, however narrow it is.
+  const bounds = useCallback(() => (view ? paneOf(view) : null), [view]);
+
   const className = props.className ? `tse-root ${props.className}` : "tse-root";
   return (
-    <div className={className} style={props.style} data-layout={layout}>
-      {view && props.toolbar !== false && !props.readOnly && <FixedToolbar view={view} end={props.toolbarEnd} />}
-      {!view && props.toolbar !== false && !props.readOnly && (
-        <div className="tse-toolbar tse-fixed" aria-hidden="true" style={{ minHeight: 40 }} />
-      )}
-      <div ref={host} className="tse-pages" />
-      {failed && (
-        <p className="tse-status" role="alert">
-          The editor couldn't start: {failed}
-        </p>
-      )}
-      {view && <Chrome view={view} props={props} slash={slash} closeSlash={closeSlash} />}
+    // biome-ignore lint/a11y/noStaticElementInteractions: it only keeps the focus where it is
+    <div className={className} style={props.style} data-layout={layout} onMouseDown={keepKeys}>
+      <Bounds.Provider value={bounds}>
+        {view && props.toolbar !== false && !props.readOnly && <FixedToolbar view={view} end={props.toolbarEnd} />}
+        {!view && props.toolbar !== false && !props.readOnly && (
+          <div className="tse-toolbar tse-fixed" aria-hidden="true" style={{ minHeight: 40 }} />
+        )}
+        <div ref={host} className="tse-pages" />
+        {failed && (
+          <p className="tse-status" role="alert">
+            The editor couldn't start: {failed}
+          </p>
+        )}
+        {view && <Chrome view={view} props={props} slash={slash} slashKeys={slashKeys} closeSlash={closeSlash} />}
+      </Bounds.Provider>
     </div>
   );
 });
+
+/**
+ * A press on the toolbar that isn't on a field (a greyed button, the room between its controls), or
+ * on the room around the pages, leaves the keys where they are: the document keeps its caret.
+ */
+const keepKeys = (e: ReactMouseEvent<HTMLDivElement>) => {
+  const target = e.target as Element;
+  // A popover's presses come here too, through React's tree: those are its own.
+  if (!e.currentTarget.contains(target)) return;
+  const bar = target.closest(".tse-toolbar");
+  if (bar ? target.closest("input, textarea, select") : target !== e.currentTarget && !target.matches(".tse-pages"))
+    return;
+  e.preventDefault();
+};
 
 /** Whether two files records hold the same files (by path and content). */
 const sameFiles = (a: FileDelta | undefined, b: FileDelta): boolean => {

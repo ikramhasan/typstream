@@ -233,7 +233,7 @@ The model can now write `#reaction(conditions: [heat])[$2 H_2 + O_2 -> 2 H_2 O$]
 | `stylesheets` | dom | CSS for the HTML your Typst writes, injected next to the renderer's and included in standalone HTML exports. |
 | `prompt` | your app | The function catalogue, rules and few-shot examples to tell the model about your Typst API. A planned `@typstream/ai` package will read it too. |
 | `islands` | The HTML renderer, `@typstream/react` | Interactive components mounted over markers your Typst writes, by name, with `parse` to check their data. See [Writing an island](/docs/guides/islands). Beta. |
-| `editor` | (future editor) | Reserved; typed loosely so plugins can fill it in early. Beta. |
+| `editor` | editor-core, editor-react | What the [visual editor](/docs/reference/editor-react) offers for your Typst: components in its insert menu with a form for their arguments, the functions that style text or sit in a line, font families for its font picker (`EditorFacet`). Plain data. Beta. |
 
 The full type:
 

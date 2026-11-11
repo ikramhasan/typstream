@@ -105,7 +105,7 @@ export const eduComponents: EditorComponentSpec[] = [
     group: "Questions",
     icon: "list-checks",
     keywords: ["choice", "options", "quiz"],
-    template: "#mcq([First option], [Second option], [Third option], answer: 1)",
+    template: "#mcq([{{cursor}}First option], [Second option], [Third option], answer: 1)",
     list: true,
     params: [
       {
@@ -192,7 +192,7 @@ export const eduComponents: EditorComponentSpec[] = [
     description: "A note, tip, warning or definition in a box",
     group: "Blocks",
     icon: "info",
-    keywords: ["note", "tip", "warning", "definition", "box"],
+    keywords: ["note", "tip", "warning", "definition", "box", "text box"],
     template: '#callout(kind: "note")[{{cursor}}Something to note.]',
     params: [
       {
@@ -238,8 +238,46 @@ export const eduComponents: EditorComponentSpec[] = [
     description: "Criteria and levels in a table",
     group: "Blocks",
     icon: "table",
+    // The levels written out, so their names are text on the page to click and change.
     template:
-      "#rubric(\n  ([Content], [Complete and accurate], [Mostly accurate], [Some errors], [Missing]),\n  ([Presentation], [Clear], [Mostly clear], [Unclear], [Missing]),\n)",
+      "#rubric(\n  levels: ([Exemplary], [Proficient], [Developing], [Beginning]),\n  ([{{cursor}}Content], [Complete and accurate], [Mostly accurate], [Some errors], [Missing]),\n  ([Presentation], [Clear], [Mostly clear], [Unclear], [Missing]),\n)",
+    rows: true,
+    params: [
+      {
+        name: "levels",
+        label: "Levels",
+        type: "list",
+        default: "([Exemplary], [Proficient], [Developing], [Beginning])",
+        columnsFrom: 1,
+        help: "The columns' names, best first, one on each line.",
+      },
+      {
+        name: "points",
+        label: "Points",
+        type: "list",
+        item: "number",
+        help: "One for each level, with commas: 4, 3, 2, 1. Empty counts down to 1; none hides them.",
+      },
+    ],
+  },
+  {
+    name: "ce",
+    label: "Chemical formula",
+    description: "A molecule, an ion or a reaction",
+    group: "Blocks",
+    icon: "flask-conical",
+    inline: true,
+    keywords: ["chemistry", "reaction", "molecule", "element"],
+    template: '#ce("H2O")',
+    // The formula is the call's first argument: a parameter named by its place.
+    params: [
+      {
+        name: "0",
+        label: "Formula",
+        type: "text",
+        help: "As you would type it: 2H2 + O2 -> 2H2O. Spaces around + and the arrow.",
+      },
+    ],
   },
   {
     name: "number-line",
@@ -251,7 +289,7 @@ export const eduComponents: EditorComponentSpec[] = [
     params: [
       { name: "from", label: "From", type: "number", default: "0" },
       { name: "to", label: "To", type: "number", default: "10" },
-      { name: "step", label: "Step", type: "number", default: "1", min: 0 },
+      { name: "step", label: "Step", type: "number", default: "1", min: 0.01 },
       { name: "length", label: "Length", type: "length", default: "12cm" },
     ],
   },
@@ -263,8 +301,8 @@ export const eduComponents: EditorComponentSpec[] = [
     icon: "table",
     template: "#graph-paper(cols: 30, rows: 10)",
     params: [
-      { name: "cols", label: "Columns", type: "number", default: "30", min: 1, step: 1 },
-      { name: "rows", label: "Rows", type: "number", default: "10", min: 1, step: 1 },
+      { name: "cols", label: "Columns", type: "number", default: "30", min: 1, max: 40, step: 1 },
+      { name: "rows", label: "Rows", type: "number", default: "10", min: 1, max: 60, step: 1 },
     ],
   },
   {

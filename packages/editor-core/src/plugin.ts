@@ -7,11 +7,11 @@
 // keys included (`keysPlugin`, at the lowest priority); a typstream plugin's `editor` facet (plain
 // data, e.g. edu's components) becomes one too.
 
-import type { EditorComponentSpec, EditorParamSpec, TypstreamPlugin } from "@typstream/core";
+import type { EditorComponentSpec, EditorFontsSpec, EditorParamSpec, TypstreamPlugin } from "@typstream/core";
 import { alignmentAt, blockType, indentItems, setAlignment, setBlockType, toggleList } from "./blocks";
 import { DEFAULT_SCHEMA, type EditorSchema, exitBlock } from "./commands";
 import { insertBlock, insertInline } from "./components";
-import { isMarked, linkAt, markValue, setLink, setMark, toggleMark } from "./marks";
+import { fontAt, isMarked, linkAt, markValue, setFont, setLink, setMark, toggleMark, wrappers } from "./marks";
 import type { EditorState, Transaction } from "./state";
 import { tableTemplate } from "./table";
 import type { EditorView } from "./view";
@@ -24,7 +24,7 @@ export type EditorCommand = (state: EditorState, schema: EditorSchema) => Transa
 
 /**
  * An entry of a toolbar: a button (`run`), a toggle (`run` and `active`), a menu (`items`), or a
- * value picker (`picker`: colours, sizes). Icons are names the React toolbar draws (lucide's).
+ * value picker (`picker`: colours, sizes, fonts). Icons are names the React toolbar draws (lucide's).
  * @beta
  */
 export interface ToolbarItem {
@@ -58,9 +58,12 @@ export interface ToolbarItem {
     value: (state: EditorState, schema: EditorSchema) => string | null;
     apply: (value: string | null) => EditorCommand;
   };
-  /** A value picker. */
+  /**
+   * A value picker: swatches (`color`), a list (`select`), or a searchable list of font families
+   * (`font`: `options` and every family the plugins' `fonts` bring).
+   */
   picker?: {
-    kind: "color" | "select";
+    kind: "color" | "select" | "font";
     options: { value: string | null; label: string; swatch?: string }[];
     value: (state: EditorState, schema: EditorSchema) => string | null;
     apply: (value: string | null) => EditorCommand;
@@ -190,6 +193,8 @@ export interface EditorPlugin {
   inputRules?: InputRule[];
   /** Components with forms. */
   components?: ComponentSpec[];
+  /** Font families for the font picker (a toolbar item whose picker is of kind `font`). */
+  fonts?: EditorFontsSpec;
 }
 
 /** Identity function that type-checks an editor plugin. @beta */
@@ -201,6 +206,9 @@ export const schemaOf = (plugins: readonly EditorPlugin[]): EditorSchema => {
   const inline = new Set(DEFAULT_SCHEMA.inline);
   const components = new Set<string>(["table", "grid"]);
   const lists = new Set<string>();
+  const indexes = new Map<string, string>();
+  const outlines = new Set<string>();
+  const rows = new Set<string>();
   for (const p of plugins) {
     for (const m of p.marks ?? []) {
       marks.add(m);
@@ -211,14 +219,19 @@ export const schemaOf = (plugins: readonly EditorPlugin[]): EditorSchema => {
       if (c.inline) inline.add(c.name);
       components.add(c.name);
       if (c.list) lists.add(c.name);
+      // The argument that counts the items (a multiple choice's `answer`) numbers one of them.
+      const index = c.list ? c.params?.find((param) => param.maxPositional) : undefined;
+      if (index) indexes.set(c.name, index.name);
+      if (c.outline) outlines.add(c.name);
+      if (c.rows) rows.add(c.name);
     }
   }
-  return { marks, inline, components, lists };
+  return { marks, inline, components, lists, indexes, outlines, rows };
 };
 
 /**
  * The editor plugin a typstream plugin's `editor` facet makes: its components in the insert menu
- * (by group) and with their forms. `null` without one.
+ * (by group) and with their forms, its fonts in the font picker. `null` without one.
  * @beta
  */
 export const fromTypstreamPlugin = (plugin: TypstreamPlugin): EditorPlugin | null => {
@@ -229,6 +242,7 @@ export const fromTypstreamPlugin = (plugin: TypstreamPlugin): EditorPlugin | nul
     key: plugin.key,
     marks: facet.marks,
     inline: facet.inline,
+    fonts: facet.fonts,
     components,
     insert: components.map((c) => ({
       key: `${plugin.key}:${c.name}`,
@@ -304,6 +318,8 @@ const link: ToolbarItem = {
   label: "Link",
   icon: "link",
   group: "link",
+  // The toolbars open the field on it: a prompt has no command a keymap could run.
+  shortcut: "Mod-k",
   active: (s, schema) => linkAt(s, schema) !== null,
   prompt: {
     label: "Link to",
@@ -313,11 +329,36 @@ const link: ToolbarItem = {
   },
 };
 
+/** The families every engine has: Typst's own. @beta */
+export const BASE_FONTS: EditorFontsSpec = {
+  label: "Typst",
+  families: ["Libertinus Serif", "New Computer Modern", "DejaVu Sans Mono"],
+};
+
+/** The font at the selection: every family the plugins bring, searched by name. */
+const font: ToolbarItem = {
+  key: "font",
+  label: "Font",
+  group: "font",
+  picker: {
+    kind: "font",
+    options: [{ value: null, label: "Default" }],
+    value: (s, schema) => fontAt(s, schema),
+    apply: (value) => setFont(value),
+  },
+};
+
 const SIZES = ["8pt", "9pt", "10pt", "11pt", "12pt", "14pt", "16pt", "18pt", "20pt", "24pt", "28pt", "32pt"];
 
-/** Bold, italic, underline, strikethrough, sub- and superscript, colours and sizes. @beta */
+/** Bold, italic, underline, strikethrough, sub- and superscript, colours, fonts and sizes. @beta */
 export const marksPlugin: EditorPlugin = createEditorPlugin({
   key: "marks",
+  fonts: BASE_FONTS,
+  // Typst draws a link as the words around it: in the editor it is underlined, so it is seen to be one.
+  decorations: (state) =>
+    wrappers(state)
+      .filter((w) => w.name === "link" && w.innerFrom < w.innerTo)
+      .map((w) => ({ from: w.innerFrom, to: w.innerTo, class: "typstream-editor-link" })),
   shortcuts: {
     "Mod-b": toggleMark({ name: "strong" }),
     "Mod-i": toggleMark({ name: "emph" }),
@@ -348,6 +389,7 @@ export const marksPlugin: EditorPlugin = createEditorPlugin({
       picker: colorPicker("highlight", "fill", HIGHLIGHTS, "None"),
     },
     link,
+    font,
     {
       key: "size",
       label: "Font size",
@@ -391,7 +433,7 @@ const BLOCK_TYPES: { label: string; icon: string; type: Parameters<typeof setBlo
   { label: "Heading 1", icon: "heading-1", type: { kind: "heading", level: 1 }, shortcut: "Mod-Alt-1" },
   { label: "Heading 2", icon: "heading-2", type: { kind: "heading", level: 2 }, shortcut: "Mod-Alt-2" },
   { label: "Heading 3", icon: "heading-3", type: { kind: "heading", level: 3 }, shortcut: "Mod-Alt-3" },
-  { label: "Heading 4", icon: "heading-4", type: { kind: "heading", level: 4 } },
+  { label: "Heading 4", icon: "heading-4", type: { kind: "heading", level: 4 }, shortcut: "Mod-Alt-4" },
   { label: "Bulleted list", icon: "list", type: { kind: "list" }, shortcut: "Mod-Shift-8" },
   { label: "Numbered list", icon: "list-ordered", type: { kind: "enum" }, shortcut: "Mod-Shift-7" },
 ];
@@ -414,13 +456,20 @@ const turnInto: ToolbarItem = {
   })),
 };
 
-const align = (value: "left" | "center" | "right", label: string, icon: string): ToolbarItem => ({
+const align = (value: "left" | "center" | "right", label: string, icon: string, shortcut: string): ToolbarItem => ({
   key: `align-${value}`,
   label,
   icon,
+  shortcut,
   run: setAlignment(value),
   active: (s) => alignmentAt(s) === value,
 });
+
+const ALIGNMENTS = [
+  align("left", "Align left", "align-left", "Mod-Shift-l"),
+  align("center", "Center", "align-center", "Mod-Shift-e"),
+  align("right", "Align right", "align-right", "Mod-Shift-r"),
+];
 
 /** Headings, lists, indentation and alignment, with Markdown-like shortcuts. @beta */
 export const blocksPlugin: EditorPlugin = createEditorPlugin({
@@ -433,9 +482,7 @@ export const blocksPlugin: EditorPlugin = createEditorPlugin({
     "Mod-Shift-7": toggleList("enum"),
     "Mod-Enter": exitBlock(1),
     "Mod-Shift-Enter": exitBlock(-1),
-    "Mod-Shift-e": setAlignment("center"),
-    "Mod-Shift-l": setAlignment("left"),
-    "Mod-Shift-r": setAlignment("right"),
+    ...Object.fromEntries(ALIGNMENTS.map((a) => [a.shortcut as string, a.run as EditorCommand])),
   },
   toolbar: [
     turnInto,
@@ -469,11 +516,7 @@ export const blocksPlugin: EditorPlugin = createEditorPlugin({
       label: "Align",
       group: "align",
       icon: "align-left",
-      items: [
-        align("left", "Align left", "align-left"),
-        align("center", "Center", "align-center"),
-        align("right", "Align right", "align-right"),
-      ],
+      items: ALIGNMENTS,
       current: (s) => alignmentAt(s),
     },
   ],
@@ -527,6 +570,9 @@ export const insertPlugin: EditorPlugin = createEditorPlugin({
       icon: "image",
       params: [{ name: "caption", label: "Caption", type: "content" }],
     },
+    // Names only, for their bars: what the insert menu calls them.
+    { name: "line", label: "Divider", icon: "minus" },
+    { name: "pagebreak", label: "Page break", icon: "file-plus" },
   ],
   insert: [
     {
@@ -544,7 +590,7 @@ export const insertPlugin: EditorPlugin = createEditorPlugin({
       description: "A formula on its own line",
       icon: "radical",
       group: "Basic",
-      keywords: ["math", "formula"],
+      keywords: ["math", "formula", "fraction", "root"],
       run: insertBlock("$ x $"),
     },
     {
@@ -553,7 +599,7 @@ export const insertPlugin: EditorPlugin = createEditorPlugin({
       description: "A formula in the text",
       icon: "sigma",
       group: "Basic",
-      keywords: ["math"],
+      keywords: ["math", "formula", "fraction", "root"],
       run: insertInline("$x$"),
     },
     {
@@ -574,6 +620,34 @@ export const insertPlugin: EditorPlugin = createEditorPlugin({
       keywords: ["new page"],
       // The caret on the new page, on an empty line, as a word processor's page break leaves it.
       run: insertBlock("#pagebreak()\n\n{{cursor}}~"),
+    },
+    // What the toolbar turns a line into, for who looks for it after a `/`.
+    ...BLOCK_TYPES.filter((t) => t.type.kind === "heading" && t.type.level <= 3).map((t) => ({
+      key: `block-${t.label}`,
+      label: t.label,
+      description: t.label === "Heading 1" ? "A section's title" : "A smaller title",
+      icon: t.icon,
+      group: "Basic",
+      keywords: ["title", "section"],
+      run: setBlockType(t.type),
+    })),
+    {
+      key: "bulleted-list",
+      label: "Bulleted list",
+      description: "A list with bullets",
+      icon: "list",
+      group: "Basic",
+      keywords: ["bullet", "points", "items"],
+      run: setBlockType({ kind: "list" }),
+    },
+    {
+      key: "numbered-list",
+      label: "Numbered list",
+      description: "A list with numbers",
+      icon: "list-ordered",
+      group: "Basic",
+      keywords: ["ordered", "steps"],
+      run: setBlockType({ kind: "enum" }),
     },
   ],
 });

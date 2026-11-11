@@ -371,16 +371,28 @@ export interface IslandProps<Data = unknown> {
  * @beta
  */
 export interface EditorParamSpec {
-  /** The named argument. */
+  /** The named argument, or a positional one by its place: `"0"` is the call's first argument. */
   name: string;
   /** Its label in the form. */
   label: string;
   /**
    * What the form edits: a number, a text (a Typst string), a yes/no, one of
-   * `options`, a colour, a length (`2em`, written as typed), or `content`
-   * (a `[…]` block, edited as text in the form).
+   * `options`, a colour, a length (`2em`, written as typed), `content`
+   * (a `[…]` block, edited as text in the form), or a `list` (an array of
+   * `item`s: `([Good], [Fair])`).
    */
-  type: "number" | "text" | "boolean" | "choice" | "color" | "length" | "content";
+  type: "number" | "text" | "boolean" | "choice" | "color" | "length" | "content" | "list";
+  /**
+   * What a `list` holds: `content` (`[…]` blocks, one on each line of the form; the default) or
+   * `number`s (on one line, with commas; `none` is written as typed, for a function that takes it).
+   */
+  item?: "content" | "number";
+  /**
+   * A `list` whose items head the columns of the component's rows (a rubric's levels), from this
+   * cell of a row on (`1`: after the criterion): a row gets an empty cell for each item added, and
+   * loses the empty ones past the last.
+   */
+  columnsFrom?: number;
   /** The choices of a `choice`: each value's Typst source and its label. */
   options?: { value: string; label: string }[];
   /** What the function uses when the argument isn't written (Typst source), shown in the form. */
@@ -412,8 +424,23 @@ export interface EditorComponentSpec {
   description?: string;
   /** The insert menu's group: `Questions`. */
   group?: string;
-  /** Its positional content arguments are items (a multiple choice's options): Enter adds one, Backspace in an empty one removes it. */
+  /**
+   * Its positional content arguments are items (a multiple choice's options): Enter adds one,
+   * Backspace in an empty one removes it. A parameter with `maxPositional` numbers one of them (the
+   * correct option), and follows it as items are added and removed.
+   */
   list?: boolean;
+  /**
+   * Its positional arguments are rows, arrays of content cells (a rubric's criteria): Tab past the
+   * last cell adds a row, Backspace in an empty one removes it.
+   */
+  rows?: boolean;
+  /**
+   * Its content is an outline, a first line and the list under it (a mind map's topic and
+   * branches): Enter on the first line starts an item, and the list's keys never leave it or turn
+   * an item into a paragraph.
+   */
+  outline?: boolean;
   /** An icon name the editor's toolbar knows (lucide's: `circle-help`, `network`). */
   icon?: string;
   /**
@@ -430,15 +457,42 @@ export interface EditorComponentSpec {
 }
 
 /**
+ * Font families a plugin brings, as the visual editor's font picker offers
+ * them (#36). Plain data: the families are loaded by the engine (the plugin's
+ * `engine.fontCatalogues`) when a document names one.
+ * @beta
+ */
+export interface EditorFontsSpec {
+  /** The picker's heading over them: `Google Fonts`. */
+  label?: string;
+  /** The families the picker lists, by the names Typst knows them by: `Lora`. */
+  families: string[];
+  /**
+   * URL of a font catalogue's index (a {@link FontCatalogueIndex}, as
+   * `engine.fontCatalogues` names it): the picker's search finds every family in it.
+   */
+  index?: string;
+  /**
+   * The most a family of the index may weigh to be found, in bytes: the catalogue's
+   * `maxBytes`, above which the engine wouldn't load it. Default 5 MB.
+   */
+  maxBytes?: number;
+  /** Names people look for, and the family that stands in for each: `{ Arial: "Arimo" }`. */
+  aliases?: Record<string, string>;
+}
+
+/**
  * What a plugin gives the visual editor (#36, PLAN §10.3): its components
- * (insert menu, forms), and its calls that style text (marks, shown inline
- * and stepped over like `*`) or are set inline in a paragraph. Further facets
- * may be added; unknown ones are ignored.
+ * (insert menu, forms), its calls that style text (marks, shown inline
+ * and stepped over like `*`) or are set inline in a paragraph, and its fonts
+ * (the font picker). Further facets may be added; unknown ones are ignored.
  * @beta
  */
 export interface EditorFacet {
   /** Components the editor can insert and edit. */
   components?: EditorComponentSpec[];
+  /** Font families for the font picker. */
+  fonts?: EditorFontsSpec;
   /** Functions that style the text inside them, like `strong`: the editor steps over their code. */
   marks?: string[];
   /** Functions set inline in a paragraph even alone on a line (the editor's blocks don't split there). */

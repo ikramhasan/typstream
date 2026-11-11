@@ -4,9 +4,10 @@
 // commands (they return `null`); the cells' text is edited on the page like any other.
 
 import type { SyntaxNode } from "@typstream/syntax";
-import { DEFAULT_SCHEMA, type EditorSchema, EMPTY_LINE } from "./commands";
+import { DEFAULT_SCHEMA, type EditorSchema } from "./commands";
 import { componentAt, deleteBlock } from "./components";
 import type { EditorState, Transaction } from "./state";
+import { EMPTY_LINE } from "./text";
 import { callArgs, calleeName } from "./tree";
 
 const TABLES = new Set(["table", "grid"]);
@@ -67,6 +68,10 @@ const readTable = (state: EditorState, call: SyntaxNode, from: number): TableMod
         .filter((c) => !["LeftParen", "RightParen", "Comma", "Space"].includes(c.kind))
         .map(src);
       columns = sizes.length;
+    } else if (columnsArg.kind === "Parenthesized") {
+      // One size in parentheses (`(1fr)`): a length, which Typst takes as one column.
+      sizes = columnsArg.children.filter((c) => !["LeftParen", "RightParen", "Space"].includes(c.kind)).map(src);
+      if (sizes.length !== 1) return null;
     } else return null;
   }
   const named = [...args.namedNodes]
@@ -126,7 +131,10 @@ export const cellAt = (table: TableModel, offset: number): { row: number; column
 
 /** Typst for `table`: its call with every row on a line, `#` included. */
 export const writeTable = (table: TableModel): string => {
-  const columns = table.sizes ? `(${table.sizes.join(", ")})` : String(table.columns);
+  // One size keeps its comma, or it would be a length in parentheses, not a list.
+  const columns = table.sizes
+    ? `(${table.sizes.join(", ")}${table.sizes.length === 1 ? "," : ""})`
+    : String(table.columns);
   const named = [`columns: ${columns}`, ...table.named.map(([k, v]) => `${k}: ${v}`)];
   const rows = table.cells.map((row, i) =>
     i === 0 && table.header ? `${table.name}.header(${row.join(", ")}),` : `${row.join(", ")},`,
@@ -146,7 +154,7 @@ export const tableTemplate = (rows: number, columns: number): string => {
   );
   const body = Array.from({ length: Math.max(0, rows - 1) }, () => `  ${Array(columns).fill(EMPTY_CELL).join(", ")},`);
   const sizes = Array(columns).fill("1fr").join(", ");
-  return `#table(\n  columns: (${sizes}),\n  table.header(${header}),\n${body.join("\n")}\n)`;
+  return `#table(\n  columns: (${sizes}),\n${[`  table.header(${header}),`, ...body].join("\n")}\n)`;
 };
 
 /** Replaces the table by `next`, the caret in cell (`row`, `column`). */
@@ -170,7 +178,8 @@ const clone = (t: TableModel): TableModel => ({
 });
 
 /**
- * Adds a row above or below the caret's row (a header gets its row below it).
+ * Adds a row above or below the caret's row. Above the header, the new row is the header, and the
+ * old one the first row under it.
  * @beta
  */
 export const addRow =
@@ -180,8 +189,7 @@ export const addRow =
     if (!table) return null;
     const cell = cellAt(table, state.from) ?? { row: table.cells.length - 1, column: 0 };
     const next = clone(table);
-    let row = where === "above" ? cell.row : cell.row + 1;
-    if (table.header && row === 0) row = 1;
+    const row = where === "above" ? cell.row : cell.row + 1;
     next.cells.splice(row, 0, Array(table.columns).fill(EMPTY_CELL));
     return rewrite(state, table, next, row, cell.column);
   };
@@ -205,7 +213,7 @@ export const addColumn =
     return rewrite(state, table, next, cell.row, column);
   };
 
-/** Deletes the caret's row; the last row deletes the table. @beta */
+/** Deletes the caret's row (the header's: the row under it is the header then); the last row deletes the table. @beta */
 export const deleteRow = (state: EditorState, schema?: EditorSchema): Transaction | null => {
   const table = tableAt(state, state.from, schema);
   if (!table) return null;
@@ -214,7 +222,6 @@ export const deleteRow = (state: EditorState, schema?: EditorSchema): Transactio
   if (table.cells.length <= 1) return deleteTable(state, schema);
   const next = clone(table);
   next.cells.splice(cell.row, 1);
-  if (table.header && cell.row === 0) next.header = false;
   return rewrite(state, table, next, Math.min(cell.row, next.cells.length - 1), cell.column);
 };
 
@@ -236,5 +243,5 @@ export const deleteColumn = (state: EditorState, schema?: EditorSchema): Transac
 export const deleteTable = (state: EditorState, schema?: EditorSchema): Transaction | null => {
   const table = tableAt(state, state.from, schema);
   if (!table) return null;
-  return deleteBlock(table.from, table.to)(state);
+  return deleteBlock(table.from, table.to)(state, schema);
 };

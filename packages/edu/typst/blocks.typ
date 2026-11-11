@@ -106,7 +106,11 @@
   let levels = if levels == auto { _words.at(text.lang, default: _words.en).levels } else { _array(levels) }
   let n = levels.len()
   let points = if points == auto { range(n, 0, step: -1) } else if points != none { _array(points) }
-  let head(i) = if points == none { levels.at(i) } else { [#levels.at(i) (#points.at(i, default: ""))] }
+  // A level past the last of the points (a level added, a list cut by a stream) has its name alone.
+  let head(i) = {
+    let p = if points != none { points.at(i, default: none) }
+    if p == none { levels.at(i) } else { [#levels.at(i) (#p)] }
+  }
   let cells(c) = range(n).map(i => c.at(i + 1, default: []))
   {
     set text(size: _half(0.9))

@@ -60,30 +60,37 @@ export const EDITOR_CSS: string = `
   position: sticky;
   top: 0;
   z-index: 30;
-  flex-wrap: wrap;
-  padding: 4px 6px;
   margin-bottom: 12px;
   border: 1px solid var(--tse-border);
   border-radius: var(--tse-radius);
   background: color-mix(in oklab, var(--tse-bg) 92%, transparent);
   backdrop-filter: blur(8px);
 }
-/* The component at the selection's controls: a tab hanging under the fixed toolbar, out of the flow (no page moves). */
-.tse-invalid { color: #b91c1c; }
-.tse-field input[aria-invalid] { border-color: #dc2626; }
-.tse-docked {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 8px;
-  padding: 3px;
-  border: 1px solid var(--tse-border);
-  border-radius: var(--tse-radius);
-  background: var(--tse-bg);
-  box-shadow: 0 4px 12px rgb(0 0 0 / 0.08);
+/* One row at any width: where the editor is narrower it scrolls sideways (its ends fade where there is more), so its
+   height, and the pages under it, never move as the selection changes what its buttons say. */
+.tse-fixed-items {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 4px 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
-.tse-floating {
+.tse-fixed-items::-webkit-scrollbar { display: none; }
+.tse-fixed-items > * { flex: none; }
+.tse-fixed-items[data-more~="start"] { mask-image: linear-gradient(to right, transparent, #000 28px); }
+.tse-fixed-items[data-more~="end"] { mask-image: linear-gradient(to left, transparent, #000 28px); }
+.tse-fixed-items[data-more~="start"][data-more~="end"] { mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent); }
+.tse-fixed-end { display: flex; flex: none; align-items: center; gap: 2px; padding: 4px 6px 4px 0; }
+.tse-field textarea[readonly] { background: var(--tse-muted); color: var(--tse-muted-fg); resize: none; }
+/* The caret stays drawn (still) where an item will go while the insert menu's search has the keyboard. */
+.tse-root[data-inserting] .typstream-editor .typstream-editor-caret { display: block; animation: none; }
+.tse-floating, .tse-bar {
   position: fixed;
   z-index: 50;
+  flex-wrap: wrap;
   padding: 3px;
   border: 1px solid var(--tse-border);
   border-radius: calc(var(--tse-radius) - 2px);
@@ -115,7 +122,7 @@ export const EDITOR_CSS: string = `
 .tse-button:hover:not(:disabled) { background: var(--tse-accent); color: var(--tse-accent-fg); }
 .tse-button:focus-visible { outline: 2px solid var(--tse-ring); outline-offset: 1px; }
 .tse-button[aria-pressed="true"], .tse-button[data-active] { background: var(--tse-accent); color: var(--tse-accent-fg); }
-.tse-button:disabled { opacity: 0.4; cursor: default; }
+.tse-button:disabled { opacity: 0.4; cursor: default; pointer-events: none; }
 .tse-button svg { width: 16px; height: 16px; flex: none; }
 .tse-button .tse-chevron { width: 12px; height: 12px; opacity: 0.6; }
 .tse-button[data-variant="primary"] { background: var(--tse-primary); color: var(--tse-primary-fg); }
@@ -155,7 +162,7 @@ export const EDITOR_CSS: string = `
   text-align: left;
   cursor: pointer;
 }
-.tse-menu-item:hover, .tse-menu-item[data-highlighted] { background: var(--tse-accent); color: var(--tse-accent-fg); }
+.tse-menu-item:hover, .tse-menu-item:focus, .tse-menu-item[data-highlighted] { background: var(--tse-accent); color: var(--tse-accent-fg); outline: none; }
 .tse-menu-item svg { width: 16px; height: 16px; flex: none; opacity: 0.85; }
 .tse-menu-item[data-active]::after { content: "✓"; margin-left: auto; font-size: 12px; }
 .tse-menu-item small { display: block; color: var(--tse-muted-fg); font-size: 12px; }
@@ -163,9 +170,16 @@ export const EDITOR_CSS: string = `
 .tse-kbd { margin-left: auto; color: var(--tse-muted-fg); font-size: 11px; letter-spacing: 0.02em; }
 .tse-search { width: 100%; height: 32px; margin-bottom: 4px; padding: 0 8px; border: 1px solid var(--tse-border); border-radius: calc(var(--tse-radius) - 4px); background: transparent; color: inherit; font: inherit; font-size: 13px; outline: none; }
 .tse-search:focus { border-color: var(--tse-ring); }
+/* A search field over a list: the list scrolls under it. */
+.tse-searchable { display: flex; flex-direction: column; overflow: hidden; }
+.tse-searchable .tse-search { flex: none; }
+.tse-scroll { min-height: 0; overflow: auto; }
+.tse-fonts { width: 240px; }
+.tse-font-name { max-width: 9em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tse-swatches { display: grid; grid-template-columns: repeat(5, 24px); gap: 6px; padding: 6px; }
 .tse-swatch { width: 24px; height: 24px; border: 1px solid rgb(0 0 0 / 0.12); border-radius: 999px; cursor: pointer; }
 .tse-swatch[data-active] { outline: 2px solid var(--tse-ring); outline-offset: 2px; }
+.tse-swatch:focus { outline: 2px solid var(--tse-fg); outline-offset: 2px; }
 .tse-swatch-none { display: flex; align-items: center; justify-content: center; background: var(--tse-bg); color: var(--tse-muted-fg); font-size: 11px; }
 .tse-empty { padding: 10px 8px; color: var(--tse-muted-fg); font-size: 13px; }
 
@@ -204,6 +218,9 @@ export const EDITOR_CSS: string = `
 .tse-field input:focus, .tse-field select:focus, .tse-field textarea:focus { border-color: var(--tse-ring); }
 .tse-field-row { display: flex; align-items: center; gap: 8px; color: var(--tse-fg); font-size: 13px; }
 .tse-field small { color: var(--tse-muted-fg); }
+.tse-invalid, .tse-field small.tse-invalid { color: #b91c1c; }
+.tse-field input[aria-invalid], .tse-field textarea[aria-invalid],
+.tse-field input[aria-invalid]:focus, .tse-field textarea[aria-invalid]:focus { border-color: #dc2626; }
 .tse-actions { display: flex; flex-wrap: wrap; gap: 4px; }
 .tse-actions .tse-button { border: 1px solid var(--tse-border); height: 28px; font-size: 12px; }
 .tse-math-keys { display: flex; flex-wrap: wrap; gap: 4px; }
@@ -248,8 +265,8 @@ export const EDITOR_CSS: string = `
     --tse-primary-fg: var(--primary-foreground, #18181b);
   }
 }
-@media (prefers-reduced-motion: reduce) { .tse-floating, .tse-popover, .tse-panel { animation: none; } }
-@media print { .tse-fixed, .tse-floating, .tse-panel, .tse-edge, .tse-popover { display: none !important; } }
+@media (prefers-reduced-motion: reduce) { .tse-floating, .tse-bar, .tse-popover, .tse-panel { animation: none; } }
+@media print { .tse-fixed, .tse-floating, .tse-bar, .tse-panel, .tse-edge, .tse-popover { display: none !important; } }
 `;
 
 const SHEET = Symbol.for("typstream.editor-react.css");

@@ -5,6 +5,7 @@
 ```ts
 
 import { EditorComponentSpec } from '@typstream/core';
+import { EditorFontsSpec } from '@typstream/core';
 import { EngineDocument } from '@typstream/engine';
 import { PagedArtifact } from '@typstream/core';
 import { PageElement } from '@typstream/core';
@@ -25,7 +26,16 @@ export type Alignment = "left" | "center" | "right";
 export const alignmentAt: (state: EditorState) => Alignment;
 
 // @beta
+export const argAsContent: (at: number, caret?: number) => EditorCommand;
+
+// @beta
+export const argsAsContent: (from: number) => EditorCommand;
+
+// @beta
 export const argumentOf: (state: EditorState, component: Component, name: string) => string | null;
+
+// @beta
+export const BASE_FONTS: EditorFontsSpec;
 
 // @beta
 export const baseKeymap: Readonly<Record<string, EditorCommand | readonly EditorCommand[]>>;
@@ -66,6 +76,9 @@ export interface CaretBox {
     top: number;
     x: number;
 }
+
+// @beta
+export const caretPlace: (state: EditorState, offset: number, schema?: EditorSchema) => number;
 
 // @beta
 export const cellAt: (table: TableModel, offset: number) => {
@@ -127,7 +140,7 @@ export interface Decoration {
 export const DEFAULT_SCHEMA: EditorSchema;
 
 // @beta
-export const deleteBlock: (from: number, to: number) => (state: EditorState) => Transaction;
+export const deleteBlock: (from: number, to: number) => (state: EditorState, schema?: EditorSchema) => Transaction;
 
 // @beta
 export const deleteChar: (dir: 1 | -1) => (state: EditorState, schema?: EditorSchema) => Transaction | null;
@@ -166,6 +179,7 @@ export interface EditorPlugin {
     components?: ComponentSpec[];
     decorations?: (state: EditorState, schema: EditorSchema) => readonly Decoration[];
     floating?: ToolbarItem[];
+    fonts?: EditorFontsSpec;
     handleKeyDown?: (view: EditorView, event: KeyboardEvent) => boolean;
     handlePaste?: (view: EditorView, data: DataTransfer) => boolean;
     handleTextInput?: (state: EditorState, text: string, schema: EditorSchema) => Transaction | null;
@@ -184,9 +198,12 @@ export interface EditorPlugin {
 // @beta
 export interface EditorSchema {
     components?: ReadonlySet<string>;
+    indexes?: ReadonlyMap<string, string>;
     inline: ReadonlySet<string>;
     lists?: ReadonlySet<string>;
     marks: ReadonlySet<string>;
+    outlines?: ReadonlySet<string>;
+    rows?: ReadonlySet<string>;
 }
 
 // @beta
@@ -247,6 +264,9 @@ export const escapeMarkup: (text: string, before?: string, after?: string) => st
 
 // @beta
 export const exitBlock: (dir: 1 | -1) => (state: EditorState, schema?: EditorSchema) => Transaction | null;
+
+// @beta
+export const fontAt: (state: EditorState, schema?: EditorSchema) => string | null;
 
 // @beta
 export const fromTypstreamPlugin: (plugin: TypstreamPlugin) => EditorPlugin | null;
@@ -356,12 +376,12 @@ export class Layout {
         after: Glyph | null;
         inside: Glyph | null;
     };
-    hit(page: number, x: number, y: number): {
+    hit(page: number, x: number, y: number, text?: boolean): {
         offset: number | null;
         glyph: Glyph | null;
         line: Line | null;
     };
-    lineAt(page: number, x: number, y: number): Line | null;
+    lineAt(page: number, x: number, y: number, text?: boolean): Line | null;
     lineBeside(line: Line, dir: 1 | -1, x: number): Line | null;
     lineOf(offset: number, affinity?: 1 | -1): Line | null;
     lineRange(line: Line): {
@@ -414,6 +434,9 @@ export const marksPlugin: EditorPlugin;
 export const markValue: (state: EditorState, mark: Mark, from?: number, to?: number, schema?: EditorSchema) => string | true | null;
 
 // @beta
+export const matchesShortcut: (shortcut: string, event: KeyboardEvent, apple: boolean) => boolean;
+
+// @beta
 export const moveArg: (dir: 1 | -1) => EditorCommand;
 
 // @beta
@@ -462,6 +485,9 @@ export const setArgument: (component: Component, name: string, value: string | n
 
 // @beta
 export const setBlockType: (type: BlockType) => (state: EditorState, schema?: EditorSchema) => Transaction | null;
+
+// @beta
+export const setFont: (family: string | null) => (state: EditorState, schema?: EditorSchema) => Transaction | null;
 
 // @beta
 export const setLink: (given: string | null) => (state: EditorState, schema?: EditorSchema) => Transaction | null;
@@ -514,7 +540,7 @@ export interface ToolbarItem {
     key: string;
     label: string;
     picker?: {
-        kind: "color" | "select";
+        kind: "color" | "select" | "font";
         options: {
             value: string | null;
             label: string;

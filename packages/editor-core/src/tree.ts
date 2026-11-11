@@ -338,6 +338,23 @@ export const contentBlocksIn = (node: SyntaxNode): SyntaxNode[] => {
   return out;
 };
 
+/** What a document starts with before its text: imports, set rules, bindings. */
+export const PREAMBLE = new Set<SyntaxKind>(["ModuleImport", "SetRule", "LetBinding"]);
+
+/** Where the document's own text starts: after those and its template (`#show: exam.with(…)`). */
+export const bodyStart = (root: SyntaxNode): number => {
+  const kids = root.children;
+  let at = 0;
+  for (let i = 0; i + 1 < kids.length; i++) {
+    const c = kids[i] as SyntaxNode;
+    const next = kids[i + 1] as SyntaxNode;
+    if (c.kind === "Hash" && (PREAMBLE.has(next.kind) || next.kind === "ShowRule")) at = next.to;
+    else if (c.kind !== "Space" && c.kind !== "Parbreak" && !c.kind.endsWith("Comment") && !PREAMBLE.has(c.kind))
+      if (c.kind !== "ShowRule") break;
+  }
+  return at;
+};
+
 /** Headings and list, enum and term items: blocks with a marker before their text. */
 export const ITEM_NODES = new Set<SyntaxKind>(["Heading", "ListItem", "EnumItem", "TermItem"]);
 

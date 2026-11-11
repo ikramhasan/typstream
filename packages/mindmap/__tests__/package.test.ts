@@ -27,6 +27,13 @@ describe("package", () => {
       expect(read(path).match(/[^\t\n -~]/g) ?? [], path).toEqual([]);
   });
 
+  it("is edited in the visual editor as the outline it is written as", () => {
+    const [map] = mindmap.editor?.components ?? [];
+    expect(map).toMatchObject({ name: "mindmap", outline: true });
+    // Its template is a topic and the list under it: what the outline's keys keep.
+    expect(map?.template).toMatch(/^#mindmap\[\n {2}\{\{cursor\}\}.+\n {2}- /);
+  });
+
   it("mounts every file under the root the preamble imports from", () => {
     expect(MINDMAP_ROOT).toBe(`@typstream/mindmap:${MINDMAP_VERSION}`);
     expect(mindmapPreamble).toBe(`#import "${MINDMAP_ROOT}": mindmap, topic\n`);

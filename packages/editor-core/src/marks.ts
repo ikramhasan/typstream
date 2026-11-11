@@ -5,10 +5,12 @@
 // calls (`#strong[…]`), which read the same between letters, where `*` would be text.
 
 import type { TextEdit } from "@typstream/core";
-import type { SyntaxNode } from "@typstream/syntax";
-import { DEFAULT_SCHEMA, type EditorSchema, unitsFor } from "./commands";
+import type { SyntaxKind, SyntaxNode } from "@typstream/syntax";
+import { DEFAULT_SCHEMA, type EditorSchema, guardDelimiters, unitsFor } from "./commands";
 import { type EditorState, mapSelection, type Selection, type Transaction } from "./state";
-import { callArgs, calleeName, contentBlocksIn, ITEM_NODES, isEmbedded } from "./tree";
+import { readString, typstString } from "./text";
+import { bodyStart, callArgs, calleeName, contentBlocksIn, findLast, ITEM_NODES, isEmbedded, PREAMBLE } from "./tree";
+import { wordAt } from "./units";
 
 /**
  * A mark: a Typst function wrapping text. `arg` makes it a styled call (`text` with `fill`): its
@@ -36,6 +38,10 @@ export interface Wrapper {
   args: Map<string, string>;
   /** Positional arguments' source, in order (a `highlight`'s none, a `text`'s none). */
   positional: string[];
+  /** Written with delimiters (`*…*`, `_…_`) rather than as a call. */
+  delimiter: boolean;
+  /** Its markup's node. */
+  markup: SyntaxNode;
 }
 
 /** Every wrapper in the tree, in source order (outer before inner). */
@@ -60,6 +66,8 @@ export const wrappers = (state: EditorState): Wrapper[] => {
             name: c.kind === "Strong" ? "strong" : "emph",
             args: new Map(),
             positional: [],
+            delimiter: true,
+            markup: inner,
           });
       } else if (c.kind === "Hash" && kids[i + 1]?.kind === "FuncCall") {
         const call = kids[i + 1] as SyntaxNode;
@@ -79,6 +87,8 @@ export const wrappers = (state: EditorState): Wrapper[] => {
               name,
               args: named,
               positional: args.positional.map((p) => text.slice(p.from, p.to)),
+              delimiter: false,
+              markup: inner,
             });
           }
         }
@@ -149,59 +159,209 @@ export const isMarked = (
   schema?: EditorSchema,
 ): boolean => markValue(state, mark, from, to, schema) !== null;
 
-/** The call that opens a wrapper of `mark` with `value`: `#strong[`, `#text(fill: red)[`. */
-const opening = (mark: Mark, value: string | null, rest: Map<string, string> = new Map()): string => {
-  const args = [...rest].filter(([k]) => k !== mark.arg).map(([k, v]) => `${k}: ${v}`);
-  if (mark.arg && value !== null) args.unshift(`${mark.arg}: ${value}`);
-  return args.length ? `#${mark.name}(${args.join(", ")})[` : `#${mark.name}[`;
+/** A call's opening, to its content's bracket: `#strong[`, `#text(fill: red)[`. */
+const call = (name: string, args: string[]): string => (args.length ? `#${name}(${args.join(", ")})[` : `#${name}[`);
+
+/** The call that opens a wrapper of `mark` with `value`. */
+const opening = (mark: Mark, value: string | null): string =>
+  call(mark.name, mark.arg && value !== null ? [`${mark.arg}: ${value}`] : []);
+
+/** `w`'s opening with `arg` set to `value`: in its place when it has one, else after its others. */
+const withArg = (w: Wrapper, arg: string, value: string): string => {
+  const named = new Map(w.args).set(arg, value);
+  return call(w.name, [...w.positional, ...[...named].map(([k, v]) => `${k}: ${v}`)]);
 };
 
-/** Edits that take `mark` off `[from, to)`, splitting wrappers around it. */
-const removeEdits = (state: EditorState, mark: Mark, from: number, to: number): TextEdit[] => {
+/**
+ * `w`'s opening without `mark`: a `text` keeps its other arguments (`text(fill: red, size: 14pt)`
+ * loses only `fill`), anything else goes whole (`""`).
+ */
+const without = (w: Wrapper, mark: Mark): string => {
+  if (!mark.arg || w.name !== "text") return "";
+  const args = [...w.positional, ...[...w.args].filter(([k]) => k !== mark.arg).map(([k, v]) => `${k}: ${v}`)];
+  return args.length ? call(w.name, args) : "";
+};
+
+/** Whether `w` is a mark, which can end and start again anywhere in its text (a component can't). */
+const splits = (w: Wrapper, schema: EditorSchema): boolean => w.delimiter || schema.marks.has(w.name);
+
+/** A place in a wrapper's text where it can end: the offset, and the marks inside it open there, outermost first. */
+interface Cut {
+  at: number;
+  open: Wrapper[];
+}
+
+/**
+ * Where wrapper `w` can be cut at `offset`. Marks inside `w` that hold the offset are cut with it
+ * (`open`); out of anything else there (a component, an equation) the offset moves towards `dir`.
+ * At a mark's first or last place the cut is outside that mark, which then stays whole: `edges`
+ * says for which of the two (`start`, `end`, `both`, or `none`).
+ */
+const cutAt = (
+  state: EditorState,
+  w: Wrapper,
+  offset: number,
+  dir: 1 | -1,
+  schema: EditorSchema,
+  edges: "both" | "start" | "end" | "none" = "both",
+): Cut => {
+  const ws = wrappers(state);
+  const open: Wrapper[] = [];
+  let at = offset;
+  let markup: SyntaxNode | null = w.markup;
+  while (markup) {
+    const kids: readonly SyntaxNode[] = markup.children;
+    let inner: Wrapper | null = null;
+    for (let i = 0; i < kids.length; i++) {
+      const c = kids[i] as SyntaxNode;
+      // An embedded expression is one construct with its `#`.
+      const next: SyntaxNode | undefined = kids[i + 1];
+      const expr: SyntaxNode | null = c.kind === "Hash" && next && isEmbedded(next) ? next : null;
+      if (expr) i++;
+      const end: number = expr ? expr.to : c.to;
+      if (at <= c.from || at >= end || c.kind === "Text" || c.kind === "Space") continue;
+      const x: Wrapper | undefined = ws.find((x) => x.from === c.from && x.to === end);
+      if (x && splits(x, schema) && x.innerFrom <= at && at <= x.innerTo) inner = x;
+      else at = dir < 0 ? c.from : end;
+      break;
+    }
+    if (inner) open.push(inner);
+    markup = inner ? (inner as Wrapper).markup : null;
+  }
+  for (let x = open.at(-1); x; x = open.at(-1)) {
+    if (at === x.innerFrom && (edges === "both" || edges === "start")) at = x.from;
+    else if (at === x.innerTo && (edges === "both" || edges === "end")) at = x.to;
+    else break;
+    open.pop();
+  }
+  return { at, open };
+};
+
+/** What a mark is taken off: a wrapper of it, and what its pieces around the place are written with. */
+const parts = (state: EditorState, mark: Mark, w: Wrapper) => {
   const text = state.text;
+  // A piece of `*…*` or `_…_` is a call, which reads the same between letters, where `*` would be text.
+  const source = (x: Wrapper) =>
+    x.delimiter
+      ? { open: `#${x.name}[`, close: "]" }
+      : { open: text.slice(x.from, x.innerFrom), close: text.slice(x.innerTo, x.to) };
+  /** A wrapper where the mark is off: itself, or what is left of it without the mark. */
+  const bare = (x: Wrapper) => {
+    if (!matches(x, mark)) return source(x);
+    const open = without(x, mark);
+    return { open, close: open ? "]" : "" };
+  };
+  return {
+    self: source(w),
+    kept: bare(w),
+    opens: (xs: Wrapper[]) => xs.map((x) => source(x).open).join(""),
+    closes: (xs: Wrapper[]) =>
+      [...xs]
+        .reverse()
+        .map((x) => source(x).close)
+        .join(""),
+    bareOpens: (xs: Wrapper[]) => xs.map((x) => bare(x).open).join(""),
+    bareCloses: (xs: Wrapper[]) =>
+      [...xs]
+        .reverse()
+        .map((x) => bare(x).close)
+        .join(""),
+    bare,
+  };
+};
+
+/**
+ * Edits that make calls of the delimiters of the marks cut at `a` and at `b`, as their pieces are
+ * written (those `mark` comes off lose theirs).
+ */
+const asCalls = (mark: Mark, a: Wrapper[], b: Wrapper[]): TextEdit[] => {
   const edits: TextEdit[] = [];
-  let covered = -1;
-  for (const w of wrappers(state)) {
-    if (!matches(w, mark) || w.innerTo <= from || w.innerFrom >= to || w.from < covered) continue;
-    covered = w.to;
-    const a = snapOut(state, Math.max(from, w.innerFrom), -1, w);
-    const b = snapOut(state, Math.min(to, w.innerTo), 1, w);
-    const open = w.name === "strong" || w.name === "emph" ? `#${w.name}[` : text.slice(w.from, w.innerFrom);
-    const close = w.name === "strong" || w.name === "emph" ? "]" : text.slice(w.innerTo, w.to);
-    const pre = text.slice(w.innerFrom, a).trim() !== "";
-    const post = text.slice(b, w.innerTo).trim() !== "";
-    // What stays styled by the wrapper's other arguments (`text(fill: red, size: 14pt)` loses only `fill`).
-    const others = mark.arg ? [...w.args].filter(([k]) => k !== mark.arg) : [];
-    const keptOpen = others.length && b > a ? opening({ name: w.name }, null, new Map(others)) : "";
-    // The selected text itself stays put, so the selection does too.
-    edits.push({ from: w.from, to: w.innerFrom, insert: pre ? open : "" });
-    if (pre || keptOpen) edits.push({ from: a, to: a, insert: (pre ? close : "") + keptOpen });
-    if (post || keptOpen) edits.push({ from: b, to: b, insert: (keptOpen ? "]" : "") + (post ? open : "") });
-    edits.push({ from: w.innerTo, to: w.to, insert: post ? close : "" });
+  for (const x of new Set([...a, ...b])) {
+    if (!x.delimiter) continue;
+    const mine = matches(x, mark);
+    if (!mine || a.includes(x)) edits.push({ from: x.from, to: x.innerFrom, insert: `#${x.name}[` });
+    if (!mine || b.includes(x)) edits.push({ from: x.innerTo, to: x.to, insert: "]" });
   }
   return edits;
 };
 
-/** `offset` moved out of any construct inside wrapper `w` it falls in (not text), towards `dir`. */
-const snapOut = (state: EditorState, offset: number, dir: 1 | -1, w: Wrapper): number => {
-  let node: SyntaxNode | undefined = state.tree;
-  // Down to the wrapper's markup.
-  const stack: SyntaxNode[] = [];
-  while (node) {
-    stack.push(node);
-    node = node.children.find(
-      (c) =>
-        c.from <= w.innerFrom &&
-        w.innerTo <= c.to &&
-        !(c.from === w.innerFrom && c.to === w.innerTo && c.kind !== "Markup"),
-    );
-    if (node && node.from === w.innerFrom && node.to === w.innerTo && node.kind === "Markup") break;
+/** Edits that take `mark` off `[from, to)`, splitting wrappers around it. */
+const removeEdits = (
+  state: EditorState,
+  mark: Mark,
+  from: number,
+  to: number,
+  schema: EditorSchema = DEFAULT_SCHEMA,
+): TextEdit[] => {
+  const text = state.text;
+  const ws = wrappers(state);
+  const edits: TextEdit[] = [];
+  let covered = -1;
+  for (const w of ws) {
+    // The outermost wrappers of the mark: those inside them go with them.
+    if (!matches(w, mark) || w.innerTo <= from || w.innerFrom >= to || w.from < covered) continue;
+    covered = w.to;
+    const a = cutAt(state, w, Math.max(from, w.innerFrom), -1, schema);
+    const b = cutAt(state, w, Math.min(to, w.innerTo), 1, schema);
+    if (b.at <= a.at) continue;
+    const p = parts(state, mark, w);
+    const pre = text.slice(w.innerFrom, a.at).trim() !== "";
+    const post = text.slice(b.at, w.innerTo).trim() !== "";
+    // The selected text itself stays put, so the selection does too. Marks open at a cut end
+    // with the wrapper and start again after it: `#strike[#sub[ab]]#sub[c]`, never `#strike[#sub[ab]c]`.
+    const before = (pre ? p.closes(a.open) + p.self.close : "") + p.kept.open + p.bareOpens(a.open);
+    const after = p.bareCloses(b.open) + p.kept.close + (post ? p.self.open + p.opens(b.open) : "");
+    edits.push({ from: w.from, to: w.innerFrom, insert: pre ? p.self.open : "" });
+    if (before) edits.push({ from: a.at, to: a.at, insert: before });
+    if (after) edits.push({ from: b.at, to: b.at, insert: after });
+    edits.push({ from: w.innerTo, to: w.to, insert: post ? p.self.close : "" }, ...asCalls(mark, a.open, b.open));
+    // Wrappers of the mark inside it lose it too, where they are in the range.
+    for (const x of ws) {
+      if (x === w || x.from < w.innerFrom || x.to > w.innerTo || !matches(x, mark)) continue;
+      if (x.to <= a.at || x.from >= b.at) continue;
+      if (!a.open.includes(x)) edits.push({ from: x.from, to: x.innerFrom, insert: p.bare(x).open });
+      if (!b.open.includes(x)) edits.push({ from: x.innerTo, to: x.to, insert: p.bare(x).close });
+    }
   }
-  if (!node) return offset;
-  for (const c of node.children) {
-    if (c.from < offset && offset < c.to && c.kind !== "Text" && c.kind !== "Space") return dir < 0 ? c.from : c.to;
+  // A `_` left between letters by a call gone from around it (`un#strong[_be_]lievable`) is a call too.
+  return [...edits, ...guardDelimiters(state, edits)];
+};
+
+/**
+ * Takes `mark` off at a caret inside it: the wrapper ends before the caret and starts again after
+ * it, and the marks between the two stay around the caret, empty, for what is typed there.
+ */
+const removeAt = (state: EditorState, mark: Mark, schema: EditorSchema): Transaction | null => {
+  const at = state.from;
+  const text = state.text;
+  const w = wrappers(state).find((w) => matches(w, mark) && w.innerFrom <= at && at <= w.innerTo);
+  if (!w) return null;
+  // A caret in something that can't be cut (it shouldn't be): the mark comes off that.
+  const a = cutAt(state, w, at, -1, schema);
+  const b = cutAt(state, w, at, 1, schema);
+  if (a.at < b.at) {
+    const edits = removeEdits(state, mark, a.at, b.at, schema);
+    return { edits, selection: mapSel(state.selection, edits) };
   }
-  return offset;
+  // A mark that would be left empty on one side of the caret doesn't end there: it starts after
+  // the caret (or ends before it) instead.
+  const here = cutAt(state, w, at, 1, schema, "none");
+  const left = cutAt(state, w, at, -1, schema, "start");
+  const right = cutAt(state, w, at, 1, schema, "end");
+  const p = parts(state, mark, w);
+  const pre = text.slice(w.innerFrom, left.at).trim() !== "";
+  const post = text.slice(right.at, w.innerTo).trim() !== "";
+  const before = (pre ? p.closes(left.open) + p.self.close : "") + p.kept.open + p.bareOpens(here.open);
+  const after = p.bareCloses(here.open) + p.kept.close + (post ? p.self.open + p.opens(right.open) : "");
+  const edits = [
+    { from: w.from, to: w.innerFrom, insert: pre ? p.self.open : "" },
+    { from: left.at, to: right.at, insert: before + after },
+    { from: w.innerTo, to: w.to, insert: post ? p.self.close : "" },
+    // Not the delimiters at the caret, which the pieces written there replace.
+    ...asCalls(mark, left.open, right.open).filter((e) => e.to <= left.at || e.from >= right.at),
+  ].sort((a, b) => a.from - b.from || a.to - b.to);
+  const grown = edits.filter((e) => e.from < left.at).reduce((n, e) => n + e.insert.length - (e.to - e.from), 0);
+  return { edits, selection: caretAt(left.at + grown + before.length) };
 };
 
 /**
@@ -276,11 +436,110 @@ const segments = (
   return out;
 };
 
-/** Whether `*`/`_` can wrap `[from, to)`: not between letters, where Typst reads it as text. */
-const delimiterFits = (text: string, from: number, to: number): boolean => {
-  const word = (c: string | undefined) => c !== undefined && /[\p{L}\p{N}]/u.test(c);
+/** The marks Typst has delimiters for. */
+const DELIMITERS: Record<string, string | undefined> = { strong: "*", emph: "_" };
+
+/**
+ * Whether `delimiter` (`*`, `_`) can wrap `[from, to)`: not between letters, where Typst reads it
+ * as text, nor beside another of it (`_a__b_` is not two pieces of italic).
+ */
+const delimiterFits = (text: string, from: number, to: number, delimiter: string): boolean => {
+  const word = (c: string | undefined) => c !== undefined && (c === delimiter || /[\p{L}\p{N}]/u.test(c));
   return !word(text[from - 1]) && !word(text[to]) && !/\s/.test(text[from] ?? " ") && !/\s/.test(text[to - 1] ?? " ");
 };
+
+/**
+ * The marks around exactly the text of `[from, to)`, innermost first: those a command changes
+ * rather than writing another inside or around them.
+ */
+const exactWrappers = (state: EditorState, from: number, to: number, schema: EditorSchema): Wrapper[] => {
+  const shown = unitsFor(state, schema).filter((u) => u.kind !== "space" && u.kind !== "break");
+  const first = shown.find((u) => u.from >= from);
+  const last = findLast(shown, (u) => u.to <= to);
+  if (!first || !last || first.from > last.from) return [];
+  return [...wrappers(state)]
+    .reverse()
+    .filter(
+      (w) =>
+        splits(w, schema) &&
+        w.innerFrom <= first.from &&
+        last.to <= w.innerTo &&
+        shown.find((u) => u.from >= w.innerFrom) === first &&
+        findLast(shown, (u) => u.to <= w.innerTo) === last,
+    );
+};
+
+/** Edits that put `mark` on `[from, to)`, which has none of it. */
+const addEdits = (
+  state: EditorState,
+  mark: Mark,
+  value: string | true,
+  from: number,
+  to: number,
+  schema: EditorSchema,
+): TextEdit[] => {
+  const text = state.text;
+  if (mark.arg && value !== true) {
+    // A call of the function around exactly this text (a `text` with a size taking a colour or
+    // a font) takes the argument: one call, not one inside the other. Not a call with something
+    // else in front of its text (`#text(red)[…]` stays as written).
+    const arg = mark.arg;
+    const exact = exactWrappers(state, from, to, schema).find(
+      (w) => w.name === mark.name && !w.delimiter && w.positional.length === 0,
+    );
+    if (exact) return [{ from: exact.from, to: exact.innerFrom, insert: withArg(exact, arg, value) }];
+  }
+  const edits: TextEdit[] = [];
+  for (const seg of segments(state, from, to, schema)) {
+    const delimiter = DELIMITERS[mark.name];
+    const fits = delimiter !== undefined && delimiterFits(text, seg.from, seg.to, delimiter);
+    const open = fits ? delimiter : opening(mark, value === true ? null : value);
+    const close = fits ? delimiter : "]";
+    edits.push({ from: seg.from, to: seg.from, insert: open }, { from: seg.to, to: seg.to, insert: close });
+  }
+  return edits.sort((a, b) => a.from - b.from || a.to - b.to);
+};
+
+/** Whether two wrappers are the same mark with the same arguments. */
+const alike = (a: Wrapper, b: Wrapper): boolean =>
+  a.name === b.name &&
+  a.positional.join() === b.positional.join() &&
+  a.args.size === b.args.size &&
+  [...a.args].every(([k, v]) => b.args.get(k) === v);
+
+/**
+ * The state with the wrappers of `mark` a command left side by side at the selection made one:
+ * bold put back on the `b` of `b#strong[old]` gives `*bold*`, not `*b*#strong[old]`.
+ */
+const joined = (state: EditorState, mark: Mark, schema: EditorSchema): EditorState => {
+  // Not where a delimiter inside would meet the other's text: `*_a_b*` has no italic.
+  const meet = (a: Wrapper, b: Wrapper, text: string) => /[*_]/.test(`${text[a.innerTo - 1]}${text[b.innerFrom]}`);
+  for (let s = state; ; ) {
+    const ws = wrappers(s).filter((w) => w.name === mark.name && splits(w, schema));
+    const pair = ws
+      .map((a) => [a, ws.find((b) => b.from === a.to)] as const)
+      .find(([a, b]) => b && alike(a, b) && !meet(a, b, s.text) && a.from <= s.to && b.to >= s.from);
+    const [a, b] = pair ?? [];
+    if (!a || !b) return s;
+    const edits: TextEdit[] = [{ from: a.innerTo, to: b.innerFrom, insert: "" }];
+    const delimiter = DELIMITERS[a.name];
+    if (delimiter !== undefined && a.args.size + a.positional.length === 0) {
+      // Delimiters again where they read as such.
+      const inner = s.text.slice(a.innerFrom, a.innerTo) + s.text.slice(b.innerFrom, b.innerTo);
+      const nested = ws.some((x) => x.name === a.name && x.from >= a.innerFrom && x.to <= b.innerTo && x !== b);
+      const fits = delimiterFits(s.text, a.from, b.to, delimiter) && inner.trim() === inner && !nested;
+      edits.unshift({ from: a.from, to: a.innerFrom, insert: fits ? delimiter : `#${a.name}[` });
+      edits.push({ from: b.innerTo, to: b.to, insert: fits ? delimiter : "]" });
+    }
+    s = s.apply({ edits, selection: mapSel(s.selection, edits) }).state;
+  }
+};
+
+/** Marks of which text has one at most: putting one on takes the other off. */
+const EXCLUSIVE = new Map([
+  ["sub", "super"],
+  ["super", "sub"],
+]);
 
 /**
  * Turns `mark` on over the selection (removing it where it already is, so it isn't nested), or off
@@ -303,68 +562,179 @@ export const toggleMark =
 export const setMark =
   (mark: Mark, value: string | true | null) =>
   (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): Transaction | null => {
-    const text = state.text;
-    const { from, to } = state;
     if (state.selection.node) return null;
-    if (from === to) {
+    // The steps of the command, each on the state the one before left; one transaction.
+    let end = state;
+    const steps: Transaction[] = [];
+    const step = (tr: Transaction | null) => {
+      if (!tr || tr.edits.length === 0) return;
+      end = end.apply(tr).state;
+      steps.push(tr);
+    };
+    const edit = (edits: TextEdit[]) => step({ edits, selection: mapSel(end.selection, edits) });
+    const done = (): Transaction => {
+      // One step's edits as they are (the selected text stays put); more, as one edit.
+      if (steps.length === 1 && end.text === state.apply(steps[0] as Transaction).state.text)
+        return steps[0] as Transaction;
+      const all = diffEdit(state.text, end.text);
+      return { edits: all ? [all] : [], selection: end.selection };
+    };
+    // Subscript on superscript text replaces it.
+    const other = value === null ? undefined : EXCLUSIVE.get(mark.name);
+    if (state.empty) {
       // A caret: an empty wrapper to type into, or a split of the wrapper it is in.
-      const w = wrappers(state)
-        .filter((w) => matches(w, mark) && w.innerFrom <= from && from <= w.innerTo)
-        .at(-1);
-      if (value === null) {
-        if (!w) return null;
-        const open = w.name === "strong" || w.name === "emph" ? `#${w.name}[` : text.slice(w.from, w.innerFrom);
-        const close = w.name === "strong" || w.name === "emph" ? "]" : text.slice(w.innerTo, w.to);
-        const pre = text.slice(w.innerFrom, from);
-        const post = text.slice(from, w.innerTo);
-        const before = pre ? open + pre + close : "";
-        const insert = `${before}${post ? open + post + close : ""}`;
-        return { edits: [{ from: w.from, to: w.to, insert }], selection: caretAt(w.from + before.length) };
+      if (other) step(removeAt(end, { name: other }, schema));
+      if (value === null) step(removeAt(end, mark, schema));
+      else {
+        const open = opening(mark, value === true ? null : value);
+        step({
+          edits: [{ from: end.from, to: end.from, insert: `${open}]` }],
+          selection: caretAt(end.from + open.length),
+        });
       }
-      const open = opening(mark, value === true ? null : value);
-      return { edits: [{ from, to, insert: `${open}]` }], selection: caretAt(from + open.length) };
+      return steps.length ? done() : null;
     }
-    // An exact wrapper with another value: change the argument only.
-    if (mark.arg && value !== null && value !== true) {
-      const exact = wrappers(state).find(
-        (w) =>
-          matches(w, mark) &&
-          snapText(state, w.innerFrom) === snapText(state, from) &&
-          snapText(state, w.innerTo, -1) === snapText(state, to, -1),
-      );
-      if (exact) {
-        const edits = [{ from: exact.from, to: exact.innerFrom, insert: opening(mark, value, exact.args) }];
-        return { edits, selection: mapSel(state.selection, edits) };
+    if (other) edit(removeEdits(end, { name: other }, end.from, end.to, schema));
+    const on = wrappers(end).filter((w) => matches(w, mark) && w.innerTo > end.from && w.innerFrom < end.to);
+    const exact = exactWrappers(end, end.from, end.to, schema).find((w) => matches(w, mark));
+    if (mark.arg && typeof value === "string" && exact && on.every((w) => w === exact)) {
+      // The one wrapper of the mark here is around exactly this text: its value changes, in its
+      // place, whatever other marks are inside it.
+      edit([{ from: exact.from, to: exact.innerFrom, insert: withArg(exact, mark.arg, value) }]);
+    } else {
+      // Off first (no nested wrappers of one mark), then on.
+      edit(removeEdits(end, mark, end.from, end.to, schema));
+      if (value !== null) edit(addEdits(end, mark, value, end.from, end.to, schema));
+    }
+    if (value !== null) end = joined(end, mark, schema);
+    return steps.length ? done() : { edits: [], selection: state.selection };
+  };
+
+// ---------------------------------------------------------------------------
+// Fonts
+
+const FONT: Mark = { name: "text", arg: "font" };
+
+/** The family a `font` argument names (the first of a list): `"Lora"`, `("Lora", "Noto Sans")`. */
+const familyOf = (source: string): string | null => {
+  const first = /"(?:[^"\\]|\\.)*"/.exec(source)?.[0];
+  return first ? readString(first) : null;
+};
+
+/** The document's own `#set text(…)` rules that name a font (not those inside components), in order. */
+const fontRules = (state: EditorState) => {
+  const text = state.text;
+  const kids = state.tree.children;
+  const out: { from: number; to: number; value: SyntaxNode; named: SyntaxNode; args: SyntaxNode; alone: boolean }[] =
+    [];
+  for (let i = 0; i + 1 < kids.length; i++) {
+    const rule = kids[i + 1] as SyntaxNode;
+    if ((kids[i] as SyntaxNode).kind !== "Hash" || rule.kind !== "SetRule") continue;
+    const callee = rule.children.find((c) => c.kind === "Ident");
+    const args = callArgs(rule, text);
+    const value = args?.named.get("font");
+    const named = args?.namedNodes.get("font");
+    // A conditional rule (`set text(…) if …`) isn't the document's font.
+    if (!callee || text.slice(callee.from, callee.to) !== "text" || !args || !value || !named) continue;
+    if (rule.children.some((c) => c.kind === "If")) continue;
+    const alone = args.named.size + args.positional.length === 1;
+    out.push({ from: (kids[i] as SyntaxNode).from, to: rule.to, value, named, args: args.node, alone });
+  }
+  return out;
+};
+
+/**
+ * The font family at the selection: that of the `#text(font: …)[…]` around it, else the document's
+ * (its last `#set text(font: …)` before the selection). `null` when the selection is in more than
+ * one, or the document names none (Typst's own, or its template's).
+ * @beta
+ */
+export const fontAt = (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): string | null => {
+  const { from, to } = state;
+  const v = markValue(state, FONT, from, to, schema);
+  if (typeof v === "string") return familyOf(v);
+  // Part of the selection in a font of its own: no one family.
+  if (wrappers(state).some((w) => matches(w, FONT) && w.innerFrom < to && w.innerTo > from)) return null;
+  const rule = fontRules(state)
+    .filter((r) => r.from <= from)
+    .at(-1);
+  return rule ? familyOf(state.text.slice(rule.value.from, rule.value.to)) : null;
+};
+
+/** What a document starts with that shows nothing: its imports, bindings and rules. */
+const RULE = /^#(?:import|set|show|let)\b/;
+
+/**
+ * The rule that sets the whole document's font, where it goes: after the imports and rules the
+ * document starts with, before its template (`#show: exam.with(…)`, whose title then follows the
+ * font too) or its first text.
+ */
+const documentRule = (state: EditorState, value: string): TextEdit => {
+  const kids = state.tree.children;
+  let i = 0;
+  let at = 0;
+  while (i < kids.length) {
+    const c = kids[i] as SyntaxNode;
+    if (c.kind === "Hash" && PREAMBLE.has((kids[i + 1] as SyntaxNode | undefined)?.kind as SyntaxKind)) {
+      at = (kids[i + 1] as SyntaxNode).to;
+      i += 2;
+    } else if (c.kind === "Space" || c.kind === "Parbreak" || c.kind === "LineComment" || c.kind === "BlockComment")
+      i++;
+    else break;
+  }
+  const rule = `#set text(font: ${value})`;
+  // On a line of its own after the last of them; else the document's first line, text after a blank one.
+  if (at > 0) return { from: at, to: at, insert: `\n${rule}` };
+  const next = kids[i];
+  const template = next?.kind === "Hash" && kids[i + 1]?.kind === "ShowRule";
+  return { from: 0, to: 0, insert: `${rule}${template ? "\n" : "\n\n"}` };
+};
+
+/**
+ * Sets the font family of the selection (`null`: the document's own again). A selection of the
+ * whole document changes the document's font instead, as its own `#set text(font: …)`: titles,
+ * numbers and what components draw follow it, which wrapping every paragraph wouldn't reach.
+ * @beta
+ */
+export const setFont =
+  (family: string | null) =>
+  (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): Transaction | null => {
+    if (state.selection.node) return null;
+    const value = family === null ? null : typstString(family);
+    const { from, to } = state;
+    const text = state.text;
+    // Everything the document shows: its text and components, not its rules or its template's fields.
+    const body = bodyStart(state.tree);
+    const shown = unitsFor(state, schema).filter(
+      (u) => u.from >= body && (u.kind === "char" || (u.kind === "atom" && !RULE.test(text.slice(u.from, u.from + 8)))),
+    );
+    const whole = from < to && shown.length > 0 && shown.every((u) => u.from >= from && u.to <= to);
+    if (!whole) return setMark(FONT, value)(state, schema);
+    // No passage keeps a font of its own, and one rule names the document's.
+    const edits = removeEdits(state, FONT, from, to, schema);
+    const rules = fontRules(state);
+    for (const [i, r] of rules.entries()) {
+      if (i === 0 && value !== null) edits.push({ from: r.value.from, to: r.value.to, insert: value });
+      else if (r.alone) {
+        // Its line with it; at the document's start, the blank line after it too.
+        let end = r.to;
+        while (text[end] === "\n" && (r.from === 0 || end === r.to)) end++;
+        edits.push({ from: r.from, to: end, insert: "" });
+      } else {
+        // The argument with the comma on one side of it.
+        const kids = r.args.children.filter((c) => c.kind !== "Space" && c.kind !== "Comma");
+        const at = kids.indexOf(r.named);
+        const next = kids[at + 1];
+        const prev = kids[at - 1];
+        if (next && next.kind !== "RightParen") edits.push({ from: r.named.from, to: next.from, insert: "" });
+        else if (prev) edits.push({ from: prev.to, to: r.named.to, insert: "" });
       }
     }
-    const removed = removeEdits(state, mark, from, to);
-    if (value === null) return { edits: removed, selection: mapSel(state.selection, removed) };
-    if (removed.length) {
-      // Off first (no nested wrappers of one mark), then on, as one edit.
-      const mid = state.apply({ edits: removed, selection: mapSel(state.selection, removed) }).state;
-      const again = setMark(mark, value)(mid, schema);
-      const end = again ? mid.apply(again).state : mid;
-      const edit = diffEdit(text, end.text);
-      return { edits: edit ? [edit] : [], selection: end.selection };
-    }
-    const edits: TextEdit[] = [];
-    for (const seg of segments(state, from, to, schema)) {
-      const delimiter = (mark.name === "strong" || mark.name === "emph") && delimiterFits(text, seg.from, seg.to);
-      const open = delimiter ? (mark.name === "strong" ? "*" : "_") : opening(mark, value === true ? null : value);
-      const close = delimiter ? open : "]";
-      edits.push({ from: seg.from, to: seg.from, insert: open }, { from: seg.to, to: seg.to, insert: close });
-    }
+    if (rules.length === 0 && value !== null) edits.push(documentRule(state, value));
+    if (edits.length === 0) return null;
     const sorted = edits.sort((a, b) => a.from - b.from || a.to - b.to);
     return { edits: sorted, selection: mapSel(state.selection, sorted) };
   };
-
-/** `offset` past spaces (to the right, or left with `dir` -1): where a wrapper's text starts. */
-const snapText = (state: EditorState, offset: number, dir: 1 | -1 = 1): number => {
-  let o = offset;
-  if (dir > 0) while (o < state.text.length && /\s/.test(state.text[o] as string)) o++;
-  else while (o > 0 && /\s/.test(state.text[o - 1] as string)) o--;
-  return o;
-};
 
 const caretAt = (at: number): Selection => ({ anchor: at, head: at });
 
@@ -411,13 +781,24 @@ export const withScheme = (url: string): string => {
 };
 
 /**
+ * Whether a link's target would run code where the document is shown (`javascript:`, `data:`,
+ * `vbscript:`), read as browsers read it: whatever the case, spaces and control characters dropped.
+ */
+const runsCode = (url: string): boolean => {
+  const read = [...url].filter((c) => c.charCodeAt(0) > 0x20).join("");
+  return /^(?:javascript|data|vbscript):/i.test(read);
+};
+
+/**
  * Makes the selection a link to `url` (`#link("…")[…]`), changes the link it is in, or takes links
- * off it with `null`. On a caret, writes the URL as the link's text.
+ * off it with `null`. On a caret in a word, the word is the link's text; anywhere else, the URL is
+ * written as its text. A target that would run code (`javascript:`, `data:`, `vbscript:`) is refused.
  * @beta
  */
 export const setLink =
   (given: string | null) =>
   (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): Transaction | null => {
+    if (given !== null && runsCode(given)) return null;
     const url = given === null ? null : withScheme(given);
     const quoted = url === null ? null : `"${url.replace(/["\\]/g, "\\$&")}"`;
     const around = wrappers(state)
@@ -425,10 +806,11 @@ export const setLink =
       .at(-1);
     if (around && quoted === null && (state.empty || (state.from <= around.innerFrom && around.innerTo <= state.to))) {
       // The link the caret (or the whole link) is in comes off whole: its text stays.
-      const edits = [
+      const off = [
         { from: around.from, to: around.innerFrom, insert: "" },
         { from: around.innerTo, to: around.to, insert: "" },
       ];
+      const edits = [...off, ...guardDelimiters(state, off)].sort((a, b) => a.from - b.from || a.to - b.to);
       return { edits, selection: mapSel(state.selection, edits) };
     }
     if (around && quoted !== null) {
@@ -437,16 +819,18 @@ export const setLink =
       return { edits, selection: mapSel(state.selection, edits) };
     }
     if (quoted === null) {
-      const edits = removeEdits(state, { name: "link" }, state.from, state.to);
+      const edits = removeEdits(state, { name: "link" }, state.from, state.to, schema);
       return edits.length ? { edits, selection: mapSel(state.selection, edits) } : null;
     }
-    if (state.empty) {
+    // A caret inside a word stands for the word.
+    const word = state.empty ? wordAt(unitsFor(state, schema), state.text, state.from) : state;
+    if (state.empty && !(word.from < state.from && state.from < word.to)) {
       const shown = escapeLinkText(url ?? "");
       const insert = `#link(${quoted})[${shown}]`;
       return { edits: [{ from: state.from, to: state.from, insert }], selection: caretAt(state.from + insert.length) };
     }
     const edits: TextEdit[] = [];
-    for (const seg of segments(state, state.from, state.to, schema))
+    for (const seg of segments(state, word.from, word.to, schema))
       edits.push(
         { from: seg.from, to: seg.from, insert: `#link(${quoted})[` },
         { from: seg.to, to: seg.to, insert: "]" },

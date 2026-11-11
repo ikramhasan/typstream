@@ -59,6 +59,8 @@ default) isn't loaded.
 | [`googleFonts`](#googlefonts) | The plugin, with its defaults. |
 | [`createGoogleFonts`](#creategooglefonts) | The plugin with another size limit or index. |
 | [`GOOGLE_FONTS_INDEX`](#google_fonts_index) | The URL of the package's `catalogue.json`. |
+| [`GOOGLE_FONTS_FAMILIES`](#google_fonts_families) | The families the editor's font picker lists before a search. |
+| [`GOOGLE_FONTS_ALIASES`](#google_fonts_aliases) | Fonts people ask for by name, and the family with the same metrics. |
 | [`googleFontsPreamble`](#googlefontspreamble) | The Typst that keeps fonts in the HTML target. |
 
 ### googleFonts
@@ -75,6 +77,9 @@ The plugin, with key `"google-fonts"`:
 - `prompt.rules`: any Google Fonts family by its exact name, with examples, and the families to use for Arial or
   Helvetica (Arimo), Times New Roman (Tinos), Calibri (Carlito), Cambria (Caladea), Courier New (Cousine) and Comic Sans
   MS (Comic Neue).
+- `editor.fonts`: the [visual editor](/docs/reference/editor-react)'s font picker: [`GOOGLE_FONTS_FAMILIES`](#google_fonts_families)
+  as its list, the index for its search (every family the engine would load: those within `maxBytes`), and
+  [`GOOGLE_FONTS_ALIASES`](#google_fonts_aliases), so a search for "Arial" finds Arimo.
 
 ### createGoogleFonts
 
@@ -100,6 +105,27 @@ const GOOGLE_FONTS_INDEX: string;
 
 The URL of `catalogue.json`, next to the package's JavaScript: bundlers emit it as an asset, so the engine fetches the
 index from your origin. The font files come from `cdn.jsdelivr.net`.
+
+### GOOGLE_FONTS_FAMILIES
+
+```ts
+const GOOGLE_FONTS_FAMILIES: readonly string[];
+```
+
+Thirty-six families for teachers' documents, by their exact names, in alphabetical order: text faces with and without
+serifs (Lora, Source Serif 4, Inter, Lato, Open Sans), faces made to be easy to read (Atkinson Hyperlegible, Lexend,
+Andika), handwriting (Caveat, Patrick Hand, Schoolbell), display faces and monospaced ones. The editor's font picker
+shows them before a search; a search goes through the whole catalogue.
+
+### GOOGLE_FONTS_ALIASES
+
+```ts
+const GOOGLE_FONTS_ALIASES: Readonly<Record<string, string>>;
+```
+
+The fonts the prompt rules name, each with the Google Fonts family that has its metrics: Arial and Helvetica (Arimo),
+Times New Roman (Tinos), Calibri (Carlito), Cambria (Caladea), Courier New (Cousine), Comic Sans MS (Comic Neue). The
+font picker's search finds a family by them.
 
 ### googleFontsPreamble
 

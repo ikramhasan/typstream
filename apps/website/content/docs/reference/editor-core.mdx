@@ -104,10 +104,12 @@ Each is `(state, schema) => Transaction | null` (an `EditorCommand`); `null` whe
 | `splitBlock`, `insertLineBreak` | Enter and Shift+Enter. In a list, a new item; on an empty one, the item up a level, or out of the list from the top level into a paragraph of its own. In an empty paragraph Enter does nothing: Typst shows no empty paragraphs. |
 | `deleteWord(dir)` | Ctrl+Backspace and Ctrl+Delete (⌥ on Apple platforms): to the start or end of the word. |
 | `moveCell(dir)` | Tab and Shift+Tab in a table: the next or previous cell's text selected; past the last cell, a new row. |
-| `moveArg(dir)`, `enterArg`, `removeArg` | Keys in a component's content: Tab through its content arguments (a multiple choice's options, a rubric's cells); in a component whose items they are (`EditorComponentSpec.list`), Enter at an item's end adds one and Backspace in an empty one removes it; Enter at the end of a plugin component's one-line content (a true/false statement) leaves it, and in a cell breaks the line. |
+| `moveArg(dir)`, `enterArg`, `removeArg` | Keys in a component's content: Tab through its content arguments (a multiple choice's options, a rubric's cells); in a component whose items they are (`EditorComponentSpec.list`), Enter at an item's end adds one and Backspace in an empty one removes it; Enter at the end of a plugin component's one-line content (a true/false statement) leaves it, and in a cell breaks the line; in a component whose arguments are rows of cells (`EditorComponentSpec.rows`: a rubric's criteria), Tab past the last cell adds a row and Backspace in an empty row removes it. |
+| `argAsContent(at, caret)`, `argsAsContent(from)` | An argument written as code that shows text (`mcq(ce("H2O"), "Water", $x$)`: a formula, a string, an equation) written as the content that shows the same (`[#ce("H2O")]`, `[Water]`, `[$x$]`), so a caret has a place in it: the one at `at`, or all of the component's at `from`. The view runs them on a click: where the pages can't say which argument a glyph came from, it writes them all, lays the pages out, and keeps the change only when the click was on one (then one undo step). |
 | `exitBlock(dir)` | Ctrl+Enter and Ctrl+Shift+Enter: an empty paragraph after (`1`) or before (`-1`) the top-level block the caret is in (a component, a table, a whole list). |
-| `moveChar`, `snap` | Where the caret goes one character on, and the nearest place a caret can be. |
+| `moveChar`, `snap`, `caretPlace` | Where the caret goes one character on, the nearest place a caret can be, and the place a caret takes where several offsets are one place on the page (before a heading's or a list item's marker it is after the marker; among the rules a document starts with, where its text starts). |
 | `toggleMark(mark)`, `setMark(mark, value)` | Bold, italic, underline (a `Mark`: a function, and for colours and sizes an argument); `isMarked` and `markValue` read them at the selection. |
+| `setFont(family)`, `fontAt` | The font family: of a passage, a `#text(font: "…")[…]` around it (joining a `#text` that only sets a size or colour); of the whole document, when all of its text is selected, one `#set text(font: "…")` after the imports, the passages' own fonts taken off. `null` takes fonts off. `fontAt` reads the family at the selection, the document's rule included. `BASE_FONTS` are Typst's own families, which every engine has. |
 | `setLink(url)`, `linkAt` | A `#link("…")[…]` around the selection, its URL changed, or links taken off with `null`. |
 | `setBlockType(type)`, `blockType` | Paragraph, heading levels, list items (`BlockType`). `toggleList` and `indentItems` for lists. |
 | `setAlignment(align)`, `alignmentAt` | An `#align(…)[…]` around the blocks (`Alignment`). |
@@ -151,7 +153,8 @@ interface EditorPlugin {
 Keys go to plugins by `priority` (higher first, then in the order given): first each `handleKeyDown`, then the
 keymaps. A key's commands are tried in order, and one that returns `null` passes the key on, to the next command and
 then to plugins of lower priority. So a plugin binds Enter for its own component and the editor's Enter runs
-everywhere else:
+everywhere else (`matchesShortcut(name, event, apple)` says whether a keydown is a binding's key, for chrome
+that handles a shortcut itself):
 
 ```ts
 const answers = createEditorPlugin({
@@ -178,7 +181,8 @@ layout or focus.
 <auto-type-table path="packages/editor-core/src/plugin.ts" name="PluginView" />
 
 `createEditorPlugin` type-checks one. `basicPlugins` are the editor's own: `blocksPlugin` (block types, lists,
-alignment, Markdown-like shortcuts), `marksPlugin` (marks, colours from `COLORS` and `HIGHLIGHTS`, sizes) and
+alignment, Markdown-like shortcuts), `marksPlugin` (marks, colours from `COLORS` and `HIGHLIGHTS`, sizes, and a
+dotted line under every link, drawn by the editor only, in `--typstream-link`: Typst gives a link no look) and
 `insertPlugin` (tables, equations, a divider, a page break). `fromTypstreamPlugin` makes one from a typstream
 plugin's `editor` facet: its components in the insert menu, with forms.
 

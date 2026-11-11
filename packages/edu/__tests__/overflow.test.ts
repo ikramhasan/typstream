@@ -56,4 +56,15 @@ describe("words stay inside their cells", () => {
     expect(text).toContain("Counterargument");
     for (const word of ["structure.", "logical.", "Inconsistent.", "Acknowledges"]) expect(text).toContain(word);
   });
+
+  it("rubric: a level past the last of the points has its name alone, no empty brackets", () => {
+    // A level added in the editor before its points, or a list of points a stream cut.
+    const out = compilePaged(engine, "#rubric(([A], [a], [b], [c]), levels: ([Good], [Fair], [Poor]), points: (2, 1))");
+    expect(problems(out.diagnostics)).toEqual([]);
+    const text = pagedText(out).replace(/\s+/g, " ");
+    expect(text).toContain("Good (2)");
+    expect(text).toContain("Fair (1)");
+    expect(text).toContain("Poor");
+    expect(text).not.toContain("()");
+  });
 });

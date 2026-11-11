@@ -8,7 +8,14 @@ import type { FontCatalogueIndex } from "@typstream/core";
 import { Engine, initSync } from "@typstream/engine-wasm";
 import { baseFonts } from "@typstream/engine-wasm/fonts";
 import { describe, expect, it } from "vitest";
-import { createGoogleFonts, GOOGLE_FONTS_INDEX, googleFonts, googleFontsPreamble } from "../src/index";
+import {
+  createGoogleFonts,
+  GOOGLE_FONTS_ALIASES,
+  GOOGLE_FONTS_FAMILIES,
+  GOOGLE_FONTS_INDEX,
+  googleFonts,
+  googleFontsPreamble,
+} from "../src/index";
 
 const index = JSON.parse(readFileSync(new URL(GOOGLE_FONTS_INDEX), "utf8")) as FontCatalogueIndex & {
   commit: string;
@@ -69,6 +76,49 @@ describe("the plugin", () => {
     const plugin = createGoogleFonts({ index: "https://example.com/fonts.json", maxBytes: 1e7 });
     expect(plugin.key).toBe("google-fonts");
     expect(plugin.engine?.fontCatalogues).toEqual([{ index: "https://example.com/fonts.json", maxBytes: 1e7 }]);
+    expect(plugin.editor?.fonts).toMatchObject({ index: "https://example.com/fonts.json", maxBytes: 1e7 });
+  });
+});
+
+describe("the editor's font picker", () => {
+  /** What the engine downloads of a family: a variable font per style, or its regular and bold. */
+  const download = (name: string): number => {
+    const files = index.families[name.toLowerCase()]?.files ?? [];
+    const bytes = (list: typeof files) => list.reduce((sum, f) => sum + (f.bytes ?? 0), 0);
+    if (bytes(files) <= 1_000_000) return bytes(files);
+    const picked = new Set<(typeof files)[number]>();
+    for (const style of ["normal", "italic"]) {
+      const styled = files.filter((f) => f.style === style);
+      const variable = styled.find((f) => Array.isArray(f.weight));
+      const near = (w: number) =>
+        [...styled].sort((a, b) => Math.abs((a.weight as number) - w) - Math.abs((b.weight as number) - w))[0];
+      for (const f of variable ? [variable] : [near(400), near(700)]) if (f) picked.add(f);
+    }
+    return bytes([...picked]);
+  };
+
+  it("gets the plugin's short list, the index for its search, and the names fonts stand in for", () => {
+    expect(googleFonts.editor?.fonts).toEqual({
+      label: "Google Fonts",
+      families: [...GOOGLE_FONTS_FAMILIES],
+      index: GOOGLE_FONTS_INDEX,
+      aliases: GOOGLE_FONTS_ALIASES,
+    });
+  });
+
+  it("lists families the catalogue has under those names, in order, each a small download", () => {
+    expect(GOOGLE_FONTS_FAMILIES.filter((name) => index.families[name.toLowerCase()]?.name !== name)).toEqual([]);
+    expect([...GOOGLE_FONTS_FAMILIES].sort((a, b) => a.localeCompare(b))).toEqual([...GOOGLE_FONTS_FAMILIES]);
+    expect(GOOGLE_FONTS_FAMILIES.filter((name) => download(name) > 3_000_000)).toEqual([]);
+  });
+
+  it("stands in for the fonts the prompt rules name, with families the catalogue has", () => {
+    const rules = (googleFonts.prompt?.rules ?? []).join("\n");
+    for (const [alias, family] of Object.entries(GOOGLE_FONTS_ALIASES)) {
+      expect(index.families[family.toLowerCase()]?.name).toBe(family);
+      expect(rules).toContain(alias);
+      expect(rules).toContain(`"${family}"`);
+    }
   });
 });
 

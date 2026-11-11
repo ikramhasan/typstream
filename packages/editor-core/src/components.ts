@@ -5,9 +5,20 @@
 
 import type { TextEdit } from "@typstream/core";
 import type { SyntaxNode } from "@typstream/syntax";
-import { blocksAround, DEFAULT_SCHEMA, type EditorSchema, emptyLineAt, isEmptyLine } from "./commands";
+import {
+  blocksAround,
+  canType,
+  caretPlace,
+  chain,
+  DEFAULT_SCHEMA,
+  type EditorSchema,
+  emptyLineAt,
+  isEmptyLine,
+  splitBlock,
+} from "./commands";
 import type { EditorState, Selection, Transaction } from "./state";
-import { callArgs, calleeName, findLast, isEmbedded } from "./tree";
+import { EMPTY_LINE } from "./text";
+import { type Block, blocksOf, callArgs, calleeName, findLast, isEmbedded } from "./tree";
 
 /**
  * A component in the source: a call embedded in markup (`#question(…)[…]`) that isn't a mark.
@@ -100,7 +111,13 @@ export const setArgument =
         let from = named.from;
         let to = named.to;
         const after = /^\s*,\s*/.exec(text.slice(to));
-        if (after) to += after[0].length;
+        // On a line of its own: the line goes.
+        const start = text.lastIndexOf("\n", from - 1) + 1;
+        const own = /^[ \t]*,[ \t]*\n/.exec(text.slice(to));
+        if (own && text.slice(start, from).trim() === "") {
+          from = start;
+          to += own[0].length;
+        } else if (after) to += after[0].length;
         else {
           const before = /,\s*$/.exec(text.slice(args.parens?.from ?? from, from));
           if (before) from -= before[0].length;
@@ -118,9 +135,12 @@ export const setArgument =
       if (value === null) return null;
       if (args.parens) {
         const inside = text.slice(args.parens.from + 1, args.parens.to - 1);
-        const sep = inside.trim() === "" ? "" : /,\s*$/.test(inside) ? " " : ", ";
+        const comma = /,\s*$/.test(inside);
+        // A call written an argument a line gets a line for this one, indented as the first is.
+        const line = /^[ \t]*\n([ \t]*)\S/.exec(inside);
+        const sep = inside.trim() === "" ? "" : line ? `${comma ? "" : ","}\n${line[1]}` : comma ? " " : ", ";
         const at = args.parens.to - 1 - (/\s*$/.exec(inside)?.[0].length ?? 0);
-        edit = { from: at, to: at, insert: `${sep}${name}: ${value}` };
+        edit = { from: at, to: at, insert: `${sep}${name}: ${value}${line ? "," : ""}` };
       } else {
         const callee = component.call.children[0] as SyntaxNode;
         edit = { from: callee.to, to: callee.to, insert: `(${name}: ${value})` };
@@ -142,10 +162,16 @@ const keep = (s: Selection, edit: TextEdit): Selection => {
 /** Where `{{cursor}}` marks the caret in a template; removed before inserting. @beta */
 export const CURSOR = "{{cursor}}";
 
+/** A template's last line when it is an empty one for the caret: what a page break leaves to type on. */
+const EMPTY_TAIL = `\n\n${CURSOR}${EMPTY_LINE}`;
+
 /**
  * Inserts `template` (Typst, with an optional `{{cursor}}` for the caret) as a block of its own:
- * on the caret's empty line, or after the block the caret is in. Its lines take the indentation of
- * the markup there (inside an indented `[…]`). Without a cursor, the new component is selected.
+ * on the caret's empty line; in the middle of a paragraph, between its two halves; at a block's
+ * start, above it; else after the block the caret is in. Its lines take the indentation of the
+ * markup there (inside an indented `[…]`). Without a cursor, the new component is selected. A page
+ * break goes after the outermost block (in a table's cell or a question it is an error), and the
+ * empty line a template ends with is left out where text follows: the caret goes to that text.
  * @beta
  */
 export const insertBlock =
@@ -153,40 +179,99 @@ export const insertBlock =
   (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): Transaction => {
     const text = state.text;
     const at = state.selection.node ? state.to : state.from;
+    const tail = template.endsWith(EMPTY_TAIL);
+    const around = blocksAround(state, at, schema);
+    // Only between the document's own blocks: a page break.
+    const outer = /^#pagebreak\b/.test(template) && around.markup !== state.tree;
+    const blocks = outer ? blocksOf(state.tree, text, (name) => schema.inline.has(name)) : around.blocks;
     const lineStart = text.lastIndexOf("\n", at - 1) + 1;
     const lineEndRaw = text.indexOf("\n", at);
     const lineEnd = lineEndRaw < 0 ? text.length : lineEndRaw;
     const line = text.slice(lineStart, lineEnd);
-    const indent = /^[ \t]*/.exec(line)?.[0] ?? "";
-    const body = template.replace(/\n/g, `\n${indent}`);
-    let from: number;
-    let prefix: string;
-    let suffix: string;
+    const indent = outer ? "" : (/^[ \t]*/.exec(line)?.[0] ?? "");
+    const indented = (t: string) => t.replace(/\n/g, `\n${indent}`);
     const tilde = line.indexOf("~");
-    if (line.trim() === "" || (line.trim() === "~" && isEmptyLine(text, lineStart + tilde))) {
+    if (!outer && (line.trim() === "" || (line.trim() === "~" && isEmptyLine(text, lineStart + tilde)))) {
       // An empty line (an empty line's `~` included): the component goes there, apart from what is around.
-      from = lineStart + indent.length;
       const before = text.slice(0, lineStart);
-      prefix = before.trim() === "" || /\n[ \t]*\n[ \t]*$/.test(before) ? "" : "\n";
+      const prefix =
+        before.trim() === "" || /\n[ \t]*\n[ \t]*$/.test(before) || /\[[ \t]*\n?[ \t]*$/.test(before) ? "" : "\n";
       const after = text.slice(lineEnd);
-      suffix = after.trim() === "" || /^\n[ \t]*\n/.test(after) ? "" : "\n";
-      return place(state, { from, to: lineEnd, prefix, body, suffix });
+      const suffix = after.trim() === "" || /^\n[ \t]*\n/.test(after) || /^\s*\]/.test(after) ? "" : "\n";
+      return place(state, { from: lineStart + indent.length, to: lineEnd, prefix, body: indented(template), suffix });
     }
-    const { blocks } = blocksAround(state, at, schema);
     const block = blocks.find((b) => b.from <= at && at <= b.to) ?? findLast(blocks, (b) => b.to <= at);
-    from = block ? block.to : lineEnd;
+    const isList = (b: Block) => b.kind === "list" || b.kind === "enum" || b.kind === "term";
+    // In the middle of a paragraph: it splits there, and the component goes between the halves.
+    if (
+      !outer &&
+      state.empty &&
+      block?.kind === "paragraph" &&
+      text.slice(block.from, at).trim() !== "" &&
+      text.slice(at, block.to).trim() !== "" &&
+      canType(state, at)
+    ) {
+      const split = splitBlock(state, schema);
+      const mid = split ? state.apply(split).state : null;
+      if (mid && blocksAround(mid, mid.selection.head, schema).blocks.some((b) => b.from === mid.selection.head))
+        return chain(state, mid, insertBlock(template)(mid, schema));
+    }
+    // At a block's start (a list's: its first item's): above it.
+    const first =
+      block &&
+      !(
+        isList(block) &&
+        blocks.some((b) => b.kind === block.kind && b.to <= block.from && text.slice(b.to, block.from).trim() === "")
+      );
+    if (
+      !outer &&
+      block &&
+      first &&
+      !state.selection.node &&
+      caretPlace(state, at, schema) === caretPlace(state, block.from, schema)
+    ) {
+      const own = text.slice(text.lastIndexOf("\n", block.from - 1) + 1, block.from).trim() === "";
+      const from = own ? text.lastIndexOf("\n", block.from - 1) + 1 : block.from;
+      const blank =
+        text.slice(0, from).trim() === "" ||
+        /\n[ \t]*\n$/.test(text.slice(0, from)) ||
+        /\[[ \t]*\n?$/.test(text.slice(0, from));
+      const body = indented(tail ? template.slice(0, -EMPTY_TAIL.length) : template);
+      const tr = place(state, {
+        from,
+        to: from,
+        prefix: own ? (blank ? "" : "\n") + indent : "",
+        body,
+        suffix: own ? "\n\n" : `\n\n${indent}`,
+      });
+      return tail ? toNext(state, tr, schema) : tr;
+    }
+    let from = block ? block.to : lineEnd;
     // After a list item, the component would continue it: after the whole list.
-    if (block && (block.kind === "list" || block.kind === "enum" || block.kind === "term")) {
+    if (block && isList(block)) {
       let last = block;
       for (const b of blocks)
         if (b.from >= last.to && b.kind === block.kind && text.slice(last.to, b.from).trim() === "") last = b;
       from = last.to;
     }
-    prefix = `\n\n${indent}`;
     const after = text.slice(from);
-    suffix = after.trim() === "" || /^[ \t]*\n[ \t]*\n/.test(after) ? "" : `\n`;
-    return place(state, { from, to: from, prefix, body, suffix });
+    const follows = after.trim() !== "" && !/^\s*\]/.test(after);
+    const suffix = !follows || /^[ \t]*\n[ \t]*\n/.test(after) ? "" : "\n";
+    const body = indented(tail && follows ? template.slice(0, -EMPTY_TAIL.length) : template);
+    const tr = place(state, { from, to: from, prefix: `\n\n${indent}`, body, suffix });
+    return tail && follows ? toNext(state, tr, schema) : tr;
   };
+
+/** `tr` (an insertion) with the caret at the start of the text after what it inserts. */
+const toNext = (state: EditorState, tr: Transaction, schema: EditorSchema): Transaction => {
+  const edit = tr.edits[0];
+  if (!edit) return tr;
+  const next = state.apply(tr).state;
+  let at = edit.from + edit.insert.length;
+  while (at < next.text.length && /\s/.test(next.text[at] as string)) at++;
+  at = caretPlace(next, at, schema);
+  return { edits: tr.edits, selection: { anchor: at, head: at } };
+};
 
 const place = (
   state: EditorState,
@@ -217,15 +302,15 @@ const sample = (clean: string, cursor: number, start: number): Selection => {
 
 /**
  * Inserts `template` (Typst, with an optional `{{cursor}}`) at the caret, in the text: an inline
- * piece (an inline equation, a blank to fill in).
+ * piece (an inline equation, a blank to fill in). With a selection, after it.
  * @beta
  */
 export const insertInline =
   (template: string) =>
   (state: EditorState): Transaction => {
-    // On an empty line, in place of its `~`.
+    // On an empty line, in place of its `~`; after what is selected, which stays.
     const empty = state.empty ? emptyLineAt(state.text, state.from) : -1;
-    const from = empty >= 0 ? empty : state.from;
+    const from = empty >= 0 ? empty : state.to;
     const to = empty >= 0 ? empty + 1 : state.to;
     const cursor = template.indexOf(CURSOR);
     const clean = template.replace(CURSOR, "");
@@ -243,7 +328,7 @@ export const insertInline =
  */
 export const deleteBlock =
   (from: number, to: number) =>
-  (state: EditorState): Transaction => {
+  (state: EditorState, schema: EditorSchema = DEFAULT_SCHEMA): Transaction => {
     const text = state.text;
     const lineStart = text.lastIndexOf("\n", from - 1) + 1;
     const eol = text.indexOf("\n", to);
@@ -260,12 +345,19 @@ export const deleteBlock =
       const start = text.lastIndexOf("\n", b - 1) + 1;
       return /^[ \t]*/.exec(text.slice(start, b))?.[0] ?? "";
     })();
+    // On the line after a paragraph's or an item's text with the next line right under it (answer
+    // lines in a list item): the lines around it stay as close.
+    const close = !/\n[ \t]*\n/.test(text.slice(a, lineStart)) && !/\n[ \t]*\n/.test(text.slice(lineEnd, b));
     let insert: string;
     if (b >= text.length) insert = "";
     else if (a === 0) insert = indent;
-    else if (text[a - 1] === "[" || text[b] === "]") insert = `\n${indent}`;
+    else if (text[a - 1] === "[" || text[b] === "]" || close) insert = `\n${indent}`;
     else insert = `\n\n${indent}`;
-    return { edits: [{ from: a, to: b, insert }], selection: { anchor: a + insert.length, head: a + insert.length } };
+    const edits = [{ from: a, to: b, insert }];
+    // At the start of what follows, where a caret stands there (after a heading's marker).
+    const next = state.apply({ edits, selection: { anchor: a, head: a } }).state;
+    const at = caretPlace(next, a + insert.length, schema);
+    return { edits, selection: { anchor: at, head: at } };
   };
 
 /** Every component call in the document, outermost first, for outlines and tests. @beta */

@@ -72,10 +72,47 @@ describe("caretAnchor: where Typst lays out nothing beside the caret", () => {
     expect(anchored("Hello «world»")).toBe("Hello world");
   });
 
+  it("not before a block's marker or a call on the caret's line", () => {
+    expect(anchored("A\n\n‸= Title")).toBe("A\n\n= Title");
+    expect(anchored("‸= Title\n\nText")).toBe("= Title\n\nText");
+    expect(anchored("A\n\n‸- item")).toBe("A\n\n- item");
+    expect(anchored("A\n\n‸+ item")).toBe("A\n\n+ item");
+    expect(anchored("A\n\n‸1. item")).toBe("A\n\n1. item");
+    expect(anchored("A\n\n‸/ Term: text")).toBe("A\n\n/ Term: text");
+    expect(anchored("A\n- one\n‸- two")).toBe("A\n- one\n- two");
+    expect(anchored("A\n\n‸#question[Q]")).toBe("A\n\n#question[Q]");
+    expect(anchored("A\n\n‸#line(length: 100%)")).toBe("A\n\n#line(length: 100%)");
+    // What closes the caret's own content, or a line break, may follow it.
+    expect(anchored("#strong[‸]")).toBe("#strong[·]");
+    expect(anchored("A\n\n‸\\\nB")).toBe("A\n\n·\\\nB");
+  });
+
   it("leaves the document parsing as it did", () => {
     for (const doc of ["Hello ‸", "- a\n- ‸", "#table(columns: 2, [a], [‸])", "= ‸", "*bold ‸*", "_it ‸_"]) {
       const placed = anchored(doc).replace("·", " ");
       expect(hasErrors(parse(placed)), doc).toBe(false);
+    }
+  });
+
+  it("leaves every block what it was", () => {
+    // The kinds of the document's top-level nodes, with a glyph where the placeholder goes.
+    const blocks = (text: string) =>
+      parse(text)
+        .children.map((c) => c.kind)
+        .filter((k) => k !== "Text" && k !== "Space" && k !== "Parbreak");
+    for (const doc of [
+      "A\n\n‸= Title",
+      "‸= Title\n\nText",
+      "A\n\n‸- item",
+      "A\n\n‸+ item",
+      "A\n- one\n‸- two",
+      "A\n\n‸#question[Q]",
+      "A\n\n‸\n\n= Title",
+      "- a\n- ‸\n- c",
+      "= ‸\n\n- item",
+    ]) {
+      const placed = anchored(doc).replace("·", "x");
+      expect(blocks(placed), doc).toEqual(blocks(state(doc).text));
     }
   });
 });
@@ -187,7 +224,7 @@ describe("deleting a component", () => {
     expect(del("A\n\n[[#table(columns: 1, [x])]]\n\n\n\nB")).toBe("A\n\n‸B");
     expect(del("[[#line(length: 100%)]]\n\nB")).toBe("‸B");
     expect(del("A\n\n[[#line(length: 100%)]]\n")).toBe("A‸");
-    expect(del("#question[\n  Text\n\n  [[#answer-lines(count: 2)]]\n]")).toBe("#question[\n  Text\n‸]");
+    expect(del("#question[\n  Text\n\n  [[#answer-lines(count: 2)]]\n]")).toBe("#question[\n  Text‸\n]");
     // In a line of text: only itself.
     expect(del("a [[$x$]] b")).toBe("a ‸ b");
   });
@@ -234,7 +271,7 @@ describe("second QA pass", () => {
 
   it("Enter at the end of a one-line statement leaves the component; in a cell it breaks the line", () => {
     expect(run("#true-false(answer: true)[Typed‸]", enter)).toBe("#true-false(answer: true)[Typed]\n\n‸~");
-    expect(run("#rubric(([Content], [Good‸]))", enter)).toBe("#rubric(([Content], [Good \\ ‸]))");
+    expect(run("#rubric(([Content], [Good‸]))", enter)).toBe("#rubric(([Content], [Good\\ ‸]))");
     expect(run("#rubric(([Con‸tent], [Good]))", (st) => moveArg(1)(st, edu))).toBe("#rubric(([Content], [«Good»]))");
     // Not a plugin's component: a paragraph as usual.
     expect(run("#align(center)[Para‸]", enter)).toBe("#align(center)[Para\n\n‸~]");

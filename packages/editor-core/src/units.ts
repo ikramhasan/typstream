@@ -195,33 +195,44 @@ export const step = (units: readonly Unit[], offset: number, dir: 1 | -1): numbe
 
 /** Where a word starts or ends next to `offset`, for Ctrl/Alt + arrows and double clicks. */
 export const wordStep = (units: readonly Unit[], text: string, offset: number, dir: 1 | -1): number => {
-  const isWord = (u: Unit) => u.kind === "char" && /[\p{L}\p{N}_]/u.test(text.slice(u.from, u.to));
+  const isWord = (i: number) => inWord(units, text, i);
   if (dir < 0) {
     let i = unitBefore(units, offset);
-    while (i >= 0 && !isWord(units[i] as Unit)) i--;
-    while (i > 0 && isWord(units[i - 1] as Unit) && (units[i - 1] as Unit).to >= (units[i] as Unit).from - 8) i--;
+    while (i >= 0 && !isWord(i)) i--;
+    while (i > 0 && isWord(i - 1) && (units[i - 1] as Unit).to >= (units[i] as Unit).from - 8) i--;
     return i >= 0 ? (units[i] as Unit).from : offset;
   }
   let i = unitAfter(units, offset);
-  while (i < units.length && !isWord(units[i] as Unit)) i++;
-  while (
-    i + 1 < units.length &&
-    isWord(units[i + 1] as Unit) &&
-    (units[i + 1] as Unit).from <= (units[i] as Unit).to + 8
-  )
-    i++;
+  while (i < units.length && !isWord(i)) i++;
+  while (i + 1 < units.length && isWord(i + 1) && (units[i + 1] as Unit).from <= (units[i] as Unit).to + 8) i++;
   return i < units.length ? (units[i] as Unit).to : offset;
+};
+
+/**
+ * Whether unit `i` is part of a word: a letter, a digit, the point or comma inside a number
+ * (`0.25`), or the apostrophe inside a word (`don't`).
+ */
+const inWord = (units: readonly Unit[], text: string, i: number): boolean => {
+  const u = units[i];
+  if (!u || u.kind !== "char") return false;
+  const s = text.slice(u.from, u.to);
+  if (/[\p{L}\p{N}_]/u.test(s)) return true;
+  const apostrophe = s === "'" || s === "\u2019";
+  if (s !== "." && s !== "," && !apostrophe) return false;
+  const beside = (v: Unit | undefined, touching: boolean) =>
+    !!v && touching && v.kind === "char" && (apostrophe ? /^\p{L}$/u : /^\p{N}$/u).test(text.slice(v.from, v.to));
+  return beside(units[i - 1], units[i - 1]?.to === u.from) && beside(units[i + 1], units[i + 1]?.from === u.to);
 };
 
 /** The word around `offset`: `[from, to)` of the run of word characters it touches. */
 export const wordAt = (units: readonly Unit[], text: string, offset: number): { from: number; to: number } => {
-  const isWord = (u: Unit | undefined) => !!u && u.kind === "char" && /[\p{L}\p{N}_]/u.test(text.slice(u.from, u.to));
+  const isWord = (i: number) => inWord(units, text, i);
   let i = unitAfter(units, offset);
-  if (!isWord(units[i]) || (units[i] as Unit).from !== offset) i = unitBefore(units, offset);
-  if (!isWord(units[i])) return { from: offset, to: offset };
+  if (!isWord(i) || (units[i] as Unit).from !== offset) i = unitBefore(units, offset);
+  if (!isWord(i)) return { from: offset, to: offset };
   let a = i;
   let b = i;
-  while (a > 0 && isWord(units[a - 1]) && (units[a - 1] as Unit).to >= (units[a] as Unit).from - 8) a--;
-  while (b + 1 < units.length && isWord(units[b + 1]) && (units[b + 1] as Unit).from <= (units[b] as Unit).to + 8) b++;
+  while (a > 0 && isWord(a - 1) && (units[a - 1] as Unit).to >= (units[a] as Unit).from - 8) a--;
+  while (b + 1 < units.length && isWord(b + 1) && (units[b + 1] as Unit).from <= (units[b] as Unit).to + 8) b++;
   return { from: (units[a] as Unit).from, to: (units[b] as Unit).to };
 };

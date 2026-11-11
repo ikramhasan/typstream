@@ -138,7 +138,9 @@ describe("Backspace and Delete", () => {
 
   it("make a heading or list item a paragraph at its start", () => {
     expect(run("Intro.\n\n= ‸Title\n\nText.", deleteChar(-1))).toBe("Intro.\n\n‸Title\n\nText.");
-    expect(run("- one\n- ‸two", deleteChar(-1))).toBe("- one\n‸two");
+    // With blank lines around it: an item right after a paragraph would be attached to it.
+    expect(run("- one\n- ‸two", deleteChar(-1))).toBe("- one\n\n‸two");
+    expect(run("+ one\n+ ‸two\n+ three", deleteChar(-1))).toBe("+ one\n\n‸two\n\n+ three");
   });
 
   it("select an equation, then delete it", () => {
@@ -159,7 +161,7 @@ describe("Backspace and Delete", () => {
   });
 
   it("empty table cells but keep the table", () => {
-    expect(run("#table(columns: 2, [«a], [b»])", deleteChar(-1))).toBe("#table(columns: 2, [‸], [])");
+    expect(run("#table(columns: 2, [«a], [b»])", deleteChar(-1))).toBe("#table(columns: 2, [‸~], [~])");
   });
 });
 
@@ -254,8 +256,10 @@ describe("Enter and Shift+Enter", () => {
     expect(run("= ‸Title", splitBlock)).toBe("~\n\n= ‸Title");
   });
 
-  it("split a heading: the rest is a paragraph", () => {
-    expect(run("= Big ‸title", splitBlock)).toBe("= Big \n\n‸title");
+  it("split a heading: two headings, and a paragraph after its end", () => {
+    expect(run("= Big ‸title", splitBlock)).toBe("= Big \n\n= ‸title");
+    expect(run("Intro.\n\n== Big ‸title\n\nText.", splitBlock)).toBe("Intro.\n\n== Big \n\n== ‸title\n\nText.");
+    expect(run("= Big title‸\n\nText.", splitBlock)).toBe("= Big title\n\n‸~\n\nText.");
   });
 
   it("start a new paragraph inside a component", () => {
@@ -263,7 +267,7 @@ describe("Enter and Shift+Enter", () => {
   });
 
   it("break a line", () => {
-    expect(run("Roses are red,‸violets", insertLineBreak)).toBe("Roses are red, \\ ‸violets");
+    expect(run("Roses are red,‸violets", insertLineBreak)).toBe("Roses are red,\\ ‸violets");
   });
 });
 

@@ -6,6 +6,7 @@ import type { EditorView } from "@typstream/editor-core";
 import { TypstEditor, type TypstEditorHandle } from "@typstream/editor-react";
 import { edu } from "@typstream/edu";
 import type { EngineDocument } from "@typstream/engine";
+import { googleFonts } from "@typstream/google-fonts";
 import { htmlCompat } from "@typstream/html-compat";
 import { mindmap } from "@typstream/mindmap";
 import { TypstreamProvider } from "@typstream/react";
@@ -16,7 +17,7 @@ import { sharedEngine } from "../engine";
 import { SAMPLES } from "./samples";
 import "./editor.css";
 
-const PLUGINS = [htmlCompat, universe, edu, mindmap];
+const PLUGINS = [htmlCompat, universe, edu, mindmap, googleFonts];
 
 declare global {
   interface Window {

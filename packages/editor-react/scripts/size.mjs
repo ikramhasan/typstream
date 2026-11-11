@@ -6,7 +6,11 @@ import { build } from "esbuild";
 
 const kb = (n) => `${(n / 1024).toFixed(1)} KB`;
 // 15.9 KB when it was written (#36): the toolbars, menus, component bars and their CSS.
-const BUDGET = 18.2 * 1024;
+// 18.2 KB until the third QA pass (2026-11-10), 9.5 KB: the font picker, menus and toolbars by keys,
+// the link field, forms that check what they are given, the equation's field, the bars' placement.
+// 27.8 KB until list fields (a rubric's levels and points, its rows' cells following them) and forms
+// that follow a component as it grows: 0.8 KB.
+const BUDGET = 28.6 * 1024;
 
 const result = await build({
   entryPoints: ["src/index.ts"],

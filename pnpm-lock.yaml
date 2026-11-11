@@ -260,6 +260,9 @@ importers:
       '@typstream/engine-wasm':
         specifier: workspace:*
         version: link:../../packages/engine-wasm
+      '@typstream/google-fonts':
+        specifier: workspace:*
+        version: link:../../packages/google-fonts
       '@typstream/heal':
         specifier: workspace:*
         version: link:../../packages/heal

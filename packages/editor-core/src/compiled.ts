@@ -19,6 +19,8 @@ export interface Insertion {
   text: string;
   /** Which. */
   kind: "open" | "close" | "caret";
+  /** A `close` marker's call's end, when the marker is further on (after the call's label). */
+  of?: number;
   /** Where it is in the compiled text. */
   start: number;
 }
@@ -42,6 +44,9 @@ const MAX_MARKERS = 400;
 /** Calls (`#name(…)`), not rules, bindings or imports, which a marker beside could change. */
 const CALL = /^#[\p{L}_][\p{L}\p{N}_.-]*\(/u;
 
+/** Calls that get no markers: a column break at the end of a page's last column would start a page for one after it. */
+const UNMARKED = new Set(["colbreak"]);
+
 // Of two insertions at one place: a call's end marker, then the caret's placeholder, then the next call's start marker.
 const RANK = { close: 0, caret: 1, open: 2 } as const;
 
@@ -59,9 +64,25 @@ export const compile = (state: EditorState, schema: EditorSchema, focused: boole
       const call = kids[i + 1];
       if (node.kind === "Markup" && c.kind === "Hash" && call?.kind === "FuncCall" && markers < MAX_MARKERS) {
         const name = calleeName(call, plain);
-        if (name !== null && !schema.marks.has(name) && CALL.test(plain.slice(c.from, c.from + 64))) {
+        if (
+          name !== null &&
+          !schema.marks.has(name) &&
+          !UNMARKED.has(name) &&
+          CALL.test(plain.slice(c.from, c.from + 64))
+        ) {
           markers++;
-          inserts.push({ at: c.from, text: MARKER, kind: "open" }, { at: call.to, text: MARKER, kind: "close" });
+          // A label after the call (on its line or a later one: Typst skips spaces and paragraph
+          // breaks) is the call's: a marker between them would take it (`@fig` would then
+          // reference metadata), so the end marker goes after the label.
+          let j = i + 2;
+          while (kids[j]?.kind === "Space" || kids[j]?.kind === "Parbreak") j++;
+          const label = kids[j]?.kind === "Label" ? kids[j] : undefined;
+          inserts.push(
+            { at: c.from, text: MARKER, kind: "open" },
+            label
+              ? { at: label.to, text: MARKER, kind: "close", of: call.to }
+              : { at: call.to, text: MARKER, kind: "close" },
+          );
         }
       }
       if (c.children.length) visit(c);
@@ -111,6 +132,6 @@ export const fromCompiled = (c: Compiled, offset: number): number => {
 /** The markers' places in the compiled text for the call at `[from, to)` of the editor's text, if it has them. */
 export const markersOf = (c: Compiled, from: number, to: number): { open: number; close: number } | null => {
   const open = c.inserts.find((i) => i.kind === "open" && i.at === from);
-  const close = c.inserts.find((i) => i.kind === "close" && i.at === to);
+  const close = c.inserts.find((i) => i.kind === "close" && (i.of ?? i.at) === to);
   return open && close ? { open: open.start, close: close.start } : null;
 };

@@ -237,7 +237,9 @@ export interface EditorComponentSpec {
     label: string;
     list?: boolean;
     name: string;
+    outline?: boolean;
     params?: EditorParamSpec[];
+    rows?: boolean;
     template: string;
 }
 
@@ -245,8 +247,18 @@ export interface EditorComponentSpec {
 export interface EditorFacet {
     [key: string]: unknown;
     components?: EditorComponentSpec[];
+    fonts?: EditorFontsSpec;
     inline?: string[];
     marks?: string[];
+}
+
+// @beta
+export interface EditorFontsSpec {
+    aliases?: Record<string, string>;
+    families: string[];
+    index?: string;
+    label?: string;
+    maxBytes?: number;
 }
 
 // @public
@@ -254,8 +266,10 @@ export type EditOrigin = "stream" | "user" | "ai" | "remote";
 
 // @beta
 export interface EditorParamSpec {
+    columnsFrom?: number;
     default?: string;
     help?: string;
+    item?: "content" | "number";
     label: string;
     max?: number;
     maxPositional?: boolean;
@@ -266,7 +280,7 @@ export interface EditorParamSpec {
         label: string;
     }[];
     step?: number;
-    type: "number" | "text" | "boolean" | "choice" | "color" | "length" | "content";
+    type: "number" | "text" | "boolean" | "choice" | "color" | "length" | "content" | "list";
 }
 
 // @public
