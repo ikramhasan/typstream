@@ -22,6 +22,14 @@ describe("package", () => {
     expect(read("../src/react/xyflow-css.generated.ts")).toBe(generateCss());
   });
 
+  it("ships the license of the React Flow stylesheet it embeds", () => {
+    const xyflow = new URL("../node_modules/@xyflow/react/", import.meta.url);
+    const { version } = JSON.parse(readFileSync(new URL("package.json", xyflow), "utf8"));
+    const notices = read("../THIRD-PARTY-NOTICES.txt");
+    expect(notices).toContain(`of\n@xyflow/react ${version} (React Flow`);
+    expect(notices).toContain(readFileSync(new URL("LICENSE", xyflow), "utf8"));
+  });
+
   it("keeps the generated modules ASCII", () => {
     for (const path of ["../src/assets.generated.ts", "../src/react/xyflow-css.generated.ts"])
       expect(read(path).match(/[^\t\n -~]/g) ?? [], path).toEqual([]);

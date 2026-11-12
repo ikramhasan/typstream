@@ -1,6 +1,6 @@
 # @typstream/mindmap
 
-Mind maps for typstream (#28, PLAN.md §8.4): written as a list, drawn in plain Typst for print, PDF and every renderer,
+Mind maps for typstream: written as a list, drawn in plain Typst for print, PDF and every renderer,
 and interactive in `<Typstream>` (pan, zoom, open and close branches). The first render island.
 
 ```typst
@@ -30,12 +30,17 @@ buildSystemPrompt([edu, mindmap]); // the model learns `#mindmap`
 - **Plugin** (`.`): the files as a local package `@typstream/mindmap:0.1.0`, the preamble, the prompt kit (catalogue
   from the `///` doc comments, rules, `examples/`), and the `mindmap` island with `parseMindMap`, which checks the
   marker's untrusted data.
-- **Interactive map** (`./react`): React Flow, loaded with the first map (64.8 KB gzipped with its CSS), laid out like
+- **Interactive map** (`./react`): React Flow, loaded with the first map (about 65 KB gzipped with its CSS), laid out like
   the drawing (`src/react/layout.ts`) on labels measured in the page's font, read-only. CSS is adopted as constructable
-  stylesheets (strict CSP). Paged target: when #14's overlay lands; until then, the drawing.
+  stylesheets (strict CSP). On pages, the map is mounted over the page's canvas,
+  which keeps the drawing for print and exports.
 - `pnpm embed` after editing `typst/` or `examples/` (a test checks `src/assets.generated.ts` and React Flow's CSS).
   `pnpm test` compiles through engine-wasm and native `typst` (every healed stream prefix of the examples);
   `pnpm test:browser` mounts the island on the real engine worker in Chromium, Firefox and WebKit; `pnpm size`.
 
-Docs: [reference](../../apps/website/content/docs/reference/mindmap.mdx),
-[Writing an island](../../apps/website/content/docs/guides/islands.mdx).
+Docs: [reference](https://typstream.vercel.app/docs/reference/mindmap),
+[Writing an island](https://typstream.vercel.app/docs/guides/islands).
+
+## License
+
+MIT. The React Flow stylesheet the interactive map embeds is MIT too; its license is in `THIRD-PARTY-NOTICES.txt`.

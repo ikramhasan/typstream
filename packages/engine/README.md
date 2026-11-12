@@ -24,14 +24,14 @@ doc.finish(); // strict heal, final compile → status "done" or "error"
   - Each compile gets 3 s while streaming and 10 s in final mode. Past that, the worker is terminated and an initialized spare takes over.
   - After 3 timeouts or crashes, live compiling stops (`failure.reason === "too-complex"`). `finish()` still compiles once.
 - **Recycling.** A worker that reports more than 256 MiB after a compile is swapped for the spare between compiles.
-- **Limits** (`limits`, PLAN §9). Input longer than `maxLength` (1 MiB of UTF-16 code units) isn't healed or compiled: the document reports `too-large` and keeps its last artifact until `set()` or `reset()` brings it back under the limit. A streaming paged compile with more than `livePages` (100) pages stops live compiling (`too-complex`); `finish()` compiles every page. How these fit the rest of the defences: the [security guide](../../apps/website/content/docs/guides/security.mdx).
+- **Limits** (`limits`). Input longer than `maxLength` (1 MiB of UTF-16 code units) isn't healed or compiled: the document reports `too-large` and keeps its last artifact until `set()` or `reset()` brings it back under the limit. A streaming paged compile with more than `livePages` (100) pages stops live compiling (`too-complex`); `finish()` compiles every page. How these fit the rest of the defences: the [security guide](https://typstream.vercel.app/docs/guides/security).
 - **Paged output.** Changed-page artifacts are merged, so `state.artifact` always has every page.
 
 Status: `idle` → `compiling` → `idle` while streaming; `stale` after a failure; `done` / `error` once finished. Everything runs on injected timers (`clock`), so the client works in Node with a fake worker. See `__tests__/support/fake-worker.ts`.
 
 ## The worker
 
-`engineWorker()` spawns the default worker: engine-wasm with the base fonts (Libertinus Serif, New Computer Modern Math, DejaVu Sans Mono), and the rest of Typst's bundled faces and the script fonts registered lazily. It is written as `new Worker(new URL("./worker.js", import.meta.url), { type: "module" })`, and the worker refers to the wasm and fonts the same way, so bundlers emit all of them as assets. Vite and Next.js (Turbopack or webpack) need no configuration. The wasm is about 19 MB (≈ 6 MB brotli) and the fonts 2.6 MB; serve them compressed and cacheable.
+`engineWorker()` spawns the default worker: engine-wasm with the base fonts (Libertinus Serif, New Computer Modern Math, DejaVu Sans Mono), and the rest of Typst's bundled faces and the script fonts registered lazily. It is written as `new Worker(new URL("./worker.js", import.meta.url), { type: "module" })`, and the worker refers to the wasm and fonts the same way, so bundlers emit all of them as assets. Vite and Next.js (Turbopack or webpack) need no configuration. The wasm is about 21 MB (6.3 MB brotli) and the base fonts 3.7 MB (1.4 MB brotli); serve them compressed and cacheable.
 
 To load the wasm or fonts from somewhere else, write your own worker with `@typstream/engine/server`:
 
@@ -76,7 +76,7 @@ A custom worker can replace the list: `serve(engineWasm(), undefined, { fixers: 
 
 ## Fallback (Layer 4)
 
-What still fails after the fixers is never a blank screen (PLAN §5.6). The client asks for it with every compile (`fallback: false` on a document turns it off):
+What still fails after the fixers is never a blank screen. The client asks for it with every compile (`fallback: false` on a document turns it off):
 
 - **Error blocks.** The text is split into top-level blocks (heal's root checkpoints, where source anchors go). The server finds the first failing block by compiling prefixes, bisecting (⌈log₂ n⌉ check compiles, which export nothing), and shows it as `#typstream.error-block(source, message)`: a "This part couldn't be displayed" box with the error and the block's source. Then it goes on to the next one. Blocks with syntax errors need no compile. While streaming only settled blocks are isolated, and what the server found is remembered for the next revision.
 - **Stable prefix.** Once the last good render is `schedule.staleMs` old (1.5 s), the client asks for it: when the tail still being written fails, the settled text compiles with the tail as plain text below it.
@@ -87,7 +87,7 @@ What still fails after the fixers is never a blank screen (PLAN §5.6). The clie
 
 ## Events (telemetry)
 
-The library sends nothing anywhere (PLAN §8.6); it reports, and the app decides what to collect. `doc.onEvent(listener)` hears one document; `engine.onEvent` hears the workers and, as `{ type: "document", event }`, every document's events too. The shapes are `@typstream/core`'s (`telemetry.ts`). Per compile, in this order, before the state it leads to is published:
+The library sends nothing anywhere; it reports, and the app decides what to collect. `doc.onEvent(listener)` hears one document; `engine.onEvent` hears the workers and, as `{ type: "document", event }`, every document's events too. The shapes are `@typstream/core`'s (`telemetry.ts`). Per compile, in this order, before the state it leads to is published:
 
 | Event | When | Fields (besides `uri`, `rev`, `target`, `mode`) |
 |---|---|---|
@@ -115,7 +115,7 @@ Hosts are required: a model can be steered into writing an image URL that carrie
 
 ## Typst packages
 
-Documents may `#import "@preview/…"` packages from an allowlist (PLAN §6.4). The allowlist is the `packages` of `initialize` (engine-wide: `createEngine({ initialize: { packages } })`) plus those of each document (`engine.open({ packages })`, which `mountTypstream` fills from plugins' `engine.packages`). `@typstream/universe` vendors the packages typstream allows by default, and `typstream`'s `<Typstream>` adds them.
+Documents may `#import "@preview/…"` packages from an allowlist. The allowlist is the `packages` of `initialize` (engine-wide: `createEngine({ initialize: { packages } })`) plus those of each document (`engine.open({ packages })`, which `mountTypstream` fills from plugins' `engine.packages`). `@typstream/universe` vendors the packages typstream allows by default, and `typstream`'s `<Typstream>` adds them.
 
 - **Nothing outside the allowlist is fetched.** An empty allowlist means no network. Before each compile the server scans the preamble and document for package specs (`"@preview/cetz:0.5.3"` in a string), and the allowed ones are fetched, checked against their `integrity` and untarred into the document's files. Mounted packages are scanned for their own imports.
 - **Waiting.** A compile waits for its packages within the fix budget (1 s streaming, 3 s final). A package that arrives later compiles the revision again, as server-initiated output.
@@ -126,3 +126,7 @@ Documents may `#import "@preview/…"` packages from an allowlist (PLAN §6.4). 
 - **Server options.** A server's own `serve(adapter, scope, { packages })` options set its allowlist, a `registry` for specs without a `url`, the cache, and `trustClient: false`, which ignores the client's lists. `@typstream/node` sets that, so WebSocket clients can't make it fetch URLs.
 
 Tests: `pnpm test` (Node: client, server, protocol conformance against engine-wasm) and `pnpm test:browser` (the real worker in Chromium, Firefox and WebKit). Any engine server must pass `__tests__/conformance.ts`.
+
+## License
+
+MIT

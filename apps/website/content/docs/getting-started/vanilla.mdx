@@ -3,7 +3,7 @@ title: Without a framework
 description: Render streamed Typst in plain TypeScript with @typstream/dom's mountTypstream, or drive the engine and the renderers yourself.
 ---
 
-`@typstream/dom` renders typstream's output with no framework. `mountTypstream` puts a streaming document in an element: it opens the document on an engine, feeds it, and shows each result with the renderer for its target. It is what `@typstream/react` wraps, so it behaves the same, and it is the starting point for Vue, Svelte or Solid bindings of your own.
+`@typstream/dom` renders typstream's output with no framework. `mountTypstream` puts a streaming document in an element: it opens the document on an engine, feeds it, and shows each result with the renderer for its target. It is what `@typstream/react` wraps, so it behaves the same, and it is the starting point for Vue, Svelte or Solid bindings of your own. [`examples/vanilla`](https://github.com/ikramhasan/typstream/tree/main/examples/vanilla) in the repository is this page's setup as a Vite app.
 
 ```npm
 npm install @typstream/dom @typstream/engine @typstream/engine-wasm @typstream/html-compat @typstream/universe

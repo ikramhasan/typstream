@@ -9,6 +9,8 @@
 #   wasm.js          `wasmUrl`: engine_bg.wasm's URL, as `new URL("./engine_bg.wasm", import.meta.url)` for bundlers
 #   fonts.js         `baseFonts` and `scriptFonts` (scripts/fonts.mjs): their URLs, as
 #                    `new URL("./fonts/…", import.meta.url)` for bundlers, and the script fonts' FontInfo
+#   THIRD-PARTY-NOTICES.txt  the licenses and notices of Typst and every crate linked into the wasm
+#                    (scripts/notices.mjs)
 #
 # It skips the build when dist/ was built from the same inputs (dist/.inputs), so
 # CI can restore dist/ from a cache and turbo's build is then a no-op. FORCE=1
@@ -26,7 +28,7 @@ if [ $# -gt 0 ]; then
 fi
 
 # Everything the output depends on. Cargo.lock pins the crates (and wasm-bindgen's version).
-inputs=$( { sha256sum build.sh Cargo.toml Cargo.lock scripts/fonts.mjs scripts/otf2ttf.py $(find src -type f | sort); } | sha256sum | cut -d' ' -f1)
+inputs=$( { sha256sum build.sh Cargo.toml Cargo.lock scripts/fonts.mjs scripts/notices.mjs scripts/otf2ttf.py $(find src licenses -type f | sort); } | sha256sum | cut -d' ' -f1)
 if [ -z "${FORCE:-}" ] && [ -f dist/engine_bg.wasm ] && [ "$(cat dist/.inputs 2>/dev/null)" = "$inputs" ]; then
   echo "dist/ is up to date (FORCE=1 to rebuild)"
   exit 0
@@ -180,6 +182,7 @@ done
 fetch "$NOTO/LICENSE" "$NOTO_LICENSE_SHA256" target/script-fonts/LICENSE
 cp target/script-fonts/LICENSE dist/fonts/LICENSE-Noto.txt
 node scripts/fonts.mjs --base "${BASE[@]}" --extra "${EXTRA[@]}" --script "${script_args[@]}"
+node scripts/notices.mjs dist/THIRD-PARTY-NOTICES.txt
 echo "$inputs" > dist/.inputs
 
 echo "built $(pwd)/dist ($(wc -c < dist/engine_bg.wasm | tr -d ' ') bytes of wasm)"

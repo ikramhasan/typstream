@@ -2,8 +2,20 @@
   "name": "@typstream/engine-wasm",
   "version": "0.0.0",
   "description": "Typst 0.15.1 compiled to wasm: in-memory files and fonts, HTML, changed-page SVG and PDF, structured diagnostics.",
-  "license": "UNLICENSED",
-  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ikramhasan/typstream.git",
+    "directory": "packages/engine-wasm"
+  },
+  "homepage": "https://typstream.vercel.app/docs/reference/engine-wasm",
+  "bugs": "https://github.com/ikramhasan/typstream/issues",
+  "keywords": [
+    "typst",
+    "wasm",
+    "pdf",
+    "svg"
+  ],
   "type": "module",
   "sideEffects": false,
   "exports": {
@@ -26,6 +38,10 @@
     "dist",
     "!dist/.inputs"
   ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "./build.sh",
     "test": "vitest run",

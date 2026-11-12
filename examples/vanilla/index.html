@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>typstream without a framework</title>
+  </head>
+  <body>
+    <main>
+      <h1>typstream without a framework</h1>
+      <div class="toolbar">
+        <label><input type="radio" name="target" value="html" checked /> HTML</label>
+        <label><input type="radio" name="target" value="paged" /> Pages</label>
+        <button type="button" id="replay">Replay</button>
+        <button type="button" id="download" disabled>Download PDF</button>
+        <output class="status" data-streaming="true" data-status="idle">streaming</output>
+      </div>
+      <div id="preview"></div>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

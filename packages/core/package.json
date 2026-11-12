@@ -2,8 +2,19 @@
   "name": "@typstream/core",
   "version": "0.0.0",
   "description": "Shared contracts for typstream: text edits, source maps, diagnostics, the worker protocol and the plugin contract.",
-  "license": "UNLICENSED",
-  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ikramhasan/typstream.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://typstream.vercel.app/docs/reference/core",
+  "bugs": "https://github.com/ikramhasan/typstream/issues",
+  "keywords": [
+    "typst",
+    "streaming",
+    "llm"
+  ],
   "type": "module",
   "sideEffects": false,
   "exports": {
@@ -15,6 +26,10 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "tsup",
     "test": "vitest run",

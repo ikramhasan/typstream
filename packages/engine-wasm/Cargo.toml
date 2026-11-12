@@ -3,6 +3,7 @@ name = "typstream-engine-wasm"
 version = "0.0.0"
 edition = "2021"
 publish = false
+license = "MIT"
 description = "Typst 0.15.1 compiled to wasm for @typstream/engine-wasm: in-memory World, HTML, changed-page SVG and PDF."
 
 [lib]

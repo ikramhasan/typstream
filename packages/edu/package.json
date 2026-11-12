@@ -2,8 +2,21 @@
   "name": "@typstream/edu",
   "version": "0.0.0",
   "description": "Typst functions and templates for teachers' documents (questions, answer spaces and keys, callouts, rubrics, drawings, chemistry), as a typstream plugin.",
-  "license": "UNLICENSED",
-  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ikramhasan/typstream.git",
+    "directory": "packages/edu"
+  },
+  "homepage": "https://typstream.vercel.app/docs/reference/edu",
+  "bugs": "https://github.com/ikramhasan/typstream/issues",
+  "keywords": [
+    "typst",
+    "education",
+    "worksheet",
+    "quiz",
+    "llm"
+  ],
   "type": "module",
   "sideEffects": false,
   "exports": {
@@ -19,6 +32,10 @@
     "typst",
     "css"
   ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "node scripts/embed.mjs && tsup",
     "embed": "node scripts/embed.mjs",

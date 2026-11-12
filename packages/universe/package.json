@@ -2,8 +2,19 @@
   "name": "@typstream/universe",
   "version": "0.0.0",
   "description": "The Typst Universe packages typstream allows by default (CeTZ, fletcher, cetz-plot, physica, unify, chemformula, alchemist), vendored with integrity hashes, as an engine allowlist plugin.",
-  "license": "UNLICENSED",
-  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ikramhasan/typstream.git",
+    "directory": "packages/universe"
+  },
+  "homepage": "https://typstream.vercel.app/docs/reference/universe",
+  "bugs": "https://github.com/ikramhasan/typstream/issues",
+  "keywords": [
+    "typst",
+    "typst-packages",
+    "cetz"
+  ],
   "type": "module",
   "sideEffects": false,
   "exports": {
@@ -14,8 +25,13 @@
   },
   "files": [
     "dist",
-    "vendor"
+    "vendor",
+    "NOTICE"
   ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "tsup",
     "test": "vitest run --project node",

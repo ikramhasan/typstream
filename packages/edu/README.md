@@ -1,6 +1,6 @@
 # @typstream/edu
 
-The Typst vocabulary typstream teaches the model for teachers' documents: worksheets, quizzes, exams, lesson plans and handouts (PLAN.md §8.3, [#23](https://github.com/ikramhasan/typstream/issues/23)). It's a Typst package plus the CSS for its HTML, packaged as a `TypstreamPlugin` with a prompt catalogue generated from the package's doc comments.
+The Typst vocabulary typstream teaches the model for teachers' documents: worksheets, quizzes, exams, lesson plans and handouts. It's a Typst package plus the CSS for its HTML, packaged as a `TypstreamPlugin` with a prompt catalogue generated from the package's doc comments.
 
 ```ts
 import { edu, eduCss } from "@typstream/edu";
@@ -57,15 +57,15 @@ import { universe } from "@typstream/universe";
 const system = buildSystemPrompt([edu, universe]); // 19,024 characters, ~8.4K tokens
 ```
 
-Measured on kit-v4, the current prompt: in `tools/llm-corpus`'s runs ([#24](https://github.com/ikramhasan/typstream/issues/24)) the API counted it as 8,354 tokens of cached input, for Claude Haiku and Sonnet alike. Every rule, catalogue entry and example adds to it: `prompt.test.ts` fails once edu's part (17,549 characters) grows past 18,500, so update this figure with the bound.
+Measured on kit-v4, the current prompt: in the repository's `tools/llm-corpus` runs the API counted it as 8,354 tokens of cached input, for Claude Haiku and Sonnet alike. Every rule, catalogue entry and example adds to it: `prompt.test.ts` fails once edu's part (17,549 characters) grows past 18,500, so update this figure with the bound.
 
-The catalogue (`eduCatalogue`) is generated from the doc comments, so it can't drift from the functions; the hand-written rules (`eduPromptRules`, `typstPromptRules`) are checked against it: every edu function they call exists and takes the arguments they name. The rules come from measuring real models with and without them (`tools/llm-corpus`, [#24](https://github.com/ikramhasan/typstream/issues/24)). Each rule targets an error class those runs produced, so change them by re-measuring.
+The catalogue (`eduCatalogue`) is generated from the doc comments, so it can't drift from the functions; the hand-written rules (`eduPromptRules`, `typstPromptRules`) are checked against it: every edu function they call exists and takes the arguments they name. The rules come from measuring real models with and without them (`tools/llm-corpus` in the repository). Each rule targets an error class those runs produced, so change them by re-measuring.
 
 **Templates as `TemplateSpec`s** (`eduTemplates`, `mountTypstream`'s `template` option) apply a template for apps that ask the model for a body only. A document that writes its own `#show: worksheet.with(…)` (the prompt's default) must not get one too: it would apply twice.
 
 ## Using it with plain Typst
 
-The package needs no typstream. In typstream it is a local package: the plugin mounts its files under `@typstream/edu:0.1.0/…` (`EDU_ROOT`), which the engine roots at that package (#25), so nothing is fetched and it needs no allowlist entry. With plain `typst`, put `typst/` where Typst looks for that package and import it the same way:
+The package needs no typstream. In typstream it is a local package: the plugin mounts its files under `@typstream/edu:0.1.0/…` (`EDU_ROOT`), which the engine roots at that package, so nothing is fetched and it needs no allowlist entry. With plain `typst`, put `typst/` where Typst looks for that package and import it the same way:
 
 ```sh
 mkdir -p packages/typstream/edu && cp -r node_modules/@typstream/edu/typst packages/typstream/edu/0.1.0
@@ -86,3 +86,7 @@ The tests compile through `@typstream/engine-wasm` and native `typst` 0.15.1, so
 - `tools/compile-oracle`: the prompt examples' stream prefixes compile.
 
 Edit `typst/`, `css/edu.css` or `examples/`, then `pnpm embed` (or `pnpm build`) to regenerate `src/assets.generated.ts`. A test fails when it's stale.
+
+## License
+
+MIT
