@@ -26,12 +26,12 @@ env:
   # The compile oracle (tools/compile-oracle) needs the built engine, and html-compat's, edu's, mindmap's and mermaid's tests
   # compile with it (a devDependency turbo would build), so they run in the engine jobs too. So do @typstream/node and its example
   # (its build copies Typst's fonts out of the Rust crate graph).
-  # examples/nextjs-ai-sdk's and examples/strict-csp's tests drive browsers, so they run in the browser jobs.
+  # The tests of examples/nextjs-ai-sdk, strict-csp, vanilla and vite-react drive browsers, so they run in the browser jobs.
   NOT_ENGINE: >-
     --filter=!@typstream/engine-wasm --filter=!@typstream/compile-oracle --filter=!@typstream/html-compat --filter=!@typstream/edu
     --filter=!@typstream/mindmap --filter=!@typstream/mermaid
     --filter=!@typstream/node --filter=!@typstream/example-node-validate --filter=!@typstream/example-nextjs-ai-sdk
-    --filter=!@typstream/example-strict-csp
+    --filter=!@typstream/example-strict-csp --filter=!@typstream/example-vanilla --filter=!@typstream/example-vite-react
 
 jobs:
   lint:
@@ -222,7 +222,9 @@ jobs:
   # The engine worker in real browsers (packages/engine/__tests__/browser): protocol conformance, streaming through
   # client + worker + engine-wasm, and the watchdog. Then the renderers (packages/dom/__tests__/browser) and <Typstream>
   # (packages/react/__tests__/browser) against that worker, the mind map island (packages/mindmap/__tests__/browser),
-  # and examples/strict-csp: both targets and the island under a strict Content-Security-Policy, with no violation. One job per browser; Chromium's also runs examples/nextjs-ai-sdk, a
+  # examples/strict-csp: both targets and the island under a strict Content-Security-Policy, with no violation, and
+  # examples/vanilla and vite-react: a worksheet streamed with mountTypstream and with typstream's <Typstream> in a Vite
+  # production build, both targets and a PDF download. One job per browser; Chromium's also runs examples/nextjs-ai-sdk, a
   # production Next.js build streaming an answer into <Typstream>, and tools/browser-suites' preview vs PDF check (#118:
   # every edu page painted in the document panel equals the PDF export's; all three browsers run it nightly), and the
   # plugins' conformance suites' paged half (#135: edu's, mindmap's, mermaid's and Universe's examples, likewise).
@@ -248,7 +250,10 @@ jobs:
       - run: node tools/repo/playwright-docker.mjs pnpm --filter @typstream/dom test:browser
       - run: node tools/repo/playwright-docker.mjs pnpm --filter @typstream/react test:browser
       - run: node tools/repo/playwright-docker.mjs pnpm --filter @typstream/mindmap test:browser
-      - run: node tools/repo/playwright-docker.mjs pnpm exec turbo run test --filter=@typstream/example-strict-csp
+      # One at a time: three production builds and browsers at once would share the runner's two cores.
+      - run: >-
+          node tools/repo/playwright-docker.mjs pnpm exec turbo run test --concurrency=1
+          --filter=@typstream/example-strict-csp --filter=@typstream/example-vanilla --filter=@typstream/example-vite-react
       - if: matrix.browser == 'chromium'
         run: node tools/repo/playwright-docker.mjs pnpm exec turbo run test --filter=@typstream/example-nextjs-ai-sdk
       - if: matrix.browser == 'chromium'

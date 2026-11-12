@@ -1,6 +1,6 @@
 # @typstream/universe
 
-The [Typst Universe](https://typst.app/universe) packages typstream allows by default, vendored with their integrity hashes (PLAN.md §6.4, #25). It answers #1's "diagrams, chemistry, math":
+The [Typst Universe](https://typst.app/universe) packages typstream allows by default, vendored with their integrity hashes. They cover diagrams, chemistry and math:
 
 | For | Package | Import |
 |---|---|---|
@@ -32,7 +32,8 @@ createEngine({ spawn: engineWorker(), initialize: { packages: [...UNIVERSE_PACKA
 
 ## Licenses
 
-Each tarball carries its package's own license, unmodified:
+The plugin's own code is MIT. The vendored packages keep their licenses: each tarball carries its own, unmodified,
+and `NOTICE` lists every package with its license and authors.
 - **LGPL-3.0-or-later:** cetz and cetz-plot.
 - **MIT:** fletcher, physica, unify, chemformula and alchemist.
 - **oxifmt:** MIT OR Apache-2.0 (1.0.0) and MIT-0 (0.2.1).

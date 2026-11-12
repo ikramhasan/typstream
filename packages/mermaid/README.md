@@ -21,7 +21,7 @@ buildSystemPrompt([edu, mermaid]); // the model learns ```mermaid blocks
 ```
 
 - **Generator** (`src/generator.ts`, built to `generator/mermaid.js` with pele bundled, 276 KB gzipped): a file
-  generator (PLAN §8.2) the engine's worker imports by URL (`MERMAID_GENERATOR`). Before each compile it finds the
+  generator the engine's worker imports by URL (`MERMAID_GENERATOR`). Before each compile it finds the
   blocks (`src/scan.ts`), draws each with pele (`src/draw.ts`), and splits pele's SVG into shapes, its CSS variables
   resolved, and labels (`src/svg.ts`), measured in Libertinus Serif's widths (`src/measure.ts`). It writes an index of
   drawings and one SVG per drawing into the Typst package.
@@ -33,4 +33,8 @@ buildSystemPrompt([edu, mermaid]); // the model learns ```mermaid blocks
 - `pnpm embed` after editing `typst/` or `examples/`; `pnpm widths` to regenerate the measurer's widths. `pnpm test`,
   `pnpm test:paged` and `pnpm test:docx` (the conformance suite), `pnpm size`.
 
-Docs: [reference](../../apps/website/content/docs/reference/mermaid.mdx).
+Docs: [reference](https://typstream.vercel.app/docs/reference/mermaid).
+
+## License
+
+MIT. The generator bundles pele (MIT), whose license is in `THIRD-PARTY-NOTICES.txt`.

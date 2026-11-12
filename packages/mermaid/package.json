@@ -2,8 +2,19 @@
   "name": "@typstream/mermaid",
   "version": "0.0.0",
   "description": "Mermaid diagrams for typstream, drawn by pele in the engine's worker: the same on pages, in HTML, PDF and DOCX.",
-  "license": "UNLICENSED",
-  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ikramhasan/typstream.git",
+    "directory": "packages/mermaid"
+  },
+  "homepage": "https://typstream.vercel.app/docs/reference/mermaid",
+  "bugs": "https://github.com/ikramhasan/typstream/issues",
+  "keywords": [
+    "typst",
+    "mermaid",
+    "diagrams"
+  ],
   "type": "module",
   "sideEffects": false,
   "exports": {
@@ -20,8 +31,13 @@
   "files": [
     "dist",
     "generator",
-    "typst"
+    "typst",
+    "THIRD-PARTY-NOTICES.txt"
   ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "node scripts/embed.mjs && tsup",
     "embed": "node scripts/embed.mjs",

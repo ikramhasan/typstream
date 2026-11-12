@@ -1,6 +1,6 @@
 # @typstream/google-fonts
 
-Any family of the [Google Fonts](https://fonts.google.com) library in typstream documents, by name (PLAN.md §6.4, "As built: font catalogues"):
+Any family of the [Google Fonts](https://fonts.google.com) library in typstream documents, by name:
 
 ```typst
 #set text(font: "Lora")
@@ -23,4 +23,9 @@ buildSystemPrompt([edu, googleFonts]);
 
 `node scripts/catalogue.mjs [<commit>]` writes `catalogue.json` again: one GitHub API call for the repository's tree, then each family's `METADATA.pb`.
 
-Docs: [Fonts and languages](../../apps/website/content/docs/guides/fonts-and-languages.mdx#any-google-fonts-family), [reference](../../apps/website/content/docs/reference/google-fonts.mdx).
+Docs: [Fonts and languages](https://typstream.vercel.app/docs/guides/fonts-and-languages#any-google-fonts-family), [reference](https://typstream.vercel.app/docs/reference/google-fonts).
+
+## License
+
+MIT. The fonts are downloaded from the Google Fonts library when a document uses them, each under its own license
+(most under the SIL Open Font License); none ship in this package.

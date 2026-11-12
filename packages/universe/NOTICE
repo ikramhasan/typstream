@@ -1,0 +1,20 @@
+Third-party notices for @typstream/universe
+
+vendor/ holds Typst Universe packages, each tarball exactly as packages.typst.org serves it. They are not part of
+typstream and keep their own licenses: each tarball contains its license file (LICENSE, or LICENSE.txt for
+physica), which applies to that package. The source of each is the tarball itself and the repository named below.
+
+* alchemist 0.2.0: MIT, by Robotechnic (https://github.com/Typsium/alchemist)
+* cetz 0.3.4: LGPL-3.0-or-later, by Johannes Wolf, fenjalien (https://github.com/cetz-package/cetz)
+* cetz 0.5.2: LGPL-3.0-or-later, by Johannes Wolf, fenjalien (https://github.com/cetz-package/cetz)
+* cetz 0.5.3: LGPL-3.0-or-later, by Johannes Wolf, fenjalien (https://github.com/cetz-package/cetz)
+* cetz-plot 0.1.4: LGPL-3.0-or-later, by Johannes Wolf, fenjalien (https://github.com/cetz-package/cetz-plot)
+* chemformula 0.1.3: MIT, by pacaunt (https://github.com/pacaunt/chemformula)
+* fletcher 0.5.8: MIT, by Joseph Wilson (Jollywatt) (https://github.com/Jollywatt/typst-fletcher)
+* oxifmt 0.2.1: MIT-0, by PgBiel (https://github.com/PgBiel/typst-oxifmt)
+* oxifmt 1.0.0: MIT OR Apache-2.0, by PgBiel (https://github.com/PgBiel/typst-oxifmt)
+* physica 0.9.8: MIT, by Leedehai (https://github.com/Leedehai/typst-physics)
+* unify 0.8.1: MIT, by Christopher Hecker (https://github.com/ChHecker/unify)
+
+cetz and cetz-plot are under the GNU Lesser General Public License, version 3 or later. They are distributed
+here unmodified, in source form (Typst packages are their source).

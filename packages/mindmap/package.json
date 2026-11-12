@@ -2,8 +2,19 @@
   "name": "@typstream/mindmap",
   "version": "0.0.0",
   "description": "Mind maps for typstream: written as a list, drawn in Typst for print and PDF, interactive (pan, zoom, open and close branches) in the viewer.",
-  "license": "UNLICENSED",
-  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ikramhasan/typstream.git",
+    "directory": "packages/mindmap"
+  },
+  "homepage": "https://typstream.vercel.app/docs/reference/mindmap",
+  "bugs": "https://github.com/ikramhasan/typstream/issues",
+  "keywords": [
+    "typst",
+    "mind-map",
+    "react-flow"
+  ],
   "type": "module",
   "sideEffects": false,
   "exports": {
@@ -19,8 +30,13 @@
   },
   "files": [
     "dist",
-    "typst"
+    "typst",
+    "THIRD-PARTY-NOTICES.txt"
   ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "node scripts/embed.mjs && tsup",
     "embed": "node scripts/embed.mjs",
