@@ -107,7 +107,7 @@ jobs:
     name: Publish
     needs: pack
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20 # the provenance check waits up to 10
     permissions:
       contents: write # the release tags and GitHub releases
       id-token: write # trusted publishing, and provenance
@@ -125,33 +125,36 @@ jobs:
 
       # 0.1.0 was published with a token and came out without provenance although every package asks for it.
       # Trusted publishing generates it; this fails the run if a version still has none, rather than finding out on
-      # npmjs.com.
+      # npmjs.com. A version can take minutes to show on the registry (0.1.1: about 3 for some packages), so it asks
+      # for every package still missing one every 15 s, for up to 10 minutes.
       - name: Check provenance
         if: steps.publish.outputs.published == 'true'
         env:
           PUBLISHED: ${{ steps.publish.outputs.published-packages }}
         run: |
           node --input-type=module -e '
-            const published = JSON.parse(process.env.PUBLISHED);
-            const hasProvenance = async (name, version) => {
+            const hasProvenance = async ({ name, version }) => {
               const url = `https://registry.npmjs.org/-/npm/v1/attestations/${name.replace("/", "%2f")}@${version}`;
-              const res = await fetch(url, { headers: { "cache-control": "no-cache" } });
-              const body = res.ok ? await res.json() : null;
-              return (body?.attestations ?? []).some((a) => a.predicateType.startsWith("https://slsa.dev/provenance/"));
-            };
-            let missing = 0;
-            for (const { name, version } of published) {
-              // A version just published can take a moment to show on the registry.
-              let ok = false;
-              for (let attempt = 0; attempt < 12 && !ok; attempt++) {
-                if (attempt) await new Promise((r) => setTimeout(r, 10_000));
-                ok = await hasProvenance(name, version);
+              try {
+                const res = await fetch(url, { headers: { "cache-control": "no-cache" } });
+                const body = res.ok ? await res.json() : null;
+                return (body?.attestations ?? []).some((a) => a.predicateType.startsWith("https://slsa.dev/provenance/"));
+              } catch {
+                return false; // a network error is asked again next round
               }
-              console.log(`${ok ? "ok     " : "MISSING"} ${name}@${version}`);
-              if (!ok) missing++;
+            };
+            const deadline = Date.now() + 10 * 60_000;
+            let pending = JSON.parse(process.env.PUBLISHED);
+            while (true) {
+              const found = await Promise.all(pending.map(hasProvenance));
+              for (const [i, p] of pending.entries()) if (found[i]) console.log(`ok      ${p.name}@${p.version}`);
+              pending = pending.filter((_, i) => !found[i]);
+              if (!pending.length || Date.now() > deadline) break;
+              await new Promise((r) => setTimeout(r, 15_000));
             }
-            if (missing) {
-              console.log(`::error::${missing} published version(s) have no provenance attestation`);
+            for (const p of pending) console.log(`MISSING ${p.name}@${p.version}`);
+            if (pending.length) {
+              console.log(`::error::${pending.length} published version(s) have no provenance attestation after 10 minutes`);
               process.exit(1);
             }
           '
