@@ -247,9 +247,11 @@ CI (`.github/workflows/ci.yml`) runs the same commands on every PR, building the
 
 Deploys (`.github/workflows/deploy.yml`): the website (`apps/website`, https://typstream.vercel.app) and `examples/nextjs-ai-sdk` (https://typstream-ai-sdk.vercel.app) are two Vercel projects in the `ikramhasans-projects` team, not connected to the repository (each app's `vercel.json` also turns Git deployments off): every PR gets previews of both (a comment lists them; the website's preview links to that PR's example), and pushes to `main` deploy production. Both are built on the runner and uploaded prebuilt (`.github/actions/vercel-deploy`: `vercel pull`, `vercel build`, `vercel deploy --prebuilt`), since Vercel's build machines can't build engine-wasm. Needs the `VERCEL_TOKEN` secret; fork PRs get no previews. Project settings (root directory, Node, the website's production `SITE_URL`) live in Vercel: `vercel project inspect <name> --scope ikramhasans-projects`; add variables with `vercel env add … --no-sensitive` (sensitive ones pull as `[SENSITIVE]` and break the build).
 
-Releases (`.github/workflows/release.yml`, PLAN §10.4 "As built (#4)"): changesets/action on every push to `main`
-opens the "chore: version packages" PR from pending changesets; merging it publishes the new versions to npm with
-provenance (`NPM_TOKEN` for 0.1.0, then trusted publishing). Never merge that PR or publish without the maintainer's
+Releases (`.github/workflows/release.yml`, PLAN §10.4 "As built (#4)"): changesets/action v2 (the one for
+@changesets/cli 3; v1 can't read its output) on every push to `main` opens the "chore: version packages" PR from
+pending changesets; merging it builds and packs the packages, publishes the new versions to npm through trusted
+publishing (OIDC, no token; only the publish job has `id-token: write`), tags them, makes a GitHub release per
+package, and fails if a version came out without provenance. Never merge that PR or publish without the maintainer's
 go-ahead. Every package is published: `check:layers` requires MIT, no `private`, `publishConfig { access: public,
 provenance: true }`, `repository.directory`, a README and a copy of the root `LICENSE`. Code a package bundles from
 elsewhere ships its notices: engine-wasm's build writes `dist/THIRD-PARTY-NOTICES.txt` (`scripts/notices.mjs`, from

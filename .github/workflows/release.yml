@@ -1,14 +1,18 @@
-# Releases to npm with changesets (PLAN.md §10.4, #4). On every push to main:
-# - with changesets pending, it opens (or updates) the "Version Packages" PR, which applies them: versions and
-#   CHANGELOG.md files. Its commits are made through GitHub's API, so GitHub signs them.
-# - when that PR is merged (no changesets left, versions not on npm yet), it publishes those versions, with
-#   provenance, and tags them.
-# CI (ci.yml) checks every commit to main; this job builds the packages again and checks what it is about to pack.
+# Releases to npm with changesets (PLAN.md §10.4, #4). On every push to main, select-mode decides what to do:
+# - "version" (changesets pending): the version job opens (or updates) the "chore: version packages" PR, which
+#   applies them: versions and CHANGELOG.md files. Its commits are made through GitHub's API, so GitHub signs them.
+# - "publish" (no changesets left, versions not on npm yet, i.e. that PR was merged): the pack job builds every
+#   package, checks what it is about to pack and packs it; the publish job publishes the tarballs, then tags them and
+#   makes a GitHub release per package.
+# - "none": nothing to do.
 #
-# npm auth: the NPM_TOKEN secret (a granular token that may publish @typstream/* and typstream) for the first
-# release. Once the packages exist, trusted publishing (OIDC: this workflow, `release.yml`, as each package's
-# trusted publisher on npmjs.com) replaces it and the secret is deleted; the id-token permission below is for that
-# and for provenance.
+# changesets/action v2 is the release for @changesets/cli 3: v1 read the CLI's output to tell what it published,
+# changesets 3 prints it differently, so 0.1.0 went out with no tags or releases (made by hand afterwards).
+#
+# npm auth is trusted publishing (OIDC): this workflow, `release.yml`, is each package's trusted publisher on
+# npmjs.com, so there is no token, and npm generates provenance for every version. Only the publish job can mint the
+# OIDC token (`id-token: write`); it runs no build and no package scripts, only `changeset publish` on the tarballs
+# the pack job made.
 name: Release
 
 on:
@@ -21,29 +25,67 @@ concurrency:
   group: release
   cancel-in-progress: false
 
-permissions:
-  contents: read
+# Each job asks for what it needs.
+permissions: {}
 
 env:
   NODE: "24"
 
 jobs:
-  release:
-    name: Version or publish
+  select-mode:
+    name: Select mode
     if: github.repository == 'ikramhasan/typstream'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      mode: ${{ steps.select.outputs.mode }}
+      publish-plan-artifact-id: ${{ steps.select.outputs.publish-plan-artifact-id }}
+    steps:
+      - uses: actions/checkout@v7
+        with: { persist-credentials: false }
+      - uses: ./.github/actions/pnpm
+        with: { node: "${{ env.NODE }}" }
+      - id: select
+        uses: changesets/action/select-mode@v2
+
+  version:
+    name: Version PR
+    needs: select-mode
+    if: needs.select-mode.outputs.mode == 'version'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # the version branch
+      pull-requests: write # the version PR
+    steps:
+      - uses: actions/checkout@v7
+        with: { fetch-depth: 0, persist-credentials: false }
+      - uses: ./.github/actions/pnpm
+        with: { node: "${{ env.NODE }}" }
+      - uses: changesets/action/version@v2
+        with:
+          script: pnpm changeset version
+          pr-title: "chore: version packages"
+          commit-message: "chore: version packages"
+
+  pack:
+    name: Build and pack
+    needs: select-mode
+    if: needs.select-mode.outputs.mode == 'publish'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
-      contents: write # the version branch and the release tags
-      pull-requests: write # the Version Packages PR
-      id-token: write # npm provenance, and trusted publishing
+      contents: read
+      actions: read # the publish plan artifact
+    outputs:
+      pack-dir-artifact-id: ${{ steps.pack.outputs.pack-dir-artifact-id }}
     steps:
       - uses: actions/checkout@v7
-        with: { fetch-depth: 0 }
-
+        with: { persist-credentials: false }
       - uses: ./.github/actions/pnpm
         with: { node: "${{ env.NODE }}" }
-
       - uses: ./.github/actions/engine-wasm
 
       # Everything published, then what publint and attw say about the packed packages (CI's check:packages).
@@ -51,16 +93,60 @@ jobs:
       - run: pnpm check:packages
       - run: pnpm check:layers
 
-      - uses: changesets/action@v1
+      - id: pack
+        uses: changesets/action/pack@v2
         with:
-          version: pnpm changeset version
-          publish: pnpm changeset publish
-          title: "chore: version packages"
-          commit: "chore: version packages"
-          commitMode: github-api
+          publish-plan-artifact-id: ${{ needs.select-mode.outputs.publish-plan-artifact-id }}
+
+  publish:
+    name: Publish
+    needs: pack
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write # the release tags and GitHub releases
+      id-token: write # trusted publishing, and provenance
+      actions: read # the packed tarballs
+    steps:
+      - uses: actions/checkout@v7
+        with: { persist-credentials: false }
+      - uses: ./.github/actions/pnpm
+        with: { node: "${{ env.NODE }}" }
+
+      - id: publish
+        uses: changesets/action/publish@v2
+        with:
+          pack-dir-artifact-id: ${{ needs.pack.outputs.pack-dir-artifact-id }}
+
+      # 0.1.0 was published with a token and came out without provenance although every package asks for it.
+      # Trusted publishing generates it; this fails the run if a version still has none, rather than finding out on
+      # npmjs.com.
+      - name: Check provenance
+        if: steps.publish.outputs.published == 'true'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          # Every package's publishConfig asks for provenance too; pnpm and npm read these either way.
-          NPM_CONFIG_PROVENANCE: "true"
-          PNPM_CONFIG_PROVENANCE: "true"
+          PUBLISHED: ${{ steps.publish.outputs.published-packages }}
+        run: |
+          node --input-type=module -e '
+            const published = JSON.parse(process.env.PUBLISHED);
+            const hasProvenance = async (name, version) => {
+              const url = `https://registry.npmjs.org/-/npm/v1/attestations/${name.replace("/", "%2f")}@${version}`;
+              const res = await fetch(url, { headers: { "cache-control": "no-cache" } });
+              const body = res.ok ? await res.json() : null;
+              return (body?.attestations ?? []).some((a) => a.predicateType.startsWith("https://slsa.dev/provenance/"));
+            };
+            let missing = 0;
+            for (const { name, version } of published) {
+              // A version just published can take a moment to show on the registry.
+              let ok = false;
+              for (let attempt = 0; attempt < 12 && !ok; attempt++) {
+                if (attempt) await new Promise((r) => setTimeout(r, 10_000));
+                ok = await hasProvenance(name, version);
+              }
+              console.log(`${ok ? "ok     " : "MISSING"} ${name}@${version}`);
+              if (!ok) missing++;
+            }
+            if (missing) {
+              console.log(`::error::${missing} published version(s) have no provenance attestation`);
+              process.exit(1);
+            }
+          '
