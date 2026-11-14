@@ -1,6 +1,6 @@
 {
   "name": "@typstream/engine",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Compiles streamed Typst in a worker: heals on the main thread, schedules compiles, and recovers from runaway documents.",
   "license": "MIT",
   "repository": {

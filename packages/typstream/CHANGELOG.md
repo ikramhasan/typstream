@@ -1,5 +1,18 @@
 # typstream
 
+## 0.1.1
+
+### Patch Changes
+
+- 3e5b205: Published with npm provenance, through trusted publishing: each version on npm now carries a signed statement of the GitHub Actions run and commit that built it (0.1.0 has none). No code changes.
+- Updated dependencies [3e5b205]
+  - @typstream/engine@0.1.1
+  - @typstream/engine-wasm@0.1.1
+  - @typstream/heal@0.1.1
+  - @typstream/html-compat@0.1.1
+  - @typstream/react@0.1.1
+  - @typstream/universe@0.1.1
+
 ## 0.1.0
 
 ### Minor Changes

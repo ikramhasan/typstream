@@ -1,5 +1,12 @@
 # @typstream/example-node-validate
 
+## 0.0.2
+
+### Patch Changes
+
+- Updated dependencies [3e5b205]
+  - @typstream/node@0.1.1
+
 ## 0.0.1
 
 ### Patch Changes

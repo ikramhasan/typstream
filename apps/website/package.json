@@ -1,6 +1,6 @@
 {
   "name": "@typstream/website",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "typstream's website: landing page and documentation (Next.js + Fumadocs, PLAN.md §10.5), with llms.txt and a markdown version of every page.",
   "license": "UNLICENSED",
   "private": true,

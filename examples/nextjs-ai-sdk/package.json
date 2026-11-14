@@ -1,6 +1,6 @@
 {
   "name": "@typstream/example-nextjs-ai-sdk",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "description": "Stream a Typst worksheet from an LLM into <Typstream> with the Vercel AI SDK's useChat (Next.js App Router).",
   "type": "module",

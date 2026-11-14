@@ -1,5 +1,18 @@
 # @typstream/example-nextjs-ai-sdk
 
+## 0.0.2
+
+### Patch Changes
+
+- Updated dependencies [3e5b205]
+  - @typstream/ai@0.1.1
+  - @typstream/edu@0.1.1
+  - @typstream/google-fonts@0.1.1
+  - @typstream/mermaid@0.1.1
+  - @typstream/mindmap@0.1.1
+  - typstream@0.1.1
+  - @typstream/universe@0.1.1
+
 ## 0.0.1
 
 ### Patch Changes

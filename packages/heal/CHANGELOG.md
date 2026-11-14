@@ -1,5 +1,13 @@
 # @typstream/heal
 
+## 0.1.1
+
+### Patch Changes
+
+- 3e5b205: Published with npm provenance, through trusted publishing: each version on npm now carries a signed statement of the GitHub Actions run and commit that built it (0.1.0 has none). No code changes.
+- Updated dependencies [3e5b205]
+  - @typstream/core@0.1.1
+
 ## 0.1.0
 
 ### Minor Changes

@@ -1,5 +1,18 @@
 # @typstream/example-strict-csp
 
+## 0.0.2
+
+### Patch Changes
+
+- Updated dependencies [3e5b205]
+  - @typstream/dom@0.1.1
+  - @typstream/engine@0.1.1
+  - @typstream/engine-wasm@0.1.1
+  - @typstream/html-compat@0.1.1
+  - @typstream/mindmap@0.1.1
+  - @typstream/react@0.1.1
+  - @typstream/universe@0.1.1
+
 ## 0.0.1
 
 ### Patch Changes
