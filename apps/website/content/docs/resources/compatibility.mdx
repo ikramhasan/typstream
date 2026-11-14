@@ -52,23 +52,28 @@ Budgets in minified and gzipped ESM. Each is checked on every change, so they ar
 
 | Part | Budget | Notes |
 |---|---|---|
-| `@typstream/heal` | ≤ 16.2 KB | With `@typstream/core`'s helpers inlined. |
-| `@typstream/engine`, main thread | ≤ 9.5 KB | Without heal. |
+| `@typstream/heal` | ≤ 16.4 KB | With `@typstream/core`'s helpers inlined. |
+| `@typstream/engine`, main thread | ≤ 9.6 KB | Without heal. |
+| `@typstream/engine/websocket` | ≤ 1.5 KB | `fromWebSocket`, only for apps that compile on a server. |
 | `@typstream/engine/images` | ≤ 1.5 KB | `fetchImages`, only for apps that show images from the web. |
-| `@typstream/react`, with `@typstream/dom` | ≤ 16.7 KB | Without React and the engine. |
-| `@typstream/dom` HTML renderer | ≤ 9.5 KB | Including its CSS. |
-| `@typstream/dom` paged renderer | ≤ 4 KB | |
+| `@typstream/react`, with `@typstream/dom` | ≤ 35.3 KB | Without React and the engine. |
+| `@typstream/dom` HTML renderer | ≤ 23.3 KB | Including its CSS, and the layout of the HTML target on pages. |
+| `@typstream/dom` paged renderer | ≤ 7.2 KB | |
 | `@typstream/dom` standalone HTML export | ≤ 2 KB | |
+| `@typstream/ai` | ≤ 4.5 KB | Without heal and core. |
 | Engine worker JS | ≤ 40 KB | Loaded in the worker, not your bundle. Without the wasm and fonts. |
-| Typst wasm (`@typstream/engine-wasm`) | ≤ 6.32 MB brotli | About 19 MB uncompressed; HTML, SVG and PDF in one build. |
+| `@typstream/docx` | ≤ 14.1 KB | Loaded by the worker on the first DOCX export. |
+| Typst wasm (`@typstream/engine-wasm`) | ≤ 6.32 MB brotli | About 21 MB uncompressed; HTML, SVG, PDF and the DOCX export's model in one build. |
+| `@typstream/mindmap` plugin | ≤ 10 KB | Its React entry ≤ 1 KB; React Flow ≤ 66 KB, loaded when the first map shows. |
+| `@typstream/mermaid` plugin | ≤ 6 KB | Its generator, loaded by the worker when a document with the plugin opens: ≤ 285 KB, pele included. |
 
-In practice, `typstream` adds about 50 KB gzipped to a React app's main bundle (React itself excluded): the bindings, renderers, engine client and healer, plus html-compat's prelude and CSS and the package list. Plugins you add, such as edu, come on top. The wasm, the fonts and the packages are separate files, fetched by the worker when it starts or when a document needs them: see [what gets downloaded, and when](/docs/getting-started/installation#what-gets-downloaded-and-when).
+In practice, `typstream` adds about 90 KB gzipped to a React app's main bundle (React itself excluded): the bindings, renderers, engine client and healer, plus html-compat's prelude and CSS and the package list. Plugins you add, such as edu, come on top. The wasm, the fonts and the packages are separate files, fetched by the worker when it starts or when a document needs them: see [what gets downloaded, and when](/docs/getting-started/installation#what-gets-downloaded-and-when).
 
 ## Fonts
 
 | Fonts | Scripts | Loaded |
 |---|---|---|
-| Libertinus Serif (regular, bold, italic) | Latin, Greek, Cyrillic, Hebrew | When the engine starts (2.6 MB with the two below) |
+| Libertinus Serif (regular, bold, italic) | Latin, Greek, Cyrillic, Hebrew | When the engine starts (3.7 MB with the two below, 1.4 MB brotli) |
 | New Computer Modern Math | Math | When the engine starts; also registered as a web font for MathML |
 | DejaVu Sans Mono | Code | When the engine starts |
 | Noto Naskh Arabic (regular, bold) | Arabic | The first time a document needs it (47–79 KB brotli per face) |

@@ -73,6 +73,35 @@ describe("vendored packages", () => {
   });
 });
 
+describe("NOTICE", () => {
+  it("names every vendored package with the license its manifest declares", () => {
+    const notice = readFileSync(new URL("../NOTICE", import.meta.url), "utf8");
+    const listed = [...notice.matchAll(/^\* (\S+) (\S+): ([^,]+),/gm)].map(([, name, version, license]) => ({
+      name,
+      version,
+      license,
+    }));
+    // The regex's capture groups are `string | undefined`, so the comparator takes them as they are.
+    type Entry = { name: string | undefined; version: string | undefined };
+    const byName = (a: Entry, b: Entry) => `${a.name} ${a.version}`.localeCompare(`${b.name} ${b.version}`);
+    expect(listed.sort(byName)).toEqual(
+      vendored
+        .map((p) => ({
+          name: p.name,
+          version: p.version,
+          license: /^license = "([^"]+)"$/m.exec(p.files.get("typst.toml")?.toString("utf8") ?? "")?.[1],
+        }))
+        .sort(byName),
+    );
+    for (const p of vendored) {
+      expect(
+        [...p.files.keys()].some((path) => /^licen[cs]e/i.test(path)),
+        `${spec(p)} has a license file`,
+      ).toBe(true);
+    }
+  });
+});
+
 describe("universe plugin", () => {
   it("allows every vendored package, with its URL, integrity and imports", () => {
     expect(universe.engine.packages.map(spec)).toEqual(UNIVERSE_PACKAGES.map(spec));

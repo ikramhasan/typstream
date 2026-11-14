@@ -1,6 +1,6 @@
 # @typstream/engine-wasm
 
-Typst 0.15.1 compiled to WebAssembly. It compiles an in-memory project to HTML, to SVG for only the pages that changed since the last compile, or to PDF, and returns diagnostics with UTF-16 spans. It's the default engine behind `@typstream/engine` (PLAN.md §6.1), meant to run in a Web Worker.
+Typst 0.15.1 compiled to WebAssembly. It compiles an in-memory project to HTML, to SVG for only the pages that changed since the last compile, or to PDF, and returns diagnostics with UTF-16 spans. It's the default engine behind `@typstream/engine`, meant to run in a Web Worker.
 
 ```ts
 import init, { Engine } from "@typstream/engine-wasm";
@@ -16,13 +16,13 @@ const { ok, html, diagnostics } = engine.compile_html();
 const { pageCount, changed } = engine.compile_svg_changed(); // changed: { index, hash, width, height, svg }[]
 ```
 
-The base fonts (Libertinus Serif regular, bold and italic, New Computer Modern Math (Book, the face Typst sets math in), DejaVu Sans Mono; 3.8 MB, 1.4 MB brotli, licenses in `dist/fonts/NOTICE`) ship in `dist/fonts/`, all with TrueType outlines: typst-assets ships Libertinus Serif and New Computer Modern Math with CFF outlines, which Word won't embed, so the build converts them (`scripts/otf2ttf.py`; same fonts, laid out the same, #118). `import { baseFonts } from "@typstream/engine-wasm/fonts"` gives their URLs, written as `new URL("./fonts/…", import.meta.url)` so bundlers emit them as assets.
+The base fonts (Libertinus Serif regular, bold and italic, New Computer Modern Math (Book, the face Typst sets math in), DejaVu Sans Mono; 3.7 MB, 1.4 MB brotli, licenses in `dist/fonts/NOTICE`) ship in `dist/fonts/`, all with TrueType outlines: typst-assets ships Libertinus Serif and New Computer Modern Math with CFF outlines, which Word won't embed, so the build converts them (`scripts/otf2ttf.py`; same fonts, laid out the same). `import { baseFonts } from "@typstream/engine-wasm/fonts"` gives their URLs, written as `new URL("./fonts/…", import.meta.url)` so bundlers emit them as assets.
 
-The rest of Typst's bundled faces (Libertinus Serif bold italic and semibold, New Computer Modern text, the math font's regular and bold, DejaVu Sans Mono bold and oblique) ship too, as `extraFonts`: registered without their bytes and downloaded the first time a document uses one, like the script fonts below. With the base fonts they are every face native `typst` embeds, so an engine that registers both picks the same faces it does (#128), and `@typstream/node` serves the same files.
+The rest of Typst's bundled faces (Libertinus Serif bold italic and semibold, New Computer Modern text, the math font's regular and bold, DejaVu Sans Mono bold and oblique) ship too, as `extraFonts`: registered without their bytes and downloaded the first time a document uses one, like the script fonts below. With the base fonts they are every face native `typst` embeds, so an engine that registers both picks the same faces it does, and `@typstream/node` serves the same files.
 
 ## Lazy fonts
 
-Scripts the base fonts don't cover have **script fonts**, registered without their bytes and downloaded the first time a document uses them (PLAN.md §6.4, #11): Noto Naskh Arabic, Noto Serif Bengali and Noto Serif Devanagari, regular and bold (47–79 KB brotli each, OFL, `dist/fonts/LICENSE-Noto.txt`). Libertinus Serif already covers Latin, Greek, Cyrillic and Hebrew. `scriptFonts` from `@typstream/engine-wasm/fonts` lists them as `{ url, file, family, scripts, info }`, where `info` is Typst's `FontInfo` for each face (family, style, coverage) as JSON, computed at build time.
+Scripts the base fonts don't cover have **script fonts**, registered without their bytes and downloaded the first time a document uses them: Noto Naskh Arabic, Noto Serif Bengali and Noto Serif Devanagari, regular and bold (47–79 KB brotli each, OFL, `dist/fonts/LICENSE-Noto.txt`). Libertinus Serif already covers Latin, Greek, Cyrillic and Hebrew. `scriptFonts` from `@typstream/engine-wasm/fonts` lists them as `{ url, file, family, scripts, info }`, where `info` is Typst's `FontInfo` for each face (family, style, coverage) as JSON, computed at build time.
 
 ```ts
 import { scriptFonts } from "@typstream/engine-wasm/fonts";
@@ -63,7 +63,7 @@ In Node or a worker that already has the bytes: `initSync({ module: bytes })`.
 | `Engine.load_font(id, bytes)` | Gives a registered font its bytes. Throws unless they are the file the info came from. |
 | `set_source(path, text)` | Sets a source file. `/main.typ` is the entry point. Existing sources are updated incrementally. |
 | `set_file(path, bytes)` / `remove_file(path)` | Binary files (images, data). `/main.typ` can't be removed. |
-| Package paths | `@preview/cetz:0.5.3/src/lib.typ` (a spec, then a path) is a file of that package, rooted at it, so `#import "@preview/cetz:0.5.3"` reads its `typst.toml` and entry point. A package with nothing mounted is "package not found". `@typstream/engine`'s server fetches and mounts allowed packages (#25). |
+| Package paths | `@preview/cetz:0.5.3/src/lib.typ` (a spec, then a path) is a file of that package, rooted at it, so `#import "@preview/cetz:0.5.3"` reads its `typst.toml` and entry point. A package with nothing mounted is "package not found". `@typstream/engine`'s server fetches and mounts allowed packages. |
 | `set_inputs({ key: "value" })` | `sys.inputs`. Values must be strings. |
 | `compile_html()` | `{ ok, html?, diagnostics, ms, missingFonts }`. Every compile lists `missingFonts`: registered fonts it wanted but had no bytes for. HTML text is drawn by the browser, so only `html.frame`s need fonts. |
 | `compile_svg_changed()` | `{ ok, pageCount?, changed?, diagnostics, ms, compileMs, exportMs }`. A failed compile keeps the previous pages as the baseline. Each changed page has its `width` and `height` in points and a `hash` (32 hex digits) of its frame. Frame hashes include source spans, so the same text parsed afresh or reparsed incrementally can hash differently. |
@@ -82,7 +82,7 @@ Things to know:
 - Fonts, the memoization cache and memory are **global to the wasm instance**, shared by every `Engine` in it. Wasm memory never shrinks; recycle the worker to give it back.
 - No packages, network or filesystem: a document can read only what was set on the engine.
 - `datetime.today()` is the local date, as in the Typst CLI.
-- PDF is in the build (+0.34 MB brotli), so an export reuses the preview's warm compile instead of loading and warming a second engine (#18, PLAN.md §6.4). `cargo build --no-default-features` leaves it out.
+- PDF is in the build (+0.34 MB brotli), so an export reuses the preview's warm compile instead of loading and warming a second engine. `cargo build --no-default-features` leaves it out.
 
 ## Building
 
@@ -94,7 +94,13 @@ pnpm build        # ./build.sh: cargo release build, wasm-bindgen --target web, 
                   # (skipped when dist/ was built from the same inputs; FORCE=1 rebuilds)
 pnpm test         # vitest, against the existing dist/
 pnpm turbo run test --filter=@typstream/engine-wasm   # from the repo root: build if needed, then test
-pnpm size         # brotli-11 size of the wasm; budget 6.3 MB
+pnpm size         # brotli-11 size of the wasm; budget 6.32 MB
 ```
 
 The tests use Typst's bundled fonts from the `typst-assets` crate (found with `cargo metadata`) and compare against the native `typst` CLI 0.15.1, which must be on `PATH`. They check that HTML and every SVG page are identical to native output.
+
+## License
+
+MIT for this package's own code. The wasm is Typst and the Rust crates it links, whose licenses (Apache-2.0, MIT
+and others) and notices are in `dist/THIRD-PARTY-NOTICES.txt`. The fonts keep their own: `dist/fonts/NOTICE` and
+`dist/fonts/LICENSE-Noto.txt`.

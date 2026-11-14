@@ -5,21 +5,6 @@ description: Which typstream package to install for your app, what your bundler 
 
 typstream is a set of packages. Most apps need one of them; the others are for apps that render without React, run on a server, or only need part of the pipeline.
 
-<Callout type="warn" title="Not on npm yet">
-The packages haven't had their first npm release ([#4](https://github.com/ikramhasan/typstream/issues/4)). The install commands in these docs are what you will run once they are published. Until then, build them from the repository:
-
-```bash
-git clone https://github.com/ikramhasan/typstream.git
-cd typstream
-pnpm install
-pnpm build
-```
-
-The build compiles Typst to WebAssembly, so it needs Rust ≥ 1.92 with the `wasm32-unknown-unknown` target, `wasm-bindgen-cli` 0.2.129 (exactly the version in the crate's `Cargo.lock`), and binaryen's `wasm-opt`. The repository's `CLAUDE.md` lists the whole toolchain.
-
-The simplest way to use the built packages is to put your app inside the repository's pnpm workspace, as the apps in `examples/` are, and depend on them with `"typstream": "workspace:*"`. To use them from another project, run `pnpm pack` in each package your app needs, including the `@typstream/*` packages it depends on (pack rewrites `workspace:*` to real versions), and install the tarballs with `file:` dependencies.
-</Callout>
-
 ## Choose a package
 
 | You are building | Install | You get |
@@ -47,7 +32,7 @@ npm install @typstream/dom @typstream/engine @typstream/engine-wasm @typstream/h
 
 The engine runs in a module worker, and the worker loads the Typst wasm and its fonts. All of them are referenced as `new URL("./file", import.meta.url)`, the pattern bundlers recognise to emit a file as an asset and rewrite the URL. You don't copy anything into `public/`.
 
-- **Vite** needs no configuration.
+- **Vite** needs no configuration. [`examples/vite-react`](https://github.com/ikramhasan/typstream/tree/main/examples/vite-react) and [`examples/vanilla`](https://github.com/ikramhasan/typstream/tree/main/examples/vanilla) are Vite apps, with React and without, whose tests build them for production and stream a document in Chromium, Firefox and WebKit.
 - **Next.js** needs none either, with Turbopack or webpack. In a monorepo, Turbopack may need `turbopack.root` set to the repository root so it can follow symlinked packages; that has nothing to do with typstream.
 
 If your bundler doesn't handle `new URL(…, import.meta.url)` for workers and assets, or you want to load the wasm and fonts from a CDN, write your own worker with `@typstream/engine/server`. See [Self-hosting the engine](/docs/guides/self-hosting).

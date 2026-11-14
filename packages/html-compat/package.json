@@ -1,9 +1,19 @@
 {
   "name": "@typstream/html-compat",
   "version": "0.0.0",
-  "description": "A Typst prelude and CSS that make Typst's HTML export keep the content of layout elements it would drop (grid, align, place, shapes, \u2026).",
-  "license": "UNLICENSED",
-  "private": true,
+  "description": "A Typst prelude and CSS that make Typst's HTML export keep the content of layout elements it would drop (grid, align, place, shapes, …).",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ikramhasan/typstream.git",
+    "directory": "packages/html-compat"
+  },
+  "homepage": "https://typstream.vercel.app/docs/reference/html-compat",
+  "bugs": "https://github.com/ikramhasan/typstream/issues",
+  "keywords": [
+    "typst",
+    "html"
+  ],
   "type": "module",
   "sideEffects": false,
   "exports": {
@@ -19,6 +29,10 @@
     "typst",
     "css"
   ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "node scripts/embed.mjs && tsup",
     "embed": "node scripts/embed.mjs",

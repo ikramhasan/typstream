@@ -1,7 +1,10 @@
 // `pnpm check:layers`: the layering of PLAN.md §4.1.
 //
 // 1. Every directory in packages/ is in tools/repo/layers.mjs, under its npm
-//    name, and declares only the workspace dependencies its row allows.
+//    name, and declares only the workspace dependencies its row allows. It is
+//    publishable (#4): MIT, the root LICENSE copied in (npm packs only the
+//    package's own files), a README, its repository directory, and published
+//    public with provenance.
 // 2. dependency-cruiser on a fixture of illegal imports reports exactly the
 //    expected violations, so a rule that silently stopped matching fails here.
 // 3. dependency-cruiser on packages/ and apps/.
@@ -15,6 +18,8 @@ const root = fileURLToPath(new URL("../..", import.meta.url));
 const depcruise = join(root, "node_modules/.bin/depcruise");
 const config = join(root, ".dependency-cruiser.mjs");
 const errors = [];
+const license = readFileSync(join(root, "LICENSE"), "utf8");
+const readIfExists = (path) => (existsSync(path) ? readFileSync(path, "utf8") : undefined);
 
 // 1. Manifests.
 const names = new Map(Object.entries(PACKAGES).map(([dir, pkg]) => [pkg.name, dir]));
@@ -28,6 +33,18 @@ for (const dir of readdirSync(join(root, "packages"))) {
   }
   const json = JSON.parse(readFileSync(manifest, "utf8"));
   if (json.name !== pkg.name) errors.push(`packages/${dir}: name is ${json.name}, layers.mjs says ${pkg.name}`);
+  const publish = [
+    [json.private === undefined, "no `private`"],
+    [json.license === "MIT", '"license": "MIT"'],
+    [json.repository?.directory === `packages/${dir}`, `repository.directory "packages/${dir}"`],
+    [
+      json.publishConfig?.access === "public" && json.publishConfig?.provenance === true,
+      "publishConfig { access: public, provenance: true }",
+    ],
+    [readIfExists(join(root, "packages", dir, "LICENSE")) === license, "a copy of the root LICENSE"],
+    [existsSync(join(root, "packages", dir, "README.md")), "a README.md"],
+  ];
+  for (const [ok, rule] of publish) if (!ok) errors.push(`packages/${dir}: to publish, it needs ${rule}`);
   const declared = { ...json.dependencies, ...json.peerDependencies, ...json.optionalDependencies };
   for (const dep of Object.keys(declared)) {
     const target = names.get(dep);

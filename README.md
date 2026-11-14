@@ -15,11 +15,14 @@ import { Typstream } from "typstream";
 
 Typst is a compiled language, so a half-written document usually doesn't compile. Typstream heals each prefix of the
 stream into one that parses (`#question(` → `#question()`), compiles it with Typst 0.15.1 built to wasm in a worker,
-and keeps the last good render on screen when a compile fails. [How it works](apps/website/content/docs/concepts/how-it-works.mdx).
+and keeps the last good render on screen when a compile fails. [How it works](https://typstream.vercel.app/docs/concepts/how-it-works).
 
-> **Status:** not released yet. The packages below are built and tested here; the first npm release is
-> [#4](https://github.com/ikramhasan/typstream/issues/4). [#38](https://github.com/ikramhasan/typstream/issues/38) is
-> the roadmap and [`PLAN.md`](PLAN.md) the design.
+```sh
+npm install typstream
+```
+
+[Installation](https://typstream.vercel.app/docs/getting-started/installation) covers the other packages, bundlers and
+serving the engine.
 
 ## Packages
 
@@ -30,6 +33,7 @@ and keeps the last good render on screen when a compile fails. [How it works](ap
 | [`@typstream/dom`](packages/dom) | Framework-free renderers: HTML blocks, pages on canvases, render islands, standalone HTML export. |
 | [`@typstream/engine`](packages/engine) | The compile worker and its main-thread client: scheduling, watchdog, last good render, fallback. |
 | [`@typstream/engine-wasm`](packages/engine-wasm) | Typst 0.15.1 as wasm: HTML, pages, PDF, diagnostics. |
+| [`@typstream/docx`](packages/docx) | The Word export's writer: editable `.docx` files laid out as Typst laid them out. |
 | [`@typstream/heal`](packages/heal) | Heals streamed prefixes so they parse; a port of Typst's parser, tested against the real one. |
 | [`@typstream/core`](packages/core) | Edits, positions, source maps, and the protocol and plugin types. |
 | [`@typstream/ai`](packages/ai) | AI SDK glue: an assistant message as a document, and streaming edits. |
@@ -41,8 +45,10 @@ and keeps the last good render on screen when a compile fails. [How it works](ap
 | [`@typstream/mindmap`](packages/mindmap) | Mind maps, drawn in Typst and interactive in React. |
 | [`@typstream/mermaid`](packages/mermaid) | Mermaid diagrams, drawn by [pele](https://pele.run), the same on pages, in PDF and in Word. |
 
-Guides and reference are in [`apps/website/content/docs`](apps/website/content/docs) (the website's source), starting
-with [installation](apps/website/content/docs/getting-started/installation.mdx). For a chat app, see
+Guides and reference are at [typstream.vercel.app/docs](https://typstream.vercel.app/docs) (source in
+[`apps/website/content/docs`](apps/website/content/docs)), starting with
+[installation](https://typstream.vercel.app/docs/getting-started/installation). Examples: [`examples/vite-react`](examples/vite-react)
+and [`examples/vanilla`](examples/vanilla) (Vite, with React and without), and a chat app,
 [`examples/nextjs-ai-sdk`](examples/nextjs-ai-sdk).
 
 ## Development
@@ -84,4 +90,7 @@ accessibility, visual regression, preview vs PDF) are in [`tools/browser-suites`
 
 ## License
 
-MIT. The license files come with the first release ([#4](https://github.com/ikramhasan/typstream/issues/4)).
+MIT. The packages that ship third-party code include its notices: `@typstream/engine-wasm` (Typst and the other crates
+in its wasm, `dist/THIRD-PARTY-NOTICES.txt`, and its fonts, `dist/fonts/`), `@typstream/node` (the same fonts),
+`@typstream/mermaid` (pele) and `@typstream/mindmap` (React Flow's stylesheet), each in `THIRD-PARTY-NOTICES.txt`, and
+`@typstream/universe` (the vendored Typst packages, which keep their own licenses, `NOTICE`).

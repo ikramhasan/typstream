@@ -2,8 +2,21 @@
   "name": "typstream",
   "version": "0.0.0",
   "description": "Render Typst streamed from an LLM, live, in React: import { Typstream } from \"typstream\".",
-  "license": "UNLICENSED",
-  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ikramhasan/typstream.git",
+    "directory": "packages/typstream"
+  },
+  "homepage": "https://typstream.vercel.app/docs/reference/typstream",
+  "bugs": "https://github.com/ikramhasan/typstream/issues",
+  "keywords": [
+    "typst",
+    "streaming",
+    "llm",
+    "react",
+    "ai"
+  ],
   "type": "module",
   "sideEffects": false,
   "exports": {
@@ -15,6 +28,10 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "tsup",
     "check-types": "tsc -p tsconfig.json",

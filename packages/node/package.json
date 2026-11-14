@@ -2,10 +2,25 @@
   "name": "@typstream/node",
   "version": "0.0.0",
   "description": "Server-side Typst for typstream: validate and render documents, repair them with an LLM, and serve the engine protocol over WebSocket.",
-  "license": "UNLICENSED",
-  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ikramhasan/typstream.git",
+    "directory": "packages/node"
+  },
+  "homepage": "https://typstream.vercel.app/docs/reference/node",
+  "bugs": "https://github.com/ikramhasan/typstream/issues",
+  "keywords": [
+    "typst",
+    "llm",
+    "validation",
+    "server"
+  ],
   "type": "module",
   "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -15,8 +30,9 @@
   "files": [
     "dist"
   ],
-  "engines": {
-    "node": ">=20"
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   },
   "scripts": {
     "build": "tsup && node scripts/copy-fonts.mjs",

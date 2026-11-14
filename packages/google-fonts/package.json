@@ -2,8 +2,19 @@
   "name": "@typstream/google-fonts",
   "version": "0.0.0",
   "description": "Any family of the Google Fonts library in typstream documents, by name: a font catalogue the engine loads families from on demand, in both render targets.",
-  "license": "UNLICENSED",
-  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ikramhasan/typstream.git",
+    "directory": "packages/google-fonts"
+  },
+  "homepage": "https://typstream.vercel.app/docs/reference/google-fonts",
+  "bugs": "https://github.com/ikramhasan/typstream/issues",
+  "keywords": [
+    "typst",
+    "google-fonts",
+    "fonts"
+  ],
   "type": "module",
   "sideEffects": false,
   "exports": {
@@ -17,6 +28,10 @@
     "dist",
     "catalogue.json"
   ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "tsup",
     "test": "vitest run",

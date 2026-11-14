@@ -58,7 +58,7 @@ await engine.close();
 
 Workers start on demand, keep Typst's caches warm between calls, and don't keep the process alive while idle.
 
-A compile over budget is stopped by terminating its worker. The result is an error diagnostic with `code: "timeout"`. A document that exhausts wasm memory (allocations fail at about 2 GiB in wasm32) comes back as `code: "engine-crashed"`. Either way the worker is replaced and the process is unaffected. That's why this runs Typst as wasm rather than as a native addon, whose compiles can't be interrupted (#22).
+A compile over budget is stopped by terminating its worker. The result is an error diagnostic with `code: "timeout"`. A document that exhausts wasm memory (allocations fail at about 2 GiB in wasm32) comes back as `code: "engine-crashed"`. Either way the worker is replaced and the process is unaffected. That's why this runs Typst as wasm rather than as a native addon, whose compiles can't be interrupted.
 
 The bundled fonts are Libertinus Serif, New Computer Modern and DejaVu Sans Mono, the set `typst compile --ignore-system-fonts` uses. Licenses are in `dist/fonts/NOTICE`. Documents can't read the server's filesystem or the network, only the `files` you pass.
 
@@ -89,3 +89,7 @@ The protocol is served by `@typstream/engine`'s server, the same code that runs 
 - the watchdog and crash recovery;
 - `fixLoop` with a scripted model;
 - `@typstream/engine`'s protocol conformance suite, in-process and over a real WebSocket, plus the server's own behaviour (watchdog per mode, malformed input, limits, disconnects).
+
+## License
+
+MIT. The fonts in `dist/fonts/` keep their own licenses (`dist/fonts/NOTICE`).

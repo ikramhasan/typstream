@@ -67,7 +67,9 @@ tools/repo        Repo tooling: package layer table (layers.mjs), layering check
 corpus/           @typstream/corpus (private): shared test documents (edu/, adversarial/, llm/, islands/), meta.json, stream replay.
 apps/playground   Dev playground (Vite + React): replay streams, inspect healing and the engine's raw output, record corpus cases.
 examples/         node-validate (@typstream/node fix loop), nextjs-ai-sdk (useChat → <Typstream>, Next.js App Router),
-                  strict-csp (both targets under a strict Content-Security-Policy, checked in three browsers).
+                  strict-csp (both targets under a strict Content-Security-Policy, checked in three browsers),
+                  vite-react and vanilla (a worksheet streamed with typstream's <Typstream> and with mountTypstream in
+                  Vite production builds, both targets and a PDF download, checked in three browsers).
 spikes/phase0     Throwaway Phase 0 experiments: browser harness (harness/) and custom Typst wasm engine (custom-engine/).
                   Port code out of here into packages/; don't import from spikes.
 spikes/docx       #118's DOCX research (Python): the same document as Typst and DOCX under the Word-compatible profile,
@@ -97,7 +99,7 @@ pnpm build             # turbo: all packages
 pnpm test              # turbo: all packages
 pnpm check-types
 pnpm check             # Biome lint + format check (pnpm fix to apply)
-pnpm check:layers      # package layering (dependency-cruiser) + package.json deps + changesets fixed group
+pnpm check:layers      # package layering (dependency-cruiser) + package.json deps + changesets fixed group + publish fields
 pnpm check:api         # public API must match packages/*/api/*.api.md; pnpm api:update to accept a change
 pnpm check:api-docs    # every @public/@beta export and member has TSDoc, and each export is on its website reference page
 pnpm check:packages    # publint + @arethetypeswrong/cli on the built packages
@@ -189,6 +191,11 @@ and a failed stream (a text part stays `"streaming"` then; only the chat's statu
 recorded documents and the recorded edit answers in `corpus/edits`. `pnpm size`: ≤ 4.5 KB gzipped (heal and core
 external). Change the edit prompt's rules (`editPromptRules`) only with a new measured `record-edits.mjs` run.
 
+In `examples/vite-react` and `examples/vanilla`: `pnpm test` (`smoke.mjs`) builds the app, serves it with `vite preview`
+and replays a worksheet as HTML and as pages, then downloads its PDF, failing on any console error, in Chromium,
+Firefox and WebKit (`BROWSERS=` picks some). Build the packages first (`pnpm turbo run build
+--filter=@typstream/example-vite-react^...`). CI runs both, with strict-csp, in each browser's `Engine (<browser>)` job.
+
 In `examples/strict-csp`: `pnpm test` builds the pages (a worksheet in both targets, and a mind map island in both), serves them with the policy in `csp.mjs` and fails on any CSP violation or console error in Chromium, Firefox and WebKit (`BROWSERS=` picks some). Build the packages first (`pnpm turbo run build --filter=@typstream/example-strict-csp^...`). CI runs it in each browser's `Engine (<browser>)` job. Hostile documents go in `corpus/adversarial/hostile-*.typ` (category `hostile-…`); the engine's and the browser suites' `security.test.ts` run them all.
 
 In `examples/nextjs-ai-sdk`: deployed at https://typstream-ai-sdk.vercel.app with no `ANTHROPIC_API_KEY`, so when the server has none (`GET /api/chat`), the page asks for the visitor's key in a dialog, keeps it in memory only and sends it in a header (`app/api/chat/key.ts`); the smoke test declines it ("Replay a sample"). `pnpm test` builds the app (Turbopack) and streams an answer into `<Typstream>` in Chromium (pages), then a follow-up's answer (HTML: the document again, changed), failing on any error frame. A follow-up gets a whole new document: the route sends the chat as `useChat` posted it, with the same instructions every request, and must never rewrite an earlier message (Anthropic rejects a request whose content before an answer's thinking changed: "Invalid `signature` in `thinking` block"). The route prompts with edu's kit (with universe, google-fonts, mindmap and mermaid) and the page renders with their plugins (mind maps as islands; Mermaid diagrams drawn by the worker, which loads mermaid's generator module as a Turbopack asset); the UI is shadcn/ui (AI Elements, Base UI, Tailwind 4) in `components/ui/`, added with the shadcn CLI. Without `ANTHROPIC_API_KEY` the route replays a worksheet (or, for a follow-up, the worksheet revised) that compiles at every prefix (a kit recording doesn't, and the test fails on any error frame); a key in `.env.local` reaches `next start` too, so run the test with `ANTHROPIC_API_KEY=` to keep it offline. Build the packages first (`pnpm turbo run build --filter=@typstream/example-nextjs-ai-sdk^...`). CI runs it in the `Engine (chromium)` job.
@@ -240,6 +247,17 @@ CI (`.github/workflows/ci.yml`) runs the same commands on every PR, building the
 
 Deploys (`.github/workflows/deploy.yml`): the website (`apps/website`, https://typstream.vercel.app) and `examples/nextjs-ai-sdk` (https://typstream-ai-sdk.vercel.app) are two Vercel projects in the `ikramhasans-projects` team, not connected to the repository (each app's `vercel.json` also turns Git deployments off): every PR gets previews of both (a comment lists them; the website's preview links to that PR's example), and pushes to `main` deploy production. Both are built on the runner and uploaded prebuilt (`.github/actions/vercel-deploy`: `vercel pull`, `vercel build`, `vercel deploy --prebuilt`), since Vercel's build machines can't build engine-wasm. Needs the `VERCEL_TOKEN` secret; fork PRs get no previews. Project settings (root directory, Node, the website's production `SITE_URL`) live in Vercel: `vercel project inspect <name> --scope ikramhasans-projects`; add variables with `vercel env add … --no-sensitive` (sensitive ones pull as `[SENSITIVE]` and break the build).
 
+Releases (`.github/workflows/release.yml`, PLAN §10.4 "As built (#4)"): changesets/action on every push to `main`
+opens the "chore: version packages" PR from pending changesets; merging it publishes the new versions to npm with
+provenance (`NPM_TOKEN` for 0.1.0, then trusted publishing). Never merge that PR or publish without the maintainer's
+go-ahead. Every package is published: `check:layers` requires MIT, no `private`, `publishConfig { access: public,
+provenance: true }`, `repository.directory`, a README and a copy of the root `LICENSE`. Code a package bundles from
+elsewhere ships its notices: engine-wasm's build writes `dist/THIRD-PARTY-NOTICES.txt` (`scripts/notices.mjs`, from
+`cargo metadata`; a crate with no license file and a license other than MIT, 0BSD or Apache-2.0 fails the build until
+`licenses/` has its text), and mermaid's and mindmap's `THIRD-PARTY-NOTICES.txt` and universe's `NOTICE` are checked by
+their tests. The website's `pnpm test` also runs `scripts/check-compat.mjs`: the compatibility page must state the
+versions and size budgets the repo enforces, so a budget change updates that page too.
+
 Adding a package: copy `packages/core` and rename. Its `tsconfig.json`, `tsup.config.ts` and `api-extractor.json` only extend the shared configs (`tsconfig.base.json`, `tools/repo/`), and `@typstream/*` resolves to `packages/*/src` through a wildcard path. Then add its row to `tools/repo/layers.mjs`, and add it to the `fixed` group in `.changeset/config.json` if the row says `fixed`. Delete the copied `api/core.api.md` but keep `api/` (api-extractor won't create it), then `pnpm api:update` writes the new package's report.
 
 In `tools/browser-suites` (PLAN.md §11.4, #19; details in its README):
@@ -259,7 +277,8 @@ In `tools/browser-suites` (PLAN.md §11.4, #19; details in its README):
 
 In `apps/website` (PLAN.md §10.5, #32, #33):
 - `pnpm --filter @typstream/website dev` (http://localhost:3000), `build`, `test` (scripts/check-docs.mjs: titles,
-  descriptions, `meta.json` navigation, and every `/docs/…` link and `#anchor`), `check-types`. Needs the packages built
+  descriptions, `meta.json` navigation, and every `/docs/…` link and `#anchor`; scripts/check-compat.mjs: the
+  compatibility page against the repo's versions and size budgets), `check-types`. Needs the packages built
   (turbo's `^build`) and engine-wasm's `dist/` for the live examples.
 - Pages are `content/docs/**/*.mdx`, listed in each folder's `meta.json`. `title` and `description` are required: the
   description is the page's summary in llms.txt. Write Typst fences as ```typst (Shiki has no `typ` alias).

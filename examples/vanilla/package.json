@@ -1,0 +1,26 @@
+{
+  "name": "@typstream/example-vanilla",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A worksheet replayed into @typstream/dom's mountTypstream with no framework, as HTML or as pages, with a PDF download; built with Vite.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node smoke.mjs",
+    "check-types": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@typstream/dom": "workspace:*",
+    "@typstream/engine": "workspace:*",
+    "@typstream/engine-wasm": "workspace:*",
+    "@typstream/html-compat": "workspace:*",
+    "@typstream/universe": "workspace:*"
+  },
+  "devDependencies": {
+    "playwright": "^1.64.1",
+    "typescript": "5.9.3",
+    "vite": "^8.3.5"
+  }
+}

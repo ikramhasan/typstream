@@ -2,8 +2,20 @@
   "name": "@typstream/react",
   "version": "0.0.0",
   "description": "React bindings for typstream: <Typstream>, useTypstream() and TypstreamProvider, for Typst streamed from an LLM.",
-  "license": "UNLICENSED",
-  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ikramhasan/typstream.git",
+    "directory": "packages/react"
+  },
+  "homepage": "https://typstream.vercel.app/docs/reference/react",
+  "bugs": "https://github.com/ikramhasan/typstream/issues",
+  "keywords": [
+    "typst",
+    "streaming",
+    "llm",
+    "react"
+  ],
   "type": "module",
   "sideEffects": false,
   "exports": {
@@ -15,6 +27,10 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "tsup",
     "test": "vitest run --project node",

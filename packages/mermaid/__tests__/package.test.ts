@@ -20,6 +20,14 @@ describe("package", () => {
     expect(read("../src/assets.generated.ts")).toBe(generate());
   });
 
+  it("ships the license of the pele it bundles", () => {
+    const pele = new URL("../node_modules/pele/", import.meta.url);
+    const { version } = JSON.parse(readFileSync(new URL("package.json", pele), "utf8"));
+    const notices = read("../THIRD-PARTY-NOTICES.txt");
+    expect(notices).toContain(`bundles pele ${version} `);
+    expect(notices).toContain(readFileSync(new URL("LICENSE", pele), "utf8"));
+  });
+
   it("keeps the generated modules ASCII", () => {
     for (const path of ["../src/assets.generated.ts", "../src/widths.generated.ts"])
       expect(read(path).match(/[^\t\n -~]/g) ?? [], path).toEqual([]);

@@ -10,7 +10,7 @@
     "dev": "node scripts/generate.mjs && next dev",
     "build": "node scripts/generate.mjs && next build",
     "start": "next start",
-    "test": "node scripts/check-docs.mjs",
+    "test": "node scripts/check-docs.mjs && node scripts/check-compat.mjs",
     "check-types": "node scripts/generate.mjs && fumadocs-mdx && next typegen && tsc --noEmit"
   },
   "dependencies": {

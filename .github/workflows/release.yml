@@ -1,0 +1,66 @@
+# Releases to npm with changesets (PLAN.md §10.4, #4). On every push to main:
+# - with changesets pending, it opens (or updates) the "Version Packages" PR, which applies them: versions and
+#   CHANGELOG.md files. Its commits are made through GitHub's API, so GitHub signs them.
+# - when that PR is merged (no changesets left, versions not on npm yet), it publishes those versions, with
+#   provenance, and tags them.
+# CI (ci.yml) checks every commit to main; this job builds the packages again and checks what it is about to pack.
+#
+# npm auth: the NPM_TOKEN secret (a granular token that may publish @typstream/* and typstream) for the first
+# release. Once the packages exist, trusted publishing (OIDC: this workflow, `release.yml`, as each package's
+# trusted publisher on npmjs.com) replaces it and the secret is deleted; the id-token permission below is for that
+# and for provenance.
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# One release at a time, never cancelled half-way through a publish.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  NODE: "24"
+
+jobs:
+  release:
+    name: Version or publish
+    if: github.repository == 'ikramhasan/typstream'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write # the version branch and the release tags
+      pull-requests: write # the Version Packages PR
+      id-token: write # npm provenance, and trusted publishing
+    steps:
+      - uses: actions/checkout@v7
+        with: { fetch-depth: 0 }
+
+      - uses: ./.github/actions/pnpm
+        with: { node: "${{ env.NODE }}" }
+
+      - uses: ./.github/actions/engine-wasm
+
+      # Everything published, then what publint and attw say about the packed packages (CI's check:packages).
+      - run: pnpm turbo run build --filter="./packages/*"
+      - run: pnpm check:packages
+      - run: pnpm check:layers
+
+      - uses: changesets/action@v1
+        with:
+          version: pnpm changeset version
+          publish: pnpm changeset publish
+          title: "chore: version packages"
+          commit: "chore: version packages"
+          commitMode: github-api
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # Every package's publishConfig asks for provenance too; pnpm and npm read these either way.
+          NPM_CONFIG_PROVENANCE: "true"
+          PNPM_CONFIG_PROVENANCE: "true"

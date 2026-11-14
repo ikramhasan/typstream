@@ -55,3 +55,7 @@ The tests compile through `@typstream/engine-wasm` and compare with native `typs
 - `paged.test.ts`: every SVG page is byte-identical with and without the prelude.
 
 Edit `typst/html-compat.typ` and `css/html-compat.css`, then `pnpm embed` (or `pnpm build`) to regenerate `src/assets.generated.ts`. A test fails when it's stale.
+
+## License
+
+MIT

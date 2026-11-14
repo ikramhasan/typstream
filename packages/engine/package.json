@@ -2,8 +2,21 @@
   "name": "@typstream/engine",
   "version": "0.0.0",
   "description": "Compiles streamed Typst in a worker: heals on the main thread, schedules compiles, and recovers from runaway documents.",
-  "license": "UNLICENSED",
-  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ikramhasan/typstream.git",
+    "directory": "packages/engine"
+  },
+  "homepage": "https://typstream.vercel.app/docs/reference/engine",
+  "bugs": "https://github.com/ikramhasan/typstream/issues",
+  "keywords": [
+    "typst",
+    "streaming",
+    "llm",
+    "wasm",
+    "web-worker"
+  ],
   "type": "module",
   "sideEffects": [
     "./dist/worker.js"
@@ -30,6 +43,10 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "tsup",
     "test": "vitest run --project node",

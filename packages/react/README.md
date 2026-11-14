@@ -32,12 +32,12 @@ The document is `source`, its whole text so far (streamdown-style), or `stream`,
 | `engine` | shared | An `Engine` from `createEngine()`. Default: one engine worker for the page, shared by every instance. |
 | `mathFont` | | URL of New Computer Modern Math, registered as a web font for MathML. |
 | `onStatusChange`, `onDiagnostics` | | `idle` / `compiling` / `stale` / `error` / `done`; diagnostics in `source` coordinates. |
-| `onRendered`, `onFallback`, `onWatchdog` | | Telemetry (PLAN §8.6), `@typstream/core`'s event shapes: a render with its compile's timings, heal time and patches, fixes and fallback level; output that fell back (with the input and healed source); a compile the watchdog stopped. |
+| `onRendered`, `onFallback`, `onWatchdog` | | Telemetry, `@typstream/core`'s event shapes: a render with its compile's timings, heal time and patches, fixes and fallback level; output that fell back (with the input and healed source); a compile the watchdog stopped. |
 | `className`, `style`, `id`, `ref` | | The host element; `ref` receives a `TypstreamHandle`. |
 
-`islands` (beta, #28) maps island names to components: a plugin's markers become interactive components rendered through portals over their Typst fallback (`@typstream/mindmap/react`'s `mindmapIslands`; PLAN §8.4).
+`islands` (beta) maps island names to components: a plugin's markers become interactive components rendered through portals over their Typst fallback (`@typstream/mindmap/react`'s `mindmapIslands`).
 
-Not yet: `fallback` (block isolation, PLAN §5.6, beyond the last good render the engine keeps), and `engine={{ adapter, fonts, packages }}` options (#11, #25): pass an `Engine` you created instead.
+Engine options (an adapter, fonts, packages for every document) aren't props: create an `Engine` with them and pass it as `engine`.
 
 ## `TypstreamProvider`
 
@@ -77,4 +77,8 @@ open a lazy document that hasn't opened yet, and reject (`exportSource()` throws
 
 - `pnpm test`: configuration merging and the shared engine's lifetime, in Node.
 - `pnpm test:browser`: `<Typstream>` with React Testing Library against the real engine worker in Chromium, Firefox and WebKit (`BROWSERS=chromium` runs one).
-- `pnpm size`: ≤ 16.7 KB gzipped with `@typstream/dom` (React and the engine external).
+- `pnpm size`: ≤ 35.3 KB gzipped with `@typstream/dom` (React and the engine external).
+
+## License
+
+MIT
