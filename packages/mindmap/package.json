@@ -1,6 +1,6 @@
 {
   "name": "@typstream/mindmap",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Mind maps for typstream: written as a list, drawn in Typst for print and PDF, interactive (pan, zoom, open and close branches) in the viewer.",
   "license": "MIT",
   "repository": {
