@@ -1,6 +1,6 @@
 {
   "name": "typstream",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Render Typst streamed from an LLM, live, in React: import { Typstream } from \"typstream\".",
   "license": "MIT",
   "repository": {

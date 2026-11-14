@@ -1,6 +1,6 @@
 {
   "name": "@typstream/mermaid",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Mermaid diagrams for typstream, drawn by pele in the engine's worker: the same on pages, in HTML, PDF and DOCX.",
   "license": "MIT",
   "repository": {

@@ -1,6 +1,6 @@
 {
   "name": "@typstream/html-compat",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "A Typst prelude and CSS that make Typst's HTML export keep the content of layout elements it would drop (grid, align, place, shapes, …).",
   "license": "MIT",
   "repository": {
