@@ -1,6 +1,7 @@
 # Releases to npm with changesets (PLAN.md §10.4, #4). On every push to main, select-mode decides what to do:
 # - "version" (changesets pending): the version job opens (or updates) the "chore: version packages" PR, which
-#   applies them: versions and CHANGELOG.md files. Its commits are made through GitHub's API, so GitHub signs them.
+#   applies them: versions and CHANGELOG.md files. It pushes them with git (see the version job); the PR is
+#   squash-merged, and GitHub signs that commit on main.
 # - "publish" (no changesets left, versions not on npm yet, i.e. that PR was merged): the pack job builds every
 #   package, checks what it is about to pack and packs it; the publish job publishes the tarballs, then tags them and
 #   makes a GitHub release per package.
@@ -69,6 +70,10 @@ jobs:
           script: pnpm changeset version
           pr-title: "chore: version packages"
           commit-message: "chore: version packages"
+          # Not GitHub's API (the default, which signs the commit): for 0.1.1 its createCommitOnBranch failed twice
+          # with "Something went wrong while executing your query", GitHub up, on the ~275 KB of package.json and
+          # CHANGELOG.md files. Git has no such limit; the commit on main is the squash merge, signed anyway.
+          push-with-git-cli: true
 
   pack:
     name: Build and pack
