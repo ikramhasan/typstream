@@ -81,8 +81,9 @@ describe("NOTICE", () => {
       version,
       license,
     }));
-    const byName = (a: { name: string; version: string }, b: { name: string; version: string }) =>
-      `${a.name} ${a.version}`.localeCompare(`${b.name} ${b.version}`);
+    // The regex's capture groups are `string | undefined`, so the comparator takes them as they are.
+    type Entry = { name: string | undefined; version: string | undefined };
+    const byName = (a: Entry, b: Entry) => `${a.name} ${a.version}`.localeCompare(`${b.name} ${b.version}`);
     expect(listed.sort(byName)).toEqual(
       vendored
         .map((p) => ({
