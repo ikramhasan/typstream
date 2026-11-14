@@ -11,6 +11,8 @@ const alias = {
   // Test against the source of sibling packages, not their builds.
   "@typstream/core": new URL("../core/src/index.ts", import.meta.url).pathname,
   "@typstream/heal": new URL("../heal/src/index.ts", import.meta.url).pathname,
+  // Before the engine's entry, which would otherwise take the subpath as a path inside it.
+  "@typstream/engine/prefetch": new URL("../engine/src/prefetch.ts", import.meta.url).pathname,
   "@typstream/engine": new URL("../engine/src/index.ts", import.meta.url).pathname,
   "@typstream/docx": new URL("../docx/src/index.ts", import.meta.url).pathname,
   "@typstream/dom": new URL("../dom/src/index.ts", import.meta.url).pathname,

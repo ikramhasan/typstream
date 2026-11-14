@@ -99,6 +99,8 @@ export interface Engine {
     readonly fonts: readonly LoadedFontFamily[];
     onEvent(listener: (event: EngineEvent) => void): () => void;
     open(options?: DocumentOptions): EngineDocument;
+    // @beta
+    preload(options?: PreloadOptions): Promise<void>;
     readonly ready: Promise<InitializeResult>;
 }
 
@@ -224,6 +226,13 @@ export type ImageResolver = (path: string, options: {
 export interface LimitOptions {
     livePages: number;
     maxLength: number;
+}
+
+// @beta
+export interface PreloadOptions {
+    plugins?: readonly TypstreamPlugin[];
+    targets?: readonly CompileTarget[];
+    text?: string;
 }
 
 // @public

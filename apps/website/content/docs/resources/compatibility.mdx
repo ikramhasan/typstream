@@ -53,10 +53,11 @@ Budgets in minified and gzipped ESM. Each is checked on every change, so they ar
 | Part | Budget | Notes |
 |---|---|---|
 | `@typstream/heal` | ≤ 16.4 KB | With `@typstream/core`'s helpers inlined. |
-| `@typstream/engine`, main thread | ≤ 9.6 KB | Without heal. |
+| `@typstream/engine`, main thread | ≤ 10.2 KB | Without heal. |
 | `@typstream/engine/websocket` | ≤ 1.5 KB | `fromWebSocket`, only for apps that compile on a server. |
 | `@typstream/engine/images` | ≤ 1.5 KB | `fetchImages`, only for apps that show images from the web. |
-| `@typstream/react`, with `@typstream/dom` | ≤ 35.3 KB | Without React and the engine. |
+| `@typstream/engine/prefetch` | ≤ 3 KB | `prefetchEngine`, downloading the engine's files early; mostly engine-wasm's font list, which `typstream` already has. `@typstream/react` loads it only for `level: "fetch"`. |
+| `@typstream/react`, with `@typstream/dom` | ≤ 35.6 KB | Without React and the engine. |
 | `@typstream/dom` HTML renderer | ≤ 23.3 KB | Including its CSS, and the layout of the HTML target on pages. |
 | `@typstream/dom` paged renderer | ≤ 7.2 KB | |
 | `@typstream/dom` standalone HTML export | ≤ 2 KB | |

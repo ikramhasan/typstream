@@ -203,6 +203,69 @@ return (
 );
 ```
 
+### `preloadTypstream`
+
+```ts
+const preloadTypstream: (options?: PreloadTypstreamOptions) => TypstreamPreload;
+```
+
+Gets the engine ready before the first `<Typstream>` mounts, so that document renders at once instead of waiting for
+the wasm (about 6 MB) and fonts. Call it when a document is likely soon: the user opens the "Generate" dialog, sends
+the prompt, or reaches the step before the page view.
+
+```tsx
+import { preloadTypstream } from "@typstream/react";
+
+<button onClick={() => { preloadTypstream({ plugins: [edu] }); generate(); }}>Generate</button>
+```
+
+- **`level: "engine"`** (default) starts the page's shared engine, the one every `<Typstream>` without an `engine`
+  uses. Then it runs `engine.preload()` with `plugins`, `targets` and `text`: warm-up compiles that load the
+  plugins' packages, modules and fonts. It keeps the engine for `holdMs` (`PRELOAD_HOLD_MS`, a minute) and then lets
+  it go. A `<Typstream>` that mounts in the meantime keeps it for as long as it needs it. `release()` lets go
+  earlier; `holdMs: Infinity` keeps it until then.
+- **`level: "fetch"`** only downloads the wasm and base fonts into the browser's caches (`prefetchEngine` from
+  [`@typstream/engine/prefetch`](/docs/reference/engine#typstreamengineprefetch)). It starts no worker and holds no
+  memory, for a document that may never come.
+- **`ready`** resolves once the engine is warm (or the files are cached). It rejects if the engine can't start or a
+  download fails. Ignoring it is safe: nothing is reported as unhandled.
+- On a server (no `Worker`) it does nothing, so it's safe to call during rendering in Next.js.
+
+An engine you pass as the `engine` prop isn't the shared one: warm that with `engine.preload()` instead.
+
+### `usePreloadTypstream`
+
+```ts
+const usePreloadTypstream: (when?: boolean, options?: PreloadTypstreamOptions) => void;
+```
+
+`preloadTypstream` for a component. While the component is mounted and `when` is true, it keeps the shared engine
+warm for the `<Typstream>`s to come, for the whole time rather than `holdMs`. Afterwards it lets the engine go, a
+moment later. Put it in the screen that leads to a document: a chat's composer, or the dialog that starts a
+generation (`usePreloadTypstream(open)`). `options` are read when `when` turns true.
+
+```tsx
+function GenerateDialog({ open }: { open: boolean }) {
+  usePreloadTypstream(open, { plugins: [edu] });
+  // …
+}
+```
+
+### `PreloadTypstreamOptions`
+
+<auto-type-table path="packages/react/src/preload.ts" name="PreloadTypstreamOptions" />
+
+`plugins`, `targets` and `text` are the engine's [`PreloadOptions`](/docs/reference/engine#preloadoptions).
+
+### `TypstreamPreload`
+
+<auto-type-table path="packages/react/src/preload.ts" name="TypstreamPreload" />
+
+<Callout type="warn" title="Beta">
+`preloadTypstream`, `usePreloadTypstream`, `PreloadTypstreamOptions`, `TypstreamPreload` and `PRELOAD_HOLD_MS` are
+beta. See [Preloading the engine](/docs/guides/preloading).
+</Callout>
+
 ### `TypstreamInfo`
 
 <auto-type-table path="packages/react/src/useTypstream.ts" name="TypstreamInfo" />
@@ -214,7 +277,7 @@ return (
 
 For convenience the package re-exports types from the packages it builds on:
 
-- From [`@typstream/engine`](/docs/reference/engine): `Engine`, `DocumentState`, `DocumentStatus`.
+- From [`@typstream/engine`](/docs/reference/engine): `Engine`, `DocumentState`, `DocumentStatus`, `PreloadOptions`.
 - From [`@typstream/dom`](/docs/reference/dom): `StandaloneHtmlOptions`, `TypstreamExportOptions` and
   `TypstreamHtmlExportOptions`, what the exports take.
 - From [`@typstream/core`](/docs/reference/core#telemetry-events): `AppliedFix`, `CompiledEvent`, `CompileReport`,

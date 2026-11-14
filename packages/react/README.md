@@ -66,6 +66,17 @@ t.exportSource(); // the healed Typst the exports compile
 React refs don't announce when they're set, so the hook hands out a callback ref rather than reading yours. The exports
 open a lazy document that hasn't opened yet, and reject (`exportSource()` throws) while no `<Typstream>` is mounted.
 
+## `preloadTypstream()`
+
+Starts and warms the page's shared engine before the first `<Typstream>` mounts, so it renders at once: call it when
+a document is likely soon (the user opens "Generate"). It keeps the engine for a minute (`holdMs`); `level: "fetch"`
+only downloads its files. `usePreloadTypstream(when, options)` keeps it warm while a component is mounted. Beta. See
+[Preloading the engine](https://typstream.vercel.app/docs/guides/preloading).
+
+```tsx
+<button onClick={() => { preloadTypstream({ plugins: [edu] }); generate(); }}>Generate</button>
+```
+
 ## Behaviour
 
 - **One worker, many documents.** Instances without an `engine` share one; it is created on first use and terminated a second after the last instance (or provider) unmounts. Compiles run one at a time across documents.

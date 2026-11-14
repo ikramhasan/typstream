@@ -6,6 +6,7 @@
 // retried.
 
 import {
+  type CompileTarget,
   type DocumentEvent,
   type DocumentUri,
   type ExportParams,
@@ -26,6 +27,7 @@ import {
   type DocumentHost,
   DocumentImpl,
   type DocumentOptions,
+  type DocumentState,
   type EngineDocument,
   ExportError,
   type ExportJob,
@@ -33,6 +35,7 @@ import {
   type WatchdogOptions,
 } from "./document";
 import { documentOptions, initializeOptions } from "./plugins";
+import { type PreloadOptions, preloadCompiles } from "./preload";
 import { DEFAULT_SCHEDULE, type ScheduleOptions } from "./schedule";
 
 /**
@@ -126,6 +129,17 @@ export interface Engine {
    * shows as web fonts. A `font` event announces each new one. @beta
    */
   readonly fonts: readonly LoadedFontFamily[];
+  /**
+   * Warms the engine for documents to come (PLAN §6.4): compiles throwaway
+   * documents in the worker, so the first real one finds the wasm compiled,
+   * the fonts parsed, and the plugins' packages, modules and fonts loaded.
+   * Call it when a document is likely soon (the user opened "Generate", a
+   * model is answering). Compiles queue like any document's. The same options
+   * again warm nothing new and return the first call's promise. Resolves when
+   * the compiles are done, whether or not they succeeded; rejects only if the
+   * engine can't start, like {@link Engine.ready}. @beta
+   */
+  preload(options?: PreloadOptions): Promise<void>;
   /** Disposes every document and terminates the workers. */
   dispose(): void;
 }
@@ -212,6 +226,10 @@ class EngineImpl implements Engine, DocumentHost {
   private readonly fontWarnings = new Set<string>();
   /** Families loaded from font catalogues, by name: they outlive the worker that loaded them. */
   private readonly loadedFonts = new Map<string, LoadedFontFamily>();
+  /** Warm-ups by their compiles, so asking again warms nothing new. */
+  private readonly preloads = new Map<string, Promise<void>>();
+  /** Ends the warm-up compiles still waiting, when the engine is disposed under them. */
+  private readonly preloadWaits = new Set<() => void>();
 
   constructor(options: EngineOptions) {
     this.options = options;
@@ -262,8 +280,46 @@ class EngineImpl implements Engine, DocumentHost {
     return [...this.loadedFonts.values()];
   }
 
+  preload(options: PreloadOptions = {}): Promise<void> {
+    const compiles = preloadCompiles(options);
+    // A replaced worker (watchdog, crash, recycling) starts without the caches a warm-up filled.
+    const key = `${this.generation}:${JSON.stringify(compiles)}`;
+    let warm = this.preloads.get(key);
+    if (!warm) {
+      warm = this.ready.then(() =>
+        Promise.all(compiles.map((c) => this.warmUp(c.text, c.target, options))).then(() => {}),
+      );
+      this.preloads.set(key, warm);
+    }
+    return warm;
+  }
+
+  /** Compiles `text` once in a throwaway document, in final mode, and closes it. */
+  private warmUp(text: string, target: CompileTarget, options: PreloadOptions): Promise<void> {
+    if (this.disposed) return Promise.resolve();
+    // Pages as drawings: what `mountTypstream` and `<Typstream>` ask for. No Layer 4: a failure has warmed what it loaded.
+    const doc = this.open({ text, target, pageFormat: "drawing", plugins: options.plugins ?? [], fallback: false });
+    doc.finish();
+    return new Promise<void>((resolve) => {
+      const end = () => {
+        this.preloadWaits.delete(end);
+        unsubscribe();
+        doc.dispose();
+        resolve();
+      };
+      this.preloadWaits.add(end);
+      const check = (s: DocumentState) => {
+        if (s.status === "done" || s.status === "error") end();
+      };
+      const unsubscribe = doc.subscribe(check);
+      // A broken engine fails the document as it opens.
+      check(doc.getState());
+    });
+  }
+
   dispose(): void {
     if (this.disposed) return;
+    for (const end of [...this.preloadWaits]) end();
     for (const doc of [...this.docs.values()]) doc.dispose();
     this.disposed = true;
     this.queue = [];

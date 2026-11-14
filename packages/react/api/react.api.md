@@ -18,6 +18,7 @@ import { EngineDocument } from '@typstream/engine';
 import { FallbackEvent } from '@typstream/core';
 import { FallbackLevel } from '@typstream/core';
 import { IslandProps } from '@typstream/core';
+import { PreloadOptions } from '@typstream/engine';
 import * as react from 'react';
 import { ReactNode } from 'react';
 import { Ref } from 'react';
@@ -54,6 +55,20 @@ export type IslandComponent<Data = any> = ComponentType<IslandProps<Data>>;
 export type IslandComponents = Readonly<Record<string, IslandComponent>>;
 
 export { IslandProps }
+
+// @beta
+export const PRELOAD_HOLD_MS = 60000;
+
+export { PreloadOptions }
+
+// @beta
+export const preloadTypstream: (options?: PreloadTypstreamOptions) => TypstreamPreload;
+
+// @beta
+export interface PreloadTypstreamOptions extends PreloadOptions {
+    holdMs?: number;
+    level?: "engine" | "fetch";
+}
 
 export { RenderedEvent }
 
@@ -109,6 +124,12 @@ export interface TypstreamInfo {
     status: DocumentStatus;
 }
 
+// @beta
+export interface TypstreamPreload {
+    readonly ready: Promise<void>;
+    release(): void;
+}
+
 // @public
 export interface TypstreamProps extends TypstreamDefaults, Pick<TypstreamOptions, "source" | "stream" | "isStreaming" | "streamingRange" | "onStatusChange"> {
     className?: string;
@@ -124,6 +145,9 @@ export const TypstreamProvider: (input: TypstreamProviderProps) => react.JSX.Ele
 export interface TypstreamProviderProps extends TypstreamDefaults {
     children?: ReactNode;
 }
+
+// @beta
+export const usePreloadTypstream: (when?: boolean, options?: PreloadTypstreamOptions) => void;
 
 // @public
 export const useTypstream: () => TypstreamInfo;

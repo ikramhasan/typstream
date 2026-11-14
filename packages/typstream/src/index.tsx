@@ -7,7 +7,15 @@
 
 import { baseFonts, extraFonts, scriptFonts } from "@typstream/engine-wasm/fonts";
 import { htmlCompat } from "@typstream/html-compat";
-import { type TypstreamProps as BaseProps, Typstream as BaseTypstream, type TypstFont } from "@typstream/react";
+import {
+  type PreloadTypstreamOptions as BasePreloadOptions,
+  type TypstreamProps as BaseProps,
+  Typstream as BaseTypstream,
+  preloadTypstream as basePreloadTypstream,
+  usePreloadTypstream as baseUsePreloadTypstream,
+  type TypstFont,
+  type TypstreamPreload,
+} from "@typstream/react";
 import { universe } from "@typstream/universe";
 
 /** The engine's copy of New Computer Modern Math, the font html-compat's CSS asks for in `<math>`. */
@@ -77,10 +85,70 @@ export const Typstream = ({
   <BaseTypstream
     fonts={TYPST_FONTS}
     {...props}
-    plugins={[...(compat ? [htmlCompat] : []), ...(packages ? [universe] : []), ...(plugins ?? [])]}
+    plugins={withDefaults(compat, packages, plugins)}
     mathFont={mathFont ?? MATH_FONT}
   />
 );
+
+/** html-compat and universe, as asked, before the app's own plugins: what this package's `<Typstream>` uses. */
+const withDefaults = (compat: boolean, packages: boolean, plugins: BaseProps["plugins"]) => [
+  ...(compat ? [htmlCompat] : []),
+  ...(packages ? [universe] : []),
+  ...(plugins ?? []),
+];
+
+/**
+ * Options of {@link preloadTypstream} and {@link usePreloadTypstream}:
+ * `@typstream/react`'s, with this package's plugins switched as on
+ * {@link Typstream}.
+ * @beta
+ */
+export interface PreloadTypstreamOptions extends BasePreloadOptions {
+  /** Warm the `@typstream/html-compat` plugin, as `<Typstream>` adds it. Default true. */
+  htmlCompat?: boolean;
+  /**
+   * Warm the `@typstream/universe` plugin, as `<Typstream>` adds it. Default
+   * true. It has no examples, so no package is downloaded until a document
+   * imports one.
+   */
+  packages?: boolean;
+}
+
+const preloadOptions = ({
+  htmlCompat: compat = true,
+  packages = true,
+  plugins,
+  ...options
+}: PreloadTypstreamOptions) => ({
+  ...options,
+  plugins: withDefaults(compat, packages, plugins),
+});
+
+/**
+ * `@typstream/react`'s `preloadTypstream` with the plugins this package's
+ * `<Typstream>` adds: gets the engine ready before the first `<Typstream>`
+ * mounts. Call it when a document is likely soon (the user opens "Generate",
+ * sends the prompt).
+ *
+ * @example
+ * ```tsx
+ * import { preloadTypstream } from "typstream";
+ *
+ * <button onClick={() => { preloadTypstream(); generate(); }}>Generate</button>
+ * ```
+ * @beta
+ */
+export const preloadTypstream = (options: PreloadTypstreamOptions = {}): TypstreamPreload =>
+  basePreloadTypstream(preloadOptions(options));
+
+/**
+ * `@typstream/react`'s `usePreloadTypstream` with the plugins this package's
+ * `<Typstream>` adds: keeps the engine warm while the component is mounted
+ * and `when` is true.
+ * @beta
+ */
+export const usePreloadTypstream = (when = true, options: PreloadTypstreamOptions = {}): void =>
+  baseUsePreloadTypstream(when, preloadOptions(options));
 
 export { createEngine, type EngineOptions, engineWorker, type ImageResolver } from "@typstream/engine";
 export { type FetchImagesOptions, fetchImages } from "@typstream/engine/images";
@@ -96,6 +164,8 @@ export {
   type Engine,
   type FallbackEvent,
   type FallbackLevel,
+  PRELOAD_HOLD_MS,
+  type PreloadOptions,
   type RenderedEvent,
   type StandaloneHtmlOptions,
   type TelemetryHooks,
@@ -104,6 +174,7 @@ export {
   type TypstreamHandle,
   type TypstreamHtmlExportOptions,
   type TypstreamInfo,
+  type TypstreamPreload,
   TypstreamProvider,
   type TypstreamProviderProps,
   useTypstream,

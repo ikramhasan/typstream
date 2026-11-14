@@ -32,5 +32,6 @@ export {
   type EngineEvent,
   type EngineOptions,
 } from "./engine";
+export type { PreloadOptions } from "./preload";
 export { DEFAULT_SCHEDULE, type ScheduleOptions } from "./schedule";
 export { engineWorker } from "./spawn";

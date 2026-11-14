@@ -120,12 +120,12 @@ In `packages/engine-wasm` (Rust build, ~3 min cold):
 In `packages/engine`:
 - `pnpm test`: the `node` vitest project (client against a fake worker; server and protocol conformance against engine-wasm in-process). Needs engine-wasm's `dist/`.
 - `pnpm test:browser`: the `browser` project, the real worker in Chromium, Firefox and WebKit (vitest browser mode, Playwright). `BROWSERS=chromium` runs one.
-- `pnpm size`: main thread ≤ 9.6 KB, worker JS ≤ 40 KB, `@typstream/engine/websocket` and `@typstream/engine/images` ≤ 1.5 KB gzipped each, the DOCX writer the worker `import()`s ≤ 14.1 KB.
+- `pnpm size`: main thread ≤ 10.2 KB, worker JS ≤ 40 KB, `@typstream/engine/websocket` and `@typstream/engine/images` ≤ 1.5 KB gzipped each, `@typstream/engine/prefetch` ≤ 3 KB, the DOCX writer the worker `import()`s ≤ 14.1 KB.
 - Every compile follows the layout profile (#129): the server puts `LAYOUT_PROFILE` (`src/server/profile.ts`) before
   every compile's and export's preamble (constant 1.3em pitch, ragged right, no hyphenation, unbreakable table rows),
   so a DOCX can match the pages; heal's `layout-profile` lint removes what would beat it. In HTML compiles it changes
   nothing itself, but html-compat reads the styles it sets, so the HTML target is laid out as the pages are.
-- Four API reports: `api/engine.api.md` (main entry), `api/engine-server.api.md` (`@typstream/engine/server`), `api/engine-websocket.api.md` (`@typstream/engine/websocket`, `fromWebSocket`, the transport to a remote engine) and `api/engine-images.api.md` (`@typstream/engine/images`, `fetchImages`).
+- Five API reports: `api/engine.api.md` (main entry), `api/engine-server.api.md` (`@typstream/engine/server`), `api/engine-websocket.api.md` (`@typstream/engine/websocket`, `fromWebSocket`, the transport to a remote engine), `api/engine-images.api.md` (`@typstream/engine/images`, `fetchImages`) and `api/engine-prefetch.api.md` (`@typstream/engine/prefetch`, `prefetchEngine`, the default worker's files downloaded without starting it).
 
 In `packages/html-compat`:
 - Edit `typst/html-compat.typ` / `css/html-compat.css`, then `pnpm embed` to regenerate `src/assets.generated.ts` (a test checks it).
@@ -182,7 +182,7 @@ In `packages/dom`:
 
 In `packages/react`:
 - `pnpm test`: Node tests (provider merging, the shared engine's lifetime). `pnpm test:browser`: `<Typstream>` with React Testing Library against the real engine worker in Chromium, Firefox and WebKit (StrictMode, lazy opening, worker cleanup). `BROWSERS=chromium` runs one. Needs engine-wasm's `dist/`.
-- `pnpm size`: ≤ 35.3 KB gzipped including `@typstream/dom` (React and the engine external).
+- `pnpm size`: ≤ 35.6 KB gzipped including `@typstream/dom` (React and the engine external).
 - Its bundle starts with `"use client"` (tsup banner), as does `typstream`'s, for Next.js's App Router.
 
 In `packages/ai`: `pnpm test` runs the helpers through AI SDK 7 itself (a devDependency): recorded `corpus/llm` streams

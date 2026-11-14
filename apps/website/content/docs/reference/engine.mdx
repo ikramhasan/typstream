@@ -169,6 +169,26 @@ const engine = createEngine({
 
 <auto-type-table path="packages/engine/src/engine.ts" name="Engine" />
 
+#### `PreloadOptions`
+
+What `engine.preload()` warms. It compiles throwaway documents: a short sample (headings, bold and italic, code,
+math) in each target, then the first prompt example of each plugin in the first target. Each is its own document, in
+final mode without fallback, closed once compiled. Everything they load stays in the worker for the documents after
+them: the compiled wasm, parsed fonts, lazy fonts, Typst packages, and fixer and generator modules. Calling it again
+with the same options returns the first call's promise; a worker replaced since then (watchdog, crash, recycling) is
+warmed again. See [Preloading the engine](/docs/guides/preloading).
+
+```ts
+const engine = createEngine({ spawn: engineWorker() }); // starts the worker: wasm and base fonts
+await engine.preload({ plugins: [edu, mermaid] }); // warm-up compiles, before the first document
+```
+
+<auto-type-table path="packages/engine/src/preload.ts" name="PreloadOptions" />
+
+<Callout type="warn" title="Beta">
+`engine.preload()` and `PreloadOptions` are beta.
+</Callout>
+
 #### `EngineEvent`
 
 What `engine.onEvent` receives, discriminated by `type`:
@@ -760,6 +780,30 @@ type ImageResolver = (
 Exported from `@typstream/engine` too. Called once per path and document, once the path's string is complete; `signal`
 aborts when the document is disposed. Return `null` to leave the image missing; a throw's message shows in the image's
 diagnostic.
+
+## `@typstream/engine/prefetch`
+
+Downloads the default worker's files without starting it. Its own entry point: under 3 KB gzipped, mostly
+engine-wasm's font list, which `typstream` already has.
+
+### `prefetchEngine`
+
+```ts
+const prefetchEngine: () => Promise<void>;
+```
+
+Fetches the wasm (`wasmUrl`) and the base fonts at low priority, and resolves once both are cached; rejects if a
+download fails. Nothing runs: no worker, no wasm instance, no memory held. When `engineWorker()` starts later, it
+finds them in the caches. The fonts go into the Cache Storage cache the worker reads them from (`typstream-fonts`), so
+they're found whatever your server's cache headers say. The wasm goes through the HTTP cache, so serve it cacheable:
+bundlers emit it with a content hash, which hosts usually serve as immutable. An engine on a server (`fromWebSocket`)
+downloads none of this.
+
+```ts
+import { prefetchEngine } from "@typstream/engine/prefetch";
+
+void prefetchEngine(); // at app start: a document may come later
+```
 
 ## `@typstream/engine/worker`
 

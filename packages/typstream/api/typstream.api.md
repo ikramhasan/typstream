@@ -26,6 +26,9 @@ import { HealResult } from '@typstream/heal';
 import { htmlCompat } from '@typstream/html-compat';
 import { htmlCompatCss } from '@typstream/html-compat';
 import { ImageResolver } from '@typstream/engine';
+import { PRELOAD_HOLD_MS } from '@typstream/react';
+import { PreloadOptions } from '@typstream/react';
+import { PreloadTypstreamOptions as PreloadTypstreamOptions_2 } from '@typstream/react';
 import * as react from 'react';
 import { RenderedEvent } from '@typstream/react';
 import { StandaloneHtmlOptions } from '@typstream/react';
@@ -35,6 +38,7 @@ import { TypstreamExportOptions } from '@typstream/react';
 import { TypstreamHandle } from '@typstream/react';
 import { TypstreamHtmlExportOptions } from '@typstream/react';
 import { TypstreamInfo } from '@typstream/react';
+import { TypstreamPreload } from '@typstream/react';
 import { TypstreamProps as TypstreamProps_2 } from '@typstream/react';
 import { TypstreamProvider } from '@typstream/react';
 import { TypstreamProviderProps } from '@typstream/react';
@@ -88,6 +92,19 @@ export { htmlCompatCss }
 
 export { ImageResolver }
 
+export { PRELOAD_HOLD_MS }
+
+export { PreloadOptions }
+
+// @beta
+export const preloadTypstream: (options?: PreloadTypstreamOptions) => TypstreamPreload;
+
+// @beta
+export interface PreloadTypstreamOptions extends PreloadTypstreamOptions_2 {
+    htmlCompat?: boolean;
+    packages?: boolean;
+}
+
 export { RenderedEvent }
 
 export { StandaloneHtmlOptions }
@@ -107,6 +124,8 @@ export { TypstreamHtmlExportOptions }
 
 export { TypstreamInfo }
 
+export { TypstreamPreload }
+
 // @public
 export interface TypstreamProps extends TypstreamProps_2 {
     htmlCompat?: boolean;
@@ -122,6 +141,9 @@ export { universe }
 export { UNIVERSE_PACKAGES }
 
 export { UniversePackage }
+
+// @beta
+export const usePreloadTypstream: (when?: boolean, options?: PreloadTypstreamOptions) => void;
 
 export { useTypstream }
 

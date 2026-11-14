@@ -18,9 +18,16 @@ export type {
   TypstreamExportOptions,
   TypstreamHtmlExportOptions,
 } from "@typstream/dom";
-export type { DocumentState, DocumentStatus, Engine } from "@typstream/engine";
+export type { DocumentState, DocumentStatus, Engine, PreloadOptions } from "@typstream/engine";
 export { type TypstreamDefaults, TypstreamProvider, type TypstreamProviderProps } from "./context";
 export type { IslandComponent, IslandComponents } from "./islands";
+export {
+  PRELOAD_HOLD_MS,
+  type PreloadTypstreamOptions,
+  preloadTypstream,
+  type TypstreamPreload,
+  usePreloadTypstream,
+} from "./preload";
 export { Typstream, type TypstreamHandle, type TypstreamProps } from "./Typstream";
 export type { TelemetryHooks } from "./telemetry";
 export { type TypstreamInfo, useTypstream } from "./useTypstream";
