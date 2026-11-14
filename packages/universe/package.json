@@ -1,6 +1,6 @@
 {
   "name": "@typstream/universe",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "The Typst Universe packages typstream allows by default (CeTZ, fletcher, cetz-plot, physica, unify, chemformula, alchemist), vendored with integrity hashes, as an engine allowlist plugin.",
   "license": "MIT",
   "repository": {

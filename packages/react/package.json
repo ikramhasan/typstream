@@ -1,6 +1,6 @@
 {
   "name": "@typstream/react",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "React bindings for typstream: <Typstream>, useTypstream() and TypstreamProvider, for Typst streamed from an LLM.",
   "license": "MIT",
   "repository": {

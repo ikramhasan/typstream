@@ -1,5 +1,16 @@
 # @typstream/website
 
+## 0.0.2
+
+### Patch Changes
+
+- Updated dependencies [3e5b205]
+  - @typstream/core@0.1.1
+  - @typstream/edu@0.1.1
+  - @typstream/heal@0.1.1
+  - @typstream/mindmap@0.1.1
+  - typstream@0.1.1
+
 ## 0.0.1
 
 ### Patch Changes

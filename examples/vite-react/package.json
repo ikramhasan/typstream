@@ -1,6 +1,6 @@
 {
   "name": "@typstream/example-vite-react",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "description": "A Vite + React app replaying a worksheet into the typstream package's <Typstream>, as HTML or as pages, with a PDF download.",
   "type": "module",
