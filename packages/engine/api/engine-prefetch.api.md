@@ -4,7 +4,7 @@
 
 ```ts
 
-// @public
+// @beta
 export const prefetchEngine: () => Promise<void>;
 
 // (No @packageDocumentation comment for this package)

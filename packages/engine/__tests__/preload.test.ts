@@ -8,6 +8,7 @@ import { createEngine, type EngineEvent } from "../src/engine";
 import { preloadCompiles } from "../src/preload";
 import { inProcess } from "../src/server/serve";
 import { nodeEngineWasm } from "./support/engine-wasm";
+import { FakeWorkers } from "./support/fake-worker";
 
 const loads = globalThis as { __preloadLoads?: Record<string, number> };
 
@@ -71,6 +72,22 @@ describe("engine.preload", { timeout: 30_000 }, () => {
     engine.dispose();
   });
 
+  it("warms other plugins again, though they add no compile of their own", async () => {
+    const plugin = definePlugin({ key: "acme/late", engine: { fixerModules: [countingModule("late")] } });
+    const engine = createEngine({ spawn: inProcess(nodeEngineWasm), spare: false });
+    const plain = engine.preload();
+    const withPlugin = engine.preload({ plugins: [plugin] });
+    expect(withPlugin).not.toBe(plain);
+    await withPlugin;
+    expect(loads.__preloadLoads?.late).toBe(1);
+    // Likewise with `text`, which replaces the plugins' examples.
+    expect(engine.preload({ text: "Hi", targets: ["html"], plugins: [plugin] })).not.toBe(
+      engine.preload({ text: "Hi", targets: ["html"] }),
+    );
+    await plain;
+    engine.dispose();
+  });
+
   it("returns the first call's promise for the same warm-up, and warms a different one", async () => {
     const engine = createEngine({ spawn: inProcess(nodeEngineWasm), spare: false });
     const first = engine.preload({ targets: ["html"] });
@@ -84,6 +101,26 @@ describe("engine.preload", { timeout: 30_000 }, () => {
     const engine = createEngine({ spawn: inProcess(nodeEngineWasm), spare: false });
     await expect(engine.preload({ text: "#nope(", targets: ["html"] })).resolves.toBeUndefined();
     engine.dispose();
+  });
+
+  it("rejects when the engine can't start, without an unhandled rejection when ignored", async () => {
+    const unhandled: unknown[] = [];
+    const listener = (reason: unknown) => unhandled.push(reason);
+    process.on("unhandledRejection", listener);
+    const engine = createEngine({ spawn: new FakeWorkers({ protocolVersion: 999 }).spawn, spare: false });
+    void engine.preload({ targets: ["html"] });
+    await expect(engine.preload({ targets: ["paged"] })).rejects.toThrow(/protocol 999/);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    process.off("unhandledRejection", listener);
+    expect(unhandled).toEqual([]);
+    engine.dispose();
+  });
+
+  it("resolves when the engine is disposed before its worker is up", async () => {
+    const engine = createEngine({ spawn: new FakeWorkers({ initMs: 200 }).spawn, spare: false });
+    const warm = engine.preload();
+    engine.dispose();
+    await expect(warm).resolves.toBeUndefined();
   });
 
   it("resolves when the engine is disposed under it", async () => {

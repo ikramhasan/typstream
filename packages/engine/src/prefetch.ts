@@ -56,9 +56,25 @@ const prefetchFont = async (url: URL, cache: Awaited<ReturnType<Caches["open"]>>
  * import { prefetchEngine } from "@typstream/engine/prefetch";
  * void prefetchEngine(); // at app start
  * ```
- * @public
+ * Calls while one is under way, or after one succeeded, return its promise:
+ * the files are fetched once per page.
+ * @beta
  */
-export const prefetchEngine = async (): Promise<void> => {
+export const prefetchEngine = (): Promise<void> => {
+  if (prefetched) return prefetched;
+  const started = prefetch();
+  prefetched = started;
+  // A failed one is forgotten, so a later call tries again.
+  started.catch(() => {
+    if (prefetched === started) prefetched = undefined;
+  });
+  return started;
+};
+
+/** The page's prefetch, once one has started. */
+let prefetched: Promise<void> | undefined;
+
+const prefetch = async (): Promise<void> => {
   const storage = (globalThis as { caches?: Caches }).caches;
   // Cache Storage throws in some contexts (opaque origins, private modes): the HTTP cache then.
   const cache = storage ? await storage.open(FONT_CACHE).catch(() => null) : null;

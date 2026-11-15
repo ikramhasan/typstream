@@ -17,6 +17,7 @@ import {
   PROTOCOL_VERSION,
   type RequestId,
   type Revision,
+  resolvePlugins,
   type ServerNotification,
   type TypstreamPlugin,
 } from "@typstream/core";
@@ -134,10 +135,11 @@ export interface Engine {
    * documents in the worker, so the first real one finds the wasm compiled,
    * the fonts parsed, and the plugins' packages, modules and fonts loaded.
    * Call it when a document is likely soon (the user opened "Generate", a
-   * model is answering). Compiles queue like any document's. The same options
-   * again warm nothing new and return the first call's promise. Resolves when
-   * the compiles are done, whether or not they succeeded; rejects only if the
-   * engine can't start, like {@link Engine.ready}. @beta
+   * model is answering). Compiles queue like any document's. The same compiles
+   * and plugins again warm nothing new and return the first call's promise.
+   * Resolves when the compiles are done, whether or not they succeeded, and
+   * when the engine is disposed; rejects only if the engine can't start, like
+   * {@link Engine.ready}, and is as safe to ignore. @beta
    */
   preload(options?: PreloadOptions): Promise<void>;
   /** Disposes every document and terminates the workers. */
@@ -282,13 +284,22 @@ class EngineImpl implements Engine, DocumentHost {
 
   preload(options: PreloadOptions = {}): Promise<void> {
     const compiles = preloadCompiles(options);
-    // A replaced worker (watchdog, crash, recycling) starts without the caches a warm-up filled.
-    const key = `${this.generation}:${JSON.stringify(compiles)}`;
+    // The plugins count apart from the compiles: most bring no example, and `text` replaces theirs, yet their
+    // modules, packages and catalogues load with the warm-up documents. A replaced worker (watchdog, crash,
+    // recycling) starts without the caches a warm-up filled.
+    const plugins = resolvePlugins(options.plugins ?? []).map((p) => p.key);
+    const key = `${this.generation}:${JSON.stringify([compiles, plugins])}`;
     let warm = this.preloads.get(key);
     if (!warm) {
-      warm = this.ready.then(() =>
-        Promise.all(compiles.map((c) => this.warmUp(c.text, c.target, options))).then(() => {}),
+      warm = this.ready.then(
+        () => Promise.all(compiles.map((c) => this.warmUp(c.text, c.target, options))).then(() => {}),
+        // Disposed before the worker was up: there is nothing to warm, not a failure.
+        (error: unknown) => {
+          if (!this.disposed) throw error;
+        },
       );
+      // As safe to ignore as `ready`, which `spawn()` handles; a caller that awaits it still sees the failure.
+      warm.catch(() => {});
       this.preloads.set(key, warm);
     }
     return warm;

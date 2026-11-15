@@ -4,8 +4,14 @@
 
 import { baseFonts } from "@typstream/engine-wasm/fonts";
 import { wasmUrl } from "@typstream/engine-wasm/wasm";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { prefetchEngine } from "../src/prefetch";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// The module keeps the page's prefetch: each test loads it afresh.
+let prefetchEngine: () => Promise<void>;
+beforeEach(async () => {
+  vi.resetModules();
+  ({ prefetchEngine } = await import("../src/prefetch"));
+});
 
 const stubFetch = (status = 200) => {
   const fetched: string[] = [];
@@ -59,9 +65,22 @@ describe("prefetchEngine", () => {
     expect(fetched).toHaveLength(1 + baseFonts.length);
   });
 
-  it("rejects when a download fails", async () => {
+  it("rejects when a download fails, and tries again on the next call", async () => {
     stubFetch(404);
     stubCaches();
     await expect(prefetchEngine()).rejects.toThrow(/HTTP 404/);
+    const fetched = stubFetch();
+    await prefetchEngine();
+    expect(fetched).toContain(`${wasmUrl} low`);
+  });
+
+  it("fetches once for every call after the first", async () => {
+    const fetched = stubFetch();
+    stubCaches();
+    const first = prefetchEngine();
+    expect(prefetchEngine()).toBe(first);
+    await first;
+    await prefetchEngine();
+    expect(fetched.filter((f) => f.startsWith(String(wasmUrl)))).toHaveLength(1);
   });
 });
