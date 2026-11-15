@@ -2,8 +2,8 @@
 // <Typstream> in each browser, with React Testing Library and the real engine
 // worker: streaming a growing `source` and a `stream`, both targets, the
 // provider's settings, useTypstream(), StrictMode, lazy opening offscreen,
-// cleanup (documents on unmount, the shared worker after its last user), and
-// exports (#18) from the handle and the hook.
+// cleanup (documents on unmount, the shared worker after its last user),
+// preloading the shared worker, and exports (#18) from the handle and the hook.
 
 import { cleanup, render, waitFor } from "@testing-library/react";
 import type { Diagnostic, FallbackEvent, RenderedEvent } from "@typstream/core";
@@ -19,6 +19,7 @@ import {
   type TypstreamInfo,
   type TypstreamProps,
   TypstreamProvider,
+  usePreloadTypstream,
   useTypstream,
 } from "../../src/index";
 import { FIVE_PAGES, sleep, startEngine, tokens, workers } from "../support/engine";
@@ -261,6 +262,39 @@ describe(`<Typstream> in ${browser}`, () => {
     expect(defaultEngineForTests.users()).toBe(2);
     unmount();
     expect(defaultEngineForTests.users()).toBe(0);
+    await sleep(RELEASE_DELAY + 200);
+    expect(workers.terminated - terminated).toBe(1);
+    expect(defaultEngineForTests.current()).toBeNull();
+  }, 60_000);
+
+  it("preloads the shared worker with usePreloadTypstream, and the first <Typstream> renders on it", async () => {
+    defaultEngineForTests.setFactory(startEngine);
+    const spawned = workers.spawned;
+    const terminated = workers.terminated;
+    const Composer = ({ open }: { open: boolean }) => {
+      usePreloadTypstream(open, { plugins: [htmlCompat] });
+      return null;
+    };
+    const { rerender, unmount } = render(<Composer open={false} />);
+    expect(defaultEngineForTests.current()).toBeNull();
+    rerender(<Composer open />);
+    const preloaded = defaultEngineForTests.current();
+    expect(preloaded).not.toBeNull();
+    // The same warm-up again is the hook's: it resolves once the worker compiled it.
+    await preloaded?.preload({ plugins: [htmlCompat] });
+    const handle = createRef<TypstreamHandle>();
+    rerender(
+      <>
+        <Composer open />
+        <Typstream ref={handle} source={"= Warm"} lazy={false} plugins={[htmlCompat]} />
+      </>,
+    );
+    await waitFor(() => expect(handle.current?.getState()?.status).toBe("done"), LONG);
+    // One worker: the preloaded one rendered the document.
+    expect(workers.spawned - spawned).toBe(1);
+    expect(defaultEngineForTests.current()).toBe(preloaded);
+    expect(defaultEngineForTests.users()).toBe(2);
+    unmount();
     await sleep(RELEASE_DELAY + 200);
     expect(workers.terminated - terminated).toBe(1);
     expect(defaultEngineForTests.current()).toBeNull();

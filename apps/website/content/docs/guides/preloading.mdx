@@ -1,0 +1,118 @@
+---
+title: Preloading the engine
+description: Download and start the Typst engine before the first document appears, so it renders at once instead of waiting for the wasm and fonts.
+---
+
+The engine is Typst compiled to wasm: about 6 MB of wasm and 1.4 MB of fonts (brotli), which a browser downloads,
+compiles and loads before the first document can render. That's about 3 seconds at 20 Mbps the first time. Later
+visits take them from the browser's caches until the next release. Even from the caches, the worker still has to
+compile the wasm, parse the fonts and lay out its first document cold: a few hundred milliseconds.
+
+Most apps show a document only after something else: the user fills in a form, a model spends seconds writing. That
+time can hide the wait. Start the engine when a document becomes likely, and the first `<Typstream>` finds it ready.
+
+## In React
+
+Call `preloadTypstream()` when a document is likely soon:
+
+```tsx
+import { preloadTypstream } from "typstream"; // or "@typstream/react"
+import { edu } from "@typstream/edu";
+
+function GenerateButton() {
+  return (
+    <button
+      onClick={() => {
+        preloadTypstream({ plugins: [edu] }); // while the model writes
+        generate();
+      }}
+    >
+      Generate
+    </button>
+  );
+}
+```
+
+It starts the page's shared engine (the one every `<Typstream>` without an `engine` uses) and runs warm-up compiles
+with the plugins you name. Then it keeps the engine for a minute (`holdMs`). A `<Typstream>` that mounts in that
+time renders on the warm engine and keeps it for as long as it needs it.
+
+Or, from a component, `usePreloadTypstream(when, options)` keeps the engine warm while the component is mounted and
+`when` is true. Use it for the screen that leads to the page view, such as a multi-step form or a dialog:
+
+```tsx
+import { usePreloadTypstream } from "typstream";
+
+function GenerateDialog({ open }: { open: boolean }) {
+  usePreloadTypstream(open, { plugins: [edu] });
+  // …
+}
+```
+
+`typstream`'s versions also warm the plugins its `<Typstream>` adds (html-compat and universe). Pass the same
+`plugins` as your `<Typstream>`s, so their packages and modules are among what gets warmed.
+
+## Two levels
+
+| `level` | What it does | What it costs while no document shows |
+| --- | --- | --- |
+| `"engine"` (default) | Starts the worker, compiles the wasm, loads the fonts, runs warm-up compiles with your plugins. The first document renders at once. | One worker: tens of MB of memory, until `holdMs` passes or `release()`. |
+| `"fetch"` | Downloads the wasm and base fonts into the browser's caches. No worker. | Nothing: the files wait on disk. |
+
+Use `"engine"` when a document is likely within seconds or minutes, such as during a generation or on the last step
+of a form. Use `"fetch"` early, for example at app start, when a document may come later or not at all: on the next
+visit, or a few screens from now, the engine starts from the caches instead of the network.
+
+```tsx
+// At app start: cheap, safe whether or not the user ever reaches a document.
+preloadTypstream({ level: "fetch" });
+```
+
+## What a warm-up loads
+
+`engine.preload()` (which `preloadTypstream` calls) compiles throwaway documents in the worker and closes them:
+
+- A short sample with headings, bold and italic, code and math in each target (`targets`, default HTML and pages).
+  This compiles the wasm, parses the base fonts and runs the first, cold layout.
+- The first prompt example of each plugin in `plugins`, in the first target. This loads what the plugin brings: its
+  Typst packages, fixer and generator modules (Mermaid's diagram generator, for instance) and fonts.
+
+All of that belongs to the worker, not the document, so it stays for the real documents that follow. To warm
+something specific, such as a package your documents always import or a font they set, pass a `text` like your
+documents instead:
+
+```ts
+preloadTypstream({ text: '#import "@preview/cetz:0.5.3"\n#set text(font: "Noto Naskh Arabic")\nمرحبا' });
+```
+
+## Without React
+
+Create the engine early: creating it starts the worker, which downloads and compiles the wasm and loads the base
+fonts. Then warm it with your plugins, and pass it to `mountTypstream` when the document comes.
+
+```ts
+import { createEngine, engineWorker } from "@typstream/engine";
+
+const engine = createEngine({ spawn: engineWorker() });
+void engine.preload({ plugins: [edu] });
+// later
+mountTypstream(element, { engine, plugins: [edu], source });
+```
+
+`prefetchEngine()` from `@typstream/engine/prefetch` is the `"fetch"` level: it downloads the files without starting
+a worker.
+
+## Caching
+
+The fonts go into Cache Storage (`typstream-fonts`), which the worker reads first, so they download once whatever
+your server sends. The wasm goes through the HTTP cache. Bundlers emit it with a content hash in its name; serve such
+files with a long `Cache-Control` (most hosts do for hashed assets), or every visit downloads it again. See
+[Self-hosting the engine](/docs/guides/self-hosting).
+
+## See also
+
+- [`preloadTypstream`](/docs/reference/react#preloadtypstream) and
+  [`usePreloadTypstream`](/docs/reference/react#usepreloadtypstream)
+- [`engine.preload()`](/docs/reference/engine#preloadoptions) and
+  [`prefetchEngine`](/docs/reference/engine#typstreamengineprefetch)
+- [The engine](/docs/concepts/engine)

@@ -127,6 +127,14 @@ Documents may `#import "@preview/…"` packages from an allowlist. The allowlist
 
 Tests: `pnpm test` (Node: client, server, protocol conformance against engine-wasm) and `pnpm test:browser` (the real worker in Chromium, Firefox and WebKit). Any engine server must pass `__tests__/conformance.ts`.
 
+## Preloading
+
+Creating an engine starts its worker: the wasm downloads and compiles and the base fonts load. `engine.preload({
+plugins })` (beta) then compiles throwaway documents, so the first real one finds the fonts parsed and its plugins'
+packages, fixer and generator modules and fonts already in the worker. `prefetchEngine()` from
+`@typstream/engine/prefetch` downloads the wasm and base fonts into the browser's caches without starting a worker.
+See [Preloading the engine](https://typstream.vercel.app/docs/guides/preloading).
+
 ## License
 
 MIT

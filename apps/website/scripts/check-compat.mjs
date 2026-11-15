@@ -60,6 +60,7 @@ const budgets = [
   ["| `@typstream/engine`, main thread | ", "engine", /MAIN_THREAD = ([\d.]+) \* 1024/],
   ["| `@typstream/engine/websocket` | ", "engine", /"src\/websocket\.ts", ([\d.]+) \* 1024/],
   ["| `@typstream/engine/images` | ", "engine", /"src\/images\.ts", ([\d.]+) \* 1024/],
+  ["| `@typstream/engine/prefetch` | ", "engine", /"src\/prefetch\.ts", ([\d.]+) \* 1024/],
   ["| `@typstream/react`, with `@typstream/dom` | ", "react", /const BUDGET = ([\d.]+) \* 1024/],
   ["| `@typstream/dom` HTML renderer | ", "dom", /"src\/html\/index\.ts", ([\d.]+) \* 1024/],
   ["| `@typstream/dom` paged renderer | ", "dom", /"src\/paged\/index\.ts", ([\d.]+) \* 1024/],

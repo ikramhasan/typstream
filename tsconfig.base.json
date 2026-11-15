@@ -30,6 +30,9 @@
       "@typstream/engine/images": [
         "./packages/engine/src/images.ts"
       ],
+      "@typstream/engine/prefetch": [
+        "./packages/engine/src/prefetch.ts"
+      ],
       "@typstream/conformance": [
         "./tools/conformance/src/suite.ts"
       ],

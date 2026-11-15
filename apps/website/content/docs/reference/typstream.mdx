@@ -80,6 +80,27 @@ defaults.
 
 <auto-type-table path="packages/typstream/src/index.tsx" name="TypstreamProps" />
 
+### `preloadTypstream` and `usePreloadTypstream`
+
+```ts
+const preloadTypstream: (options?: PreloadTypstreamOptions) => TypstreamPreload;
+const usePreloadTypstream: (when?: boolean, options?: PreloadTypstreamOptions) => void;
+```
+
+[`@typstream/react`'s](/docs/reference/react#preloadtypstream), warming the plugins this package's `<Typstream>`
+adds: html-compat and universe, unless `htmlCompat` or `packages` is false, before the `plugins` given. Universe has
+no examples, so preloading downloads no Typst package; a package downloads when a document first imports it.
+
+```tsx
+import { preloadTypstream } from "typstream";
+
+<button onClick={() => { preloadTypstream(); generate(); }}>Generate</button>
+```
+
+### `PreloadTypstreamOptions`
+
+<auto-type-table path="packages/typstream/src/index.tsx" name="PreloadTypstreamOptions" />
+
 ### Re-exports
 
 Everything else in `typstream` comes from another package and is documented there:
@@ -88,7 +109,8 @@ Everything else in `typstream` comes from another package and is documented ther
 | --- | --- | --- |
 | `TypstreamProvider`, `useTypstream` | `@typstream/react` | [React](/docs/reference/react) |
 | Types: `TypstreamProviderProps`, `TypstreamDefaults`, `TypstreamHandle`, `TypstreamInfo`, `TelemetryHooks` | `@typstream/react` | [React](/docs/reference/react) |
-| Types: `Engine`, `DocumentState`, `DocumentStatus` | `@typstream/engine` (through `@typstream/react`) | [Engine](/docs/reference/engine) |
+| `PRELOAD_HOLD_MS`, type `TypstreamPreload` | `@typstream/react` | [React](/docs/reference/react#preloadtypstream) |
+| Types: `Engine`, `DocumentState`, `DocumentStatus`, `PreloadOptions` | `@typstream/engine` (through `@typstream/react`) | [Engine](/docs/reference/engine) |
 | `createEngine`, `engineWorker`, types `EngineOptions`, `ImageResolver` | `@typstream/engine` | [Engine](/docs/reference/engine) |
 | `fetchImages`, type `FetchImagesOptions` | `@typstream/engine/images` | [Engine](/docs/reference/engine#typstreamengineimages), [Images](/docs/guides/images) |
 | `createHealer`, `heal`, types `Healer`, `HealOptions`, `HealResult` | `@typstream/heal` | [Heal](/docs/reference/heal) |
