@@ -1,6 +1,6 @@
 {
   "name": "@typstream/ai",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "typstream with AI SDKs: an AI SDK chat's assistant messages as Typst documents, streaming or finished.",
   "license": "MIT",
   "repository": {

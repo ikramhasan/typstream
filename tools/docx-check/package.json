@@ -1,6 +1,6 @@
 {
   "name": "@typstream/docx-check",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "private": true,
   "type": "module",
   "description": "Checks DOCX exports against Typst's PDF: LibreOffice's lines and page breaks, Microsoft's validator (#131).",

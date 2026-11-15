@@ -1,5 +1,15 @@
 # @typstream/example-vanilla
 
+## 0.0.3
+
+### Patch Changes
+
+- Updated dependencies [0441dc0]
+  - @typstream/engine@0.2.0
+  - @typstream/dom@0.2.0
+  - @typstream/html-compat@0.1.2
+  - @typstream/universe@0.1.2
+
 ## 0.0.2
 
 ### Patch Changes

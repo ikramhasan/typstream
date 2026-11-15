@@ -1,5 +1,16 @@
 # @typstream/website
 
+## 0.0.3
+
+### Patch Changes
+
+- Updated dependencies [0441dc0]
+  - typstream@0.2.0
+  - @typstream/mindmap@0.1.2
+  - @typstream/core@0.2.0
+  - @typstream/heal@0.2.0
+  - @typstream/edu@0.1.2
+
 ## 0.0.2
 
 ### Patch Changes

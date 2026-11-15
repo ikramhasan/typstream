@@ -1,5 +1,12 @@
 # @typstream/example-vite-react
 
+## 0.0.3
+
+### Patch Changes
+
+- Updated dependencies [0441dc0]
+  - typstream@0.2.0
+
 ## 0.0.2
 
 ### Patch Changes

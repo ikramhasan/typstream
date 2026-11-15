@@ -1,6 +1,6 @@
 {
   "name": "@typstream/playground",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Dev playground: replay streams, inspect healing, record corpus cases (PLAN.md \u00a710.5).",
   "license": "UNLICENSED",
   "private": true,

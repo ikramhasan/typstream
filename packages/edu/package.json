@@ -1,6 +1,6 @@
 {
   "name": "@typstream/edu",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Typst functions and templates for teachers' documents (questions, answer spaces and keys, callouts, rubrics, drawings, chemistry), as a typstream plugin.",
   "license": "MIT",
   "repository": {
