@@ -1,5 +1,16 @@
 # @typstream/docx-check
 
+## 0.0.3
+
+### Patch Changes
+
+- @typstream/mindmap@0.1.2
+  - @typstream/node@0.1.2
+  - @typstream/conformance@0.0.3
+  - @typstream/docx@0.2.0
+  - @typstream/heal@0.2.0
+  - @typstream/edu@0.1.2
+
 ## 0.0.2
 
 ### Patch Changes

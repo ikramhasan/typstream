@@ -1,6 +1,6 @@
 {
   "name": "@typstream/core",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Shared contracts for typstream: text edits, source maps, diagnostics, the worker protocol and the plugin contract.",
   "license": "MIT",
   "repository": {

@@ -1,6 +1,6 @@
 {
   "name": "@typstream/docx",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "DOCX export for typstream: a laid-out Typst document as editable Word, line and page breaks kept.",
   "license": "MIT",
   "repository": {
