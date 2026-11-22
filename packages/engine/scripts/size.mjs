@@ -52,8 +52,9 @@ const ok = [
   // #118's last ink fixes raised blanks to their stroke, anchored lowered pictures to their line and made a cell's room
   // before a moved block breakable (14 bytes over); 13.4 KB until cells' margins moved into indents and neighbours'
   // margins, rows' heights and spacers before tables, for Apple's Pages (0.66 KB in CI's Node 24, whose zlib makes
-  // this 0.16 KB larger than Node 25's).
-  await measure("@typstream/docx (loaded on a DOCX export)", "../docx/src/index.ts", 14.1 * 1024, []),
+  // this 0.16 KB larger than Node 25's); 14.1 KB until blanks became natural-width spaces and empty lines got a line
+  // to type on, right to left after right-to-left text (0.27 KB: 14.33 KB in Node 26).
+  await measure("@typstream/docx (loaded on a DOCX export)", "../docx/src/index.ts", 14.4 * 1024, []),
   await measure("@typstream/engine/websocket", "src/websocket.ts", 1.5 * 1024, []),
   await measure("@typstream/engine/images", "src/images.ts", 1.5 * 1024, []),
   await measure("@typstream/engine/prefetch", "src/prefetch.ts", 3 * 1024, []),

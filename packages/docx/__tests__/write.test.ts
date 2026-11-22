@@ -172,6 +172,17 @@ describe("writeDocx", () => {
     expect(third).toContain('w:fill="787878"');
   });
 
+  it("writes a line to write on after right-to-left text right to left, its rule's indents as its end and start", () => {
+    const rule = { type: "rule", thickness: 0.4, color: "787878", indent: { left: 10, right: 30 } } as const;
+    const doc = parts(model([p("اشرح.", { rtl: true }), { ...rule, writable: 21.6, before: 21.6 }])).xml(
+      "word/document.xml",
+    );
+    const line = (doc.match(/<w:p>.*?<\/w:p>/g) ?? [])[1] ?? "";
+    expect(line).toContain("<w:bidi/>");
+    // Under bidi, w:left is the paragraph's start, on the right: the rule's right indent stays there.
+    expect(line).toContain('<w:ind w:left="600" w:right="200"/>');
+  });
+
   it("writes a breakable room as lines a fifth of a point tall, which engines break between pages", () => {
     const doc = parts(model([{ type: "drawing", width: 1, height: 10, indent: 0, before: 0, breakable: true }])).xml(
       "word/document.xml",

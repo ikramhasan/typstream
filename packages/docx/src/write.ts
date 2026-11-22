@@ -122,8 +122,8 @@ class Writer {
   drawings = 0;
   /** The margins of the cell being written that its paragraphs' indents hold (`PAGES_INSET`), in points. */
   shift = { left: 0, right: 0 };
-  /** The face and size of the last text written: what is typed on a line to write on takes them. */
-  text = { font: 0, size: 11 };
+  /** The face, size and direction of the last text written: what is typed on a line to write on takes them. */
+  text = { font: 0, size: 11, rtl: false };
 
   constructor(
     private readonly model: DocxModel,
@@ -304,7 +304,7 @@ class Writer {
       | undefined;
     const mark = first ? this.rPr(first.font, first.size) : undefined;
     const word = p.runs.find((r) => "text" in r) as DocxTextRun | undefined;
-    if (word) this.text = { font: word.font, size: word.size };
+    if (word) this.text = { font: word.font, size: word.size, rtl: !!p.rtl };
     let left = p.indent.left;
     let firstLine = p.indent.firstLine;
     let num: number | undefined;
@@ -377,12 +377,13 @@ class Writer {
 
   /**
    * A line to write on (a `writable` rule): the room above the rule as an empty paragraph exactly as tall, in the
-   * face and size of the text before it (upright), so that what is typed there sits on the rule and wraps onto lines
-   * as tall. It takes the rule's space before, what the room doesn't hold. A room shorter than the text gets none.
+   * face, size and direction of the text before it (upright), so that what is typed there sits on the rule and wraps
+   * onto lines as tall. It takes the rule's space before, what the room doesn't hold. A room shorter than the text gets
+   * none. Right to left, `pPr`'s indents are the paragraph's start and end, the rule's are left and right.
    */
   private writeLine(r: DocxRule): string | undefined {
     const room = r.writable ?? 0;
-    const { font, size } = this.text;
+    const { font, size, rtl } = this.text;
     if (room < size) return undefined;
     const f = this.fonts[font];
     const upright = f?.bold || f?.italic ? this.fonts.findIndex((g) => g.name === f.name && !g.bold && !g.italic) : -1;
@@ -390,8 +391,9 @@ class Writer {
       pageBreak: r.pageBreak,
       before: Math.max(0, (r.before ?? 0) - room),
       line: room,
-      left: r.indent.left,
-      right: r.indent.right,
+      bidi: rtl,
+      left: rtl ? r.indent.right : r.indent.left,
+      right: rtl ? r.indent.left : r.indent.right,
       rPr: this.rPr(upright >= 0 ? upright : font, size),
     })}</w:p>`;
   }
