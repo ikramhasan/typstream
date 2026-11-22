@@ -420,12 +420,17 @@ export interface DocxCell {
   blocks: DocxBlock[];
 }
 
-/** A horizontal rule across the area (`line(length: 100%)`). @internal */
+/**
+ * A horizontal rule: across the area (`line(length: 100%)`), or the line of an empty box ruled underneath (edu's
+ * answer lines, a student's details), which is `writable`. @internal
+ */
 export interface DocxRule extends DocxBlockBase {
   type: "rule";
   thickness: number;
   color: string;
   indent: { left: number; right: number };
+  /** A line to write on: how tall its box is above the line, in points, which holds a line to type on. */
+  writable?: number;
 }
 
 /**

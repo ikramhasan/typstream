@@ -202,6 +202,7 @@ describe("compile_docx_model", () => {
       type: string;
       align?: string;
       before?: number;
+      writable?: number;
       indent?: { left: number; firstLine: number } | number;
       list?: { id: number; label: string };
       runs?: Run[];
@@ -326,6 +327,48 @@ describe("compile_docx_model", () => {
       // The 5 pt inset less half the 1 pt stroke, which Word adds: not the 30-odd points the first line is centred by.
       expect(cell?.margins.left).toBe(4.5);
       expect(cell?.blocks[0]).toMatchObject({ align: "center" });
+    });
+
+    it("gives the line of an empty box ruled underneath the box's room above it, to type on, and a rule none", () => {
+      const out = blocks(
+        "Explain.\n\n#block(width: 100%, height: 2em, stroke: (bottom: 0.4pt))\n\n#line(length: 100%)\n\n" +
+          "#grid(columns: (auto, 3cm), align: bottom, [Name:], box(width: 100%, stroke: (bottom: 0.5pt), sym.wj))\n",
+      );
+      const rules = out.filter((b) => b.type === "rule");
+      // 2em at 11 pt less the stroke; then `line`, a rule alone.
+      expect(rules.map((r) => r.writable)).toEqual([21.6, undefined]);
+      const grid = out.find((b) => b.type === "table");
+      const line = grid?.rows?.[0]?.cells[1]?.blocks[0];
+      // As tall as its label's line (the profile's 1.3em), less the stroke.
+      expect(line).toMatchObject({ type: "rule", writable: 13.8 });
+    });
+
+    it("gives back the stroke under text that reaches a box's bottom edge from its last line, as engines add the border", () => {
+      // A filled-in line: the value's line box is the box, the stroke half over it. Word's border goes below the line.
+      const out = blocks(
+        "#grid(columns: (auto, 3cm), align: bottom, [Name:], box(width: 100%, stroke: (bottom: 0.5pt))[Ikram])\n",
+      );
+      const framed = out[0]?.rows?.[0]?.cells[1]?.blocks[0];
+      const line = framed?.rows?.[0]?.cells[0]?.blocks[0] as (Block & { pitch?: number }) | undefined;
+      expect(line?.runs?.map(show)).toEqual(["Ikram"]);
+      // The profile's 1.3em at 11 pt, less the 0.5 pt stroke.
+      expect(line?.pitch).toBe(13.8);
+    });
+
+    it("doesn't underline the space Typst keeps after a blank that ends a line", () => {
+      // A blank with its answer shown ends the first line: Typst keeps the space after it there, of no width, where
+      // its stroke ends. Underlined, LibreOffice carried it to the next line's start.
+      const [para] = blocks(
+        "#set page(width: 8cm, margin: 0pt)\nWords #box(width: 6.8cm, stroke: (bottom: 0.5pt), inset: (x: 0.3em))[#align(center)[merit]] after it.\n",
+      );
+      expect(para?.runs?.map((r) => (r.underline ? `${show(r)}_` : show(r)))).toEqual([
+        "Words ",
+        "[84.3 u]_",
+        "merit_",
+        "[84.3 u]_",
+        " ",
+        "after it.",
+      ]);
     });
   });
 

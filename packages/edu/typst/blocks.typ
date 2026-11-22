@@ -121,29 +121,40 @@
   }
 }
 
-/// Lines for students to write their name, the date, their class, and so on. Known fields are
-/// "name", "date", "class", "section", "roll", "score" and "teacher", labelled in the document's
-/// language; any other text is used as its own label. The name field gets the most room.
+/// Lines for students to write their name, the date, their class, and so on, or those details
+/// filled in. Known fields are "name", "date", "class", "section", "roll", "score" and "teacher",
+/// labelled in the document's language; any other text is its own label, as written (capitalise
+/// it, in the document's language). A plain field is an empty line; one given as `key: value` has
+/// its value written on the line, and `none` leaves it empty. A label of your own with a value goes
+/// in a dictionary, `("Year": [2026])`, as a template's `info` is. The name field gets the most room.
 ///
 /// ```example
 /// #student-info("name", "class", "roll")
+/// #student-info(name: [Ikram Hasan], class: [9B], date: none, ("Year": [2026]))
 /// ```
 #let student-info(..fields) = context {
-  let fields = if fields.pos().len() == 0 { ("name", "date", "class") } else { fields.pos() }
+  // (label, value) pairs: a plain field has no value; a `key: value` one is named, or in a dictionary (a template's
+  // `info: (name: [Ikram], date: none)`). Named ones first (Typst doesn't keep where they were among the others), then
+  // the rest in order. Cut while streaming, an argument can be `""` or `()`: no field.
+  let entries = fields.named().pairs()
+  for f in fields.pos() {
+    if type(f) == dictionary { entries += f.pairs() } else if f not in (none, "", ()) { entries.push((f, none)) }
+  }
+  if entries.len() == 0 { entries = (("name", none), ("date", none), ("class", none)) }
   {
     let width(f) = if f == "name" { 2.2fr } else { 1fr }
     block(above: 0.36em, below: 0.36em, grid(
-      columns: fields.map(f => (auto, width(f))).flatten(),
+      columns: entries.map(((f, _)) => (auto, width(f))).flatten(),
       // Tight between a label and its line, wider between fields.
-      column-gutter: range(fields.len() * 2 - 1).map(i => if calc.even(i) { 0.4em } else { 1.2em }),
-      // A line's cell holds no text: at the bottom, level with its label's line.
+      column-gutter: range(entries.len() * 2 - 1).map(i => if calc.even(i) { 0.4em } else { 1.2em }),
+      // A line's cell may hold no text: at the bottom, level with its label's line.
       align: bottom,
-      ..fields
-        .map(f => (
+      ..entries
+        .map(((f, v)) => (
           [#_field-label(f):],
-          // As tall as its label's line, the stroke at its bottom: a DOCX export writes a paragraph with a bottom border,
-          // which every engine draws there (an underline's place differs between them, #135).
-          box(width: 100%, stroke: (bottom: 0.5pt + _rule), h(1fr)),
+          // As tall as its label's line (a word joiner when empty), the stroke at its bottom and the value (if any) on
+          // it: a DOCX export writes a line to type on above a rule, or the value in a cell with a bottom border.
+          box(width: 100%, stroke: (bottom: 0.5pt + _rule), if v in (none, "", []) { sym.wj } else { [#v] }),
         ))
         .flatten(),
     ))

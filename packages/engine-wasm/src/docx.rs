@@ -3825,8 +3825,9 @@ impl Builder {
             top: (first_top - rect.y - thickness("top")).max(0.0),
             bottom: (rect.bottom() - last_bottom - thickness("bottom")).max(0.0),
         };
-        // An empty box ruled underneath only (edu's answer lines) is a ruled line: a paragraph with a bottom border,
-        // which engines split pages between, where they won't break a row holding a nested table.
+        // An empty box ruled underneath only (edu's answer lines, a student's details, a matching exercise's letter) is
+        // a line to write on: a rule, which engines split pages between, where they won't break a row holding a nested
+        // table, with the box's room above it, which the writer makes a line to type on.
         if blocks.is_empty() && fill.is_none() {
             if let Some(Json::Object(sides)) = Some(&borders) {
                 if sides.len() == 1 && sides.contains_key("bottom") {
@@ -3835,6 +3836,7 @@ impl Builder {
                     json.insert("type".into(), json!("rule"));
                     json.insert("thickness".into(), json!(round(t)));
                     json.insert("color".into(), sides["bottom"]["color"].clone());
+                    json.insert("writable".into(), json!(round((rect.h - t).max(0.0))));
                     json.insert(
                         "indent".into(),
                         json!({ "left": round(rect.x - area.left), "right": round((area.right - rect.right()).max(0.0)) }),
@@ -3851,6 +3853,19 @@ impl Builder {
         }
         let blocks = self.with_gaps_from(blocks, first_top);
         let mut blocks: Vec<Json> = blocks.into_iter().map(|b| Json::Object(b.json)).collect();
+        // Text down to the bottom edge (a value on its line, a matching exercise's shown letter): Typst draws half the
+        // stroke over its line box, engines add the border below the cell's content. A last line of one gives that
+        // back, so the row is as tall as Typst's; an exact line loses it above the text, which stays on the border.
+        let deficit = thickness("bottom") - (rect.bottom() - last_bottom);
+        if deficit > 0.05 {
+            if let Some(Json::Object(last)) = blocks.last_mut() {
+                let pitch = last.get("pitch").and_then(|p| p.as_f64());
+                let one = last.get("lines").and_then(|n| n.as_u64()) == Some(1);
+                if let (Some(pitch), true, false) = (pitch, one, last.contains_key("atLeast")) {
+                    last.insert("pitch".into(), json!(round(pitch - deficit)));
+                }
+            }
+        }
         // Nothing in it (a ruled line, an empty box): its height held by an empty paragraph.
         let mut inset = inset;
         if blocks.is_empty() {
@@ -4767,8 +4782,10 @@ fn underlined(
     baseline: f64,
 ) -> Option<(String, f64)> {
     let mid = (x0 + x1) / 2.0;
+    // Not what starts where the stroke ends: the space Typst keeps, of no width, at a line it broke after a blank,
+    // which engines would carry to the next line, underlined.
     segs.iter()
-        .find(|(p, s)| *p == page && s.x0 <= mid && s.x1 >= mid && underlines(s, baseline))
+        .find(|(p, s)| *p == page && s.x0 <= mid && s.x1 > mid && underlines(s, baseline))
         .map(|(_, s)| (s.color.clone(), s.y0 - baseline))
 }
 

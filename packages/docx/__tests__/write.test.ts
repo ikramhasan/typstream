@@ -103,8 +103,73 @@ describe("writeDocx", () => {
       ],
     });
     const doc = parts(model([para])).xml("word/document.xml");
-    expect(doc).toContain('<w:spacing w:val="1145"/><w:position w:val="2"/><w:sz w:val="22"/>');
+    expect(doc).toContain('<w:spacing w:val="2"/><w:position w:val="2"/><w:sz w:val="22"/>');
     expect(doc).toContain('<w:position w:val="-1"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:u w:val="single"/>');
+  });
+
+  it("writes a blank as no-break spaces as wide as they are, the rest a twip or two of spacing each, so typed letters aren't spread", () => {
+    const para = p("", {
+      runs: [
+        { text: "I ", font: 0, size: 11 },
+        { gap: 60, font: 0, size: 11, underline: true },
+        { text: " went.", font: 0, size: 11 },
+      ],
+    });
+    const doc = parts(model([para])).xml("word/document.xml");
+    // 60 pt = 1200 twips: 21 spaces of 55 twips (0.25em at 11 pt) and 45 twips more, 2 each and 3 for three of them.
+    const runs = [
+      ...doc.matchAll(
+        /<w:r><w:rPr>((?:(?!<\/w:rPr>).)*)<\/w:rPr><w:t xml:space="preserve">((?:&#160;)+)<\/w:t><\/w:r>/g,
+      ),
+    ];
+    expect(runs.map((r) => [(r[2] ?? "").length / 6, /w:spacing w:val="(\d+)"/.exec(r[1] ?? "")?.[1]])).toEqual([
+      [18, "2"],
+      [3, "3"],
+    ]);
+    for (const r of runs) expect(r[1]).toContain('<w:u w:val="single"/>');
+    // Room that isn't a blank stays one widened space.
+    const room = parts(
+      model([
+        p("", {
+          runs: [
+            { text: "a", font: 0, size: 11 },
+            { gap: 20, font: 0, size: 11 },
+          ],
+        }),
+      ]),
+    );
+    expect(room.xml("word/document.xml")).toContain('<w:spacing w:val="345"/>');
+  });
+
+  it("writes a line to write on above its rule, in the face and size of the text before it, upright", () => {
+    const rule = { type: "rule", thickness: 0.4, color: "787878", indent: { left: 0, right: 0 } } as const;
+    const bold = { name: "Libertinus Serif", bold: true, italic: false, nbsp: 0.25 };
+    const doc = parts(
+      model(
+        [
+          p("Explain.", { runs: [{ text: "Explain.", font: 1, size: 12 }] }),
+          { ...rule, writable: 21.6, before: 30 },
+          { ...rule, writable: 21.6, before: 21.6 },
+          // Too short for the text: the rule alone.
+          { ...rule, writable: 5, before: 5 },
+        ],
+        { fonts: [{ name: "Libertinus Serif", bold: false, italic: false, nbsp: 0.25 }, bold] },
+      ),
+      [FONT, FONT],
+    ).xml("word/document.xml");
+    const paragraphs = doc.match(/<w:p>.*?<\/w:p>/g) ?? [];
+    expect(paragraphs).toHaveLength(7);
+    const [, line, first, line2, second, , third] = paragraphs as string[];
+    // 21.6 pt of the 30 before the first rule is its line, the rest space above; in 12 pt, not bold.
+    expect(line).toContain('w:before="168" w:after="0" w:line="432" w:lineRule="exact"');
+    expect(line).toContain('<w:sz w:val="24"/>');
+    expect(line).not.toContain("<w:b/>");
+    expect(line).not.toContain("<w:shd");
+    expect(first).toContain('w:fill="787878"');
+    expect(first).toContain('w:before="0"');
+    expect(line2).toContain('w:before="0" w:after="0" w:line="432"');
+    expect(second).toContain('w:fill="787878"');
+    expect(third).toContain('w:fill="787878"');
   });
 
   it("writes a breakable room as lines a fifth of a point tall, which engines break between pages", () => {

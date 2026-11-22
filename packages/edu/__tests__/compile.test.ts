@@ -51,6 +51,10 @@ const EMPTY_CALLS = [
   "#rubric(([A], [a]), levels: (), points: none)",
   "#student-info()",
   '#student-info("Anything")',
+  // Filled in; cut while streaming, `"Year", (` heals to `"Year", ()` and `"` to `""`.
+  '#student-info(name: [Ikram Hasan], class: 9, date: none, ("Year": [2026]), "", ())',
+  '#student-info("name", (class: [9B], date: none), roll: [])',
+  "#show: worksheet.with(info: (name: [Ikram], date: none))\n",
   "#number-line()",
   "#number-line(from: 5, to: 5)",
   "#number-line(from: 0, to: 1, step: 0)",

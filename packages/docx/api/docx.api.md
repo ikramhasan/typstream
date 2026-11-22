@@ -374,6 +374,7 @@ export interface DocxRule extends DocxBlockBase {
     thickness: number;
     // (undocumented)
     type: "rule";
+    writable?: number;
 }
 
 // @internal
