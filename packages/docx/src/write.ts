@@ -122,6 +122,8 @@ class Writer {
   drawings = 0;
   /** The margins of the cell being written that its paragraphs' indents hold (`PAGES_INSET`), in points. */
   shift = { left: 0, right: 0 };
+  /** The face, size and direction of the last text written: what is typed on a line to write on takes them. */
+  text = { font: 0, size: 11, rtl: false };
 
   constructor(
     private readonly model: DocxModel,
@@ -195,12 +197,24 @@ class Writer {
         const sz = halfPoints(r.size);
         return `<w:r><w:rPr><w:position w:val="${raise}"/><w:sz w:val="${sz}"/><w:szCs w:val="${sz}"/></w:rPr>${picture}</w:r>`;
       }
-      // A no-break space, widened to the gap by character spacing: exact to a twip, and Word underlines the spacing too.
       const nbsp = (this.fonts[r.font]?.nbsp ?? 0.25) * halfPoints(r.size) * 10;
       // U+00A0, written as a character reference so it stays visible in the source. In a right-to-left paragraph, a
       // right-to-left run: engines place runs by their direction.
       const space = (n: number, spacing: number) =>
         `<w:r>${this.rPr(r.font, r.size, undefined, r.underline, spacing, { ...r, rtl })}<w:t xml:space="preserve">${"&#160;".repeat(n)}</w:t></w:r>`;
+      // A blank (underlined): no-break spaces as wide as they are, as many as fit, the rest spread over them as a
+      // twip or two of character spacing each, exact to a twip. What is typed in it takes a space's spacing: one
+      // space widened to the whole blank spread typed letters a blank apart. Rounded down, as LibreOffice
+      // breaks a line early over negative spacing.
+      if (r.underline && !complex) {
+        const total = twips(r.gap);
+        const count = Math.max(1, Math.floor(total / Math.max(1, nbsp)));
+        const rest = Math.max(0, Math.round(total - count * nbsp));
+        const per = Math.floor(rest / count);
+        const wider = rest - per * count;
+        return (count > wider ? space(count - wider, per) : "") + (wider > 0 ? space(wider, per + 1) : "");
+      }
+      // Room (not a blank): a no-break space, widened to the gap by character spacing, exact to a twip.
       if (!complex) return space(1, Math.max(0, twips(r.gap) - Math.round(nbsp)));
       // Among complex-script text (Arabic, Indic), as many no-break spaces as fill the gap, the last spaced by the
       // rest: ONLYOFFICE ignores character spacing there (#134), so it is off by half a space at most.
@@ -289,6 +303,8 @@ class Writer {
       | DocxGapRun
       | undefined;
     const mark = first ? this.rPr(first.font, first.size) : undefined;
+    const word = p.runs.find((r) => "text" in r) as DocxTextRun | undefined;
+    if (word) this.text = { font: word.font, size: word.size, rtl: !!p.rtl };
     let left = p.indent.left;
     let firstLine = p.indent.firstLine;
     let num: number | undefined;
@@ -357,6 +373,29 @@ class Writer {
   spacer(height: number, before = 0, pageBreak = false, left = 0, content = ""): string {
     const line = Math.max(0.05, height);
     return `<w:p>${this.pPr({ pageBreak, before, line, left, rPr: roomMark(line) })}${content}</w:p>`;
+  }
+
+  /**
+   * A line to write on (a `writable` rule): the room above the rule as an empty paragraph exactly as tall, in the
+   * face, size and direction of the text before it (upright), so that what is typed there sits on the rule and wraps
+   * onto lines as tall. It takes the rule's space before, what the room doesn't hold. A room shorter than the text gets
+   * none. Right to left, `pPr`'s indents are the paragraph's start and end, the rule's are left and right.
+   */
+  private writeLine(r: DocxRule): string | undefined {
+    const room = r.writable ?? 0;
+    const { font, size, rtl } = this.text;
+    if (room < size) return undefined;
+    const f = this.fonts[font];
+    const upright = f?.bold || f?.italic ? this.fonts.findIndex((g) => g.name === f.name && !g.bold && !g.italic) : -1;
+    return `<w:p>${this.pPr({
+      pageBreak: r.pageBreak,
+      before: Math.max(0, (r.before ?? 0) - room),
+      line: room,
+      bidi: rtl,
+      left: rtl ? r.indent.right : r.indent.left,
+      right: rtl ? r.indent.left : r.indent.right,
+      rPr: this.rPr(upright >= 0 ? upright : font, size),
+    })}</w:p>`;
   }
 
   /**
@@ -654,6 +693,12 @@ class Writer {
           break;
         }
         case "rule": {
+          // A line to write on, above its rule. Between two rules, it keeps them apart too (below).
+          const line = this.writeLine(b);
+          if (line) {
+            out.push(line, this.rule({ ...b, before: 0, pageBreak: false }));
+            break;
+          }
           // Rules one after another (answer lines): LibreOffice shades paragraphs with the same shading as one block,
           // the gap between them too. A paragraph a hundredth of a point tall between them keeps them apart.
           const prev = blocks[i - 1];

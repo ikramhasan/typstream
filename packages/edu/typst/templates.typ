@@ -80,7 +80,7 @@
 /// - title (content, str, none): The worksheet's title.
 /// - subject (content, str, none): E.g. "Mathematics".
 /// - grade (content, str, none): E.g. "Grade 5".
-/// - info (array, none): Student fields (see `student-info`); `none` for none.
+/// - info (array, dictionary, none): Student fields (see `student-info`): names for empty lines, `("name", "date")`, or a dictionary to fill some in, `(name: [Ikram], date: none)`; `none` for none.
 /// - instructions (content, none): Instructions shown under the title.
 /// - lang (str, auto): The document's language, e.g. "ar" or "bn"; sets the text language for the whole document, title included.
 /// - paper (str): Paper size, e.g. "a4" or "us-letter".
