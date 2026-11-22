@@ -1,6 +1,6 @@
 {
   "name": "@typstream/heal",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Self-healing for streamed Typst: closes and trims incomplete syntax so every prefix compiles.",
   "license": "MIT",
   "repository": {

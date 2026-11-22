@@ -1,6 +1,6 @@
 {
   "name": "@typstream/example-strict-csp",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "private": true,
   "description": "typstream on a page served with a strict Content-Security-Policy: no inline scripts or styles, no eval, same-origin everything; both targets, and a render island.",
   "type": "module",

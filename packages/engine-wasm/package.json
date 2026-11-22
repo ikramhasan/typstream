@@ -1,6 +1,6 @@
 {
   "name": "@typstream/engine-wasm",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Typst 0.15.1 compiled to wasm: in-memory files and fonts, HTML, changed-page SVG and PDF, structured diagnostics.",
   "license": "MIT",
   "repository": {

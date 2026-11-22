@@ -1,5 +1,11 @@
 # @typstream/example-node-validate
 
+## 0.0.3
+
+### Patch Changes
+
+- @typstream/node@0.1.2
+
 ## 0.0.2
 
 ### Patch Changes
