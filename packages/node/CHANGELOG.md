@@ -1,5 +1,17 @@
 # @typstream/node
 
+## 0.1.2
+
+### Patch Changes
+
+- Updated dependencies [47499e4]
+- Updated dependencies [0441dc0]
+  - @typstream/docx@0.2.0
+  - @typstream/engine-wasm@0.1.2
+  - @typstream/engine@0.2.0
+  - @typstream/core@0.2.0
+  - @typstream/heal@0.2.0
+
 ## 0.1.1
 
 ### Patch Changes

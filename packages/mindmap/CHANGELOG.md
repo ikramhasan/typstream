@@ -1,5 +1,11 @@
 # @typstream/mindmap
 
+## 0.1.2
+
+### Patch Changes
+
+- @typstream/core@0.2.0
+
 ## 0.1.1
 
 ### Patch Changes

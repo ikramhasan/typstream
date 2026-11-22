@@ -1,5 +1,17 @@
 # @typstream/docx-check
 
+## 0.0.3
+
+### Patch Changes
+
+- Updated dependencies [47499e4]
+  - @typstream/edu@0.2.0
+  - @typstream/docx@0.2.0
+  - @typstream/node@0.1.2
+  - @typstream/conformance@0.0.3
+  - @typstream/mindmap@0.1.2
+  - @typstream/heal@0.2.0
+
 ## 0.0.2
 
 ### Patch Changes

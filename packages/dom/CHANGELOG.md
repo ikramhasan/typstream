@@ -1,5 +1,13 @@
 # @typstream/dom
 
+## 0.2.0
+
+### Patch Changes
+
+- Updated dependencies [0441dc0]
+  - @typstream/engine@0.2.0
+  - @typstream/core@0.2.0
+
 ## 0.1.1
 
 ### Patch Changes

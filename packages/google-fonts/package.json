@@ -1,6 +1,6 @@
 {
   "name": "@typstream/google-fonts",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Any family of the Google Fonts library in typstream documents, by name: a font catalogue the engine loads families from on demand, in both render targets.",
   "license": "MIT",
   "repository": {
